@@ -1,0 +1,171 @@
+/** @import must precede all other statements */
+@import url("https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Hide scrollbar for IE, Edge and Firefox */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+
+  /* Smooth performance optimizations */
+  .gpu-accelerated {
+    transform: translateZ(0);
+    will-change: transform;
+  }
+}
+
+@layer base {
+  /**
+   * Tailwind CSS theme
+   * tailwind.config.ts expects the following color variables to be expressed as HSL values.
+   * A different format will require also updating the theme in tailwind.config.ts.
+  */
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Foorweb brand - Enhanced vibrancy */
+    --primary: 258 95% 65%; /* Brighter Royal Indigo */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 190 95% 48%; /* More saturated teal accent */
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 258 95% 65%;
+
+    --radius: 0.8rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5% 26%;
+
+    --sidebar-primary: 258 95% 65%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 210 40% 96%;
+
+    --sidebar-accent-foreground: 222 47% 11%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 258 95% 65%;
+  }
+
+  .dark {
+    --background: 230 20% 7%;
+    --foreground: 210 40% 98%;
+
+    --card: 230 20% 8.5%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 230 20% 8.5%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 258 95% 72%; /* Brighter in dark mode */
+    --primary-foreground: 240 10% 4%;
+
+    --secondary: 220 14% 16%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 220 14% 16%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 190 95% 50%; /* More saturated in dark mode */
+    --accent-foreground: 240 10% 4%;
+
+    --destructive: 0 62% 40%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 220 14% 16%;
+    --input: 220 14% 16%;
+    --ring: 258 95% 72%;
+    --sidebar-background: 230 20% 8%;
+    --sidebar-foreground: 240 5% 96%;
+    --sidebar-primary: 258 95% 65%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 230 16% 12%;
+    --sidebar-accent-foreground: 240 5% 96%;
+    --sidebar-border: 230 16% 12%;
+    --sidebar-ring: 258 95% 72%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Cairo", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  }
+
+  /* Enhanced shadows for light mode */
+  :root {
+    --card-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --card-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --card-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  }
+
+  .dark {
+    --card-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --card-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+    --card-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+  }
+
+  /* Smooth section scroll for anchor links */
+  html:focus-within {
+    scroll-behavior: smooth;
+  }
+
+  :where(p, span, li, h1, h2, h3, h4, h5, h6, a, button, label, td, th) {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  pre,
+  code {
+    overflow-x: auto;
+    white-space: pre;
+  }
+}
+
+/* Add shadows to cards and page elements */
+@layer components {
+  .card {
+    box-shadow: var(--card-shadow-md);
+  }
+
+  .card:hover {
+    box-shadow: var(--card-shadow-lg);
+    transition: box-shadow 0.2s ease-in-out;
+  }
+}
