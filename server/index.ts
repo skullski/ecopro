@@ -46,8 +46,14 @@ export function createServer() {
     app.use(express.static(clientBuildPath));
 
     // Handle React routing - send all non-API requests to index.html
-    app.get("*", (_req, res) => {
-      res.sendFile(path.join(clientBuildPath, "index.html"));
+    // Note: Using a middleware function instead of app.get("*") for Express 5 compatibility
+    app.use((req, res, next) => {
+      // Only serve index.html for GET requests that don't start with /api
+      if (req.method === 'GET' && !req.path.startsWith('/api')) {
+        res.sendFile(path.join(clientBuildPath, "index.html"));
+      } else {
+        next();
+      }
     });
   }
 
