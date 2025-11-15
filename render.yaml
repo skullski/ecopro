@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: ecopro
+    runtime: node
+    buildCommand: pnpm install && pnpm run render:build
+    startCommand: pnpm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+    healthCheckPath: /api/ping

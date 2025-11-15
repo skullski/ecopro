@@ -61,7 +61,28 @@ ecopro/
 └── public/            # Static assets
 ```
 
-## Deployment to Vercel
+## Deployment
+
+### Render (Recommended - Single Service)
+
+Deploy both frontend and backend together:
+
+```bash
+# See detailed guide
+cat RENDER_DEPLOYMENT.md
+
+# Quick steps:
+1. Push to GitHub
+2. Connect to Render
+3. Build: pnpm install && pnpm run render:build
+4. Start: pnpm start
+```
+
+[📖 Full Render Deployment Guide](./RENDER_DEPLOYMENT.md)
+
+### Vercel (Alternative)
+
+Deploy as serverless functions:
 
 ### Step 1: Push to GitHub
 

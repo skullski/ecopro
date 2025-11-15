@@ -1,6 +1,23 @@
 import { RequestHandler } from "express";
 import type { Vendor, MarketplaceProduct } from "@shared/types";
 
+// Define route parameter types
+interface VendorIdParams {
+  id: string;
+}
+
+interface VendorSlugParams {
+  slug: string;
+}
+
+interface ProductIdParams {
+  id: string;
+}
+
+interface VendorProductsParams {
+  vendorId: string;
+}
+
 // In-memory storage (replace with database later)
 let vendors: Vendor[] = [];
 let products: MarketplaceProduct[] = [];
@@ -11,8 +28,9 @@ export const getVendors: RequestHandler = (_req, res) => {
 };
 
 // Get vendor by ID
-export const getVendorById: RequestHandler = (req, res) => {
-  const vendor = vendors.find(v => v.id === req.params.id);
+export const getVendorById: RequestHandler<VendorIdParams> = (req, res) => {
+  const { id } = req.params;
+  const vendor = vendors.find(v => v.id === id);
   if (!vendor) {
     return res.status(404).json({ error: "Vendor not found" });
   }
@@ -20,8 +38,9 @@ export const getVendorById: RequestHandler = (req, res) => {
 };
 
 // Get vendor by slug
-export const getVendorBySlug: RequestHandler = (req, res) => {
-  const vendor = vendors.find(v => v.storeSlug === req.params.slug);
+export const getVendorBySlug: RequestHandler<VendorSlugParams> = (req, res) => {
+  const { slug } = req.params;
+  const vendor = vendors.find(v => v.storeSlug === slug);
   if (!vendor) {
     return res.status(404).json({ error: "Vendor not found" });
   }
@@ -36,8 +55,9 @@ export const createVendor: RequestHandler = (req, res) => {
 };
 
 // Update vendor
-export const updateVendor: RequestHandler = (req, res) => {
-  const index = vendors.findIndex(v => v.id === req.params.id);
+export const updateVendor: RequestHandler<VendorIdParams> = (req, res) => {
+  const { id } = req.params;
+  const index = vendors.findIndex(v => v.id === id);
   if (index === -1) {
     return res.status(404).json({ error: "Vendor not found" });
   }
@@ -51,8 +71,9 @@ export const getProducts: RequestHandler = (_req, res) => {
 };
 
 // Get products by vendor
-export const getVendorProducts: RequestHandler = (req, res) => {
-  const vendorProducts = products.filter(p => p.vendorId === req.params.vendorId);
+export const getVendorProducts: RequestHandler<VendorProductsParams> = (req, res) => {
+  const { vendorId } = req.params;
+  const vendorProducts = products.filter(p => p.vendorId === vendorId);
   res.json(vendorProducts);
 };
 
@@ -64,8 +85,9 @@ export const createProduct: RequestHandler = (req, res) => {
 };
 
 // Update product
-export const updateProduct: RequestHandler = (req, res) => {
-  const index = products.findIndex(p => p.id === req.params.id);
+export const updateProduct: RequestHandler<ProductIdParams> = (req, res) => {
+  const { id } = req.params;
+  const index = products.findIndex(p => p.id === id);
   if (index === -1) {
     return res.status(404).json({ error: "Product not found" });
   }
@@ -74,8 +96,9 @@ export const updateProduct: RequestHandler = (req, res) => {
 };
 
 // Delete product
-export const deleteProduct: RequestHandler = (req, res) => {
-  const index = products.findIndex(p => p.id === req.params.id);
+export const deleteProduct: RequestHandler<ProductIdParams> = (req, res) => {
+  const { id } = req.params;
+  const index = products.findIndex(p => p.id === id);
   if (index === -1) {
     return res.status(404).json({ error: "Product not found" });
   }
