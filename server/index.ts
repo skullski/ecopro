@@ -2,8 +2,13 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import path from "path";
+import { fileURLToPath } from "url";
 import { handleDemo } from "./routes/demo";
 import * as vendorRoutes from "./routes/vendors";
+
+// Get __dirname equivalent in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export function createServer() {
   const app = express();
@@ -35,14 +40,16 @@ export function createServer() {
   app.put("/api/products/:id", vendorRoutes.updateProduct);
   app.delete("/api/products/:id", vendorRoutes.deleteProduct);
 
-  // Serve static files from React build (for production)
-  const clientBuildPath = path.join(__dirname, "../dist");
-  app.use(express.static(clientBuildPath));
+  // Serve static files from React build (only in production)
+  if (process.env.NODE_ENV === "production") {
+    const clientBuildPath = path.join(__dirname, "../dist");
+    app.use(express.static(clientBuildPath));
 
-  // Handle React routing - send all non-API requests to index.html
-  app.get("*", (_req, res) => {
-    res.sendFile(path.join(clientBuildPath, "index.html"));
-  });
+    // Handle React routing - send all non-API requests to index.html
+    app.get("*", (_req, res) => {
+      res.sendFile(path.join(clientBuildPath, "index.html"));
+    });
+  }
 
   return app;
 }
