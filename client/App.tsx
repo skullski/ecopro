@@ -89,7 +89,7 @@ const App = () => (
 
               {/* Admin routes (require admin role) */}
               <Route path="/admin" element={<AdminLayout />}>
-                <Route index element={<EnhancedDashboard />} />
+                <Route index element={<AdminDashboard />} />
                 
                 {/* Store submenu routes */}
                 <Route path="store/logo" element={<StoreLogo />} />
