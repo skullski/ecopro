@@ -71,7 +71,7 @@ export default function AppPlaceholder() {
         <Ghost className="absolute left-1/2 bottom-10 w-40 h-40 opacity-30 animate-float delay-2000 pointer-events-none" />
         {/* Horror background overlay */}
     {/* Dark overlay for horror readability */}
-    <div className="absolute inset-0 bg-black/80 z-0" />
+  <div className="absolute inset-0 bg-black/40 z-0" />
         <div className="relative z-10 w-full max-w-4xl mx-auto p-10 rounded-2xl shadow-2xl border border-purple-900 bg-black/80 backdrop-blur-md">
           {/* Header */}
           <div className="flex items-start justify-between mb-8">
