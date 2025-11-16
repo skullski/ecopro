@@ -8,12 +8,13 @@ import {
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { AnimatedLogo } from "@/components/ui/animated-logo";
+import { useTranslation } from "@/lib/i18n";
 
 interface MenuItem {
-  title: string;
+  titleKey: string;
   path: string;
   icon: React.ReactNode;
-  badge?: string;
+  badgeKey?: string;
   children?: MenuItem[];
 }
 
@@ -22,97 +23,98 @@ interface EnhancedSidebarProps {
 }
 
 const menuItems: MenuItem[] = [
-  { title: "الرئيسية", path: "/admin", icon: <Home className="w-5 h-5" /> },
-  { title: "غرض المتجر", path: "/admin/preview", icon: <Eye className="w-5 h-5" /> },
+  { titleKey: "sidebar.home", path: "/admin", icon: <Home className="w-5 h-5" /> },
+  { titleKey: "sidebar.preview", path: "/admin/preview", icon: <Eye className="w-5 h-5" /> },
   { 
-    title: "المتجر", 
+    titleKey: "sidebar.store", 
     path: "/admin/stores", 
     icon: <Store className="w-5 h-5" />,
     children: [
-      { title: "الشعار", path: "/admin/store/logo", icon: <Store className="w-4 h-4" /> },
-      { title: "القالب", path: "/admin/store/template", icon: <FileText className="w-4 h-4" /> },
-      { title: "الصفحة الرئيسية", path: "/admin/store/homepage", icon: <Home className="w-4 h-4" /> },
-      { title: "معلومات الإتصال", path: "/admin/store/contact", icon: <Globe className="w-4 h-4" /> },
-      { title: "الأسئلة الشائعة", path: "/admin/store/faq", icon: <FileText className="w-4 h-4" /> },
-      { title: "حول المتجر", path: "/admin/store/about", icon: <FileText className="w-4 h-4" /> },
-      { title: "إعدادات استمارة الطلب و سلة التسوّق", path: "/admin/store/checkout-settings", icon: <Settings className="w-4 h-4" /> },
+      { titleKey: "sidebar.storeLogo", path: "/admin/store/logo", icon: <Store className="w-4 h-4" /> },
+      { titleKey: "sidebar.storeTemplate", path: "/admin/store/template", icon: <FileText className="w-4 h-4" /> },
+      { titleKey: "sidebar.storeHomepage", path: "/admin/store/homepage", icon: <Home className="w-4 h-4" /> },
+      { titleKey: "sidebar.storeContact", path: "/admin/store/contact", icon: <Globe className="w-4 h-4" /> },
+      { titleKey: "sidebar.storeFaq", path: "/admin/store/faq", icon: <FileText className="w-4 h-4" /> },
+      { titleKey: "sidebar.storeAbout", path: "/admin/store/about", icon: <FileText className="w-4 h-4" /> },
+      { titleKey: "sidebar.storeCheckout", path: "/admin/store/checkout-settings", icon: <Settings className="w-4 h-4" /> },
     ]
   },
   { 
-    title: "الطلبات", 
+    titleKey: "sidebar.orders", 
     path: "/admin/orders", 
     icon: <ShoppingCart className="w-5 h-5" />,
     children: [
-      { title: "الكل", path: "/admin/orders", icon: <ShoppingCart className="w-4 h-4" /> },
-      { title: "إضافة طلب", path: "/admin/orders/add", icon: <Tag className="w-4 h-4" /> },
-      { title: "واش نوَجَّد ؟", path: "/admin/orders/wasselni", icon: <Truck className="w-4 h-4" /> },
-      { title: "الطلبات المتروكة", path: "/admin/orders/abandoned", icon: <Ban className="w-4 h-4" /> },
-      { title: "Flex Scan", path: "/admin/orders/flex-scan", icon: <BarChart3 className="w-4 h-4" /> },
+      { titleKey: "sidebar.ordersAll", path: "/admin/orders", icon: <ShoppingCart className="w-4 h-4" /> },
+      { titleKey: "sidebar.ordersAdd", path: "/admin/orders/add", icon: <Tag className="w-4 h-4" /> },
+      { titleKey: "sidebar.ordersWasselni", path: "/admin/orders/wasselni", icon: <Truck className="w-4 h-4" /> },
+      { titleKey: "sidebar.ordersAbandoned", path: "/admin/orders/abandoned", icon: <Ban className="w-4 h-4" /> },
+      { titleKey: "sidebar.ordersFlexScan", path: "/admin/orders/flex-scan", icon: <BarChart3 className="w-4 h-4" /> },
     ]
   },
   { 
-    title: "المنتجات", 
+    titleKey: "sidebar.products", 
     path: "/admin/products", 
     icon: <Tag className="w-5 h-5" />,
     children: [
-      { title: "الكل", path: "/admin/products", icon: <Tag className="w-4 h-4" /> },
-      { title: "إضافة منتج", path: "/admin/products/add", icon: <Layers className="w-4 h-4" /> },
-      { title: "مدير المخزون", path: "/admin/products/inventory", icon: <Layers className="w-4 h-4" /> },
+      { titleKey: "sidebar.productsAll", path: "/admin/products", icon: <Tag className="w-4 h-4" /> },
+      { titleKey: "sidebar.productsAdd", path: "/admin/products/add", icon: <Layers className="w-4 h-4" /> },
+      { titleKey: "sidebar.productsInventory", path: "/admin/products/inventory", icon: <Layers className="w-4 h-4" /> },
     ]
   },
-  { title: "التصنيفات", path: "/admin/categories", icon: <Layers className="w-5 h-5" /> },
+  { titleKey: "sidebar.categories", path: "/admin/categories", icon: <Layers className="w-5 h-5" /> },
   { 
-    title: "التوصيل", 
+    titleKey: "sidebar.delivery", 
     path: "/admin/delivery", 
     icon: <Truck className="w-5 h-5" />,
     children: [
-      { title: "ولايات التوصيل", path: "/admin/delivery/regions", icon: <Globe className="w-4 h-4" /> },
-      { title: "شركات التوصيل", path: "/admin/delivery/companies", icon: <Truck className="w-4 h-4" /> },
+      { titleKey: "sidebar.deliveryRegions", path: "/admin/delivery/regions", icon: <Globe className="w-4 h-4" /> },
+      { titleKey: "sidebar.deliveryCompanies", path: "/admin/delivery/companies", icon: <Truck className="w-4 h-4" /> },
     ]
   },
   { 
-    title: "أدوات التسويق", 
+    titleKey: "sidebar.marketing", 
     path: "/admin/marketing", 
     icon: <Megaphone className="w-5 h-5" />,
-    badge: "جديد",
+    badgeKey: "sidebar.badgeNew",
     children: [
-      { title: "فيسبوك بيكسل", path: "/admin/marketing/facebook-pixel", icon: <BarChart3 className="w-4 h-4" /> },
-      { title: "فيسبوك كتالوڨ", path: "/admin/marketing/facebook-catalog", icon: <Layers className="w-4 h-4" /> },
-      { title: "تيكتوك بيكسل", path: "/admin/marketing/tiktok-pixel", icon: <BarChart3 className="w-4 h-4" /> },
-      { title: "Google Analytics", path: "/admin/marketing/google-analytics", icon: <BarChart3 className="w-4 h-4" /> },
-      { title: "Google Tag Manager", path: "/admin/marketing/google-tag-manager", icon: <BarChart3 className="w-4 h-4" /> },
+      { titleKey: "sidebar.marketingFacebookPixel", path: "/admin/marketing/facebook-pixel", icon: <BarChart3 className="w-4 h-4" /> },
+      { titleKey: "sidebar.marketingFacebookCatalog", path: "/admin/marketing/facebook-catalog", icon: <Layers className="w-4 h-4" /> },
+      { titleKey: "sidebar.marketingTiktokPixel", path: "/admin/marketing/tiktok-pixel", icon: <BarChart3 className="w-4 h-4" /> },
+      { titleKey: "sidebar.marketingGoogleAnalytics", path: "/admin/marketing/google-analytics", icon: <BarChart3 className="w-4 h-4" /> },
+      { titleKey: "sidebar.marketingGoogleTagManager", path: "/admin/marketing/google-tag-manager", icon: <BarChart3 className="w-4 h-4" /> },
     ]
   },
-  { title: "آراء الزبائن", path: "/admin/reviews", icon: <Star className="w-5 h-5" /> },
-  { title: "الرموز الترويجية", path: "/admin/promo-codes", icon: <Percent className="w-5 h-5" /> },
-  { title: "الدومينات", path: "/admin/domains", icon: <Globe className="w-5 h-5" /> },
+  { titleKey: "sidebar.reviews", path: "/admin/reviews", icon: <Star className="w-5 h-5" /> },
+  { titleKey: "sidebar.promoCodes", path: "/admin/promo-codes", icon: <Percent className="w-5 h-5" /> },
+  { titleKey: "sidebar.domains", path: "/admin/domains", icon: <Globe className="w-5 h-5" /> },
   { 
-    title: "الإحصائيات", 
+    titleKey: "sidebar.analytics", 
     path: "/admin/analytics", 
     icon: <BarChart3 className="w-5 h-5" />,
     children: [
-      { title: "عام", path: "/admin/analytics", icon: <BarChart3 className="w-4 h-4" /> },
-      { title: "المنتجات", path: "/admin/analytics/products", icon: <Tag className="w-4 h-4" /> },
-      { title: "الزيارات", path: "/admin/analytics/visits", icon: <Eye className="w-4 h-4" /> },
+      { titleKey: "sidebar.analyticsOverview", path: "/admin/analytics", icon: <BarChart3 className="w-4 h-4" /> },
+      { titleKey: "sidebar.analyticsProducts", path: "/admin/analytics/products", icon: <Tag className="w-4 h-4" /> },
+      { titleKey: "sidebar.analyticsVisits", path: "/admin/analytics/visits", icon: <Eye className="w-4 h-4" /> },
     ]
   },
-  { title: "غُشّال المتجر", path: "/admin/workers", icon: <Users className="w-5 h-5" /> },
-  { title: "القوائم السوداء", path: "/admin/blacklist", icon: <Ban className="w-5 h-5" /> },
-  { title: "الزبائن المشبوهين", path: "/admin/suspicious", icon: <Shield className="w-5 h-5" /> },
+  { titleKey: "sidebar.workers", path: "/admin/workers", icon: <Users className="w-5 h-5" /> },
+  { titleKey: "sidebar.blacklist", path: "/admin/blacklist", icon: <Ban className="w-5 h-5" /> },
+  { titleKey: "sidebar.suspicious", path: "/admin/suspicious", icon: <Shield className="w-5 h-5" /> },
   { 
-    title: "الإضافات", 
+    titleKey: "sidebar.addons", 
     path: "/admin/addons", 
     icon: <Puzzle className="w-5 h-5" />,
     children: [
-      { title: "Google Sheets", path: "/admin/addons/google-sheets", icon: <FileText className="w-4 h-4" /> },
-      { title: "إشعارات Telegram", path: "/admin/addons/telegram", icon: <Megaphone className="w-4 h-4" /> },
+      { titleKey: "sidebar.addonsGoogleSheets", path: "/admin/addons/google-sheets", icon: <FileText className="w-4 h-4" /> },
+      { titleKey: "sidebar.addonsTelegram", path: "/admin/addons/telegram", icon: <Megaphone className="w-4 h-4" /> },
     ]
   },
-  { title: "الدفع و الإشتراكات", path: "/admin/billing", icon: <CreditCard className="w-5 h-5" /> },
-  { title: "إعدادات مالك المتجر", path: "/admin/settings", icon: <Settings className="w-5 h-5" /> },
+  { titleKey: "sidebar.billing", path: "/admin/billing", icon: <CreditCard className="w-5 h-5" /> },
+  { titleKey: "sidebar.settingsOwner", path: "/admin/settings", icon: <Settings className="w-5 h-5" /> },
 ];
 
 export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {}) {
+  const { t } = useTranslation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
@@ -173,11 +175,11 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
           
           {!collapsed && (
             <>
-              <span className="flex-1 text-sm font-medium">{item.title}</span>
+              <span className="flex-1 text-sm font-medium">{t(item.titleKey)}</span>
               
-              {item.badge && (
+              {item.badgeKey && (
                 <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-sm">
-                  {item.badge}
+                  {t(item.badgeKey)}
                 </span>
               )}
               
@@ -209,7 +211,7 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
             <span className="font-bold text-lg bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent block">
               Wasselni
             </span>
-            <span className="text-xs text-muted-foreground">لوحة التحكم</span>
+            <span className="text-xs text-muted-foreground">{t("sidebar.controlPanel")}</span>
           </div>
         )}
         
@@ -217,7 +219,7 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
         <button
           onClick={() => handleCollapse(!collapsed)}
           className="hidden lg:flex items-center justify-center p-2.5 hover:bg-primary/20 rounded-lg transition-colors border-2 border-primary/30 hover:border-primary/50 bg-primary/10"
-          title={collapsed ? "توسيع القائمة" : "تصغير القائمة"}
+          title={collapsed ? t("sidebar.expandMenu") : t("sidebar.collapseMenu")}
         >
           <Menu className="w-5 h-5 text-primary" />
         </button>
