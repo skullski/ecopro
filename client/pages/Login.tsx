@@ -2,32 +2,38 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/i18n";
+import { authApi } from "@/lib/auth";
 import { FloatingShapes } from "@/components/ui/floating-shapes";
-import { LogIn, Mail, Lock } from "lucide-react";
+import { LogIn, Mail, Lock, Loader2 } from "lucide-react";
 
 export default function Login() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    
-    // Check for admin credentials
-    if (email === "admin" && password === "admin123") {
-      const user = { email, role: "admin" };
-      localStorage.setItem("user", JSON.stringify(user));
-      localStorage.setItem("isAdmin", "true");
-      alert("تم تسجيل الدخول كمسؤول");
-      navigate("/admin");
-    } else {
-      // Regular user login
-      const user = { email };
-      localStorage.setItem("user", JSON.stringify(user));
-      localStorage.removeItem("isAdmin");
-      alert(t("login") + " successful");
-      navigate("/app");
+    setError("");
+    setLoading(true);
+
+    try {
+      const response = await authApi.login({ email, password });
+      
+      // Redirect based on role
+      if (response.user.role === "admin") {
+        navigate("/admin");
+      } else if (response.user.role === "vendor") {
+        navigate("/vendor/dashboard");
+      } else {
+        navigate("/app");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Login failed");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -48,24 +54,32 @@ export default function Login() {
             <p className="text-sm text-muted-foreground mt-2">مرحباً بعودتك! سجل دخولك للمتابعة</p>
           </div>
           
+          {error && (
+            <div className="p-4 bg-red-500/10 border-2 border-red-500/20 rounded-xl text-red-600 dark:text-red-400 text-sm">
+              {error}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-medium mb-2 flex items-center gap-2">
                 <Mail className="w-4 h-4 text-primary" />
-                البريد الإلكتروني
+                {t("auth.email")}
               </label>
               <input 
                 value={email} 
                 onChange={(e) => setEmail(e.target.value)} 
                 className="mt-1 w-full rounded-xl border-2 border-primary/20 bg-background px-4 py-3 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all" 
-                placeholder="admin"
-                type="text"
+                placeholder="admin@ecopro.com"
+                type="email"
+                required
+                disabled={loading}
               />
             </div>
             <div>
               <label className="block text-sm font-medium mb-2 flex items-center gap-2">
                 <Lock className="w-4 h-4 text-primary" />
-                كلمة المرور
+                {t("auth.password")}
               </label>
               <input 
                 type="password" 
@@ -73,11 +87,24 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)} 
                 className="mt-1 w-full rounded-xl border-2 border-primary/20 bg-background px-4 py-3 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all" 
                 placeholder="••••••••"
+                required
+                disabled={loading}
               />
             </div>
             <div className="flex items-center justify-between">
-              <Button type="submit" className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-lg hover:shadow-xl transition-all py-6 text-lg">
-                {t("login")}
+              <Button 
+                type="submit" 
+                className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-lg hover:shadow-xl transition-all py-6 text-lg"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 ml-2 animate-spin" />
+                    {t("loading")}
+                  </>
+                ) : (
+                  t("login")
+                )}
               </Button>
             </div>
           </form>

@@ -1,0 +1,185 @@
+import { RequestHandler } from "express";
+import { hashPassword, comparePassword, generateToken } from "../utils/auth";
+
+// In-memory user storage (replace with database in production)
+interface User {
+  id: string;
+  email: string;
+  password: string;
+  name: string;
+  role: "user" | "admin" | "vendor";
+  createdAt: Date;
+}
+
+const users: User[] = [];
+
+// Create default admin user
+(async () => {
+  const adminPassword = await hashPassword("admin123");
+  users.push({
+    id: "admin-1",
+    email: "admin@ecopro.com",
+    password: adminPassword,
+    name: "Admin User",
+    role: "admin",
+    createdAt: new Date(),
+  });
+})();
+
+/**
+ * Register new user
+ * POST /api/auth/register
+ */
+export const register: RequestHandler = async (req, res) => {
+  try {
+    const { email, password, name, role = "user" } = req.body;
+
+    // Check if user already exists
+    const existingUser = users.find((u) => u.email === email);
+    if (existingUser) {
+      res.status(400).json({ error: "Email already registered" });
+      return;
+    }
+
+    // Hash password
+    const hashedPassword = await hashPassword(password);
+
+    // Create user
+    const user: User = {
+      id: Date.now().toString(),
+      email,
+      password: hashedPassword,
+      name,
+      role: role as "user" | "admin" | "vendor",
+      createdAt: new Date(),
+    };
+
+    users.push(user);
+
+    // Generate token
+    const token = generateToken({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
+    res.status(201).json({
+      message: "User registered successfully",
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    console.error("Registration error:", error);
+    res.status(500).json({ error: "Registration failed" });
+  }
+};
+
+/**
+ * Login user
+ * POST /api/auth/login
+ */
+export const login: RequestHandler = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Find user
+    const user = users.find((u) => u.email === email);
+    if (!user) {
+      res.status(401).json({ error: "Invalid email or password" });
+      return;
+    }
+
+    // Verify password
+    const isValidPassword = await comparePassword(password, user.password);
+    if (!isValidPassword) {
+      res.status(401).json({ error: "Invalid email or password" });
+      return;
+    }
+
+    // Generate token
+    const token = generateToken({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
+    res.json({
+      message: "Login successful",
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ error: "Login failed" });
+  }
+};
+
+/**
+ * Verify token and get current user
+ * GET /api/auth/me
+ */
+export const getCurrentUser: RequestHandler = (req, res) => {
+  if (!req.user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+
+  const user = users.find((u) => u.id === req.user!.userId);
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  res.json({
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+  });
+};
+
+/**
+ * Change password
+ * POST /api/auth/change-password
+ */
+export const changePassword: RequestHandler = async (req, res) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: "Not authenticated" });
+      return;
+    }
+
+    const { currentPassword, newPassword } = req.body;
+
+    const user = users.find((u) => u.id === req.user!.userId);
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    // Verify current password
+    const isValidPassword = await comparePassword(currentPassword, user.password);
+    if (!isValidPassword) {
+      res.status(401).json({ error: "Current password is incorrect" });
+      return;
+    }
+
+    // Hash new password
+    user.password = await hashPassword(newPassword);
+
+    res.json({ message: "Password changed successfully" });
+  } catch (error) {
+    console.error("Change password error:", error);
+    res.status(500).json({ error: "Failed to change password" });
+  }
+};

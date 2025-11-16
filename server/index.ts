@@ -3,8 +3,19 @@ import express from "express";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import { handleDemo } from "./routes/demo";
 import * as vendorRoutes from "./routes/vendors";
+import * as authRoutes from "./routes/auth";
+import { authenticate, requireAdmin, requireVendor } from "./middleware/auth";
+import {
+  validate,
+  registerValidation,
+  loginValidation,
+  productValidation,
+  vendorValidation,
+} from "./middleware/validation";
 
 // Get __dirname equivalent in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -13,12 +24,64 @@ const __dirname = path.dirname(__filename);
 export function createServer() {
   const app = express();
 
-  // Middleware
-  app.use(cors());
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
+  // Security: Helmet adds security headers
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          scriptSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", "data:", "https:"],
+        },
+      },
+    })
+  );
 
-  // Example API routes
+  // Security: Rate limiting to prevent brute force attacks
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // 5 requests per window
+    message: "Too many authentication attempts, please try again later",
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // 100 requests per window
+    message: "Too many requests, please try again later",
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  // Security: CORS configuration
+  const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(",")
+    : ["http://localhost:8080", "http://localhost:5173"];
+
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        // Allow requests with no origin (mobile apps, curl, etc.)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error("Not allowed by CORS"));
+        }
+      },
+      credentials: true,
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization"],
+    })
+  );
+
+  // Middleware
+  app.use(express.json({ limit: "10mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+  // Public routes
   app.get("/api/ping", (_req, res) => {
     const ping = process.env.PING_MESSAGE ?? "ping";
     res.json({ message: ping });
@@ -26,19 +89,76 @@ export function createServer() {
 
   app.get("/api/demo", handleDemo);
 
-  // Vendor routes - all properly named parameters
-  app.get("/api/vendors", vendorRoutes.getVendors);
-  app.get("/api/vendors/:id", vendorRoutes.getVendorById);
-  app.get("/api/vendors/slug/:slug", vendorRoutes.getVendorBySlug);
-  app.post("/api/vendors", vendorRoutes.createVendor);
-  app.put("/api/vendors/:id", vendorRoutes.updateVendor);
+  // Auth routes (with rate limiting)
+  app.post(
+    "/api/auth/register",
+    authLimiter,
+    registerValidation,
+    validate,
+    authRoutes.register
+  );
+  app.post(
+    "/api/auth/login",
+    authLimiter,
+    loginValidation,
+    validate,
+    authRoutes.login
+  );
+  app.get("/api/auth/me", authenticate, authRoutes.getCurrentUser);
+  app.post("/api/auth/change-password", authenticate, authRoutes.changePassword);
 
-  // Product routes - all properly named parameters
-  app.get("/api/products", vendorRoutes.getProducts);
-  app.get("/api/products/vendor/:vendorId", vendorRoutes.getVendorProducts);
-  app.post("/api/products", vendorRoutes.createProduct);
-  app.put("/api/products/:id", vendorRoutes.updateProduct);
-  app.delete("/api/products/:id", vendorRoutes.deleteProduct);
+  // Public vendor/product routes
+  app.get("/api/vendors", apiLimiter, vendorRoutes.getVendors);
+  app.get("/api/vendors/:id", apiLimiter, vendorRoutes.getVendorById);
+  app.get("/api/vendors/slug/:slug", apiLimiter, vendorRoutes.getVendorBySlug);
+  app.get("/api/products", apiLimiter, vendorRoutes.getProducts);
+  app.get(
+    "/api/products/vendor/:vendorId",
+    apiLimiter,
+    vendorRoutes.getVendorProducts
+  );
+
+  // Protected vendor routes (require authentication)
+  app.post(
+    "/api/vendors",
+    authenticate,
+    requireVendor,
+    vendorValidation,
+    validate,
+    vendorRoutes.createVendor
+  );
+  app.put(
+    "/api/vendors/:id",
+    authenticate,
+    requireVendor,
+    vendorValidation,
+    validate,
+    vendorRoutes.updateVendor
+  );
+
+  // Protected product routes (require vendor or admin)
+  app.post(
+    "/api/products",
+    authenticate,
+    requireVendor,
+    productValidation,
+    validate,
+    vendorRoutes.createProduct
+  );
+  app.put(
+    "/api/products/:id",
+    authenticate,
+    requireVendor,
+    productValidation,
+    validate,
+    vendorRoutes.updateProduct
+  );
+  app.delete(
+    "/api/products/:id",
+    authenticate,
+    requireVendor,
+    vendorRoutes.deleteProduct
+  );
 
   // Serve static files from React build (only in production)
   if (process.env.NODE_ENV === "production") {
@@ -50,7 +170,7 @@ export function createServer() {
     // Note: Using a middleware function instead of app.get("*") for Express 5 compatibility
     app.use((req, res, next) => {
       // Only serve index.html for GET requests that don't start with /api
-      if (req.method === 'GET' && !req.path.startsWith('/api')) {
+      if (req.method === "GET" && !req.path.startsWith("/api")) {
         res.sendFile(path.join(clientBuildPath, "index.html"));
       } else {
         next();

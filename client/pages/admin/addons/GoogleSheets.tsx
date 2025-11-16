@@ -106,7 +106,7 @@ export default function GoogleSheetsIntegration() {
           <div>
             <label className="text-sm font-medium mb-2 block">Private Key (JSON)</label>
             <textarea
-              className="w-full min-h-[120px] px-3 py-2 border rounded-lg font-mono text-xs"
+              className="w-full min-h-[120px] px-3 py-2 border rounded-lg font-mono text-xs bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               placeholder='{"type": "service_account", "project_id": "...", "private_key": "..."}'
             />
             <p className="text-xs text-muted-foreground mt-1">

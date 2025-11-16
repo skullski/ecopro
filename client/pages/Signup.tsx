@@ -1,22 +1,33 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/i18n";
+import { authApi } from "@/lib/auth";
 import { FloatingShapes } from "@/components/ui/floating-shapes";
-import { UserPlus, Mail, Lock, Sparkles } from "lucide-react";
+import { UserPlus, Mail, Lock, Sparkles, User, Loader2 } from "lucide-react";
 
 export default function Signup() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const user = { email };
-    localStorage.setItem("user", JSON.stringify(user));
-    alert(t("signup") + " successful");
-    navigate("/app");
+    setError("");
+    setLoading(true);
+
+    try {
+      await authApi.register({ email, password, name });
+      navigate("/app");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Registration failed");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
