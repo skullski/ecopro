@@ -23,23 +23,30 @@ export default function Dashboard() {
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
 
   useEffect(() => {
-    const products = JSON.parse(localStorage.getItem("products") || "[]");
-    const orders = JSON.parse(localStorage.getItem("orders") || "[]");
-    const revenue = orders.reduce((s:any,o:any)=>s + (o.total || 0), 0);
-    const pendingOrders = orders.filter((o:any) => o.status === 'pending').length;
-    const completedOrders = orders.filter((o:any) => o.status === 'completed').length;
-    
-    setStats({ 
-      products: products.length, 
-      orders: orders.length, 
-      revenue,
-      pendingOrders,
-      completedOrders,
-      visitors: Math.floor(Math.random() * 1000) + 500
-    });
-    
-    setRecentOrders(orders.slice(-5).reverse());
-  }, []);
+      // Demo data: add a product and order if none exist
+      let products = JSON.parse(localStorage.getItem("products") || "[]");
+      let orders = JSON.parse(localStorage.getItem("orders") || "[]");
+      if (products.length === 0) {
+        products = [{ id: "demo-1", title: "Demo Product", price: 19.99, desc: "This is a demo product." }];
+        localStorage.setItem("products", JSON.stringify(products));
+      }
+      if (orders.length === 0) {
+        orders = [{ id: "order-1", total: 19.99, status: "completed", items: [products[0]], createdAt: new Date().toISOString() }];
+        localStorage.setItem("orders", JSON.stringify(orders));
+      }
+      const revenue = orders.reduce((s:any,o:any)=>s + (o.total || 0), 0);
+      const pendingOrders = orders.filter((o:any) => o.status === 'pending').length;
+      const completedOrders = orders.filter((o:any) => o.status === 'completed').length;
+      setStats({ 
+        products: products.length, 
+        orders: orders.length, 
+        revenue,
+        pendingOrders,
+        completedOrders,
+        visitors: Math.floor(Math.random() * 1000) + 500
+      });
+      setRecentOrders(orders.slice(-5).reverse());
+    }, []);
 
   return (
     <div className="space-y-6">
