@@ -79,7 +79,6 @@ const App = () => (
           <Layout>
             <Routes>
               <Route path="/" element={<Index />} />
-              <Route path="/app" element={<AppPlaceholder />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/store" element={<Store />} />
@@ -87,8 +86,8 @@ const App = () => (
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/order-success/:id" element={<OrderSuccess />} />
 
-              {/* Secret Admin Panel - Unguessable URL */}
-              <Route path="/admin-portal-x9k2m8p5q7w3" element={<AdminLayout />}>
+              {/* Vendor Dashboard - For clients who create stores (current "admin" panel) */}
+              <Route path="/dashboard" element={<AdminLayout />}>
                 <Route index element={<AdminDashboard />} />
                 
                 {/* Store submenu routes */}
@@ -126,9 +125,13 @@ const App = () => (
                 <Route path="calls" element={<AdminCalls />} />
               </Route>
 
-              {/* Old /admin redirects to 404 - hide the real admin panel */}
-              <Route path="/admin" element={<NotFound />} />
-              <Route path="/admin/*" element={<NotFound />} />
+              {/* Secret Platform Admin Panel - For platform owner ONLY */}
+              <Route path="/platform-control-x9k2m8p5q7w3" element={<AppPlaceholder />} />
+
+              {/* Old admin routes redirect to dashboard */}
+              <Route path="/admin" element={<AdminLayout />} />
+              <Route path="/admin/*" element={<AdminLayout />} />
+              <Route path="/app" element={<AdminLayout />} />
               <Route path="/billing" element={<Billing />} />
               <Route path="/wasselni" element={<Wasselni />} />
               <Route path="/s/:id" element={<Storefront />} />

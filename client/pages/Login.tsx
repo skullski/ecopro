@@ -24,11 +24,9 @@ export default function Login() {
       
       // Redirect based on role
       if (response.user.role === "admin") {
-        navigate("/admin-portal-x9k2m8p5q7w3"); // Secret admin URL
-      } else if (response.user.role === "vendor") {
-        navigate("/vendor/dashboard");
+        navigate("/platform-control-x9k2m8p5q7w3"); // Secret platform admin URL
       } else {
-        navigate("/app");
+        navigate("/dashboard"); // Vendor dashboard (store owner)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");

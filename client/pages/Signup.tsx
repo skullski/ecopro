@@ -22,7 +22,7 @@ export default function Signup() {
 
     try {
       await authApi.register({ email, password, name });
-      navigate("/app");
+      navigate("/dashboard"); // Redirect to vendor dashboard
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {

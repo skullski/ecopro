@@ -78,7 +78,7 @@ export default function Header() {
               </Link>
               {isAdmin && (
                 <Link 
-                  to="/admin-portal-x9k2m8p5q7w3" 
+                  to="/platform-control-x9k2m8p5q7w3" 
                   className="px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-primary/20 to-accent/20 text-foreground hover:from-primary/30 hover:to-accent/30 transition-all"
                 >
                   {t("menu.admin")}
@@ -211,7 +211,7 @@ export default function Header() {
               </Link>
               {isAdmin && (
                 <Link 
-                  to="/admin-portal-x9k2m8p5q7w3" 
+                  to="/platform-control-x9k2m8p5q7w3" 
                   onClick={() => setMobileMenuOpen(false)}
                   className="px-4 py-3 rounded-lg text-base font-medium bg-gradient-to-r from-primary/20 to-accent/20 text-foreground hover:from-primary/30 hover:to-accent/30 transition-all"
                 >
@@ -226,7 +226,7 @@ export default function Header() {
                     variant="ghost" 
                     onClick={() => {
                       setMobileMenuOpen(false);
-                      navigate(isAdmin ? "/admin-portal-x9k2m8p5q7w3" : "/app");
+                      navigate(isAdmin ? "/platform-control-x9k2m8p5q7w3" : "/dashboard");
                     }} 
                     className="justify-start hover:bg-gradient-to-r hover:from-primary/10 hover:to-accent/10 font-medium"
                   >

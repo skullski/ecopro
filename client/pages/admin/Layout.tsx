@@ -1,13 +1,28 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import { EnhancedSidebar } from "@/components/admin/EnhancedSidebar";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { getCurrentUser } from "@/lib/auth";
 
 export default function AdminLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { locale } = useTranslation();
   const isRTL = locale === "ar";
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check if user is logged in
+    const user = getCurrentUser();
+    
+    if (!user) {
+      // Not logged in - redirect to login
+      navigate("/login");
+      return;
+    }
+    
+    // Logged in users (vendors) can access this dashboard
+  }, [navigate]);
 
   return (
     <div className="flex min-h-screen bg-background">
