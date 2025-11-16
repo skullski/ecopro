@@ -68,7 +68,7 @@ export default function Login() {
                 value={email} 
                 onChange={(e) => setEmail(e.target.value)} 
                 className="mt-1 w-full rounded-xl border-2 border-primary/20 bg-background px-4 py-3 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all" 
-                placeholder="admin@ecopro.com"
+                placeholder={t("auth.email")}
                 type="email"
                 required
                 disabled={loading}
