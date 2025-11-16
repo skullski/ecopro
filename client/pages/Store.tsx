@@ -29,17 +29,18 @@ import { useState, useMemo, useEffect } from "react";
 import type { MarketplaceProduct, Vendor } from "@shared/types";
 import * as api from "@/lib/api";
 
-const CATEGORIES = [
-  { id: "all", name: "الكل", icon: Grid3x3 },
-  { id: "electronics", name: "إلكترونيات", icon: Zap },
-  { id: "fashion", name: "أزياء", icon: Sparkles },
-  { id: "home", name: "منزل", icon: Package },
-  { id: "sports", name: "رياضة", icon: Award },
-  { id: "beauty", name: "تجميل", icon: Star },
-];
-
 export default function Store() {
   const { t } = useTranslation();
+  
+  const CATEGORIES = [
+    { id: "all", nameKey: "category.all", icon: Grid3x3 },
+    { id: "electronics", nameKey: "category.electronics", icon: Zap },
+    { id: "fashion", nameKey: "category.fashion", icon: Sparkles },
+    { id: "home", nameKey: "category.home", icon: Package },
+    { id: "sports", nameKey: "category.sports", icon: Award },
+    { id: "beauty", nameKey: "category.beauty", icon: Star },
+  ];
+  
   const [cart, setCart] = useState<MarketplaceProduct[]>(
     JSON.parse(localStorage.getItem("cart") || "[]")
   );
@@ -141,7 +142,7 @@ export default function Store() {
           <div className="flex items-center gap-2">
             <Percent className="h-5 w-5" />
             <span className="text-sm md:text-base font-semibold">
-              سوق مفتوح للجميع - سجل وابدأ البيع مجاناً!
+              {t("marketplace.banner")}
             </span>
           </div>
           <Link to="/vendor/signup">
@@ -150,7 +151,7 @@ export default function Store() {
               className="bg-white text-primary hover:bg-white/90 font-bold shadow-lg"
             >
               <UserPlus className="h-4 w-4 mr-2" />
-              ابدأ البيع الآن
+              {t("marketplace.startSelling")}
             </Button>
           </Link>
         </div>
@@ -161,18 +162,21 @@ export default function Store() {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6 px-4">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent mb-1">
-              {t("store.title")}
+              {t("marketplace.title")}
             </h1>
             <p className="text-sm text-muted-foreground flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-accent" />
-              {filteredProducts.length} منتج من {vendors.length} بائع
+              {t("marketplace.productsFrom", { 
+                products: filteredProducts.length.toString(), 
+                vendors: vendors.length.toString() 
+              })}
             </p>
           </div>
           <div className="flex gap-3">
             <Link to="/vendor/signup">
               <Button size="lg" variant="outline" className="border-2 border-primary">
                 <UserPlus className="h-5 w-5 mr-2" />
-                <span className="hidden sm:inline">ابدأ البيع</span>
+                <span className="hidden sm:inline">{t("marketplace.startSelling")}</span>
               </Button>
             </Link>
             <Link to="/checkout">
@@ -181,7 +185,7 @@ export default function Store() {
                 className="bg-gradient-to-r from-accent to-orange-500 text-white shadow-lg"
               >
                 <ShoppingCart className="h-5 w-5 mr-2" />
-                السلة ({cart.length})
+                {t("marketplace.cart", { count: cart.length.toString() })}
               </Button>
             </Link>
           </div>
@@ -203,7 +207,7 @@ export default function Store() {
                   }`}
                 >
                   <Icon className="h-4 w-4" />
-                  {cat.name}
+                  {t(cat.nameKey)}
                 </button>
               );
             })}
@@ -217,7 +221,7 @@ export default function Store() {
               <Search className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
               <DarkModeInput
                 type="search"
-                placeholder="ابحث..."
+                placeholder={t("marketplace.search")}
                 className="w-full pr-12 pl-4 py-6 rounded-xl border-2"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -225,10 +229,10 @@ export default function Store() {
             </div>
             <div className="flex gap-3">
               <DarkModeSelect value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-                <option value="featured">مميز</option>
-                <option value="newest">الأحدث</option>
-                <option value="price-low">السعر: الأقل</option>
-                <option value="price-high">السعر: الأعلى</option>
+                <option value="featured">{t("marketplace.featured")}</option>
+                <option value="newest">{t("marketplace.newest")}</option>
+                <option value="price-low">{t("marketplace.priceLow")}</option>
+                <option value="price-high">{t("marketplace.priceHigh")}</option>
               </DarkModeSelect>
               <div className="flex gap-1 bg-card border-2 border-border rounded-lg p-1">
                 <button
@@ -259,12 +263,12 @@ export default function Store() {
               <div className="max-w-2xl mx-auto p-8 rounded-2xl bg-gradient-to-br from-primary/10 via-accent/10 to-orange-500/10 border-2 border-primary/20">
                 <StoreIcon className="h-24 w-24 mx-auto mb-6 text-primary" />
                 <h2 className="text-3xl font-bold mb-4">
-                  {products.length === 0 ? "كن أول من يبدأ!" : "لا توجد نتائج"}
+                  {products.length === 0 ? t("marketplace.firstToStart") : t("marketplace.noResults")}
                 </h2>
                 <p className="text-lg text-muted-foreground mb-6">
                   {products.length === 0
-                    ? "سجل الآن وأضف منتجاتك مجاناً"
-                    : "جرب تعديل البحث"}
+                    ? t("marketplace.registerFree")
+                    : t("marketplace.tryDifferent")}
                 </p>
                 {products.length === 0 && (
                   <Link to="/vendor/signup">
@@ -273,7 +277,7 @@ export default function Store() {
                       className="bg-gradient-to-r from-primary to-accent text-white text-lg px-8 py-6 shadow-xl"
                     >
                       <UserPlus className="h-6 w-6 mr-3" />
-                      سجل كبائع الآن
+                      {t("marketplace.registerAsVendor")}
                     </Button>
                   </Link>
                 )}
@@ -317,7 +321,7 @@ export default function Store() {
                         {p.featured && (
                           <Badge className="bg-gradient-to-r from-accent to-purple-500 text-white">
                             <Star className="h-3 w-3 mr-1" />
-                            مميز
+                            {t("marketplace.featured")}
                           </Badge>
                         )}
                       </div>
@@ -369,7 +373,7 @@ export default function Store() {
                             size="sm"
                           >
                             <ShoppingCart className="h-4 w-4 mr-1" />
-                            أضف
+                            {t("marketplace.addToCart")}
                           </Button>
                         </div>
                       </div>
@@ -386,15 +390,15 @@ export default function Store() {
           <div className="mt-16 p-8 rounded-2xl bg-gradient-to-r from-primary/10 to-orange-500/10 border-2 border-primary/20">
             <div className="max-w-3xl mx-auto text-center">
               <StoreIcon className="h-16 w-16 mx-auto mb-4 text-primary" />
-              <h2 className="text-3xl font-bold mb-3">هل لديك منتجات للبيع؟</h2>
-              <p className="text-lg text-muted-foreground mb-6">انضم إلى آلاف البائعين</p>
+              <h2 className="text-3xl font-bold mb-3">{t("marketplace.haveProducts")}</h2>
+              <p className="text-lg text-muted-foreground mb-6">{t("marketplace.joinThousands")}</p>
               <Link to="/vendor/signup">
                 <Button
                   size="lg"
                   className="bg-gradient-to-r from-primary to-accent text-white shadow-lg"
                 >
                   <UserPlus className="h-5 w-5 mr-2" />
-                  سجل كبائع مجاناً
+                  {t("marketplace.registerVendorFree")}
                 </Button>
               </Link>
             </div>
