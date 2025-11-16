@@ -24,7 +24,7 @@ export default function Login() {
       
       // Redirect based on role
       if (response.user.role === "admin") {
-        navigate("/admin");
+        navigate("/admin-portal-x9k2m8p5q7w3"); // Secret admin URL
       } else if (response.user.role === "vendor") {
         navigate("/vendor/dashboard");
       } else {

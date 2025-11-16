@@ -143,14 +143,6 @@ export default function AppPlaceholder() {
                 </Button>
               </Link>
             )}
-            {user.role === 'admin' && (
-              <Link to="/admin">
-                <Button variant="outline">
-                  <Settings className="w-4 h-4 mr-2" />
-                  {t("menu.admin")}
-                </Button>
-              </Link>
-            )}
             <Link to="/">
               <Button variant="ghost">{t("back")}</Button>
             </Link>

@@ -87,8 +87,8 @@ const App = () => (
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/order-success/:id" element={<OrderSuccess />} />
 
-              {/* Admin routes (require admin role) */}
-              <Route path="/admin" element={<AdminLayout />}>
+              {/* Secret Admin Panel - Unguessable URL */}
+              <Route path="/admin-portal-x9k2m8p5q7w3" element={<AdminLayout />}>
                 <Route index element={<AdminDashboard />} />
                 
                 {/* Store submenu routes */}
@@ -125,6 +125,10 @@ const App = () => (
                 <Route path="wasselni-settings" element={<AdminWasselniSettings />} />
                 <Route path="calls" element={<AdminCalls />} />
               </Route>
+
+              {/* Old /admin redirects to 404 - hide the real admin panel */}
+              <Route path="/admin" element={<NotFound />} />
+              <Route path="/admin/*" element={<NotFound />} />
               <Route path="/billing" element={<Billing />} />
               <Route path="/wasselni" element={<Wasselni />} />
               <Route path="/s/:id" element={<Storefront />} />
