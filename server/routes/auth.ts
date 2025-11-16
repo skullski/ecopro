@@ -6,12 +6,18 @@ import {
   createUser,
   updateUser,
   initializeDatabase,
-} from "../utils/db";
+  createDefaultAdmin,
+} from "../utils/database";
 
-// Initialize database with default admin user
+// Initialize database and create default admin user
 (async () => {
-  const adminPassword = await hashPassword("admin123");
-  await initializeDatabase(adminPassword);
+  try {
+    await initializeDatabase();
+    const adminPassword = await hashPassword("admin123");
+    await createDefaultAdmin("admin@ecopro.com", adminPassword);
+  } catch (error) {
+    console.error("Database initialization error:", error);
+  }
 })();
 
 /**
