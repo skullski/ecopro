@@ -42,6 +42,10 @@ export const translations: Record<Locale, Record<string, string>> = {
     "continue": "متابعة",
     "submit": "إرسال",
     "send": "إرسال",
+    "settings": "الإعدادات",
+    "admin": "مسؤول",
+    "vendor": "بائع",
+    "customer": "عميل",
 
     // Navigation & Brand
     "brand": "walidstore",
@@ -76,6 +80,8 @@ export const translations: Record<Locale, Record<string, string>> = {
     "auth.changePassword": "تغيير كلمة المرور",
     "auth.currentPassword": "كلمة المرور الحالية",
     "auth.newPassword": "كلمة المرور الجديدة",
+    "auth.namePlaceholder": "أدخل اسمك الكامل",
+    "auth.passwordHint": "يجب أن تحتوي كلمة المرور على 6 أحرف على الأقل",
 
     // Homepage
     "hero.badge": "منصة SaaS للمتاجر الإلكترونية",
@@ -224,7 +230,15 @@ export const translations: Record<Locale, Record<string, string>> = {
     // Dashboard
     "dashboard.welcome": "مرحبًا",
     "dashboard.overview": "نظرة عامة",
+    "dashboard.accountInfo": "معلومات الحساب",
+    "dashboard.accountDesc": "بياناتك الشخصية ومعلومات حسابك",
+    "dashboard.accountType": "نوع الحساب",
     "dashboard.totalOrders": "إجمالي الطلبات",
+    "dashboard.noOrdersYet": "لا توجد طلبات حتى الآن",
+    "dashboard.totalRevenue": "إجمالي الإيرادات",
+    "dashboard.allTime": "كل الوقت",
+    "dashboard.quickActionsDesc": "الإجراءات الأكثر استخدامًا",
+    "dashboard.startSelling": "ابدأ البيع الآن",
     "dashboard.revenue": "الإيرادات",
     "dashboard.visitors": "الزوار",
     "dashboard.products": "المنتجات",
@@ -552,6 +566,10 @@ export const translations: Record<Locale, Record<string, string>> = {
     "continue": "Continue",
     "submit": "Submit",
     "send": "Send",
+    "settings": "Settings",
+    "admin": "Admin",
+    "vendor": "Vendor",
+    "customer": "Customer",
 
     // Navigation & Brand
     "brand": "walidstore",
@@ -586,6 +604,8 @@ export const translations: Record<Locale, Record<string, string>> = {
     "auth.changePassword": "Change Password",
     "auth.currentPassword": "Current Password",
     "auth.newPassword": "New Password",
+    "auth.namePlaceholder": "Enter your full name",
+    "auth.passwordHint": "Password must be at least 6 characters long",
 
     // Homepage
     "hero.badge": "SaaS E-commerce Platform",
@@ -734,7 +754,15 @@ export const translations: Record<Locale, Record<string, string>> = {
     // Dashboard
     "dashboard.welcome": "Welcome",
     "dashboard.overview": "Overview",
+    "dashboard.accountInfo": "Account Information",
+    "dashboard.accountDesc": "Your personal details and account information",
+    "dashboard.accountType": "Account Type",
     "dashboard.totalOrders": "Total Orders",
+    "dashboard.noOrdersYet": "No orders yet",
+    "dashboard.totalRevenue": "Total Revenue",
+    "dashboard.allTime": "All time",
+    "dashboard.quickActionsDesc": "Most frequently used actions",
+    "dashboard.startSelling": "Start selling now",
     "dashboard.revenue": "Revenue",
     "dashboard.visitors": "Visitors",
     "dashboard.products": "Products",
@@ -1062,6 +1090,10 @@ export const translations: Record<Locale, Record<string, string>> = {
     "continue": "Continuer",
     "submit": "Soumettre",
     "send": "Envoyer",
+    "settings": "Paramètres",
+    "admin": "Administrateur",
+    "vendor": "Vendeur",
+    "customer": "Client",
 
     // Navigation & Brand
     "brand": "walidstore",
@@ -1096,6 +1128,8 @@ export const translations: Record<Locale, Record<string, string>> = {
     "auth.changePassword": "Changer le mot de passe",
     "auth.currentPassword": "Mot de passe actuel",
     "auth.newPassword": "Nouveau mot de passe",
+    "auth.namePlaceholder": "Entrez votre nom complet",
+    "auth.passwordHint": "Le mot de passe doit contenir au moins 6 caractères",
 
     // Homepage
     "hero.badge": "Plateforme E-commerce SaaS",
@@ -1244,7 +1278,15 @@ export const translations: Record<Locale, Record<string, string>> = {
     // Dashboard
     "dashboard.welcome": "Bienvenue",
     "dashboard.overview": "Aperçu",
+    "dashboard.accountInfo": "Informations du Compte",
+    "dashboard.accountDesc": "Vos détails personnels et informations de compte",
+    "dashboard.accountType": "Type de Compte",
     "dashboard.totalOrders": "Total des Commandes",
+    "dashboard.noOrdersYet": "Aucune commande pour le moment",
+    "dashboard.totalRevenue": "Revenus Totaux",
+    "dashboard.allTime": "Tout le temps",
+    "dashboard.quickActionsDesc": "Actions les plus utilisées",
+    "dashboard.startSelling": "Commencer à vendre maintenant",
     "dashboard.revenue": "Revenus",
     "dashboard.visitors": "Visiteurs",
     "dashboard.products": "Produits",

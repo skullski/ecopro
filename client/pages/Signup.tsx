@@ -50,24 +50,48 @@ export default function Signup() {
             </p>
           </div>
           
+          {error && (
+            <div className="p-4 mb-6 bg-red-500/10 border-2 border-red-500/20 rounded-xl text-red-600 dark:text-red-400 text-sm">
+              {error}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                <User className="w-4 h-4 text-accent" />
+                {t("auth.name")}
+              </label>
+              <input 
+                value={name} 
+                onChange={(e) => setName(e.target.value)} 
+                className="mt-1 w-full rounded-xl border-2 border-accent/20 bg-background px-4 py-3 focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all" 
+                placeholder={t("auth.namePlaceholder")}
+                type="text"
+                required
+                disabled={loading}
+                minLength={2}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2 flex items-center gap-2">
                 <Mail className="w-4 h-4 text-accent" />
-                البريد الإلكتروني
+                {t("auth.email")}
               </label>
               <input 
                 value={email} 
                 onChange={(e) => setEmail(e.target.value)} 
                 className="mt-1 w-full rounded-xl border-2 border-accent/20 bg-background px-4 py-3 focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all" 
-                placeholder="example@email.com"
+                placeholder="example@gmail.com"
                 type="email"
+                required
+                disabled={loading}
               />
             </div>
             <div>
               <label className="block text-sm font-medium mb-2 flex items-center gap-2">
                 <Lock className="w-4 h-4 text-accent" />
-                كلمة المرور
+                {t("auth.password")}
               </label>
               <input 
                 type="password" 
@@ -75,15 +99,43 @@ export default function Signup() {
                 onChange={(e) => setPassword(e.target.value)} 
                 className="mt-1 w-full rounded-xl border-2 border-accent/20 bg-background px-4 py-3 focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all" 
                 placeholder="••••••••"
+                required
+                disabled={loading}
+                minLength={6}
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                {t("auth.passwordHint")}
+              </p>
             </div>
             <div className="flex items-center justify-between">
-              <Button type="submit" className="w-full bg-gradient-to-r from-accent to-orange-500 hover:from-accent/90 hover:to-orange-500/90 shadow-lg hover:shadow-xl transition-all py-6 text-lg">
-                <Sparkles className="w-5 h-5 ml-2" />
-                {t("signup")}
+              <Button 
+                type="submit" 
+                className="w-full bg-gradient-to-r from-accent to-orange-500 hover:from-accent/90 hover:to-orange-500/90 shadow-lg hover:shadow-xl transition-all py-6 text-lg"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 ml-2 animate-spin" />
+                    {t("loading")}
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-5 h-5 ml-2" />
+                    {t("signup")}
+                  </>
+                )}
               </Button>
             </div>
           </form>
+          
+          <div className="mt-6 text-center">
+            <p className="text-sm text-muted-foreground">
+              {t("auth.haveAccount")}{" "}
+              <Link to="/login" className="text-accent hover:underline font-medium">
+                {t("login")}
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </section>
