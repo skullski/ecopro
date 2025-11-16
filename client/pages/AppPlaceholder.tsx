@@ -56,13 +56,22 @@ export default function AppPlaceholder() {
 
     // Horror dark theme background and ghostly effects
     return (
-      <section className="relative min-h-screen flex items-center justify-center bg-black overflow-hidden">
+      <section
+        className="relative min-h-screen flex items-center justify-center overflow-hidden"
+        style={{
+          backgroundImage: `url('/admin/graffiti-wallpaper.jpg')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+        }}
+      >
         {/* Animated ghost SVGs */}
         <Ghost className="absolute left-10 top-20 w-32 h-32 opacity-60 animate-float pointer-events-none" />
         <Ghost className="absolute right-20 top-40 w-24 h-24 opacity-40 animate-float delay-1000 pointer-events-none" />
         <Ghost className="absolute left-1/2 bottom-10 w-40 h-40 opacity-30 animate-float delay-2000 pointer-events-none" />
         {/* Horror background overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-black via-gray-900 to-purple-950 opacity-90 z-0" style={{backgroundImage:'radial-gradient(circle at 60% 40%, #2d0036 0%, transparent 70%)'}} />
+    {/* Dark overlay for horror readability */}
+    <div className="absolute inset-0 bg-black/80 z-0" />
         <div className="relative z-10 w-full max-w-4xl mx-auto p-10 rounded-2xl shadow-2xl border border-purple-900 bg-black/80 backdrop-blur-md">
           {/* Header */}
           <div className="flex items-start justify-between mb-8">
