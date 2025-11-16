@@ -14,14 +14,17 @@ export default function AdminLayout() {
   useEffect(() => {
     // Check if user is logged in
     const user = getCurrentUser();
-    
     if (!user) {
       // Not logged in - redirect to login
       navigate("/login");
       return;
     }
-    
-    // Logged in users (vendors) can access this dashboard
+    if (user.role === "admin") {
+      // Admins should not see the dashboard, redirect to admin panel
+      navigate("/platform-control-x9k2m8p5q7w3");
+      return;
+    }
+    // Only vendors/clients see the dashboard
   }, [navigate]);
 
   return (
