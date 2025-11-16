@@ -26,6 +26,10 @@ dist-ssr
 .config/
 !.env
 
+# User data database
+data/
+*.json.backup
+
 # Vercel
 .vercel
 
