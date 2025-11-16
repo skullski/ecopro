@@ -10,8 +10,11 @@ import {
   Globe,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "@/lib/i18n";
 
 export default function Index() {
+  const { t } = useTranslation();
+  
   return (
     <div className="min-h-screen">
       {/* Modern Hero Section */}
@@ -30,31 +33,31 @@ export default function Index() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                 </span>
-                <span className="text-sm font-medium">Live & Growing</span>
+                <span className="text-sm font-medium">{t("home.liveGrowing")}</span>
               </div>
 
               <h1 className="text-5xl md:text-7xl font-black leading-tight">
-                Your
+                {t("home.heroYour")}
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-600">
-                  Marketplace
+                  {t("home.heroMarketplace")}
                 </span>
-                Revolution
+                {t("home.heroTitle")}
               </h1>
 
               <p className="text-xl text-gray-600 dark:text-gray-300 max-w-lg">
-                Build your online empire. Connect with thousands of buyers. Grow your business with zero limits.
+                {t("home.heroDescription")}
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link to="/vendor/signup">
                   <Button size="lg" className="group bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-700 hover:to-cyan-700 text-white shadow-xl hover:shadow-2xl px-8 h-14 text-lg">
-                    Start Selling
+                    {t("home.startSelling")}
                     <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
                 <Link to="/store">
                   <Button size="lg" variant="outline" className="h-14 px-8 text-lg border-2 hover:border-indigo-600 hover:text-indigo-600">
-                    Explore Marketplace
+                    {t("home.exploreMarketplace")}
                   </Button>
                 </Link>
               </div>
@@ -67,7 +70,7 @@ export default function Index() {
                       <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
                     ))}
                   </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">4.9/5 from 1000+ reviews</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{t("home.reviews")}</p>
                 </div>
               </div>
             </div>
@@ -83,7 +86,7 @@ export default function Index() {
                       <TrendingUp />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Sales Today</p>
+                      <p className="text-sm text-gray-500">{t("home.salesToday")}</p>
                       <p className="text-2xl font-bold">$12,450</p>
                     </div>
                   </div>
@@ -93,7 +96,7 @@ export default function Index() {
                 {/* Card 2 */}
                 <div className="absolute top-32 left-0 w-72 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 animate-float" style={{animationDelay: '0.5s'}}>
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold">New Products</h3>
+                    <h3 className="font-bold">{t("home.newProducts")}</h3>
                     <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 rounded-full text-xs font-medium">+24</span>
                   </div>
                   <div className="space-y-3">
@@ -113,10 +116,10 @@ export default function Index() {
                 <div className="absolute bottom-0 right-8 w-56 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 animate-float" style={{animationDelay: '1s'}}>
                   <div className="flex items-center gap-2 mb-4">
                     <Users className="w-5 h-5 text-purple-600" />
-                    <p className="text-sm font-medium">Active Vendors</p>
+                    <p className="text-sm font-medium">{t("home.activeVendors")}</p>
                   </div>
                   <p className="text-4xl font-black bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">1,247</p>
-                  <p className="text-xs text-gray-500 mt-2">↑ 12% this week</p>
+                  <p className="text-xs text-gray-500 mt-2">{t("home.thisWeek")}</p>
                 </div>
               </div>
             </div>
@@ -129,51 +132,51 @@ export default function Index() {
         <div className="container mx-auto px-4">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-4xl md:text-5xl font-black mb-4">
-              Everything You Need to
+              {t("home.featuresTitle")}
               <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-600">
-                Succeed Online
+                {t("home.featuresSubtitle")}
               </span>
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-300">
-              Powerful tools designed for modern sellers. No complexity, just results.
+              {t("home.featuresDescription")}
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             <FeatureCard
               icon={<Store />}
-              title="Your Own Storefront"
-              description="Get a professional store page with custom branding, product showcase, and direct customer access."
+              title={t("home.feature.storefront.title")}
+              description={t("home.feature.storefront.desc")}
               color="from-blue-500 to-cyan-500"
             />
             <FeatureCard
               icon={<TrendingUp />}
-              title="Real-Time Analytics"
-              description="Track sales, views, and customer behavior with live dashboards and actionable insights."
+              title={t("home.feature.analytics.title")}
+              description={t("home.feature.analytics.desc")}
               color="from-green-500 to-emerald-500"
             />
             <FeatureCard
               icon={<Users />}
-              title="Built-in Audience"
-              description="Tap into our active marketplace community. Your products get discovered automatically."
+              title={t("home.feature.audience.title")}
+              description={t("home.feature.audience.desc")}
               color="from-purple-500 to-pink-500"
             />
             <FeatureCard
               icon={<Shield />}
-              title="Secure Payments"
-              description="Accept payments safely with built-in fraud protection and instant payouts to your account."
+              title={t("home.feature.payments.title")}
+              description={t("home.feature.payments.desc")}
               color="from-orange-500 to-red-500"
             />
             <FeatureCard
               icon={<Rocket />}
-              title="Launch in Minutes"
-              description="Set up your store and list products faster than making coffee. Seriously, it's that easy."
+              title={t("home.feature.launch.title")}
+              description={t("home.feature.launch.desc")}
               color="from-indigo-500 to-purple-500"
             />
             <FeatureCard
               icon={<Globe />}
-              title="Global Reach"
-              description="Sell to anyone, anywhere. Multi-currency support and international shipping integration."
+              title={t("home.feature.global.title")}
+              description={t("home.feature.global.desc")}
               color="from-cyan-500 to-blue-500"
             />
           </div>
@@ -184,15 +187,15 @@ export default function Index() {
       <section className="py-24 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-black mb-4">Join Successful Sellers</h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300">Real stories from our community</p>
+            <h2 className="text-4xl font-black mb-4">{t("home.testimonials.title")}</h2>
+            <p className="text-xl text-gray-600 dark:text-gray-300">{t("home.testimonials.subtitle")}</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {[
-              { name: "Sarah M.", role: "Fashion Designer", quote: "Sold $50k in my first 3 months. This platform changed my business forever.", avatar: "🎨" },
-              { name: "Mike R.", role: "Electronics Seller", quote: "The easiest way to scale. I went from 10 to 500 products without breaking a sweat.", avatar: "⚡" },
-              { name: "Lisa K.", role: "Handmade Crafts", quote: "Finally, a marketplace that doesn't take all my profits. Fair pricing, great community.", avatar: "🌟" }
+              { name: t("home.testimonial1.name"), role: t("home.testimonial1.role"), quote: t("home.testimonial1.quote"), avatar: "🎨" },
+              { name: t("home.testimonial2.name"), role: t("home.testimonial2.role"), quote: t("home.testimonial2.quote"), avatar: "⚡" },
+              { name: t("home.testimonial3.name"), role: t("home.testimonial3.role"), quote: t("home.testimonial3.quote"), avatar: "🌟" }
             ].map((testimonial, i) => (
               <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-xl">
                 <div className="flex items-center gap-4 mb-4">
@@ -224,29 +227,28 @@ export default function Index() {
         <div className="container relative z-10 mx-auto px-4 text-center">
           <div className="max-w-3xl mx-auto">
             <h2 className="text-4xl md:text-6xl font-black text-white mb-6">
-              Ready to Start Your Journey?
+              {t("home.cta.title")}
             </h2>
             <p className="text-xl text-white/90 mb-10">
-              Join thousands of sellers who are already growing their business with us.
-              No credit card required to start.
+              {t("home.cta.description")}
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Link to="/vendor/signup">
                 <Button size="lg" className="bg-white text-indigo-600 hover:bg-gray-100 shadow-2xl px-8 h-14 text-lg font-bold">
-                  Start Selling Free
+                  {t("home.cta.startFree")}
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
               <Link to="/store">
                 <Button size="lg" variant="outline" className="border-2 border-white text-white hover:bg-white/10 h-14 px-8 text-lg">
-                  Browse Marketplace
+                  {t("home.cta.browseMarketplace")}
                 </Button>
               </Link>
             </div>
 
             <p className="mt-8 text-white/80 text-sm">
-              ✓ No setup fees  ✓ Cancel anytime  ✓ 24/7 support
+              {t("home.cta.noFees")}
             </p>
           </div>
         </div>
@@ -256,6 +258,8 @@ export default function Index() {
 }
 
 function FeatureCard({ icon, title, description, color }: { icon: React.ReactNode; title: string; description: string; color: string }) {
+  const { t } = useTranslation();
+  
   return (
     <div className="group relative bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border border-gray-100 dark:border-gray-700">
       <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${color} opacity-0 group-hover:opacity-10 rounded-2xl transition-opacity blur-2xl`}></div>
@@ -268,7 +272,7 @@ function FeatureCard({ icon, title, description, color }: { icon: React.ReactNod
       <p className="text-gray-600 dark:text-gray-300 leading-relaxed">{description}</p>
       
       <div className={`mt-6 inline-flex items-center text-sm font-medium bg-gradient-to-r ${color} bg-clip-text text-transparent group-hover:gap-2 transition-all`}>
-        Learn more
+        {t("home.learnMore")}
         <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
     </div>
