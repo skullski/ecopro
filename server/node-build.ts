@@ -1,10 +1,4 @@
-import path from "path";
-import { fileURLToPath } from "url";
 import { createServer } from "./index";
-
-// Get __dirname equivalent in ES modules (compatible with Node.js 18+)
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const app = createServer();
 const port = process.env.PORT || 3000;
