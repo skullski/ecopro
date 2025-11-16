@@ -37,8 +37,8 @@ export default function Wasselni() {
 
         <div className="mt-6 flex items-center gap-3">
           <Link to="/signup"><Button>{"إنشاء حساب"}</Button></Link>
-          <Link to="/admin/wasselni-settings"><Button variant="outline">إعدادات Wasselni</Button></Link>
-          <Link to="/admin/calls"><Button variant="ghost">قائمة المكالمات</Button></Link>
+          <Link to="/dashboard/wasselni-settings"><Button variant="outline">إعدادات Wasselni</Button></Link>
+          <Link to="/dashboard/calls"><Button variant="ghost">قائمة المكالمات</Button></Link>
         </div>
       </div>
     </section>
