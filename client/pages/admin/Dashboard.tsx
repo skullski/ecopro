@@ -8,8 +8,10 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useTranslation } from "@/lib/i18n";
 
 export default function Dashboard() {
+  const { t } = useTranslation();
   const [stats, setStats] = useState({ 
     products: 0, 
     orders: 0, 
@@ -55,9 +57,9 @@ export default function Dashboard() {
                 12%
               </div>
             </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">إجمالي الطلبات</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t("dashboard.totalOrders")}</div>
             <div className="text-3xl font-black">{stats.orders}</div>
-            <div className="text-xs text-gray-500 mt-2">مقارنة بالشهر الماضي</div>
+            <div className="text-xs text-gray-500 mt-2">{t("dashboard.compared")}</div>
           </div>
         </Card>
 
@@ -73,9 +75,9 @@ export default function Dashboard() {
                 23%
               </div>
             </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">الإيرادات</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t("dashboard.revenue")}</div>
             <div className="text-3xl font-black">${stats.revenue.toLocaleString()}</div>
-            <div className="text-xs text-gray-500 mt-2">مقارنة بالشهر الماضي</div>
+            <div className="text-xs text-gray-500 mt-2">{t("dashboard.compared")}</div>
           </div>
         </Card>
 
@@ -91,9 +93,9 @@ export default function Dashboard() {
                 8%
               </div>
             </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">الزوار</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t("dashboard.visitors")}</div>
             <div className="text-3xl font-black">{stats.visitors.toLocaleString()}</div>
-            <div className="text-xs text-gray-500 mt-2">مقارنة بالشهر الماضي</div>
+            <div className="text-xs text-gray-500 mt-2">{t("dashboard.compared")}</div>
           </div>
         </Card>
 
@@ -109,9 +111,9 @@ export default function Dashboard() {
                 {stats.pendingOrders}
               </div>
             </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">المنتجات</div>
+            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t("dashboard.products")}</div>
             <div className="text-3xl font-black">{stats.products}</div>
-            <div className="text-xs text-gray-500 mt-2">إجمالي المنتجات النشطة</div>
+            <div className="text-xs text-gray-500 mt-2">{t("dashboard.activeProducts")}</div>
           </div>
         </Card>
       </div>
@@ -123,12 +125,12 @@ export default function Dashboard() {
           <div className="p-6 border-b">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-bold">نظرة عامة على المبيعات</h3>
-                <p className="text-sm text-muted-foreground mt-1">مبيعات الأشهر الأخيرة</p>
+                <h3 className="text-lg font-bold">{t("dashboard.salesOverview")}</h3>
+                <p className="text-sm text-muted-foreground mt-1">{t("dashboard.recentPurchases")}</p>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm">الشهر</Button>
-                <Button variant="outline" size="sm">السنة</Button>
+                <Button variant="outline" size="sm">{t("dashboard.month")}</Button>
+                <Button variant="outline" size="sm">{t("dashboard.year")}</Button>
               </div>
             </div>
           </div>
@@ -148,11 +150,11 @@ export default function Dashboard() {
             <div className="flex items-center justify-center gap-6 mt-6">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 to-cyan-400"></div>
-                <span className="text-sm text-gray-600 dark:text-gray-400">المبيعات</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">{t("dashboard.sales")}</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-gradient-to-r from-green-500 to-emerald-400"></div>
-                <span className="text-sm text-gray-600 dark:text-gray-400">الأرباح</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">{t("dashboard.profits")}</span>
               </div>
             </div>
           </div>
@@ -161,8 +163,8 @@ export default function Dashboard() {
         {/* Order Status Distribution */}
         <Card>
           <div className="p-6 border-b">
-            <h3 className="text-lg font-bold">حالة الطلبات</h3>
-            <p className="text-sm text-muted-foreground mt-1">توزيع الطلبات</p>
+            <h3 className="text-lg font-bold">{t("dashboard.orderStatus")}</h3>
+            <p className="text-sm text-muted-foreground mt-1">{t("dashboard.orderDistribution")}</p>
           </div>
           <div className="p-6">
             {/* Donut Chart Placeholder */}
@@ -218,7 +220,7 @@ export default function Dashboard() {
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center">
                   <div className="text-2xl font-black">{stats.orders}</div>
-                  <div className="text-xs text-gray-500">إجمالي</div>
+                  <div className="text-xs text-gray-500">{t("dashboard.total")}</div>
                 </div>
               </div>
             </div>
@@ -227,7 +229,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between p-3 rounded-lg bg-green-50 dark:bg-green-900/20">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-gradient-to-r from-green-500 to-emerald-400"></div>
-                  <span className="text-sm font-medium">مكتملة</span>
+                  <span className="text-sm font-medium">{t("dashboard.completedOrders")}</span>
                 </div>
                 <span className="text-sm font-bold">{stats.completedOrders}</span>
               </div>
@@ -235,7 +237,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between p-3 rounded-lg bg-orange-50 dark:bg-orange-900/20">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-gradient-to-r from-orange-500 to-yellow-400"></div>
-                  <span className="text-sm font-medium">قيد الانتظار</span>
+                  <span className="text-sm font-medium">{t("dashboard.pendingOrders")}</span>
                 </div>
                 <span className="text-sm font-bold">{stats.pendingOrders}</span>
               </div>
@@ -243,7 +245,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between p-3 rounded-lg bg-red-50 dark:bg-red-900/20">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-gradient-to-r from-red-500 to-rose-400"></div>
-                  <span className="text-sm font-medium">ملغاة</span>
+                  <span className="text-sm font-medium">{t("dashboard.cancelledOrders")}</span>
                 </div>
                 <span className="text-sm font-bold">
                   {stats.orders - stats.completedOrders - stats.pendingOrders}
@@ -261,12 +263,12 @@ export default function Dashboard() {
           <div className="p-6 border-b">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-bold">آخر الطلبات</h3>
-                <p className="text-sm text-muted-foreground mt-1">أحدث عمليات الشراء</p>
+                <h3 className="text-lg font-bold">{t("dashboard.recentOrders")}</h3>
+                <p className="text-sm text-muted-foreground mt-1">{t("dashboard.recentPurchases")}</p>
               </div>
               <Link to="/admin/orders">
                 <Button variant="ghost" size="sm">
-                  عرض الكل
+                  {t("dashboard.viewAll")}
                   <ArrowRight className="w-4 h-4 mr-2" />
                 </Button>
               </Link>
@@ -277,11 +279,11 @@ export default function Dashboard() {
             {recentOrders.length === 0 ? (
               <div className="text-center py-12">
                 <ShoppingCart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500 mb-4">لا توجد طلبات بعد</p>
+                <p className="text-gray-500 mb-4">{t("dashboard.noOrders")}</p>
                 <Link to="/admin/products/add">
                   <Button>
                     <Plus className="w-4 h-4 mr-2" />
-                    أضف منتجك الأول
+                    {t("dashboard.addFirstProduct")}
                   </Button>
                 </Link>
               </div>
@@ -297,10 +299,10 @@ export default function Dashboard() {
                         #{order.id?.slice(-3)}
                       </div>
                       <div>
-                        <div className="font-bold">طلب رقم {order.id}</div>
+                        <div className="font-bold">{t("orders.orderNumber")} {order.id}</div>
                         <div className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2 mt-1">
                           <Package className="w-3 h-3" />
-                          {order.items?.length || 0} منتجات
+                          {order.items?.length || 0} {t("dashboard.items")}
                           <Clock className="w-3 h-3 mr-2" />
                           {new Date(order.createdAt || Date.now()).toLocaleDateString('ar-DZ')}
                         </div>
@@ -311,12 +313,12 @@ export default function Dashboard() {
                       {order.status === 'completed' ? (
                         <span className="flex items-center gap-1 text-green-600 dark:text-green-400 text-sm font-medium bg-green-50 dark:bg-green-900/20 px-3 py-1 rounded-full">
                           <CheckCircle className="w-4 h-4" />
-                          مكتمل
+                          {t("dashboard.completed")}
                         </span>
                       ) : (
                         <span className="flex items-center gap-1 text-orange-600 dark:text-orange-400 text-sm font-medium bg-orange-50 dark:bg-orange-900/20 px-3 py-1 rounded-full">
                           <AlertCircle className="w-4 h-4" />
-                          قيد الانتظار
+                          {t("dashboard.pending")}
                         </span>
                       )}
                       <div className="text-xl font-black">${order.total || 0}</div>
@@ -331,8 +333,8 @@ export default function Dashboard() {
         {/* Quick Actions */}
         <Card>
           <div className="p-6 border-b">
-            <h3 className="text-lg font-bold">إجراءات سريعة</h3>
-            <p className="text-sm text-muted-foreground mt-1">الوصول السريع</p>
+            <h3 className="text-lg font-bold">{t("dashboard.quickActions")}</h3>
+            <p className="text-sm text-muted-foreground mt-1">{t("dashboard.quickAccess")}</p>
           </div>
           <div className="p-6 space-y-3">
             <Link to="/admin/products/add" className="block">
@@ -342,8 +344,8 @@ export default function Dashboard() {
                     <Plus className="w-5 h-5" />
                   </div>
                   <div>
-                    <div className="font-bold">إضافة منتج</div>
-                    <div className="text-xs opacity-90">منتج جديد</div>
+                    <div className="font-bold">{t("product.add")}</div>
+                    <div className="text-xs opacity-90">{t("dashboard.newProduct")}</div>
                   </div>
                 </div>
               </div>
@@ -356,8 +358,8 @@ export default function Dashboard() {
                     <ShoppingCart className="w-5 h-5" />
                   </div>
                   <div>
-                    <div className="font-bold">إدارة الطلبات</div>
-                    <div className="text-xs opacity-90">عرض جميع الطلبات</div>
+                    <div className="font-bold">{t("dashboard.manageOrders")}</div>
+                    <div className="text-xs opacity-90">{t("dashboard.viewOrders")}</div>
                   </div>
                 </div>
               </div>
@@ -370,8 +372,8 @@ export default function Dashboard() {
                     <BarChart3 className="w-5 h-5" />
                   </div>
                   <div>
-                    <div className="font-bold">التحليلات</div>
-                    <div className="text-xs opacity-90">عرض الإحصائيات</div>
+                    <div className="font-bold">{t("analytics.title")}</div>
+                    <div className="text-xs opacity-90">{t("dashboard.viewStats")}</div>
                   </div>
                 </div>
               </div>
@@ -384,8 +386,8 @@ export default function Dashboard() {
                     <Star className="w-5 h-5" />
                   </div>
                   <div>
-                    <div className="font-bold">الإعدادات</div>
-                    <div className="text-xs opacity-90">إعدادات المتجر</div>
+                    <div className="font-bold">{t("settings.title")}</div>
+                    <div className="text-xs opacity-90">{t("dashboard.storeSettings")}</div>
                   </div>
                 </div>
               </div>
