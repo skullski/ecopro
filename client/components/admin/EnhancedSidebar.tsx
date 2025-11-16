@@ -23,52 +23,52 @@ interface EnhancedSidebarProps {
 }
 
 const menuItems: MenuItem[] = [
-  { titleKey: "sidebar.home", path: "/admin", icon: <Home className="w-5 h-5" /> },
-  { titleKey: "sidebar.preview", path: "/admin/preview", icon: <Eye className="w-5 h-5" /> },
+  { titleKey: "sidebar.home", path: "/dashboard", icon: <Home className="w-5 h-5" /> },
+  { titleKey: "sidebar.preview", path: "/dashboard/preview", icon: <Eye className="w-5 h-5" /> },
   { 
     titleKey: "sidebar.store", 
-    path: "/admin/stores", 
+    path: "/dashboard/stores", 
     icon: <Store className="w-5 h-5" />,
     children: [
-      { titleKey: "sidebar.storeLogo", path: "/admin/store/logo", icon: <Store className="w-4 h-4" /> },
-      { titleKey: "sidebar.storeTemplate", path: "/admin/store/template", icon: <FileText className="w-4 h-4" /> },
-      { titleKey: "sidebar.storeHomepage", path: "/admin/store/homepage", icon: <Home className="w-4 h-4" /> },
-      { titleKey: "sidebar.storeContact", path: "/admin/store/contact", icon: <Globe className="w-4 h-4" /> },
-      { titleKey: "sidebar.storeFaq", path: "/admin/store/faq", icon: <FileText className="w-4 h-4" /> },
-      { titleKey: "sidebar.storeAbout", path: "/admin/store/about", icon: <FileText className="w-4 h-4" /> },
-      { titleKey: "sidebar.storeCheckout", path: "/admin/store/checkout-settings", icon: <Settings className="w-4 h-4" /> },
+      { titleKey: "sidebar.storeLogo", path: "/dashboard/store/logo", icon: <Store className="w-4 h-4" /> },
+      { titleKey: "sidebar.storeTemplate", path: "/dashboard/store/template", icon: <FileText className="w-4 h-4" /> },
+      { titleKey: "sidebar.storeHomepage", path: "/dashboard/store/homepage", icon: <Home className="w-4 h-4" /> },
+      { titleKey: "sidebar.storeContact", path: "/dashboard/store/contact", icon: <Globe className="w-4 h-4" /> },
+      { titleKey: "sidebar.storeFaq", path: "/dashboard/store/faq", icon: <FileText className="w-4 h-4" /> },
+      { titleKey: "sidebar.storeAbout", path: "/dashboard/store/about", icon: <FileText className="w-4 h-4" /> },
+      { titleKey: "sidebar.storeCheckout", path: "/dashboard/store/checkout-settings", icon: <Settings className="w-4 h-4" /> },
     ]
   },
   { 
     titleKey: "sidebar.orders", 
-    path: "/admin/orders", 
+    path: "/dashboard/orders", 
     icon: <ShoppingCart className="w-5 h-5" />,
     children: [
-      { titleKey: "sidebar.ordersAll", path: "/admin/orders", icon: <ShoppingCart className="w-4 h-4" /> },
-      { titleKey: "sidebar.ordersAdd", path: "/admin/orders/add", icon: <Tag className="w-4 h-4" /> },
-      { titleKey: "sidebar.ordersWasselni", path: "/admin/orders/wasselni", icon: <Truck className="w-4 h-4" /> },
-      { titleKey: "sidebar.ordersAbandoned", path: "/admin/orders/abandoned", icon: <Ban className="w-4 h-4" /> },
-      { titleKey: "sidebar.ordersFlexScan", path: "/admin/orders/flex-scan", icon: <BarChart3 className="w-4 h-4" /> },
+      { titleKey: "sidebar.ordersAll", path: "/dashboard/orders", icon: <ShoppingCart className="w-4 h-4" /> },
+      { titleKey: "sidebar.ordersAdd", path: "/dashboard/orders/add", icon: <Tag className="w-4 h-4" /> },
+      { titleKey: "sidebar.ordersWasselni", path: "/dashboard/orders/wasselni", icon: <Truck className="w-4 h-4" /> },
+      { titleKey: "sidebar.ordersAbandoned", path: "/dashboard/orders/abandoned", icon: <Ban className="w-4 h-4" /> },
+      { titleKey: "sidebar.ordersFlexScan", path: "/dashboard/orders/flex-scan", icon: <BarChart3 className="w-4 h-4" /> },
     ]
   },
   { 
     titleKey: "sidebar.products", 
-    path: "/admin/products", 
+    path: "/dashboard/products", 
     icon: <Tag className="w-5 h-5" />,
     children: [
-      { titleKey: "sidebar.productsAll", path: "/admin/products", icon: <Tag className="w-4 h-4" /> },
-      { titleKey: "sidebar.productsAdd", path: "/admin/products/add", icon: <Layers className="w-4 h-4" /> },
-      { titleKey: "sidebar.productsInventory", path: "/admin/products/inventory", icon: <Layers className="w-4 h-4" /> },
+      { titleKey: "sidebar.productsAll", path: "/dashboard/products", icon: <Tag className="w-4 h-4" /> },
+      { titleKey: "sidebar.productsAdd", path: "/dashboard/products/add", icon: <Layers className="w-4 h-4" /> },
+      { titleKey: "sidebar.productsInventory", path: "/dashboard/products/inventory", icon: <Layers className="w-4 h-4" /> },
     ]
   },
   { titleKey: "sidebar.categories", path: "/admin/categories", icon: <Layers className="w-5 h-5" /> },
   { 
     titleKey: "sidebar.delivery", 
-    path: "/admin/delivery", 
+    path: "/dashboard/delivery", 
     icon: <Truck className="w-5 h-5" />,
     children: [
-      { titleKey: "sidebar.deliveryRegions", path: "/admin/delivery/regions", icon: <Globe className="w-4 h-4" /> },
-      { titleKey: "sidebar.deliveryCompanies", path: "/admin/delivery/companies", icon: <Truck className="w-4 h-4" /> },
+      { titleKey: "sidebar.deliveryRegions", path: "/dashboard/delivery/regions", icon: <Globe className="w-4 h-4" /> },
+      { titleKey: "sidebar.deliveryCompanies", path: "/dashboard/delivery/companies", icon: <Truck className="w-4 h-4" /> },
     ]
   },
   { 

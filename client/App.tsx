@@ -4,7 +4,7 @@ import "./global.css";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import Index from "./pages/Index";
 import AppPlaceholder from "./pages/AppPlaceholder";
@@ -68,6 +68,12 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 
 const queryClient = new QueryClient();
 
+function RedirectAdmin() {
+  const loc = useLocation();
+  const to = loc.pathname.replace(/^\/admin/, "/dashboard");
+  return <Navigate to={to} replace />;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
@@ -128,9 +134,9 @@ const App = () => (
               {/* Secret Platform Admin Panel - For platform owner ONLY */}
               <Route path="/platform-control-x9k2m8p5q7w3" element={<AppPlaceholder />} />
 
-              {/* Old admin routes redirect to dashboard */}
-              <Route path="/admin" element={<AdminLayout />} />
-              <Route path="/admin/*" element={<AdminLayout />} />
+              {/* Old admin routes: redirect to /dashboard (preserve subpath) */}
+              <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/admin/*" element={<RedirectAdmin />} />
               <Route path="/app" element={<AdminLayout />} />
               <Route path="/billing" element={<Billing />} />
               <Route path="/wasselni" element={<Wasselni />} />

@@ -266,7 +266,7 @@ export default function Dashboard() {
                 <h3 className="text-lg font-bold">{t("dashboard.recentOrders")}</h3>
                 <p className="text-sm text-muted-foreground mt-1">{t("dashboard.recentPurchases")}</p>
               </div>
-              <Link to="/admin/orders">
+              <Link to="/dashboard/orders">
                 <Button variant="ghost" size="sm">
                   {t("dashboard.viewAll")}
                   <ArrowRight className="w-4 h-4 mr-2" />
@@ -280,7 +280,7 @@ export default function Dashboard() {
               <div className="text-center py-12">
                 <ShoppingCart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <p className="text-gray-500 mb-4">{t("dashboard.noOrders")}</p>
-                <Link to="/admin/products/add">
+                <Link to="/dashboard/products/add">
                   <Button>
                     <Plus className="w-4 h-4 mr-2" />
                     {t("dashboard.addFirstProduct")}
@@ -337,7 +337,7 @@ export default function Dashboard() {
             <p className="text-sm text-muted-foreground mt-1">{t("dashboard.quickAccess")}</p>
           </div>
           <div className="p-6 space-y-3">
-            <Link to="/admin/products/add" className="block">
+            <Link to="/dashboard/products/add" className="block">
               <div className="p-4 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white transition-all cursor-pointer group">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -351,7 +351,7 @@ export default function Dashboard() {
               </div>
             </Link>
 
-            <Link to="/admin/orders" className="block">
+            <Link to="/dashboard/orders" className="block">
               <div className="p-4 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white transition-all cursor-pointer group">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -365,7 +365,7 @@ export default function Dashboard() {
               </div>
             </Link>
 
-            <Link to="/admin/analytics" className="block">
+            <Link to="/dashboard/analytics" className="block">
               <div className="p-4 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white transition-all cursor-pointer group">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -379,7 +379,7 @@ export default function Dashboard() {
               </div>
             </Link>
 
-            <Link to="/admin/settings" className="block">
+            <Link to="/dashboard/settings" className="block">
               <div className="p-4 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white transition-all cursor-pointer group">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
