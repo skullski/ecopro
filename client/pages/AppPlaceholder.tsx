@@ -18,6 +18,7 @@ import {
   BarChart3,
   Package
 } from "lucide-react";
+import Ghost from "@/components/ui/ghost";
 
 export default function AppPlaceholder() {
   const { t } = useTranslation();
@@ -44,154 +45,162 @@ export default function AppPlaceholder() {
     authApi.logout();
   };
 
+
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-black">
         <p className="text-muted-foreground">{t("loading")}</p>
       </div>
     );
   }
 
-  return (
-    <section className="container mx-auto py-20">
-      <div className="mx-auto max-w-7xl">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-8">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <ShieldCheck className="w-10 h-10 text-primary" />
-              <h1 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                Platform Admin Control
-              </h1>
+    // Horror dark theme background and ghostly effects
+    return (
+      <section className="relative min-h-screen flex items-center justify-center bg-black overflow-hidden">
+        {/* Animated ghost SVGs */}
+        <Ghost className="absolute left-10 top-20 w-32 h-32 opacity-60 animate-float pointer-events-none" />
+        <Ghost className="absolute right-20 top-40 w-24 h-24 opacity-40 animate-float delay-1000 pointer-events-none" />
+        <Ghost className="absolute left-1/2 bottom-10 w-40 h-40 opacity-30 animate-float delay-2000 pointer-events-none" />
+        {/* Horror background overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-black via-gray-900 to-purple-950 opacity-90 z-0" style={{backgroundImage:'radial-gradient(circle at 60% 40%, #2d0036 0%, transparent 70%)'}} />
+        <div className="relative z-10 w-full max-w-4xl mx-auto p-10 rounded-2xl shadow-2xl border border-purple-900 bg-black/80 backdrop-blur-md">
+          {/* Header */}
+          <div className="flex items-start justify-between mb-8">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <ShieldCheck className="w-10 h-10 text-purple-400 drop-shadow-glow" />
+                <h1 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-purple-400 via-fuchsia-600 to-indigo-500 bg-clip-text text-transparent drop-shadow-glow">
+                  Platform Admin Control
+                </h1>
+              </div>
+              <p className="mt-2 text-purple-200 flex items-center gap-2">
+                <Mail className="w-4 h-4" />
+                {user.email}
+              </p>
             </div>
-            <p className="mt-2 text-muted-foreground flex items-center gap-2">
-              <Mail className="w-4 h-4" />
-              {user.email}
-            </p>
+            <Button variant="ghost" size="sm" onClick={handleLogout} className="text-purple-300 hover:text-white">
+              <LogOut className="w-4 h-4 mr-2" />
+              {t("auth.logout")}
+            </Button>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleLogout}>
-            <LogOut className="w-4 h-4 mr-2" />
-            {t("auth.logout")}
-          </Button>
-        </div>
 
-        {/* Admin Badge */}
-        <Card className="mb-6 border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-primary" />
-              Platform Administrator Access
-            </CardTitle>
-            <CardDescription>
-              You have full control over the entire platform, all vendors, and system settings
-            </CardDescription>
-          </CardHeader>
-        </Card>
-
-        {/* Platform Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Vendors</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground">Registered store owners</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Stores</CardTitle>
-              <Store className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground">Live storefronts</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Platform Revenue</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">0 {t("currency")}</div>
-              <p className="text-xs text-muted-foreground">Subscription fees</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">0</div>
-              <p className="text-xs text-muted-foreground">Across all stores</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Admin Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
+          {/* Admin Badge */}
+          <Card className="mb-6 border-2 border-purple-800/40 bg-gradient-to-br from-purple-900/40 to-black/60 shadow-lg">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-primary" />
-                Vendor Management
+              <CardTitle className="flex items-center gap-2 text-purple-200">
+                <ShieldCheck className="w-5 h-5 text-purple-400" />
+                Platform Administrator Access
               </CardTitle>
-              <CardDescription>Manage all store owners and their accounts</CardDescription>
+              <CardDescription className="text-purple-300">
+                You have full control over the entire platform, all vendors, and system settings
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <Button className="w-full justify-start" variant="outline">
-                <Users className="w-4 h-4 mr-2" />
-                View All Vendors
-              </Button>
-              <Button className="w-full justify-start" variant="outline">
-                <Package className="w-4 h-4 mr-2" />
-                View All Stores
-              </Button>
-              <Button className="w-full justify-start" variant="outline">
-                <BarChart3 className="w-4 h-4 mr-2" />
-                Vendor Analytics
-              </Button>
-            </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="w-5 h-5 text-primary" />
-                Platform Settings
-              </CardTitle>
-              <CardDescription>Configure platform-wide settings and features</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button className="w-full justify-start" variant="outline">
-                <Settings className="w-4 h-4 mr-2" />
-                System Configuration
-              </Button>
-              <Button className="w-full justify-start" variant="outline">
-                <DollarSign className="w-4 h-4 mr-2" />
-                Pricing & Billing
-              </Button>
-              <Button className="w-full justify-start" variant="outline">
-                <ShieldCheck className="w-4 h-4 mr-2" />
-                Security Settings
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+          {/* Platform Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+            <Card className="bg-black/60 border-purple-900/30">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-purple-200">Total Vendors</CardTitle>
+                <Users className="h-4 w-4 text-purple-400" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-white">0</div>
+                <p className="text-xs text-purple-400">Registered store owners</p>
+              </CardContent>
+            </Card>
 
-        <div className="mt-6 text-center">
-          <Link to="/">
-            <Button variant="ghost">{t("back")} to Homepage</Button>
-          </Link>
+            <Card className="bg-black/60 border-purple-900/30">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-purple-200">Active Stores</CardTitle>
+                <Store className="h-4 w-4 text-purple-400" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-white">0</div>
+                <p className="text-xs text-purple-400">Live storefronts</p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-black/60 border-purple-900/30">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-purple-200">Platform Revenue</CardTitle>
+                <DollarSign className="h-4 w-4 text-purple-400" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-white">0 {t("currency")}</div>
+                <p className="text-xs text-purple-400">Subscription fees</p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-black/60 border-purple-900/30">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-purple-200">Total Orders</CardTitle>
+                <TrendingUp className="h-4 w-4 text-purple-400" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-white">0</div>
+                <p className="text-xs text-purple-400">Across all stores</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Admin Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="bg-black/60 border-purple-900/30">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-purple-200">
+                  <Users className="w-5 h-5 text-purple-400" />
+                  Vendor Management
+                </CardTitle>
+                <CardDescription className="text-purple-400">Manage all store owners and their accounts</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Button className="w-full justify-start bg-purple-950/60 text-purple-200 border-purple-800 hover:bg-purple-900/80" variant="outline">
+                  <Users className="w-4 h-4 mr-2 text-purple-400" />
+                  View All Vendors
+                </Button>
+                <Button className="w-full justify-start bg-purple-950/60 text-purple-200 border-purple-800 hover:bg-purple-900/80" variant="outline">
+                  <Package className="w-4 h-4 mr-2 text-purple-400" />
+                  View All Stores
+                </Button>
+                <Button className="w-full justify-start bg-purple-950/60 text-purple-200 border-purple-800 hover:bg-purple-900/80" variant="outline">
+                  <BarChart3 className="w-4 h-4 mr-2 text-purple-400" />
+                  Vendor Analytics
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-black/60 border-purple-900/30">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-purple-200">
+                  <Settings className="w-5 h-5 text-purple-400" />
+                  Platform Settings
+                </CardTitle>
+                <CardDescription className="text-purple-400">Configure platform-wide settings and features</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Button className="w-full justify-start bg-purple-950/60 text-purple-200 border-purple-800 hover:bg-purple-900/80" variant="outline">
+                  <Settings className="w-4 h-4 mr-2 text-purple-400" />
+                  System Configuration
+                </Button>
+                <Button className="w-full justify-start bg-purple-950/60 text-purple-200 border-purple-800 hover:bg-purple-900/80" variant="outline">
+                  <DollarSign className="w-4 h-4 mr-2 text-purple-400" />
+                  Pricing & Billing
+                </Button>
+                <Button className="w-full justify-start bg-purple-950/60 text-purple-200 border-purple-800 hover:bg-purple-900/80" variant="outline">
+                  <ShieldCheck className="w-4 h-4 mr-2 text-purple-400" />
+                  Security Settings
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="mt-6 text-center">
+            <Link to="/">
+              <Button variant="ghost" className="text-purple-300 hover:text-white">{t("back")} to Homepage</Button>
+            </Link>
+          </div>
         </div>
-      </div>
-    </section>
-  );
+      </section>
+    );
 }
