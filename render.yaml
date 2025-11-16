@@ -9,4 +9,10 @@ services:
         value: production
       - key: PORT
         value: 10000
+      - key: DATABASE_URL
+        sync: false  # Set manually in Render Dashboard
+      - key: JWT_SECRET
+        sync: false  # Set manually in Render Dashboard
+      - key: ALLOWED_ORIGINS
+        value: https://ecopro-1lbl.onrender.com
     healthCheckPath: /api/ping
