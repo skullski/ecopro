@@ -19,6 +19,8 @@ import {
   Package
 } from "lucide-react";
 import Ghost from "@/components/ui/ghost";
+import AnimatedGhosts from "@/components/ui/animated-ghosts";
+import "../ghosts.css";
 
 export default function AppPlaceholder() {
   const { t } = useTranslation();
@@ -56,7 +58,9 @@ export default function AppPlaceholder() {
 
     // Horror dark theme background and ghostly effects
     return (
-      <section
+    <section
+  {/* Animated moving ghosts */}
+  <AnimatedGhosts />
         className="relative min-h-screen flex items-center justify-center overflow-hidden"
         style={{
           backgroundImage: `url('/admin/1399550.jpg')`,
