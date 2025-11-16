@@ -59,7 +59,7 @@ export default function AppPlaceholder() {
       <section
         className="relative min-h-screen flex items-center justify-center overflow-hidden"
         style={{
-          backgroundImage: `url('/admin/graffiti-wallpaper.jpg')`,
+          backgroundImage: `url('/admin/1399550.jpg')`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
