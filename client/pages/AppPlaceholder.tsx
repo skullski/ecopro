@@ -72,7 +72,7 @@ export default function AppPlaceholder() {
         {/* Horror background overlay */}
     {/* Dark overlay for horror readability */}
   <div className="absolute inset-0 bg-black/40 z-0" />
-        <div className="relative z-10 w-full max-w-4xl mx-auto p-10 rounded-2xl shadow-2xl border border-purple-900 bg-black/80 backdrop-blur-md">
+    <div className="relative z-10 w-full max-w-4xl mx-auto p-10 rounded-2xl shadow-2xl border border-purple-900 bg-black/40 backdrop-blur-lg" style={{boxShadow:'0 8px 32px 0 rgba(31, 38, 135, 0.37)'}}>
           {/* Header */}
           <div className="flex items-start justify-between mb-8">
             <div>
