@@ -114,11 +114,13 @@ const menuItems: MenuItem[] = [
 ];
 
 export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {}) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const location = useLocation();
+  
+  const isRTL = locale === "ar";
 
   const handleCollapse = (newCollapsed: boolean) => {
     setCollapsed(newCollapsed);
@@ -154,16 +156,22 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
           }}
           className={cn(
             "group relative flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
-            level > 0 && "mr-4",
+            level > 0 && (isRTL ? "mr-4" : "ml-4"),
             active 
-              ? "bg-gradient-to-l from-primary/20 to-accent/10 text-primary font-medium border-r-4 border-primary shadow-md" 
+              ? cn(
+                  "bg-gradient-to-l from-primary/20 to-accent/10 text-primary font-medium shadow-md",
+                  isRTL ? "border-r-4 border-primary" : "border-l-4 border-primary"
+                )
               : "hover:bg-muted/60 text-muted-foreground hover:text-foreground",
             collapsed && level === 0 && "justify-center"
           )}
         >
           {/* Active indicator */}
           {active && !collapsed && (
-            <div className="absolute right-2 w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+            <div className={cn(
+              "absolute w-2 h-2 rounded-full bg-primary animate-pulse",
+              isRTL ? "right-2" : "left-2"
+            )}></div>
           )}
           
           <div className={cn(
@@ -194,7 +202,10 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
         </Link>
 
         {hasChildren && isExpanded && !collapsed && (
-          <div className="mt-1 space-y-1 mr-2">
+          <div className={cn(
+            "mt-1 space-y-1",
+            isRTL ? "mr-2" : "ml-2"
+          )}>
             {item.children?.map(child => renderMenuItem(child, level + 1))}
           </div>
         )}
@@ -203,7 +214,10 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
   };
 
   const sidebarContent = (
-    <div className="flex flex-col h-full bg-card border-l">
+    <div className={cn(
+      "flex flex-col h-full bg-card",
+      isRTL ? "border-l" : "border-r"
+    )}>
       {/* Header with unique design */}
       <div className="p-4 border-b flex items-center justify-between bg-gradient-to-br from-primary/5 to-accent/5">
         {!collapsed && (
@@ -242,7 +256,10 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
       {!collapsed && (
         <div className="p-4 border-t">
           <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary/10 via-accent/5 to-purple-500/10 p-4 border border-primary/20">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-primary/10 rounded-full blur-2xl"></div>
+            <div className={cn(
+              "absolute top-0 w-20 h-20 bg-primary/10 rounded-full blur-2xl",
+              isRTL ? "right-0" : "left-0"
+            )}></div>
             <div className="relative flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-sm shadow-lg">
                 WW
@@ -262,7 +279,8 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
     <>
       {/* Desktop Sidebar */}
       <aside className={cn(
-        "hidden lg:block fixed right-0 top-20 h-[calc(100vh-5rem)] bg-card border-l transition-all duration-300 z-40",
+        "hidden lg:block fixed top-20 h-[calc(100vh-5rem)] bg-card transition-all duration-300 z-40",
+        isRTL ? "right-0 border-l" : "left-0 border-r",
         collapsed ? "w-20" : "w-72"
       )}>
         {sidebarContent}
@@ -275,7 +293,10 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
             className="lg:hidden fixed inset-0 bg-background/80 backdrop-blur-sm z-[60]"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="lg:hidden fixed right-0 top-0 h-screen w-72 bg-card shadow-2xl z-[70]">
+          <aside className={cn(
+            "lg:hidden fixed top-0 h-screen w-72 bg-card shadow-2xl z-[70]",
+            isRTL ? "right-0" : "left-0"
+          )}>
             {sidebarContent}
           </aside>
         </>
@@ -284,7 +305,10 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
       {/* Mobile Menu Button */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="lg:hidden fixed bottom-6 left-6 p-4 rounded-full bg-gradient-to-r from-primary to-accent text-white shadow-2xl z-[60] hover:scale-110 transition-transform"
+        className={cn(
+          "lg:hidden fixed bottom-6 p-4 rounded-full bg-gradient-to-r from-primary to-accent text-white shadow-2xl z-[60] hover:scale-110 transition-transform",
+          isRTL ? "left-6" : "right-6"
+        )}
       >
         <Menu className="w-6 h-6" />
       </button>
