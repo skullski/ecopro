@@ -72,6 +72,7 @@ export default function Login() {
                 type="email"
                 required
                 disabled={loading}
+                autoComplete="off"
               />
             </div>
             <div>
@@ -87,6 +88,7 @@ export default function Login() {
                 placeholder="••••••••"
                 required
                 disabled={loading}
+                autoComplete="off"
               />
             </div>
             <div className="flex items-center justify-between">
