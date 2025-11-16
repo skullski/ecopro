@@ -50,38 +50,38 @@ export default function Header() {
                 href="/#مزايا" 
                 className="px-4 py-2 rounded-lg text-sm font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 transition-all"
               >
-                المزايا
+                {t("menu.features")}
               </a>
               <a 
                 href="/#البنية" 
                 className="px-4 py-2 rounded-lg text-sm font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 transition-all"
               >
-                البنية
+                {locale === "ar" ? "البنية" : locale === "fr" ? "Architecture" : "Architecture"}
               </a>
               <a 
                 href="/#الأسعار" 
                 className="px-4 py-2 rounded-lg text-sm font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 transition-all"
               >
-                الأسعار
+                {t("menu.pricing")}
               </a>
               <a 
                 href="/#الأسئلة" 
                 className="px-4 py-2 rounded-lg text-sm font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 transition-all"
               >
-                الأسئلة
+                {t("menu.faq")}
               </a>
               <Link 
                 to="/store" 
                 className="px-4 py-2 rounded-lg text-sm font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 transition-all"
               >
-                المتجر
+                {t("menu.store")}
               </Link>
               {isAdmin && (
                 <Link 
                   to="/admin" 
                   className="px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-primary/20 to-accent/20 text-foreground hover:from-primary/30 hover:to-accent/30 transition-all"
                 >
-                  الإدارة
+                  {t("menu.admin")}
                 </Link>
               )}
             </nav>
@@ -121,13 +121,13 @@ export default function Header() {
                       variant="ghost" 
                       className="hover:bg-gradient-to-r hover:from-primary/10 hover:to-accent/10 font-medium"
                     >
-                      تسجيل الدخول
+                      {t("auth.login")}
                     </Button>
                   </Link>
                   <Link to="/signup">
                     <Button className="bg-gradient-to-r from-primary via-accent to-purple-600 hover:from-primary/90 hover:via-accent/90 hover:to-purple-700 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all font-bold">
                       <Sparkles className="w-4 h-4 ml-2" />
-                      إنشاء حساب
+                      {t("auth.signup")}
                     </Button>
                   </Link>
                 </>
@@ -139,7 +139,7 @@ export default function Header() {
                     className="hover:bg-gradient-to-r hover:from-primary/10 hover:to-accent/10 font-medium"
                   >
                     <LayoutDashboard className="w-4 h-4 ml-2" />
-                    لوحة التحكم
+                    {t("admin.dashboard")}
                   </Button>
                   <Button 
                     variant="outline" 
@@ -147,7 +147,7 @@ export default function Header() {
                     className="border-2 border-red-500/30 text-red-500 hover:bg-red-500/10 hover:border-red-500/50 font-medium"
                   >
                     <LogOut className="w-4 h-4 ml-2" />
-                    تسجيل الخروج
+                    {t("auth.logout")}
                   </Button>
                 </div>
               )}
@@ -179,35 +179,35 @@ export default function Header() {
                 onClick={() => setMobileMenuOpen(false)}
                 className="px-4 py-3 rounded-lg text-base font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 transition-all"
               >
-                المزايا
+                {t("menu.features")}
               </a>
               <a 
                 href="/#البنية" 
                 onClick={() => setMobileMenuOpen(false)}
                 className="px-4 py-3 rounded-lg text-base font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 transition-all"
               >
-                البنية
+                {locale === "ar" ? "البنية" : locale === "fr" ? "Architecture" : "Architecture"}
               </a>
               <a 
                 href="/#الأسعار" 
                 onClick={() => setMobileMenuOpen(false)}
                 className="px-4 py-3 rounded-lg text-base font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 transition-all"
               >
-                الأسعار
+                {t("menu.pricing")}
               </a>
               <a 
                 href="/#الأسئلة" 
                 onClick={() => setMobileMenuOpen(false)}
                 className="px-4 py-3 rounded-lg text-base font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 transition-all"
               >
-                الأسئلة
+                {t("menu.faq")}
               </a>
               <Link 
                 to="/store" 
                 onClick={() => setMobileMenuOpen(false)}
                 className="px-4 py-3 rounded-lg text-base font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 transition-all"
               >
-                المتجر
+                {t("menu.store")}
               </Link>
               {isAdmin && (
                 <Link 
@@ -215,7 +215,7 @@ export default function Header() {
                   onClick={() => setMobileMenuOpen(false)}
                   className="px-4 py-3 rounded-lg text-base font-medium bg-gradient-to-r from-primary/20 to-accent/20 text-foreground hover:from-primary/30 hover:to-accent/30 transition-all"
                 >
-                  الإدارة
+                  {t("menu.admin")}
                 </Link>
               )}
 
@@ -231,7 +231,7 @@ export default function Header() {
                     className="justify-start hover:bg-gradient-to-r hover:from-primary/10 hover:to-accent/10 font-medium"
                   >
                     <LayoutDashboard className="w-4 h-4 ml-2" />
-                    لوحة التحكم
+                    {t("admin.dashboard")}
                   </Button>
                   <Button 
                     variant="outline" 
@@ -242,7 +242,7 @@ export default function Header() {
                     className="justify-start border-2 border-red-500/30 text-red-500 hover:bg-red-500/10 hover:border-red-500/50 font-medium"
                   >
                     <LogOut className="w-4 h-4 ml-2" />
-                    تسجيل الخروج
+                    {t("auth.logout")}
                   </Button>
                 </>
               )}
