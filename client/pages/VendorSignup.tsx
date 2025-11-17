@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { DarkModeInput } from "@/components/ui/dark-mode-input";
 import { FloatingShapes } from "@/components/ui/floating-shapes";
+import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { 
@@ -19,6 +20,7 @@ import {
   Shield
 } from "lucide-react";
 import type { Vendor } from "@shared/types";
+import * as api from "@/lib/api";
 
 export default function VendorSignup() {
   const navigate = useNavigate();
@@ -30,7 +32,9 @@ export default function VendorSignup() {
     description: "",
     city: "",
     country: "",
+    honeypot: "",
   });
+  const { toast } = useToast();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -66,8 +70,11 @@ export default function VendorSignup() {
     };
 
     try {
-      // Save to API (shared across all users)
-      const savedVendor = await api.createVendor(vendor);
+  // Save to API (shared across all users). Include honeypot field from form state.
+  const payload = { ...vendor, honeypot: (formData as any).honeypot } as any;
+  const savedVendor = await api.createVendor(payload);
+  // Show success message
+  toast({ title: "تم إنشاء المتجر", description: "تم إنشاء حسابك كبائع بنجاح" });
       
       // Also save to localStorage for offline access
       const vendors = JSON.parse(localStorage.getItem("vendors") || "[]");
@@ -81,7 +88,8 @@ export default function VendorSignup() {
       navigate(`/vendor/${savedVendor.id}/dashboard`);
     } catch (error) {
       console.error("Failed to create vendor:", error);
-      alert("فشل التسجيل. حاول مرة أخرى.");
+  // Friendly failure notification
+  toast({ title: "خطأ", description: "فشل التسجيل. حاول مرة أخرى.", variant: "destructive" });
     }
   }
 
@@ -301,6 +309,17 @@ export default function VendorSignup() {
                   إنشاء حساب بائع
                   <ArrowRight className="h-5 w-5 mr-2" />
                 </Button>
+
+                {/* Honeypot hidden field to detect bots (should be empty) */}
+                <input
+                  type="text"
+                  name="honeypot"
+                  value={(formData as any).honeypot}
+                  onChange={(e) => setFormData({ ...formData, honeypot: e.target.value })}
+                  className="hidden"
+                  tabIndex={-1}
+                  autoComplete="off"
+                />
 
                 <p className="text-sm text-muted-foreground text-center">
                   لديك حساب بالفعل؟{" "}

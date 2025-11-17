@@ -119,6 +119,44 @@ for i in {1..6}; do
 done
 
 echo ""
+echo -e "${YELLOW}Test 7: Vendor signup (public)${NC}"
+VENDOR_RESPONSE=$(curl -s -X POST "$API_URL/vendors" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Vendor Test",
+    "email": "vendor-test@example.com",
+    "phone": "+10000000000",
+    "businessName": "Vendor Test Store",
+    "storeSlug": "vendor-test-store-1",
+    "description": "A sample vendor",
+    "rating": 0,
+    "totalSales": 0,
+    "totalProducts": 0,
+    "verified": false,
+    "isVIP": false,
+    "subscriptionStatus": "free",
+    "joinedAt": 0,
+    "location": {"city": "City", "country": "Country"}
+  }')
+
+if echo "$VENDOR_RESPONSE" | grep -q "vendor_test" || echo "$VENDOR_RESPONSE" | grep -q "vendor-"; then
+  echo -e "${GREEN}✅ Vendor signup successful${NC}"
+else
+  echo -e "${RED}❌ Vendor signup failed${NC}"
+  echo "$VENDOR_RESPONSE"
+fi
+
+echo -e "${YELLOW}Test 8: Duplicate vendor signup${NC}"
+DUP=$(curl -s -X POST "$API_URL/vendors" \ 
+  -H "Content-Type: application/json" \ 
+  -d '{ "name": "Vendor Test", "email": "vendor-test@example.com" }')
+if echo "$DUP" | grep -q "already exists"; then
+  echo -e "${GREEN}✅ Duplicate vendor correctly rejected${NC}"
+else
+  echo -e "${RED}❌ Duplicate vendor accepted (should be rejected)${NC}"
+  echo "$DUP"
+fi
+
 echo -e "${GREEN}==================================${NC}"
 echo -e "${GREEN}Authentication tests completed!${NC}"
 echo -e "${GREEN}==================================${NC}"
