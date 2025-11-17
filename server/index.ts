@@ -150,7 +150,7 @@ export function createServer() {
   app.post(
     "/api/products",
     authenticate,
-    requireVip,
+    requireVendor, // allow vendors to add products; site export is gated by vendor settings
     productValidation,
     validate,
     vendorRoutes.createProduct
