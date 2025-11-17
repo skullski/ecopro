@@ -147,8 +147,8 @@ else
 fi
 
 echo -e "${YELLOW}Test 8: Duplicate vendor signup${NC}"
-DUP=$(curl -s -X POST "$API_URL/vendors" \ 
-  -H "Content-Type: application/json" \ 
+DUP=$(curl -s -X POST "$API_URL/vendors" \
+  -H "Content-Type: application/json" \
   -d '{ "name": "Vendor Test", "email": "vendor-test@example.com" }')
 if echo "$DUP" | grep -q "already exists"; then
   echo -e "${GREEN}✅ Duplicate vendor correctly rejected${NC}"
