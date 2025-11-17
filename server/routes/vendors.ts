@@ -111,8 +111,12 @@ export const getProducts: RequestHandler = async (_req, res) => {
 // Get products by vendor
 export const getVendorProducts: RequestHandler = (req, res) => {
   const { vendorId } = req.params;
-  const vendorProducts = products.filter(p => p.vendorId === vendorId);
-  res.json(vendorProducts);
+  (async () => {
+    const { readProducts } = await import('../utils/productsDb');
+    const list = await readProducts();
+    const vendorProducts = list.filter(p => p.vendorId === vendorId);
+    res.json(vendorProducts);
+  })();
 };
 
 // Create product
@@ -222,14 +226,21 @@ export const claimProductsByEmail: RequestHandler = async (req, res) => {
 };
 
 // Update product
-export const updateProduct: RequestHandler = (req, res) => {
+export const updateProduct: RequestHandler = async (req, res) => {
   const { id } = req.params;
-  const index = products.findIndex(p => p.id === id);
-  if (index === -1) {
-    return res.status(404).json({ error: "Product not found" });
+  const { findProductById, updateProduct: updateProductDb } = await import('../utils/productsDb');
+
+  const existing = await findProductById(id);
+  if (!existing) return res.status(404).json({ error: 'Product not found' });
+
+  // If vendor, ensure they own the product
+  if (req.user && req.user.role === 'vendor') {
+    if (existing.vendorId !== req.user.userId) return res.status(403).json({ error: 'Not allowed' });
   }
-  products[index] = { ...products[index], ...req.body };
-  res.json(products[index]);
+
+  const updated = await updateProductDb(id, req.body);
+  if (!updated) return res.status(500).json({ error: 'Failed to update' });
+  res.json(updated);
 };
 
 // Delete product

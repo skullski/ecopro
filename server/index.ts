@@ -158,7 +158,7 @@ export function createServer() {
   app.put(
     "/api/products/:id",
     authenticate,
-    requireVip,
+    requireVendor,
     productValidation,
     validate,
     vendorRoutes.updateProduct
@@ -166,7 +166,7 @@ export function createServer() {
   app.delete(
     "/api/products/:id",
     authenticate,
-    requireVip,
+    requireVendor,
     vendorRoutes.deleteProduct
   );
 

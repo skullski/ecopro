@@ -83,11 +83,6 @@ export default function VendorDashboard() {
   }, [id, navigate]);
 
   function handleAddProduct() {
-    if (!vendor?.isVIP) {
-      toast({ title: 'Upgrade required', description: 'Management tools are available for VIP accounts. Start a 7-day free trial or upgrade to manage your store.' });
-      navigate('/vendor/upgrade');
-      return;
-    }
     const newProduct: MarketplaceProduct = {
       id: `prod_${Date.now()}`,
       vendorId: vendor!.id,
@@ -156,11 +151,6 @@ export default function VendorDashboard() {
   }
 
   function handleEditProduct() {
-    if (!vendor?.isVIP) {
-      toast({ title: 'Upgrade required', description: 'Editing products requires a VIP subscription.' });
-      navigate('/vendor/upgrade');
-      return;
-    }
     if (!editingProduct) return;
 
     const updatedProduct = {
@@ -185,10 +175,6 @@ export default function VendorDashboard() {
   }
 
   function handleDeleteProduct(productId: string) {
-    if (!vendor?.isVIP) {
-      toast({ title: 'Upgrade required', description: 'Deleting products requires a VIP subscription.' });
-      return;
-    }
     if (!confirm("Are you sure you want to delete this product?")) return;
 
     const allProducts = JSON.parse(localStorage.getItem("marketplaceProducts") || "[]");

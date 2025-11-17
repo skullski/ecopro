@@ -1,3 +1,4 @@
+ 
 #!/bin/bash
 
 # Colors for output
@@ -237,6 +238,30 @@ if echo "$CREATE_PROD" | grep -q "id"; then
 else
   echo -e "${RED}❌ Non-VIP vendor could not create product (unexpected)${NC}"
   echo "$CREATE_PROD"
+fi
+
+# Test: non-VIP vendor can update and delete their product
+if echo "$CREATE_PROD" | grep -q "id"; then
+  CREATED_ID=$(echo "$CREATE_PROD" | grep -o '"id":"[^']*' | cut -d'"' -f4)
+  echo "Created product: $CREATED_ID"
+
+  # Update
+  UPDATE_RESP=$(curl -s -X PUT "$API_URL/products/$CREATED_ID" -H "Content-Type: application/json" -H "Authorization: Bearer $VENDOR_TOKEN" -d '{"name":"Updated via API"}')
+  if echo "$UPDATE_RESP" | grep -q "Updated via API"; then
+    echo -e "${GREEN}✅ Vendor can update their product${NC}"
+  else
+    echo -e "${RED}❌ Vendor could not update their product${NC}"
+    echo "$UPDATE_RESP"
+  fi
+
+  # Delete
+  DELETE_RESP=$(curl -s -X DELETE "$API_URL/products/$CREATED_ID" -H "Content-Type: application/json" -H "Authorization: Bearer $VENDOR_TOKEN")
+  if [ -z "$DELETE_RESP" ]; then
+    echo -e "${GREEN}✅ Vendor can delete their product${NC}"
+  else
+    echo -e "${RED}❌ Vendor failed to delete their product${NC}"
+    echo "$DELETE_RESP"
+  fi
 fi
 
 echo -e "\n${YELLOW}Test 12: VIP vendor can manage products${NC}"
