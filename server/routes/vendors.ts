@@ -6,17 +6,11 @@ interface VendorIdParams {
   id: string;
 }
 
-interface VendorSlugParams {
-  slug: string;
-}
+interface VendorSlugParams { slug: string; }
 
-interface ProductIdParams {
-  id: string;
-}
+interface ProductIdParams { id: string; }
 
-interface VendorProductsParams {
-  vendorId: string;
-}
+interface VendorProductsParams { vendorId: string; }
 
 // In-memory storage (replace with database later)
 // In-memory vendors fallback; prefer file persistence
@@ -40,7 +34,7 @@ export const getVendors: RequestHandler = async (_req, res) => {
 };
 
 // Get vendor by ID
-export const getVendorById: RequestHandler<VendorIdParams> = async (req, res) => {
+export const getVendorById: RequestHandler = async (req, res) => {
   const { id } = req.params;
   const { readVendors } = await import("../utils/vendorsDb");
   const persisted = await readVendors();
@@ -52,7 +46,7 @@ export const getVendorById: RequestHandler<VendorIdParams> = async (req, res) =>
 };
 
 // Get vendor by slug
-export const getVendorBySlug: RequestHandler<VendorSlugParams> = async (req, res) => {
+export const getVendorBySlug: RequestHandler = async (req, res) => {
   const { slug } = req.params;
   const { readVendors } = await import("../utils/vendorsDb");
   const persisted = await readVendors();
@@ -87,7 +81,7 @@ export const createVendor: RequestHandler = async (req, res) => {
 };
 
 // Update vendor
-export const updateVendor: RequestHandler<VendorIdParams> = async (req, res) => {
+export const updateVendor: RequestHandler = async (req, res) => {
   const { id } = req.params;
   const { updateVendor: updateVendorDb, readVendors } = await import("../utils/vendorsDb");
   const persisted = await readVendors();
@@ -105,7 +99,7 @@ export const getProducts: RequestHandler = (_req, res) => {
 };
 
 // Get products by vendor
-export const getVendorProducts: RequestHandler<VendorProductsParams> = (req, res) => {
+export const getVendorProducts: RequestHandler = (req, res) => {
   const { vendorId } = req.params;
   const vendorProducts = products.filter(p => p.vendorId === vendorId);
   res.json(vendorProducts);
@@ -119,7 +113,7 @@ export const createProduct: RequestHandler = (req, res) => {
 };
 
 // Update product
-export const updateProduct: RequestHandler<ProductIdParams> = (req, res) => {
+export const updateProduct: RequestHandler = (req, res) => {
   const { id } = req.params;
   const index = products.findIndex(p => p.id === id);
   if (index === -1) {
@@ -130,7 +124,7 @@ export const updateProduct: RequestHandler<ProductIdParams> = (req, res) => {
 };
 
 // Delete product
-export const deleteProduct: RequestHandler<ProductIdParams> = (req, res) => {
+export const deleteProduct: RequestHandler = (req, res) => {
   const { id } = req.params;
   const index = products.findIndex(p => p.id === id);
   if (index === -1) {

@@ -1,4 +1,4 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { ShoppingCart, Box, Settings, Phone, ChartBar } from "lucide-react";
 
 export default function CustomerDashboard(){

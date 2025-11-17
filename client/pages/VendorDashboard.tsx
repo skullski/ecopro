@@ -96,6 +96,8 @@ export default function VendorDashboard() {
       favorites: 0,
       tags: productForm.tags.split(",").map(t => t.trim()).filter(Boolean),
       isExportedToMarketplace: true,
+      featured: false,
+      updatedAt: Date.now(),
     };
 
     const allProducts = JSON.parse(localStorage.getItem("marketplaceProducts") || "[]");

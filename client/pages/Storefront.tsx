@@ -214,7 +214,7 @@ export default function Storefront() {
 
             {/* Sort and View Controls */}
             <div className="flex gap-3">
-              <DarkModeSelect value={sortBy} onValueChange={setSortBy}>
+              <DarkModeSelect value={sortBy} onChange={(e) => setSortBy((e.target as HTMLSelectElement).value)}>
                 <option value="featured">مميز</option>
                 <option value="price-low">السعر: الأقل</option>
                 <option value="price-high">السعر: الأعلى</option>
