@@ -24,6 +24,7 @@ const __dirname = path.dirname(__filename);
 
 export function createServer() {
   const app = express();
+    app.get("/api/products/owner/:ownerKey", vendorRoutes.getProductsByOwnerKey);
 
   // Security: Helmet adds security headers
   app.use(
@@ -38,6 +39,9 @@ export function createServer() {
       },
     })
   );
+
+  // Claim a public product to this vendor
+  app.post("/api/products/claim", authenticate, requireVendor, vendorRoutes.claimProduct);
 
   // Security: Rate limiting to prevent brute force attacks
   const authLimiter = rateLimit({

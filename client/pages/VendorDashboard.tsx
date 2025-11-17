@@ -28,6 +28,7 @@ import {
   Heart,
 } from "lucide-react";
 import type { Vendor, MarketplaceProduct } from "@shared/types";
+import * as api from "@/lib/api";
 
 const CATEGORIES = [
   "electronics",
@@ -106,6 +107,20 @@ export default function VendorDashboard() {
     setProducts([...products, newProduct]);
     setIsAddingProduct(false);
     resetForm();
+  }
+
+  // Claim a public product by ownerKey (used when vendor wants to claim an anonymous product)
+  async function claimPublicProduct(productId: string, ownerKey: string) {
+    try {
+      await api.claimProduct(productId, ownerKey);
+      // Refresh products locally
+      const allProducts = JSON.parse(localStorage.getItem('marketplaceProducts') || '[]');
+      const claimed = allProducts.map((p: any) => p.id === productId ? { ...p, vendorId: id } : p);
+      localStorage.setItem('marketplaceProducts', JSON.stringify(claimed));
+      setProducts(claimed.filter((p: any) => p.vendorId === id));
+    } catch (err) {
+      alert('Failed to claim product: ' + ((err as any).message || 'Unknown'));
+    }
   }
 
   function handleEditProduct() {

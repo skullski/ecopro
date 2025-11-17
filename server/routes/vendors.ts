@@ -1,5 +1,9 @@
 import { RequestHandler } from "express";
 import type { Vendor, MarketplaceProduct } from "@shared/types";
+// generate owner keys using timestamp + random
+function generateKey() {
+  return `key_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+}
 
 // Define route parameter types
 interface VendorIdParams {
@@ -94,8 +98,14 @@ export const updateVendor: RequestHandler = async (req, res) => {
 };
 
 // Get all products
-export const getProducts: RequestHandler = (_req, res) => {
-  res.json(products);
+export const getProducts: RequestHandler = async (_req, res) => {
+  try {
+    const { readProducts } = await import("../utils/productsDb");
+    const persisted = await readProducts();
+    res.json(persisted.length ? persisted : products);
+  } catch (err) {
+    res.json(products);
+  }
 };
 
 // Get products by vendor
@@ -106,10 +116,63 @@ export const getVendorProducts: RequestHandler = (req, res) => {
 };
 
 // Create product
-export const createProduct: RequestHandler = (req, res) => {
+export const createProduct: RequestHandler = async (req, res) => {
   const product: MarketplaceProduct = req.body;
-  products.push(product);
-  res.status(201).json(product);
+
+  // server-side defaults for vendor-created products
+  if (!product.id) product.id = `prod_${Date.now()}`;
+  if (!product.createdAt) product.createdAt = Date.now();
+  if (!product.updatedAt) product.updatedAt = Date.now();
+
+  const { createProduct: createProductDb, findProductById } = await import("../utils/productsDb");
+  const existing = await findProductById(product.id);
+  if (existing) return res.status(409).json({ error: "Product already exists" });
+
+  const saved = await createProductDb(product);
+  res.status(201).json(saved);
+};
+
+// Public product creation - anonymous seller
+export const createPublicProduct: RequestHandler = async (req, res) => {
+  try {
+    const product = req.body as MarketplaceProduct;
+    if (!product.id) product.id = `prod_${Date.now()}`;
+    product.createdAt = Date.now();
+    product.updatedAt = Date.now();
+    product.ownerKey = generateKey();
+    product.vendorId = product.vendorId || "";
+
+    const { createProduct: createProductDb } = await import("../utils/productsDb");
+    const saved = await createProductDb(product);
+    res.status(201).json({ product: saved, ownerKey: product.ownerKey });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to create public product" });
+  }
+};
+
+// List products owned by ownerKey
+export const getProductsByOwnerKey: RequestHandler = async (req, res) => {
+  const { ownerKey } = req.params;
+  const { findProductsByOwnerKey } = await import("../utils/productsDb");
+  const list = await findProductsByOwnerKey(ownerKey);
+  res.json(list);
+};
+
+// Claim product: authenticated vendor can attach vendorId to product using ownerKey
+export const claimProduct: RequestHandler = async (req, res) => {
+  const { ownerKey, productId } = req.body;
+  // must be authenticated vendor
+  if (!req.user) return res.status(401).json({ error: "Not authenticated" });
+  if (req.user.role !== "vendor" && req.user.role !== "admin") return res.status(403).json({ error: "Vendor access required" });
+
+  const { findProductById, updateProduct } = await import("../utils/productsDb");
+  const product = await findProductById(productId);
+  if (!product) return res.status(404).json({ error: "Product not found" });
+  if (product.ownerKey !== ownerKey) return res.status(403).json({ error: "Invalid owner key" });
+
+  const updated = await updateProduct(productId, { vendorId: req.user.userId, ownerKey: undefined });
+  res.json({ message: "Product claimed", product: updated });
 };
 
 // Update product
@@ -124,12 +187,28 @@ export const updateProduct: RequestHandler = (req, res) => {
 };
 
 // Delete product
-export const deleteProduct: RequestHandler = (req, res) => {
+export const deleteProduct: RequestHandler = async (req, res) => {
   const { id } = req.params;
-  const index = products.findIndex(p => p.id === id);
-  if (index === -1) {
-    return res.status(404).json({ error: "Product not found" });
+  const { deleteProduct } = await import("../utils/productsDb");
+  const ownerKey = req.body && req.body.ownerKey;
+
+  // If the request comes from an authenticated vendor, check role
+  if (req.user && (req.user.role === "vendor" || req.user.role === "admin")) {
+    // allow vendor with vendorId matching product
+    const product = await (await import("../utils/productsDb")).findProductById(id);
+    if (!product) return res.status(404).json({ error: "Product not found" });
+    if (req.user.role === 'vendor' && product.vendorId !== req.user.userId) {
+      return res.status(403).json({ error: 'Not allowed' });
+    }
+    await deleteProduct(id);
+    return res.status(204).send();
   }
-  products.splice(index, 1);
+
+  // Otherwise require ownerKey for anonymous sellers
+  if (!ownerKey) return res.status(401).json({ error: 'Missing ownerKey' });
+  const product = await (await import("../utils/productsDb")).findProductById(id);
+  if (!product) return res.status(404).json({ error: 'Product not found' });
+  if (product.ownerKey !== ownerKey) return res.status(403).json({ error: 'Invalid ownerKey' });
+  await deleteProduct(id);
   res.status(204).send();
 };

@@ -56,6 +56,39 @@ export async function createProduct(product: MarketplaceProduct): Promise<Market
   return res.json();
 }
 
+// Create a public (anonymous) product and receive ownerKey
+export async function createPublicProduct(product: Partial<MarketplaceProduct>): Promise<{ product: MarketplaceProduct; ownerKey: string; }> {
+  const res = await fetch(`${API_URL}/products/public`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(product),
+  });
+  return res.json();
+}
+
+export async function deletePublicProduct(productId: string, ownerKey: string): Promise<any> {
+  const res = await fetch(`${API_URL}/products/${productId}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ownerKey }),
+  });
+  return res.json();
+}
+
+export async function getProductsByOwnerKey(ownerKey: string): Promise<MarketplaceProduct[]> {
+  const res = await fetch(`${API_URL}/products/owner/${ownerKey}`);
+  return res.json();
+}
+
+export async function claimProduct(productId: string, ownerKey: string): Promise<any> {
+  const res = await fetch(`${API_URL}/products/claim`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ productId, ownerKey })
+  });
+  return res.json();
+}
+
 export async function updateProduct(id: string, updates: Partial<MarketplaceProduct>): Promise<MarketplaceProduct> {
   const res = await fetch(`${API_URL}/products/${id}`, {
     method: "PUT",

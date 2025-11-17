@@ -87,6 +87,7 @@ export interface MarketplaceProduct {
   featured: boolean;
   status: 'active' | 'pending' | 'sold' | 'inactive';
   isExportedToMarketplace: boolean; // True if product is visible in main /store
+  ownerKey?: string; // Temporary token for anonymous sellers
   views: number;
   favorites: number;
   createdAt: number;
