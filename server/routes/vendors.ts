@@ -133,7 +133,18 @@ export const createProduct: RequestHandler = async (req, res) => {
   const { createProduct: createProductDb, findProductById } = await import("../utils/productsDb");
   // If request is authenticated vendor, attach vendorId and default to exported
   if (req.user && req.user.role === "vendor") {
-    product.vendorId = req.user.userId;
+    // Map authenticated user to a vendor record so vendorId matches vendor DB id
+    try {
+      const { findVendorByEmail } = await import("../utils/vendorsDb");
+      const vendorRecord = await findVendorByEmail(req.user.email);
+      if (vendorRecord) {
+        product.vendorId = vendorRecord.id;
+      } else {
+        product.vendorId = req.user.userId;
+      }
+    } catch (err) {
+      console.warn("Could not determine vendor record for user: ", err);
+    }
     // Default visibility: export vendor products to marketplace unless explicitly false
     product.isExportedToMarketplace = product.isExportedToMarketplace ?? true;
   }
@@ -202,7 +213,11 @@ export const claimProduct: RequestHandler = async (req, res) => {
   if (!product) return res.status(404).json({ error: "Product not found" });
   if (product.ownerKey !== ownerKey) return res.status(403).json({ error: "Invalid owner key" });
 
-  const updated = await updateProduct(productId, { vendorId: req.user.userId, ownerKey: undefined, ownerEmail: undefined });
+  // Map user to vendor id
+  const { findVendorByEmail } = await import('../utils/vendorsDb');
+  const vendorRec = await findVendorByEmail(req.user.email);
+  const vendorId = vendorRec ? vendorRec.id : req.user.userId;
+  const updated = await updateProduct(productId, { vendorId, ownerKey: undefined, ownerEmail: undefined });
   res.json({ message: "Product claimed", product: updated });
 };
 
@@ -218,7 +233,9 @@ export const claimProductsByEmail: RequestHandler = async (req, res) => {
   const toClaim = products.filter(p => p.ownerEmail && p.ownerEmail.toLowerCase() === vendorEmail);
   const updated: any[] = [];
   for (const p of toClaim) {
-    const u = await updateProduct(p.id, { vendorId: req.user.userId, ownerKey: undefined, ownerEmail: undefined });
+  const vendorRec = await (await import('../utils/vendorsDb')).findVendorByEmail(req.user.email);
+  const vendorId = vendorRec ? vendorRec.id : req.user.userId;
+  const u = await updateProduct(p.id, { vendorId, ownerKey: undefined, ownerEmail: undefined });
     if (u) updated.push(u);
   }
 
@@ -235,7 +252,10 @@ export const updateProduct: RequestHandler = async (req, res) => {
 
   // If vendor, ensure they own the product
   if (req.user && req.user.role === 'vendor') {
-    if (existing.vendorId !== req.user.userId) return res.status(403).json({ error: 'Not allowed' });
+    const { findVendorByEmail } = await import('../utils/vendorsDb');
+    const vendor = await findVendorByEmail(req.user.email);
+    const checkId = vendor ? vendor.id : req.user.userId;
+    if (existing.vendorId !== checkId) return res.status(403).json({ error: 'Not allowed' });
   }
 
   const updated = await updateProductDb(id, req.body);
@@ -254,9 +274,15 @@ export const deleteProduct: RequestHandler = async (req, res) => {
     // allow vendor with vendorId matching product
     const product = await (await import("../utils/productsDb")).findProductById(id);
     if (!product) return res.status(404).json({ error: "Product not found" });
-    if (req.user.role === 'vendor' && product.vendorId !== req.user.userId) {
-      return res.status(403).json({ error: 'Not allowed' });
+    if (req.user.role === 'vendor') {
+      const { findVendorByEmail } = await import('../utils/vendorsDb');
+      const vendor = await findVendorByEmail(req.user.email);
+      const checkId = vendor ? vendor.id : req.user.userId;
+      if (product.vendorId !== checkId) {
+        return res.status(403).json({ error: 'Not allowed' });
+      }
     }
+    
     await deleteProduct(id);
     return res.status(204).send();
   }
