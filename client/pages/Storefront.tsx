@@ -1,6 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import type { StoreSettings, Product } from "@shared/types";
 import { useState, useEffect, useMemo } from "react";
+import * as api from "@/lib/api";
 import { DarkModeInput } from "@/components/ui/dark-mode-input";
 import { DarkModeSelect } from "@/components/ui/dark-mode-select";
 import { FloatingShapes } from "@/components/ui/floating-shapes";
@@ -47,9 +48,34 @@ export default function Storefront() {
       setStore(storeData);
     }
 
-    const allProducts = JSON.parse(localStorage.getItem('products') || '[]');
-    const storeProducts = allProducts.filter((p: Product) => p.storeId === id);
-    setProducts(storeProducts);
+    async function loadProducts() {
+      // Try API first (marketplace + vendor products persisted on server)
+      try {
+        const allProducts = await api.fetchProducts();
+        // Marketplace uses MarketplaceProduct; filter for those matching this store/vendorkey
+        const storeProducts = allProducts
+          .filter((p: any) => p.vendorId === id || p.storeId === id)
+          .map((p: any) => ({
+            id: p.id,
+            storeId: p.vendorId || p.storeId || id,
+            title: p.title,
+            description: p.description,
+            price: p.price,
+            images: p.images || [],
+            category: p.category || "",
+            featured: p.featured || false,
+            inStock: (p.quantity ?? 1) > 0,
+            createdAt: p.createdAt || Date.now(),
+          } as Product));
+        setProducts(storeProducts);
+      } catch (err) {
+        // Fallback to localStorage as before (single-store mode)
+        const allProducts = JSON.parse(localStorage.getItem('products') || '[]');
+        const storeProducts = allProducts.filter((p: Product) => p.storeId === id);
+        setProducts(storeProducts);
+      }
+    }
+    loadProducts();
 
     const savedCart = JSON.parse(localStorage.getItem(`cart_${id}`) || '[]');
     setCart(savedCart);

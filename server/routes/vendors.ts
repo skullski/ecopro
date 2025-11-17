@@ -123,6 +123,8 @@ export const createProduct: RequestHandler = async (req, res) => {
   if (!product.id) product.id = `prod_${Date.now()}`;
   if (!product.createdAt) product.createdAt = Date.now();
   if (!product.updatedAt) product.updatedAt = Date.now();
+  if (!product.status) product.status = 'active';
+  if (typeof product.quantity !== 'number') product.quantity = 1;
 
   const { createProduct: createProductDb, findProductById } = await import("../utils/productsDb");
   const existing = await findProductById(product.id);
@@ -137,14 +139,20 @@ export const createPublicProduct: RequestHandler = async (req, res) => {
   try {
     const product = req.body as MarketplaceProduct;
     if (!product.id) product.id = `prod_${Date.now()}`;
-    product.createdAt = Date.now();
+  product.createdAt = Date.now();
     product.updatedAt = Date.now();
     product.ownerKey = generateKey();
     // Honor email if provided by anonymous seller
     if (req.body.ownerEmail) {
       product.ownerEmail = req.body.ownerEmail;
     }
-    product.vendorId = product.vendorId || "";
+  product.vendorId = product.vendorId || "";
+  // defaults so public products are visible in marketplace
+  if (!product.status) product.status = "active";
+  if (typeof product.quantity !== "number") product.quantity = 1;
+  if (product.isExportedToMarketplace === undefined) product.isExportedToMarketplace = true;
+  product.views = product.views || 0;
+  product.favorites = product.favorites || 0;
 
     const { createProduct: createProductDb } = await import("../utils/productsDb");
     const saved = await createProductDb(product);

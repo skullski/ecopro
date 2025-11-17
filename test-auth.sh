@@ -160,3 +160,27 @@ fi
 echo -e "${GREEN}==================================${NC}"
 echo -e "${GREEN}Authentication tests completed!${NC}"
 echo -e "${GREEN}==================================${NC}"
+
+echo -e "\n${YELLOW}Test 9: Create public product (QuickSell) and verify marketplace visibility${NC}"
+PUBLIC_PRODUCT_RESPONSE=$(curl -s -X POST "$API_URL/products/public" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Public Test","description":"Public created product","price":9.99,"images":[],"category":"demo","isExportedToMarketplace":true,"ownerEmail":"anon@example.com"}')
+
+if echo "$PUBLIC_PRODUCT_RESPONSE" | grep -q "ownerKey"; then
+  echo -e "${GREEN}✅ Public product created with ownerKey${NC}"
+  OWNER_KEY=$(echo "$PUBLIC_PRODUCT_RESPONSE" | grep -o '"ownerKey":"[^']*' | cut -d'"' -f4)
+  PRODUCT_ID=$(echo "$PUBLIC_PRODUCT_RESPONSE" | grep -o '"id":"[^']*' | cut -d'"' -f4)
+  echo "OwnerKey: $OWNER_KEY ProductId: $PRODUCT_ID"
+
+  # Check marketplace listing
+  ALL_PRODUCTS=$(curl -s "$API_URL/products")
+  if echo "$ALL_PRODUCTS" | grep -q "Public Test"; then
+    echo -e "${GREEN}✅ Public product appears in marketplace${NC}"
+  else
+    echo -e "${RED}❌ Public product not visible in marketplace${NC}"
+    echo "$ALL_PRODUCTS"
+  fi
+else
+  echo -e "${RED}❌ Failed to create public product${NC}"
+  echo "$PUBLIC_PRODUCT_RESPONSE"
+fi
