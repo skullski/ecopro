@@ -94,6 +94,14 @@ export async function claimProduct(productId: string, ownerKey: string): Promise
   return res.json();
 }
 
+export async function claimProductsByEmail(): Promise<any> {
+  const res = await fetch(`${API_URL}/products/claim-by-email`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  return res.json();
+}
+
 export async function updateProduct(id: string, updates: Partial<MarketplaceProduct>): Promise<MarketplaceProduct> {
   const res = await fetch(`${API_URL}/products/${id}`, {
     method: "PUT",

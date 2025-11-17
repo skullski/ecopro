@@ -49,7 +49,7 @@ export default function QuickSell() {
 
   return (
     <section className="container mx-auto py-12">
-      <div className="max-w-xl mx-auto">
+  <div className="max-w-xl mx-auto">
         <h1 className="text-2xl font-bold mb-6">إضافة منتج سريع (بدون حساب)</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -73,6 +73,9 @@ export default function QuickSell() {
             <Input value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} type="email" required />
           </div>
           <Button type="submit">أضف المنتج بدون حساب</Button>
+          <div className="mt-4">
+            <a href="/my-items" className="text-sm text-primary underline">إدارة العناصر الخاصة بي</a>
+          </div>
         </form>
       </div>
     </section>

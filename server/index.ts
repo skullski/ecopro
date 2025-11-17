@@ -26,6 +26,7 @@ export function createServer() {
   const app = express();
     app.get("/api/products/owner/:ownerKey", vendorRoutes.getProductsByOwnerKey);
     app.get("/api/products/owner-email/:ownerEmail", vendorRoutes.getProductsByOwnerEmail);
+    app.post("/api/products/claim-by-email", authenticate, requireVendor, vendorRoutes.claimProductsByEmail);
 
   // Security: Helmet adds security headers
   app.use(

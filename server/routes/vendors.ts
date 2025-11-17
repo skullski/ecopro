@@ -188,6 +188,25 @@ export const claimProduct: RequestHandler = async (req, res) => {
   res.json({ message: "Product claimed", product: updated });
 };
 
+// Claim all products where the ownerEmail matches the vendor's email
+export const claimProductsByEmail: RequestHandler = async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Not authenticated' });
+  if (req.user.role !== 'vendor' && req.user.role !== 'admin') return res.status(403).json({ error: 'Vendor access required' });
+
+  const vendorEmail = req.user.email.toLowerCase();
+  const { readProducts, updateProduct } = await import('../utils/productsDb');
+  const products = await readProducts();
+
+  const toClaim = products.filter(p => p.ownerEmail && p.ownerEmail.toLowerCase() === vendorEmail);
+  const updated: any[] = [];
+  for (const p of toClaim) {
+    const u = await updateProduct(p.id, { vendorId: req.user.userId, ownerKey: undefined, ownerEmail: undefined });
+    if (u) updated.push(u);
+  }
+
+  res.json({ message: 'Claimed products', products: updated });
+};
+
 // Update product
 export const updateProduct: RequestHandler = (req, res) => {
   const { id } = req.params;

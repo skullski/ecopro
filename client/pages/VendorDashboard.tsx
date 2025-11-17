@@ -123,6 +123,23 @@ export default function VendorDashboard() {
     }
   }
 
+  async function claimByEmail() {
+    try {
+      const res = await api.claimProductsByEmail();
+      if (res.products?.length) {
+        alert(`Claimed ${res.products.length} products`);
+      } else {
+        alert('No products claimed for your email');
+      }
+      // Refresh vendor products
+      const allProducts = JSON.parse(localStorage.getItem('marketplaceProducts') || '[]');
+      const vendorProducts = allProducts.filter((p: any) => p.vendorId === id);
+      setProducts(vendorProducts);
+    } catch (err) {
+      alert('Failed to claim by email');
+    }
+  }
+
   function handleEditProduct() {
     if (!editingProduct) return;
 
@@ -247,6 +264,7 @@ export default function VendorDashboard() {
               <Button variant="ghost" onClick={handleLogout}>
                 <LogOut className="h-4 w-4" />
               </Button>
+              <Button onClick={claimByEmail} variant="outline">Claim items by email</Button>
             </div>
           </div>
         </div>
