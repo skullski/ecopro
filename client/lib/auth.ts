@@ -143,6 +143,16 @@ export const authApi = {
     removeAuthToken();
     window.location.href = "/";
   },
+
+  /**
+   * Promote an existing user to admin (platform owner only)
+   */
+  promoteToAdmin: async (email: string): Promise<{ message: string; user?: any }> => {
+    return apiRequest("/admin/promote", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+  },
 };
 
 /**
@@ -164,3 +174,12 @@ export function getCurrentUser(): { id: string; email: string; name: string; rol
     return null;
   }
 }
+
+/**
+ * Admin utilities (client-side wrappers)
+ */
+export const adminApi = {
+  listUsers: async (): Promise<any[]> => {
+    return apiRequest("/admin/users");
+  },
+};

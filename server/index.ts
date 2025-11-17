@@ -9,6 +9,7 @@ import { handleDemo } from "./routes/demo";
 import * as vendorRoutes from "./routes/vendors";
 import * as authRoutes from "./routes/auth";
 import { authenticate, requireAdmin, requireVendor } from "./middleware/auth";
+import * as adminRoutes from "./routes/admin";
 import {
   validate,
   registerValidation,
@@ -158,6 +159,21 @@ export function createServer() {
     authenticate,
     requireVendor,
     vendorRoutes.deleteProduct
+  );
+
+  // Admin management routes (platform admin only)
+  app.post(
+    "/api/admin/promote",
+    authenticate,
+    requireAdmin,
+    adminRoutes.promoteUserToAdmin
+  );
+
+  app.get(
+    "/api/admin/users",
+    authenticate,
+    requireAdmin,
+    adminRoutes.listUsers
   );
 
   // Serve static files from React build (only in production)

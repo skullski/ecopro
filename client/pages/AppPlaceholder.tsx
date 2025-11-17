@@ -3,8 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
-import { getCurrentUser, authApi } from "@/lib/auth";
+import { getCurrentUser, authApi, adminApi } from "@/lib/auth";
 import { useTranslation } from "@/lib/i18n";
+import { useToast } from "@/hooks/use-toast";
 import { 
   User, 
   Mail, 
@@ -46,6 +47,11 @@ export default function AppPlaceholder() {
   const handleLogout = () => {
     authApi.logout();
   };
+
+  const [promoteEmail, setPromoteEmail] = useState("");
+  const [users, setUsers] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const { toast } = useToast();
 
 
   if (!user) {
@@ -180,6 +186,86 @@ export default function AppPlaceholder() {
                   <BarChart3 className="w-4 h-4 mr-2 text-purple-400" />
                   Vendor Analytics
                 </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-black/60 border-purple-900/30">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-purple-200">
+                  <ShieldCheck className="w-5 h-5 text-purple-400" />
+                  Platform Admins
+                </CardTitle>
+                <CardDescription className="text-purple-400">Promote users to platform admin access</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="flex gap-2">
+                  <input
+                    value={promoteEmail}
+                    onChange={(e) => setPromoteEmail(e.target.value)}
+                    placeholder="user@example.com"
+                    className="flex-1 rounded-xl border-2 border-accent/20 bg-background px-4 py-3"
+                  />
+                  <Button
+                    onClick={async () => {
+                      try {
+                        await authApi.promoteToAdmin(promoteEmail);
+                        toast({ title: "User promoted", description: `${promoteEmail} is now an admin` });
+                        setPromoteEmail("");
+                      } catch (err) {
+                        toast({ title: "Error", description: (err as Error).message || "Failed to promote user" });
+                      }
+                    }}
+                  >
+                    Make Admin
+                  </Button>
+                </div>
+                <div className="pt-4">
+                  <Button
+                    onClick={async () => {
+                      try {
+                        setLoadingUsers(true);
+                        const res = await adminApi.listUsers();
+                        setUsers(res);
+                      } catch (err) {
+                        toast({ title: "Error", description: "Failed to fetch users" });
+                      } finally {
+                        setLoadingUsers(false);
+                      }
+                    }}
+                    variant="outline"
+                  >
+                    {loadingUsers ? "Loading..." : "Load Users"}
+                  </Button>
+                </div>
+                {users.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    {users.map((u) => (
+                      <div key={u.id} className="flex items-center justify-between bg-black/30 p-3 rounded-xl">
+                        <div>
+                          <div className="text-sm text-purple-200">{u.email}</div>
+                          <div className="text-xs text-muted-foreground">{u.role}</div>
+                        </div>
+                        {u.role !== "admin" && (
+                          <Button
+                            size="sm"
+                            onClick={async () => {
+                              try {
+                                await authApi.promoteToAdmin(u.email);
+                                const updated = users.map((x) => (x.email === u.email ? { ...x, role: "admin" } : x));
+                                setUsers(updated);
+                                toast({ title: "Promoted", description: `${u.email} is now an admin` });
+                              } catch (err) {
+                                toast({ title: "Error", description: "Failed to promote user" });
+                              }
+                            }}
+                          >
+                            Make Admin
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
