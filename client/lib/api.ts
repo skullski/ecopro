@@ -80,6 +80,11 @@ export async function getProductsByOwnerKey(ownerKey: string): Promise<Marketpla
   return res.json();
 }
 
+export async function getProductsByOwnerEmail(ownerEmail: string): Promise<MarketplaceProduct[]> {
+  const res = await fetch(`${API_URL}/products/owner-email/${encodeURIComponent(ownerEmail)}`);
+  return res.json();
+}
+
 export async function claimProduct(productId: string, ownerKey: string): Promise<any> {
   const res = await fetch(`${API_URL}/products/claim`, {
     method: 'POST',

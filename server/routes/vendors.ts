@@ -140,6 +140,10 @@ export const createPublicProduct: RequestHandler = async (req, res) => {
     product.createdAt = Date.now();
     product.updatedAt = Date.now();
     product.ownerKey = generateKey();
+    // Honor email if provided by anonymous seller
+    if (req.body.ownerEmail) {
+      product.ownerEmail = req.body.ownerEmail;
+    }
     product.vendorId = product.vendorId || "";
 
     const { createProduct: createProductDb } = await import("../utils/productsDb");
@@ -159,6 +163,15 @@ export const getProductsByOwnerKey: RequestHandler = async (req, res) => {
   res.json(list);
 };
 
+// List products by owner email (public) — useful for anonymous sellers to see their items
+export const getProductsByOwnerEmail: RequestHandler = async (req, res) => {
+  const { ownerEmail } = req.params;
+  const { readProducts } = await import("../utils/productsDb");
+  const products = await readProducts();
+  const list = products.filter((p) => p.ownerEmail && p.ownerEmail.toLowerCase() === ownerEmail.toLowerCase());
+  res.json(list);
+};
+
 // Claim product: authenticated vendor can attach vendorId to product using ownerKey
 export const claimProduct: RequestHandler = async (req, res) => {
   const { ownerKey, productId } = req.body;
@@ -171,7 +184,7 @@ export const claimProduct: RequestHandler = async (req, res) => {
   if (!product) return res.status(404).json({ error: "Product not found" });
   if (product.ownerKey !== ownerKey) return res.status(403).json({ error: "Invalid owner key" });
 
-  const updated = await updateProduct(productId, { vendorId: req.user.userId, ownerKey: undefined });
+  const updated = await updateProduct(productId, { vendorId: req.user.userId, ownerKey: undefined, ownerEmail: undefined });
   res.json({ message: "Product claimed", product: updated });
 };
 
