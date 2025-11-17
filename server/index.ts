@@ -120,10 +120,9 @@ export function createServer() {
   );
 
   // Protected vendor routes (require authentication)
+  // Public vendor signup: allow unauthenticated users to create vendor accounts
   app.post(
     "/api/vendors",
-    authenticate,
-    requireVendor,
     vendorValidation,
     validate,
     vendorRoutes.createVendor
