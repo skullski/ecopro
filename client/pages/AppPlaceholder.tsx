@@ -211,6 +211,13 @@ export default function AppPlaceholder() {
                         await authApi.promoteToAdmin(promoteEmail);
                         toast({ title: "User promoted", description: `${promoteEmail} is now an admin` });
                         setPromoteEmail("");
+                        // Refresh users list if open
+                        try {
+                          const refreshed = await adminApi.listUsers();
+                          setUsers(refreshed);
+                        } catch (e) {
+                          // ignore
+                        }
                       } catch (err) {
                         toast({ title: "Error", description: (err as Error).message || "Failed to promote user" });
                       }
