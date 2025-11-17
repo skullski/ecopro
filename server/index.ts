@@ -7,8 +7,9 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { handleDemo } from "./routes/demo";
 import * as vendorRoutes from "./routes/vendors";
+import * as uploadRoutes from "./routes/uploads";
 import * as authRoutes from "./routes/auth";
-import { authenticate, requireAdmin, requireVendor } from "./middleware/auth";
+import { authenticate, requireAdmin, requireVendor, requireVip } from "./middleware/auth";
 import * as adminRoutes from "./routes/admin";
 import {
   validate,
@@ -26,7 +27,7 @@ export function createServer() {
   const app = express();
     app.get("/api/products/owner/:ownerKey", vendorRoutes.getProductsByOwnerKey);
     app.get("/api/products/owner-email/:ownerEmail", vendorRoutes.getProductsByOwnerEmail);
-    app.post("/api/products/claim-by-email", authenticate, requireVendor, vendorRoutes.claimProductsByEmail);
+  app.post("/api/products/claim-by-email", authenticate, requireVip, vendorRoutes.claimProductsByEmail);
 
   // Security: Helmet adds security headers
   app.use(
@@ -43,7 +44,7 @@ export function createServer() {
   );
 
   // Claim a public product to this vendor
-  app.post("/api/products/claim", authenticate, requireVendor, vendorRoutes.claimProduct);
+  app.post("/api/products/claim", authenticate, requireVip, vendorRoutes.claimProduct);
 
   // Security: Rate limiting to prevent brute force attacks
   const authLimiter = rateLimit({
@@ -61,6 +62,9 @@ export function createServer() {
     standardHeaders: true,
     legacyHeaders: false,
   });
+
+  // Image upload for product images (base64 JSON). Keep small images for demo.
+  app.post("/api/products/upload", apiLimiter, uploadRoutes.uploadImage);
 
   // Security: CORS configuration
   const allowedOrigins = process.env.ALLOWED_ORIGINS
@@ -146,7 +150,7 @@ export function createServer() {
   app.post(
     "/api/products",
     authenticate,
-    requireVendor,
+    requireVip,
     productValidation,
     validate,
     vendorRoutes.createProduct
@@ -154,7 +158,7 @@ export function createServer() {
   app.put(
     "/api/products/:id",
     authenticate,
-    requireVendor,
+    requireVip,
     productValidation,
     validate,
     vendorRoutes.updateProduct
@@ -162,7 +166,7 @@ export function createServer() {
   app.delete(
     "/api/products/:id",
     authenticate,
-    requireVendor,
+    requireVip,
     vendorRoutes.deleteProduct
   );
 

@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import type { Vendor, MarketplaceProduct } from "@shared/types";
 import * as api from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 const CATEGORIES = [
   "electronics",
@@ -46,6 +47,7 @@ const CATEGORIES = [
 export default function VendorDashboard() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [vendor, setVendor] = useState<Vendor | null>(null);
   const [products, setProducts] = useState<MarketplaceProduct[]>([]);
   const [isAddingProduct, setIsAddingProduct] = useState(false);
@@ -81,6 +83,11 @@ export default function VendorDashboard() {
   }, [id, navigate]);
 
   function handleAddProduct() {
+    if (!vendor?.isVIP) {
+      toast({ title: 'Upgrade required', description: 'Management tools are available for VIP accounts. Start a 7-day free trial or upgrade to manage your store.' });
+      navigate('/vendor/upgrade');
+      return;
+    }
     const newProduct: MarketplaceProduct = {
       id: `prod_${Date.now()}`,
       vendorId: vendor!.id,
@@ -111,6 +118,10 @@ export default function VendorDashboard() {
 
   // Claim a public product by ownerKey (used when vendor wants to claim an anonymous product)
   async function claimPublicProduct(productId: string, ownerKey: string) {
+    if (!vendor?.isVIP) {
+      toast({ title: 'Upgrade required', description: 'Claiming products requires a VIP subscription.' });
+      return;
+    }
     try {
       await api.claimProduct(productId, ownerKey);
       // Refresh products locally
@@ -124,6 +135,10 @@ export default function VendorDashboard() {
   }
 
   async function claimByEmail() {
+    if (!vendor?.isVIP) {
+      toast({ title: 'Upgrade required', description: 'Claiming by email requires a VIP subscription.' });
+      return;
+    }
     try {
       const res = await api.claimProductsByEmail();
       if (res.products?.length) {
@@ -141,6 +156,11 @@ export default function VendorDashboard() {
   }
 
   function handleEditProduct() {
+    if (!vendor?.isVIP) {
+      toast({ title: 'Upgrade required', description: 'Editing products requires a VIP subscription.' });
+      navigate('/vendor/upgrade');
+      return;
+    }
     if (!editingProduct) return;
 
     const updatedProduct = {
@@ -165,6 +185,10 @@ export default function VendorDashboard() {
   }
 
   function handleDeleteProduct(productId: string) {
+    if (!vendor?.isVIP) {
+      toast({ title: 'Upgrade required', description: 'Deleting products requires a VIP subscription.' });
+      return;
+    }
     if (!confirm("Are you sure you want to delete this product?")) return;
 
     const allProducts = JSON.parse(localStorage.getItem("marketplaceProducts") || "[]");

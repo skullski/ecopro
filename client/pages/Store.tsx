@@ -145,7 +145,7 @@ export default function Store() {
               {t("marketplace.banner")}
             </span>
           </div>
-          <Link to="/vendor/signup">
+          <Link to="/quick-sell">
             <Button
               size="sm"
               className="bg-white text-primary hover:bg-white/90 font-bold shadow-lg"
@@ -173,7 +173,7 @@ export default function Store() {
             </p>
           </div>
           <div className="flex gap-3">
-            <Link to="/vendor/signup">
+            <Link to="/quick-sell">
               <Button size="lg" variant="outline" className="border-2 border-primary">
                 <UserPlus className="h-5 w-5 mr-2" />
                 <span className="hidden sm:inline">{t("marketplace.startSelling")}</span>
@@ -271,7 +271,7 @@ export default function Store() {
                     : t("marketplace.tryDifferent")}
                 </p>
                 {products.length === 0 && (
-                  <Link to="/vendor/signup">
+                  <Link to="/quick-sell">
                     <Button
                       size="lg"
                       className="bg-gradient-to-r from-primary to-accent text-white text-lg px-8 py-6 shadow-xl"
@@ -392,7 +392,7 @@ export default function Store() {
               <StoreIcon className="h-16 w-16 mx-auto mb-4 text-primary" />
               <h2 className="text-3xl font-bold mb-3">{t("marketplace.haveProducts")}</h2>
               <p className="text-lg text-muted-foreground mb-6">{t("marketplace.joinThousands")}</p>
-              <Link to="/vendor/signup">
+              <Link to="/quick-sell">
                 <Button
                   size="lg"
                   className="bg-gradient-to-r from-primary to-accent text-white shadow-lg"

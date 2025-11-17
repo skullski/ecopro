@@ -184,3 +184,74 @@ else
   echo -e "${RED}❌ Failed to create public product${NC}"
   echo "$PUBLIC_PRODUCT_RESPONSE"
 fi
+
+echo -e "\n${YELLOW}Test 10: Upload an image via API and verify URL returned${NC}"
+# a 1x1 PNG transparent base64 data (short)
+IMG_BASE64="iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAuMB9d3qQ2QAAAAASUVORK5CYII="
+UPLOAD_BODY=$(printf '{"filename":"test.png","data":"data:image/png;base64,%s"}' "$IMG_BASE64")
+UPLOAD_RESPONSE=$(curl -s -X POST "$API_URL/products/upload" -H "Content-Type: application/json" -d "$UPLOAD_BODY")
+
+if echo "$UPLOAD_RESPONSE" | grep -q "/uploads/"; then
+  echo -e "${GREEN}✅ Upload returned a URL${NC}"
+  echo "$UPLOAD_RESPONSE"
+else
+  echo -e "${RED}❌ Upload failed or URL not returned${NC}"
+  echo "$UPLOAD_RESPONSE"
+fi
+
+echo -e "\n${YELLOW}Test 11: VIP gating for vendor management (non-VIP should be blocked)${NC}"
+VENDOR_USER_EMAIL="vendor-user@example.com"
+VENDOR_PASSWORD="VendorPass1"
+
+# Register a user with vendor role
+VENDOR_REGISTER=$(curl -s -X POST "$API_URL/auth/register" -H "Content-Type: application/json" -d '{"email":"'"$VENDOR_USER_EMAIL"'","password":"'$VENDOR_PASSWORD'","name":"Vendor User","role":"vendor"}')
+
+if echo "$VENDOR_REGISTER" | grep -q "token"; then
+  echo -e "${GREEN}✅ Vendor user registered${NC}"
+  VENDOR_TOKEN=$(echo "$VENDOR_REGISTER" | grep -o '"token":"[^']*' | cut -d'"' -f4)
+  echo "Vendor Token: $VENDOR_TOKEN"
+else
+  echo -e "${RED}❌ Vendor user registration failed${NC}"
+  echo "$VENDOR_REGISTER"
+fi
+
+# Create a vendor record for this email (non-VIP)
+VENDOR_CREATE=$(curl -s -X POST "$API_URL/vendors" -H "Content-Type: application/json" -d '{"name":"Vendor Test","email":"'$VENDOR_USER_EMAIL'","businessName":"Vendor Store","storeSlug":"vendor-store-'"$(date +%s)"'","rating":0,"totalSales":0,"totalProducts":0,"verified":false,"isVIP":false,"subscriptionStatus":"free","joinedAt":0,"location":{"city":"City","country":"Country"}}')
+
+if echo "$VENDOR_CREATE" | grep -q "vendor_"; then
+  echo -e "${GREEN}✅ Vendor record created (non-VIP)${NC}"
+else
+  echo -e "${RED}❌ Vendor record creation failed${NC}"
+  echo "$VENDOR_CREATE"
+fi
+
+# Try to create a product using non-VIP vendor token (should be blocked)
+CREATE_PROD=$(curl -s -X POST "$API_URL/products" -H "Content-Type: application/json" -H "Authorization: Bearer $VENDOR_TOKEN" -d '{"name":"Test Prod","title":"Test Prod","description":"A product","price":5.99,"stock":1}')
+if echo "$CREATE_PROD" | grep -q "VIP"; then
+  echo -e "${GREEN}✅ Non-VIP vendor correctly blocked from creating products${NC}"
+else
+  echo -e "${RED}❌ Non-VIP vendor was able to create a product (or unexpected response)${NC}"
+  echo "$CREATE_PROD"
+fi
+
+echo -e "\n${YELLOW}Test 12: VIP vendor can manage products${NC}"
+VENDOR_VIP_EMAIL="vendorvip@example.com"
+VENDOR_VIP_PASSWORD="VendorVip1"
+
+# Register/Log in VIP vendor user
+VIP_REGISTER=$(curl -s -X POST "$API_URL/auth/register" -H "Content-Type: application/json" -d '{"email":"'"$VENDOR_VIP_EMAIL"'","password":"'$VENDOR_VIP_PASSWORD'","name":"VIP Vendor","role":"vendor"}')
+VIP_TOKEN=$(echo "$VIP_REGISTER" | grep -o '"token":"[^']*' | cut -d'"' -f4 || echo "")
+
+# Create VIP vendor record
+VENDOR_VIP_CREATE=$(curl -s -X POST "$API_URL/vendors" -H "Content-Type: application/json" -d '{"name":"VIP Vendor","email":"'$VENDOR_VIP_EMAIL'","businessName":"VIP Store","storeSlug":"vip-store-'"$(date +%s)"'","rating":0,"totalSales":0,"totalProducts":0,"verified":true,"isVIP":true,"subscriptionStatus":"vip","joinedAt":0,"location":{"city":"City","country":"Country"}}')
+
+# Try to create a product with VIP token
+CREATE_PROD_VIP=$(curl -s -X POST "$API_URL/products" -H "Content-Type: application/json" -H "Authorization: Bearer $VIP_TOKEN" -d '{"name":"VIP Product","title":"VIP Product","description":"From VIP vendor","price":9.99,"stock":10}')
+
+if echo "$CREATE_PROD_VIP" | grep -q "id"; then
+  echo -e "${GREEN}✅ VIP vendor can create products${NC}"
+  echo "$CREATE_PROD_VIP"
+else
+  echo -e "${RED}❌ VIP vendor could not create product${NC}"
+  echo "$CREATE_PROD_VIP"
+fi

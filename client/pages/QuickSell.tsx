@@ -12,6 +12,8 @@ export default function QuickSell() {
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
   const [image, setImage] = useState('');
+    // local file for preview and upload
+    const [file, setFile] = useState<File | null>(null);
   const [ownerEmail, setOwnerEmail] = useState('');
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -19,11 +21,19 @@ export default function QuickSell() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     try {
-      const { product, ownerKey } = await api.createPublicProduct({
+        // If a file was provided, upload it first and use the returned URL(s)
+        let uploadedUrl = image;
+        if (file) {
+          const { url } = await api.uploadImage(file);
+          uploadedUrl = url;
+          setImage(url);
+        }
+
+  const { product, ownerKey } = await api.createPublicProduct({
         title,
         description,
         price: parseFloat(price),
-        images: image ? [image] : [],
+        images: uploadedUrl ? [uploadedUrl] : [],
   vendorId: '',
   ownerEmail,
         isExportedToMarketplace: true,
@@ -66,7 +76,18 @@ export default function QuickSell() {
           </div>
           <div>
             <Label>صورة (رابط)</Label>
-            <Input value={image} onChange={(e) => setImage(e.target.value)} />
+            <Input value={image} onChange={(e) => setImage(e.target.value)} placeholder="https://example.com/image.jpg" />
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                if (!e.target.files || e.target.files.length === 0) return;
+                setFile(e.target.files[0]);
+                // show local preview path until saved
+                setImage(URL.createObjectURL(e.target.files[0]));
+              }}
+              className="mt-2"
+            />
           </div>
           <div>
             <Label>بريدك الإلكتروني (لإدارة العناصر لاحقًا)</Label>

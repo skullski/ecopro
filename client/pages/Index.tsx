@@ -49,7 +49,7 @@ export default function Index() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/vendor/signup">
+                <Link to="/quick-sell">
                   <Button size="lg" className="group bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-700 hover:to-cyan-700 text-white shadow-xl hover:shadow-2xl px-8 h-14 text-lg">
                     {t("home.startSelling")}
                     <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -234,7 +234,7 @@ export default function Index() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Link to="/vendor/signup">
+              <Link to="/quick-sell">
                 <Button size="lg" className="bg-white text-indigo-600 hover:bg-gray-100 shadow-2xl px-8 h-14 text-lg font-bold">
                   {t("home.cta.startFree")}
                   <ArrowRight className="ml-2 w-5 h-5" />

@@ -65,6 +65,43 @@ export function requireVendor(req: Request, res: Response, next: NextFunction) {
 }
 
 /**
+ * Middleware to check vendor has VIP subscription (paid)
+ */
+export async function requireVip(req: Request, res: Response, next: NextFunction) {
+  if (!req.user) {
+    res.status(401).json({ error: "Authentication required" });
+    return;
+  }
+
+  // Admins bypass VIP restriction
+  if (req.user.role === "admin") return next();
+
+  // Only vendors supported here
+  if (req.user.role !== "vendor") {
+    res.status(403).json({ error: "Vendor access required" });
+    return;
+  }
+
+  // Find vendor record by email and ensure they are VIP
+  try {
+    const { findVendorByEmail } = await import("../utils/vendorsDb");
+    const vendor = await findVendorByEmail(req.user.email);
+    if (!vendor) {
+      return res.status(403).json({ error: "Vendor account not found" });
+    }
+
+    if (!vendor.isVIP && vendor.subscriptionStatus !== "vip") {
+      return res.status(403).json({ error: "VIP subscription required for management" });
+    }
+
+    next();
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to validate vendor subscription" });
+  }
+}
+
+/**
  * Optional authentication - attaches user if token is valid, but doesn't reject if missing
  */
 export function optionalAuthenticate(req: Request, res: Response, next: NextFunction) {
