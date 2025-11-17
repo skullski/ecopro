@@ -127,19 +127,11 @@ export const createProduct: RequestHandler = async (req, res) => {
   if (typeof product.quantity !== 'number') product.quantity = 1;
 
   const { createProduct: createProductDb, findProductById } = await import("../utils/productsDb");
-  // If request is authenticated vendor, attach vendorId and set export flag based on VIP
+  // If request is authenticated vendor, attach vendorId and default to exported
   if (req.user && req.user.role === "vendor") {
     product.vendorId = req.user.userId;
-    try {
-      const { findVendorByEmail } = await import("../utils/vendorsDb");
-      const vendor = await findVendorByEmail(req.user.email);
-      // If vendor exists and is not VIP, do not export to marketplace by default
-      if (vendor && !vendor.isVIP) {
-        product.isExportedToMarketplace = false;
-      }
-    } catch (err) {
-      console.warn("Could not determine vendor VIP status", err);
-    }
+    // Default visibility: export vendor products to marketplace unless explicitly false
+    product.isExportedToMarketplace = product.isExportedToMarketplace ?? true;
   }
   const existing = await findProductById(product.id);
   if (existing) return res.status(409).json({ error: "Product already exists" });

@@ -225,14 +225,14 @@ else
   echo "$VENDOR_CREATE"
 fi
 
-# Try to create a product using non-VIP vendor token - it should be allowed but not exported to marketplace
+# Try to create a product using non-VIP vendor token - it should be allowed and visible in marketplace
 CREATE_PROD=$(curl -s -X POST "$API_URL/products" -H "Content-Type: application/json" -H "Authorization: Bearer $VENDOR_TOKEN" -d '{"name":"Test Prod","title":"Test Prod","description":"A product","price":5.99,"stock":1}')
 if echo "$CREATE_PROD" | grep -q "id"; then
   echo -e "${GREEN}✅ Non-VIP vendor was able to create a product (private)${NC}"
-  if echo "$CREATE_PROD" | grep -q "isExportedToMarketplace.*false"; then
-    echo -e "${GREEN}✅ Product is private (not exported to marketplace) for non-VIP${NC}"
+  if echo "$CREATE_PROD" | grep -q "isExportedToMarketplace.*true"; then
+    echo -e "${GREEN}✅ Product is exported to marketplace for vendor${NC}"
   else
-    echo -e "${YELLOW}⚠️ Product export flag not explicitly false; check behavior${NC}"
+    echo -e "${YELLOW}⚠️ Product export flag is not explicitly true; check behavior${NC}"
   fi
 else
   echo -e "${RED}❌ Non-VIP vendor could not create product (unexpected)${NC}"
