@@ -36,46 +36,44 @@ export default function QuickSell() {
       console.log('User authenticated:', user);
       console.log('Auth token exists:', !!getAuthToken());
 
-      // Find vendor by email
-      const vendors = JSON.parse(localStorage.getItem('vendors') || '[]');
-      const userVendor = vendors.find((v: Vendor) => v.email === user.email);
-      if (userVendor) {
-        setVendor(userVendor);
-        setOwnerEmail(user.email);
-      } else {
-        // Auto-create vendor account for logged-in user
-        const newVendor: Vendor = {
-          id: `vendor_${Date.now()}`,
-          name: user.name,
-          email: user.email,
-          businessName: user.name,
-          storeSlug: `${user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}-${Date.now()}`,
-          location: { city: '', country: '' },
-          description: '',
-          verified: false,
-          isVIP: false,
-          totalSales: 0,
-          totalProducts: 0,
-          subscriptionStatus: 'free',
-          rating: 5.0,
-          joinedAt: Date.now(),
-        };
-        
-        try {
-          // Create vendor on server
-          console.log('Creating vendor on server:', newVendor);
-          await api.createVendor(newVendor);
-          console.log('Vendor created on server');
-        } catch (error) {
-          console.error('Failed to create vendor on server:', error);
+      // Find vendor by email using API
+      try {
+        const allVendors = await api.fetchVendors();
+        const userVendor = allVendors.find((v: Vendor) => v.email === user.email);
+        if (userVendor) {
+          setVendor(userVendor);
+          setOwnerEmail(user.email);
+        } else {
+          // Auto-create vendor account for logged-in user
+          const newVendor: Vendor = {
+            id: `vendor_${Date.now()}`,
+            name: user.name,
+            email: user.email,
+            businessName: user.name,
+            storeSlug: `${user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}-${Date.now()}`,
+            location: { city: '', country: '' },
+            description: '',
+            verified: false,
+            isVIP: false,
+            totalSales: 0,
+            totalProducts: 0,
+            subscriptionStatus: 'free',
+            rating: 5.0,
+            joinedAt: Date.now(),
+          };
+          try {
+            // Create vendor on server
+            console.log('Creating vendor on server:', newVendor);
+            await api.createVendor(newVendor);
+            console.log('Vendor created on server');
+            setVendor(newVendor);
+            setOwnerEmail(user.email);
+          } catch (error) {
+            console.error('Failed to create vendor on server:', error);
+          }
         }
-        
-        // Save to localStorage
-        vendors.push(newVendor);
-        localStorage.setItem('vendors', JSON.stringify(vendors));
-        
-        setVendor(newVendor);
-        setOwnerEmail(user.email);
+      } catch (error) {
+        console.error('Failed to fetch vendors from API:', error);
       }
     };
 
