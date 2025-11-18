@@ -116,10 +116,7 @@ export default function QuickSell() {
 
       console.log('Product created:', product);
 
-      // Save to localStorage for persistence
-      const allProducts = JSON.parse(localStorage.getItem('marketplaceProducts') || '[]');
-      allProducts.push(product);
-      localStorage.setItem('marketplaceProducts', JSON.stringify(allProducts));
+
 
       toast({ title: 'تم الإضافة', description: 'تم إضافة منتجك بنجاح إلى متجرك.' });
       navigate(`/vendor/dashboard/${vendor.id}`);
