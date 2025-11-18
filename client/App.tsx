@@ -12,7 +12,6 @@ import NotFound from "./pages/NotFound";
 import { I18nProvider } from "@/lib/i18n";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
-import Store from "./pages/Store";
 import Product from "./pages/Product";
 import Checkout from "./pages/Checkout";
 import QuickSell from "./pages/QuickSell";
@@ -89,7 +88,6 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
-              <Route path="/store" element={<Store />} />
               <Route path="/quick-sell" element={<QuickSell />} />
               <Route path="/my-items" element={<MyItems />} />
               <Route path="/product/:id" element={<Product />} />
