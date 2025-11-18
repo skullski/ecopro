@@ -28,6 +28,7 @@ import { Badge } from "@/components/ui/badge";
 import { useState, useMemo, useEffect } from "react";
 import type { MarketplaceProduct, Vendor } from "@shared/types";
 import * as api from "@/lib/api";
+import { isAuthenticated, getCurrentUser } from "@/lib/auth";
 
 export default function Store() {
   const { t } = useTranslation();
@@ -51,8 +52,21 @@ export default function Store() {
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [products, setProducts] = useState<MarketplaceProduct[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [user, setUser] = useState<any>(null);
+  const [userVendor, setUserVendor] = useState<Vendor | null>(null);
 
   useEffect(() => {
+    // Check auth
+    if (isAuthenticated()) {
+      const currentUser = getCurrentUser();
+      setUser(currentUser);
+      if (currentUser) {
+        const allVendors = JSON.parse(localStorage.getItem('vendors') || '[]');
+        const vendor = allVendors.find((v: Vendor) => v.email === currentUser.email);
+        setUserVendor(vendor || null);
+      }
+    }
+
     // Load from API instead of localStorage
     async function loadData() {
       try {
@@ -89,6 +103,13 @@ export default function Store() {
     }
     loadData();
   }, []);
+
+  function getSellLink() {
+    if (!user) return { to: '/login', text: t("marketplace.startSelling") };
+    return { to: '/quick-sell', text: 'Add Product' };
+  }
+
+  const sellLink = getSellLink();
 
   function getVendor(vendorId: string) {
     return vendors.find((v) => v.id === vendorId);
@@ -145,13 +166,13 @@ export default function Store() {
               {t("marketplace.banner")}
             </span>
           </div>
-          <Link to="/quick-sell">
+          <Link to={sellLink.to}>
             <Button
               size="sm"
               className="bg-white text-primary hover:bg-white/90 font-bold shadow-lg"
             >
               <UserPlus className="h-4 w-4 mr-2" />
-              {t("marketplace.startSelling")}
+              {sellLink.text}
             </Button>
           </Link>
         </div>
@@ -173,10 +194,10 @@ export default function Store() {
             </p>
           </div>
           <div className="flex gap-3">
-            <Link to="/quick-sell">
+            <Link to={sellLink.to}>
               <Button size="lg" variant="outline" className="border-2 border-primary">
                 <UserPlus className="h-5 w-5 mr-2" />
-                <span className="hidden sm:inline">{t("marketplace.startSelling")}</span>
+                <span className="hidden sm:inline">{sellLink.text}</span>
               </Button>
             </Link>
             <Link to="/checkout">
@@ -271,13 +292,13 @@ export default function Store() {
                     : t("marketplace.tryDifferent")}
                 </p>
                 {products.length === 0 && (
-                  <Link to="/quick-sell">
+                  <Link to={sellLink.to}>
                     <Button
                       size="lg"
                       className="bg-gradient-to-r from-primary to-accent text-white text-lg px-8 py-6 shadow-xl"
                     >
                       <UserPlus className="h-6 w-6 mr-3" />
-                      {t("marketplace.registerAsVendor")}
+                      {sellLink.text}
                     </Button>
                   </Link>
                 )}
@@ -392,13 +413,13 @@ export default function Store() {
               <StoreIcon className="h-16 w-16 mx-auto mb-4 text-primary" />
               <h2 className="text-3xl font-bold mb-3">{t("marketplace.haveProducts")}</h2>
               <p className="text-lg text-muted-foreground mb-6">{t("marketplace.joinThousands")}</p>
-              <Link to="/quick-sell">
+              <Link to={sellLink.to}>
                 <Button
                   size="lg"
                   className="bg-gradient-to-r from-primary to-accent text-white shadow-lg"
                 >
                   <UserPlus className="h-5 w-5 mr-2" />
-                  {t("marketplace.registerVendorFree")}
+                  {sellLink.text}
                 </Button>
               </Link>
             </div>
