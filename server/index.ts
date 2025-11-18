@@ -25,6 +25,9 @@ const __dirname = path.dirname(__filename);
 
 export function createServer() {
   const app = express();
+  
+  // Trust proxy for rate limiting (required for deployment behind reverse proxies like Render)
+  app.set('trust proxy', 1);
     app.get("/api/products/owner/:ownerKey", vendorRoutes.getProductsByOwnerKey);
     app.get("/api/products/owner-email/:ownerEmail", vendorRoutes.getProductsByOwnerEmail);
   app.post("/api/products/claim-by-email", authenticate, requireVip, vendorRoutes.claimProductsByEmail);
