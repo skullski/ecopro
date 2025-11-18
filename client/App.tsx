@@ -1,3 +1,4 @@
+              <Route path="/marketplace" element={<Marketplace />} />
 import { Toaster } from "@/components/ui/toaster";
 import { createRoot } from "react-dom/client";
 import "./global.css";
@@ -34,6 +35,7 @@ import AdminCalls from "./pages/admin/Calls";
 import AdminStores from "./pages/admin/Stores";
 import Storefront from "./pages/Storefront";
 import CustomerDashboard from "./pages/customer/Dashboard";
+import Marketplace from "./pages/Marketplace";
 import CustomerLogin from "./pages/customer/Login";
 import CustomerSignup from "./pages/customer/Signup";
 import LogoDemo from "./pages/LogoDemo";
@@ -100,7 +102,6 @@ const App = () => (
                 
                 {/* Store submenu routes */}
                 <Route path="store/logo" element={<StoreLogo />} />
-                <Route path="store/template" element={<StoreTemplate />} />
                 <Route path="store/homepage" element={<StoreHomepage />} />
                 <Route path="store/contact" element={<StoreContact />} />
                 <Route path="store/faq" element={<StoreFAQ />} />
@@ -137,6 +138,7 @@ const App = () => (
               <Route path="/platform-control-x9k2m8p5q7w3" element={<AppPlaceholder />} />
 
               {/* Old admin routes: redirect to /dashboard (preserve subpath) */}
+  import Marketplace from "./pages/Marketplace";
               <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
               <Route path="/admin/*" element={<RedirectAdmin />} />
               <Route path="/app" element={<AdminLayout />} />
@@ -145,6 +147,7 @@ const App = () => (
               <Route path="/s/:id" element={<Storefront />} />
               <Route path="/shop/:id/dashboard" element={<CustomerDashboard />} />
               <Route path="/shop/:id/login" element={<CustomerLogin />} />
+              <Route path="/marketplace" element={<Marketplace />} />
               <Route path="/shop/:id/signup" element={<CustomerSignup />} />
               <Route path="/logo-demo" element={<LogoDemo />} />
               
