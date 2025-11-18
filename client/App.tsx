@@ -147,7 +147,7 @@ const App = () => (
               <Route path="/s/:id" element={<Storefront />} />
               <Route path="/shop/:id/dashboard" element={<CustomerDashboard />} />
               <Route path="/shop/:id/login" element={<CustomerLogin />} />
-              <Route path="/marketplace" element={<Marketplace />} />
+              <Route path="/store" element={<Marketplace />} />
               <Route path="/shop/:id/signup" element={<CustomerSignup />} />
               <Route path="/logo-demo" element={<LogoDemo />} />
               
