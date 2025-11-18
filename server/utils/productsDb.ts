@@ -1,66 +1,45 @@
-import fs from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import type { MarketplaceProduct } from '@shared/types';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const PRODUCTS_PATH = path.join(__dirname, '../../data/products.json');
-
-async function ensureDataDir() {
-  const dir = path.dirname(PRODUCTS_PATH);
-  try {
-    await fs.access(dir);
-  } catch {
-    await fs.mkdir(dir, { recursive: true });
-  }
-}
 
 export async function readProducts(): Promise<MarketplaceProduct[]> {
-  try {
-    await ensureDataDir();
-    const data = await fs.readFile(PRODUCTS_PATH, 'utf-8');
-    return JSON.parse(data);
-  } catch {
-    return [];
-  }
-}
-
-export async function writeProducts(products: MarketplaceProduct[]): Promise<void> {
-  await ensureDataDir();
-  await fs.writeFile(PRODUCTS_PATH, JSON.stringify(products, null, 2), 'utf-8');
+  const { rows } = await pool.query('SELECT * FROM products');
+  return rows;
 }
 
 export async function findProductById(id: string): Promise<MarketplaceProduct | null> {
-  const products = await readProducts();
-  return products.find((p) => p.id === id) || null;
+  const { rows } = await pool.query('SELECT * FROM products WHERE id = $1', [id]);
+  return rows[0] || null;
 }
 
 export async function findProductsByOwnerKey(ownerKey: string): Promise<MarketplaceProduct[]> {
-  const products = await readProducts();
-  return products.filter((p) => p.ownerKey === ownerKey);
+  const { rows } = await pool.query('SELECT * FROM products WHERE owner_key = $1', [ownerKey]);
+  return rows;
 }
 
 export async function createProduct(product: MarketplaceProduct): Promise<MarketplaceProduct> {
-  const products = await readProducts();
-  products.push(product);
-  await writeProducts(products);
-  return product;
+  const keys = Object.keys(product);
+  const values = Object.values(product);
+  const columns = keys.map((k) => k.replace(/[A-Z]/g, (c) => '_' + c.toLowerCase()));
+  const placeholders = values.map((_, i) => `$${i + 1}`);
+  const { rows } = await pool.query(
+    `INSERT INTO products (${columns.join(',')}) VALUES (${placeholders.join(',')}) RETURNING *`,
+    values
+  );
+  return rows[0];
 }
 
 export async function updateProduct(id: string, updates: Partial<MarketplaceProduct>): Promise<MarketplaceProduct | null> {
-  const products = await readProducts();
-  const index = products.findIndex((p) => p.id === id);
-  if (index === -1) return null;
-  products[index] = { ...products[index], ...updates };
-  await writeProducts(products);
-  return products[index];
+  const keys = Object.keys(updates);
+  const values = Object.values(updates);
+  if (keys.length === 0) return null;
+  const setClause = keys.map((k, i) => `${k.replace(/[A-Z]/g, (c) => '_' + c.toLowerCase())} = $${i + 1}`).join(', ');
+  const { rows } = await pool.query(
+    `UPDATE products SET ${setClause} WHERE id = $${keys.length + 1} RETURNING *`,
+    [...values, id]
+  );
+  return rows[0] || null;
 }
 
 export async function deleteProduct(id: string): Promise<boolean> {
-  const products = await readProducts();
-  const filtered = products.filter((p) => p.id !== id);
-  if (filtered.length === products.length) return false;
-  await writeProducts(filtered);
-  return true;
+  const { rowCount } = await pool.query('DELETE FROM products WHERE id = $1', [id]);
+  return rowCount > 0;
 }

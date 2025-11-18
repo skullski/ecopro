@@ -1,63 +1,12 @@
-import fs from "fs/promises";
-import path from "path";
-import { fileURLToPath } from "url";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { Pool } from 'pg';
 
-// Database file path
-const DB_PATH = path.join(__dirname, "../../data/users.json");
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL || '',
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+});
 
-export interface User {
-  id: string;
-  email: string;
-  password: string;
-  name: string;
-  role: "user" | "admin" | "vendor";
-  createdAt: string;
-}
-
-/**
- * Ensure data directory exists
- */
-async function ensureDataDir() {
-  const dataDir = path.dirname(DB_PATH);
-  try {
-    await fs.access(dataDir);
-  } catch {
-    await fs.mkdir(dataDir, { recursive: true });
-  }
-}
-
-/**
- * Read all users from database
- */
-export async function readUsers(): Promise<User[]> {
-  try {
-    await ensureDataDir();
-    const data = await fs.readFile(DB_PATH, "utf-8");
-    return JSON.parse(data);
-  } catch (error) {
-    // If file doesn't exist or is empty, return empty array
-    return [];
-  }
-}
-
-/**
- * Write users to database
- */
-export async function writeUsers(users: User[]): Promise<void> {
-  await ensureDataDir();
-  await fs.writeFile(DB_PATH, JSON.stringify(users, null, 2), "utf-8");
-}
-
-/**
- * Find user by email
- */
-export async function findUserByEmail(email: string): Promise<User | null> {
-  const users = await readUsers();
-  return users.find((u) => u.email === email) || null;
-}
+export default pool;
 
 /**
  * Find user by ID
