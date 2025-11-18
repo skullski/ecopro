@@ -146,11 +146,10 @@ export function createServer() {
     vendorRoutes.updateVendor
   );
 
-  // Protected product routes (require vendor or admin)
+  // Protected product routes (require authentication)
   app.post(
     "/api/products",
-    authenticate,
-    requireVendor, // allow vendors to add products; site export is gated by vendor settings
+    authenticate, // allow authenticated users to add products
     productValidation,
     validate,
     vendorRoutes.createProduct

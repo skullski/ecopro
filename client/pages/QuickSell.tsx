@@ -32,6 +32,9 @@ export default function QuickSell() {
       return;
     }
 
+    console.log('User authenticated:', user);
+    console.log('Auth token exists:', !!getAuthToken());
+
     // Find vendor by email
     const vendors = JSON.parse(localStorage.getItem('vendors') || '[]');
     const userVendor = vendors.find((v: Vendor) => v.email === user.email);
@@ -55,6 +58,15 @@ export default function QuickSell() {
         updatedAt: Date.now(),
       };
       
+      try {
+        // Create vendor on server
+        console.log('Creating vendor on server:', newVendor);
+        await api.createVendor(newVendor);
+        console.log('Vendor created on server');
+      } catch (error) {
+        console.error('Failed to create vendor on server:', error);
+      }
+      
       // Save to localStorage
       vendors.push(newVendor);
       localStorage.setItem('vendors', JSON.stringify(vendors));
@@ -76,6 +88,7 @@ export default function QuickSell() {
         setImage(url);
       }
 
+      console.log('Creating product for vendor:', vendor.id);
       const product = await api.createProduct({
         title,
         description,
@@ -95,6 +108,8 @@ export default function QuickSell() {
         updatedAt: Date.now(),
       } as any);
 
+      console.log('Product created:', product);
+
       // Save to localStorage for persistence
       const allProducts = JSON.parse(localStorage.getItem('marketplaceProducts') || '[]');
       allProducts.push(product);
@@ -103,7 +118,8 @@ export default function QuickSell() {
       toast({ title: 'تم الإضافة', description: 'تم إضافة منتجك بنجاح إلى متجرك.' });
       navigate(`/vendor/dashboard/${vendor.id}`);
     } catch (err) {
-      toast({ title: 'خطأ', description: 'فشل إضافة المنتج' });
+      console.error('Failed to create product:', err);
+      toast({ title: 'خطأ', description: 'فشل إضافة المنتج: ' + (err as any).message });
     }
   }
 
