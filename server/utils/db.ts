@@ -85,3 +85,26 @@ export async function initializeDatabase(adminPassword: string): Promise<void> {
     console.log("✅ Default admin user created: admin@ecopro.com");
   }
 }
+function writeUsers(users: any) {
+  throw new Error('Function not implemented.');
+}
+
+
+// Define User interface locally to fix import error
+export interface User {
+  id: string;
+  email: string;
+  password: string;
+  name: string;
+  role: string;
+  createdAt: string;
+}
+
+/**
+ * Read users from the database (stub implementation)
+ */
+async function readUsers(): Promise<User[]> {
+  // TODO: Replace this stub with actual DB logic
+  return [];
+}
+

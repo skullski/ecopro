@@ -1,4 +1,6 @@
 
+import pool from './db';
+import type { MarketplaceProduct } from '../../shared/types';
 
 export async function readProducts(): Promise<MarketplaceProduct[]> {
   const { rows } = await pool.query('SELECT * FROM products');
