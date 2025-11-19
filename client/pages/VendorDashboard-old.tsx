@@ -217,7 +217,7 @@ export default function VendorDashboard() {
 
   function handleLogout() {
     localStorage.removeItem("currentVendor");
-    navigate("/store");
+  navigate("/marketplace");
   }
 
   if (!vendor) {
@@ -263,7 +263,7 @@ export default function VendorDashboard() {
               {/* Store Link */}
               <div className="mt-3 flex items-center gap-2">
                 <Link 
-                  to={`/store/${vendor.storeSlug}`}
+                  to={`/marketplace/${vendor.storeSlug}`}
                   className="text-sm text-primary hover:underline flex items-center gap-1"
                 >
                   <Globe className="h-4 w-4" />
@@ -280,7 +280,7 @@ export default function VendorDashboard() {
                   </Button>
                 </Link>
               )}
-              <Link to="/store">
+              <Link to="/marketplace">
                 <Button variant="outline">
                   <Eye className="h-4 w-4 mr-2" />
                   السوق الكبير

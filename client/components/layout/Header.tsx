@@ -71,7 +71,7 @@ export default function Header() {
                 {t("menu.faq")}
               </a>
               <Link 
-                to="/store" 
+                to="/marketplace" 
                 className="px-4 py-2 rounded-lg text-sm font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 transition-all"
               >
                 {t("menu.store")}
@@ -203,7 +203,7 @@ export default function Header() {
                 {t("menu.faq")}
               </a>
               <Link 
-                to="/store" 
+                to="/marketplace" 
                 onClick={() => setMobileMenuOpen(false)}
                 className="px-4 py-3 rounded-lg text-base font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 transition-all"
               >

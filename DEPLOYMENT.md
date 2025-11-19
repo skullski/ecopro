@@ -52,26 +52,14 @@ chmod +x deploy.sh
 
 After deployment, your app will have these URLs:
 
-- **Homepage**: `https://your-app.vercel.app/`
-- **Main Store**: `https://your-app.vercel.app/store`
-- **Vendor Signup**: `https://your-app.vercel.app/vendor/signup`
-- **Admin Panel**: `https://your-app.vercel.app/admin`
-
-### 4️⃣ Share with Your Team
-
 All 3 users should use the **same Vercel URL** so they share data!
 
 Example:
-- User 1: Opens `https://your-app.vercel.app/store`
-- User 2: Opens `https://your-app.vercel.app/store`
-- User 3: Opens `https://your-app.vercel.app/store`
-
-All will see the same products! 🎊
-
+- User 1: Opens `https://your-app.vercel.app/marketplace`
+- User 2: Opens `https://your-app.vercel.app/marketplace`
+- User 3: Opens `https://your-app.vercel.app/marketplace`
 ## ⚠️ Known Limitations
 
-**Current Setup:**
-- Uses in-memory storage (resets on server restart)
 - Data not persisted between deployments
 
 **For Production:**
@@ -113,7 +101,7 @@ git push
 
 - [ ] Test vendor registration
 - [ ] Test product creation
-- [ ] Test product visibility in store
+- [ ] Test product visibility in marketplace
 - [ ] Test from different devices/networks
 - [ ] Share URL with team
 - [ ] Monitor Vercel dashboard for errors

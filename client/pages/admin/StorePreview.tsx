@@ -29,7 +29,7 @@ export default function StorePreview() {
 
   const copyStoreLink = () => {
     if (currentVendor) {
-      const storeUrl = `${window.location.origin}/store/${currentVendor.storeSlug}`;
+      const storeUrl = `${window.location.origin}/marketplace/${currentVendor.storeSlug}`;
       navigator.clipboard.writeText(storeUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -53,8 +53,8 @@ export default function StorePreview() {
     );
   }
 
-  const storeUrl = `${window.location.origin}/store/${currentVendor.storeSlug}`;
-  const marketplaceUrl = `${window.location.origin}/store`;
+  const storeUrl = `${window.location.origin}/marketplace/${currentVendor.storeSlug}`;
+  const marketplaceUrl = `${window.location.origin}/marketplace`;
 
   return (
     <div className="p-8 space-y-6">
@@ -124,7 +124,7 @@ export default function StorePreview() {
               هذا الرابط يعرض جميع منتجاتك (المصدرة والخاصة)
             </p>
             <div className="flex gap-2">
-              <Link to={`/store/${currentVendor.storeSlug}`} target="_blank">
+              <Link to={`/marketplace/${currentVendor.storeSlug}`} target="_blank">
                 <Button size="sm" className="bg-gradient-to-r from-primary to-accent text-white">
                   <Eye className="h-4 w-4 mr-2" />
                   معاينة متجرك
@@ -159,7 +159,7 @@ export default function StorePreview() {
             <p className="text-xs text-muted-foreground mb-3">
               تظهر هنا فقط المنتجات التي قمت بتصديرها للسوق الكبير
             </p>
-            <Link to="/store" target="_blank">
+            <Link to="/marketplace" target="_blank">
               <Button size="sm" variant="outline">
                 <Eye className="h-4 w-4 mr-2" />
                 معاينة السوق الكبير

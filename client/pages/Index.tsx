@@ -55,7 +55,7 @@ export default function Index() {
                     <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
-                <Link to="/store">
+                <Link to="/marketplace">
                   <Button size="lg" variant="outline" className="h-14 px-8 text-lg border-2 hover:border-indigo-600 hover:text-indigo-600">
                     {t("home.exploreMarketplace")}
                   </Button>
@@ -240,7 +240,7 @@ export default function Index() {
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
-              <Link to="/store">
+              <Link to="/marketplace">
                 <Button size="lg" variant="outline" className="border-2 border-white text-white hover:bg-white/10 h-14 px-8 text-lg">
                   {t("home.cta.browseMarketplace")}
                 </Button>

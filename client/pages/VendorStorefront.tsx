@@ -98,7 +98,7 @@ export default function VendorStorefront() {
       <div className="container mx-auto py-20 text-center">
         <Package className="h-24 w-24 mx-auto mb-4 text-muted-foreground" />
         <h2 className="text-2xl font-bold mb-2">المتجر غير موجود</h2>
-        <Link to="/store">
+  <Link to="/marketplace">
           <Button>العودة للمتجر الرئيسي</Button>
         </Link>
       </div>
@@ -197,7 +197,7 @@ export default function VendorStorefront() {
 
               {/* Actions */}
               <div className="flex flex-col gap-2">
-                <Link to="/store">
+                <Link to="/marketplace">
                   <Button variant="outline" className="w-full">
                     <ArrowLeft className="h-4 w-4 ml-2" />
                     السوق الكبير

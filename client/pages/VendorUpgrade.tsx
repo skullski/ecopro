@@ -276,7 +276,7 @@ export default function VendorUpgrade() {
               <Crown className="h-6 w-6 mr-2" />
               ترقية لـ VIP الآن
             </Button>
-            <Link to="/store">
+            <Link to="/marketplace">
               <Button size="lg" variant="outline" className="text-lg px-10 py-6">
                 تصفح المتجر
               </Button>

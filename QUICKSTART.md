@@ -62,7 +62,7 @@ Your app will be at: `https://your-app.vercel.app`
 
 ### Important Pages:
 
-- **Main Store**: `/store` - Where customers browse
+- **Main Store**: `/marketplace` - Where customers browse
 - **Vendor Signup**: `/vendor/signup` - Register as seller
 - **Vendor Dashboard**: `/vendor/:id/dashboard` - Manage products
 - **Admin Preview**: `/admin/preview` - View your store

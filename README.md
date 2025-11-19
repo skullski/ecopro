@@ -135,8 +135,8 @@ Add these in Vercel dashboard if needed:
 ## Key Pages
 
 - `/` - Homepage
-- `/store` - Main marketplace (exported products only)
-- `/store/:vendorSlug` - Individual vendor storefront (all products)
+- `/marketplace` - Main marketplace (exported products only)
+- `/marketplace/:vendorSlug` - Individual vendor storefront (all products)
 - `/vendor/signup` - Vendor registration
 - `/vendor/:id/dashboard` - Vendor dashboard
 - `/vendor/upgrade` - VIP subscription page

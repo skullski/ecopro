@@ -208,7 +208,7 @@ export default function VendorDashboard() {
 
   function handleLogout() {
     localStorage.removeItem("currentVendor");
-    navigate("/store");
+  navigate("/marketplace");
   }
 
   if (!vendor) {
@@ -265,7 +265,7 @@ export default function VendorDashboard() {
                   </Button>
                 </Link>
               )}
-              <Link to={`/store/${vendor.storeSlug}`}>
+              <Link to={`/marketplace/${vendor.storeSlug}`}>
                 <Button variant="outline">
                   <Eye className="h-4 w-4 mr-2" />
                   View Store
