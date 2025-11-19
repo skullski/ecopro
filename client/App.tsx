@@ -1,4 +1,3 @@
-              <Route path="/marketplace" element={<Marketplace />} />
 import { Toaster } from "@/components/ui/toaster";
 import { createRoot } from "react-dom/client";
 import "./global.css";
@@ -147,7 +146,7 @@ const App = () => (
               <Route path="/s/:id" element={<Storefront />} />
               <Route path="/shop/:id/dashboard" element={<CustomerDashboard />} />
               <Route path="/shop/:id/login" element={<CustomerLogin />} />
-              <Route path="/store" element={<Marketplace />} />
+              <Route path="/marketplace" element={<Marketplace />} />
               <Route path="/shop/:id/signup" element={<CustomerSignup />} />
               <Route path="/logo-demo" element={<LogoDemo />} />
               
@@ -155,7 +154,7 @@ const App = () => (
               <Route path="/vendor/signup" element={<VendorSignup />} />
               <Route path="/vendor/upgrade" element={<VendorUpgrade />} />
               <Route path="/vendor/:id/dashboard" element={<VendorDashboard />} />
-              <Route path="/store/:vendorSlug" element={<VendorStorefront />} />
+              <Route path="/marketplace/:vendorSlug" element={<VendorStorefront />} />
               <Route path="/data-migration" element={<DataMigration />} />
 
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
