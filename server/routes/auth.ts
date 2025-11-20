@@ -56,6 +56,7 @@ router.post("/upgrade", async (req, res) => {
 // POST /api/auth/register
 export const register: RequestHandler = async (req, res) => {
   try {
+    console.log("[REGISTER] Incoming body:", req.body);
     const { email, password, name, role } = req.body;
     // role: 'client' (paid) or 'seller' (default)
     const userRole = role === 'client' ? 'client' : 'seller';
@@ -64,12 +65,14 @@ export const register: RequestHandler = async (req, res) => {
     // Check if user already exists
     const existingUser = await findUserByEmail(email);
     if (existingUser) {
+      console.log("[REGISTER] Email already registered:", email);
       res.status(400).json({ error: "Email already registered" });
       return;
     }
 
     // Hash password
     const hashedPassword = await hashPassword(password);
+    console.log("[REGISTER] Password hashed");
 
     // Create user
     const user = await createUser({
@@ -79,6 +82,7 @@ export const register: RequestHandler = async (req, res) => {
       role: userRole,
       is_paid_client: isPaidClient,
     });
+    console.log("[REGISTER] User created:", user.id, user.email);
 
     // Generate token
     const token = generateToken({
@@ -87,6 +91,7 @@ export const register: RequestHandler = async (req, res) => {
       role: user.role,
       is_paid_client: user.is_paid_client,
     });
+    console.log("[REGISTER] Token generated");
 
     res.status(201).json({
       message: "User registered successfully",
@@ -100,7 +105,7 @@ export const register: RequestHandler = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Registration error:", error);
+    console.error("[REGISTER] Registration error:", error);
     res.status(500).json({ error: "Registration failed" });
   }
 };
