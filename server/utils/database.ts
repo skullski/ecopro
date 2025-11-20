@@ -14,7 +14,8 @@ export interface User {
   email: string;
   password: string;
   name: string;
-  role: "user" | "admin" | "vendor";
+  role: "seller" | "client" | "admin";
+  is_paid_client: boolean;
   created_at: Date;
 }
 
@@ -31,7 +32,8 @@ export async function initializeDatabase(): Promise<void> {
         email VARCHAR(255) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
         name VARCHAR(255) NOT NULL,
-        role VARCHAR(50) NOT NULL DEFAULT 'user',
+        role VARCHAR(50) NOT NULL DEFAULT 'seller',
+        is_paid_client BOOLEAN NOT NULL DEFAULT false,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -75,12 +77,13 @@ export async function createUser(user: {
   password: string;
   name: string;
   role: string;
+  is_paid_client?: boolean;
 }): Promise<User> {
   const result = await pool.query(
-    `INSERT INTO users (email, password, name, role) 
-     VALUES ($1, $2, $3, $4) 
+    `INSERT INTO users (email, password, name, role, is_paid_client) 
+     VALUES ($1, $2, $3, $4, $5) 
      RETURNING *`,
-    [user.email, user.password, user.name, user.role]
+    [user.email, user.password, user.name, user.role, user.is_paid_client ?? false]
   );
   return result.rows[0];
 }

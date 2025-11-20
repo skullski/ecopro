@@ -5,6 +5,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { getCurrentUser } from "@/lib/auth";
 import Layout from "@/components/layout/Layout";
 import Index from "./pages/Index";
 import AppPlaceholder from "./pages/AppPlaceholder";
@@ -76,6 +77,18 @@ function RedirectAdmin() {
   return <Navigate to={to} replace />;
 }
 
+// Route guard for dashboard: only allow paid clients
+function RequirePaidClient({ children }: { children: JSX.Element }) {
+  const user = getCurrentUser();
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  if (!user.is_paid_client) {
+    return <Navigate to="/vendor/upgrade" replace />;
+  }
+  return children;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
@@ -96,9 +109,12 @@ const App = () => (
               <Route path="/order-success/:id" element={<OrderSuccess />} />
 
               {/* Vendor Dashboard - For clients who create stores (current "admin" panel) */}
-              <Route path="/dashboard" element={<AdminLayout />}>
+              <Route path="/dashboard" element={
+                <RequirePaidClient>
+                  <AdminLayout />
+                </RequirePaidClient>
+              }>
                 <Route index element={<AdminDashboard />} />
-                
                 {/* Store submenu routes */}
                 <Route path="store/logo" element={<StoreLogo />} />
                 <Route path="store/homepage" element={<StoreHomepage />} />
@@ -106,23 +122,18 @@ const App = () => (
                 <Route path="store/faq" element={<StoreFAQ />} />
                 <Route path="store/about" element={<StoreAbout />} />
                 <Route path="store/checkout-settings" element={<CheckoutSettings />} />
-                
                 {/* Orders submenu routes */}
                 <Route path="orders" element={<AdminOrders />} />
                 <Route path="orders/add" element={<AddOrder />} />
                 <Route path="orders/wasselni" element={<WasselniOrders />} />
                 <Route path="orders/abandoned" element={<AbandonedOrders />} />
                 <Route path="orders/flex-scan" element={<FlexScan />} />
-                
                 {/* Products routes */}
                 <Route path="products" element={<AdminProducts />} />
-                
                 {/* Delivery submenu routes */}
                 <Route path="delivery/companies" element={<DeliveryCompanies />} />
-                
                 {/* Addons submenu routes */}
                 <Route path="addons/google-sheets" element={<GoogleSheetsIntegration />} />
-                
                 <Route path="analytics" element={<AdminAnalytics />} />
                 <Route path="preview" element={<StorePreview />} />
                 <Route path="settings" element={<AdminSettings />} />
@@ -137,7 +148,6 @@ const App = () => (
               <Route path="/platform-control-x9k2m8p5q7w3" element={<AppPlaceholder />} />
 
               {/* Old admin routes: redirect to /dashboard (preserve subpath) */}
-  import Marketplace from "./pages/Marketplace";
               <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
               <Route path="/admin/*" element={<RedirectAdmin />} />
               <Route path="/app" element={<AdminLayout />} />
@@ -149,7 +159,6 @@ const App = () => (
               <Route path="/marketplace" element={<Marketplace />} />
               <Route path="/shop/:id/signup" element={<CustomerSignup />} />
               <Route path="/logo-demo" element={<LogoDemo />} />
-              
               {/* Vendor/Marketplace routes */}
               <Route path="/vendor/signup" element={<VendorSignup />} />
               <Route path="/vendor/upgrade" element={<VendorUpgrade />} />

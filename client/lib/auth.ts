@@ -1,3 +1,14 @@
+  /**
+   * Upgrade seller to paid client (VIP)
+   */
+  upgradeToVIP: async (): Promise<AuthResponse> => {
+    const response = await apiRequest<AuthResponse>("/auth/upgrade", {
+      method: "POST",
+    });
+    setAuthToken(response.token);
+    localStorage.setItem("user", JSON.stringify(response.user));
+    return response;
+  },
 /**
  * Secure API client with token management
  */
@@ -12,6 +23,7 @@ export interface AuthResponse {
     email: string;
     name: string;
     role: string;
+    is_paid_client?: boolean;
   };
 }
 
@@ -165,7 +177,7 @@ export function isAuthenticated(): boolean {
 /**
  * Get current user from localStorage
  */
-export function getCurrentUser(): { id: string; email: string; name: string; role: string } | null {
+export function getCurrentUser(): { id: string; email: string; name: string; role: string; is_paid_client?: boolean } | null {
   const userStr = localStorage.getItem("user");
   if (!userStr) return null;
   try {

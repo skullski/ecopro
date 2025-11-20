@@ -13,6 +13,8 @@ export default function Header() {
 
   const user = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user") || "null") : null;
   const isAdmin = typeof window !== "undefined" ? localStorage.getItem("isAdmin") === 'true' : false;
+  const isPaidClient = user?.is_paid_client === true;
+  const isSeller = user?.role === "seller" && !isPaidClient;
 
   function handleLogout() {
     localStorage.removeItem("user");
@@ -133,14 +135,24 @@ export default function Header() {
                 </>
               ) : (
                 <div className="hidden md:flex items-center gap-2">
-                  <Button 
-                    variant="ghost" 
-                    onClick={() => navigate(isAdmin ? "/admin" : "/app")} 
-                    className="hover:bg-gradient-to-r hover:from-primary/10 hover:to-accent/10 font-medium"
-                  >
-                    <LayoutDashboard className="w-4 h-4 ml-2" />
-                    {t("admin.dashboard")}
-                  </Button>
+                  {isPaidClient && (
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => navigate("/dashboard")}
+                      className="hover:bg-gradient-to-r hover:from-primary/10 hover:to-accent/10 font-medium"
+                    >
+                      <LayoutDashboard className="w-4 h-4 ml-2" />
+                      {t("admin.dashboard")}
+                    </Button>
+                  )}
+                  {isSeller && (
+                    <Link to="/vendor/upgrade">
+                      <Button variant="outline" className="border-2 border-yellow-500/40 text-yellow-700 hover:bg-yellow-100/20 font-medium">
+                        <Crown className="w-4 h-4 ml-2" />
+                        ترقية لحساب VIP
+                      </Button>
+                    </Link>
+                  )}
                   <Button 
                     variant="outline" 
                     onClick={handleLogout}

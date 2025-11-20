@@ -1,4 +1,6 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { authApi, getCurrentUser } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { FloatingShapes } from "@/components/ui/floating-shapes";
 import {
@@ -56,8 +58,27 @@ const PRICING_PLANS = [
 ];
 
 export default function VendorUpgrade() {
-  // Check if user is logged in as vendor
-  const currentVendor = JSON.parse(localStorage.getItem("currentVendor") || "null");
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const user = getCurrentUser();
+
+  // Only show upgrade if user is a seller and not already paid client
+  const canUpgrade = user && user.role === "seller" && !user.is_paid_client;
+
+  async function handleUpgrade() {
+    setLoading(true);
+    setError(null);
+    try {
+      await authApi.upgradeToVIP();
+      // Optionally show a toast here
+      window.location.reload(); // or navigate("/dashboard");
+    } catch (err: any) {
+      setError(err.message || "حدث خطأ أثناء الترقية");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <section className="relative min-h-screen bg-background overflow-hidden">
@@ -77,26 +98,30 @@ export default function VendorUpgrade() {
             انضم إلى نخبة البائعين واحصل على متجرك الخاص مع أدوات احترافية للنجاح
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button
-              size="lg"
-              className="bg-white text-primary hover:bg-white/90 font-bold text-lg px-8 py-6 shadow-2xl"
-            >
-              <Crown className="h-6 w-6 mr-2" />
-              ابدأ الآن - 7 أيام تجربة مجانية
-            </Button>
-            {currentVendor && (
-              <Link to={`/vendor/${currentVendor.id}/dashboard`}>
+            {canUpgrade && (
+              <Button
+                size="lg"
+                className="bg-white text-primary hover:bg-white/90 font-bold text-lg px-8 py-6 shadow-2xl"
+                onClick={handleUpgrade}
+                disabled={loading}
+              >
+                <Crown className="h-6 w-6 mr-2" />
+                {loading ? "...جاري الترقية" : "ابدأ الآن - 7 أيام تجربة مجانية"}
+              </Button>
+            )}
+            {user && user.role === "client" && (
+              <Link to="/dashboard">
                 <Button
                   size="lg"
                   variant="outline"
                   className="border-2 border-white text-white hover:bg-white/10 text-lg px-8 py-6"
                 >
                   <Package className="h-6 w-6 mr-2" />
-                  تخطي - اذهب للوحة التحكم
+                  اذهب للوحة التحكم
                 </Button>
               </Link>
             )}
-            {!currentVendor && (
+            {!user && (
               <Button
                 size="lg"
                 variant="outline"
@@ -269,13 +294,20 @@ export default function VendorUpgrade() {
             انضم إلى مئات البائعين الناجحين اليوم
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button
-              size="lg"
-              className="bg-gradient-to-r from-primary to-accent text-white text-lg px-10 py-6 shadow-xl"
-            >
-              <Crown className="h-6 w-6 mr-2" />
-              ترقية لـ VIP الآن
-            </Button>
+            {canUpgrade && (
+              <Button
+                size="lg"
+                className="bg-gradient-to-r from-primary to-accent text-white text-lg px-10 py-6 shadow-xl"
+                onClick={handleUpgrade}
+                disabled={loading}
+              >
+                <Crown className="h-6 w-6 mr-2" />
+                {loading ? "...جاري الترقية" : "ترقية لـ VIP الآن"}
+              </Button>
+            )}
+                    {error && (
+                      <div className="text-red-600 font-bold text-lg mt-4">{error}</div>
+                    )}
             <Link to="/marketplace">
               <Button size="lg" variant="outline" className="text-lg px-10 py-6">
                 تصفح المتجر

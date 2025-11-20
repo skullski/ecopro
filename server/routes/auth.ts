@@ -31,16 +31,37 @@ import {
     await createDefaultAdmin("admin@ecopro.com", adminPassword);
   } catch (error) {
     console.error("Database initialization error:", error);
+  import { requireAuth } from "./auth";
+  import { getUserFromRequest } from "../utils/auth";
+  import { updateUserById, getUserById } from "../utils/database";
   }
 })();
 
 /**
- * Register new user
+  import { Router } from "express";
+  const upgradeRouter = Router();
+  upgradeRouter.post("/upgrade", requireAuth, async (req, res) => {
+    const user = getUserFromRequest(req);
+    const dbUser = await getUserById(user.userId);
+    if (!dbUser) return res.status(404).json({ error: "User not found" });
+    if (dbUser.role !== "seller" || dbUser.is_paid_client) {
+      return res.status(400).json({ error: "Upgrade not allowed" });
+    }
+    await updateUserById(dbUser.id, { role: "client", is_paid_client: true });
+    const upgraded = await getUserById(dbUser.id);
+    res.json({ message: "Upgraded to VIP", user: upgraded });
+  });
+
+  router.use(upgradeRouter);
+  export default router;
  * POST /api/auth/register
  */
 export const register: RequestHandler = async (req, res) => {
   try {
-    const { email, password, name, role = "user" } = req.body;
+    const { email, password, name, role } = req.body;
+    // role: 'client' (paid) or 'seller' (default)
+    const userRole = role === 'client' ? 'client' : 'seller';
+    const isPaidClient = userRole === 'client';
 
     // Check if user already exists
     const existingUser = await findUserByEmail(email);
@@ -57,7 +78,8 @@ export const register: RequestHandler = async (req, res) => {
       email,
       password: hashedPassword,
       name,
-      role: role as "user" | "admin" | "vendor",
+      role: userRole,
+      is_paid_client: isPaidClient,
     });
 
     // Generate token
@@ -65,6 +87,7 @@ export const register: RequestHandler = async (req, res) => {
       userId: user.id,
       email: user.email,
       role: user.role,
+      is_paid_client: user.is_paid_client,
     });
 
     res.status(201).json({
@@ -75,6 +98,7 @@ export const register: RequestHandler = async (req, res) => {
         email: user.email,
         name: user.name,
         role: user.role,
+        is_paid_client: user.is_paid_client,
       },
     });
   } catch (error) {
