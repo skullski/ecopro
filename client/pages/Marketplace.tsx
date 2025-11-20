@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import * as api from "@/lib/api";
 import type { MarketplaceProduct, Vendor } from "@shared/types";
 import { Link } from "react-router-dom";
-import { Search, Tag, User, Heart, Star, ShoppingCart, MessageCircle, Phone, BadgeCheck, Car, Smartphone, Tshirt, Home, Football, Gamepad, Building, Briefcase, User as UserIcon, Grid } from "lucide-react";
+import { Search, Tag, User, Heart, Star, ShoppingCart, MessageCircle, Phone, BadgeCheck, Car, Smartphone, Shirt, Home, Football, Gamepad, Building, Briefcase, User as UserIcon, Grid } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -17,7 +17,7 @@ const DEMO_BANNERS = [
 const CATEGORY_ICONS: Record<string, JSX.Element> = {
   Automobiles: <Car className="w-5 h-5" />,
   Electronics: <Smartphone className="w-5 h-5" />,
-  Fashion: <Tshirt className="w-5 h-5" />,
+  Fashion: <Shirt className="w-5 h-5" />,
   Home: <Home className="w-5 h-5" />,
   Sports: <Football className="w-5 h-5" />,
   Toys: <Gamepad className="w-5 h-5" />,
