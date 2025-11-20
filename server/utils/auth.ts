@@ -1,3 +1,7 @@
+// Extract user info from request (set by requireAuth)
+export function getUserFromRequest(req: any) {
+  return req.user;
+}
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 

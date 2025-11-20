@@ -1,3 +1,17 @@
+import jwt from "jsonwebtoken";
+
+// JWT authentication middleware
+export const requireAuth: RequestHandler = (req, res, next) => {
+  const auth = req.headers.authorization;
+  if (!auth) return res.status(401).json({ error: "No token" });
+  try {
+    const decoded = jwt.verify(auth.split(" ")[1], process.env.JWT_SECRET || "changeme");
+    req.user = decoded;
+    next();
+  } catch {
+    res.status(401).json({ error: "Invalid token" });
+  }
+};
 import { RequestHandler } from "express";
 import { hashPassword, comparePassword, generateToken } from "../utils/auth";
 import {

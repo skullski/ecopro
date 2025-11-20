@@ -1,3 +1,31 @@
+// Marketplace item CRUD (for MongoDB or in-memory for now)
+import { v4 as uuidv4 } from "uuid";
+const items: any[] = [];
+
+export async function getItems() {
+  return items;
+}
+
+export async function getItemById(id: string) {
+  return items.find(i => i.id === id);
+}
+
+export async function createItem(item: any) {
+  items.push(item);
+  return item;
+}
+
+export async function updateItem(id: string, updates: any) {
+  const idx = items.findIndex(i => i.id === id);
+  if (idx === -1) return null;
+  items[idx] = { ...items[idx], ...updates };
+  return items[idx];
+}
+
+export async function deleteItem(id: string) {
+  const idx = items.findIndex(i => i.id === id);
+  if (idx !== -1) items.splice(idx, 1);
+}
 
 import pool from './db';
 import type { MarketplaceProduct } from '../../shared/types';
