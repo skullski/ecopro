@@ -44,6 +44,7 @@ import VendorDashboard from "./pages/VendorDashboard";
 import VendorUpgrade from "./pages/VendorUpgrade";
 import VendorStorefront from "./pages/VendorStorefront";
 import DataMigration from "./pages/DataMigration";
+import PremiumManagement from "./pages/admin/PremiumManagement";
 
 // Store submenu pages
 import StoreLogo from "./pages/admin/store/Logo";
@@ -77,13 +78,13 @@ function RedirectAdmin() {
   return <Navigate to={to} replace />;
 }
 
-// Route guard for dashboard: only allow paid clients
+// Route guard for dashboard: only allow premium clients (role: 'premium' or 'admin')
 function RequirePaidClient({ children }: { children: JSX.Element }) {
   const user = getCurrentUser();
   if (!user) {
     return <Navigate to="/login" replace />;
   }
-  if (!user.is_paid_client) {
+  if (user.role !== 'premium' && user.role !== 'admin') {
     return <Navigate to="/vendor/upgrade" replace />;
   }
   return children;
@@ -147,6 +148,8 @@ const App = () => (
               {/* Secret Platform Admin Panel - For platform owner ONLY */}
               <Route path="/platform-control-x9k2m8p5q7w3" element={<AppPlaceholder />} />
 
+              {/* Admin Premium Management */}
+              <Route path="/admin/premium-management" element={<PremiumManagement />} />
               {/* Old admin routes: redirect to /dashboard (preserve subpath) */}
               <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
               <Route path="/admin/*" element={<RedirectAdmin />} />

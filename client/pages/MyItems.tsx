@@ -1,8 +1,8 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import * as api from '@/lib/api';
 
 export default function MyItems() {
   const [email, setEmail] = useState('');
@@ -13,9 +13,12 @@ export default function MyItems() {
   async function handleSearch() {
     setLoading(true);
     try {
-      const res = await api.getProductsByOwnerEmail(email);
-      setItems(res);
-      if (res.length === 0) toast({ title: 'No items', description: 'No items found for that email' });
+      // Fetch items from server by owner email
+      const res = await fetch(`/api/items?ownerEmail=${encodeURIComponent(email)}`);
+      if (!res.ok) throw new Error('Failed to fetch items');
+      const data = await res.json();
+      setItems(data);
+      if (data.length === 0) toast({ title: 'No items', description: 'No items found for that email' });
     } catch (err) {
       toast({ title: 'Error', description: 'Failed to fetch items' });
     } finally {
@@ -24,15 +27,9 @@ export default function MyItems() {
   }
 
   async function handleDelete(id: string) {
-    // find ownerKey from local storage
-    const myKeys = JSON.parse(localStorage.getItem('myOwnerKeys') || '[]');
-    const found = myKeys.find((k: any) => k.productId === id);
-    if (!found) {
-      toast({ title: 'Missing key', description: 'Owner key was not found locally. Cannot delete.' });
-      return;
-    }
     try {
-      await api.deletePublicProduct(id, found.ownerKey);
+      const res = await fetch(`/api/items/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Delete failed');
       setItems(items.filter(i => i.id !== id));
       toast({ title: 'Deleted', description: 'Item deleted' });
     } catch (err) {

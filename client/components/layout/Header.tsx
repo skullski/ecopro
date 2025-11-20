@@ -2,7 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/lib/i18n";
-import { Sparkles, Menu, X, LogOut, LayoutDashboard, ShoppingBag } from "lucide-react";
+import { Sparkles, Menu, X, LogOut, LayoutDashboard, ShoppingBag, Crown, PlusCircle } from "lucide-react";
 import { useState } from "react";
 
 export default function Header() {
@@ -13,8 +13,8 @@ export default function Header() {
 
   const user = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user") || "null") : null;
   const isAdmin = typeof window !== "undefined" ? localStorage.getItem("isAdmin") === 'true' : false;
-  const isPaidClient = user?.is_paid_client === true;
-  const isSeller = user?.role === "seller" && !isPaidClient;
+  const isPremium = user?.role === "premium" || isAdmin;
+  const isNormalSeller = user?.role === "normal" || user?.role === "seller";
 
   function handleLogout() {
     localStorage.removeItem("user");
@@ -135,7 +135,7 @@ export default function Header() {
                 </>
               ) : (
                 <div className="hidden md:flex items-center gap-2">
-                  {isPaidClient && (
+                  {isPremium && (
                     <Button 
                       variant="ghost" 
                       onClick={() => navigate("/dashboard")}
@@ -145,13 +145,21 @@ export default function Header() {
                       {t("admin.dashboard")}
                     </Button>
                   )}
-                  {isSeller && (
-                    <Link to="/vendor/upgrade">
-                      <Button variant="outline" className="border-2 border-yellow-500/40 text-yellow-700 hover:bg-yellow-100/20 font-medium">
-                        <Crown className="w-4 h-4 ml-2" />
-                        ترقية لحساب VIP
-                      </Button>
-                    </Link>
+                  {isNormalSeller && (
+                    <>
+                      <Link to="/quick-sell">
+                        <Button variant="outline" className="border-2 border-primary/40 text-primary hover:bg-primary/10 font-medium">
+                          <PlusCircle className="w-4 h-4 ml-2" />
+                          أضف منتج
+                        </Button>
+                      </Link>
+                      <Link to="/vendor/upgrade">
+                        <Button variant="outline" className="border-2 border-yellow-500/40 text-yellow-700 hover:bg-yellow-100/20 font-medium">
+                          <Crown className="w-4 h-4 ml-2" />
+                          ترقية لحساب VIP
+                        </Button>
+                      </Link>
+                    </>
                   )}
                   <Button 
                     variant="outline" 

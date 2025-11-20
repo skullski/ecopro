@@ -1,3 +1,17 @@
+/**
+ * Middleware to check if user has premium (dashboard) access
+ */
+export function requirePremium(req: Request, res: Response, next: NextFunction) {
+  if (!req.user) {
+    res.status(401).json({ error: "Authentication required" });
+    return;
+  }
+  if (req.user.role !== "premium" && req.user.role !== "admin") {
+    res.status(403).json({ error: "Premium access required" });
+    return;
+  }
+  next();
+}
 import { Request, Response, NextFunction } from "express";
 import { verifyToken, extractToken, JWTPayload } from "../utils/auth";
 

@@ -1,11 +1,19 @@
+
 import { Router } from "express";
 import { requireAuth } from "./auth";
 import { v4 as uuidv4 } from "uuid";
 import { uploadImage } from "../utils/uploads.js";
 import { getUserFromRequest } from "../utils/auth";
-import { getItems, createItem, updateItem, deleteItem, getItemById } from "../utils/productsDb";
+import { getItems, createItem, updateItem, deleteItem, getItemById, getItemsByUserId } from "../utils/productsDb";
 
 const router = Router();
+
+// Get items for the current authenticated user (seller's own listings)
+router.get("/mine", requireAuth, async (req, res) => {
+  const user = getUserFromRequest(req);
+  const items = await getItemsByUserId(user.userId);
+  res.json(items);
+});
 
 // Get all items (marketplace feed)
 router.get("/", async (req, res) => {
@@ -23,7 +31,7 @@ router.get("/:id", async (req, res) => {
 // Create new item (auth required, any logged-in user can add)
 router.post("/", requireAuth, async (req, res) => {
   const user = getUserFromRequest(req);
-  const { title, description, price, category, imageUrl } = req.body;
+  const { title, description, price, category, images } = req.body;
   if (!title || !description || !price || !category) return res.status(400).json({ error: "Missing fields" });
   // No vendor restriction: any authenticated user can add items
   const item = await createItem({
@@ -32,7 +40,7 @@ router.post("/", requireAuth, async (req, res) => {
     description,
     price,
     category,
-    imageUrl,
+    images: images || [],
     userId: user.userId,
     createdAt: Date.now(),
   });

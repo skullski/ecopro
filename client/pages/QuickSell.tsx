@@ -26,49 +26,52 @@ export default function QuickSell() {
         navigate('/login');
         return;
       }
+      async function handleSubmit(e: React.FormEvent) {
+        e.preventDefault();
+        if (!vendor) return;
 
-      const user = getCurrentUser();
-      if (!user) {
-        navigate('/login');
-        return;
-      }
+        try {
+          let uploadedUrl = image;
+          if (file) {
+            const { url } = await api.uploadImage(file);
+            uploadedUrl = url;
+            setImage(url);
+          }
 
-      console.log('User authenticated:', user);
-      console.log('Auth token exists:', !!getAuthToken());
-
-      // Find vendor by email using API
-      try {
-        const allVendors = await api.fetchVendors();
-        const userVendor = allVendors.find((v: Vendor) => v.email === user.email);
-        if (userVendor) {
-          setVendor(userVendor);
-          setOwnerEmail(user.email);
-        } else {
-          // Auto-create vendor account for logged-in user
-          const newVendor: Vendor = {
-            id: `vendor_${Date.now()}`,
-            name: user.name,
-            email: user.email,
-            businessName: user.name,
-            storeSlug: `${user.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}-${Date.now()}`,
-            location: { city: '', country: '' },
-            description: '',
-            verified: false,
-            isVIP: false,
-            totalSales: 0,
-            totalProducts: 0,
-            subscriptionStatus: 'free',
-            rating: 5.0,
-            joinedAt: Date.now(),
+          // POST to /api/items (server-side persistence)
+          const payload = {
+            title,
+            description,
+            price: parseFloat(price),
+            images: uploadedUrl ? [uploadedUrl] : [],
+            vendorId: vendor.id,
+            category: 'other',
+            condition: 'new',
+            quantity: 1,
+            status: 'active',
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            isExportedToMarketplace: true,
+            featured: false,
+            views: 0,
+            favorites: 0,
+            tags: [],
           };
-          try {
-            // Create vendor on server
-            console.log('Creating vendor on server:', newVendor);
-            await api.createVendor(newVendor);
-            console.log('Vendor created on server');
-            setVendor(newVendor);
-            setOwnerEmail(user.email);
-          } catch (error) {
+
+          const response = await fetch('/api/items', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          if (!response.ok) throw new Error('Failed to create item');
+          const product = await response.json();
+
+          toast({ title: 'تم الإضافة', description: 'تم إضافة منتجك بنجاح إلى متجرك.' });
+          navigate(`/vendor/dashboard/${vendor.id}`);
+        } catch (err) {
+          console.error('Failed to create item:', err);
+          toast({ title: 'خطأ', description: 'فشل إضافة المنتج: ' + (err as any).message });
+        }
             console.error('Failed to create vendor on server:', error);
           }
         }

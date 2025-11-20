@@ -9,6 +9,8 @@ import { handleDemo } from "./routes/demo";
 import * as vendorRoutes from "./routes/vendors";
 import * as uploadRoutes from "./routes/uploads";
 import * as authRoutes from "./routes/auth";
+import marketplaceRouter from "./routes/marketplace";
+import storeProductsRouter from "./routes/storeProducts";
 import { authenticate, requireAdmin, requireVendor, requireVip } from "./middleware/auth";
 import * as adminRoutes from "./routes/admin";
 import {
@@ -121,6 +123,12 @@ export function createServer() {
   app.get("/api/auth/me", authenticate, authRoutes.getCurrentUser);
   app.post("/api/auth/change-password", authenticate, authRoutes.changePassword);
 
+  // Marketplace (seller) routes
+  app.use("/api/marketplace", marketplaceRouter);
+
+  // Store products (premium dashboard) routes
+  app.use("/api/store-products", storeProductsRouter);
+
   // Public vendor/product routes
   app.get("/api/vendors", apiLimiter, vendorRoutes.getVendors);
   app.get("/api/vendors/:id", apiLimiter, vendorRoutes.getVendorById);
@@ -172,6 +180,7 @@ export function createServer() {
     vendorRoutes.deleteProduct
   );
 
+
   // Admin management routes (platform admin only)
   app.post(
     "/api/admin/promote",
@@ -185,6 +194,26 @@ export function createServer() {
     authenticate,
     requireAdmin,
     adminRoutes.listUsers
+  );
+
+  // Premium user management
+  app.get(
+    "/api/admin/premium-users",
+    authenticate,
+    requireAdmin,
+    adminRoutes.listPremiumUsers
+  );
+  app.post(
+    "/api/admin/upgrade/:id",
+    authenticate,
+    requireAdmin,
+    adminRoutes.upgradeUserToPremium
+  );
+  app.post(
+    "/api/admin/downgrade/:id",
+    authenticate,
+    requireAdmin,
+    adminRoutes.downgradeUserToNormal
   );
 
   // Serve static files from React build (only in production)
