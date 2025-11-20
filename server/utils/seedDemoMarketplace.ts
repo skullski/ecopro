@@ -123,7 +123,7 @@ async function seed() {
     await createItem({
       id: uuidv4(),
       ...product,
-      userId: 'demo-user',
+      vendorId: 'demo-vendor',
       createdAt: Date.now(),
     });
   }

@@ -15,7 +15,8 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Product from "./pages/Product";
 import Checkout from "./pages/Checkout";
-import QuickSell from "./pages/QuickSell";
+import React, { Suspense } from "react";
+const QuickSell = React.lazy(() => import("./pages/QuickSell"));
 import MyItems from "./pages/MyItems";
 import OrderSuccess from "./pages/OrderSuccess";
 import AdminLayout from "./pages/admin/Layout";
@@ -103,7 +104,11 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
-              <Route path="/quick-sell" element={<QuickSell />} />
+              <Route path="/quick-sell" element={
+                <Suspense fallback={<div>Loading...</div>}>
+                  <QuickSell />
+                </Suspense>
+              } />
               <Route path="/my-items" element={<MyItems />} />
               <Route path="/product/:id" element={<Product />} />
               <Route path="/checkout" element={<Checkout />} />

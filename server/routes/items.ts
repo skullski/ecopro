@@ -11,7 +11,7 @@ const router = Router();
 // Get items for the current authenticated user (seller's own listings)
 router.get("/mine", requireAuth, async (req, res) => {
   const user = getUserFromRequest(req);
-  const items = await getItemsByUserId(user.userId);
+  const items = await getItemsByUserId(user.vendorId);
   res.json(items);
 });
 
@@ -41,7 +41,7 @@ router.post("/", requireAuth, async (req, res) => {
     price,
     category,
     images: images || [],
-    userId: user.userId,
+    vendorId: user.vendorId,
     createdAt: Date.now(),
   });
   res.status(201).json(item);
@@ -52,7 +52,7 @@ router.put("/:id", requireAuth, async (req, res) => {
   const user = getUserFromRequest(req);
   const item = await getItemById(req.params.id);
   if (!item) return res.status(404).json({ error: "Item not found" });
-  if (item.userId !== user.userId) return res.status(403).json({ error: "Forbidden" });
+  if (item.vendorId !== user.vendorId) return res.status(403).json({ error: "Forbidden" });
   const updated = await updateItem(req.params.id, req.body);
   res.json(updated);
 });
@@ -62,7 +62,7 @@ router.delete("/:id", requireAuth, async (req, res) => {
   const user = getUserFromRequest(req);
   const item = await getItemById(req.params.id);
   if (!item) return res.status(404).json({ error: "Item not found" });
-  if (item.userId !== user.userId) return res.status(403).json({ error: "Forbidden" });
+  if (item.vendorId !== user.vendorId) return res.status(403).json({ error: "Forbidden" });
   await deleteItem(req.params.id);
   res.json({ success: true });
 });

@@ -21,66 +21,11 @@ export default function QuickSell() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const initializeVendor = async () => {
-      if (!isAuthenticated()) {
-        navigate('/login');
-        return;
-      }
-      async function handleSubmit(e: React.FormEvent) {
-        e.preventDefault();
-        if (!vendor) return;
-
-        try {
-          let uploadedUrl = image;
-          if (file) {
-            const { url } = await api.uploadImage(file);
-            uploadedUrl = url;
-            setImage(url);
-          }
-
-          // POST to /api/items (server-side persistence)
-          const payload = {
-            title,
-            description,
-            price: parseFloat(price),
-            images: uploadedUrl ? [uploadedUrl] : [],
-            vendorId: vendor.id,
-            category: 'other',
-            condition: 'new',
-            quantity: 1,
-            status: 'active',
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-            isExportedToMarketplace: true,
-            featured: false,
-            views: 0,
-            favorites: 0,
-            tags: [],
-          };
-
-          const response = await fetch('/api/items', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-          });
-          if (!response.ok) throw new Error('Failed to create item');
-          const product = await response.json();
-
-          toast({ title: 'تم الإضافة', description: 'تم إضافة منتجك بنجاح إلى متجرك.' });
-          navigate(`/vendor/dashboard/${vendor.id}`);
-        } catch (err) {
-          console.error('Failed to create item:', err);
-          toast({ title: 'خطأ', description: 'فشل إضافة المنتج: ' + (err as any).message });
-        }
-            console.error('Failed to create vendor on server:', error);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to fetch vendors from API:', error);
-      }
-    };
-
-    initializeVendor();
+    if (!isAuthenticated()) {
+      navigate('/login');
+      return;
+    }
+    // TODO: Set vendor info here if needed
   }, [navigate]);
 
   async function handleSubmit(e: React.FormEvent) {
