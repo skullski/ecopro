@@ -20,11 +20,12 @@ router.get("/:id", async (req, res) => {
   res.json(item);
 });
 
-// Create new item (auth required)
+// Create new item (auth required, any logged-in user can add)
 router.post("/", requireAuth, async (req, res) => {
   const user = getUserFromRequest(req);
   const { title, description, price, category, imageUrl } = req.body;
   if (!title || !description || !price || !category) return res.status(400).json({ error: "Missing fields" });
+  // No vendor restriction: any authenticated user can add items
   const item = await createItem({
     id: uuidv4(),
     title,

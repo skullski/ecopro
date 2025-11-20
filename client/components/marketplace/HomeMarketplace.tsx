@@ -1,4 +1,6 @@
 import React from "react";
+import { Link } from "react-router-dom";
+import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/button";
 import { Sun, Moon, Globe, User, Grid, Car, Smartphone, Shirt, Home, Trophy, Gamepad, Tag, Heart, Star, ShoppingCart, MessageCircle, Phone, BadgeCheck, Share2 } from "lucide-react";
 
@@ -32,15 +34,26 @@ const products = Array.from({ length: 12 }).map((_, i) => ({
 }));
 
 export default function HomeMarketplace() {
+  const { theme } = useTheme();
+  // Use theme-aware classes for backgrounds and text
   return (
-    <div className="w-full min-h-screen bg-[#18191b] text-white">
-      {/* ...header/navbar removed as requested... */}
+    <div className={
+      `w-full min-h-screen transition-colors duration-300 ` +
+      (theme === "dark"
+        ? "bg-[#18191b] text-white"
+        : "bg-white text-gray-900")
+    }>
       {/* Search Bar */}
       <div className="flex justify-center py-6 px-2">
         <input
           type="text"
           placeholder="Search products..."
-          className="w-full max-w-xl py-3 px-5 rounded-full bg-[#232325] border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-primary text-lg shadow"
+          className={
+            "w-full max-w-xl py-3 px-5 rounded-full border text-lg shadow focus:outline-none focus:ring-2 focus:ring-primary " +
+            (theme === "dark"
+              ? "bg-[#232325] border-gray-700 text-white"
+              : "bg-gray-100 border-gray-300 text-gray-900")
+          }
         />
       </div>
       {/* Banners */}
@@ -54,22 +67,35 @@ export default function HomeMarketplace() {
         <h2 className="text-xl font-bold mb-2">Today's Picks</h2>
         <div className="flex gap-4 overflow-x-auto scrollbar-hide">
           {products.slice(0, 6).map(product => (
-            <div key={product.id} className="min-w-[260px] max-w-xs bg-[#232325] border border-gray-800 rounded-xl shadow-lg flex flex-col overflow-hidden group">
+            <Link
+              key={product.id}
+              to={`/product/${product.id}`}
+              className={
+                "min-w-[260px] max-w-xs border rounded-xl shadow-lg flex flex-col overflow-hidden group transition hover:shadow-2xl " +
+                (theme === "dark"
+                  ? "bg-[#232325] border-gray-800"
+                  : "bg-white border-gray-200")
+              }
+              style={{ textDecoration: "none" }}
+            >
               <img src={product.image} alt={product.title} className="w-full h-36 object-cover group-hover:scale-105 transition-transform duration-200" />
               <div className="flex-1 flex flex-col p-3">
                 <div className="font-bold text-base mb-1 line-clamp-2">{product.title}</div>
                 <div className="mb-1 text-lg font-bold text-accent-400">{product.price}</div>
-                <div className="flex items-center gap-2 text-xs text-gray-400 mb-1">
+                <div className={
+                  "flex items-center gap-2 text-xs mb-1 " +
+                  (theme === "dark" ? "text-gray-400" : "text-gray-500")
+                }>
                   <User className="w-4 h-4" /> {product.seller}
                 </div>
                 <div className="flex items-center gap-2 mt-auto">
-                  <Button size="icon" variant="ghost"><Phone className="w-4 h-4" /></Button>
-                  <Button size="icon" variant="ghost"><MessageCircle className="w-4 h-4" /></Button>
-                  <Button size="icon" variant="ghost"><Heart className="w-4 h-4" /></Button>
-                  <Button size="icon" variant="ghost"><Share2 className="w-4 h-4" /></Button>
+                  <Button size="icon" variant="ghost" tabIndex={-1}><Phone className="w-4 h-4" /></Button>
+                  <Button size="icon" variant="ghost" tabIndex={-1}><MessageCircle className="w-4 h-4" /></Button>
+                  <Button size="icon" variant="ghost" tabIndex={-1}><Heart className="w-4 h-4" /></Button>
+                  <Button size="icon" variant="ghost" tabIndex={-1}><Share2 className="w-4 h-4" /></Button>
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </div>
@@ -78,7 +104,12 @@ export default function HomeMarketplace() {
         <h2 className="text-xl font-bold mb-2">Categories</h2>
         <div className="flex gap-4 overflow-x-auto scrollbar-hide">
           {categories.map(cat => (
-            <div key={cat.name} className="flex flex-col items-center gap-2 px-4 py-3 bg-[#232325] border border-gray-700 rounded-xl min-w-[110px]">
+            <div key={cat.name} className={
+              "flex flex-col items-center gap-2 px-4 py-3 border rounded-xl min-w-[110px] " +
+              (theme === "dark"
+                ? "bg-[#232325] border-gray-700"
+                : "bg-gray-100 border-gray-300")
+            }>
               {cat.icon}
               <span className="text-sm font-medium">{cat.name}</span>
             </div>
@@ -90,7 +121,12 @@ export default function HomeMarketplace() {
         <h2 className="text-xl font-bold mb-2">Top Dealers</h2>
         <div className="flex gap-4 overflow-x-auto scrollbar-hide">
           {sellers.map(seller => (
-            <div key={seller.name} className="flex flex-col items-center gap-2 px-4 py-3 bg-[#232325] border border-gray-700 rounded-xl min-w-[110px]">
+            <div key={seller.name} className={
+              "flex flex-col items-center gap-2 px-4 py-3 border rounded-xl min-w-[110px] " +
+              (theme === "dark"
+                ? "bg-[#232325] border-gray-700"
+                : "bg-gray-100 border-gray-300")
+            }>
               <img src={seller.logo} alt={seller.name} className="w-12 h-12 rounded-full object-cover border border-primary" />
               <span className="text-sm font-medium">{seller.name}</span>
             </div>
@@ -102,7 +138,17 @@ export default function HomeMarketplace() {
         <h2 className="text-xl font-bold mb-2">All Products</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
           {products.map(product => (
-            <div key={product.id} className="relative bg-[#232325] border border-gray-800 rounded-xl shadow card hover:shadow-lg transition flex flex-col overflow-hidden group min-h-[320px]">
+            <Link
+              key={product.id}
+              to={`/product/${product.id}`}
+              className={
+                "relative border rounded-xl shadow card hover:shadow-lg transition flex flex-col overflow-hidden group min-h-[320px] " +
+                (theme === "dark"
+                  ? "bg-[#232325] border-gray-800"
+                  : "bg-white border-gray-200")
+              }
+              style={{ textDecoration: "none" }}
+            >
               <img src={product.image} alt={product.title} className="w-full h-36 md:h-40 object-cover group-hover:scale-105 transition-transform duration-200" />
               <div className="flex-1 flex flex-col p-3 md:p-4">
                 <div className="font-bold text-base md:text-lg mb-1 line-clamp-2">{product.title}</div>
@@ -110,17 +156,20 @@ export default function HomeMarketplace() {
                 <div className="mb-1 text-xs text-primary-400 font-medium flex gap-2 items-center">
                   <Tag className="w-4 h-4" /> Accessories
                 </div>
-                <div className="flex items-center gap-2 text-xs text-gray-400 mb-1">
+                <div className={
+                  "flex items-center gap-2 text-xs mb-1 " +
+                  (theme === "dark" ? "text-gray-400" : "text-gray-500")
+                }>
                   <User className="w-4 h-4" /> {product.seller}
                 </div>
                 <div className="flex items-center gap-2 mt-auto">
-                  <Button size="icon" variant="ghost"><Phone className="w-4 h-4" /></Button>
-                  <Button size="icon" variant="ghost"><MessageCircle className="w-4 h-4" /></Button>
-                  <Button size="icon" variant="ghost"><Heart className="w-4 h-4" /></Button>
-                  <Button size="icon" variant="ghost"><Share2 className="w-4 h-4" /></Button>
+                  <Button size="icon" variant="ghost" tabIndex={-1}><Phone className="w-4 h-4" /></Button>
+                  <Button size="icon" variant="ghost" tabIndex={-1}><MessageCircle className="w-4 h-4" /></Button>
+                  <Button size="icon" variant="ghost" tabIndex={-1}><Heart className="w-4 h-4" /></Button>
+                  <Button size="icon" variant="ghost" tabIndex={-1}><Share2 className="w-4 h-4" /></Button>
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </div>
@@ -128,23 +177,36 @@ export default function HomeMarketplace() {
       <div className="px-4 py-6">
         <h2 className="text-xl font-bold mb-2">More of what you love</h2>
         <div className="flex gap-4 overflow-x-auto scrollbar-hide">
-          {products.slice(6, 12).map(product => (
-            <div key={product.id} className="min-w-[260px] max-w-xs bg-[#232325] border border-gray-800 rounded-xl shadow-lg flex flex-col overflow-hidden group">
+          {products.slice(6).map(product => (
+            <Link
+              key={product.id}
+              to={`/product/${product.id}`}
+              className={
+                "min-w-[260px] max-w-xs border rounded-xl shadow-lg flex flex-col overflow-hidden group transition hover:shadow-2xl " +
+                (theme === "dark"
+                  ? "bg-[#232325] border-gray-800"
+                  : "bg-white border-gray-200")
+              }
+              style={{ textDecoration: "none" }}
+            >
               <img src={product.image} alt={product.title} className="w-full h-36 object-cover group-hover:scale-105 transition-transform duration-200" />
               <div className="flex-1 flex flex-col p-3">
                 <div className="font-bold text-base mb-1 line-clamp-2">{product.title}</div>
                 <div className="mb-1 text-lg font-bold text-accent-400">{product.price}</div>
-                <div className="flex items-center gap-2 text-xs text-gray-400 mb-1">
+                <div className={
+                  "flex items-center gap-2 text-xs mb-1 " +
+                  (theme === "dark" ? "text-gray-400" : "text-gray-500")
+                }>
                   <User className="w-4 h-4" /> {product.seller}
                 </div>
                 <div className="flex items-center gap-2 mt-auto">
-                  <Button size="icon" variant="ghost"><Phone className="w-4 h-4" /></Button>
-                  <Button size="icon" variant="ghost"><MessageCircle className="w-4 h-4" /></Button>
-                  <Button size="icon" variant="ghost"><Heart className="w-4 h-4" /></Button>
-                  <Button size="icon" variant="ghost"><Share2 className="w-4 h-4" /></Button>
+                  <Button size="icon" variant="ghost" tabIndex={-1}><Phone className="w-4 h-4" /></Button>
+                  <Button size="icon" variant="ghost" tabIndex={-1}><MessageCircle className="w-4 h-4" /></Button>
+                  <Button size="icon" variant="ghost" tabIndex={-1}><Heart className="w-4 h-4" /></Button>
+                  <Button size="icon" variant="ghost" tabIndex={-1}><Share2 className="w-4 h-4" /></Button>
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </div>
