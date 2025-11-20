@@ -31,29 +31,28 @@ import {
     await createDefaultAdmin("admin@ecopro.com", adminPassword);
   } catch (error) {
     console.error("Database initialization error:", error);
-  import { requireAuth } from "./auth";
-  import { getUserFromRequest } from "../utils/auth";
-  import { updateUserById, getUserById } from "../utils/database";
   }
 })();
 
-/**
-  import { Router } from "express";
-  const upgradeRouter = Router();
-  upgradeRouter.post("/upgrade", requireAuth, async (req, res) => {
-    const user = getUserFromRequest(req);
-    const dbUser = await getUserById(user.userId);
-    if (!dbUser) return res.status(404).json({ error: "User not found" });
-    if (dbUser.role !== "seller" || dbUser.is_paid_client) {
-      return res.status(400).json({ error: "Upgrade not allowed" });
-    }
-    await updateUserById(dbUser.id, { role: "client", is_paid_client: true });
-    const upgraded = await getUserById(dbUser.id);
-    res.json({ message: "Upgraded to VIP", user: upgraded });
-  });
+import { Router } from "express";
+import { getUserFromRequest } from "../utils/auth";
+import { updateUserById, getUserById } from "../utils/database";
 
-  router.use(upgradeRouter);
-  export default router;
+const router = Router();
+
+// Seller to paid client (VIP) upgrade endpoint
+// POST /api/auth/upgrade
+router.post("/upgrade", requireAuth, async (req, res) => {
+  const user = getUserFromRequest(req);
+  const dbUser = await getUserById(user.userId);
+  if (!dbUser) return res.status(404).json({ error: "User not found" });
+  if (dbUser.role !== "seller" || dbUser.is_paid_client) {
+    return res.status(400).json({ error: "Upgrade not allowed" });
+  }
+  await updateUserById(dbUser.id, { role: "client", is_paid_client: true });
+  const upgraded = await getUserById(dbUser.id);
+  res.json({ message: "Upgraded to VIP", user: upgraded });
+});
  * POST /api/auth/register
  */
 export const register: RequestHandler = async (req, res) => {
