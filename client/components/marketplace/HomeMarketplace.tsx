@@ -34,23 +34,7 @@ const products = Array.from({ length: 12 }).map((_, i) => ({
 export default function HomeMarketplace() {
   return (
     <div className="w-full min-h-screen bg-[#18191b] text-white">
-      {/* Navbar */}
-      <nav className="w-full flex items-center justify-between px-4 py-3 bg-[#232325] border-b border-gray-800">
-        <div className="flex items-center gap-4">
-          <span className="font-bold text-xl text-primary">walidstore</span>
-          <Button variant="ghost" className="text-white">Home</Button>
-          <Button variant="ghost" className="text-white">Categories</Button>
-          <Button variant="ghost" className="text-white">Offers</Button>
-          <Button variant="ghost" className="text-white">FAQ</Button>
-          <Button variant="ghost" className="text-white">Dashboard</Button>
-          <Button variant="ghost" className="text-white">Admin Panel</Button>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button size="icon" variant="ghost"><Globe /></Button>
-          <Button size="icon" variant="ghost"><Sun /></Button>
-          <Button size="icon" variant="ghost"><Moon /></Button>
-        </div>
-      </nav>
+      {/* ...header/navbar removed as requested... */}
       {/* Search Bar */}
       <div className="flex justify-center py-6 px-2">
         <input
