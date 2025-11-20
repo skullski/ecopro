@@ -42,6 +42,7 @@ const router = Router();
 
 // Seller to paid client (VIP) upgrade endpoint
 // POST /api/auth/upgrade
+router.post("/upgrade", async (req, res) => {
   const user = getUserFromRequest(req);
   const dbUser = await findUserById(user.userId);
   if (!dbUser) return res.status(404).json({ error: "User not found" });
