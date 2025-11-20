@@ -36,21 +36,20 @@ import {
 
 import { Router } from "express";
 import { getUserFromRequest } from "../utils/auth";
-import { updateUserById, getUserById } from "../utils/database";
+import { updateUser, findUserById } from "../utils/database";
 
 const router = Router();
 
 // Seller to paid client (VIP) upgrade endpoint
 // POST /api/auth/upgrade
-router.post("/upgrade", requireAuth, async (req, res) => {
   const user = getUserFromRequest(req);
-  const dbUser = await getUserById(user.userId);
+  const dbUser = await findUserById(user.userId);
   if (!dbUser) return res.status(404).json({ error: "User not found" });
   if (dbUser.role !== "seller" || dbUser.is_paid_client) {
     return res.status(400).json({ error: "Upgrade not allowed" });
   }
-  await updateUserById(dbUser.id, { role: "client", is_paid_client: true });
-  const upgraded = await getUserById(dbUser.id);
+  await updateUser(dbUser.id, { role: "client", is_paid_client: true });
+  const upgraded = await findUserById(dbUser.id);
   res.json({ message: "Upgraded to VIP", user: upgraded });
 });
 // POST /api/auth/register
