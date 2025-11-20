@@ -53,8 +53,7 @@ router.post("/upgrade", requireAuth, async (req, res) => {
   const upgraded = await getUserById(dbUser.id);
   res.json({ message: "Upgraded to VIP", user: upgraded });
 });
- * POST /api/auth/register
- */
+// POST /api/auth/register
 export const register: RequestHandler = async (req, res) => {
   try {
     const { email, password, name, role } = req.body;
