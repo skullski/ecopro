@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { requireAuth } from "./auth";
 import { v4 as uuidv4 } from "uuid";
-import { uploadImage } from "../utils/uploads";
+import { uploadImage } from "../utils/uploads.js";
 import { getUserFromRequest } from "../utils/auth";
 import { getItems, createItem, updateItem, deleteItem, getItemById } from "../utils/productsDb";
 
