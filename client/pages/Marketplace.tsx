@@ -93,8 +93,8 @@ export default function Marketplace() {
           <div className="col-span-full text-center text-gray-400 text-lg py-16">No products found.</div>
         )}
       </div>
-    </section>
-  );
+      </section>
+    );
       </div>
     </section>
   );
