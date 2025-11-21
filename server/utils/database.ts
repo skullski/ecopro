@@ -13,6 +13,7 @@ export interface User {
   email: string;
   password: string;
   name: string;
+  role: string;
 }
 
 /**
@@ -27,7 +28,8 @@ export async function initializeDatabase(): Promise<void> {
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
-        name VARCHAR(255) NOT NULL
+        name VARCHAR(255) NOT NULL,
+        role VARCHAR(32) NOT NULL DEFAULT 'vendor'
       );
     `);
 
@@ -69,12 +71,13 @@ export async function createUser(user: {
   email: string;
   password: string;
   name: string;
+  role?: string;
 }): Promise<User> {
   const result = await pool.query(
-    `INSERT INTO users (email, password, name) 
-     VALUES ($1, $2, $3) 
+    `INSERT INTO users (email, password, name, role) 
+     VALUES ($1, $2, $3, $4) 
      RETURNING *`,
-    [user.email, user.password, user.name]
+    [user.email, user.password, user.name, user.role || 'vendor']
   );
   return result.rows[0];
 }

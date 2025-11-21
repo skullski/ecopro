@@ -44,7 +44,7 @@ const router = Router();
 export const register: RequestHandler = async (req, res) => {
   try {
     console.log("[REGISTER] Incoming body:", req.body);
-    const { email, password, name } = req.body;
+    const { email, password, name, role } = req.body;
 
     // Check if user already exists
     const existingUser = await findUserByEmail(email);
@@ -63,6 +63,7 @@ export const register: RequestHandler = async (req, res) => {
       email,
       password: hashedPassword,
       name,
+      role: role || 'vendor',
     });
     console.log("[REGISTER] User created:", user.id, user.email);
 
@@ -70,6 +71,7 @@ export const register: RequestHandler = async (req, res) => {
     const token = generateToken({
       userId: user.id,
       email: user.email,
+      role: user.role,
     });
     console.log("[REGISTER] Token generated");
 

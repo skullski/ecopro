@@ -12,6 +12,7 @@ export default function Signup() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("vendor"); // default to vendor
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -21,7 +22,7 @@ export default function Signup() {
     setLoading(true);
 
     try {
-      await authApi.register({ email, password, name });
+      await authApi.register({ email, password, name, role });
       navigate("/dashboard"); // Redirect to vendor dashboard
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
@@ -72,6 +73,21 @@ export default function Signup() {
                 disabled={loading}
                 minLength={2}
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                <span className="w-4 h-4 text-accent">🏷️</span>
+                {t("Register as")}
+              </label>
+              <select
+                value={role}
+                onChange={e => setRole(e.target.value)}
+                className="mt-1 w-full rounded-xl border-2 border-accent/20 bg-background px-4 py-3 focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all"
+                disabled={loading}
+              >
+                <option value="vendor">Seller</option>
+                <option value="client">Client</option>
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium mb-2 flex items-center gap-2">
