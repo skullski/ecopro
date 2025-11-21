@@ -96,18 +96,14 @@ export async function requireVip(req: Request, res: Response, next: NextFunction
     return;
   }
 
-  // Find vendor record by email and ensure they are VIP
+  // Find vendor record by email
   try {
     const { findVendorByEmail } = await import("../utils/vendorsDb");
     const vendor = await findVendorByEmail(req.user.email);
     if (!vendor) {
       return res.status(403).json({ error: "Vendor account not found" });
     }
-
-    if (!vendor.isVIP && vendor.subscriptionStatus !== "vip") {
-      return res.status(403).json({ error: "VIP subscription required for management" });
-    }
-
+    // No VIP logic enforced, just allow access for valid vendors
     next();
   } catch (err) {
     console.error(err);
