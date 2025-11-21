@@ -51,9 +51,9 @@ export default function HomeMarketplace() {
   }, []);
 
   // Filter products by selected filters
-  // Only show products explicitly marked for public listing
+  // Only show products explicitly marked as published
   const filteredProducts = products.filter(product => {
-    if (!product.isExportedToMarketplace) return false;
+    if (!product.published) return false;
     if (filters.categories && filters.categories.length > 0 && !filters.categories.includes(product.category)) return false;
     if (filters.price && (product.price < filters.price[0] || product.price > filters.price[1])) return false;
     return true;

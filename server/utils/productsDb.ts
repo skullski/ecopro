@@ -21,9 +21,10 @@ export async function getItemById(id: string): Promise<MarketplaceProduct | null
 
 // Create new item
 export async function createItem(item: Partial<MarketplaceProduct>): Promise<MarketplaceProduct> {
-  // Allow userId as a property for seller linkage
-  const keys = Object.keys(item);
-  const values = Object.values(item);
+  // Ensure published defaults to false if not provided
+  const newItem = { ...item, published: item.published ?? false };
+  const keys = Object.keys(newItem);
+  const values = Object.values(newItem);
   const columns = keys.map((k) => k === 'userId' ? 'user_id' : k.replace(/[A-Z]/g, (c) => '_' + c.toLowerCase()));
   const placeholders = values.map((_, i) => `$${i + 1}`);
   const { rows } = await pool.query(
