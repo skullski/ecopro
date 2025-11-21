@@ -9,7 +9,7 @@ import type { MarketplaceProduct } from '../../shared/types';
 
 // Get all items (marketplace feed)
 export async function getItems(): Promise<MarketplaceProduct[]> {
-  const { rows } = await pool.query('SELECT * FROM products ORDER BY created_at DESC');
+  const { rows } = await pool.query('SELECT * FROM products WHERE published = true ORDER BY created_at DESC');
   return rows;
 }
 

@@ -163,8 +163,44 @@ export default function VendorDashboard() {
             </div>
           </section>
         )}
-        {/* Other tabs (orders, products, etc.) can be implemented similarly, fetching data from backend */}
-        {/* ... */}
+        {/* Products Tab */}
+        {activeTab === "products" && (
+          <section>
+            <h1 className="text-2xl font-bold mb-6 bg-gradient-to-r from-purple-400 via-blue-400 to-pink-500 bg-clip-text text-transparent drop-shadow-neon">{t("Your Products")}</h1>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {(seller?.products || []).map((product: any) => (
+                <div key={product.id} className="bg-white/10 rounded-2xl p-6 shadow-lg border border-accent/20 flex flex-col gap-2">
+                  <div className="flex items-center gap-3 mb-2">
+                    <img src={product.images?.[0] || "/demo/product1.jpg"} alt={product.title} className="w-16 h-16 object-cover rounded-xl border border-accent/20" />
+                    <div className="flex-1">
+                      <div className="font-bold text-lg line-clamp-1">{product.title}</div>
+                      <div className="text-accent-200 text-xs">{product.category}</div>
+                    </div>
+                    <span className={cn("px-3 py-1 rounded-full text-xs font-bold", product.published ? "bg-green-500/20 text-green-500" : "bg-gray-500/20 text-gray-500")}>{product.published ? t("Public") : t("Private")}</span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <Button
+                      size="sm"
+                      variant={product.published ? "outline" : "default"}
+                      className={product.published ? "border-green-500 text-green-600" : ""}
+                      onClick={async () => {
+                        await fetch(`/api/items/${product.id}`, {
+                          method: "PUT",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ published: !product.published })
+                        });
+                        // Refresh seller dashboard data
+                        window.location.reload();
+                      }}
+                    >
+                      {product.published ? t("Unpublish") : t("Export to Marketplace")}
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
       </main>
     </div>
   );
