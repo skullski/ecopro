@@ -13,8 +13,6 @@ export interface User {
   email: string;
   password: string;
   name: string;
-  role: "seller" | "client" | "admin";
-  created_at: Date;
 }
 
 /**
@@ -29,9 +27,7 @@ export async function initializeDatabase(): Promise<void> {
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
-        name VARCHAR(255) NOT NULL,
-        role VARCHAR(50) NOT NULL DEFAULT 'seller',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        name VARCHAR(255) NOT NULL
       );
     `);
 
@@ -73,13 +69,12 @@ export async function createUser(user: {
   email: string;
   password: string;
   name: string;
-  role: string;
 }): Promise<User> {
   const result = await pool.query(
-    `INSERT INTO users (email, password, name, role) 
-     VALUES ($1, $2, $3, $4) 
+    `INSERT INTO users (email, password, name) 
+     VALUES ($1, $2, $3) 
      RETURNING *`,
-    [user.email, user.password, user.name, user.role]
+    [user.email, user.password, user.name]
   );
   return result.rows[0];
 }
@@ -139,8 +134,7 @@ export async function createDefaultAdmin(
     await createUser({
       email,
       password: hashedPassword,
-      name: "Admin User",
-      role: "admin",
+      name: "Admin User"
     });
     console.log(`✅ Default admin user created: ${email}`);
   }
