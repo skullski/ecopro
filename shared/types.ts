@@ -80,15 +80,16 @@ export interface MarketplaceProduct {
   price: number;
   images: string[];
   category: string;
-  condition: 'new' | 'used' | 'refurbished';
-  quantity: number;
-  featured: boolean;
-  status: 'active' | 'pending' | 'sold' | 'inactive';
+  condition?: 'new' | 'used' | 'refurbished';
+  quantity?: number;
+  featured?: boolean;
+  status?: 'active' | 'pending' | 'sold' | 'inactive';
   published: boolean; // True if product is visible in main /marketplace (public listing)
+  visibilitySource?: string; // 'marketplace' or 'store'
   ownerKey?: string; // Temporary token for anonymous sellers
   ownerEmail?: string; // Email associated with anonymous listing
-  views: number;
-  favorites: number;
+  views?: number;
+  favorites?: number;
   createdAt: number;
   updatedAt: number;
   tags?: string[];

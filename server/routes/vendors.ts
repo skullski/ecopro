@@ -160,24 +160,21 @@ export const createPublicProduct: RequestHandler = async (req, res) => {
   try {
     const product = req.body as MarketplaceProduct;
     // Validate required fields
-    if (!product.title || !product.description || !product.price || !product.category) {
-      return res.status(400).json({ error: "Missing required fields" });
+    if (!product.title || !product.price || !product.category || !product.location || !product.images || !product.images.length) {
+      return res.status(400).json({ error: "Missing required fields (title, price, category, location, image)" });
     }
     if (!product.id) product.id = `prod_${Date.now()}`;
     product.createdAt = Date.now();
     product.updatedAt = Date.now();
     product.ownerKey = generateKey();
-    // Honor email if provided by anonymous seller
     if (req.body.ownerEmail) {
       product.ownerEmail = req.body.ownerEmail;
     }
     product.vendorId = product.vendorId || "";
-    // defaults so public products are visible in marketplace
-    if (!product.status) product.status = "active";
-    if (typeof product.quantity !== "number") product.quantity = 1;
-    if (product.isExportedToMarketplace === undefined) product.isExportedToMarketplace = true;
-    product.published = true;
-    product.visibilitySource = "marketplace";
+    product.status = product.status || "active";
+    product.quantity = typeof product.quantity === "number" ? product.quantity : 1;
+    product.published = req.body.published === true || req.body.published === 'true';
+    product.visibilitySource = req.body.visibilitySource || "marketplace";
     product.views = product.views || 0;
     product.favorites = product.favorites || 0;
 

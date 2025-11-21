@@ -1,4 +1,6 @@
 -- Create products table for marketplace
+
+-- Updated products table for marketplace publishing
 CREATE TABLE IF NOT EXISTS products (
     id SERIAL PRIMARY KEY,
     user_id VARCHAR(255),
@@ -8,7 +10,8 @@ CREATE TABLE IF NOT EXISTS products (
     category VARCHAR(100) NOT NULL,
     images TEXT,
     location VARCHAR(255),
-    published BOOLEAN DEFAULT false,
+    published BOOLEAN DEFAULT FALSE,
+    visibility_source VARCHAR(20),
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );

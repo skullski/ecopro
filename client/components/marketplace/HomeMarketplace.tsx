@@ -77,6 +77,12 @@ export default function HomeMarketplace() {
     setError(null);
     setSuccess(null);
     setSubmitting(true);
+    // Frontend validation
+    if (!form.title || !form.price || !form.category || !form.location || !form.image) {
+      setError("All fields including image are required.");
+      setSubmitting(false);
+      return;
+    }
     let imageUrl = "";
     if (form.image) {
       try {
@@ -95,23 +101,19 @@ export default function HomeMarketplace() {
       category: form.category,
       location: form.location,
       images: imageUrl ? [imageUrl] : [],
-      published: true, // Always publish to marketplace
+      published: form.published,
       visibilitySource: "marketplace"
     };
     try {
       const resp = await apiHelpers.createPublicProduct(product);
-      if (resp && resp.error) {
-        setError("Backend: " + resp.error);
-      } else {
-        setSuccess("Product added successfully!");
-        setShowAdd(false);
-        setForm({ title: "", description: "", price: "", category: "", location: "", image: null, published: true });
-        // Refresh products
-        setLoading(true);
-        const items = await fetch('/api/items').then(r => r.json());
-        setProducts(items);
-        setLoading(false);
-      }
+      setSuccess("Product added successfully!");
+      setShowAdd(false);
+      setForm({ title: "", description: "", price: "", category: "", location: "", image: null, published: true });
+      // Refresh products
+      setLoading(true);
+      const items = await fetch('/api/items').then(r => r.json());
+      setProducts(items);
+      setLoading(false);
     } catch (err: any) {
       setError("Failed to add product: " + (err?.message || "Unknown error"));
     } finally {
@@ -202,8 +204,12 @@ export default function HomeMarketplace() {
                 <option value="Jobs">Jobs</option>
                 <option value="Others">Others</option>
               </select>
-              <Input placeholder="Location" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} />
-              <Input type="file" accept="image/*" onChange={e => setForm(f => ({ ...f, image: e.target.files?.[0] || null }))} />
+              <Input required placeholder="Location" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} />
+              <Input required type="file" accept="image/*" onChange={e => setForm(f => ({ ...f, image: e.target.files?.[0] || null }))} />
+              <div className="flex items-center gap-2">
+                <Switch checked={form.published} onCheckedChange={v => setForm(f => ({ ...f, published: v }))} />
+                <span>Publish to Marketplace</span>
+              </div>
               {error && <div className="text-red-500 text-sm font-semibold">{error}</div>}
               {success && <div className="text-green-500 text-sm font-semibold">{success}</div>}
               <DialogFooter>
