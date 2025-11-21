@@ -12,9 +12,9 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const user = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user") || "null") : null;
+
   const isAdmin = typeof window !== "undefined" ? localStorage.getItem("isAdmin") === 'true' : false;
-  const isPremium = user?.role === "premium" || isAdmin;
-  const isNormalSeller = user?.role === "normal" || user?.role === "seller";
+  const isSeller = user?.role === "seller";
 
   function handleLogout() {
     localStorage.removeItem("user");
@@ -135,34 +135,18 @@ export default function Header() {
                 </>
               ) : (
                 <div className="hidden md:flex items-center gap-2">
-                  {isPremium && (
-                    <Button 
-                      variant="ghost" 
-                      onClick={() => navigate("/dashboard")}
-                      className="hover:bg-gradient-to-r hover:from-primary/10 hover:to-accent/10 font-medium"
-                    >
-                      <LayoutDashboard className="w-4 h-4 ml-2" />
-                      {t("admin.dashboard")}
-                    </Button>
-                  )}
-                  {isNormalSeller && (
+                  {user && (
                     <>
-                      <Link to="/quick-sell">
-                        <Button variant="outline" className="border-2 border-primary/40 text-primary hover:bg-primary/10 font-medium">
-                          <PlusCircle className="w-4 h-4 ml-2" />
-                          أضف منتج
-                        </Button>
-                      </Link>
-                      <Link to="/vendor/upgrade">
-                        <Button variant="outline" className="border-2 border-yellow-500/40 text-yellow-700 hover:bg-yellow-100/20 font-medium">
-                          <Crown className="w-4 h-4 ml-2" />
-                          ترقية لحساب VIP
-                        </Button>
-                      </Link>
                       <Link to="/post-item">
                         <Button variant="outline" className="border-2 border-primary/40 text-primary hover:bg-primary/10 font-medium">
                           <PlusCircle className="w-4 h-4 ml-2" />
                           Post Item
+                        </Button>
+                      </Link>
+                      <Link to="/my-listings">
+                        <Button variant="ghost" className="font-medium">
+                          <ShoppingBag className="w-4 h-4 ml-2" />
+                          My Listings
                         </Button>
                       </Link>
                     </>

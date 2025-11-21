@@ -100,10 +100,8 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <I18nProvider>
           <BrowserRouter>
           <Layout>
-            <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />

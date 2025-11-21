@@ -9,15 +9,18 @@ export interface MarketplaceListing {
   category: string;
   images: string[];
   location?: string;
+  views: number;
+  saves: number;
+  contacts: number;
   createdAt: number;
   updatedAt: number;
 }
 
-export async function createMarketplaceListing(listing: Omit<MarketplaceListing, 'id' | 'createdAt' | 'updatedAt'>): Promise<MarketplaceListing> {
+export async function createMarketplaceListing(listing: Omit<MarketplaceListing, 'id' | 'createdAt' | 'updatedAt' | 'views' | 'saves' | 'contacts'>): Promise<MarketplaceListing> {
   const now = Date.now();
   const { rows } = await pool.query(
-    `INSERT INTO marketplace_listings (user_id, title, description, price, category, images, location, created_at, updated_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    `INSERT INTO marketplace_listings (user_id, title, description, price, category, images, location, views, saves, contacts, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, 0, 0, 0, $8, $9)
      RETURNING *`,
     [listing.userId, listing.title, listing.description, listing.price, listing.category, JSON.stringify(listing.images), listing.location || '', now, now]
   );
@@ -39,10 +42,10 @@ export async function updateMarketplaceListing(id: string, updates: Partial<Mark
   if (fields.length === 0) return null;
   const setClause = fields.map((k, i) => `${k === 'images' ? 'images' : k.replace(/[A-Z]/g, c => '_' + c.toLowerCase())} = $${i + 1}`).join(', ');
   const values = fields.map(k => k === 'images' ? JSON.stringify((updates as any)[k]) : (updates as any)[k]);
-  values.push(id);
+  values.push(Date.now(), id);
   const { rows } = await pool.query(
     `UPDATE marketplace_listings SET ${setClause}, updated_at = $${fields.length + 1} WHERE id = $${fields.length + 2} RETURNING *`,
-    [...values, Date.now(), id]
+    values
   );
   return rows[0] || null;
 }
