@@ -42,43 +42,24 @@ export default function Storefront() {
   const [wishlist, setWishlist] = useState<string[]>([]);
 
   useEffect(() => {
-    const stores = JSON.parse(localStorage.getItem('stores') || '[]');
-    const storeData = stores.find((s: StoreSettings) => s.id === id);
-    if (storeData) {
-      setStore(storeData);
-    }
-
-    async function loadProducts() {
-      // Try API first (marketplace + vendor products persisted on server)
+    async function loadStoreAndProducts() {
+      // Fetch store info from backend
       try {
-        const allProducts = await api.fetchProducts();
-        // Marketplace uses MarketplaceProduct; filter for those matching this store/vendorkey
-        const storeProducts = allProducts
-          .filter((p: any) => p.vendorId === id || p.storeId === id)
-          .map((p: any) => ({
-            id: p.id,
-            storeId: p.vendorId || p.storeId || id,
-            title: p.title,
-            description: p.description,
-            price: p.price,
-            images: p.images || [],
-            category: p.category || "",
-            featured: p.featured || false,
-            inStock: (p.quantity ?? 1) > 0,
-            createdAt: p.createdAt || Date.now(),
-          } as Product));
+        const storeData = await api.fetchStoreById(id);
+        setStore(storeData);
+      } catch (err) {
+        setStore(null);
+      }
+      // Fetch only this seller's products (private store)
+      try {
+        const storeProducts = await api.fetchProductsByStore(id);
         setProducts(storeProducts);
       } catch (err) {
-        // Fallback to localStorage as before (single-store mode)
-        const allProducts = JSON.parse(localStorage.getItem('products') || '[]');
-        const storeProducts = allProducts.filter((p: Product) => p.storeId === id);
-        setProducts(storeProducts);
+        setProducts([]);
       }
     }
-    loadProducts();
-
-    const savedCart = JSON.parse(localStorage.getItem(`cart_${id}`) || '[]');
-    setCart(savedCart);
+    loadStoreAndProducts();
+    setCart([]); // No localStorage cart
   }, [id]);
 
   // Get unique categories from products
@@ -186,12 +167,7 @@ export default function Storefront() {
                   <Badge className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white border-0">
                     شحن سريع
                   </Badge>
-                  {store.subscription?.level !== 'free' && (
-                    <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0">
-                      <Zap className="h-3 w-3 mr-1" />
-                      {store.subscription?.level === 'pro' ? 'PRO' : 'Enterprise'}
-                    </Badge>
-                  )}
+                  {/* No premium logic: platform is 100% free */}
                 </div>
               </div>
             </div>
@@ -204,19 +180,7 @@ export default function Storefront() {
                 <ShoppingCart className="h-5 w-5 mr-2" />
                 السلة ({cart.length})
               </Button>
-              <Link to={`/shop/${store.id}/dashboard`} className="w-full md:w-auto">
-                <Button variant="outline" size="lg" className="w-full">
-                  لوحة الزبائن
-                </Button>
-              </Link>
-              {store.subscription?.level !== 'free' && (
-                <Link to={`/admin/store/${store.id}/settings`} className="w-full md:w-auto">
-                  <Button variant="ghost" size="sm" className="w-full">
-                    <Settings className="h-4 w-4 mr-2" />
-                    تخصيص المتجر
-                  </Button>
-                </Link>
-              )}
+              {/* No dashboard/settings for buyers; platform is 100% free */}
             </div>
           </div>
         </div>
