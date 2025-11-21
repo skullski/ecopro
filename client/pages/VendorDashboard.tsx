@@ -61,12 +61,15 @@ export default function VendorDashboard() {
     if (form.image) {
       try {
         // Optionally implement image upload logic here
-        imageUrl = ""; // Placeholder
+        imageUrl = ""; // Placeholder for now
       } catch {
         imageUrl = "";
       }
     }
+    // You may want to get storeId from seller or context
+    const storeId = seller?.storeId || seller?.id || "";
     const product = {
+      storeId,
       title: form.title,
       description: form.description,
       price: parseFloat(form.price),
@@ -74,7 +77,7 @@ export default function VendorDashboard() {
       images: imageUrl ? [imageUrl] : [],
       published: false, // Private by default
     };
-    await fetch('/api/items', {
+    await fetch('/api/store-products', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(product)
@@ -94,12 +97,18 @@ export default function VendorDashboard() {
     async function fetchDashboard() {
       setLoading(true);
       try {
-        // Fetch all dashboard data from backend
-        const res = await fetch("/api/seller/dashboard", { credentials: "include" });
-        const data = await res.json();
-        setSeller(data.seller);
-        setMetrics(data.metrics);
-        setCharts(data.charts);
+        // Fetch seller info (simulate or fetch from /api/vendors/me if available)
+        // For now, just set a dummy seller with id as storeId
+        const vendorRes = await fetch('/api/auth/me', { credentials: 'include' });
+        const vendor = await vendorRes.json();
+        setSeller(vendor);
+        // Fetch products for this vendor
+        const productsRes = await fetch('/api/store-products/mine', { credentials: 'include' });
+        const products = await productsRes.json();
+        setSeller(s => ({ ...s, products }));
+        // Optionally set metrics/charts to empty or dummy
+        setMetrics({});
+        setCharts({});
       } catch (e) {
         setSeller(null);
         setMetrics({});
