@@ -45,10 +45,8 @@ import VendorDashboard from "./pages/VendorDashboard";
 import VendorUpgrade from "./pages/VendorUpgrade";
 import VendorStorefront from "./pages/VendorStorefront";
 import DataMigration from "./pages/DataMigration";
-import PremiumManagement from "./pages/admin/PremiumManagement";
 import PostItem from "./pages/PostItem";
 import MyListings from "./pages/MyListings";
-import PremiumDashboard from "./pages/PremiumDashboard";
 
 // Store submenu pages
 import StoreLogo from "./pages/admin/store/Logo";
@@ -82,14 +80,11 @@ function RedirectAdmin() {
   return <Navigate to={to} replace />;
 }
 
-// Route guard for dashboard: only allow premium clients (role: 'premium' or 'admin')
+// Route guard for dashboard: only allow logged-in users
 function RequirePaidClient({ children }: { children: JSX.Element }) {
   const user = getCurrentUser();
   if (!user) {
     return <Navigate to="/login" replace />;
-  }
-  if (user.role !== 'premium' && user.role !== 'admin') {
-    return <Navigate to="/vendor/upgrade" replace />;
   }
   return children;
 }
@@ -100,103 +95,92 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <I18nProvider>
           <BrowserRouter>
-          <Layout>
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/quick-sell" element={
-                <Suspense fallback={<div>Loading...</div>}>
-                  <QuickSell />
-                </Suspense>
-              } />
-              <Route path="/my-items" element={<MyItems />} />
-              <Route path="/product/:id" element={<Product />} />
-              <Route path="/checkout" element={<Checkout />} />
-              <Route path="/order-success/:id" element={<OrderSuccess />} />
-              <Route path="/post-item" element={<PostItem />} />
-              <Route path="/my-listings" element={<MyListings />} />
-
-              {/* Vendor Dashboard - For clients who create stores (current "admin" panel) */}
-              <Route path="/dashboard" element={
-                <RequirePaidClient>
-                  <AdminLayout />
-                </RequirePaidClient>
-              }>
-                <Route index element={<AdminDashboard />} />
-                {/* Store submenu routes */}
-                <Route path="store/logo" element={<StoreLogo />} />
-                <Route path="store/homepage" element={<StoreHomepage />} />
-                <Route path="store/contact" element={<StoreContact />} />
-                <Route path="store/faq" element={<StoreFAQ />} />
-                <Route path="store/about" element={<StoreAbout />} />
-                <Route path="store/checkout-settings" element={<CheckoutSettings />} />
-                {/* Orders submenu routes */}
-                <Route path="orders" element={<AdminOrders />} />
-                <Route path="orders/add" element={<AddOrder />} />
-                <Route path="orders/wasselni" element={<WasselniOrders />} />
-                <Route path="orders/abandoned" element={<AbandonedOrders />} />
-                <Route path="orders/flex-scan" element={<FlexScan />} />
-                {/* Products routes */}
-                <Route path="products" element={<AdminProducts />} />
-                {/* Delivery submenu routes */}
-                <Route path="delivery/companies" element={<DeliveryCompanies />} />
-                {/* Addons submenu routes */}
-                <Route path="addons/google-sheets" element={<GoogleSheetsIntegration />} />
-                <Route path="analytics" element={<AdminAnalytics />} />
-                <Route path="preview" element={<StorePreview />} />
-                <Route path="settings" element={<AdminSettings />} />
-                <Route path="stores" element={<AdminStores />} />
-                <Route path="store/:id/settings" element={<StoreSettings />} />
-                <Route path="billing" element={<AdminBilling />} />
-                <Route path="wasselni-settings" element={<AdminWasselniSettings />} />
-                <Route path="calls" element={<AdminCalls />} />
-              </Route>
-
-              {/* Secret Platform Admin Panel - For platform owner ONLY */}
-              <Route path="/platform-control-x9k2m8p5q7w3" element={<AppPlaceholder />} />
-
-              {/* Admin Premium Management */}
-              <Route path="/admin/premium-management" element={<PremiumManagement />} />
-              {/* Old admin routes: redirect to /dashboard (preserve subpath) */}
-              <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/admin/*" element={<RedirectAdmin />} />
-              <Route path="/app" element={<AdminLayout />} />
-              <Route path="/billing" element={<Billing />} />
-              <Route path="/wasselni" element={<Wasselni />} />
-              <Route path="/s/:id" element={<Storefront />} />
-              <Route path="/shop/:id/dashboard" element={<CustomerDashboard />} />
-              <Route path="/shop/:id/login" element={<CustomerLogin />} />
-              <Route path="/marketplace" element={<Marketplace />} />
-              <Route path="/shop/:id/signup" element={<CustomerSignup />} />
-              <Route path="/logo-demo" element={<LogoDemo />} />
-              {/* Vendor/Marketplace routes */}
-              <Route path="/vendor/signup" element={<VendorSignup />} />
-              <Route path="/vendor/upgrade" element={<VendorUpgrade />} />
-              <Route path="/vendor/:id/dashboard" element={<VendorDashboard />} />
-              <Route path="/marketplace/:vendorSlug" element={<VendorStorefront />} />
-              <Route path="/data-migration" element={<DataMigration />} />
-              <Route path="/premium-dashboard" element={<PremiumDashboard />} />
-
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Layout>
-        </BrowserRouter>
-      </I18nProvider>
-    </TooltipProvider>
+            <Layout>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/quick-sell" element={
+                  <Suspense fallback={<div>Loading...</div>}>
+                    <QuickSell />
+                  </Suspense>
+                } />
+                <Route path="/my-items" element={<MyItems />} />
+                <Route path="/product/:id" element={<Product />} />
+                <Route path="/order-success/:id" element={<OrderSuccess />} />
+                <Route path="/post-item" element={<PostItem />} />
+                <Route path="/my-listings" element={<MyListings />} />
+                {/* Vendor Dashboard - For clients who create stores (current "admin" panel) */}
+                <Route path="/dashboard" element={
+                  <RequirePaidClient>
+                    <AdminLayout />
+                  </RequirePaidClient>
+                }>
+                  <Route index element={<AdminDashboard />} />
+                  {/* Store submenu routes */}
+                  <Route path="store/logo" element={<StoreLogo />} />
+                  <Route path="store/homepage" element={<StoreHomepage />} />
+                  <Route path="store/contact" element={<StoreContact />} />
+                  <Route path="store/faq" element={<StoreFAQ />} />
+                  <Route path="store/about" element={<StoreAbout />} />
+                  <Route path="store/checkout-settings" element={<CheckoutSettings />} />
+                  {/* Orders submenu routes */}
+                  <Route path="orders" element={<AdminOrders />} />
+                  <Route path="orders/add" element={<AddOrder />} />
+                  <Route path="orders/wasselni" element={<WasselniOrders />} />
+                  <Route path="orders/abandoned" element={<AbandonedOrders />} />
+                  <Route path="orders/flex-scan" element={<FlexScan />} />
+                  {/* Products routes */}
+                  <Route path="products" element={<AdminProducts />} />
+                  {/* Delivery submenu routes */}
+                  <Route path="delivery/companies" element={<DeliveryCompanies />} />
+                  {/* Addons submenu routes */}
+                  <Route path="addons/google-sheets" element={<GoogleSheetsIntegration />} />
+                  <Route path="analytics" element={<AdminAnalytics />} />
+                  <Route path="preview" element={<StorePreview />} />
+                  <Route path="settings" element={<AdminSettings />} />
+                  <Route path="stores" element={<AdminStores />} />
+                  <Route path="store/:id/settings" element={<StoreSettings />} />
+                  <Route path="billing" element={<AdminBilling />} />
+                  <Route path="wasselni-settings" element={<AdminWasselniSettings />} />
+                  <Route path="calls" element={<AdminCalls />} />
+                </Route>
+                {/* Secret Platform Admin Panel - For platform owner ONLY */}
+                <Route path="/platform-control-x9k2m8p5q7w3" element={<AppPlaceholder />} />
+                {/* Old admin routes: redirect to /dashboard (preserve subpath) */}
+                <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/admin/*" element={<RedirectAdmin />} />
+                <Route path="/app" element={<AdminLayout />} />
+                <Route path="/billing" element={<Billing />} />
+                <Route path="/wasselni" element={<Wasselni />} />
+                <Route path="/s/:id" element={<Storefront />} />
+                <Route path="/shop/:id/dashboard" element={<CustomerDashboard />} />
+                <Route path="/shop/:id/login" element={<CustomerLogin />} />
+                <Route path="/marketplace" element={<Marketplace />} />
+                <Route path="/shop/:id/signup" element={<CustomerSignup />} />
+                <Route path="/logo-demo" element={<LogoDemo />} />
+                {/* Vendor/Marketplace routes */}
+                <Route path="/vendor/signup" element={<VendorSignup />} />
+                <Route path="/vendor/upgrade" element={<VendorUpgrade />} />
+                <Route path="/vendor/:id/dashboard" element={<VendorDashboard />} />
+                <Route path="/marketplace/:vendorSlug" element={<VendorStorefront />} />
+                <Route path="/data-migration" element={<DataMigration />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Layout>
+          </BrowserRouter>
+        </I18nProvider>
+      </TooltipProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );
 
 const container = document.getElementById("root")!;
 // Persist root across HMR to avoid 'createRoot on same container' warning
-declare global {
-  interface Window {
-    __APP_ROOT__?: ReturnType<typeof createRoot>;
-  }
+if (!(window as any).__APP_ROOT__) {
+  (window as any).__APP_ROOT__ = createRoot(container);
 }
-if (!window.__APP_ROOT__) {
-  window.__APP_ROOT__ = createRoot(container);
-}
-window.__APP_ROOT__.render(<App />);
+(window as any).__APP_ROOT__.render(<App />);
