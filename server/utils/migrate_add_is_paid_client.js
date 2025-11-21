@@ -1,4 +1,3 @@
-// Ensure compatibility with ts-node
 const { Pool } = require("pg");
 
 const pool = new Pool({

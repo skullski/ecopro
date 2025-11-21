@@ -11,6 +11,8 @@ function getRandomInt(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+const ghostImage = "https://path-to-your-uploaded-image/ghost-image.jpg"; // Replace with the actual URL of the attached image
+
 export default function AnimatedGhosts() {
   const [ghosts, setGhosts] = useState<Array<{id:number, top:number, img:string, speed:number}>>([]);
   const ghostId = useRef(0);
@@ -60,6 +62,7 @@ export default function AnimatedGhosts() {
           }}
         />
       ))}
+      <img src={ghostImage} alt="Moving Ghost" className="absolute" style={{ animation: 'ghostMove 5s infinite' }} />
     </>
   );
 }

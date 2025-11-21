@@ -27,6 +27,8 @@ export default function HomeMarketplace() {
   const [vendors, setVendors] = useState<Record<string, Vendor>>({});
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<any>({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
 
   useEffect(() => {
     async function fetchData() {
@@ -55,6 +57,11 @@ export default function HomeMarketplace() {
     return true;
   });
 
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   return (
     <div className={
       `w-full min-h-screen transition-colors duration-300 flex flex-col items-center ` +
@@ -78,10 +85,11 @@ export default function HomeMarketplace() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-8">
           {loading ? (
             <div className="text-center w-full col-span-full">Loading...</div>
-          ) : filteredProducts.map(product => (
+          ) : paginatedProducts.map(product => (
+            // Enhanced product card design with hover effects and animations
             <div
               key={product.id}
-              className="relative group rounded-3xl p-0.5 bg-gradient-to-br from-white/60 via-primary/10 to-accent/10 dark:from-[#232325]/60 dark:via-[#232325]/80 dark:to-[#1a1a2e]/80 shadow-2xl hover:shadow-primary/30 transition-all duration-300"
+              className="relative group rounded-3xl p-0.5 bg-gradient-to-br from-white/60 via-primary/10 to-accent/10 dark:from-[#232325]/60 dark:via-[#232325]/80 dark:to-[#1a1a2e]/80 shadow-2xl hover:shadow-primary/30 transition-all duration-300 transform hover:scale-105 hover:rotate-1"
               style={{ minHeight: 340 }}
             >
               <div className="relative bg-white/80 dark:bg-[#232325]/80 rounded-3xl overflow-hidden flex flex-col h-full backdrop-blur-xl">
@@ -95,7 +103,6 @@ export default function HomeMarketplace() {
                     <Button size="icon" variant="ghost" className="backdrop-blur bg-white/60 dark:bg-[#232325]/60 shadow hover:scale-110 transition-transform"><Heart className="w-4 h-4" /></Button>
                     <Button size="icon" variant="ghost" className="backdrop-blur bg-white/60 dark:bg-[#232325]/60 shadow hover:scale-110 transition-transform"><Share2 className="w-4 h-4" /></Button>
                   </div>
-                  {/* Gallery indicator dots or carousel can go here */}
                 </div>
                 <div className="flex-1 flex flex-col p-4">
                   <div className="font-bold text-lg mb-1 line-clamp-2">{product.title}</div>
@@ -103,10 +110,7 @@ export default function HomeMarketplace() {
                   <div className="mb-1 text-xs text-primary-400 font-medium flex gap-2 items-center">
                     <Tag className="w-4 h-4" /> {product.category}
                   </div>
-                  <div className={
-                    "flex items-center gap-2 text-xs mb-1 " +
-                    (theme === "dark" ? "text-gray-400" : "text-gray-500")
-                  }>
+                  <div className={"flex items-center gap-2 text-xs mb-1 " + (theme === "dark" ? "text-gray-400" : "text-gray-500")}>
                     <User className="w-4 h-4" /> {vendors[product.vendorId]?.name || 'Vendor'}
                   </div>
                   <div className="flex items-center gap-2 mt-auto">
@@ -121,11 +125,29 @@ export default function HomeMarketplace() {
                 >
                   <span className="sr-only">View product</span>
                 </Link>
-                {/* Glassmorphism overlay and animated border */}
                 <div className="pointer-events-none absolute inset-0 rounded-3xl border-2 border-white/30 dark:border-gray-800/60 group-hover:border-primary/60 transition-all duration-300" />
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Pagination Controls */}
+        <div className="flex justify-center mt-8">
+          <button
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(currentPage - 1)}
+            className="px-4 py-2 border rounded-lg bg-primary text-white disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <span className="px-4 py-2">Page {currentPage}</span>
+          <button
+            disabled={currentPage * itemsPerPage >= filteredProducts.length}
+            onClick={() => setCurrentPage(currentPage + 1)}
+            className="px-4 py-2 border rounded-lg bg-primary text-white disabled:opacity-50"
+          >
+            Next
+          </button>
         </div>
       </div>
     </div>

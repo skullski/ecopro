@@ -48,6 +48,7 @@ import DataMigration from "./pages/DataMigration";
 import PremiumManagement from "./pages/admin/PremiumManagement";
 import PostItem from "./pages/PostItem";
 import MyListings from "./pages/MyListings";
+import PremiumDashboard from "./pages/PremiumDashboard";
 
 // Store submenu pages
 import StoreLogo from "./pages/admin/store/Logo";
@@ -177,6 +178,7 @@ const App = () => (
               <Route path="/vendor/:id/dashboard" element={<VendorDashboard />} />
               <Route path="/marketplace/:vendorSlug" element={<VendorStorefront />} />
               <Route path="/data-migration" element={<DataMigration />} />
+              <Route path="/premium-dashboard" element={<PremiumDashboard />} />
 
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
