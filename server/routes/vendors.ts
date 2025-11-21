@@ -129,6 +129,7 @@ export const createProduct: RequestHandler = async (req, res) => {
   if (!product.updatedAt) product.updatedAt = Date.now();
   if (!product.status) product.status = 'active';
   if (typeof product.quantity !== 'number') product.quantity = 1;
+  if (!product.ownerKey) product.ownerKey = `key_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
 
   const { createProduct: createProductDb, findProductById } = await import("../utils/productsDb");
   // If request is authenticated vendor, attach vendorId and default to exported
