@@ -156,6 +156,12 @@ export function createServer() {
     vendorRoutes.updateVendor
   );
 
+  // Public product creation (anonymous marketplace sellers)
+  app.post(
+    "/api/products/public",
+    vendorRoutes.createPublicProduct
+  );
+
   // Protected product routes (require authentication)
   app.post(
     "/api/products",

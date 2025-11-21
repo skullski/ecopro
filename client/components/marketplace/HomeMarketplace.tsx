@@ -43,6 +43,8 @@ export default function HomeMarketplace() {
     published: true,
   });
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [products, setProducts] = useState<MarketplaceProduct[]>([]);
   const [vendors, setVendors] = useState<Record<string, Vendor>>({});
   const [loading, setLoading] = useState(true);
@@ -72,14 +74,18 @@ export default function HomeMarketplace() {
 
   async function handleAddProduct(e: React.FormEvent) {
     e.preventDefault();
+    setError(null);
+    setSuccess(null);
     setSubmitting(true);
     let imageUrl = "";
     if (form.image) {
       try {
         const uploadRes = await apiHelpers.uploadImage(form.image);
         imageUrl = uploadRes.url;
-      } catch {
-        imageUrl = "";
+      } catch (err: any) {
+        setError("Image upload failed: " + (err?.message || "Unknown error"));
+        setSubmitting(false);
+        return;
       }
     }
     const product = {
@@ -92,16 +98,25 @@ export default function HomeMarketplace() {
       published: true, // Always publish to marketplace
       visibilitySource: "marketplace"
     };
-    // Use public/anonymous product creation for marketplace
-    await apiHelpers.createPublicProduct(product);
-    setShowAdd(false);
-    setForm({ title: "", description: "", price: "", category: "", location: "", image: null, published: true });
-    setSubmitting(false);
-    // Refresh products
-    setLoading(true);
-    const items = await fetch('/api/items').then(r => r.json());
-    setProducts(items);
-    setLoading(false);
+    try {
+      const resp = await apiHelpers.createPublicProduct(product);
+      if (resp && resp.error) {
+        setError("Backend: " + resp.error);
+      } else {
+        setSuccess("Product added successfully!");
+        setShowAdd(false);
+        setForm({ title: "", description: "", price: "", category: "", location: "", image: null, published: true });
+        // Refresh products
+        setLoading(true);
+        const items = await fetch('/api/items').then(r => r.json());
+        setProducts(items);
+        setLoading(false);
+      }
+    } catch (err: any) {
+      setError("Failed to add product: " + (err?.message || "Unknown error"));
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   // Filter products by selected filters
@@ -162,7 +177,42 @@ export default function HomeMarketplace() {
               + Add Product
             </Button>
           </DialogTrigger>
-          {/* DialogContent and form remain here (not shown for brevity) */}
+          <DialogContent>
+            <DialogHeader>
+              <h3 className="text-xl font-bold mb-2">Add Product</h3>
+            </DialogHeader>
+            <form onSubmit={handleAddProduct} className="space-y-4">
+              <Input required placeholder="Title" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
+              <Textarea required placeholder="Description" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
+              <Input required type="number" min="0" step="0.01" placeholder="Price" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} />
+              <select
+                required
+                value={form.category}
+                onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+                className="w-full rounded-lg border-2 border-accent/30 bg-[#181a2a] text-accent-200 px-4 py-2 focus:border-accent/60 focus:ring-2 focus:ring-accent/60 transition-all shadow-neon"
+              >
+                <option value="" disabled>Select category…</option>
+                <option value="Cars">Cars</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Fashion">Fashion</option>
+                <option value="Home">Home</option>
+                <option value="Sports">Sports</option>
+                <option value="Accessories">Accessories</option>
+                <option value="Real Estate">Real Estate</option>
+                <option value="Jobs">Jobs</option>
+                <option value="Others">Others</option>
+              </select>
+              <Input placeholder="Location" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} />
+              <Input type="file" accept="image/*" onChange={e => setForm(f => ({ ...f, image: e.target.files?.[0] || null }))} />
+              {error && <div className="text-red-500 text-sm font-semibold">{error}</div>}
+              {success && <div className="text-green-500 text-sm font-semibold">{success}</div>}
+              <DialogFooter>
+                <Button type="submit" disabled={submitting} className="w-full bg-gradient-to-r from-indigo-600 to-cyan-600 text-white font-bold">
+                  {submitting ? "Adding..." : "+ Add Product"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
         </Dialog>
         {/* Product Grid */}
         </div>

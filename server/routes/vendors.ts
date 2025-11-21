@@ -159,28 +159,44 @@ export const createProduct: RequestHandler = async (req, res) => {
 export const createPublicProduct: RequestHandler = async (req, res) => {
   try {
     const product = req.body as MarketplaceProduct;
+    // Validate required fields
+    if (!product.title || !product.description || !product.price || !product.category) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
     if (!product.id) product.id = `prod_${Date.now()}`;
-  product.createdAt = Date.now();
+    product.createdAt = Date.now();
     product.updatedAt = Date.now();
     product.ownerKey = generateKey();
     // Honor email if provided by anonymous seller
     if (req.body.ownerEmail) {
       product.ownerEmail = req.body.ownerEmail;
     }
-  product.vendorId = product.vendorId || "";
-  // defaults so public products are visible in marketplace
-  if (!product.status) product.status = "active";
-  if (typeof product.quantity !== "number") product.quantity = 1;
-  if (product.isExportedToMarketplace === undefined) product.isExportedToMarketplace = true;
-  product.views = product.views || 0;
-  product.favorites = product.favorites || 0;
+    product.vendorId = product.vendorId || "";
+    // defaults so public products are visible in marketplace
+    if (!product.status) product.status = "active";
+    if (typeof product.quantity !== "number") product.quantity = 1;
+    if (product.isExportedToMarketplace === undefined) product.isExportedToMarketplace = true;
+    product.published = true;
+    product.visibilitySource = "marketplace";
+    product.views = product.views || 0;
+    product.favorites = product.favorites || 0;
 
     const { createProduct: createProductDb } = await import("../utils/productsDb");
-    const saved = await createProductDb(product);
+    let saved;
+    try {
+      saved = await createProductDb(product);
+    } catch (dbErr) {
+      console.error("DB error in createProductDb:", dbErr, "\nProduct:", product);
+      return res.status(500).json({ error: "DB error: " + (dbErr && dbErr.message ? dbErr.message : dbErr) });
+    }
+    if (!saved) {
+      console.error("createProductDb returned falsy value. Product:", product);
+      return res.status(500).json({ error: "Failed to create public product (DB error)" });
+    }
     res.status(201).json({ product: saved, ownerKey: product.ownerKey });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to create public product" });
+    console.error("createPublicProduct error:", err, "\nProduct:", req.body);
+    res.status(500).json({ error: "Failed to create public product: " + (err && err.message ? err.message : err) });
   }
 };
 
