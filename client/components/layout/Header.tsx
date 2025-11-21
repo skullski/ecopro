@@ -48,14 +48,30 @@ export default function Header() {
 
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center gap-1">
-              {/* Only show marketplace navigation */}
               <Link 
                 to="/marketplace" 
                 className="px-4 py-2 rounded-lg text-sm font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 transition-all"
               >
                 {t("menu.store")}
               </Link>
-
+              <Link 
+                to="/pricing" 
+                className="px-4 py-2 rounded-lg text-sm font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 transition-all"
+              >
+                Pricing
+              </Link>
+              <Link 
+                to="/about" 
+                className="px-4 py-2 rounded-lg text-sm font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 transition-all"
+              >
+                About Us
+              </Link>
+              <Link 
+                to="/contact" 
+                className="px-4 py-2 rounded-lg text-sm font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 transition-all"
+              >
+                Support
+              </Link>
             </nav>
 
             {/* Right Side Actions */}
@@ -150,7 +166,6 @@ export default function Header() {
         <div className="lg:hidden fixed inset-0 top-20 z-40 bg-background/95 backdrop-blur-xl border-t border-primary/10">
           <div className="container mx-auto px-4 py-6">
             <nav className="flex flex-col gap-2">
-              {/* Only show marketplace navigation */}
               <Link 
                 to="/marketplace" 
                 onClick={() => setMobileMenuOpen(false)}
@@ -158,7 +173,27 @@ export default function Header() {
               >
                 {t("menu.store")}
               </Link>
-
+              <Link 
+                to="/pricing" 
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-4 py-3 rounded-lg text-base font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 transition-all"
+              >
+                Pricing
+              </Link>
+              <Link 
+                to="/about" 
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-4 py-3 rounded-lg text-base font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 transition-all"
+              >
+                About Us
+              </Link>
+              <Link 
+                to="/contact" 
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-4 py-3 rounded-lg text-base font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 transition-all"
+              >
+                Support
+              </Link>
 
               {user && (
                 <>

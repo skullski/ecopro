@@ -1,3 +1,6 @@
+import Pricing from "./pages/Pricing";
+import About from "./pages/About";
+import Contact from "./pages/Contact";
 import { Toaster } from "@/components/ui/toaster";
 import { createRoot } from "react-dom/client";
 import "./global.css";
@@ -167,6 +170,9 @@ const App = () => (
                 <Route path="/vendor/:id/dashboard" element={<VendorDashboard />} />
                 <Route path="/marketplace/:vendorSlug" element={<VendorStorefront />} />
                 <Route path="/data-migration" element={<DataMigration />} />
+                <Route path="/pricing" element={<Pricing />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/contact" element={<Contact />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

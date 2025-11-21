@@ -63,10 +63,12 @@ const PostItem: React.FC = () => {
           formDataToSend.append(key, value as string);
         }
       });
+      const token = localStorage.getItem("authToken");
       const response = await fetch("/api/marketplace/items", {
         method: "POST",
         body: formDataToSend,
         credentials: "include",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (response.ok) {
         navigate("/my-listings");
