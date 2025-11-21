@@ -24,7 +24,7 @@ function VendorDashboard() {
     let imageUrl = "";
     // Optionally implement image upload logic here
     // For now, skip image upload
-    const storeId = seller?.storeId || seller?.id || "";
+    const storeId = user?.storeId || user?.id || "";
     const product = {
       storeId,
       title: form.title,
