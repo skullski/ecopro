@@ -121,6 +121,12 @@ export default function Header() {
                 </>
               ) : (
                 <div className="hidden md:flex items-center gap-2">
+                  <Link to="/dashboard">
+                    <Button variant="outline" className="border-2 border-primary/40 text-primary hover:bg-primary/10 font-medium">
+                      <LayoutDashboard className="w-4 h-4 ml-2" />
+                      Dashboard
+                    </Button>
+                  </Link>
                   <Button 
                     variant="outline" 
                     onClick={handleLogout}
@@ -186,6 +192,12 @@ export default function Header() {
               {user && (
                 <>
                   <div className="h-px bg-border my-2" />
+                  <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>
+                    <Button variant="outline" className="justify-start border-2 border-primary/40 text-primary hover:bg-primary/10 font-medium w-full">
+                      <LayoutDashboard className="w-4 h-4 ml-2" />
+                      Dashboard
+                    </Button>
+                  </Link>
                   <Button 
                     variant="outline" 
                     onClick={() => {

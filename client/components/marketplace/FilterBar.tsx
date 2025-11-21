@@ -48,15 +48,15 @@ export default function FilterBar({
 	}
 
 	return (
-		<div className="backdrop-blur bg-white/40 dark:bg-[#232325]/60 rounded-2xl shadow-xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between border border-white/20 dark:border-gray-800 mb-6">
-			<div className="flex flex-wrap gap-2 items-center">
+		<div className="backdrop-blur-xl bg-gradient-to-r from-[#232325]/60 via-[#1a1a2e]/80 to-[#232325]/60 rounded-2xl shadow-2xl p-6 flex flex-col md:flex-row gap-6 items-center justify-between border border-accent/30 mb-8 animate-fade-in">
+			<div className="flex flex-wrap gap-3 items-center">
 				{categories.map((cat) => (
 					<button
 						key={cat.name}
-						className={`px-4 py-2 rounded-full text-sm font-medium flex items-center gap-1 transition-all border-2 ${
+						className={`px-5 py-2 rounded-full text-sm font-semibold flex items-center gap-2 transition-all border-2 shadow-lg focus:outline-none focus:ring-2 focus:ring-accent/60 ${
 							selected.includes(cat.name)
-								? "bg-gradient-to-r from-primary/60 to-accent/60 text-white border-primary shadow-lg"
-								: "bg-white/60 dark:bg-[#232325]/60 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-primary/10 hover:border-primary/40"
+								? "bg-gradient-to-r from-purple-500 via-blue-500 to-pink-500 text-white border-accent/80 shadow-neon"
+								: "bg-white/10 dark:bg-[#232325]/40 border-accent/30 text-accent-200 hover:bg-accent/10 hover:border-accent/60"
 						}`}
 						onClick={() => toggleCategory(cat.name)}
 					>
@@ -67,71 +67,33 @@ export default function FilterBar({
 					</button>
 				))}
 			</div>
-			<div className="flex items-center gap-2">
-				<span className="text-xs text-gray-500">Price:</span>
+			<div className="flex items-center gap-3">
+				<span className="text-xs text-accent-200 font-semibold">Price:</span>
 				<input
 					type="range"
 					min={0}
 					max={100000}
 					value={price[0]}
 					onChange={(e) => handlePriceChange(e, 0)}
-					className="accent-primary w-24"
+					className="accent-accent w-28 rounded-lg border-2 border-accent/30 bg-[#181a2a] shadow-neon transition-all focus:ring-2 focus:ring-accent/60"
 				/>
-				<span className="text-xs font-bold text-primary">{price[0]}</span>
-				<span className="mx-1 text-xs text-gray-400">-</span>
+				<span className="text-xs font-bold text-accent-200">{price[0]}</span>
+				<span className="mx-1 text-xs text-accent-200">-</span>
 				<input
 					type="range"
 					min={0}
 					max={100000}
 					value={price[1]}
 					onChange={(e) => handlePriceChange(e, 1)}
-					className="accent-primary w-24"
+					className="accent-accent w-28 rounded-lg border-2 border-accent/30 bg-[#181a2a] shadow-neon transition-all focus:ring-2 focus:ring-accent/60"
 				/>
-				<span className="text-xs font-bold text-primary">{price[1]}</span>
+				<span className="text-xs font-bold text-accent-200">{price[1]}</span>
 			</div>
-			{/* Added advanced filters for categories, price range, and location */}
 			<div className="flex flex-wrap gap-4">
-				<select
-					className="border rounded-lg p-2"
-					onChange={(e) => onFilter({ categories: [e.target.value] })}
-				>
-					<option value="">All Categories</option>
-					{categories.map((category) => (
-						<option key={category.name} value={category.name}>
-							{category.name}
-						</option>
-					))}
-				</select>
-				<input
-					type="number"
-					placeholder="Min Price"
-					className="border rounded-lg p-2"
-					onChange={(e) =>
-						onFilter({
-							price: [
-								parseInt(e.target.value),
-								filters.price?.[1] || Infinity,
-							],
-						})
-					}
-				/>
-				<input
-					type="number"
-					placeholder="Max Price"
-					className="border rounded-lg p-2"
-					onChange={(e) =>
-						onFilter({
-							price: [
-								filters.price?.[0] || 0,
-								parseInt(e.target.value),
-							],
-						})
-					}
-				/>
 				<input
 					type="text"
 					placeholder="Location"
-					className="border rounded-lg p-2"
+					className="rounded-lg border-2 border-accent/30 bg-[#181a2a] text-accent-200 px-4 py-2 focus:border-accent/60 focus:ring-2 focus:ring-accent/60 transition-all shadow-neon"
 					onChange={(e) => onFilter({ location: e.target.value })}
 				/>
 			</div>
