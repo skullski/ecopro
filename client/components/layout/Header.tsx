@@ -121,18 +121,6 @@ export default function Header() {
                 </>
               ) : (
                 <div className="hidden md:flex items-center gap-2">
-                  <Link to="/post-item">
-                    <Button variant="outline" className="border-2 border-primary/40 text-primary hover:bg-primary/10 font-medium">
-                      <PlusCircle className="w-4 h-4 ml-2" />
-                      Post Item
-                    </Button>
-                  </Link>
-                  <Link to="/my-listings">
-                    <Button variant="ghost" className="font-medium">
-                      <ShoppingBag className="w-4 h-4 ml-2" />
-                      My Listings
-                    </Button>
-                  </Link>
                   <Button 
                     variant="outline" 
                     onClick={handleLogout}
@@ -198,18 +186,6 @@ export default function Header() {
               {user && (
                 <>
                   <div className="h-px bg-border my-2" />
-                  <Link to="/post-item" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="outline" className="justify-start border-2 border-primary/40 text-primary hover:bg-primary/10 font-medium w-full">
-                      <PlusCircle className="w-4 h-4 ml-2" />
-                      Post Item
-                    </Button>
-                  </Link>
-                  <Link to="/my-listings" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="ghost" className="justify-start font-medium w-full">
-                      <ShoppingBag className="w-4 h-4 ml-2" />
-                      My Listings
-                    </Button>
-                  </Link>
                   <Button 
                     variant="outline" 
                     onClick={() => {
