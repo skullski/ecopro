@@ -58,9 +58,7 @@ export interface Vendor {
   totalSales: number;
   totalProducts: number;
   verified: boolean;
-  isVIP: boolean; // True if paid subscription is active
-  subscriptionStatus: 'free' | 'vip' | 'expired'; // Subscription tier
-  subscriptionExpiry?: number; // Timestamp when VIP expires
+  // All vendors are free tier; no premium logic
   joinedAt: number;
   location?: {
     city: string;
@@ -86,7 +84,7 @@ export interface MarketplaceProduct {
   quantity: number;
   featured: boolean;
   status: 'active' | 'pending' | 'sold' | 'inactive';
-  isExportedToMarketplace: boolean; // True if product is visible in main /marketplace
+  isExportedToMarketplace: boolean; // True if product is visible in main /marketplace (public listing)
   ownerKey?: string; // Temporary token for anonymous sellers
   ownerEmail?: string; // Email associated with anonymous listing
   views: number;

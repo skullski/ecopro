@@ -23,7 +23,6 @@ interface EnhancedSidebarProps {
 }
 
 const menuItems: MenuItem[] = [
-  { titleKey: "sidebar.premiumManagement", path: "/admin/premium-management", icon: <Star className="w-5 h-5 text-yellow-500" /> },
   { titleKey: "sidebar.home", path: "/dashboard", icon: <Home className="w-5 h-5" /> },
   { titleKey: "sidebar.preview", path: "/dashboard/preview", icon: <Eye className="w-5 h-5" /> },
   { 
