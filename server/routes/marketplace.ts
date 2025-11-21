@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, Request } from "express";
 import { requireAuth } from "./auth";
 import { v4 as uuidv4 } from "uuid";
 import { getUserFromRequest } from "../utils/auth";
@@ -9,8 +9,27 @@ import {
   updateMarketplaceListing,
   deleteMarketplaceListing
 } from "../utils/marketplaceDb";
+import multer, { Multer } from "multer";
+import { Readable } from "stream";
 
 const router = Router();
+const upload = multer({ dest: "uploads/" });
+
+// Extend the Express Request interface to include the Multer file property
+interface MulterRequest extends Request {
+  file?: {
+    fieldname: string;
+    originalname: string;
+    encoding: string;
+    mimetype: string;
+    size: number;
+    destination: string;
+    filename: string;
+    path: string;
+    stream: Readable;
+    buffer: Buffer;
+  };
+}
 
 // Get all marketplace listings (public)
 router.get("/", async (_req, res) => {
@@ -63,6 +82,29 @@ router.delete("/:id", requireAuth, async (req, res) => {
   if (!listing) return res.status(404).json({ error: "Listing not found" });
   await deleteMarketplaceListing(id);
   res.json({ success: true });
+});
+
+// Create new listing with image upload (seller only)
+router.post("/items", requireAuth, upload.single("image"), async (req, res) => {
+  const user = getUserFromRequest(req);
+  const { title, description, price, category, location } = req.body;
+  const image = (req as MulterRequest).file;
+
+  if (!title || !description || !price || !category || !location || !image) {
+    return res.status(400).json({ error: "All fields are required." });
+  }
+
+  const listing = await createMarketplaceListing({
+    userId: user.userId,
+    title,
+    description,
+    price: parseFloat(price),
+    category,
+    images: [image.path],
+    location,
+  });
+
+  res.status(201).json(listing);
 });
 
 export default router;

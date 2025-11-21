@@ -6,7 +6,7 @@ export function requirePremium(req: Request, res: Response, next: NextFunction) 
     res.status(401).json({ error: "Authentication required" });
     return;
   }
-  if (req.user.role !== "premium" && req.user.role !== "admin") {
+  if (req.user.role !== "vendor" && req.user.role !== "admin") {
     res.status(403).json({ error: "Premium access required" });
     return;
   }
@@ -130,5 +130,19 @@ export function optionalAuthenticate(req: Request, res: Response, next: NextFunc
     // Token invalid but we don't reject the request
   }
   
+  next();
+}
+
+/**
+ * Middleware to ensure user has seller role
+ */
+export function ensureSeller(req: Request, res: Response, next: NextFunction) {
+  const user = req.user; // Assuming user is attached to req by authentication middleware
+
+  // Corrected role checks to align with defined roles
+  if (req.user.role !== "vendor" && req.user.role !== "admin") {
+    return res.status(403).json({ error: "Access denied." });
+  }
+
   next();
 }

@@ -159,6 +159,12 @@ export default function Header() {
                           ترقية لحساب VIP
                         </Button>
                       </Link>
+                      <Link to="/post-item">
+                        <Button variant="outline" className="border-2 border-primary/40 text-primary hover:bg-primary/10 font-medium">
+                          <PlusCircle className="w-4 h-4 ml-2" />
+                          Post Item
+                        </Button>
+                      </Link>
                     </>
                   )}
                   <Button 

@@ -46,6 +46,8 @@ import VendorUpgrade from "./pages/VendorUpgrade";
 import VendorStorefront from "./pages/VendorStorefront";
 import DataMigration from "./pages/DataMigration";
 import PremiumManagement from "./pages/admin/PremiumManagement";
+import PostItem from "./pages/PostItem";
+import MyListings from "./pages/MyListings";
 
 // Store submenu pages
 import StoreLogo from "./pages/admin/store/Logo";
@@ -113,6 +115,8 @@ const App = () => (
               <Route path="/product/:id" element={<Product />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/order-success/:id" element={<OrderSuccess />} />
+              <Route path="/post-item" element={<PostItem />} />
+              <Route path="/my-listings" element={<MyListings />} />
 
               {/* Vendor Dashboard - For clients who create stores (current "admin" panel) */}
               <Route path="/dashboard" element={
