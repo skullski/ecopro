@@ -6,7 +6,7 @@ import { useTranslation } from "@/lib/i18n";
 function VendorDashboard() {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
-  const [seller, setSeller] = useState<any>(null);
+  const [user, setUser] = useState<any>(null);
   const [products, setProducts] = useState<any[]>([]);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
@@ -49,24 +49,26 @@ function VendorDashboard() {
   }
 
   useEffect(() => {
-    async function fetchDashboard() {
+    async function fetchUserAndProducts() {
       setLoading(true);
       try {
-        const vendorRes = await fetch('/api/auth/me', { credentials: 'include' });
-        const vendor = await vendorRes.json();
-        setSeller(vendor);
-        // Fetch only store products (not public/marketplace)
-        const productsRes = await fetch('/api/store-products/mine', { credentials: 'include' });
-        const items = await productsRes.json();
-        setProducts(items.filter((p: any) => !p.published));
+        const res = await fetch('/api/auth/me', { credentials: 'include' });
+        const user = await res.json();
+        setUser(user);
+        if (user.role === 'vendor') {
+          // Only fetch products for sellers
+          const productsRes = await fetch('/api/store-products/mine', { credentials: 'include' });
+          const items = await productsRes.json();
+          setProducts(items.filter((p: any) => !p.published));
+        }
       } catch (e) {
-        setSeller(null);
+        setUser(null);
         setProducts([]);
       } finally {
         setLoading(false);
       }
     }
-    fetchDashboard();
+    fetchUserAndProducts();
   }, []);
 
   async function handleDelete(productId: string) {
@@ -100,16 +102,23 @@ function VendorDashboard() {
     );
   }
 
-  if (!seller) {
+  if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0f1021] via-[#181a2a] to-[#1a1a2e]">
         <div className="text-center">
-          <p className="text-accent-200 text-lg font-bold">{t("No seller information found. Please log in again.")}</p>
+          <p className="text-accent-200 text-lg font-bold">{t("No user information found. Please log in again.")}</p>
         </div>
       </div>
     );
   }
 
+  // If user is a client, redirect to dashboard (full access)
+  if (user.role === 'client') {
+    window.location.href = '/dashboard';
+    return null;
+  }
+
+  // Seller: Only show product management UI
   return (
     <div className="min-h-screen flex flex-col items-center justify-start bg-gradient-to-br from-[#0f1021] via-[#181a2a] to-[#1a1a2e] text-white p-8">
       <h1 className="text-3xl font-extrabold mb-8 bg-gradient-to-r from-purple-400 via-blue-400 to-pink-500 bg-clip-text text-transparent drop-shadow-neon">{t("Your Store Items")}</h1>

@@ -13,7 +13,7 @@ import Layout from "@/components/layout/Layout";
 import Index from "./pages/Index";
 import AppPlaceholder from "./pages/AppPlaceholder";
 import NotFound from "./pages/NotFound";
-import { I18nProvider } from "@/lib/i18n";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Product from "./pages/Product";
@@ -99,6 +99,21 @@ const App = () => (
     <ThemeProvider>
       <TooltipProvider>
         <Toaster />
+function RequireClient({ children }: { children: JSX.Element }) {
+  const user = getCurrentUser();
+  if (user?.role === 'vendor') {
+    return <Navigate to="/vendor-dashboard" replace />;
+  }
+  return children;
+}
+
+function RequireVendor({ children }: { children: JSX.Element }) {
+  const user = getCurrentUser();
+  if (user?.role !== 'vendor') {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return children;
+}
         <Sonner />
         <I18nProvider>
           <BrowserRouter>
