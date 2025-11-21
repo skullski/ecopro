@@ -40,27 +40,13 @@ import { updateUser, findUserById } from "../utils/database";
 
 const router = Router();
 
-// Seller to paid client (VIP) upgrade endpoint
-// POST /api/auth/upgrade
-router.post("/upgrade", async (req, res) => {
-  const user = getUserFromRequest(req);
-  const dbUser = await findUserById(user.userId);
-  if (!dbUser) return res.status(404).json({ error: "User not found" });
-  if (dbUser.role !== "seller" || dbUser.is_paid_client) {
-    return res.status(400).json({ error: "Upgrade not allowed" });
-  }
-  await updateUser(dbUser.id, { role: "client", is_paid_client: true });
-  const upgraded = await findUserById(dbUser.id);
-  res.json({ message: "Upgraded to VIP", user: upgraded });
-});
 // POST /api/auth/register
 export const register: RequestHandler = async (req, res) => {
   try {
     console.log("[REGISTER] Incoming body:", req.body);
     const { email, password, name, role } = req.body;
-    // role: 'client' (paid) or 'seller' (default)
-    const userRole = role === 'client' ? 'client' : 'seller';
-    const isPaidClient = userRole === 'client';
+    // role: always 'seller' (default, all users free)
+    const userRole = 'seller';
 
     // Check if user already exists
     const existingUser = await findUserByEmail(email);
@@ -80,7 +66,6 @@ export const register: RequestHandler = async (req, res) => {
       password: hashedPassword,
       name,
       role: userRole,
-      is_paid_client: isPaidClient,
     });
     console.log("[REGISTER] User created:", user.id, user.email);
 
@@ -89,7 +74,6 @@ export const register: RequestHandler = async (req, res) => {
       userId: user.id,
       email: user.email,
       role: user.role,
-      is_paid_client: user.is_paid_client,
     });
     console.log("[REGISTER] Token generated");
 
@@ -101,7 +85,6 @@ export const register: RequestHandler = async (req, res) => {
         email: user.email,
         name: user.name,
         role: user.role,
-        is_paid_client: user.is_paid_client,
       },
     });
   } catch (error) {

@@ -48,44 +48,14 @@ export default function Header() {
 
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center gap-1">
-              <a 
-                href="/#مزايا" 
-                className="px-4 py-2 rounded-lg text-sm font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 transition-all"
-              >
-                {t("menu.features")}
-              </a>
-              <a 
-                href="/#البنية" 
-                className="px-4 py-2 rounded-lg text-sm font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 transition-all"
-              >
-                {locale === "ar" ? "البنية" : locale === "fr" ? "Architecture" : "Architecture"}
-              </a>
-              <a 
-                href="/#الأسعار" 
-                className="px-4 py-2 rounded-lg text-sm font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 transition-all"
-              >
-                {t("menu.pricing")}
-              </a>
-              <a 
-                href="/#الأسئلة" 
-                className="px-4 py-2 rounded-lg text-sm font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 transition-all"
-              >
-                {t("menu.faq")}
-              </a>
+              {/* Only show marketplace navigation */}
               <Link 
                 to="/marketplace" 
                 className="px-4 py-2 rounded-lg text-sm font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 transition-all"
               >
                 {t("menu.store")}
               </Link>
-              {isAdmin && (
-                <Link 
-                  to="/platform-control-x9k2m8p5q7w3" 
-                  className="px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-primary/20 to-accent/20 text-foreground hover:from-primary/30 hover:to-accent/30 transition-all"
-                >
-                  {t("menu.admin")}
-                </Link>
-              )}
+
             </nav>
 
             {/* Right Side Actions */}
@@ -135,22 +105,18 @@ export default function Header() {
                 </>
               ) : (
                 <div className="hidden md:flex items-center gap-2">
-                  {user && (
-                    <>
-                      <Link to="/post-item">
-                        <Button variant="outline" className="border-2 border-primary/40 text-primary hover:bg-primary/10 font-medium">
-                          <PlusCircle className="w-4 h-4 ml-2" />
-                          Post Item
-                        </Button>
-                      </Link>
-                      <Link to="/my-listings">
-                        <Button variant="ghost" className="font-medium">
-                          <ShoppingBag className="w-4 h-4 ml-2" />
-                          My Listings
-                        </Button>
-                      </Link>
-                    </>
-                  )}
+                  <Link to="/post-item">
+                    <Button variant="outline" className="border-2 border-primary/40 text-primary hover:bg-primary/10 font-medium">
+                      <PlusCircle className="w-4 h-4 ml-2" />
+                      Post Item
+                    </Button>
+                  </Link>
+                  <Link to="/my-listings">
+                    <Button variant="ghost" className="font-medium">
+                      <ShoppingBag className="w-4 h-4 ml-2" />
+                      My Listings
+                    </Button>
+                  </Link>
                   <Button 
                     variant="outline" 
                     onClick={handleLogout}
@@ -184,34 +150,7 @@ export default function Header() {
         <div className="lg:hidden fixed inset-0 top-20 z-40 bg-background/95 backdrop-blur-xl border-t border-primary/10">
           <div className="container mx-auto px-4 py-6">
             <nav className="flex flex-col gap-2">
-              <a 
-                href="/#مزايا" 
-                onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 rounded-lg text-base font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 transition-all"
-              >
-                {t("menu.features")}
-              </a>
-              <a 
-                href="/#البنية" 
-                onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 rounded-lg text-base font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 transition-all"
-              >
-                {locale === "ar" ? "البنية" : locale === "fr" ? "Architecture" : "Architecture"}
-              </a>
-              <a 
-                href="/#الأسعار" 
-                onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 rounded-lg text-base font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 transition-all"
-              >
-                {t("menu.pricing")}
-              </a>
-              <a 
-                href="/#الأسئلة" 
-                onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 rounded-lg text-base font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 transition-all"
-              >
-                {t("menu.faq")}
-              </a>
+              {/* Only show marketplace navigation */}
               <Link 
                 to="/marketplace" 
                 onClick={() => setMobileMenuOpen(false)}
@@ -219,37 +158,30 @@ export default function Header() {
               >
                 {t("menu.store")}
               </Link>
-              {isAdmin && (
-                <Link 
-                  to="/platform-control-x9k2m8p5q7w3" 
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="px-4 py-3 rounded-lg text-base font-medium bg-gradient-to-r from-primary/20 to-accent/20 text-foreground hover:from-primary/30 hover:to-accent/30 transition-all"
-                >
-                  {t("menu.admin")}
-                </Link>
-              )}
+
 
               {user && (
                 <>
                   <div className="h-px bg-border my-2" />
-                  <Button 
-                    variant="ghost" 
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      navigate(isAdmin ? "/platform-control-x9k2m8p5q7w3" : "/dashboard");
-                    }} 
-                    className="justify-start hover:bg-gradient-to-r hover:from-primary/10 hover:to-accent/10 font-medium"
-                  >
-                    <LayoutDashboard className="w-4 h-4 ml-2" />
-                    {t("admin.dashboard")}
-                  </Button>
+                  <Link to="/post-item" onClick={() => setMobileMenuOpen(false)}>
+                    <Button variant="outline" className="justify-start border-2 border-primary/40 text-primary hover:bg-primary/10 font-medium w-full">
+                      <PlusCircle className="w-4 h-4 ml-2" />
+                      Post Item
+                    </Button>
+                  </Link>
+                  <Link to="/my-listings" onClick={() => setMobileMenuOpen(false)}>
+                    <Button variant="ghost" className="justify-start font-medium w-full">
+                      <ShoppingBag className="w-4 h-4 ml-2" />
+                      My Listings
+                    </Button>
+                  </Link>
                   <Button 
                     variant="outline" 
                     onClick={() => {
                       setMobileMenuOpen(false);
                       handleLogout();
                     }}
-                    className="justify-start border-2 border-red-500/30 text-red-500 hover:bg-red-500/10 hover:border-red-500/50 font-medium"
+                    className="justify-start border-2 border-red-500/30 text-red-500 hover:bg-red-500/10 hover:border-red-500/50 font-medium w-full"
                   >
                     <LogOut className="w-4 h-4 ml-2" />
                     {t("auth.logout")}

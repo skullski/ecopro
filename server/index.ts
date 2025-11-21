@@ -11,7 +11,7 @@ import * as uploadRoutes from "./routes/uploads";
 import * as authRoutes from "./routes/auth";
 import marketplaceRouter from "./routes/marketplace";
 import storeProductsRouter from "./routes/storeProducts";
-import { authenticate, requireAdmin, requireVendor, requireVip } from "./middleware/auth";
+import { authenticate, requireAdmin, requireVendor } from "./middleware/auth";
 import * as adminRoutes from "./routes/admin";
 import {
   validate,
@@ -32,7 +32,6 @@ export function createServer() {
   app.set('trust proxy', 1);
     app.get("/api/products/owner/:ownerKey", vendorRoutes.getProductsByOwnerKey);
     app.get("/api/products/owner-email/:ownerEmail", vendorRoutes.getProductsByOwnerEmail);
-  app.post("/api/products/claim-by-email", authenticate, requireVip, vendorRoutes.claimProductsByEmail);
 
   // Security: Helmet adds security headers
   app.use(
@@ -49,7 +48,7 @@ export function createServer() {
   );
 
   // Claim a public product to this vendor
-  app.post("/api/products/claim", authenticate, requireVip, vendorRoutes.claimProduct);
+  // Removed premium claim product route
 
   // Security: Rate limiting to prevent brute force attacks
   const authLimiter = rateLimit({
@@ -196,25 +195,7 @@ export function createServer() {
     adminRoutes.listUsers
   );
 
-  // Premium user management
-  app.get(
-    "/api/admin/premium-users",
-    authenticate,
-    requireAdmin,
-    adminRoutes.listPremiumUsers
-  );
-  app.post(
-    "/api/admin/upgrade/:id",
-    authenticate,
-    requireAdmin,
-    adminRoutes.upgradeUserToPremium
-  );
-  app.post(
-    "/api/admin/downgrade/:id",
-    authenticate,
-    requireAdmin,
-    adminRoutes.downgradeUserToNormal
-  );
+
 
   // Serve static files from React build (only in production)
   if (process.env.NODE_ENV === "production") {
