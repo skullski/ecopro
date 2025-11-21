@@ -2,6 +2,54 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import * as apiHelpers from "@/lib/api";
+  // Add Product modal state
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState({
+    title: "",
+    description: "",
+    price: "",
+    category: "",
+    location: "",
+    image: null as File | null,
+    published: true,
+  });
+  const [submitting, setSubmitting] = useState(false);
+  async function handleAddProduct(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    let imageUrl = "";
+    if (form.image) {
+      try {
+        const uploadRes = await apiHelpers.uploadImage(form.image);
+        imageUrl = uploadRes.url;
+      } catch {
+        imageUrl = "";
+      }
+    }
+    const product = {
+      title: form.title,
+      description: form.description,
+      price: parseFloat(form.price),
+      category: form.category,
+      location: form.location,
+      images: imageUrl ? [imageUrl] : [],
+      published: form.published,
+    };
+    await apiHelpers.createProduct(product as any);
+    setShowAdd(false);
+    setForm({ title: "", description: "", price: "", category: "", location: "", image: null, published: true });
+    setSubmitting(false);
+    // Refresh products
+    setLoading(true);
+    const items = await fetch('/api/items').then(r => r.json());
+    setProducts(items);
+    setLoading(false);
+  }
 import { Sun, Moon, Globe, User, Grid, Car, Smartphone, Shirt, Home, Trophy, Gamepad, Tag, Heart, Star, ShoppingCart, MessageCircle, Phone, BadgeCheck, Share2 } from "lucide-react";
 import FilterBar from "./FilterBar";
 import * as api from "@/lib/api";
@@ -13,12 +61,15 @@ const banners = [
   "/demo/banner3.jpg",
 ];
 const categories = [
-  { name: "Cars", icon: <Car className="w-6 h-6" /> },
-  { name: "Electronics", icon: <Smartphone className="w-6 h-6" /> },
-  { name: "Fashion", icon: <Shirt className="w-6 h-6" /> },
-  { name: "Home", icon: <Home className="w-6 h-6" /> },
-  { name: "Sports", icon: <Trophy className="w-6 h-6" /> },
-  { name: "Accessories", icon: <Gamepad className="w-6 h-6" /> },
+  { name: "Cars", icon: <Car className="w-8 h-8" /> },
+  { name: "Electronics", icon: <Smartphone className="w-8 h-8" /> },
+  { name: "Fashion", icon: <Shirt className="w-8 h-8" /> },
+  { name: "Home", icon: <Home className="w-8 h-8" /> },
+  { name: "Sports", icon: <Trophy className="w-8 h-8" /> },
+  { name: "Accessories", icon: <Gamepad className="w-8 h-8" /> },
+  { name: "Real Estate", icon: <Building className="w-8 h-8" /> },
+  { name: "Jobs", icon: <UserIcon className="w-8 h-8" /> },
+  { name: "Others", icon: <Grid className="w-8 h-8" /> },
 ];
 
 export default function HomeMarketplace() {
@@ -65,30 +116,96 @@ export default function HomeMarketplace() {
   );
 
   return (
-    <div className={
-      `w-full min-h-screen transition-colors duration-300 flex flex-col items-center ` +
-      (theme === "dark"
-        ? "bg-gradient-to-br from-[#0f1021] via-[#181a2a] to-[#1a1a2e] text-white"
-        : "bg-gradient-to-br from-white via-blue-50 to-purple-100 text-gray-900")
-    }>
-      {/* Filters Bar with animated transitions */}
-      <div className="w-full max-w-6xl px-2 mt-8 animate-fade-in">
+    <div
+      className={
+        `w-full min-h-screen transition-colors duration-300 flex flex-col items-center ` +
+        (theme === "dark"
+          ? "bg-gradient-to-br from-[#0f1021] via-[#181a2a] to-[#1a1a2e] text-white"
+          : "bg-gradient-to-br from-white via-blue-50 to-purple-100 text-gray-900")
+      }
+    >
+      {/* Horizontal Category Carousel */}
+      <div className="w-full max-w-screen-xl px-0 mt-6 flex flex-col items-center">
+        <div className="w-full overflow-x-auto scrollbar-hide">
+          <div className="flex flex-nowrap gap-4 py-2 px-2">
+            {categories.map((cat) => (
+              <div
+                key={cat.name}
+                className="flex flex-col items-center justify-center min-w-[100px] bg-white/20 dark:bg-[#232325]/60 rounded-2xl shadow-lg border border-white/10 p-3 hover:bg-accent/10 transition-all cursor-pointer"
+              >
+                {cat.icon}
+                <span className="mt-2 text-xs font-semibold text-center whitespace-nowrap text-accent-200">{cat.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Banner Section */}
+      <div className="w-full max-w-screen-xl px-0 mt-4 flex justify-center animate-fade-in">
+        <img
+          src={banners[0]}
+          alt="Marketplace Banner"
+          className="rounded-2xl w-full max-h-40 object-cover shadow-xl border border-white/10"
+        />
+      </div>
+
+      {/* Add Product Button and Filters Bar */}
+      <div className="w-full max-w-screen-xl px-0 mt-8 flex items-center justify-between animate-fade-in">
+        <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-purple-400 via-blue-400 to-pink-500 bg-clip-text text-transparent drop-shadow-neon">Marketplace</h2>
+        <Dialog open={showAdd} onOpenChange={setShowAdd}>
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-to-r from-indigo-600 to-cyan-600 text-white font-bold px-6 py-3 rounded-xl shadow-lg hover:from-indigo-700 hover:to-cyan-700" onClick={() => setShowAdd(true)}>
+              + Add Product
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <h3 className="text-xl font-bold mb-2">Add Product</h3>
+            </DialogHeader>
+            <form onSubmit={handleAddProduct} className="space-y-4">
+              <Input required placeholder="Title" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
+              <Textarea required placeholder="Description" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
+              <Input required type="number" min="0" step="0.01" placeholder="Price" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} />
+              <Input required placeholder="Category" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} />
+              <Input placeholder="Location" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} />
+              <Input type="file" accept="image/*" onChange={e => setForm(f => ({ ...f, image: e.target.files?.[0] || null }))} />
+              <div className="flex items-center gap-2">
+                <Switch checked={form.published} onCheckedChange={v => setForm(f => ({ ...f, published: v }))} />
+                <span>Publish to Marketplace</span>
+              </div>
+              <DialogFooter>
+                <Button type="submit" disabled={submitting} className="w-full bg-gradient-to-r from-indigo-600 to-cyan-600 text-white font-bold">
+                  {submitting ? "Adding..." : "+ Add Product"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <div className="w-full max-w-screen-xl px-0 mt-8 animate-fade-in">
         <FilterBar onFilter={setFilters} />
       </div>
+
+      {/* Section Title */}
+      <div className="w-full max-w-screen-xl px-0 mt-4 mb-2 flex items-center">
+        <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-accent-400 mr-4">Featured Listings</h3>
+        <div className="flex-1 h-0.5 bg-gradient-to-r from-purple-400 via-blue-400 to-pink-500 opacity-40 rounded-full" />
+      </div>
+
       {/* Product Grid with glassmorphism and neon accents */}
-      <div className="w-full max-w-6xl px-2">
-        <h2 className="text-3xl font-extrabold mb-6 tracking-tight bg-gradient-to-r from-purple-400 via-blue-400 to-pink-500 bg-clip-text text-transparent drop-shadow-neon">Marketplace</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-8">
+      <div className="w-full max-w-screen-xl px-0">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6 xl:gap-8">
           {loading ? (
             <div className="text-center w-full col-span-full animate-pulse">Loading...</div>
           ) : paginatedProducts.map(product => (
             <div
               key={product.id}
-              className="relative group rounded-3xl p-0.5 bg-gradient-to-br from-[#232325]/80 via-[#232325]/90 to-[#1a1a2e]/90 shadow-2xl hover:shadow-neon transition-all duration-300 transform hover:scale-105 hover:-translate-y-2 hover:border-accent/80 border border-white/10 backdrop-blur-xl"
-              style={{ minHeight: 340 }}
+              className="relative group rounded-2xl p-0.5 bg-gradient-to-br from-[#232325]/80 via-[#232325]/90 to-[#1a1a2e]/90 shadow-xl hover:shadow-neon transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 hover:border-accent/80 border border-white/10 backdrop-blur-xl min-h-[260px]"
             >
-              <div className="relative bg-white/10 dark:bg-[#181a2a]/80 rounded-3xl overflow-hidden flex flex-col h-full backdrop-blur-2xl border border-white/10">
-                <div className="relative w-full h-48 overflow-hidden">
+              <div className="relative bg-white/10 dark:bg-[#181a2a]/80 rounded-2xl overflow-hidden flex flex-col h-full backdrop-blur-2xl border border-white/10">
+                <div className="relative w-full h-32 sm:h-36 md:h-40 overflow-hidden">
                   <img
                     src={product.images?.[0] || "/demo/product1.jpg"}
                     alt={product.title}
@@ -99,9 +216,9 @@ export default function HomeMarketplace() {
                     <Button size="icon" variant="ghost" className="backdrop-blur bg-white/20 dark:bg-[#232325]/40 shadow hover:scale-110 hover:bg-accent/30 hover:text-accent transition-transform"><Share2 className="w-4 h-4" /></Button>
                   </div>
                 </div>
-                <div className="flex-1 flex flex-col p-4">
-                  <div className="font-bold text-lg mb-1 line-clamp-2 text-white drop-shadow-neon">{product.title}</div>
-                  <div className="mb-1 text-xl font-bold text-accent-400 drop-shadow-neon">{product.price} DZD</div>
+                <div className="flex-1 flex flex-col p-2 md:p-3 xl:p-4">
+                  <div className="font-bold text-base md:text-lg mb-1 line-clamp-2 text-white drop-shadow-neon">{product.title}</div>
+                  <div className="mb-1 text-lg md:text-xl font-bold text-accent-400 drop-shadow-neon">{product.price} DZD</div>
                   <div className="mb-1 text-xs font-medium flex gap-2 items-center text-accent-200">
                     <Tag className="w-4 h-4" /> {product.category}
                   </div>
@@ -120,7 +237,7 @@ export default function HomeMarketplace() {
                 >
                   <span className="sr-only">View product</span>
                 </Link>
-                <div className="pointer-events-none absolute inset-0 rounded-3xl border-2 border-accent/30 group-hover:border-accent/80 transition-all duration-300" />
+                <div className="pointer-events-none absolute inset-0 rounded-2xl border-2 border-accent/30 group-hover:border-accent/80 transition-all duration-300" />
               </div>
             </div>
           ))}

@@ -40,6 +40,8 @@ import AdminStores from "./pages/admin/Stores";
 import Storefront from "./pages/Storefront";
 import CustomerDashboard from "./pages/customer/Dashboard";
 import Marketplace from "./pages/Marketplace";
+import MarketplaceLogin from "./pages/MarketplaceLogin";
+import MarketplaceSignup from "./pages/MarketplaceSignup";
 import CustomerLogin from "./pages/customer/Login";
 import CustomerSignup from "./pages/customer/Signup";
 import LogoDemo from "./pages/LogoDemo";
@@ -162,6 +164,8 @@ const App = () => (
                 <Route path="/shop/:id/dashboard" element={<CustomerDashboard />} />
                 <Route path="/shop/:id/login" element={<CustomerLogin />} />
                 <Route path="/marketplace" element={<Marketplace />} />
+                <Route path="/marketplace/login" element={<MarketplaceLogin />} />
+                <Route path="/marketplace/signup" element={<MarketplaceSignup />} />
                 <Route path="/shop/:id/signup" element={<CustomerSignup />} />
                 <Route path="/logo-demo" element={<LogoDemo />} />
                 {/* Vendor/Marketplace routes */}

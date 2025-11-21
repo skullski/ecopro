@@ -2,6 +2,9 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/lib/i18n";
 import { BarChart3, PieChart, Package, ShoppingCart, DollarSign, TrendingUp, Users, Star, LogOut, Settings, Globe, Plus, Edit, Trash2, Eye, Heart } from "lucide-react";
@@ -39,6 +42,49 @@ export default function VendorDashboard() {
   const { t, locale, setLocale } = useTranslation();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("dashboard");
+  // Add Product modal state
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState({
+    title: "",
+    description: "",
+    price: "",
+    category: "",
+    image: null as File | null,
+    published: false,
+  });
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleAddProduct(e: React.FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    let imageUrl = "";
+    if (form.image) {
+      try {
+        // Optionally implement image upload logic here
+        imageUrl = ""; // Placeholder
+      } catch {
+        imageUrl = "";
+      }
+    }
+    const product = {
+      title: form.title,
+      description: form.description,
+      price: parseFloat(form.price),
+      category: form.category,
+      images: imageUrl ? [imageUrl] : [],
+      published: false, // Private by default
+    };
+    await fetch('/api/items', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(product)
+    });
+    setShowAdd(false);
+    setForm({ title: "", description: "", price: "", category: "", image: null, published: false });
+    setSubmitting(false);
+    // Refresh seller dashboard data
+    window.location.reload();
+  }
   const [loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState<any>({});
   const [charts, setCharts] = useState<any>({});
@@ -166,7 +212,33 @@ export default function VendorDashboard() {
         {/* Products Tab */}
         {activeTab === "products" && (
           <section>
-            <h1 className="text-2xl font-bold mb-6 bg-gradient-to-r from-purple-400 via-blue-400 to-pink-500 bg-clip-text text-transparent drop-shadow-neon">{t("Your Products")}</h1>
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 via-blue-400 to-pink-500 bg-clip-text text-transparent drop-shadow-neon">{t("Your Products")}</h1>
+              <Dialog open={showAdd} onOpenChange={setShowAdd}>
+                <DialogTrigger asChild>
+                  <Button className="bg-gradient-to-r from-indigo-600 to-cyan-600 text-white font-bold px-4 py-2 rounded-xl shadow-lg hover:from-indigo-700 hover:to-cyan-700" onClick={() => setShowAdd(true)}>
+                    + Add Product
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <h3 className="text-xl font-bold mb-2">Add Product</h3>
+                  </DialogHeader>
+                  <form onSubmit={handleAddProduct} className="space-y-4">
+                    <Input required placeholder="Title" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
+                    <Textarea required placeholder="Description" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
+                    <Input required type="number" min="0" step="0.01" placeholder="Price" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} />
+                    <Input required placeholder="Category" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} />
+                    <Input type="file" accept="image/*" onChange={e => setForm(f => ({ ...f, image: e.target.files?.[0] || null }))} />
+                    <DialogFooter>
+                      <Button type="submit" disabled={submitting} className="w-full bg-gradient-to-r from-indigo-600 to-cyan-600 text-white font-bold">
+                        {submitting ? "Adding..." : "+ Add Product"}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {(seller?.products || []).map((product: any) => (
                 <div key={product.id} className="bg-white/10 rounded-2xl p-6 shadow-lg border border-accent/20 flex flex-col gap-2">
@@ -189,7 +261,6 @@ export default function VendorDashboard() {
                           headers: { "Content-Type": "application/json" },
                           body: JSON.stringify({ published: !product.published })
                         });
-                        // Refresh seller dashboard data
                         window.location.reload();
                       }}
                     >
