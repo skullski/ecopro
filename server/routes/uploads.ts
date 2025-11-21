@@ -1,35 +1,37 @@
+
 import { RequestHandler } from 'express';
 import fs from 'fs/promises';
 import path from 'path';
+import multer from 'multer';
 
-// Accepts JSON body: { filename, data } where data is base64 image string (data URL or raw base64)
-export const uploadImage: RequestHandler = async (req, res) => {
-  try {
-    const { filename, data } = req.body as { filename: string; data: string };
-    if (!filename || !data) return res.status(400).json({ error: 'Missing filename or data' });
-
+// Set up multer storage
+const storage = multer.diskStorage({
+  destination: async function (req, file, cb) {
     const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
     try {
       await fs.access(uploadsDir);
     } catch {
       await fs.mkdir(uploadsDir, { recursive: true });
     }
+    cb(null, uploadsDir);
+  },
+  filename: function (req, file, cb) {
+    const safeName = file.originalname.replace(/[^a-z0-9.-_]/gi, '_');
+    cb(null, `${Date.now()}_${safeName}`);
+  }
+});
 
-    // strip data URL prefix if present
-    const base64 = data.includes(',') ? data.split(',')[1] : data;
-    const buffer = Buffer.from(base64, 'base64');
-    // Limit to 2MB per upload for demo
-    const MAX_SIZE = 2 * 1024 * 1024;
-    if (buffer.length > MAX_SIZE) {
-      return res.status(413).json({ error: 'File too large (max 2MB)' });
-    }
-    // ensure filename safe
-    const safeName = filename.replace(/[^a-z0-9.-_]/gi, '_');
-    const filePath = path.join(uploadsDir, `${Date.now()}_${safeName}`);
-    await fs.writeFile(filePath, buffer);
+export const upload = multer({
+  storage,
+  limits: { fileSize: 2 * 1024 * 1024 } // 2MB
+});
 
+// POST /api/products/upload (multipart/form-data)
+export const uploadImage: RequestHandler = async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
     // Build public url
-  const urlPath = `/uploads/${path.basename(filePath)}`;
+    const urlPath = `/uploads/${req.file.filename}`;
     res.json({ url: urlPath });
   } catch (err) {
     console.error('Upload error', err);

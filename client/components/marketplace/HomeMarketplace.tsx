@@ -84,15 +84,13 @@ export default function HomeMarketplace() {
       return;
     }
     let imageUrl = "";
-    if (form.image) {
-      try {
-        const uploadRes = await apiHelpers.uploadImage(form.image);
-        imageUrl = uploadRes.url;
-      } catch (err: any) {
-        setError("Image upload failed: " + (err?.message || "Unknown error"));
-        setSubmitting(false);
-        return;
-      }
+    try {
+      const uploadRes = await apiHelpers.uploadImage(form.image!);
+      imageUrl = uploadRes.url;
+    } catch (err: any) {
+      setError("Image upload failed: " + (err?.message || "Unknown error"));
+      setSubmitting(false);
+      return;
     }
     const product = {
       title: form.title,
@@ -225,7 +223,10 @@ export default function HomeMarketplace() {
         <div className="w-full max-w-screen-xl px-0">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6 xl:gap-8">
             {loading ? (
-              <div className="text-center w-full col-span-full animate-pulse">Loading...</div>
+              <div className="text-center w-full col-span-full animate-pulse">
+                <svg className="animate-spin h-8 w-8 text-accent mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>
+                Loading...
+              </div>
             ) : paginatedProducts.map(product => (
               <div
                 key={product.id}

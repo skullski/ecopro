@@ -67,8 +67,8 @@ export function createServer() {
     legacyHeaders: false,
   });
 
-  // Image upload for product images (base64 JSON). Keep small images for demo.
-  app.post("/api/products/upload", apiLimiter, uploadRoutes.uploadImage);
+  // Image upload for product images (multipart/form-data)
+  app.post("/api/products/upload", apiLimiter, uploadRoutes.upload.single('image'), uploadRoutes.uploadImage);
 
   // Security: CORS configuration
   const allowedOrigins = process.env.ALLOWED_ORIGINS

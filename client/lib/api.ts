@@ -68,18 +68,11 @@ export async function createPublicProduct(product: Partial<MarketplaceProduct>):
 
 // Upload an image as base64 JSON body
 export async function uploadImage(file: File): Promise<{ url: string }> {
-  // read file as dataURL
-  const dataUrl = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(new Error('failed reading file'));
-    reader.readAsDataURL(file);
-  });
-
+  const formData = new FormData();
+  formData.append('image', file);
   const res = await fetch(`${API_URL}/products/upload`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ filename: file.name, data: dataUrl }),
+    body: formData,
   });
   return res.json();
 }
