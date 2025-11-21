@@ -89,9 +89,11 @@ export default function HomeMarketplace() {
       category: form.category,
       location: form.location,
       images: imageUrl ? [imageUrl] : [],
-      published: form.published,
+      published: true, // Always publish to marketplace
+      visibilitySource: "marketplace"
     };
-    await apiHelpers.createProduct(product as any);
+    // Use public/anonymous product creation for marketplace
+    await apiHelpers.createPublicProduct(product);
     setShowAdd(false);
     setForm({ title: "", description: "", price: "", category: "", location: "", image: null, published: true });
     setSubmitting(false);
