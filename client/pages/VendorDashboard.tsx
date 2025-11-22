@@ -53,13 +53,17 @@ function VendorDashboard() {
       setLoading(true);
       try {
         const res = await fetch('/api/auth/me', { credentials: 'include' });
+        if (!res.ok) throw new Error('Not authenticated');
         const user = await res.json();
         setUser(user);
-        if (user.role === 'vendor') {
-          // Only fetch products for sellers
+        if (user.role === 'vendor' || user.role === 'seller') {
+          // Always fetch products for sellers
           const productsRes = await fetch('/api/store-products/mine', { credentials: 'include' });
+          if (!productsRes.ok) throw new Error('Failed to fetch products');
           const items = await productsRes.json();
-          setProducts(items.filter((p: any) => !p.published));
+          setProducts(Array.isArray(items) ? items.filter((p: any) => !p.published) : []);
+        } else {
+          setProducts([]);
         }
       } catch (e) {
         setUser(null);
@@ -102,23 +106,41 @@ function VendorDashboard() {
     );
   }
 
-  if (!user) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0f1021] via-[#181a2a] to-[#1a1a2e]">
         <div className="text-center">
-          <p className="text-accent-200 text-lg font-bold">{t("No user information found. Please log in again.")}</p>
+          <div className="w-16 h-16 border-4 border-accent-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-accent-200">{t("Loading your dashboard...")}</p>
         </div>
       </div>
     );
   }
 
-  // If user is a client, redirect to dashboard (full access)
-  if (user.role === 'client') {
-    window.location.href = '/dashboard';
-    return null;
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0f1021] via-[#181a2a] to-[#1a1a2e]">
+        <div className="text-center">
+          <p className="text-accent-200 text-lg font-bold">{t("No seller information found. Please log in again.")}</p>
+          <a href="/login" className="text-accent underline">{t("Go to Login")}</a>
+        </div>
+      </div>
+    );
   }
 
-  // Seller: Only show product management UI
+  // Only allow product management for vendor/seller roles
+  if (user.role !== 'vendor' && user.role !== 'seller') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0f1021] via-[#181a2a] to-[#1a1a2e]">
+        <div className="text-center">
+          <p className="text-accent-200 text-lg font-bold">{t("You do not have access to the store management page.")}</p>
+          <a href="/" className="text-accent underline">{t("Go Home")}</a>
+        </div>
+      </div>
+    );
+  }
+
+  // Main product management UI for vendor/seller
   return (
     <div className="min-h-screen flex flex-col items-center justify-start bg-gradient-to-br from-[#0f1021] via-[#181a2a] to-[#1a1a2e] text-white p-8">
       <h1 className="text-3xl font-extrabold mb-8 bg-gradient-to-r from-purple-400 via-blue-400 to-pink-500 bg-clip-text text-transparent drop-shadow-neon">{t("Your Store Items")}</h1>
