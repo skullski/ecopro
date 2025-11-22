@@ -13,7 +13,6 @@ import Layout from "@/components/layout/Layout";
 import Index from "./pages/Index";
 import AppPlaceholder from "./pages/AppPlaceholder";
 import NotFound from "./pages/NotFound";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Product from "./pages/Product";
@@ -75,6 +74,7 @@ import DeliveryCompanies from "./pages/admin/delivery/DeliveryCompanies";
 import GoogleSheetsIntegration from "./pages/admin/addons/GoogleSheets";
 
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { I18nProvider } from "./contexts/I18nContext";
 
 
 const queryClient = new QueryClient();

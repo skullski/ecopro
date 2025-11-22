@@ -45,15 +45,59 @@ export default function Storefront() {
     async function loadStoreAndProducts() {
       // Fetch store info from backend
       try {
-        const storeData = await api.fetchStoreById(id);
-        setStore(storeData);
+        const vendor = await api.fetchVendorById(id);
+        // Map Vendor to StoreSettings (minimal fallback)
+        const storeSettings = {
+          id: vendor.id,
+          name: vendor.businessName || vendor.name,
+          owner: vendor.name,
+          theme: {
+            primaryColor: '#f59e42',
+            secondaryColor: '#f59e42',
+            accentColor: '#f59e42',
+            backgroundColor: '#fff',
+            textColor: '#222',
+            fontFamily: 'inherit',
+            layout: { showSearch: true, showCategories: true, columns: 3 },
+          },
+          layout: {
+            columns: 3,
+            showCategories: true,
+            showFeatured: true,
+            showSearch: true,
+          },
+          features: {
+            reviews: true,
+            wishlist: true,
+            compare: false,
+            quickView: false,
+          },
+          subscription: {
+            level: "free" as "free",
+            features: [],
+            maxProducts: 100,
+          },
+        };
+        setStore(storeSettings);
       } catch (err) {
         setStore(null);
       }
       // Fetch only this seller's products (private store)
       try {
-        const storeProducts = await api.fetchProductsByStore(id);
-        setProducts(storeProducts);
+        const storeProducts = await api.fetchVendorProducts(id);
+        // Map MarketplaceProduct[] to Product[]
+        setProducts(storeProducts.map((p: any) => ({
+          id: p.id,
+          storeId: p.storeId || id,
+          title: p.title,
+          description: p.description,
+          price: p.price,
+          images: p.images,
+          category: p.category,
+          featured: !!p.featured,
+          inStock: p.inStock !== undefined ? p.inStock : true,
+          createdAt: p.createdAt || Date.now(),
+        })));
       } catch (err) {
         setProducts([]);
       }
