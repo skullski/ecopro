@@ -94,11 +94,6 @@ function RequirePaidClient({ children }: { children: JSX.Element }) {
   return children;
 }
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
-      <TooltipProvider>
-        <Toaster />
 function RequireClient({ children }: { children: JSX.Element }) {
   const user = getCurrentUser();
   if (user?.role === 'vendor') {
@@ -114,6 +109,12 @@ function RequireVendor({ children }: { children: JSX.Element }) {
   }
   return children;
 }
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <ThemeProvider>
+      <TooltipProvider>
+        <Toaster />
         <Sonner />
         <I18nProvider>
           <BrowserRouter>
