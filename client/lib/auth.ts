@@ -154,6 +154,15 @@ export const authApi = {
       body: JSON.stringify({ email }),
     });
   },
+
+  /**
+   * Upgrade current user to VIP (paid client)
+   */
+  upgradeToVIP: async (): Promise<{ message: string }> => {
+    return apiRequest("/auth/upgrade-vip", {
+      method: "POST"
+    });
+  },
 };
 
 /**

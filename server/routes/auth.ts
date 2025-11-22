@@ -35,10 +35,33 @@ import {
 })();
 
 import { Router } from "express";
+// Upgrade current user to VIP (paid client)
+export const upgradeToVIP: RequestHandler = async (req, res) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: "Not authenticated" });
+      return;
+    }
+    // Update user role to 'client' and set is_paid_client flag if you have it
+    const user = await findUserById(req.user.userId);
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    // If you have an is_paid_client column, set it. Otherwise, just update role.
+    await updateUser(user.id, { role: "client" });
+    res.json({ message: "Upgraded to VIP (client) successfully" });
+  } catch (error) {
+    console.error("Upgrade to VIP error:", error);
+    res.status(500).json({ error: "Failed to upgrade to VIP" });
+  }
+};
 import { getUserFromRequest } from "../utils/auth";
 import { updateUser, findUserById } from "../utils/database";
 
 const router = Router();
+// POST /api/auth/upgrade-vip
+router.post("/upgrade-vip", requireAuth, upgradeToVIP);
 
 // POST /api/auth/register
 export const register: RequestHandler = async (req, res) => {
