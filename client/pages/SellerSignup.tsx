@@ -20,7 +20,7 @@ export default function SellerSignup() {
     setError("");
     setSuccess(false);
     try {
-      const res = await fetch("/api/vendor-signup", {
+      const res = await fetch("/api/vendors", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form)
