@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { JWTPayload } from "@shared/api";
 
 // JWT authentication middleware
 export const requireAuth: RequestHandler = (req, res, next) => {
@@ -6,7 +7,11 @@ export const requireAuth: RequestHandler = (req, res, next) => {
   if (!auth) return res.status(401).json({ error: "No token" });
   try {
     const decoded = jwt.verify(auth.split(" ")[1], process.env.JWT_SECRET || "changeme");
-    req.user = decoded;
+    if (typeof decoded === "object" && decoded !== null) {
+      req.user = decoded as JWTPayload;
+    } else {
+      req.user = undefined;
+    }
     next();
   } catch {
     res.status(401).json({ error: "Invalid token" });
@@ -35,33 +40,9 @@ import {
 })();
 
 import { Router } from "express";
-// Upgrade current user to VIP (paid client)
-export const upgradeToVIP: RequestHandler = async (req, res) => {
-  try {
-    if (!req.user) {
-      res.status(401).json({ error: "Not authenticated" });
-      return;
-    }
-    // Update user role to 'client' and set is_paid_client flag if you have it
-    const user = await findUserById(req.user.userId);
-    if (!user) {
-      res.status(404).json({ error: "User not found" });
-      return;
-    }
-    // If you have an is_paid_client column, set it. Otherwise, just update role.
-    await updateUser(user.id, { role: "client" });
-    res.json({ message: "Upgraded to VIP (client) successfully" });
-  } catch (error) {
-    console.error("Upgrade to VIP error:", error);
-    res.status(500).json({ error: "Failed to upgrade to VIP" });
-  }
-};
 import { getUserFromRequest } from "../utils/auth";
-import { updateUser, findUserById } from "../utils/database";
 
 const router = Router();
-// POST /api/auth/upgrade-vip
-router.post("/upgrade-vip", requireAuth, upgradeToVIP);
 
 // POST /api/auth/register
 export const register: RequestHandler = async (req, res) => {
@@ -86,15 +67,15 @@ export const register: RequestHandler = async (req, res) => {
       email,
       password: hashedPassword,
       name,
-      role: role || 'vendor',
+      role: (role as "vendor" | "user" | "admin") || "user",
     });
     console.log("[REGISTER] User created:", user.id, user.email);
 
     // Generate token
     const token = generateToken({
-      userId: user.id,
+      id: user.id,
       email: user.email,
-      role: user.role,
+      role: (user.role as "vendor" | "user" | "admin") || "user",
     });
     console.log("[REGISTER] Token generated");
 
@@ -137,9 +118,9 @@ export const login: RequestHandler = async (req, res) => {
 
     // Generate token
     const token = generateToken({
-      userId: user.id,
+      id: user.id,
       email: user.email,
-      role: user.role,
+      role: (user.role as "vendor" | "user" | "admin") || "user",
     });
 
     res.json({
@@ -169,7 +150,7 @@ export const getCurrentUser: RequestHandler = async (req, res) => {
       return;
     }
 
-    const user = await findUserById(req.user.userId);
+    const user = await findUserById(req.user.id);
     if (!user) {
       res.status(404).json({ error: "User not found" });
       return;
@@ -179,7 +160,7 @@ export const getCurrentUser: RequestHandler = async (req, res) => {
       id: user.id,
       email: user.email,
       name: user.name,
-      role: user.role,
+        role: user.role as "vendor" | "user" | "admin",
     });
   } catch (error) {
     console.error("Get current user error:", error);
@@ -200,7 +181,7 @@ export const changePassword: RequestHandler = async (req, res) => {
 
     const { currentPassword, newPassword } = req.body;
 
-    const user = await findUserById(req.user.userId);
+    const user = await findUserById(req.user.id);
     if (!user) {
       res.status(404).json({ error: "User not found" });
       return;
@@ -215,7 +196,7 @@ export const changePassword: RequestHandler = async (req, res) => {
 
     // Hash new password
     const hashedPassword = await hashPassword(newPassword);
-    await updateUser(user.id, { password: hashedPassword });
+      await updateUser(user.id, { password: hashedPassword });
 
     res.json({ message: "Password changed successfully" });
   } catch (error) {

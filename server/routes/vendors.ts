@@ -22,40 +22,19 @@ let vendors: Vendor[] = [];
 let products: MarketplaceProduct[] = [];
 
 // Get all vendors
-export const getVendors: RequestHandler = async (_req, res) => {
-  try {
-    const { readVendors } = await import("../utils/vendorsDb");
-    const persisted = await readVendors();
-    // Merge in-memory fallback if no persisted data
-    if (persisted.length > 0) {
-      res.json(persisted);
-    } else {
-      res.json(vendors);
-    }
-  } catch (err) {
-    res.json(vendors);
-  }
-};
-
-// Get vendor by ID
-export const getVendorById: RequestHandler = async (req, res) => {
-  const { id } = req.params;
-  const { readVendors } = await import("../utils/vendorsDb");
-  const persisted = await readVendors();
-  const vendor = persisted.find(v => v.id === id) || vendors.find(v => v.id === id);
-  if (!vendor) {
-    return res.status(404).json({ error: "Vendor not found" });
-  }
-  res.json(vendor);
-};
-
-// Get vendor by slug
-export const getVendorBySlug: RequestHandler = async (req, res) => {
-  const { slug } = req.params;
-  const { readVendors } = await import("../utils/vendorsDb");
-  const persisted = await readVendors();
-  const vendor = persisted.find(v => v.storeSlug === slug) || vendors.find(v => v.storeSlug === slug);
-  if (!vendor) {
+export const createProduct: RequestHandler = async (req, res) => {
+  const product: MarketplaceProduct = req.body;
+  // server-side defaults for vendor-created products
+  if (!product.createdAt) product.createdAt = Date.now();
+  if (!product.updatedAt) product.updatedAt = Date.now();
+  if (!product.status) product.status = 'active';
+  if (typeof product.quantity !== 'number') product.quantity = 1;
+  if (!product.ownerKey) product.ownerKey = `key_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+  product.published = true;
+  product.visibilitySource = 'marketplace';
+  const { createProduct: createProductDb } = await import("../utils/productsDb");
+  const saved = await createProductDb(product);
+  res.status(201).json(saved);
     return res.status(404).json({ error: "Vendor not found" });
   }
   res.json(vendor);
@@ -164,7 +143,6 @@ export const createPublicProduct: RequestHandler = async (req, res) => {
     if (!product.title || !product.price || !product.category || !product.location || !product.images || !product.images.length) {
       return res.status(400).json({ error: "Missing required fields (title, price, category, location, image)" });
     }
-    if (!product.id) product.id = `prod_${Date.now()}`;
     product.createdAt = Date.now();
     product.updatedAt = Date.now();
     product.ownerKey = generateKey();
@@ -174,8 +152,8 @@ export const createPublicProduct: RequestHandler = async (req, res) => {
     product.vendorId = product.vendorId || "";
     product.status = product.status || "active";
     product.quantity = typeof product.quantity === "number" ? product.quantity : 1;
-    product.published = req.body.published === true || req.body.published === 'true';
-    product.visibilitySource = req.body.visibilitySource || "marketplace";
+    product.published = true;
+    product.visibilitySource = "marketplace";
     product.views = product.views || 0;
     product.favorites = product.favorites || 0;
 

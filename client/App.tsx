@@ -48,7 +48,6 @@ import CustomerSignup from "./pages/customer/Signup";
 import LogoDemo from "./pages/LogoDemo";
 import VendorSignup from "./pages/VendorSignup";
 import VendorDashboard from "./pages/VendorDashboard";
-import VendorUpgrade from "./pages/VendorUpgrade";
 import VendorStorefront from "./pages/VendorStorefront";
 import DataMigration from "./pages/DataMigration";
 import PostItem from "./pages/PostItem";
@@ -187,7 +186,6 @@ const App = () => (
                 <Route path="/logo-demo" element={<LogoDemo />} />
                 {/* Vendor/Marketplace routes */}
                 <Route path="/vendor/signup" element={<VendorSignup />} />
-                <Route path="/vendor/upgrade" element={<VendorUpgrade />} />
                 <Route path="/vendor/:id/dashboard" element={<VendorDashboard />} />
                 <Route path="/marketplace/:vendorSlug" element={<VendorStorefront />} />
                 <Route path="/data-migration" element={<DataMigration />} />

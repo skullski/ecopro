@@ -9,11 +9,7 @@ const SALT_ROUNDS = 10;
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-in-production";
 const JWT_EXPIRES_IN = "7d"; // Token expires in 7 days
 
-export interface JWTPayload {
-  userId: string;
-  email: string;
-  role: "user" | "admin" | "vendor";
-}
+import { JWTPayload } from "@shared/api";
 
 /**
  * Hash a password using bcrypt

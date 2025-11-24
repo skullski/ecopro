@@ -206,7 +206,7 @@ export function createServer() {
   // Serve static files from React build (only in production)
   if (process.env.NODE_ENV === "production") {
     // In production, __dirname is dist/server/, so we need to go up one level to dist/, then into spa/
-    const clientBuildPath = path.join(__dirname, "../spa");
+    const clientBuildPath = path.join(__dirname, "../client/dist");
     app.use(express.static(clientBuildPath));
 
     // Handle React routing - send all non-API requests to index.html

@@ -4,12 +4,12 @@ export async function getItemsByUserId(userId: string): Promise<MarketplaceProdu
   return rows;
 }
 
-import pool from './db';
-import type { MarketplaceProduct } from '../../shared/types';
 
 // Get all items (marketplace feed)
 export async function getItems(): Promise<MarketplaceProduct[]> {
-  const { rows } = await pool.query('SELECT * FROM products WHERE published = true ORDER BY created_at DESC');
+  const { rows } = await pool.query(
+    "SELECT * FROM products WHERE published = true AND (visibility_source = 'marketplace' OR visibility_source = 'both') ORDER BY created_at DESC"
+  );
   return rows;
 }
 
@@ -21,11 +21,17 @@ export async function getItemById(id: string): Promise<MarketplaceProduct | null
 
 // Create new item
 export async function createItem(item: Partial<MarketplaceProduct>): Promise<MarketplaceProduct> {
-  // Ensure published defaults to false if not provided
-  const newItem = { ...item, published: item.published ?? false };
+  // Always force published true and visibility_source marketplace, let Postgres handle id
+  const newItem: any = {
+    ...item,
+    published: true,
+    visibility_source: 'marketplace',
+    owner_key: item.owner_key || 'anon',
+  };
+  if ('id' in newItem) delete newItem.id;
   const keys = Object.keys(newItem);
   const values = Object.values(newItem);
-  const columns = keys.map((k) => k === 'userId' ? 'user_id' : k.replace(/[A-Z]/g, (c) => '_' + c.toLowerCase()));
+  const columns = keys.map((k) => k.replace(/[A-Z]/g, (c) => '_' + c.toLowerCase()));
   const placeholders = values.map((_, i) => `$${i + 1}`);
   const { rows } = await pool.query(
     `INSERT INTO products (${columns.join(',')}) VALUES (${placeholders.join(',')}) RETURNING *`,
@@ -72,8 +78,16 @@ export async function findProductsByOwnerKey(ownerKey: string): Promise<Marketpl
 }
 
 export async function createProduct(product: MarketplaceProduct): Promise<MarketplaceProduct> {
-  const keys = Object.keys(product);
-  const values = Object.values(product);
+  // Always force published true and visibility_source marketplace, let Postgres handle id
+  const newProduct: any = {
+    ...product,
+    published: true,
+    visibility_source: 'marketplace',
+    owner_key: product.owner_key || 'anon',
+  };
+  if ('id' in newProduct) delete newProduct.id;
+  const keys = Object.keys(newProduct);
+  const values = Object.values(newProduct);
   const columns = keys.map((k) => k.replace(/[A-Z]/g, (c) => '_' + c.toLowerCase()));
   const placeholders = values.map((_, i) => `$${i + 1}`);
   const { rows } = await pool.query(

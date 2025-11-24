@@ -70,8 +70,6 @@ export interface Vendor {
     instagram?: string;
     whatsapp?: string;
   };
-  isVIP?: boolean;
-  subscriptionStatus?: string;
 }
 
 export interface MarketplaceProduct {

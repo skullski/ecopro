@@ -3,78 +3,8 @@ import { useState } from "react";
 import { authApi, getCurrentUser } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { FloatingShapes } from "@/components/ui/floating-shapes";
-import {
-  Check,
-  Crown,
-  Store,
-  TrendingUp,
-  BarChart3,
-  Shield,
-  Zap,
-  Users,
-  Globe,
-  Package,
-  Sparkles,
-  ArrowRight,
-} from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-
-const VIP_FEATURES = [
-  { icon: Store, title: "متجرك الخاص", description: "صفحة متجر مخصصة برابط فريد" },
-  { icon: TrendingUp, title: "تصدير للسوق الكبير", description: "اعرض منتجاتك لآلاف الزوار" },
-  { icon: BarChart3, title: "لوحة تحكم متقدمة", description: "إحصائيات مبيعات وتحليلات شاملة" },
-  { icon: Shield, title: "شارة التحقق", description: "شارة VIP تزيد ثقة المشترين" },
-  { icon: Package, title: "منتجات غير محدودة", description: "أضف عدد غير محدود من المنتجات" },
-  { icon: Users, title: "دعم أولوية", description: "دعم فني سريع على مدار الساعة" },
-  { icon: Globe, title: "أدوات التسويق", description: "أدوات ترويجية متقدمة" },
-  { icon: Sparkles, title: "منتجات مميزة", description: "إبراز منتجاتك في الصفحة الرئيسية" },
-];
-
-const PRICING_PLANS = [
-  {
-    name: "شهري",
-    price: "29",
-    duration: "شهر",
-    badge: "الأكثر مرونة",
-    popular: false,
-  },
-  {
-    name: "ربع سنوي",
-    price: "69",
-    originalPrice: "87",
-    duration: "3 أشهر",
-    badge: "وفر 20%",
-    popular: true,
-  },
-  {
-    name: "سنوي",
-    price: "199",
-    originalPrice: "348",
-    duration: "سنة",
-    badge: "أفضل قيمة - وفر 43%",
-    popular: false,
-  },
-];
-
-export default function VendorUpgrade() {
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const user = getCurrentUser();
-
-  // Only show upgrade if user is a seller and not already paid client
-  const canUpgrade = user && user.role === "seller" && !user.is_paid_client;
-
-  async function handleUpgrade() {
-    setLoading(true);
-    setError(null);
-    try {
-      await authApi.upgradeToVIP();
-      // Optionally show a toast here
-      window.location.reload(); // or navigate("/dashboard");
-    } catch (err: any) {
-      setError(err.message || "حدث خطأ أثناء الترقية");
+// This page is removed. The platform is 100% free for all users.
+export default function VendorUpgrade() { return null; }
     } finally {
       setLoading(false);
     }

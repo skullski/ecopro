@@ -133,6 +133,15 @@ export default function HomeMarketplace() {
     currentPage * itemsPerPage
   );
 
+  if (!loading && products.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[40vh] text-center">
+        <p className="text-lg text-muted-foreground mb-4">No products found in the marketplace.</p>
+        <Button onClick={() => setShowAdd(true)}>+ Add Product</Button>
+      </div>
+    );
+  }
+
   return (
     <div
       className={

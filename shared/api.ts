@@ -2,8 +2,10 @@
  * JWT Payload shared type
  */
 export interface JWTPayload {
-  id: string;
-  role: string;
+  id: string; // user id
+  userId?: string; // alias for compatibility
+  email: string;
+  role: "user" | "admin" | "vendor";
   is_paid_client?: boolean;
   // Add other JWT payload properties as needed
 }

@@ -1,19 +1,6 @@
-/**
- * Middleware to check if user has premium (dashboard) access
- */
-export function requirePremium(req: Request, res: Response, next: NextFunction) {
-  if (!req.user) {
-    res.status(401).json({ error: "Authentication required" });
-    return;
-  }
-  if (req.user.role !== "vendor" && req.user.role !== "admin") {
-    res.status(403).json({ error: "Premium access required" });
-    return;
-  }
-  next();
-}
 import { Request, Response, NextFunction } from "express";
-import { verifyToken, extractToken, JWTPayload } from "../utils/auth";
+import { verifyToken, extractToken } from "../utils/auth";
+import { JWTPayload } from "@shared/api";
 
 // Extend Express Request to include user
 declare global {
@@ -54,10 +41,8 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction) {
   }
 
   if (req.user.role !== "admin") {
-    res.status(403).json({ error: "Admin access required" });
-    return;
+    return res.status(403).json({ error: "Admin access required" });
   }
-
   next();
 }
 
@@ -71,50 +56,16 @@ export function requireVendor(req: Request, res: Response, next: NextFunction) {
   }
 
   if (req.user.role !== "vendor" && req.user.role !== "admin") {
-    res.status(403).json({ error: "Vendor access required" });
-    return;
+    return res.status(403).json({ error: "Vendor access required" });
   }
-
   next();
 }
 
-/**
- * Middleware to check vendor has VIP subscription (paid)
- */
-export async function requireVip(req: Request, res: Response, next: NextFunction) {
-  if (!req.user) {
-    res.status(401).json({ error: "Authentication required" });
-    return;
-  }
-
-  // Admins bypass VIP restriction
-  if (req.user.role === "admin") return next();
-
-  // Only vendors supported here
-  if (req.user.role !== "vendor") {
-    res.status(403).json({ error: "Vendor access required" });
-    return;
-  }
-
-  // Find vendor record by email
-  try {
-    const { findVendorByEmail } = await import("../utils/vendorsDb");
-    const vendor = await findVendorByEmail(req.user.email);
-    if (!vendor) {
-      return res.status(403).json({ error: "Vendor account not found" });
-    }
-    // No VIP logic enforced, just allow access for valid vendors
-    next();
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to validate vendor subscription" });
-  }
-}
 
 /**
  * Optional authentication - attaches user if token is valid, but doesn't reject if missing
  */
-export function optionalAuthenticate(req: Request, res: Response, next: NextFunction) {
+export function optionalAuthenticate(req: Request, res: Response, next: NextFunction): void {
   try {
     const token = extractToken(req.headers.authorization);
     
@@ -133,12 +84,8 @@ export function optionalAuthenticate(req: Request, res: Response, next: NextFunc
  * Middleware to ensure user has seller role
  */
 export function ensureSeller(req: Request, res: Response, next: NextFunction) {
-  const user = req.user; // Assuming user is attached to req by authentication middleware
-
-  // Corrected role checks to align with defined roles
-  if (req.user.role !== "vendor" && req.user.role !== "admin") {
+  if (!req.user || (req.user.role !== "vendor" && req.user.role !== "admin")) {
     return res.status(403).json({ error: "Access denied." });
   }
-
   next();
 }
