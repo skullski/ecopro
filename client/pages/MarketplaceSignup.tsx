@@ -1,7 +1,6 @@
 import React from "react";
-import { Navigate } from "react-router-dom";
 
-// Marketplace signup removed — redirect to home
+// Marketplace signup removed — no-op placeholder
 export default function MarketplaceSignup() {
-  return <Navigate to="/" replace />;
+  return null;
 }

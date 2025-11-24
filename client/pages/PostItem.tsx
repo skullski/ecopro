@@ -64,7 +64,7 @@ const PostItem: React.FC = () => {
         }
       });
       const token = localStorage.getItem("authToken");
-      const response = await fetch("/api/marketplace/items", {
+      const response = await fetch("/api/products", {
         method: "POST",
         body: formDataToSend,
         credentials: "include",

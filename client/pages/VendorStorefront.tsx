@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { DarkModeInput } from "@/components/ui/dark-mode-input";
 import { DarkModeSelect } from "@/components/ui/dark-mode-select";
+import * as api from '@/lib/api';
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Product, Vendor } from "@shared/types";
@@ -47,14 +48,33 @@ export default function VendorStorefront() {
 
   useEffect(() => {
     // Load vendor by slug from localStorage fallback
-    const vendors: Vendor[] = JSON.parse(localStorage.getItem("vendors") || "[]");
-    const vendorData = vendors.find((v) => v.storeSlug === vendorSlug);
-    if (!vendorData) return;
-    setVendor(vendorData);
+    (async () => {
+      try {
+        // Prefer API calls
+        const vendorRec = await api.fetchVendorBySlug(vendorSlug || "");
+        if (vendorRec) {
+          setVendor(vendorRec);
+          try {
+            const prods = await api.fetchVendorProducts(vendorRec.id);
+            setProducts(prods || []);
+            return;
+          } catch (e) {
+            // fallback to localStorage below
+          }
+        }
+      } catch (err) {
+        // API failed, fall back to localStorage
+      }
 
-    const allProducts: Product[] = JSON.parse(localStorage.getItem("marketplaceProducts") || "[]");
-    const vendorProducts = allProducts.filter((p) => p.vendorId === vendorData.id && p.status === "active");
-    setProducts(vendorProducts);
+      // LocalStorage fallback
+      const vendors: Vendor[] = JSON.parse(localStorage.getItem("vendors") || "[]");
+      const vendorData = vendors.find((v) => v.storeSlug === vendorSlug);
+      if (!vendorData) return;
+      setVendor(vendorData);
+      const allProducts: Product[] = JSON.parse(localStorage.getItem("products") || "[]");
+      const vendorProducts = allProducts.filter((p) => p.vendorId === vendorData.id && p.status === "active");
+      setProducts(vendorProducts);
+    })();
   }, [vendorSlug]);
 
   function addToCart(p: Product) {

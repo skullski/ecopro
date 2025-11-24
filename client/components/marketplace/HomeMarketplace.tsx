@@ -1,7 +1,6 @@
 import React from "react";
-import { Navigate } from "react-router-dom";
 
-// Marketplace feature removed. This placeholder prevents accidental imports.
+// Marketplace component removed — no-op placeholder
 export default function HomeMarketplace() {
   return null;
 }

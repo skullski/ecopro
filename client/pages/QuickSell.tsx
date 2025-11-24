@@ -55,7 +55,6 @@ export default function QuickSell() {
         views: 0,
         favorites: 0,
         tags: [],
-        isExportedToMarketplace: true,
         featured: false,
         updatedAt: Date.now(),
       } as any);

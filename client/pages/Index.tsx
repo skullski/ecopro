@@ -39,7 +39,7 @@ export default function Index() {
               <h1 className="text-5xl md:text-7xl font-black leading-tight">
                 {t("home.heroYour")}
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-600">
-                  {t("home.heroMarketplace")}
+                  {t("brand")}
                 </span>
                 {t("home.heroTitle")}
               </h1>
@@ -57,7 +57,7 @@ export default function Index() {
                 </Link>
                 <Link to="/store">
                   <Button size="lg" variant="outline" className="h-14 px-8 text-lg border-2 hover:border-indigo-600 hover:text-indigo-600">
-                    {t("home.exploreMarketplace")}
+                    {t("menu.store")}
                   </Button>
                 </Link>
               </div>
@@ -242,7 +242,7 @@ export default function Index() {
               </Link>
               <Link to="/store">
                 <Button size="lg" variant="outline" className="border-2 border-white text-white hover:bg-white/10 h-14 px-8 text-lg">
-                  {t("home.cta.browseMarketplace")}
+                  {t("menu.store")}
                 </Button>
               </Link>
             </div>
