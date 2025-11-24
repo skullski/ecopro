@@ -60,9 +60,9 @@ Your app will be at: `https://your-app.vercel.app`
 
 **Share this URL with all 3 users!** Everyone using the same Vercel URL will see the same data.
 
-### Important Pages:
+-### Important Pages:
 
-- **Main Store**: `/marketplace` - Where customers browse
+- **Main Store**: `/store` - Where customers browse
 - **Vendor Signup**: `/vendor/signup` - Register as seller
 - **Vendor Dashboard**: `/vendor/:id/dashboard` - Manage products
 - **Admin Preview**: `/admin/preview` - View your store
