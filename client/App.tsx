@@ -1,7 +1,4 @@
 import SellerSignup from "./pages/SellerSignup";
-                <Route path="/seller-signup" element={<SellerSignup />} />
-                {/* Fallback route for 404s */}
-                <Route path="*" element={<NotFound />} />
 import Pricing from "./pages/Pricing";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
@@ -125,6 +122,7 @@ const App = () => (
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
+                <Route path="/seller-signup" element={<SellerSignup />} />
                 <Route path="/quick-sell" element={
                   <Suspense fallback={<div>Loading...</div>}>
                     <QuickSell />
