@@ -34,15 +34,7 @@ export default function DataMigration() {
           changed = true;
         }
 
-        if (v.isVIP === undefined) {
-          updated.isVIP = false;
-          changed = true;
-        }
-
-        if (!v.subscriptionStatus) {
-          updated.subscriptionStatus = 'free';
-          changed = true;
-        }
+        // No VIP fields required anymore; ensure storeSlug exists.
 
         if (changed) vendorsMigrated++;
         return updated;
@@ -88,9 +80,9 @@ export default function DataMigration() {
         <Card className="p-8">
           <div className="flex items-center gap-3 mb-6">
             <Database className="h-8 w-8 text-primary" />
-            <div>
+              <div>
               <h1 className="text-3xl font-bold">Data Migration Tool</h1>
-              <p className="text-muted-foreground">Fix existing data to work with new VIP system</p>
+              <p className="text-muted-foreground">Normalize existing vendor & product data (no premium fields required)</p>
             </div>
           </div>
 
@@ -101,9 +93,8 @@ export default function DataMigration() {
                 <p className="font-semibold mb-1">This tool will:</p>
                 <ul className="list-disc list-inside space-y-1 text-muted-foreground">
                   <li>Add <code>storeSlug</code> to vendors without one</li>
-                  <li>Add <code>isVIP</code> and <code>subscriptionStatus</code> fields</li>
-                  <li>Set <code>isExportedToMarketplace: true</code> on old products</li>
-                  <li>Make all existing products visible in the main store</li>
+                  <li>Ensure product export flag <code>isExportedToMarketplace</code> is present</li>
+                  <li>Make older products visible in the main marketplace when requested</li>
                 </ul>
               </div>
             </div>

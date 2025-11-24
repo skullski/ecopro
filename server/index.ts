@@ -123,6 +123,11 @@ export function createServer() {
   app.get("/api/auth/me", authenticate, authRoutes.getCurrentUser);
   app.post("/api/auth/change-password", authenticate, authRoutes.changePassword);
 
+  // Disabled upgrade route: platform is 100% free. Keep endpoint to return explicit 410.
+  app.post("/api/auth/upgrade-vip", (_req, res) => {
+    res.status(410).json({ error: "VIP upgrades are no longer supported. Platform is free." });
+  });
+
   // Marketplace (seller) routes
   app.use("/api/marketplace", marketplaceRouter);
 

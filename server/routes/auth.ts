@@ -1,10 +1,11 @@
 import jwt from "jsonwebtoken";
 import { JWTPayload } from "@shared/api";
+import { jsonError } from "../utils/httpHelpers";
 
 // JWT authentication middleware
 export const requireAuth: RequestHandler = (req, res, next) => {
   const auth = req.headers.authorization;
-  if (!auth) return res.status(401).json({ error: "No token" });
+  if (!auth) return jsonError(res, 401, "No token");
   try {
     const decoded = jwt.verify(auth.split(" ")[1], process.env.JWT_SECRET || "changeme");
     if (typeof decoded === "object" && decoded !== null) {
@@ -14,7 +15,7 @@ export const requireAuth: RequestHandler = (req, res, next) => {
     }
     next();
   } catch {
-    res.status(401).json({ error: "Invalid token" });
+    return jsonError(res, 401, "Invalid token");
   }
 };
 import { RequestHandler } from "express";
@@ -54,8 +55,7 @@ export const register: RequestHandler = async (req, res) => {
     const existingUser = await findUserByEmail(email);
     if (existingUser) {
       console.log("[REGISTER] Email already registered:", email);
-      res.status(400).json({ error: "Email already registered" });
-      return;
+      return jsonError(res, 400, "Email already registered");
     }
 
     // Hash password
@@ -90,7 +90,7 @@ export const register: RequestHandler = async (req, res) => {
     });
   } catch (error) {
     console.error("[REGISTER] Registration error:", error);
-    res.status(500).json({ error: "Registration failed" });
+    return jsonError(res, 500, "Registration failed");
   }
 };
 
@@ -105,15 +105,13 @@ export const login: RequestHandler = async (req, res) => {
     // Find user
     const user = await findUserByEmail(email);
     if (!user) {
-      res.status(401).json({ error: "Invalid email or password" });
-      return;
+      return jsonError(res, 401, "Invalid email or password");
     }
 
     // Verify password
     const isValidPassword = await comparePassword(password, user.password);
     if (!isValidPassword) {
-      res.status(401).json({ error: "Invalid email or password" });
-      return;
+      return jsonError(res, 401, "Invalid email or password");
     }
 
     // Generate token
@@ -135,7 +133,7 @@ export const login: RequestHandler = async (req, res) => {
     });
   } catch (error) {
     console.error("Login error:", error);
-    res.status(500).json({ error: "Login failed" });
+    return jsonError(res, 500, "Login failed");
   }
 };
 
@@ -146,14 +144,12 @@ export const login: RequestHandler = async (req, res) => {
 export const getCurrentUser: RequestHandler = async (req, res) => {
   try {
     if (!req.user) {
-      res.status(401).json({ error: "Not authenticated" });
-      return;
+      return jsonError(res, 401, "Not authenticated");
     }
 
     const user = await findUserById(req.user.id);
     if (!user) {
-      res.status(404).json({ error: "User not found" });
-      return;
+      return jsonError(res, 404, "User not found");
     }
 
     res.json({
@@ -164,7 +160,7 @@ export const getCurrentUser: RequestHandler = async (req, res) => {
     });
   } catch (error) {
     console.error("Get current user error:", error);
-    res.status(500).json({ error: "Failed to get user" });
+    return jsonError(res, 500, "Failed to get user");
   }
 };
 
@@ -175,23 +171,20 @@ export const getCurrentUser: RequestHandler = async (req, res) => {
 export const changePassword: RequestHandler = async (req, res) => {
   try {
     if (!req.user) {
-      res.status(401).json({ error: "Not authenticated" });
-      return;
+      return jsonError(res, 401, "Not authenticated");
     }
 
     const { currentPassword, newPassword } = req.body;
 
     const user = await findUserById(req.user.id);
     if (!user) {
-      res.status(404).json({ error: "User not found" });
-      return;
+      return jsonError(res, 404, "User not found");
     }
 
     // Verify current password
     const isValidPassword = await comparePassword(currentPassword, user.password);
     if (!isValidPassword) {
-      res.status(401).json({ error: "Current password is incorrect" });
-      return;
+      return jsonError(res, 401, "Current password is incorrect");
     }
 
     // Hash new password
@@ -201,6 +194,6 @@ export const changePassword: RequestHandler = async (req, res) => {
     res.json({ message: "Password changed successfully" });
   } catch (error) {
     console.error("Change password error:", error);
-    res.status(500).json({ error: "Failed to change password" });
+    return jsonError(res, 500, "Failed to change password");
   }
 };

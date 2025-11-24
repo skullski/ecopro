@@ -1,4 +1,5 @@
 import { Router, Request } from "express";
+import { jsonError } from '../utils/httpHelpers';
 import { requireAuth } from "./auth";
 import { v4 as uuidv4 } from "uuid";
 import { getUserFromRequest } from "../utils/auth";
@@ -33,8 +34,12 @@ interface MulterRequest extends Request {
 
 // Get all marketplace listings (public)
 router.get("/", async (_req, res) => {
-  const listings = await getMarketplaceListings();
-  res.json(listings);
+  try {
+    const listings = await getMarketplaceListings();
+    res.json(listings);
+  } catch (err) {
+    return jsonError(res, 500, 'Failed to list marketplace listings');
+  }
 });
 
 // Get listings for current seller
@@ -48,7 +53,7 @@ router.get("/mine", requireAuth, async (req, res) => {
 router.post("/", requireAuth, async (req, res) => {
   const user = getUserFromRequest(req);
   const { title, description, price, category, images, location } = req.body;
-  if (!title || !description || !price || !category) return res.status(400).json({ error: "Missing fields" });
+  if (!title || !description || !price || !category) return jsonError(res, 400, "Missing fields");
   const listing = await createMarketplaceListing({
     userId: user.userId,
     title,
@@ -68,7 +73,7 @@ router.put("/:id", requireAuth, async (req, res) => {
   // Only allow update if user owns the listing
   const listings = await getMarketplaceListingsByUser(user.userId);
   const listing = listings.find(l => l.id == id);
-  if (!listing) return res.status(404).json({ error: "Listing not found" });
+  if (!listing) return jsonError(res, 404, "Listing not found");
   const updated = await updateMarketplaceListing(id, req.body);
   res.json(updated);
 });
@@ -79,7 +84,7 @@ router.delete("/:id", requireAuth, async (req, res) => {
   const { id } = req.params;
   const listings = await getMarketplaceListingsByUser(user.userId);
   const listing = listings.find(l => l.id == id);
-  if (!listing) return res.status(404).json({ error: "Listing not found" });
+  if (!listing) return jsonError(res, 404, "Listing not found");
   await deleteMarketplaceListing(id);
   res.json({ success: true });
 });
@@ -91,7 +96,7 @@ router.post("/items", requireAuth, upload.single("image"), async (req, res) => {
   const image = (req as MulterRequest).file;
 
   if (!title || !description || !price || !category || !location || !image) {
-    return res.status(400).json({ error: "All fields are required." });
+    return jsonError(res, 400, "All fields are required.");
   }
 
   const listing = await createMarketplaceListing({

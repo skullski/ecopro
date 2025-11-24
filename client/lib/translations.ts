@@ -156,7 +156,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "features.marketing": "أدوات التسويق",
     "features.inventory": "إدارة المخزون",
     "features.reports": "التقارير والإحصائيات",
-    "features.support": "دعم فني متميز",
+    "features.support": "الدعم",
     "features.security": "أمان وحماية",
 
     // Admin Panel
@@ -453,7 +453,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "billing.plan": "الخطة",
     "billing.currentPlan": "الخطة الحالية",
     "billing.changePlan": "تغيير الخطة",
-    "billing.upgrade": "ترقية",
+    "billing.upgrade": "إدارة",
     "billing.downgrade": "تخفيض",
     "billing.cancel": "إلغاء الاشتراك",
     "billing.renew": "تجديد",
@@ -680,7 +680,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "features.marketing": "Marketing Tools",
     "features.inventory": "Inventory Management",
     "features.reports": "Reports & Analytics",
-    "features.support": "Premium Support",
+    "features.support": "Support",
     "features.security": "Security & Protection",
 
     // Admin Panel
@@ -977,7 +977,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "billing.plan": "Plan",
     "billing.currentPlan": "Current Plan",
     "billing.changePlan": "Change Plan",
-    "billing.upgrade": "Upgrade",
+    "billing.upgrade": "Manage",
     "billing.downgrade": "Downgrade",
     "billing.cancel": "Cancel Subscription",
     "billing.renew": "Renew",
@@ -1204,7 +1204,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "features.marketing": "Outils Marketing",
     "features.inventory": "Gestion des Stocks",
     "features.reports": "Rapports & Analytique",
-    "features.support": "Support Premium",
+    "features.support": "Support",
     "features.security": "Sécurité & Protection",
 
     // Admin Panel
@@ -1501,7 +1501,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "billing.plan": "Formule",
     "billing.currentPlan": "Formule Actuelle",
     "billing.changePlan": "Changer de Formule",
-    "billing.upgrade": "Mettre à Niveau",
+    "billing.upgrade": "Gérer",
     "billing.downgrade": "Rétrograder",
     "billing.cancel": "Annuler l'Abonnement",
     "billing.renew": "Renouveler",
