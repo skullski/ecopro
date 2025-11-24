@@ -1,4 +1,9 @@
 {
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/" }
+  ]
+}
+{
   "version": 2,
   "buildCommand": "pnpm build",
   "devCommand": "pnpm dev",
