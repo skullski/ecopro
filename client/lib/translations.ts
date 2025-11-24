@@ -617,7 +617,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "home.feature.analytics.title": "Real-Time Analytics",
     "home.feature.analytics.desc": "Track sales, views, and customer behavior with live dashboards and actionable insights.",
     "home.feature.audience.title": "Built-in Audience",
-    "home.feature.audience.desc": "Tap into our active marketplace community. Your products get discovered automatically.",
+    "home.feature.audience.desc": "Tap into our active store community. Your products get discovered automatically.",
     "home.feature.payments.title": "Secure Payments",
     "home.feature.payments.desc": "Accept payments safely with built-in fraud protection and instant payouts to your account.",
     "home.feature.launch.title": "Launch in Minutes",
@@ -637,7 +637,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "home.testimonial2.quote": "The easiest way to scale. I went from 10 to 500 products without breaking a sweat.",
     "home.testimonial3.name": "Lisa K.",
     "home.testimonial3.role": "Handmade Crafts",
-    "home.testimonial3.quote": "Finally, a marketplace that doesn't take all my profits. Fair pricing, great community.",
+    "home.testimonial3.quote": "Finally, a store that doesn't take all my profits. Fair pricing, great community.",
     
     // CTA Section
     "home.cta.title": "Ready to Start Your Journey?",
@@ -1118,7 +1118,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "home.feature.analytics.title": "Analyses en temps réel",
     "home.feature.analytics.desc": "Suivez les ventes, les vues et le comportement des clients avec des tableaux de bord en direct et des informations exploitables.",
     "home.feature.audience.title": "Audience intégrée",
-    "home.feature.audience.desc": "Accédez à notre communauté de marketplace active. Vos produits sont découverts automatiquement.",
+    "home.feature.audience.desc": "Accédez à notre communauté du magasin active. Vos produits sont découverts automatiquement.",
     "home.feature.payments.title": "Paiements sécurisés",
     "home.feature.payments.desc": "Acceptez les paiements en toute sécurité avec une protection contre la fraude intégrée et des paiements instantanés sur votre compte.",
     "home.feature.launch.title": "Lancement en quelques minutes",
@@ -1138,7 +1138,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "home.testimonial2.quote": "Le moyen le plus simple de se développer. Je suis passé de 10 à 500 produits sans transpirer.",
     "home.testimonial3.name": "Lisa K.",
     "home.testimonial3.role": "Artisanat fait main",
-    "home.testimonial3.quote": "Enfin, une marketplace qui ne prend pas tous mes profits. Tarification équitable, grande communauté.",
+    "home.testimonial3.quote": "Enfin, un magasin qui ne prend pas tous mes profits. Tarification équitable, grande communauté.",
     
     // CTA Section
     "home.cta.title": "Prêt à commencer votre voyage ?",
