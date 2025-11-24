@@ -14,18 +14,37 @@ export default function SellerSignup() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
 
+  function slugify(str: string) {
+    return str
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .replace(/--+/g, '-');
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     setError("");
     setSuccess(false);
+    const payload = {
+      name: form.name,
+      email: form.email,
+      phone: form.phone,
+      businessName: form.storeName,
+      storeSlug: slugify(form.storeName) + "--" + Date.now(),
+      password: form.password
+    };
     try {
       const res = await fetch("/api/vendors", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form)
+        body: JSON.stringify(payload)
       });
-      if (!res.ok) throw new Error("Signup failed");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Signup failed");
+      }
       setSuccess(true);
     } catch (e: any) {
       setError(e.message || "Signup failed");
