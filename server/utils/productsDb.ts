@@ -26,7 +26,7 @@ export async function createItem(item: Partial<MarketplaceProduct>): Promise<Mar
     ...item,
     published: true,
     visibility_source: 'marketplace',
-    owner_key: item.owner_key || 'anon',
+    owner_key: item.ownerKey || 'anon',
   };
   if ('id' in newItem) delete newItem.id;
   const keys = Object.keys(newItem);
@@ -83,7 +83,7 @@ export async function createProduct(product: MarketplaceProduct): Promise<Market
     ...product,
     published: true,
     visibility_source: 'marketplace',
-    owner_key: product.owner_key || 'anon',
+    owner_key: product.ownerKey || 'anon',
   };
   if ('id' in newProduct) delete newProduct.id;
   const keys = Object.keys(newProduct);

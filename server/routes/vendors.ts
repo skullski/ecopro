@@ -1,3 +1,29 @@
+// Get all vendors
+export const getVendors: RequestHandler = async (_req, res) => {
+  const { readVendors } = await import("../utils/vendorsDb");
+  const vendors = await readVendors();
+  res.json(vendors);
+};
+
+// Get vendor by ID
+export const getVendorById: RequestHandler = async (req, res) => {
+  const { id } = req.params;
+  const { readVendors } = await import("../utils/vendorsDb");
+  const vendors = await readVendors();
+  const vendor = vendors.find((v) => v.id === id);
+  if (!vendor) return res.status(404).json({ error: "Vendor not found" });
+  res.json(vendor);
+};
+
+// Get vendor by slug
+export const getVendorBySlug: RequestHandler = async (req, res) => {
+  const { slug } = req.params;
+  const { readVendors } = await import("../utils/vendorsDb");
+  const vendors = await readVendors();
+  const vendor = vendors.find((v) => v.storeSlug === slug);
+  if (!vendor) return res.status(404).json({ error: "Vendor not found" });
+  res.json(vendor);
+};
 import { RequestHandler } from "express";
 import type { Vendor, MarketplaceProduct } from "@shared/types";
 // generate owner keys using timestamp + random
@@ -34,10 +60,7 @@ export const createProduct: RequestHandler = async (req, res) => {
   product.visibilitySource = 'marketplace';
   const { createProduct: createProductDb } = await import("../utils/productsDb");
   const saved = await createProductDb(product);
-  res.status(201).json(saved);
-    return res.status(404).json({ error: "Vendor not found" });
-  }
-  res.json(vendor);
+  return res.status(201).json(saved);
 };
 
 // Create vendor
@@ -98,50 +121,15 @@ export const getVendorProducts: RequestHandler = (req, res) => {
   })();
 };
 
-// Create product
-export const createProduct: RequestHandler = async (req, res) => {
-  const product: MarketplaceProduct = req.body;
-
-  // server-side defaults for vendor-created products
-  if (!product.id) product.id = `prod_${Date.now()}`;
-  if (!product.createdAt) product.createdAt = Date.now();
-  if (!product.updatedAt) product.updatedAt = Date.now();
-  if (!product.status) product.status = 'active';
-  if (typeof product.quantity !== 'number') product.quantity = 1;
-  if (!product.ownerKey) product.ownerKey = `key_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
-
-  const { createProduct: createProductDb, findProductById } = await import("../utils/productsDb");
-  // If request is authenticated vendor, attach vendorId and default to exported
-  if (req.user && req.user.role === "vendor") {
-    // Map authenticated user to a vendor record so vendorId matches vendor DB id
-    try {
-      const { findVendorByEmail } = await import("../utils/vendorsDb");
-      const vendorRecord = await findVendorByEmail(req.user.email);
-      if (vendorRecord) {
-        product.vendorId = vendorRecord.id;
-      } else {
-        product.vendorId = req.user.userId;
-      }
-    } catch (err) {
-      console.warn("Could not determine vendor record for user: ", err);
-    }
-    // Default visibility: export vendor products to marketplace unless explicitly false
-    product.isExportedToMarketplace = product.isExportedToMarketplace ?? true;
-  }
-  const existing = await findProductById(product.id);
-  if (existing) return res.status(409).json({ error: "Product already exists" });
-
-  const saved = await createProductDb(product);
-  res.status(201).json(saved);
-};
+// ...existing code...
 
 // Public product creation - anonymous seller
 export const createPublicProduct: RequestHandler = async (req, res) => {
   try {
     const product = req.body as MarketplaceProduct;
     // Validate required fields
-    if (!product.title || !product.price || !product.category || !product.location || !product.images || !product.images.length) {
-      return res.status(400).json({ error: "Missing required fields (title, price, category, location, image)" });
+    if (!product.title || !product.price || !product.category || !product.images || !product.images.length) {
+      return res.status(400).json({ error: "Missing required fields (title, price, category, image)" });
     }
     product.createdAt = Date.now();
     product.updatedAt = Date.now();
