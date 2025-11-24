@@ -140,12 +140,6 @@ export default function VendorStorefront() {
                   {vendor.verified && (
                     <Verified className="h-6 w-6 text-blue-500 fill-blue-500" />
                   )}
-                  {vendor.isVIP && (
-                    <Badge className="bg-gradient-to-r from-primary to-accent text-white">
-                      <Award className="h-3 w-3 mr-1" />
-                      VIP
-                    </Badge>
-                  )}
                 </div>
 
                 <p className="text-muted-foreground mb-4">{vendor.description}</p>

@@ -75,12 +75,7 @@ export default function StorePreview() {
           <div>
             <h2 className="text-2xl font-bold mb-1">{currentVendor.businessName}</h2>
             <p className="text-muted-foreground">{currentVendor.description}</p>
-            <div className="flex gap-2 mt-3">
-              {currentVendor.isVIP && (
-                <Badge className="bg-gradient-to-r from-primary to-accent text-white">
-                  VIP
-                </Badge>
-              )}
+              <div className="flex gap-2 mt-3">
               {currentVendor.verified && (
                 <Badge className="bg-green-500/10 text-green-500 border-green-500/20">
                   ✓ موثق
@@ -204,10 +199,7 @@ export default function StorePreview() {
             <span className="text-blue-500">•</span>
             <span>أضف صور واضحة ووصف تفصيلي لكل منتج</span>
           </li>
-          <li className="flex items-start gap-2">
-            <span className="text-blue-500">•</span>
-            <span>احصل على حساب VIP لمزايا إضافية وزيادة الثقة</span>
-          </li>
+          {/* VIP removed - platform is 100% free */}
         </ul>
       </Card>
     </div>
