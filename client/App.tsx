@@ -1,3 +1,5 @@
+import SellerSignup from "./pages/SellerSignup";
+                <Route path="/seller-signup" element={<SellerSignup />} />
 import Pricing from "./pages/Pricing";
 import About from "./pages/About";
 import Contact from "./pages/Contact";

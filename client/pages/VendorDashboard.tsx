@@ -122,7 +122,7 @@ function VendorDashboard() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0f1021] via-[#181a2a] to-[#1a1a2e]">
         <div className="text-center">
           <p className="text-accent-200 text-lg font-bold">{t("No seller information found. Please log in again.")}</p>
-          <a href="/login" className="text-accent underline">{t("Go to Login")}</a>
+          <a href="/seller-signup" className="text-accent underline">{t("Create Seller Account")}</a>
         </div>
       </div>
     );
