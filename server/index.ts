@@ -206,15 +206,15 @@ export function createServer() {
   // Serve static files from React build (only in production)
   if (process.env.NODE_ENV === "production") {
     // In production, __dirname is dist/server/, so we need to go up one level to dist/, then into spa/
-    const clientBuildPath = path.join(__dirname, "../client/dist");
-    app.use(express.static(clientBuildPath));
+    const spaBuildPath = path.join(__dirname, "../spa");
+    app.use(express.static(spaBuildPath));
 
     // Handle React routing - send all non-API requests to index.html
     // Note: Using a middleware function instead of app.get("*") for Express 5 compatibility
     app.use((req, res, next) => {
       // Only serve index.html for GET requests that don't start with /api
       if (req.method === "GET" && !req.path.startsWith("/api")) {
-        res.sendFile(path.join(clientBuildPath, "index.html"));
+        res.sendFile(path.join(spaBuildPath, "index.html"));
       } else {
         next();
       }
