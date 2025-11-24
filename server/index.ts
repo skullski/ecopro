@@ -127,7 +127,7 @@ export function createServer() {
     res.status(410).json({ error: "VIP upgrades are no longer supported. Platform is free." });
   });
 
-  // Marketplace removed: public marketplace endpoints disabled
+  // Public listing endpoints removed: deprecated and returning 410 where used
 
   // Store products (premium dashboard) routes
   app.use("/api/store-products", storeProductsRouter);
@@ -160,9 +160,9 @@ export function createServer() {
     vendorRoutes.updateVendor
   );
 
-  // Public product creation (anonymous sellers) - removed
+  // Public product creation (anonymous sellers) - removed; return 410
   app.post("/api/products/public", (_req, res) => {
-    res.status(410).json({ error: "Marketplace feature removed" });
+    res.status(410).json({ error: "Public listing feature removed" });
   });
 
   // Protected product routes (require authentication)
