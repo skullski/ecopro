@@ -5,7 +5,7 @@ export default function Pricing() {
     <div className="max-w-2xl mx-auto py-16 px-4 text-center">
       <h1 className="text-4xl font-extrabold mb-4 bg-gradient-to-r from-primary via-accent to-purple-600 bg-clip-text text-transparent">Pricing</h1>
       <p className="text-lg mb-6 text-muted-foreground">
-        <strong>Good news!</strong> Our marketplace is <span className="text-primary font-bold">100% free</span> for all users. There are no hidden fees, no subscriptions, and no premium barriers. You can list, sell, and grow your business with zero cost.
+        <strong>Good news!</strong> Our store is <span className="text-primary font-bold">100% free</span> for all users. There are no hidden fees, no subscriptions, and no premium barriers. You can list, sell, and grow your business with zero cost.
       </p>
       <div className="bg-primary/5 rounded-xl p-6 mb-6">
         <p className="text-base text-foreground">

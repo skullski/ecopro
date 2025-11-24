@@ -81,4 +81,4 @@ export interface Vendor {
     whatsapp?: string;
   };
 }
-// Marketplace-specific types removed. Use `Product` and `Vendor` for storefront and vendor flows.
+// Use `Product` and `Vendor` for storefront and vendor flows.

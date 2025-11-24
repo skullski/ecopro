@@ -55,9 +55,9 @@ export async function createProduct(product: Product): Promise<Product> {
   });
   return res.json();
 }
-// Public marketplace actions removed. The following functions are intentionally disabled.
+// Public listing actions removed. The following functions are intentionally disabled.
 export async function createPublicProduct(): Promise<never> {
-  throw new Error('createPublicProduct is removed. Marketplace feature disabled.');
+  throw new Error('createPublicProduct is removed. Public listing feature disabled.');
 }
 
 // Upload an image as base64 JSON body

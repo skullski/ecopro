@@ -178,10 +178,10 @@ const App = () => (
                 <Route path="/shop/:id/login" element={<CustomerLogin />} />
                 <Route path="/shop/:id/signup" element={<CustomerSignup />} />
                 <Route path="/logo-demo" element={<LogoDemo />} />
-                {/* Vendor/Marketplace routes */}
+                {/* Vendor/store routes */}
                 <Route path="/vendor/signup" element={<VendorSignup />} />
                 <Route path="/vendor/:id/dashboard" element={<VendorDashboard />} />
-                {/* Marketplace removed - vendor storefront accessible via store routes */}
+                {/* Vendor storefront accessible via store routes */}
                 <Route path="/data-migration" element={<DataMigration />} />
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/about" element={<About />} />
