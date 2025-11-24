@@ -29,7 +29,6 @@ async function seedProducts() {
       category: randomItem(categories),
       images: [randomItem(images)],
       published: true,
-      visibilitySource: "marketplace",
       ownerKey: "demo-owner",
       createdAt: Date.now(),
       updatedAt: Date.now(),

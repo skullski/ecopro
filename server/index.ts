@@ -9,7 +9,6 @@ import { handleDemo } from "./routes/demo";
 import * as vendorRoutes from "./routes/vendors";
 import * as uploadRoutes from "./routes/uploads";
 import * as authRoutes from "./routes/auth";
-import marketplaceRouter from "./routes/marketplace";
 import storeProductsRouter from "./routes/storeProducts";
 import { authenticate, requireAdmin, requireVendor } from "./middleware/auth";
 import * as adminRoutes from "./routes/admin";
@@ -128,8 +127,7 @@ export function createServer() {
     res.status(410).json({ error: "VIP upgrades are no longer supported. Platform is free." });
   });
 
-  // Marketplace (seller) routes
-  app.use("/api/marketplace", marketplaceRouter);
+  // Marketplace removed: public marketplace endpoints disabled
 
   // Store products (premium dashboard) routes
   app.use("/api/store-products", storeProductsRouter);
@@ -162,11 +160,10 @@ export function createServer() {
     vendorRoutes.updateVendor
   );
 
-  // Public product creation (anonymous marketplace sellers)
-  app.post(
-    "/api/products/public",
-    vendorRoutes.createPublicProduct
-  );
+  // Public product creation (anonymous sellers) - removed
+  app.post("/api/products/public", (_req, res) => {
+    res.status(410).json({ error: "Marketplace feature removed" });
+  });
 
   // Protected product routes (require authentication)
   app.post(

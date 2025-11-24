@@ -27,7 +27,7 @@ export const getVendorBySlug: RequestHandler = async (req, res) => {
   res.json(vendor);
 };
 import { RequestHandler } from "express";
-import type { Vendor, MarketplaceProduct } from "@shared/types";
+import type { Vendor } from "@shared/types";
 // generate owner keys using timestamp + random
 function generateKey() {
   return `key_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
@@ -47,11 +47,11 @@ interface VendorProductsParams { vendorId: string; }
 // In-memory storage (replace with database later)
 // In-memory vendors fallback; prefer file persistence
 let vendors: Vendor[] = [];
-let products: MarketplaceProduct[] = [];
+let products: any[] = [];
 
 // Get all vendors
 export const createProduct: RequestHandler = async (req, res) => {
-  const product: MarketplaceProduct = req.body;
+  const product: any = req.body;
   // server-side defaults for vendor-created products
   if (!product.createdAt) product.createdAt = Date.now();
   if (!product.updatedAt) product.updatedAt = Date.now();
@@ -59,7 +59,6 @@ export const createProduct: RequestHandler = async (req, res) => {
   if (typeof product.quantity !== 'number') product.quantity = 1;
   if (!product.ownerKey) product.ownerKey = `key_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
   product.published = true;
-  product.visibilitySource = 'marketplace';
   const { createProduct: createProductDb } = await import("../utils/productsDb");
   const saved = await createProductDb(product);
   return res.status(201).json(saved);
@@ -128,7 +127,7 @@ export const getVendorProducts: RequestHandler = (req, res) => {
 // Public product creation - anonymous seller
 export const createPublicProduct: RequestHandler = async (req, res) => {
   try {
-    const product = req.body as MarketplaceProduct;
+    const product: any = req.body;
     // Validate required fields
     if (!product.title || !product.price || !product.category || !product.images || !product.images.length) {
       return jsonError(res, 400, "Missing required fields (title, price, category, image)");
@@ -143,7 +142,7 @@ export const createPublicProduct: RequestHandler = async (req, res) => {
     product.status = product.status || "active";
     product.quantity = typeof product.quantity === "number" ? product.quantity : 1;
     product.published = true;
-    product.visibilitySource = "marketplace";
+    // visibilitySource removed
     product.views = product.views || 0;
     product.favorites = product.favorites || 0;
 
@@ -152,24 +151,22 @@ export const createPublicProduct: RequestHandler = async (req, res) => {
       const { default: pool } = await import("../utils/db");
       const cols = [
         'title',
-        'description',
-        'price',
-        'images',
-        'category',
-        'published',
-        'visibility_source',
-        'created_at',
-        'updated_at'
-      ];
-      const values = [
-        product.title,
-        product.description,
-        product.price,
-        JSON.stringify(product.images || []),
-        product.category,
-        true,
-        'marketplace'
-      ];
+          'description',
+          'price',
+          'images',
+          'category',
+          'published',
+          'created_at',
+          'updated_at'
+        ];
+        const values = [
+          product.title,
+          product.description,
+          product.price,
+          JSON.stringify(product.images || []),
+          product.category,
+          true
+        ];
       const placeholders = values.map((_, i) => `$${i + 1}`).join(',');
       const insertSql = `INSERT INTO products (title, description, price, images, category, published, visibility_source, created_at, updated_at) VALUES (${placeholders}, now(), now()) RETURNING *`;
       const { rows } = await pool.query(insertSql, values);

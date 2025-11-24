@@ -41,6 +41,17 @@ export interface Product {
   featured: boolean;
   inStock: boolean;
   createdAt: number;
+  // Optional fields kept for compatibility with vendor/legacy flows
+  vendorId?: string;
+  published?: boolean;
+  visibilitySource?: string;
+  ownerKey?: string;
+  ownerEmail?: string;
+  views?: number;
+  favorites?: number;
+  quantity?: number;
+  status?: string;
+  updatedAt?: number;
 }
 
 // Multi-vendor marketplace types

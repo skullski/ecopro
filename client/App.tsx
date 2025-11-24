@@ -39,9 +39,6 @@ import AdminCalls from "./pages/admin/Calls";
 import AdminStores from "./pages/admin/Stores";
 import Storefront from "./pages/Storefront";
 import CustomerDashboard from "./pages/customer/Dashboard";
-import Marketplace from "./pages/Marketplace";
-import MarketplaceLogin from "./pages/MarketplaceLogin";
-import MarketplaceSignup from "./pages/MarketplaceSignup";
 import CustomerLogin from "./pages/customer/Login";
 import CustomerSignup from "./pages/customer/Signup";
 import LogoDemo from "./pages/LogoDemo";
@@ -179,15 +176,12 @@ const App = () => (
                 <Route path="/s/:id" element={<Storefront />} />
                 <Route path="/shop/:id/dashboard" element={<CustomerDashboard />} />
                 <Route path="/shop/:id/login" element={<CustomerLogin />} />
-                <Route path="/marketplace" element={<Marketplace />} />
-                <Route path="/marketplace/login" element={<MarketplaceLogin />} />
-                <Route path="/marketplace/signup" element={<MarketplaceSignup />} />
                 <Route path="/shop/:id/signup" element={<CustomerSignup />} />
                 <Route path="/logo-demo" element={<LogoDemo />} />
                 {/* Vendor/Marketplace routes */}
                 <Route path="/vendor/signup" element={<VendorSignup />} />
                 <Route path="/vendor/:id/dashboard" element={<VendorDashboard />} />
-                <Route path="/marketplace/:vendorSlug" element={<VendorStorefront />} />
+                {/* Marketplace removed - vendor storefront accessible via store routes */}
                 <Route path="/data-migration" element={<DataMigration />} />
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/about" element={<About />} />

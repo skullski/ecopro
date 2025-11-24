@@ -1,5 +1,5 @@
 import pool from './db';
-import type { MarketplaceProduct } from '../../shared/types';
+import type { Product } from '../../shared/types';
 
 function toSnakeCase(key: string) {
   return key.replace(/[A-Z]/g, (c) => '_' + c.toLowerCase());
@@ -36,7 +36,7 @@ function mapRowToCamel(row: Record<string, any>) {
 }
 
 // Read all products (admin / internal)
-export async function readProducts(): Promise<MarketplaceProduct[]> {
+export async function readProducts(): Promise<Product[]> {
   const cols = [
     'id',
     'vendor_id',
@@ -58,11 +58,11 @@ export async function readProducts(): Promise<MarketplaceProduct[]> {
     'updated_at'
   ].join(',');
   const { rows } = await pool.query(`SELECT ${cols} FROM products ORDER BY created_at DESC`);
-  return rows.map(mapRowToCamel) as unknown as MarketplaceProduct[];
+  return rows.map(mapRowToCamel) as unknown as Product[];
 }
 
 // Get marketplace-visible items
-export async function getItems(): Promise<MarketplaceProduct[]> {
+export async function getItems(): Promise<Product[]> {
   const cols = [
     'id',
     'vendor_id',
@@ -75,21 +75,20 @@ export async function getItems(): Promise<MarketplaceProduct[]> {
     'owner_key',
     'created_at'
   ].join(',');
-  const { rows } = await pool.query(
-    `SELECT ${cols} FROM products WHERE published = true AND (visibility_source = 'marketplace' OR visibility_source = 'both') ORDER BY created_at DESC`
-  );
-  return rows.map(mapRowToCamel) as unknown as MarketplaceProduct[];
+  // Return published products regardless of visibility source (marketplace removed)
+  const { rows } = await pool.query(`SELECT ${cols} FROM products WHERE published = true ORDER BY created_at DESC`);
+  return rows.map(mapRowToCamel) as unknown as Product[];
 }
 
 // Get items by seller user id
-export async function getItemsByUserId(userId: string): Promise<MarketplaceProduct[]> {
+export async function getItemsByUserId(userId: string): Promise<Product[]> {
   const cols = ['id','title','price','images','category','published','created_at'].join(',');
   const { rows } = await pool.query(`SELECT ${cols} FROM products WHERE vendor_id = $1 ORDER BY created_at DESC`, [userId]);
-  return rows.map(mapRowToCamel) as unknown as MarketplaceProduct[];
+  return rows.map(mapRowToCamel) as unknown as Product[];
 }
 
 // Find single product by id
-export async function findProductById(id: string): Promise<MarketplaceProduct | null> {
+export async function findProductById(id: string): Promise<Product | null> {
   const cols = [
     'id',
     'vendor_id',
@@ -114,25 +113,25 @@ export async function findProductById(id: string): Promise<MarketplaceProduct | 
     'updated_at'
   ].join(',');
   const { rows } = await pool.query(`SELECT ${cols} FROM products WHERE id = $1`, [id]);
-  return rows[0] ? (mapRowToCamel(rows[0]) as unknown as MarketplaceProduct) : null;
+  return rows[0] ? (mapRowToCamel(rows[0]) as unknown as Product) : null;
 }
 
 // Alias for findProductById
 export const getItemById = findProductById;
 
-export async function findProductsByOwnerKey(ownerKey: string): Promise<MarketplaceProduct[]> {
+export async function findProductsByOwnerKey(ownerKey: string): Promise<Product[]> {
   const cols = ['id','title','price','images','category','published','owner_key','created_at'].join(',');
   const { rows } = await pool.query(`SELECT ${cols} FROM products WHERE owner_key = $1 ORDER BY created_at DESC`, [ownerKey]);
-  return rows.map(mapRowToCamel) as unknown as MarketplaceProduct[];
+  return rows.map(mapRowToCamel) as unknown as Product[];
 }
 
 // Create a new product. Accepts partial product; enforces published & visibility_source for marketplace.
-export async function createProduct(product: Partial<MarketplaceProduct>): Promise<MarketplaceProduct> {
+export async function createProduct(product: any): Promise<Product> {
   const base = {
     ...product,
     published: product.published === undefined ? true : product.published,
-    visibilitySource: product.visibilitySource || 'marketplace',
-    ownerKey: product.ownerKey || 'anon',
+    // visibilitySource removed - default to store-owned
+    ownerKey: (product as any).ownerKey || 'anon',
   } as Record<string, any>;
 
   if ('id' in base) delete base.id;
@@ -147,10 +146,10 @@ export async function createProduct(product: Partial<MarketplaceProduct>): Promi
     `INSERT INTO products (${columns}) VALUES (${placeholders}) RETURNING *`,
     values
   );
-  return mapRowToCamel(rows[0]) as unknown as MarketplaceProduct;
+  return mapRowToCamel(rows[0]) as unknown as Product;
 }
 
-export async function updateProduct(id: string, updates: Partial<MarketplaceProduct>): Promise<MarketplaceProduct | null> {
+export async function updateProduct(id: string, updates: any): Promise<Product | null> {
   const mapped = mapKeysToSnake(updates as Record<string, any>);
   const keys = Object.keys(mapped);
   const values = Object.values(mapped);
@@ -160,7 +159,7 @@ export async function updateProduct(id: string, updates: Partial<MarketplaceProd
     `UPDATE products SET ${setClause}, updated_at = now() WHERE id = $${keys.length + 1} RETURNING *`,
     [...values, id]
   );
-  return rows[0] ? (mapRowToCamel(rows[0]) as unknown as MarketplaceProduct) : null;
+  return rows[0] ? (mapRowToCamel(rows[0]) as unknown as Product) : null;
 }
 
 export async function deleteProduct(id: string): Promise<boolean> {
