@@ -1,5 +1,5 @@
 // Script to seed demo products, categories, and banners for a full-featured marketplace
-import { createItem } from './productsDb';
+import { createProduct } from './productsDb';
 import { v4 as uuidv4 } from 'uuid';
 
 const categories = [
@@ -120,7 +120,7 @@ const demoProducts = [
 
 async function seed() {
   for (const product of demoProducts) {
-    await createItem({
+    await createProduct({
       id: uuidv4(),
       ...product,
       vendorId: 'demo-vendor',

@@ -159,9 +159,8 @@ export const authApi = {
    * Upgrade current user to VIP (paid client)
    */
   upgradeToVIP: async (): Promise<{ message: string }> => {
-    return apiRequest("/auth/upgrade-vip", {
-      method: "POST"
-    });
+    // No-op: platform is 100% free, VIP upgrades removed.
+    return Promise.resolve({ message: 'Platform is free — no upgrade available' });
   },
 };
 

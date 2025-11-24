@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { jsonError } from '../utils/httpHelpers';
 import { requireAuth } from "./auth";
 import { v4 as uuidv4 } from "uuid";
 import { getUserFromRequest } from "../utils/auth";
@@ -30,7 +31,7 @@ router.get("/mine", requireAuth, async (req, res) => {
 router.post("/", requireAuth, async (req, res) => {
   const user = getUserFromRequest(req);
   const { storeId, title, description, price, category, images, condition, quantity, featured, status } = req.body;
-  if (!storeId || !title || !description || !price || !category) return res.status(400).json({ error: "Missing fields" });
+  if (!storeId || !title || !description || !price || !category) return jsonError(res, 400, "Missing fields");
   const product = await createStoreProduct({
     storeId,
     userId: user.userId,
@@ -53,7 +54,7 @@ router.put("/:id", requireAuth, async (req, res) => {
   const { id } = req.params;
   const products = await getStoreProductsByUser(user.userId);
   const product = products.find(p => p.id == id);
-  if (!product) return res.status(404).json({ error: "Product not found" });
+  if (!product) return jsonError(res, 404, "Product not found");
   const updated = await updateStoreProduct(id, req.body);
   res.json(updated);
 });
@@ -64,7 +65,7 @@ router.delete("/:id", requireAuth, async (req, res) => {
   const { id } = req.params;
   const products = await getStoreProductsByUser(user.userId);
   const product = products.find(p => p.id == id);
-  if (!product) return res.status(404).json({ error: "Product not found" });
+  if (!product) return jsonError(res, 404, "Product not found");
   await deleteStoreProduct(id);
   res.json({ success: true });
 });

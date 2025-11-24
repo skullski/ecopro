@@ -26,29 +26,12 @@ const menuItems: MenuItem[] = [
   { titleKey: "sidebar.home", path: "/dashboard", icon: <Home className="w-5 h-5" /> },
   { titleKey: "sidebar.preview", path: "/dashboard/preview", icon: <Eye className="w-5 h-5" /> },
   { 
-    titleKey: "sidebar.store", 
-    path: "/dashboard/stores", 
-    icon: <Store className="w-5 h-5" />,
-    children: [
-      { titleKey: "sidebar.storeLogo", path: "/dashboard/store/logo", icon: <Store className="w-4 h-4" /> },
-      { titleKey: "sidebar.storeTemplate", path: "/dashboard/store/template", icon: <FileText className="w-4 h-4" /> },
-      { titleKey: "sidebar.storeHomepage", path: "/dashboard/store/homepage", icon: <Home className="w-4 h-4" /> },
-      { titleKey: "sidebar.storeContact", path: "/dashboard/store/contact", icon: <Globe className="w-4 h-4" /> },
-      { titleKey: "sidebar.storeFaq", path: "/dashboard/store/faq", icon: <FileText className="w-4 h-4" /> },
-      { titleKey: "sidebar.storeAbout", path: "/dashboard/store/about", icon: <FileText className="w-4 h-4" /> },
-      { titleKey: "sidebar.storeCheckout", path: "/dashboard/store/checkout-settings", icon: <Settings className="w-4 h-4" /> },
-    ]
-  },
-  { 
     titleKey: "sidebar.orders", 
     path: "/dashboard/orders", 
     icon: <ShoppingCart className="w-5 h-5" />,
     children: [
       { titleKey: "sidebar.ordersAll", path: "/dashboard/orders", icon: <ShoppingCart className="w-4 h-4" /> },
       { titleKey: "sidebar.ordersAdd", path: "/dashboard/orders/add", icon: <Tag className="w-4 h-4" /> },
-      { titleKey: "sidebar.ordersWasselni", path: "/dashboard/orders/wasselni", icon: <Truck className="w-4 h-4" /> },
-      { titleKey: "sidebar.ordersAbandoned", path: "/dashboard/orders/abandoned", icon: <Ban className="w-4 h-4" /> },
-      { titleKey: "sidebar.ordersFlexScan", path: "/dashboard/orders/flex-scan", icon: <BarChart3 className="w-4 h-4" /> },
     ]
   },
   { 
@@ -58,55 +41,14 @@ const menuItems: MenuItem[] = [
     children: [
       { titleKey: "sidebar.productsAll", path: "/dashboard/products", icon: <Tag className="w-4 h-4" /> },
       { titleKey: "sidebar.productsAdd", path: "/dashboard/products/add", icon: <Layers className="w-4 h-4" /> },
-      { titleKey: "sidebar.productsInventory", path: "/dashboard/products/inventory", icon: <Layers className="w-4 h-4" /> },
     ]
   },
-  { titleKey: "sidebar.categories", path: "/admin/categories", icon: <Layers className="w-5 h-5" /> },
-  { 
-    titleKey: "sidebar.delivery", 
-    path: "/dashboard/delivery", 
-    icon: <Truck className="w-5 h-5" />,
-    children: [
-      { titleKey: "sidebar.deliveryRegions", path: "/dashboard/delivery/regions", icon: <Globe className="w-4 h-4" /> },
-      { titleKey: "sidebar.deliveryCompanies", path: "/dashboard/delivery/companies", icon: <Truck className="w-4 h-4" /> },
-    ]
-  },
-  { 
-    titleKey: "sidebar.marketing", 
-    path: "/admin/marketing", 
-    icon: <Megaphone className="w-5 h-5" />,
-    badgeKey: "sidebar.badgeNew",
-    children: [
-      { titleKey: "sidebar.marketingFacebookPixel", path: "/admin/marketing/facebook-pixel", icon: <BarChart3 className="w-4 h-4" /> },
-      { titleKey: "sidebar.marketingFacebookCatalog", path: "/admin/marketing/facebook-catalog", icon: <Layers className="w-4 h-4" /> },
-      { titleKey: "sidebar.marketingTiktokPixel", path: "/admin/marketing/tiktok-pixel", icon: <BarChart3 className="w-4 h-4" /> },
-      { titleKey: "sidebar.marketingGoogleAnalytics", path: "/admin/marketing/google-analytics", icon: <BarChart3 className="w-4 h-4" /> },
-      { titleKey: "sidebar.marketingGoogleTagManager", path: "/admin/marketing/google-tag-manager", icon: <BarChart3 className="w-4 h-4" /> },
-    ]
-  },
-  { titleKey: "sidebar.reviews", path: "/admin/reviews", icon: <Star className="w-5 h-5" /> },
-  { titleKey: "sidebar.promoCodes", path: "/admin/promo-codes", icon: <Percent className="w-5 h-5" /> },
-  { titleKey: "sidebar.domains", path: "/admin/domains", icon: <Globe className="w-5 h-5" /> },
   { 
     titleKey: "sidebar.analytics", 
     path: "/admin/analytics", 
     icon: <BarChart3 className="w-5 h-5" />,
     children: [
       { titleKey: "sidebar.analyticsOverview", path: "/admin/analytics", icon: <BarChart3 className="w-4 h-4" /> },
-      { titleKey: "sidebar.analyticsProducts", path: "/admin/analytics/products", icon: <Tag className="w-4 h-4" /> },
-      { titleKey: "sidebar.analyticsVisits", path: "/admin/analytics/visits", icon: <Eye className="w-4 h-4" /> },
-    ]
-  },
-  { titleKey: "sidebar.workers", path: "/admin/workers", icon: <Users className="w-5 h-5" /> },
-  { titleKey: "sidebar.blacklist", path: "/admin/blacklist", icon: <Ban className="w-5 h-5" /> },
-  { titleKey: "sidebar.suspicious", path: "/admin/suspicious", icon: <Shield className="w-5 h-5" /> },
-  { 
-    titleKey: "sidebar.addons", 
-    path: "/admin/addons", 
-    icon: <Puzzle className="w-5 h-5" />,
-    children: [
-      { titleKey: "sidebar.addonsGoogleSheets", path: "/admin/addons/google-sheets", icon: <FileText className="w-4 h-4" /> },
-      { titleKey: "sidebar.addonsTelegram", path: "/admin/addons/telegram", icon: <Megaphone className="w-4 h-4" /> },
     ]
   },
   { titleKey: "sidebar.billing", path: "/admin/billing", icon: <CreditCard className="w-5 h-5" /> },

@@ -1,13 +1,5 @@
-import mongoose, { Schema, Types } from 'mongoose';
+// mongoose model stub — mongoose types are not present in the minimal build environment.
+// If you rely on Mongoose elsewhere, restore the original model and add `mongoose` to dependencies.
 
-const itemSchema = new Schema({
-  title: { type: String, required: true },
-  description: { type: String, required: true },
-  price: { type: Number, required: true },
-  category: { type: String, required: true },
-  imageUrl: { type: String },
-  user: { type: Types.ObjectId, ref: 'User', required: true },
-  createdAt: { type: Date, default: Date.now },
-});
-
-export default mongoose.model('Item', itemSchema);
+const ItemStub: any = {};
+export default ItemStub;

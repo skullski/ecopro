@@ -1,3 +1,5 @@
+import { jsonError } from "../utils/httpHelpers";
+
 // Get all vendors
 export const getVendors: RequestHandler = async (_req, res) => {
   const { readVendors } = await import("../utils/vendorsDb");
@@ -11,7 +13,7 @@ export const getVendorById: RequestHandler = async (req, res) => {
   const { readVendors } = await import("../utils/vendorsDb");
   const vendors = await readVendors();
   const vendor = vendors.find((v) => v.id === id);
-  if (!vendor) return res.status(404).json({ error: "Vendor not found" });
+  if (!vendor) return jsonError(res, 404, 'Vendor not found');
   res.json(vendor);
 };
 
@@ -21,7 +23,7 @@ export const getVendorBySlug: RequestHandler = async (req, res) => {
   const { readVendors } = await import("../utils/vendorsDb");
   const vendors = await readVendors();
   const vendor = vendors.find((v) => v.storeSlug === slug);
-  if (!vendor) return res.status(404).json({ error: "Vendor not found" });
+  if (!vendor) return jsonError(res, 404, 'Vendor not found');
   res.json(vendor);
 };
 import { RequestHandler } from "express";
@@ -69,17 +71,17 @@ export const createVendor: RequestHandler = async (req, res) => {
 
   // Simple honeypot check to prevent bot signups
   if (req.body.honeypot) {
-    return res.status(400).json({ error: "Invalid request" });
+    return jsonError(res, 400, "Invalid request");
   }
 
   const { findVendorByEmail, findVendorBySlug, createVendor: createVendorDb } = await import("../utils/vendorsDb");
   const byEmail = await findVendorByEmail(vendor.email);
   if (byEmail) {
-    return res.status(409).json({ error: "Vendor email already exists" });
+    return jsonError(res, 409, "Vendor email already exists");
   }
   const bySlug = await findVendorBySlug(vendor.storeSlug);
   if (bySlug) {
-    return res.status(409).json({ error: "Store slug already exists" });
+    return jsonError(res, 409, "Store slug already exists");
   }
 
   const saved = await createVendorDb(vendor);
@@ -93,7 +95,7 @@ export const updateVendor: RequestHandler = async (req, res) => {
   const persisted = await readVendors();
   const index = persisted.findIndex(v => v.id === id);
   if (index === -1) {
-    return res.status(404).json({ error: "Vendor not found" });
+    return jsonError(res, 404, "Vendor not found");
   }
   const updated = await updateVendorDb(id, req.body as Partial<Vendor>);
   res.json(updated);
@@ -102,8 +104,8 @@ export const updateVendor: RequestHandler = async (req, res) => {
 // Get all products
 export const getProducts: RequestHandler = async (_req, res) => {
   try {
-    const { readProducts } = await import("../utils/productsDb");
-    const persisted = await readProducts();
+    const { getItems } = await import("../utils/productsDb");
+    const persisted = await getItems();
     res.json(persisted.length ? persisted : products);
   } catch (err) {
     res.json(products);
@@ -129,7 +131,7 @@ export const createPublicProduct: RequestHandler = async (req, res) => {
     const product = req.body as MarketplaceProduct;
     // Validate required fields
     if (!product.title || !product.price || !product.category || !product.images || !product.images.length) {
-      return res.status(400).json({ error: "Missing required fields (title, price, category, image)" });
+      return jsonError(res, 400, "Missing required fields (title, price, category, image)");
     }
     product.createdAt = Date.now();
     product.updatedAt = Date.now();
@@ -145,22 +147,41 @@ export const createPublicProduct: RequestHandler = async (req, res) => {
     product.views = product.views || 0;
     product.favorites = product.favorites || 0;
 
-    const { createProduct: createProductDb } = await import("../utils/productsDb");
-    let saved;
+    // Insert minimally into products table (schema may not contain legacy VIP columns)
     try {
-      saved = await createProductDb(product);
+      const { default: pool } = await import("../utils/db");
+      const cols = [
+        'title',
+        'description',
+        'price',
+        'images',
+        'category',
+        'published',
+        'visibility_source',
+        'created_at',
+        'updated_at'
+      ];
+      const values = [
+        product.title,
+        product.description,
+        product.price,
+        JSON.stringify(product.images || []),
+        product.category,
+        true,
+        'marketplace'
+      ];
+      const placeholders = values.map((_, i) => `$${i + 1}`).join(',');
+      const insertSql = `INSERT INTO products (title, description, price, images, category, published, visibility_source, created_at, updated_at) VALUES (${placeholders}, now(), now()) RETURNING *`;
+      const { rows } = await pool.query(insertSql, values);
+      const saved = rows[0];
+      return res.status(201).json({ product: saved, ownerKey: product.ownerKey });
     } catch (dbErr) {
-      console.error("DB error in createProductDb:", dbErr, "\nProduct:", product);
-      return res.status(500).json({ error: "DB error: " + (dbErr && dbErr.message ? dbErr.message : dbErr) });
+      console.error("DB error in create public product:", dbErr, "\nProduct:", product);
+      return jsonError(res, 500, "DB error: " + (dbErr && dbErr.message ? dbErr.message : dbErr));
     }
-    if (!saved) {
-      console.error("createProductDb returned falsy value. Product:", product);
-      return res.status(500).json({ error: "Failed to create public product (DB error)" });
-    }
-    res.status(201).json({ product: saved, ownerKey: product.ownerKey });
   } catch (err) {
     console.error("createPublicProduct error:", err, "\nProduct:", req.body);
-    res.status(500).json({ error: "Failed to create public product: " + (err && err.message ? err.message : err) });
+    return jsonError(res, 500, "Failed to create public product: " + (err && err.message ? err.message : err));
   }
 };
 
@@ -185,13 +206,13 @@ export const getProductsByOwnerEmail: RequestHandler = async (req, res) => {
 export const claimProduct: RequestHandler = async (req, res) => {
   const { ownerKey, productId } = req.body;
   // must be authenticated vendor
-  if (!req.user) return res.status(401).json({ error: "Not authenticated" });
-  if (req.user.role !== "vendor" && req.user.role !== "admin") return res.status(403).json({ error: "Vendor access required" });
+  if (!req.user) return jsonError(res, 401, "Not authenticated");
+  if (req.user.role !== "vendor" && req.user.role !== "admin") return jsonError(res, 403, "Vendor access required");
 
   const { findProductById, updateProduct } = await import("../utils/productsDb");
   const product = await findProductById(productId);
-  if (!product) return res.status(404).json({ error: "Product not found" });
-  if (product.ownerKey !== ownerKey) return res.status(403).json({ error: "Invalid owner key" });
+  if (!product) return jsonError(res, 404, "Product not found");
+  if (product.ownerKey !== ownerKey) return jsonError(res, 403, "Invalid owner key");
 
   // Map user to vendor id
   const { findVendorByEmail } = await import('../utils/vendorsDb');
@@ -203,8 +224,8 @@ export const claimProduct: RequestHandler = async (req, res) => {
 
 // Claim all products where the ownerEmail matches the vendor's email
 export const claimProductsByEmail: RequestHandler = async (req, res) => {
-  if (!req.user) return res.status(401).json({ error: 'Not authenticated' });
-  if (req.user.role !== 'vendor' && req.user.role !== 'admin') return res.status(403).json({ error: 'Vendor access required' });
+  if (!req.user) return jsonError(res, 401, 'Not authenticated');
+  if (req.user.role !== 'vendor' && req.user.role !== 'admin') return jsonError(res, 403, 'Vendor access required');
 
   const vendorEmail = req.user.email.toLowerCase();
   const { readProducts, updateProduct } = await import('../utils/productsDb');
@@ -228,18 +249,18 @@ export const updateProduct: RequestHandler = async (req, res) => {
   const { findProductById, updateProduct: updateProductDb } = await import('../utils/productsDb');
 
   const existing = await findProductById(id);
-  if (!existing) return res.status(404).json({ error: 'Product not found' });
+  if (!existing) return jsonError(res, 404, 'Product not found');
 
   // If vendor, ensure they own the product
   if (req.user && req.user.role === 'vendor') {
     const { findVendorByEmail } = await import('../utils/vendorsDb');
     const vendor = await findVendorByEmail(req.user.email);
     const checkId = vendor ? vendor.id : req.user.userId;
-    if (existing.vendorId !== checkId) return res.status(403).json({ error: 'Not allowed' });
+    if (existing.vendorId !== checkId) return jsonError(res, 403, 'Not allowed');
   }
 
   const updated = await updateProductDb(id, req.body);
-  if (!updated) return res.status(500).json({ error: 'Failed to update' });
+  if (!updated) return jsonError(res, 500, 'Failed to update');
   res.json(updated);
 };
 
@@ -253,13 +274,13 @@ export const deleteProduct: RequestHandler = async (req, res) => {
   if (req.user && (req.user.role === "vendor" || req.user.role === "admin")) {
     // allow vendor with vendorId matching product
     const product = await (await import("../utils/productsDb")).findProductById(id);
-    if (!product) return res.status(404).json({ error: "Product not found" });
+    if (!product) return jsonError(res, 404, "Product not found");
     if (req.user.role === 'vendor') {
       const { findVendorByEmail } = await import('../utils/vendorsDb');
       const vendor = await findVendorByEmail(req.user.email);
       const checkId = vendor ? vendor.id : req.user.userId;
       if (product.vendorId !== checkId) {
-        return res.status(403).json({ error: 'Not allowed' });
+        return jsonError(res, 403, 'Not allowed');
       }
     }
     
@@ -268,10 +289,10 @@ export const deleteProduct: RequestHandler = async (req, res) => {
   }
 
   // Otherwise require ownerKey for anonymous sellers
-  if (!ownerKey) return res.status(401).json({ error: 'Missing ownerKey' });
+  if (!ownerKey) return jsonError(res, 401, 'Missing ownerKey');
   const product = await (await import("../utils/productsDb")).findProductById(id);
-  if (!product) return res.status(404).json({ error: 'Product not found' });
-  if (product.ownerKey !== ownerKey) return res.status(403).json({ error: 'Invalid ownerKey' });
+  if (!product) return jsonError(res, 404, 'Product not found');
+  if (product.ownerKey !== ownerKey) return jsonError(res, 403, 'Invalid ownerKey');
   await deleteProduct(id);
   res.status(204).send();
 };

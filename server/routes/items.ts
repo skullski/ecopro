@@ -1,10 +1,11 @@
 
 import { Router } from "express";
+import { jsonError } from '../utils/httpHelpers';
 import { requireAuth } from "./auth";
 import { v4 as uuidv4 } from "uuid";
 import { uploadImage } from "../utils/uploads.js";
 import { getUserFromRequest } from "../utils/auth";
-import { getItems, createItem, updateItem, deleteItem, getItemById, getItemsByUserId } from "../utils/productsDb";
+import { getItems, createProduct, updateProduct, deleteProduct, getItemById, getItemsByUserId } from "../utils/productsDb";
 
 const router = Router();
 
@@ -24,7 +25,7 @@ router.get("/", async (req, res) => {
 // Get single item
 router.get("/:id", async (req, res) => {
   const item = await getItemById(req.params.id);
-  if (!item) return res.status(404).json({ error: "Item not found" });
+  if (!item) return jsonError(res, 404, "Item not found");
   res.json(item);
 });
 
@@ -32,9 +33,9 @@ router.get("/:id", async (req, res) => {
 router.post("/", requireAuth, async (req, res) => {
   const user = getUserFromRequest(req);
   const { title, description, price, category, images } = req.body;
-  if (!title || !description || !price || !category) return res.status(400).json({ error: "Missing fields" });
+  if (!title || !description || !price || !category) return jsonError(res, 400, "Missing fields");
   // No vendor restriction: any authenticated user can add items
-  const item = await createItem({
+  const item = await createProduct({
     id: uuidv4(),
     title,
     description,
@@ -51,9 +52,9 @@ router.post("/", requireAuth, async (req, res) => {
 router.put("/:id", requireAuth, async (req, res) => {
   const user = getUserFromRequest(req);
   const item = await getItemById(req.params.id);
-  if (!item) return res.status(404).json({ error: "Item not found" });
-  if (item.vendorId !== user.vendorId) return res.status(403).json({ error: "Forbidden" });
-  const updated = await updateItem(req.params.id, req.body);
+  if (!item) return jsonError(res, 404, "Item not found");
+  if (item.vendorId !== user.vendorId) return jsonError(res, 403, "Forbidden");
+  const updated = await updateProduct(req.params.id, req.body);
   res.json(updated);
 });
 
@@ -61,9 +62,9 @@ router.put("/:id", requireAuth, async (req, res) => {
 router.delete("/:id", requireAuth, async (req, res) => {
   const user = getUserFromRequest(req);
   const item = await getItemById(req.params.id);
-  if (!item) return res.status(404).json({ error: "Item not found" });
-  if (item.vendorId !== user.vendorId) return res.status(403).json({ error: "Forbidden" });
-  await deleteItem(req.params.id);
+  if (!item) return jsonError(res, 404, "Item not found");
+  if (item.vendorId !== user.vendorId) return jsonError(res, 403, "Forbidden");
+  await deleteProduct(req.params.id);
   res.json({ success: true });
 });
 

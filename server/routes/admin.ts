@@ -1,4 +1,5 @@
 import { pool, findUserById } from "../utils/database";
+import { jsonError } from '../utils/httpHelpers';
 import { RequestHandler } from "express";
 import { requireAdmin } from "../middleware/auth";
 import { findUserByEmail, updateUser } from "../utils/database";
@@ -11,21 +12,19 @@ export const promoteUserToAdmin: RequestHandler = async (req, res) => {
 
     const { email } = req.body;
     if (!email) {
-      res.status(400).json({ error: "Email is required" });
-      return;
+      return jsonError(res, 400, "Email is required");
     }
 
     const user = await findUserByEmail(email);
     if (!user) {
-      res.status(404).json({ error: "User not found" });
-      return;
+      return jsonError(res, 404, "User not found");
     }
 
     const updated = await updateUser(user.id, { role: "admin" });
     res.json({ message: "User promoted to admin", user: { id: updated.id, email: updated.email, role: updated.role } });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Failed to promote user" });
+    return jsonError(res, 500, "Failed to promote user");
   }
 };
 
@@ -37,6 +36,6 @@ export const listUsers: RequestHandler = async (_req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Failed to list users" });
+    return jsonError(res, 500, "Failed to list users");
   }
 };

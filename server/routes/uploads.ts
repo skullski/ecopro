@@ -1,5 +1,6 @@
 
 import { RequestHandler } from 'express';
+import { jsonError } from '../utils/httpHelpers';
 import fs from 'fs/promises';
 import path from 'path';
 import multer from 'multer';
@@ -29,12 +30,12 @@ export const upload = multer({
 // POST /api/products/upload (multipart/form-data)
 export const uploadImage: RequestHandler = async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    if (!req.file) return jsonError(res, 400, 'No file uploaded');
     // Build public url
     const urlPath = `/uploads/${req.file.filename}`;
     res.json({ url: urlPath });
   } catch (err) {
     console.error('Upload error', err);
-    res.status(500).json({ error: 'Upload failed' });
+    return jsonError(res, 500, 'Upload failed');
   }
 };

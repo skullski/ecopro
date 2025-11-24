@@ -7,7 +7,7 @@ A modern, full-stack multi-vendor e-commerce platform built with React, TypeScri
 - 🛍️ **Multi-Vendor Marketplace** - Multiple sellers with individual storefronts
 - 🏪 **Personal Vendor Stores** - Each vendor gets their own branded store page
 - 📦 **Product Management** - Easy product addition, editing, and export controls
-- 💎 **VIP System** - Premium subscription tiers for vendors
+- No paid upgrades — the platform is 100% free for all vendors
 - 🌐 **Dual Visibility** - Products can be private or exported to main marketplace
 - 📱 **Responsive Design** - Works on desktop, tablet, and mobile
 - 🎨 **Dark Mode** - Full dark mode support
@@ -139,7 +139,7 @@ Add these in Vercel dashboard if needed:
 - `/marketplace/:vendorSlug` - Individual vendor storefront (all products)
 - `/vendor/signup` - Vendor registration
 - `/vendor/:id/dashboard` - Vendor dashboard
-- `/vendor/upgrade` - VIP subscription page
+- `/vendor/upgrade` - (removed) platform is free
 - `/admin/preview` - Vendor store preview
 
 ## Development Commands
@@ -160,7 +160,7 @@ pnpm test         # Run tests
 - Toggle product visibility (private vs marketplace)
 - Access personal storefront with unique URL
 - View sales statistics
-- Upgrade to VIP for premium features
+ - No paid upgrades — the platform is free for all users
 
 ### For Customers
 - Browse marketplace with all exported products

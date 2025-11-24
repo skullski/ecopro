@@ -60,8 +60,6 @@ export default function VendorSignup() {
       totalSales: 0,
       totalProducts: 0,
       verified: false,
-      isVIP: false, // Default to free account
-      subscriptionStatus: 'free',
       joinedAt: Date.now(),
       location: {
         city: formData.city,
