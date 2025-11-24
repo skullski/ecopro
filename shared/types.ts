@@ -70,6 +70,8 @@ export interface Vendor {
     instagram?: string;
     whatsapp?: string;
   };
+  isVIP?: boolean;
+  subscriptionStatus?: string;
 }
 
 export interface MarketplaceProduct {
@@ -100,6 +102,7 @@ export interface MarketplaceProduct {
     internationalShipping: boolean;
     estimatedDays: number;
   };
+  isExportedToMarketplace?: boolean;
 }
 
 export interface MarketplaceOrder {

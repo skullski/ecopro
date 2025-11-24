@@ -1,4 +1,13 @@
 /**
+ * JWT Payload shared type
+ */
+export interface JWTPayload {
+  id: string;
+  role: string;
+  is_paid_client?: boolean;
+  // Add other JWT payload properties as needed
+}
+/**
  * Shared code between client and server
  * Useful to share types between client and server
  * and/or small pure JS functions that can be used on both client and server

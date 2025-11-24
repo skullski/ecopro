@@ -2,7 +2,7 @@ import Pricing from "./pages/Pricing";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import { Toaster } from "@/components/ui/toaster";
-import { createRoot } from "react-dom/client";
+
 import "./global.css";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -74,7 +74,7 @@ import DeliveryCompanies from "./pages/admin/delivery/DeliveryCompanies";
 import GoogleSheetsIntegration from "./pages/admin/addons/GoogleSheets";
 
 import { ThemeProvider } from "./contexts/ThemeContext";
-import { I18nProvider } from "./contexts/I18nContext";
+import { I18nProvider } from "@/lib/i18n";
 
 
 const queryClient = new QueryClient();
@@ -109,7 +109,6 @@ function RequireVendor({ children }: { children: JSX.Element }) {
   }
   return children;
 }
-
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
@@ -204,9 +203,5 @@ const App = () => (
   </QueryClientProvider>
 );
 
-const container = document.getElementById("root")!;
-// Persist root across HMR to avoid 'createRoot on same container' warning
-if (!(window as any).__APP_ROOT__) {
-  (window as any).__APP_ROOT__ = createRoot(container);
-}
-(window as any).__APP_ROOT__.render(<App />);
+
+export default App;
