@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, AlertCircle, RefreshCw, Database } from "lucide-react";
-import type { Vendor, MarketplaceProduct } from "@shared/types";
+import type { Vendor, Product } from "@shared/types";
 
 export default function DataMigration() {
   const [migrationStatus, setMigrationStatus] = useState<string[]>([]);
@@ -51,10 +51,11 @@ export default function DataMigration() {
       const products = JSON.parse(localStorage.getItem("marketplaceProducts") || "[]");
       let productsMigrated = 0;
 
-      const updatedProducts = products.map((p: MarketplaceProduct) => {
-        if (p.isExportedToMarketplace === undefined) {
+      const updatedProducts = products.map((p: Product) => {
+        // Normalize: ensure published flag exists
+        if (p.published === undefined) {
           productsMigrated++;
-          return { ...p, isExportedToMarketplace: true };
+          return { ...p, published: true };
         }
         return p;
       });

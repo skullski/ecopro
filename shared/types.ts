@@ -53,8 +53,7 @@ export interface Product {
   status?: string;
   updatedAt?: number;
 }
-
-// Multi-vendor marketplace types
+// Multi-vendor vendor types
 export interface Vendor {
   id: string;
   name: string;
@@ -82,54 +81,4 @@ export interface Vendor {
     whatsapp?: string;
   };
 }
-
-export interface MarketplaceProduct {
-  id: string;
-  vendorId: string;
-  title: string;
-  description: string;
-  price: number;
-  images: string[];
-  category: string;
-  condition?: 'new' | 'used' | 'refurbished';
-  quantity?: number;
-  featured?: boolean;
-  status?: 'active' | 'pending' | 'sold' | 'inactive';
-  published: boolean; // True if product is visible in main /marketplace (public listing)
-  visibilitySource?: string; // 'marketplace' or 'store'
-  ownerKey?: string; // Temporary token for anonymous sellers
-  ownerEmail?: string; // Email associated with anonymous listing
-  views?: number;
-  favorites?: number;
-  createdAt: number;
-  updatedAt: number;
-  tags?: string[];
-  specifications?: Record<string, string>;
-  shippingOptions?: {
-    freeShipping: boolean;
-    domesticShipping: boolean;
-    internationalShipping: boolean;
-    estimatedDays: number;
-  };
-  isExportedToMarketplace?: boolean;
-}
-
-export interface MarketplaceOrder {
-  id: string;
-  productId: string;
-  vendorId: string;
-  buyerId: string;
-  quantity: number;
-  totalPrice: number;
-  status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
-  shippingAddress: {
-    name: string;
-    phone: string;
-    address: string;
-    city: string;
-    country: string;
-    postalCode?: string;
-  };
-  createdAt: number;
-  updatedAt: number;
-}
+// Marketplace-specific types removed. Use `Product` and `Vendor` for storefront and vendor flows.
