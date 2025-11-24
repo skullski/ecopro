@@ -187,7 +187,7 @@ function VendorDashboard() {
                   className="px-4 py-2 rounded-lg bg-green-500/20 text-green-500 font-semibold hover:bg-green-500/40"
                   onClick={() => handleExport(product.id)}
                 >
-                  {t("Export to Marketplace")}
+                  {t("Export")}
                 </button>
               </div>
             </div>

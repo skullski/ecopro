@@ -61,7 +61,7 @@ export async function readProducts(): Promise<Product[]> {
   return rows.map(mapRowToCamel) as unknown as Product[];
 }
 
-// Get marketplace-visible items
+// Get public store items
 export async function getItems(): Promise<Product[]> {
   const cols = [
     'id',
@@ -75,7 +75,7 @@ export async function getItems(): Promise<Product[]> {
     'owner_key',
     'created_at'
   ].join(',');
-  // Return published products regardless of visibility source (marketplace removed)
+  // Return published products (public/store-visible)
   const { rows } = await pool.query(`SELECT ${cols} FROM products WHERE published = true ORDER BY created_at DESC`);
   return rows.map(mapRowToCamel) as unknown as Product[];
 }
@@ -125,7 +125,7 @@ export async function findProductsByOwnerKey(ownerKey: string): Promise<Product[
   return rows.map(mapRowToCamel) as unknown as Product[];
 }
 
-// Create a new product. Accepts partial product; enforces published & visibility_source for marketplace.
+// Create a new product. Accepts partial product; enforces published flag for store visibility.
 export async function createProduct(product: any): Promise<Product> {
   const base = {
     ...product,

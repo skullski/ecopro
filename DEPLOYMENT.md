@@ -58,6 +58,10 @@ Example:
 - User 1: Opens `https://your-app.vercel.app/marketplace`
 - User 2: Opens `https://your-app.vercel.app/marketplace`
 - User 3: Opens `https://your-app.vercel.app/marketplace`
+Example:
+ User 1: Opens `https://your-app.vercel.app/store`
+ User 2: Opens `https://your-app.vercel.app/store`
+ User 3: Opens `https://your-app.vercel.app/store`
 ## ⚠️ Known Limitations
 
 - Data not persisted between deployments

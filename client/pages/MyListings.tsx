@@ -3,6 +3,8 @@ import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Trash, Edit, Eye, Heart, Phone } from "lucide-react";
+import * as api from '@/lib/api';
+import { getCurrentUser, isAuthenticated } from '@/lib/auth';
 
 const MyListings: React.FC = () => {
   const [listings, setListings] = useState([]);
@@ -12,9 +14,27 @@ const MyListings: React.FC = () => {
     async function fetchListings() {
       setLoading(true);
       try {
-        const response = await fetch("/api/marketplace/mine");
-        const data = await response.json();
-        setListings(data);
+        // Find vendor by current user email, then fetch vendor products
+        if (!isAuthenticated()) {
+          setListings([]);
+          setLoading(false);
+          return;
+        }
+        const user = getCurrentUser();
+        if (!user) {
+          setListings([]);
+          setLoading(false);
+          return;
+        }
+        const vendors = await api.fetchVendors();
+        const vendor = vendors.find(v => v.email === user.email);
+        if (!vendor) {
+          setListings([]);
+          setLoading(false);
+          return;
+        }
+        const data = await api.fetchVendorProducts(vendor.id);
+        setListings(data || []);
       } catch (error) {
         console.error("Failed to fetch listings", error);
       } finally {
@@ -29,7 +49,7 @@ const MyListings: React.FC = () => {
     if (!confirm("Are you sure you want to delete this listing?")) return;
 
     try {
-      const response = await fetch(`/api/marketplace/${id}`, {
+      const response = await fetch(`/api/products/${id}`, {
         method: "DELETE",
       });
 

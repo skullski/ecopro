@@ -1,6 +1,6 @@
-# EcoPro - Multi-Vendor Marketplace
+# EcoPro - Multi-Vendor Storefront
 
-A modern, full-stack multi-vendor e-commerce platform built with React, TypeScript, Express, and Vite.
+A modern, full-stack multi-vendor e-commerce platform (storefront) built with React, TypeScript, Express, and Vite.
 
 ## Features
 
@@ -8,7 +8,7 @@ A modern, full-stack multi-vendor e-commerce platform built with React, TypeScri
 - 🏪 **Personal Vendor Stores** - Each vendor gets their own branded store page
 - 📦 **Product Management** - Easy product addition, editing, and export controls
 - No paid upgrades — the platform is 100% free for all vendors
-- 🌐 **Dual Visibility** - Products can be private or exported to main marketplace
+- 🌐 **Dual Visibility** - Products can be private or published to the main store
 - 📱 **Responsive Design** - Works on desktop, tablet, and mobile
 - 🎨 **Dark Mode** - Full dark mode support
 - 🌍 **RTL Support** - Arabic language interface
@@ -132,11 +132,11 @@ Add these in Vercel dashboard if needed:
 - `PUT /api/products/:id` - Update product
 - `DELETE /api/products/:id` - Delete product
 
-## Key Pages
+### Key Pages
 
 - `/` - Homepage
-- `/marketplace` - Main marketplace (exported products only)
-- `/marketplace/:vendorSlug` - Individual vendor storefront (all products)
+- `/store` - Main store (published products)
+- `/store/:vendorSlug` - Individual vendor storefront (all products)
 - `/vendor/signup` - Vendor registration
 - `/vendor/:id/dashboard` - Vendor dashboard
 - `/vendor/upgrade` - (removed) platform is free
@@ -162,8 +162,7 @@ pnpm test         # Run tests
 - View sales statistics
  - No paid upgrades — the platform is free for all users
 
-### For Customers
-- Browse marketplace with all exported products
+- Browse the main store with all published products
 - Search and filter by category
 - Add to cart and wishlist
 - Visit individual vendor stores

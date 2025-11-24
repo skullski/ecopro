@@ -13,7 +13,7 @@ export default function OrderSuccess(){
         <h2 className="text-2xl font-bold">شكراً لطلبك</h2>
         <p className="mt-2 text-sm text-muted-foreground">رقم الطلب: #{order.id}</p>
         <div className="mt-4">
-          <Link to="/marketplace"><Button variant="ghost">العودة للمتجر</Button></Link>
+          <Link to="/store"><Button variant="ghost">العودة للمتجر</Button></Link>
           <Link to="/dashboard/orders"><Button className="ml-2">عرض الطلبات</Button></Link>
         </div>
       </div>

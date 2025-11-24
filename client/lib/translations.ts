@@ -98,11 +98,9 @@ export const translations: Record<Locale, Record<string, string>> = {
     // Homepage - New Translations
     "home.liveGrowing": "نشط ومتنامي",
     "home.heroTitle": "ثورة",
-    "home.heroMarketplace": "السوق الإلكتروني",
     "home.heroYour": "خاصتك",
     "home.heroDescription": "بناء إمبراطوريتك على الإنترنت. تواصل مع آلاف المشترين. نمِّ عملك بلا حدود.",
     "home.startSelling": "ابدأ البيع",
-    "home.exploreMarketplace": "استكشف السوق",
     "home.reviews": "4.9/5 من أكثر من 1000 تقييم",
     "home.salesToday": "مبيعات اليوم",
     "home.newProducts": "منتجات جديدة",
@@ -144,7 +142,6 @@ export const translations: Record<Locale, Record<string, string>> = {
     "home.cta.title": "جاهز لبدء رحلتك؟",
     "home.cta.description": "انضم إلى آلاف البائعين الذين ينمون بالفعل أعمالهم معنا. لا يلزم بطاقة ائتمان للبدء.",
     "home.cta.startFree": "ابدأ البيع مجاناً",
-    "home.cta.browseMarketplace": "تصفح السوق",
     "home.cta.noFees": "✓ بدون رسوم إعداد  ✓ إلغاء في أي وقت  ✓ دعم 24/7",
 
     // Features
@@ -324,27 +321,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "store.checkout": "إعدادات الدفع",
     "store.preview": "معاينة المتجر",
 
-    // Marketplace
-    "marketplace.title": "سوق walidstore",
-    "marketplace.banner": "سوق مفتوح للجميع - سجل وابدأ البيع مجاناً!",
-    "marketplace.startSelling": "ابدأ البيع الآن",
-    "marketplace.productsFrom": "{products} منتج من {vendors} بائع",
-    "marketplace.cart": "السلة ({count})",
-    "marketplace.search": "ابحث...",
-    "marketplace.viewAll": "عرض الكل",
-    "marketplace.featured": "مميز",
-    "marketplace.newest": "الأحدث",
-    "marketplace.priceLow": "السعر: الأقل",
-    "marketplace.priceHigh": "السعر: الأعلى",
-    "marketplace.noResults": "لا توجد نتائج",
-    "marketplace.tryDifferent": "جرب تعديل البحث",
-    "marketplace.firstToStart": "كن أول من يبدأ!",
-    "marketplace.registerFree": "سجل الآن وأضف منتجاتك مجاناً",
-    "marketplace.registerAsVendor": "سجل كبائع الآن",
-    "marketplace.addToCart": "أضف",
-    "marketplace.haveProducts": "هل لديك منتجات للبيع؟",
-    "marketplace.joinThousands": "انضم إلى آلاف البائعين",
-    "marketplace.registerVendorFree": "سجل كبائع مجاناً",
+    // Marketplace keys removed
     
     // Categories
     "category.all": "الكل",
@@ -622,11 +599,9 @@ export const translations: Record<Locale, Record<string, string>> = {
     // Homepage - New Translations
     "home.liveGrowing": "Live & Growing",
     "home.heroTitle": "Revolution",
-    "home.heroMarketplace": "Marketplace",
     "home.heroYour": "Your",
     "home.heroDescription": "Build your online empire. Connect with thousands of buyers. Grow your business with zero limits.",
     "home.startSelling": "Start Selling",
-    "home.exploreMarketplace": "Explore Marketplace",
     "home.reviews": "4.9/5 from 1000+ reviews",
     "home.salesToday": "Sales Today",
     "home.newProducts": "New Products",
@@ -642,7 +617,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "home.feature.analytics.title": "Real-Time Analytics",
     "home.feature.analytics.desc": "Track sales, views, and customer behavior with live dashboards and actionable insights.",
     "home.feature.audience.title": "Built-in Audience",
-    "home.feature.audience.desc": "Tap into our active marketplace community. Your products get discovered automatically.",
+    "home.feature.audience.desc": "Tap into our active store community. Your products get discovered automatically.",
     "home.feature.payments.title": "Secure Payments",
     "home.feature.payments.desc": "Accept payments safely with built-in fraud protection and instant payouts to your account.",
     "home.feature.launch.title": "Launch in Minutes",
@@ -662,13 +637,12 @@ export const translations: Record<Locale, Record<string, string>> = {
     "home.testimonial2.quote": "The easiest way to scale. I went from 10 to 500 products without breaking a sweat.",
     "home.testimonial3.name": "Lisa K.",
     "home.testimonial3.role": "Handmade Crafts",
-    "home.testimonial3.quote": "Finally, a marketplace that doesn't take all my profits. Fair pricing, great community.",
+    "home.testimonial3.quote": "Finally, a store that doesn't take all my profits. Fair pricing, great community.",
     
     // CTA Section
     "home.cta.title": "Ready to Start Your Journey?",
     "home.cta.description": "Join thousands of sellers who are already growing their business with us. No credit card required to start.",
     "home.cta.startFree": "Start Selling Free",
-    "home.cta.browseMarketplace": "Browse Marketplace",
     "home.cta.noFees": "✓ No setup fees  ✓ Cancel anytime  ✓ 24/7 support",
 
     // Features
@@ -848,27 +822,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "store.checkout": "Checkout Settings",
     "store.preview": "Preview Store",
 
-    // Marketplace
-    "marketplace.title": "walidstore Marketplace",
-    "marketplace.banner": "Open marketplace for everyone - Register and start selling for free!",
-    "marketplace.startSelling": "Start Selling Now",
-    "marketplace.productsFrom": "{products} products from {vendors} vendors",
-    "marketplace.cart": "Cart ({count})",
-    "marketplace.search": "Search...",
-    "marketplace.viewAll": "View All",
-    "marketplace.featured": "Featured",
-    "marketplace.newest": "Newest",
-    "marketplace.priceLow": "Price: Low to High",
-    "marketplace.priceHigh": "Price: High to Low",
-    "marketplace.noResults": "No results found",
-    "marketplace.tryDifferent": "Try adjusting your search",
-    "marketplace.firstToStart": "Be the first to start!",
-    "marketplace.registerFree": "Register now and add your products for free",
-    "marketplace.registerAsVendor": "Register as Vendor Now",
-    "marketplace.addToCart": "Add",
-    "marketplace.haveProducts": "Have products to sell?",
-    "marketplace.joinThousands": "Join thousands of vendors",
-    "marketplace.registerVendorFree": "Register as Vendor for Free",
+    // Marketplace keys removed
     
     // Categories
     "category.all": "All",
@@ -1146,11 +1100,9 @@ export const translations: Record<Locale, Record<string, string>> = {
     // Homepage - New Translations
     "home.liveGrowing": "En Direct et Croissance",
     "home.heroTitle": "Révolution",
-    "home.heroMarketplace": "Marketplace",
     "home.heroYour": "Votre",
     "home.heroDescription": "Construisez votre empire en ligne. Connectez-vous avec des milliers d'acheteurs. Développez votre entreprise sans limites.",
     "home.startSelling": "Commencer à vendre",
-    "home.exploreMarketplace": "Explorer la Marketplace",
     "home.reviews": "4.9/5 sur 1000+ avis",
     "home.salesToday": "Ventes aujourd'hui",
     "home.newProducts": "Nouveaux produits",
@@ -1166,7 +1118,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "home.feature.analytics.title": "Analyses en temps réel",
     "home.feature.analytics.desc": "Suivez les ventes, les vues et le comportement des clients avec des tableaux de bord en direct et des informations exploitables.",
     "home.feature.audience.title": "Audience intégrée",
-    "home.feature.audience.desc": "Accédez à notre communauté de marketplace active. Vos produits sont découverts automatiquement.",
+    "home.feature.audience.desc": "Accédez à notre communauté du magasin active. Vos produits sont découverts automatiquement.",
     "home.feature.payments.title": "Paiements sécurisés",
     "home.feature.payments.desc": "Acceptez les paiements en toute sécurité avec une protection contre la fraude intégrée et des paiements instantanés sur votre compte.",
     "home.feature.launch.title": "Lancement en quelques minutes",
@@ -1186,13 +1138,12 @@ export const translations: Record<Locale, Record<string, string>> = {
     "home.testimonial2.quote": "Le moyen le plus simple de se développer. Je suis passé de 10 à 500 produits sans transpirer.",
     "home.testimonial3.name": "Lisa K.",
     "home.testimonial3.role": "Artisanat fait main",
-    "home.testimonial3.quote": "Enfin, une marketplace qui ne prend pas tous mes profits. Tarification équitable, grande communauté.",
+    "home.testimonial3.quote": "Enfin, un magasin qui ne prend pas tous mes profits. Tarification équitable, grande communauté.",
     
     // CTA Section
     "home.cta.title": "Prêt à commencer votre voyage ?",
     "home.cta.description": "Rejoignez des milliers de vendeurs qui développent déjà leur entreprise avec nous. Aucune carte de crédit requise pour commencer.",
     "home.cta.startFree": "Commencer à vendre gratuitement",
-    "home.cta.browseMarketplace": "Parcourir la Marketplace",
     "home.cta.noFees": "✓ Pas de frais de configuration  ✓ Annulez à tout moment  ✓ Support 24/7",
 
     // Features
@@ -1372,27 +1323,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "store.checkout": "Paramètres de Paiement",
     "store.preview": "Aperçu de la Boutique",
 
-    // Marketplace
-    "marketplace.title": "Marché walidstore",
-    "marketplace.banner": "Marché ouvert à tous - Inscrivez-vous et commencez à vendre gratuitement!",
-    "marketplace.startSelling": "Commencez à Vendre Maintenant",
-    "marketplace.productsFrom": "{products} produits de {vendors} vendeurs",
-    "marketplace.cart": "Panier ({count})",
-    "marketplace.search": "Rechercher...",
-    "marketplace.viewAll": "Voir Tout",
-    "marketplace.featured": "Mis en Avant",
-    "marketplace.newest": "Plus Récents",
-    "marketplace.priceLow": "Prix: Croissant",
-    "marketplace.priceHigh": "Prix: Décroissant",
-    "marketplace.noResults": "Aucun résultat trouvé",
-    "marketplace.tryDifferent": "Essayez de modifier votre recherche",
-    "marketplace.firstToStart": "Soyez le premier à commencer!",
-    "marketplace.registerFree": "Inscrivez-vous maintenant et ajoutez vos produits gratuitement",
-    "marketplace.registerAsVendor": "S'inscrire comme Vendeur",
-    "marketplace.addToCart": "Ajouter",
-    "marketplace.haveProducts": "Vous avez des produits à vendre?",
-    "marketplace.joinThousands": "Rejoignez des milliers de vendeurs",
-    "marketplace.registerVendorFree": "Inscription Vendeur Gratuite",
+    // Marketplace keys removed
     
     // Categories
     "category.all": "Tous",

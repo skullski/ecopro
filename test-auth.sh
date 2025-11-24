@@ -4,7 +4,7 @@
 # - register/login/me
 # - create public vendor
 # - create public product
-# - list marketplace products
+# - list public store products
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -80,12 +80,12 @@ else
 fi
 
 # 6) List products
-echo -e "\n${YELLOW}6) List marketplace products${NC}"
+echo -e "\n${YELLOW}6) List public store products${NC}"
 LIST=$(curl -s "$API_URL/products")
 if echo "$LIST" | grep -q 'Smoke Product'; then
-  echo -e "${GREEN}[OK] product visible in marketplace${NC}"
+  echo -e "${GREEN}[OK] product visible in public store${NC}"
 else
-  echo -e "${YELLOW}[WARN] product not found in marketplace result${NC}"
+  echo -e "${YELLOW}[WARN] product not found in public store result${NC}"
   echo "$LIST"
 fi
 

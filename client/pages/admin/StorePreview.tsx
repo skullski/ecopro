@@ -29,7 +29,7 @@ export default function StorePreview() {
 
   const copyStoreLink = () => {
     if (currentVendor) {
-      const storeUrl = `${window.location.origin}/marketplace/${currentVendor.storeSlug}`;
+      const storeUrl = `${window.location.origin}/store/${currentVendor.storeSlug}`;
       navigator.clipboard.writeText(storeUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -53,8 +53,8 @@ export default function StorePreview() {
     );
   }
 
-  const storeUrl = `${window.location.origin}/marketplace/${currentVendor.storeSlug}`;
-  const marketplaceUrl = `${window.location.origin}/marketplace`;
+  const storeUrl = `${window.location.origin}/store/${currentVendor.storeSlug}`;
+  const publicStoreUrl = `${window.location.origin}/store`;
 
   return (
     <div className="p-8 space-y-6">
@@ -119,7 +119,7 @@ export default function StorePreview() {
               هذا الرابط يعرض جميع منتجاتك (المصدرة والخاصة)
             </p>
             <div className="flex gap-2">
-              <Link to={`/marketplace/${currentVendor.storeSlug}`} target="_blank">
+              <Link to={`/store/${currentVendor.storeSlug}`} target="_blank">
                 <Button size="sm" className="bg-gradient-to-r from-primary to-accent text-white">
                   <Eye className="h-4 w-4 mr-2" />
                   معاينة متجرك
@@ -134,30 +134,30 @@ export default function StorePreview() {
             </div>
           </div>
 
-          {/* Marketplace Link */}
+          {/* Public Store Link */}
           <div className="p-4 rounded-lg bg-primary/5 border-2 border-primary/20">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5 text-primary" />
-                <span className="font-semibold">السوق الكبير</span>
+                <span className="font-semibold">المتجر العام</span>
               </div>
               <Badge className="bg-primary/10 text-primary">
                 <ExternalLink className="h-3 w-3 mr-1" />
-                المنتجات المصدرة فقط
+                المنتجات العامة
               </Badge>
             </div>
             <div className="flex items-center gap-2 mb-2">
               <code className="flex-1 px-3 py-2 bg-background rounded text-sm">
-                {marketplaceUrl}
+                {publicStoreUrl}
               </code>
             </div>
             <p className="text-xs text-muted-foreground mb-3">
-              تظهر هنا فقط المنتجات التي قمت بتصديرها للسوق الكبير
+              تظهر هنا فقط المنتجات العامة المعرّضة للزوار
             </p>
-            <Link to="/marketplace" target="_blank">
-              <Button size="sm" variant="outline">
+            <Link to="/store" target="_blank">
+                <Button size="sm" variant="outline">
                 <Eye className="h-4 w-4 mr-2" />
-                معاينة السوق الكبير
+                معاينة المتجر العام
               </Button>
             </Link>
           </div>

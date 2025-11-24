@@ -124,7 +124,7 @@ After deployment, your API will be available at:
 All React routes work automatically:
 
 - `https://your-app.onrender.com/` (Homepage)
-- `https://your-app.onrender.com/marketplace` (Marketplace)
+- `https://your-app.onrender.com/store` (Main store)
 - `https://your-app.onrender.com/admin` (Admin Dashboard)
 - `https://your-app.onrender.com/vendor-dashboard` (Vendor Panel)
 

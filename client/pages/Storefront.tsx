@@ -85,7 +85,7 @@ export default function Storefront() {
       // Fetch only this seller's products (private store)
       try {
         const storeProducts = await api.fetchVendorProducts(id);
-        // Map MarketplaceProduct[] to Product[]
+        // Map product payload to internal `Product` shape
         setProducts(storeProducts.map((p: any) => ({
           id: p.id,
           storeId: p.storeId || id,
