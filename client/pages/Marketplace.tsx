@@ -31,6 +31,7 @@ export default function Marketplace() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [slowConnection, setSlowConnection] = useState(false);
 
   useEffect(() => {
     loadCategories();
@@ -54,6 +55,13 @@ export default function Marketplace() {
 
   const loadProducts = async () => {
     setLoading(true);
+    setSlowConnection(false);
+    
+    // Show warning if loading takes more than 3 seconds
+    const slowTimer = setTimeout(() => {
+      setSlowConnection(true);
+    }, 3000);
+
     try {
       const params = new URLSearchParams();
       if (selectedCategory) {
@@ -78,12 +86,14 @@ export default function Marketplace() {
       if (res.ok) {
         const data = await res.json();
         setProducts(data);
+        setSlowConnection(false);
       } else {
         console.error('Failed to fetch products:', res.status);
       }
     } catch (error) {
       console.error('Failed to load products:', error);
     } finally {
+      clearTimeout(slowTimer);
       setLoading(false);
     }
   };
@@ -257,9 +267,25 @@ export default function Marketplace() {
             {/* Products Grid */}
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
               {loading ? (
-                <div className="col-span-full text-center py-12 text-muted-foreground">
-                  Loading products...
-                </div>
+                <>
+                  {/* Skeleton Loading */}
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className="bg-card rounded-xl border overflow-hidden animate-pulse">
+                      <div className="aspect-square bg-muted"></div>
+                      <div className="p-3 space-y-2">
+                        <div className="h-4 bg-muted rounded"></div>
+                        <div className="h-4 bg-muted rounded w-3/4"></div>
+                        <div className="h-3 bg-muted rounded w-1/2"></div>
+                      </div>
+                    </div>
+                  ))}
+                  {slowConnection && (
+                    <div className="col-span-full text-center py-8 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                      <p className="text-yellow-800 dark:text-yellow-200 font-medium">⏳ Loading is taking longer than usual...</p>
+                      <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">This may be due to distance from the server or network conditions.</p>
+                    </div>
+                  )}
+                </>
               ) : products.length === 0 ? (
                 <div className="col-span-full text-center py-12 text-muted-foreground">
                   No products found. Be the first to{' '}

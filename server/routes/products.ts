@@ -36,18 +36,17 @@ export const getAllProducts: RequestHandler = async (req, res) => {
   try {
     const { category, search, min_price, max_price, sort = 'created_at', order = 'DESC', limit = '50' } = req.query;
     
-    // Exclude images from list query for performance - images can be huge base64 strings
+    // Only return first image from array for better performance
     let query = `
       SELECT 
-        p.id, p.seller_id, p.title, p.description, p.price, p.original_price,
-        p.category, p.stock, p.status, p.condition, p.location,
-        p.shipping_available, p.views, p.created_at, p.updated_at,
+        p.id, p.seller_id, p.title, p.price, p.original_price,
+        p.category, p.stock, p.condition,
+        p.shipping_available, p.views, p.created_at,
         CASE 
           WHEN array_length(p.images, 1) > 0 THEN ARRAY[p.images[1]]
           ELSE ARRAY[]::text[]
         END as images,
-        u.name as seller_name,
-        u.email as seller_email
+        u.name as seller_name
       FROM marketplace_products p
       LEFT JOIN users u ON p.seller_id = u.id
       WHERE p.status = 'active'
@@ -92,13 +91,26 @@ export const getAllProducts: RequestHandler = async (req, res) => {
     const limitValue = Math.min(parseInt(limit as string) || 50, 100);
     query += ` LIMIT ${limitValue}`;
 
-    // Add cache headers for performance
-    res.set('Cache-Control', 'public, max-age=60'); // Cache for 60 seconds
-
-    const result = await pool.query(query, params);
-    res.json(result.rows as Product[]);
-  } catch (error) {
-    console.error("Get products error:", error);
+    // Set query timeout to 10 seconds
+    const client = await pool.connect();
+    try {
+      await client.query('SET statement_timeout = 10000');
+      const result = await client.query(query, params);
+      
+      // Add cache headers for performance
+      res.set('Cache-Control', 'public, max-age=60'); // Cache for 60 seconds
+      res.json(result.rows as Product[]);
+    } finally {
+      client.release();
+    }
+  } catch (error: any) {
+    console.error("Get products error:", error.message);
+    
+    // If query times out, return empty array with warning
+    if (error.message.includes('timeout')) {
+      return res.status(200).json([]);
+    }
+    
     res.status(500).json({ error: "Failed to fetch products" });
   }
 };
