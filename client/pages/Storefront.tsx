@@ -124,20 +124,16 @@ export default function Storefront() {
     );
   }
 
-  if (error || products.length === 0) {
+  if (error) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="text-center space-y-4 p-6 max-w-md">
           <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
             <StoreIcon className="w-8 h-8 text-muted-foreground" />
           </div>
-          <h2 className="text-2xl font-bold">
-            {error ? 'Store Not Available' : 'No Products Yet'}
-          </h2>
+          <h2 className="text-2xl font-bold">Store Not Available</h2>
           <p className="text-muted-foreground">
-            {error 
-              ? 'This store could not be loaded. Please check the URL and try again.'
-              : 'This store is being set up. Check back soon for products!'}
+            This store could not be loaded. Please check the URL and try again.
           </p>
           <Button onClick={() => navigate('/marketplace')}>
             Browse Marketplace
@@ -256,9 +252,10 @@ export default function Storefront() {
 
       {/* All Products Section */}
       <div className="container mx-auto px-4 py-8">
-        {/* Filters */}
-        <div className="bg-card rounded-xl border p-4 mb-6">
-          <div className="flex flex-wrap gap-4 items-center">
+        {/* Filters - only show if there are products */}
+        {products.length > 0 && (
+          <div className="bg-card rounded-xl border p-4 mb-6">
+            <div className="flex flex-wrap gap-4 items-center">
             <div className="flex-1 min-w-[200px]">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -303,12 +300,42 @@ export default function Storefront() {
             </div>
           </div>
         </div>
+        )}
 
         {/* Products Grid/List */}
-        {filteredProducts.length === 0 ? (
+        {products.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="max-w-md mx-auto">
+              <div className="w-24 h-24 mx-auto bg-gradient-to-br from-primary/10 to-accent/10 rounded-full flex items-center justify-center mb-6">
+                <Package className="w-12 h-12 text-primary" />
+              </div>
+              <h3 className="text-2xl font-bold mb-3">Store Opening Soon!</h3>
+              <p className="text-muted-foreground mb-6">
+                This store is currently being set up. New products will be available soon. 
+                Check back later or explore other stores on our marketplace.
+              </p>
+              <Button 
+                onClick={() => navigate('/marketplace')}
+                className="bg-gradient-to-r from-primary to-accent"
+              >
+                Browse Marketplace
+              </Button>
+            </div>
+          </div>
+        ) : filteredProducts.length === 0 ? (
           <div className="text-center py-12">
             <Package className="w-16 h-16 mx-auto text-muted-foreground opacity-20 mb-4" />
             <p className="text-muted-foreground">No products found matching your criteria</p>
+            <Button 
+              variant="outline" 
+              className="mt-4"
+              onClick={() => {
+                setSearchQuery('');
+                setCategoryFilter('all');
+              }}
+            >
+              Clear Filters
+            </Button>
           </div>
         ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
