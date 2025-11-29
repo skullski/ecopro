@@ -292,7 +292,12 @@ export default function Store() {
           <div className="flex items-center gap-3">
             <Button 
               variant="outline"
-              onClick={() => window.open('/my-store', '_blank')}
+              onClick={() => {
+                if (clientId) {
+                  window.open(`/store/${clientId}`, '_blank');
+                }
+              }}
+              disabled={!clientId}
             >
               <StoreIcon className="w-4 h-4 mr-2" />
               View Storefront
@@ -837,7 +842,12 @@ export default function Store() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => window.open('/my-store', '_blank')}
+                  onClick={() => {
+                    if (clientId) {
+                      window.open(`/store/${clientId}`, '_blank');
+                    }
+                  }}
+                  disabled={!clientId}
                 >
                   <ExternalLink className="w-4 h-4 mr-2" />
                   Open Store
