@@ -6,9 +6,11 @@ const pool = new Pool({
   ssl: {
     rejectUnauthorized: false, // Required for Render PostgreSQL
   },
-  max: 20, // Maximum pool connections
-  idleTimeoutMillis: 10000, // Close idle connections after 10s
-  connectionTimeoutMillis: 3000, // Fast connection timeout
+  max: 30, // Maximum pool connections for high concurrency
+  min: 5, // Keep 5 connections ready
+  idleTimeoutMillis: 5000, // Close idle connections after 5s
+  connectionTimeoutMillis: 2000, // Ultra-fast connection timeout
+  statement_timeout: 2000, // Global statement timeout
 });
 
 export interface User {

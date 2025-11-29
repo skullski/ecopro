@@ -72,10 +72,10 @@ export default function Marketplace() {
       setError(null);
     }
     
-    // Show warning if loading takes more than 1 second
+    // Show warning if loading takes more than 800ms
     const slowTimer = setTimeout(() => {
       setSlowConnection(true);
-    }, 1000);
+    }, 800);
 
     try {
       const params = new URLSearchParams();
@@ -95,13 +95,22 @@ export default function Marketplace() {
         params.append('sort', sortMap[sortBy] || 'created_at');
         params.append('order', sortBy === 'price-high' ? 'DESC' : 'ASC');
       }
-      params.append('limit', '12');
-      params.append('offset', String((pageNum - 1) * 12));
+      params.append('limit', '8');
+      params.append('offset', String((pageNum - 1) * 8));
 
       const apiUrl = `/api/products?${params}`;
       console.log('[Marketplace] Fetching products:', apiUrl);
       
-      const res = await fetch(apiUrl);
+      // Use keepalive and timeout for faster requests
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
+      const res = await fetch(apiUrl, {
+        signal: controller.signal,
+        keepalive: true
+      });
+      clearTimeout(timeoutId);
+      
       console.log('[Marketplace] Response status:', res.status);
       
       if (res.ok) {
@@ -112,7 +121,7 @@ export default function Marketplace() {
         } else {
           setProducts(prev => [...prev, ...data]);
         }
-        setHasMore(data.length === 12);
+        setHasMore(data.length === 8);
         setSlowConnection(false);
       } else {
         const errorText = await res.text();
@@ -316,26 +325,10 @@ export default function Marketplace() {
                   </button>
                 </div>
               )}
-              {loading ? (
-                <>
-                  {/* Skeleton Loading */}
-                  {Array.from({ length: 2 }).map((_, i) => (
-                    <div key={i} className="bg-card rounded-xl border overflow-hidden animate-pulse">
-                      <div className="aspect-square bg-muted"></div>
-                      <div className="p-3 space-y-2">
-                        <div className="h-4 bg-muted rounded"></div>
-                        <div className="h-4 bg-muted rounded w-3/4"></div>
-                        <div className="h-3 bg-muted rounded w-1/2"></div>
-                      </div>
-                    </div>
-                  ))}
-                  {slowConnection && (
-                    <div className="col-span-full text-center py-8 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                      <p className="text-yellow-800 dark:text-yellow-200 font-medium">⏳ Loading is taking longer than usual...</p>
-                      <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">This may be due to distance from the server or network conditions.</p>
-                    </div>
-                  )}
-                </>
+              {loading && products.length === 0 ? (
+                <div className="col-span-full text-center py-12">
+                  <div className="inline-block w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                </div>
               ) : products.length === 0 ? (
                 <div className="col-span-full text-center py-12 text-muted-foreground">
                   No products found. Be the first to{' '}

@@ -34,46 +34,43 @@ export const getCategoryCounts: RequestHandler = async (req, res) => {
  */
 export const getAllProducts: RequestHandler = async (req, res) => {
   try {
-    const { category, search, min_price, max_price, sort = 'created_at', order = 'DESC', limit = '12', offset = '0' } = req.query;
+    const { category, search, min_price, max_price, sort = 'created_at', order = 'DESC', limit = '8', offset = '0' } = req.query;
     
-    // Minimal fields for fastest response
+    // Ultra-minimal query - no JOIN for maximum speed
     let query = `
       SELECT 
-        p.id, p.title, p.price, p.original_price,
-        p.category, p.condition, p.views,
+        id, title, price, original_price, category, condition,
         CASE 
-          WHEN array_length(p.images, 1) > 0 THEN ARRAY[p.images[1]]
-          ELSE ARRAY[]::text[]
-        END as images,
-        u.name as seller_name
-      FROM marketplace_products p
-      LEFT JOIN users u ON p.seller_id = u.id
-      WHERE p.status = 'active'
+          WHEN array_length(images, 1) > 0 THEN images[1]
+          ELSE NULL
+        END as image
+      FROM marketplace_products
+      WHERE status = 'active'
     `;
     
     const params: any[] = [];
     let paramIndex = 1;
 
     if (category) {
-      query += ` AND p.category = $${paramIndex}`;
+      query += ` AND category = $${paramIndex}`;
       params.push(category);
       paramIndex++;
     }
 
     if (search) {
-      query += ` AND (p.title ILIKE $${paramIndex} OR p.description ILIKE $${paramIndex})`;
+      query += ` AND (title ILIKE $${paramIndex} OR description ILIKE $${paramIndex})`;
       params.push(`%${search}%`);
       paramIndex++;
     }
 
     if (min_price) {
-      query += ` AND p.price >= $${paramIndex}`;
+      query += ` AND price >= $${paramIndex}`;
       params.push(min_price);
       paramIndex++;
     }
 
     if (max_price) {
-      query += ` AND p.price <= $${paramIndex}`;
+      query += ` AND price <= $${paramIndex}`;
       params.push(max_price);
       paramIndex++;
     }
@@ -84,22 +81,30 @@ export const getAllProducts: RequestHandler = async (req, res) => {
     const sortField = validSorts.includes(sort as string) ? sort : 'created_at';
     const sortOrder = validOrders.includes((order as string).toUpperCase()) ? order : 'DESC';
 
-    query += ` ORDER BY p.${sortField} ${sortOrder}`;
+    query += ` ORDER BY ${sortField} ${sortOrder}`;
     
     // Add pagination
-    const limitValue = Math.min(parseInt(limit as string) || 12, 50);
+    const limitValue = Math.min(parseInt(limit as string) || 8, 20);
     const offsetValue = Math.max(parseInt(offset as string) || 0, 0);
     query += ` LIMIT ${limitValue} OFFSET ${offsetValue}`;
 
-    // Set query timeout to 3 seconds for instant response
+    // Ultra-fast timeout of 2 seconds
     const client = await pool.connect();
     try {
-      await client.query('SET statement_timeout = 3000');
+      await client.query('SET statement_timeout = 2000');
       const result = await client.query(query, params);
+      
+      // Transform image field back to array for compatibility
+      const products = result.rows.map(row => ({
+        ...row,
+        images: row.image ? [row.image] : [],
+        views: 0,
+        seller_name: ''
+      }));
       
       // No cache for instant updates
       res.set('Cache-Control', 'no-cache');
-      res.json(result.rows as Product[]);
+      res.json(products as Product[]);
     } finally {
       client.release();
     }
