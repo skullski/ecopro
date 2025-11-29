@@ -365,41 +365,16 @@ export default function Marketplace() {
                   !
                 </div>
               ) : (
-                memoizedCards
-              )}
-            </div>
+                products.map((product) => {
+                  const discount = product.original_price
+                    ? Math.round(((product.original_price - product.price) / product.original_price) * 100)
+                    : 0;
+                  // Deterministic pseudo rating based on id
+                  const base = ((Number(product.id) * 9301 + 49297) % 233280) / 233280;
+                  const rating = (3 + base * 2).toFixed(1);
+                  const reviews = Math.floor(base * 500) + 10;
 
-            {/* Load More Button */}
-            {hasMore && (
-              <div className="mt-8 flex justify-center">
-                <Button
-                  onClick={loadMore}
-                  size="lg"
-                  className="bg-gradient-to-r from-primary via-accent to-neon-blue hover:from-primary/90 hover:via-accent/90 hover:to-neon-blue/90 text-white border-0 futuristic-glow px-8"
-                >
-                  Load More Products
-                </Button>
-              </div>
-            )}
-          </main>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Memoized product cards outside main render
-const memoizedCards = useMemo(() => 
-  products.map((product) => {
-    const discount = product.original_price
-      ? Math.round(((product.original_price - product.price) / product.original_price) * 100)
-      : 0;
-    // Deterministic pseudo rating based on id
-    const base = ((Number(product.id) * 9301 + 49297) % 233280) / 233280; // 0..1
-    const rating = (3 + base * 2).toFixed(1);
-    const reviews = Math.floor(base * 500) + 10;
-
-    return (
+                  return (
                     <Link
                       key={product.id}
                       to={`/product/${product.id}`}
@@ -480,5 +455,26 @@ const memoizedCards = useMemo(() =>
                         </div>
                       </div>
                     </Link>
-      );
-  }), [products]);
+                  );
+                })
+              )}
+            </div>
+
+            {/* Load More Button */}
+            {hasMore && (
+              <div className="mt-8 flex justify-center">
+                <Button
+                  onClick={loadMore}
+                  size="lg"
+                  className="bg-gradient-to-r from-primary via-accent to-neon-blue hover:from-primary/90 hover:via-accent/90 hover:to-neon-blue/90 text-white border-0 futuristic-glow px-8"
+                >
+                  Load More Products
+                </Button>
+              </div>
+            )}
+          </main>
+        </div>
+      </div>
+    </div>
+  );
+}
