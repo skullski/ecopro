@@ -367,36 +367,52 @@ export default function Marketplace() {
                           </div>
                         )}
                         {product.condition === 'new' && (
-                          <Badge className="absolute top-2 left-2 bg-red-500 text-white border-0">
+                          <Badge className="absolute top-1.5 left-1.5 text-xs bg-red-500 text-white border-0 px-1.5 py-0">
                             New
                           </Badge>
                         )}
                         {discount > 0 && (
-                          <Badge className="absolute top-2 right-2 bg-primary text-white border-0">
+                          <Badge className="absolute top-1.5 right-1.5 text-xs bg-primary text-white border-0 px-1.5 py-0">
                             -{discount}%
                           </Badge>
                         )}
+                        {/* Buy Button in bottom corner */}
                         <button 
-                          onClick={(e) => e.preventDefault()}
-                          className="absolute top-2 right-2 p-2 bg-white/90 backdrop-blur-sm rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            window.location.href = `/guest-checkout/${product.id}`;
+                          }}
+                          className="absolute bottom-2 right-2 px-2 py-1 text-xs bg-green-600 hover:bg-green-700 text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity font-medium shadow-lg"
                         >
-                          <Heart className="w-4 h-4 text-gray-600" />
+                          Buy
                         </button>
                       </div>
 
-                      {/* Content */}
-                      <div className="p-3 space-y-2">
-                        <h3 className="text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors">
+                      {/* Compact Content */}
+                      <div className="p-2 space-y-1">
+                        <h3 className="text-xs font-medium line-clamp-2 leading-tight group-hover:text-primary transition-colors">
                           {product.title}
                         </h3>
                         
-                        {/* Rating */}
+                        {/* Price */}
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm font-bold text-primary">
+                            ${product.price}
+                          </span>
+                          {product.original_price && (
+                            <span className="text-[10px] text-muted-foreground line-through">
+                              ${product.original_price}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Compact Rating */}
                         <div className="flex items-center gap-1">
                           <div className="flex items-center">
                             {Array.from({ length: 5 }).map((_, i) => (
                               <Star
                                 key={i}
-                                className={`w-3 h-3 ${
+                                className={`w-2.5 h-2.5 ${
                                   i < Math.floor(+rating)
                                     ? 'fill-yellow-400 text-yellow-400'
                                     : 'text-gray-300'
@@ -404,64 +420,9 @@ export default function Marketplace() {
                               />
                             ))}
                           </div>
-                          <span className="text-xs text-muted-foreground">
-                            {rating} ({reviews})
+                          <span className="text-[10px] text-muted-foreground">
+                            ({reviews})
                           </span>
-                        </div>
-
-                        {/* Price */}
-                        <div className="space-y-1">
-                          <div className="flex items-baseline gap-2">
-                            <span className="text-lg font-bold text-primary">
-                              ${product.price}
-                            </span>
-                            {product.original_price && (
-                              <span className="text-xs text-muted-foreground line-through">
-                                ${product.original_price}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Footer Info */}
-                        <div className="flex items-center justify-between pt-2 border-t text-xs text-muted-foreground">
-                          <span>{product.views} views</span>
-                          {product.shipping_available && (
-                            <span className="text-green-600 font-medium">Free ship</span>
-                          )}
-                        </div>
-
-                        {/* Seller Info */}
-                        {product.seller_name && (
-                          <div className="text-xs text-muted-foreground">
-                            by {product.seller_name}
-                          </div>
-                        )}
-
-                        {/* Action Buttons */}
-                        <div className="space-y-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button
-                            size="sm"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              window.location.href = `/guest-checkout/${product.id}`;
-                            }}
-                            className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white border-0 futuristic-glow"
-                          >
-                            <ShoppingCart className="w-4 h-4 mr-2" />
-                            Buy Now
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              // Add to cart logic here
-                            }}
-                            className="w-full"
-                          >
-                            Add to Cart
-                          </Button>
                         </div>
                       </div>
                     </Link>
