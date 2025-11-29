@@ -1,7 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Truck, Key, Globe, CheckCircle2 } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Truck, Key, CheckCircle2, X } from "lucide-react";
 import { useState } from "react";
 
 interface DeliveryCompany {
@@ -15,9 +17,13 @@ interface DeliveryCompany {
     field: string;
   }[];
   enabled: boolean;
+  credentials?: Record<string, string>;
 }
 
 export default function DeliveryCompanies() {
+  const [selectedCompany, setSelectedCompany] = useState<DeliveryCompany | null>(null);
+  const [showConfigDialog, setShowConfigDialog] = useState(false);
+  const [credentials, setCredentials] = useState<Record<string, string>>({});
   const [companies, setCompanies] = useState<DeliveryCompany[]>([
     {
       id: "yalidine",
@@ -223,9 +229,29 @@ export default function DeliveryCompanies() {
     },
   ]);
 
-  const toggleCompany = (id: string) => {
+  const handleCardClick = (company: DeliveryCompany) => {
+    setSelectedCompany(company);
+    setCredentials(company.credentials || {});
+    setShowConfigDialog(true);
+  };
+
+  const handleSaveCredentials = () => {
+    if (!selectedCompany) return;
+    
     setCompanies(companies.map(company => 
-      company.id === id ? { ...company, enabled: !company.enabled } : company
+      company.id === selectedCompany.id 
+        ? { ...company, enabled: true, credentials } 
+        : company
+    ));
+    setShowConfigDialog(false);
+    setCredentials({});
+  };
+
+  const handleDisable = (companyId: string) => {
+    setCompanies(companies.map(company => 
+      company.id === companyId 
+        ? { ...company, enabled: false, credentials: {} } 
+        : company
     ));
   };
 
@@ -235,137 +261,109 @@ export default function DeliveryCompanies() {
         <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
           شركات التوصيل
         </h1>
-        <p className="text-muted-foreground mt-2">قم بربط متجرك مع شركات التوصيل المختلفة</p>
+        <p className="text-muted-foreground mt-2">اختر شركة التوصيل وقم بإعداد الربط</p>
       </div>
 
-      <Card className="border-2 border-primary/20">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Truck className="w-5 h-5 text-primary" />
-            نصائح الربط
-          </CardTitle>
-          <CardDescription>معلومات مهمة قبل البدء</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-            <p className="text-sm">
-              <strong>💡 نصيحة:</strong> تأكد من حصولك على API credentials من لوحة تحكم شركة التوصيل أولاً
-            </p>
-          </div>
-          <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
-            <p className="text-sm">
-              <strong>✅ الفائدة:</strong> بعد الربط، سيتم إنشاء طلبات التوصيل تلقائياً عند استلام الطلبات
-            </p>
-          </div>
-          <div className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg">
-            <p className="text-sm">
-              <strong>⚠️ تحذير:</strong> احتفظ بمفاتيح API الخاصة بك آمنة ولا تشاركها مع أحد
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-6">
+      {/* Grid of delivery company cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {companies.map((company) => (
-          <Card key={company.id} className={`border-2 transition-all ${company.enabled ? 'border-green-500/40 bg-green-500/5' : 'border-primary/20'}`}>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="text-4xl">{company.logo}</div>
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      {company.name}
-                      {company.enabled && (
-                        <CheckCircle2 className="w-5 h-5 text-green-600" />
-                      )}
-                    </CardTitle>
-                    <CardDescription>{company.description}</CardDescription>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Button
-                    variant={company.enabled ? "outline" : "default"}
-                    onClick={() => toggleCompany(company.id)}
-                    className={company.enabled ? "border-green-500 text-green-600" : "bg-gradient-to-r from-primary to-accent"}
-                  >
-                    {company.enabled ? "مفعل" : "تفعيل"}
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            
+          <Card
+            key={company.id}
+            className={`relative cursor-pointer transition-all hover:shadow-lg border-2 ${
+              company.enabled 
+                ? 'border-green-500 bg-green-50 dark:bg-green-950/20' 
+                : 'border-border hover:border-primary'
+            }`}
+            onClick={() => handleCardClick(company)}
+          >
             {company.enabled && (
-              <CardContent className="space-y-4 border-t pt-6">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                  <Key className="w-4 h-4" />
-                  <span>إعدادات الربط مع {company.name}</span>
+              <div className="absolute top-2 right-2">
+                <CheckCircle2 className="w-5 h-5 text-green-500" />
+              </div>
+            )}
+            <CardContent className="pt-6 pb-4">
+              <div className="flex flex-col items-center text-center space-y-3">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center text-3xl">
+                  {company.logo}
                 </div>
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  {company.apiFields.map((field, idx) => (
-                    <div key={idx}>
-                      <label className="text-sm font-medium mb-2 block flex items-center gap-2">
-                        <Key className="w-3 h-3" />
-                        {field.label}
-                      </label>
-                      <Input
-                        type="password"
-                        placeholder={field.placeholder}
-                        className="font-mono text-sm"
-                      />
-                    </div>
-                  ))}
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-base">{company.name}</h3>
+                  <p className="text-xs text-muted-foreground line-clamp-2">
+                    {company.description}
+                  </p>
                 </div>
-
-                {company.id !== "custom" && (
-                  <div className="pt-4">
-                    <Button
-                      variant="outline"
-                      className="w-full border-primary/30 hover:border-primary/50"
-                      onClick={() => window.open(`https://${company.id}.com`, '_blank')}
-                    >
-                      <Globe className="w-4 h-4 ml-2" />
-                      زيارة موقع {company.name} للحصول على API Keys
-                    </Button>
+                {company.enabled && (
+                  <div className="text-xs text-green-600 dark:text-green-400 font-medium">
+                    ✓ مفعل
                   </div>
                 )}
-
-                <div className="flex gap-3 pt-4">
-                  <Button className="flex-1 bg-gradient-to-r from-green-500 to-green-600">
-                    حفظ الإعدادات
-                  </Button>
-                  <Button variant="outline" className="flex-1">
-                    اختبار الاتصال
-                  </Button>
-                </div>
-              </CardContent>
-            )}
+              </div>
+            </CardContent>
           </Card>
         ))}
       </div>
 
-      <Card className="border-2 border-accent/20">
-        <CardHeader>
-          <CardTitle>إحصائيات التوصيل</CardTitle>
-          <CardDescription>ملخص أداء شركات التوصيل</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="p-4 bg-gradient-to-br from-blue-500/10 to-blue-500/5 rounded-lg border border-blue-500/20">
-              <p className="text-sm text-muted-foreground mb-1">إجمالي الطلبات</p>
-              <p className="text-2xl font-bold text-blue-600">1,234</p>
-            </div>
-            <div className="p-4 bg-gradient-to-br from-green-500/10 to-green-500/5 rounded-lg border border-green-500/20">
-              <p className="text-sm text-muted-foreground mb-1">تم التوصيل</p>
-              <p className="text-2xl font-bold text-green-600">1,089</p>
-            </div>
-            <div className="p-4 bg-gradient-to-br from-orange-500/10 to-orange-500/5 rounded-lg border border-orange-500/20">
-              <p className="text-sm text-muted-foreground mb-1">معدل النجاح</p>
-              <p className="text-2xl font-bold text-orange-600">88.2%</p>
+      {/* Configuration Dialog */}
+      <Dialog open={showConfigDialog} onOpenChange={setShowConfigDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              <span className="text-2xl">{selectedCompany?.logo}</span>
+              {selectedCompany?.name}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedCompany?.description}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {selectedCompany?.apiFields.map((field) => (
+              <div key={field.field} className="space-y-2">
+                <Label htmlFor={field.field}>{field.label}</Label>
+                <Input
+                  id={field.field}
+                  placeholder={field.placeholder}
+                  value={credentials[field.field] || ''}
+                  onChange={(e) => setCredentials({ ...credentials, [field.field]: e.target.value })}
+                />
+              </div>
+            ))}
+            
+            <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+              <div className="flex gap-2">
+                <Key className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-blue-700 dark:text-blue-300">
+                  احصل على API credentials من لوحة تحكم شركة التوصيل
+                </p>
+              </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+
+          <DialogFooter className="gap-2">
+            {selectedCompany?.enabled && (
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  if (selectedCompany) {
+                    handleDisable(selectedCompany.id);
+                    setShowConfigDialog(false);
+                  }
+                }}
+              >
+                <X className="w-4 h-4 mr-2" />
+                تعطيل
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => setShowConfigDialog(false)}>
+              إلغاء
+            </Button>
+            <Button onClick={handleSaveCredentials}>
+              <CheckCircle2 className="w-4 h-4 mr-2" />
+              حفظ وتفعيل
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
