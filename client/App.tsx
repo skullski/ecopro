@@ -50,6 +50,7 @@ import StockManagement from "./pages/customer/StockManagement";
 import Store from "./pages/customer/Store";
 import PublicProduct from "./pages/PublicProduct";
 import Storefront from "./pages/Storefront";
+import MyStore from "./pages/MyStore";
 
 // Orders submenu pages
 import AddOrder from "./pages/admin/orders/AddOrder";
@@ -548,6 +549,8 @@ const App = () => (
                   <Route path="/contact" element={<Contact />} />
                   {/* Guest checkout route (public, no account needed) */}
                   <Route path="/guest-checkout/:productId" element={<GuestCheckout />} />
+                  {/* My Store - logged in client viewing their own store */}
+                  <Route path="/my-store" element={<MyStore />} />
                   {/* Public storefront routes (client's store) */}
                   <Route path="/store/:clientId" element={<Storefront />} />
                   <Route path="/store/:clientId/:slug" element={<PublicProduct />} />

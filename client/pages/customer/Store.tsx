@@ -290,15 +290,13 @@ export default function Store() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            {clientId && (
-              <Button 
-                variant="outline"
-                onClick={() => window.open(`/store/${clientId}`, '_blank')}
-              >
-                <StoreIcon className="w-4 h-4 mr-2" />
-                View Storefront
-              </Button>
-            )}
+            <Button 
+              variant="outline"
+              onClick={() => window.open('/my-store', '_blank')}
+            >
+              <StoreIcon className="w-4 h-4 mr-2" />
+              View Storefront
+            </Button>
             <Button
               variant="outline"
               onClick={() => setShowStoreSettingsModal(true)}
@@ -839,15 +837,7 @@ export default function Store() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => {
-                    if (clientId) {
-                      window.open(`/store/${clientId}`, '_blank');
-                    } else {
-                      console.error('Client ID not available');
-                      alert('Please wait while your store loads...');
-                    }
-                  }}
-                  disabled={!clientId}
+                  onClick={() => window.open('/my-store', '_blank')}
                 >
                   <ExternalLink className="w-4 h-4 mr-2" />
                   Open Store
