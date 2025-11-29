@@ -18,8 +18,8 @@ export const getCategoryCounts: RequestHandler = async (req, res) => {
       ORDER BY count DESC`
     );
 
-    // Add cache headers - categories change less frequently
-    res.set('Cache-Control', 'public, max-age=300'); // Cache for 5 minutes
+    // Minimal cache for categories
+    res.set('Cache-Control', 'public, max-age=60'); // Cache for 1 minute
 
     res.json(result.rows);
   } catch (error) {
@@ -34,14 +34,13 @@ export const getCategoryCounts: RequestHandler = async (req, res) => {
  */
 export const getAllProducts: RequestHandler = async (req, res) => {
   try {
-    const { category, search, min_price, max_price, sort = 'created_at', order = 'DESC', limit = '20', offset = '0' } = req.query;
+    const { category, search, min_price, max_price, sort = 'created_at', order = 'DESC', limit = '12', offset = '0' } = req.query;
     
-    // Only return first image from array for better performance
+    // Minimal fields for fastest response
     let query = `
       SELECT 
-        p.id, p.seller_id, p.title, p.price, p.original_price,
-        p.category, p.stock, p.condition,
-        p.shipping_available, p.views, p.created_at,
+        p.id, p.title, p.price, p.original_price,
+        p.category, p.condition, p.views,
         CASE 
           WHEN array_length(p.images, 1) > 0 THEN ARRAY[p.images[1]]
           ELSE ARRAY[]::text[]
@@ -88,18 +87,18 @@ export const getAllProducts: RequestHandler = async (req, res) => {
     query += ` ORDER BY p.${sortField} ${sortOrder}`;
     
     // Add pagination
-    const limitValue = Math.min(parseInt(limit as string) || 20, 100);
+    const limitValue = Math.min(parseInt(limit as string) || 12, 50);
     const offsetValue = Math.max(parseInt(offset as string) || 0, 0);
     query += ` LIMIT ${limitValue} OFFSET ${offsetValue}`;
 
-    // Set query timeout to 5 seconds for faster response
+    // Set query timeout to 3 seconds for instant response
     const client = await pool.connect();
     try {
-      await client.query('SET statement_timeout = 5000');
+      await client.query('SET statement_timeout = 3000');
       const result = await client.query(query, params);
       
-      // Shorter cache for more dynamic content
-      res.set('Cache-Control', 'public, max-age=30');
+      // No cache for instant updates
+      res.set('Cache-Control', 'no-cache');
       res.json(result.rows as Product[]);
     } finally {
       client.release();

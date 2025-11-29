@@ -1,11 +1,14 @@
 import { Pool } from "pg";
 
-// Database connection pool
+// Database connection pool with aggressive optimization
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
     rejectUnauthorized: false, // Required for Render PostgreSQL
   },
+  max: 20, // Maximum pool connections
+  idleTimeoutMillis: 10000, // Close idle connections after 10s
+  connectionTimeoutMillis: 3000, // Fast connection timeout
 });
 
 export interface User {

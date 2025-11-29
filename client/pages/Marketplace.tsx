@@ -72,10 +72,10 @@ export default function Marketplace() {
       setError(null);
     }
     
-    // Show warning if loading takes more than 2 seconds
+    // Show warning if loading takes more than 1 second
     const slowTimer = setTimeout(() => {
       setSlowConnection(true);
-    }, 2000);
+    }, 1000);
 
     try {
       const params = new URLSearchParams();
@@ -95,8 +95,8 @@ export default function Marketplace() {
         params.append('sort', sortMap[sortBy] || 'created_at');
         params.append('order', sortBy === 'price-high' ? 'DESC' : 'ASC');
       }
-      params.append('limit', '20');
-      params.append('offset', String((pageNum - 1) * 20));
+      params.append('limit', '12');
+      params.append('offset', String((pageNum - 1) * 12));
 
       const apiUrl = `/api/products?${params}`;
       console.log('[Marketplace] Fetching products:', apiUrl);
@@ -112,7 +112,7 @@ export default function Marketplace() {
         } else {
           setProducts(prev => [...prev, ...data]);
         }
-        setHasMore(data.length === 20);
+        setHasMore(data.length === 12);
         setSlowConnection(false);
       } else {
         const errorText = await res.text();
@@ -319,7 +319,7 @@ export default function Marketplace() {
               {loading ? (
                 <>
                   {/* Skeleton Loading */}
-                  {Array.from({ length: 4 }).map((_, i) => (
+                  {Array.from({ length: 2 }).map((_, i) => (
                     <div key={i} className="bg-card rounded-xl border overflow-hidden animate-pulse">
                       <div className="aspect-square bg-muted"></div>
                       <div className="p-3 space-y-2">
