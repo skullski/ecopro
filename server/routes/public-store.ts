@@ -11,15 +11,19 @@ export const getStorefrontProducts: RequestHandler = async (req, res) => {
   }
 
   try {
-    // First check if the client exists
+    // First check if the client exists (any user can have a store)
     const clientCheck = await pool.query(
-      'SELECT id FROM users WHERE id = $1 AND user_type = $2',
-      [clientId, 'client']
+      'SELECT id, user_type FROM users WHERE id = $1',
+      [clientId]
     );
 
     if (clientCheck.rows.length === 0) {
+      console.log(`Store not found: User ID ${clientId} does not exist`);
       return res.status(404).json({ error: 'Store not found' });
     }
+
+    const user = clientCheck.rows[0];
+    console.log(`Loading store for user ID ${clientId}, type: ${user.user_type}`);
 
     // Get products (can be empty array)
     const result = await pool.query(
@@ -33,6 +37,7 @@ export const getStorefrontProducts: RequestHandler = async (req, res) => {
       [clientId]
     );
 
+    console.log(`Found ${result.rows.length} products for store ${clientId}`);
     res.json(result.rows);
   } catch (error) {
     console.error('Get storefront products error:', error);
