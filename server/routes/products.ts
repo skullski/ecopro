@@ -18,6 +18,9 @@ export const getCategoryCounts: RequestHandler = async (req, res) => {
       ORDER BY count DESC`
     );
 
+    // Add cache headers - categories change less frequently
+    res.set('Cache-Control', 'public, max-age=300'); // Cache for 5 minutes
+
     res.json(result.rows);
   } catch (error) {
     console.error("Get category counts error:", error);
@@ -39,7 +42,10 @@ export const getAllProducts: RequestHandler = async (req, res) => {
         p.id, p.seller_id, p.title, p.description, p.price, p.original_price,
         p.category, p.stock, p.status, p.condition, p.location,
         p.shipping_available, p.views, p.created_at, p.updated_at,
-        p.images,
+        CASE 
+          WHEN array_length(p.images, 1) > 0 THEN ARRAY[p.images[1]]
+          ELSE ARRAY[]::text[]
+        END as images,
         u.name as seller_name,
         u.email as seller_email
       FROM marketplace_products p
@@ -85,6 +91,9 @@ export const getAllProducts: RequestHandler = async (req, res) => {
     // Add limit for pagination
     const limitValue = Math.min(parseInt(limit as string) || 50, 100);
     query += ` LIMIT ${limitValue}`;
+
+    // Add cache headers for performance
+    res.set('Cache-Control', 'public, max-age=60'); // Cache for 60 seconds
 
     const result = await pool.query(query, params);
     res.json(result.rows as Product[]);
