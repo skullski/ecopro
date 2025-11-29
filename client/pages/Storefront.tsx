@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { 
   Search, Grid, List, ShoppingCart, Star, Eye, 
   Package, Filter, ArrowLeft, Store as StoreIcon,
-  Heart, Share2, ExternalLink
+  Heart, Share2, ExternalLink, Truck, Shield
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -304,22 +304,59 @@ export default function Storefront() {
 
         {/* Products Grid/List */}
         {products.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="max-w-md mx-auto">
-              <div className="w-24 h-24 mx-auto bg-gradient-to-br from-primary/10 to-accent/10 rounded-full flex items-center justify-center mb-6">
-                <Package className="w-12 h-12 text-primary" />
+          <div className="text-center py-20">
+            <div className="max-w-2xl mx-auto space-y-6">
+              <div className="w-32 h-32 mx-auto bg-muted/50 rounded-full flex items-center justify-center border-2 border-dashed border-muted-foreground/20">
+                <Package className="w-16 h-16 text-muted-foreground/40" />
               </div>
-              <h3 className="text-2xl font-bold mb-3">Store Opening Soon!</h3>
-              <p className="text-muted-foreground mb-6">
-                This store is currently being set up. New products will be available soon. 
-                Check back later or explore other stores on our marketplace.
-              </p>
-              <Button 
-                onClick={() => navigate('/marketplace')}
-                className="bg-gradient-to-r from-primary to-accent"
-              >
-                Browse Marketplace
-              </Button>
+              <div className="space-y-3">
+                <h3 className="text-3xl font-bold text-foreground/80">No Products Yet</h3>
+                <p className="text-muted-foreground text-lg max-w-md mx-auto">
+                  This store is being stocked with amazing products. Check back soon or explore our marketplace!
+                </p>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+                <Button 
+                  onClick={() => navigate('/marketplace')}
+                  size="lg"
+                  className="bg-gradient-to-r from-primary to-accent hover:opacity-90"
+                >
+                  <Package className="mr-2 h-5 w-5" />
+                  Browse Marketplace
+                </Button>
+                <Button 
+                  onClick={() => navigate('/contact')}
+                  variant="outline"
+                  size="lg"
+                >
+                  Contact Store Owner
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto pt-8">
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <div className="w-10 h-10 mx-auto bg-primary/10 rounded-full flex items-center justify-center mb-3">
+                    <Package className="w-5 h-5 text-primary" />
+                  </div>
+                  <h4 className="font-semibold mb-1">Quality Products</h4>
+                  <p className="text-sm text-muted-foreground">Carefully selected items</p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <div className="w-10 h-10 mx-auto bg-primary/10 rounded-full flex items-center justify-center mb-3">
+                    <Truck className="w-5 h-5 text-primary" />
+                  </div>
+                  <h4 className="font-semibold mb-1">Fast Delivery</h4>
+                  <p className="text-sm text-muted-foreground">Quick shipping across Algeria</p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <div className="w-10 h-10 mx-auto bg-primary/10 rounded-full flex items-center justify-center mb-3">
+                    <Shield className="w-5 h-5 text-primary" />
+                  </div>
+                  <h4 className="font-semibold mb-1">Secure Shopping</h4>
+                  <p className="text-sm text-muted-foreground">Safe and protected transactions</p>
+                </div>
+              </div>
             </div>
           </div>
         ) : filteredProducts.length === 0 ? (
