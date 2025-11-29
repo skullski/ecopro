@@ -175,9 +175,8 @@ export const translations: Record<Locale, Record<string, string>> = {
 
     // Sidebar Menu
     "sidebar.home": "الرئيسية",
-    "sidebar.preview": "معاينة المتجر",
-    "sidebar.stock": "إدارة المخزون",
     "sidebar.store": "المتجر",
+    "sidebar.stock": "إدارة المخزون",
     "sidebar.storeLogo": "الشعار",
     "sidebar.storeTemplate": "القالب",
     "sidebar.storeHomepage": "الصفحة الرئيسية",
@@ -677,9 +676,8 @@ export const translations: Record<Locale, Record<string, string>> = {
 
     // Sidebar Menu
     "sidebar.home": "Home",
-    "sidebar.preview": "Store Preview",
-    "sidebar.stock": "Stock Management",
     "sidebar.store": "Store",
+    "sidebar.stock": "Stock Management",
     "sidebar.storeLogo": "Logo",
     "sidebar.storeTemplate": "Template",
     "sidebar.storeHomepage": "Homepage",
@@ -1179,9 +1177,8 @@ export const translations: Record<Locale, Record<string, string>> = {
 
     // Sidebar Menu
     "sidebar.home": "Accueil",
-    "sidebar.preview": "Aperçu de la Boutique",
-    "sidebar.stock": "Gestion du Stock",
     "sidebar.store": "Boutique",
+    "sidebar.stock": "Gestion du Stock",
     "sidebar.storeLogo": "Logo",
     "sidebar.storeTemplate": "Modèle",
     "sidebar.storeHomepage": "Page d'Accueil",
