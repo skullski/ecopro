@@ -6,17 +6,22 @@ const PORT = process.env.PORT || 8080;
 
 async function startServer() {
   try {
-    // Initialize database and create tables
-    console.log("🔄 Initializing database...");
-    await initializeDatabase();
+    // Initialize database and create tables (skip if no DATABASE_URL for local dev)
+    if (process.env.DATABASE_URL) {
+      console.log("🔄 Initializing database...");
+      await initializeDatabase();
 
-    // Create default admin user
-    const adminEmail = "admin@ecopro.com";
-    const adminPassword = "admin123";
-    const hashedPassword = await bcrypt.hash(adminPassword, 10);
-    await createDefaultAdmin(adminEmail, hashedPassword);
-    console.log(`✅ Default admin user created: ${adminEmail}`);
-    console.log(`🔑 Default password: ${adminPassword}`);
+      // Create default admin user
+      const adminEmail = "admin@ecopro.com";
+      const adminPassword = "admin123";
+      const hashedPassword = await bcrypt.hash(adminPassword, 10);
+      await createDefaultAdmin(adminEmail, hashedPassword);
+      console.log(`✅ Default admin user created: ${adminEmail}`);
+      console.log(`🔑 Default password: ${adminPassword}`);
+    } else {
+      console.log("⚠️  No DATABASE_URL found - skipping database initialization");
+      console.log("💡 Frontend will be available but API endpoints will fail");
+    }
 
     // Create and start server
     const app = createServer();
@@ -27,7 +32,14 @@ async function startServer() {
     });
   } catch (error) {
     console.error("❌ Failed to start server:", error);
-    process.exit(1);
+    console.log("💡 Starting server anyway for frontend development...");
+    
+    // Start server even if DB fails (for frontend dev)
+    const app = createServer();
+    app.listen(PORT, () => {
+      console.log(`\n⚠️  API Server running (DB connection failed)`);
+      console.log(`📡 Frontend available at http://localhost:${PORT}\n`);
+    });
   }
 }
 

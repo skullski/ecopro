@@ -29,16 +29,8 @@ import {
   createDefaultAdmin,
 } from "../utils/database";
 
-// Initialize database and create default admin user
-(async () => {
-  try {
-    await initializeDatabase();
-    const adminPassword = await hashPassword("admin123");
-    await createDefaultAdmin("admin@ecopro.com", adminPassword);
-  } catch (error) {
-    console.error("Database initialization error:", error);
-  }
-})();
+// Database initialization moved to server startup (dev.ts / index.ts)
+// Removed immediate init to prevent crashes when DB is unavailable
 
 import { Router } from "express";
 import { getUserFromRequest } from "../utils/auth";
