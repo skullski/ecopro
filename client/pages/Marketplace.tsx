@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Product } from '@shared/api';
+import { safeStorage } from '@/lib/storage';
 
 // Category icons mapping
 const categoryIcons: Record<string, string> = {
@@ -50,7 +51,7 @@ export default function Marketplace() {
 
   // Parallel initial fetch with optimistic cache
   useEffect(() => {
-    const cached = sessionStorage.getItem('mp_first_page');
+    const cached = safeStorage.getItem('mp_first_page', true);
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
@@ -143,7 +144,7 @@ export default function Marketplace() {
         if (pageNum === 1) {
           setProducts(data);
           if (!background) {
-            sessionStorage.setItem('mp_first_page', JSON.stringify({ products: data, timestamp: Date.now() }));
+            safeStorage.setItem('mp_first_page', JSON.stringify({ products: data, timestamp: Date.now() }), true);
           }
         } else {
           setProducts(prev => [...prev, ...data]);
