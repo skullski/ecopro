@@ -32,13 +32,16 @@ export default function Marketplace() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [slowConnection, setSlowConnection] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
   useEffect(() => {
     loadCategories();
   }, []);
 
   useEffect(() => {
-    loadProducts();
+    setPage(1);
+    loadProducts(1);
   }, [selectedCategory, sortBy]);
 
   const loadCategories = async () => {
@@ -53,9 +56,11 @@ export default function Marketplace() {
     }
   };
 
-  const loadProducts = async () => {
-    setLoading(true);
-    setSlowConnection(false);
+  const loadProducts = async (pageNum: number = 1) => {
+    if (pageNum === 1) {
+      setLoading(true);
+      setSlowConnection(false);
+    }
     
     // Show warning if loading takes more than 3 seconds
     const slowTimer = setTimeout(() => {
@@ -74,18 +79,24 @@ export default function Marketplace() {
         const sortMap: Record<string, string> = {
           'price-low': 'price',
           'price-high': 'price',
-          'rating': 'views', // Using views as proxy for popularity
+          'rating': 'views',
           'popular': 'views',
         };
         params.append('sort', sortMap[sortBy] || 'created_at');
         params.append('order', sortBy === 'price-high' ? 'DESC' : 'ASC');
       }
-      params.append('limit', '50');
+      params.append('limit', '20'); // Load 20 per page
+      params.append('offset', String((pageNum - 1) * 20));
 
       const res = await fetch(`/api/products?${params}`);
       if (res.ok) {
         const data = await res.json();
-        setProducts(data);
+        if (pageNum === 1) {
+          setProducts(data);
+        } else {
+          setProducts(prev => [...prev, ...data]);
+        }
+        setHasMore(data.length === 20);
         setSlowConnection(false);
       } else {
         console.error('Failed to fetch products:', res.status);
@@ -94,12 +105,19 @@ export default function Marketplace() {
       console.error('Failed to load products:', error);
     } finally {
       clearTimeout(slowTimer);
-      setLoading(false);
+      if (pageNum === 1) setLoading(false);
     }
   };
 
+  const loadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    loadProducts(nextPage);
+  };
+
   const handleSearch = () => {
-    loadProducts();
+    setPage(1);
+    loadProducts(1);
   };
 
   return (
@@ -314,6 +332,8 @@ export default function Marketplace() {
                           <img
                             src={product.images[0]}
                             alt={product.title}
+                            loading="lazy"
+                            decoding="async"
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                           />
                         ) : (
@@ -425,20 +445,18 @@ export default function Marketplace() {
               )}
             </div>
 
-            {/* Pagination */}
-            <div className="mt-8 flex justify-center gap-2">
-              <Button variant="outline" size="sm">Previous</Button>
-              {[1, 2, 3, 4, 5].map((page) => (
+            {/* Load More Button */}
+            {hasMore && (
+              <div className="mt-8 flex justify-center">
                 <Button
-                  key={page}
-                  variant={page === 1 ? 'default' : 'outline'}
-                  size="sm"
+                  onClick={loadMore}
+                  size="lg"
+                  className="bg-gradient-to-r from-primary via-accent to-neon-blue hover:from-primary/90 hover:via-accent/90 hover:to-neon-blue/90 text-white border-0 futuristic-glow px-8"
                 >
-                  {page}
+                  Load More Products
                 </Button>
-              ))}
-              <Button variant="outline" size="sm">Next</Button>
-            </div>
+              </div>
+            )}
           </main>
         </div>
       </div>
