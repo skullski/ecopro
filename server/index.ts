@@ -11,6 +11,8 @@ import * as authRoutes from "./routes/auth";
 import * as sellerAuthRoutes from "./routes/seller-auth";
 import * as productRoutes from "./routes/products";
 import * as stockRoutes from "./routes/stock";
+import * as clientStoreRoutes from "./routes/client-store";
+import * as publicStoreRoutes from "./routes/public-store";
 import { authenticate, requireAdmin, requireSeller, requireClient } from "./middleware/auth";
 import * as adminRoutes from "./routes/admin";
 import * as dashboardRoutes from "./routes/dashboard";
@@ -294,6 +296,68 @@ export function createServer() {
     requireClient,
     stockRoutes.deleteStock
   );
+
+  // Client Store routes (private store for clients)
+  app.get(
+    "/api/client/store/products",
+    authenticate,
+    requireClient,
+    clientStoreRoutes.getStoreProducts
+  );
+  app.get(
+    "/api/client/store/products/:id",
+    authenticate,
+    requireClient,
+    clientStoreRoutes.getStoreProduct
+  );
+  app.post(
+    "/api/client/store/products",
+    authenticate,
+    requireClient,
+    apiLimiter,
+    clientStoreRoutes.createStoreProduct
+  );
+  app.put(
+    "/api/client/store/products/:id",
+    authenticate,
+    requireClient,
+    apiLimiter,
+    clientStoreRoutes.updateStoreProduct
+  );
+  app.delete(
+    "/api/client/store/products/:id",
+    authenticate,
+    requireClient,
+    clientStoreRoutes.deleteStoreProduct
+  );
+  app.get(
+    "/api/client/store/categories",
+    authenticate,
+    requireClient,
+    clientStoreRoutes.getStoreCategories
+  );
+  app.get(
+    "/api/client/store/settings",
+    authenticate,
+    requireClient,
+    clientStoreRoutes.getStoreSettings
+  );
+  app.put(
+    "/api/client/store/settings",
+    authenticate,
+    requireClient,
+    apiLimiter,
+    clientStoreRoutes.updateStoreSettings
+  );
+  app.get(
+    "/api/client/store/products/:id/share-link",
+    authenticate,
+    requireClient,
+    clientStoreRoutes.getProductShareLink
+  );
+
+  // Public store routes (no authentication required)
+  app.get("/api/store/:clientId/:slug", publicStoreRoutes.getPublicProduct);
 
   // Serve static files from React build (only in production)
   if (process.env.NODE_ENV === "production") {

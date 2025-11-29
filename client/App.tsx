@@ -47,6 +47,8 @@ import DataMigration from "./pages/DataMigration";
 
 // Customer pages
 import StockManagement from "./pages/customer/StockManagement";
+import Store from "./pages/customer/Store";
+import PublicProduct from "./pages/PublicProduct";
 
 // Orders submenu pages
 import AddOrder from "./pages/admin/orders/AddOrder";
@@ -507,6 +509,7 @@ const App = () => (
                   >
                     <Route index element={<AdminDashboard />} />
                     {/* Store submenu routes */}
+                    <Route path="preview" element={<Store />} />
                     {/* Admin store submenu removed */}
                     {/* Customer stock management */}
                     <Route path="stock" element={<StockManagement />} />
@@ -544,6 +547,8 @@ const App = () => (
                   <Route path="/contact" element={<Contact />} />
                   {/* Guest checkout route (public, no account needed) */}
                   <Route path="/guest-checkout/:productId" element={<GuestCheckout />} />
+                  {/* Public store product route (shareable links) */}
+                  <Route path="/store/:clientId/:slug" element={<PublicProduct />} />
                   {/* REMOVE duplicate/non-existent custom routes */}
                   {/* <Route path="/product/:id" element={<ProductDetail />} /> */}
                   {/* <Route path="/cart" element={<Cart />} /> */}

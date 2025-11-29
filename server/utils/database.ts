@@ -186,6 +186,66 @@ export async function initializeDatabase(): Promise<void> {
       ON client_stock_history(client_id);
     `);
 
+    // Create client_store_products table (private store)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS client_store_products (
+        id SERIAL PRIMARY KEY,
+        client_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        price DECIMAL(10, 2) NOT NULL,
+        original_price DECIMAL(10, 2),
+        images TEXT[] DEFAULT '{}',
+        category VARCHAR(100),
+        stock_quantity INTEGER DEFAULT 0,
+        status VARCHAR(32) DEFAULT 'active',
+        is_featured BOOLEAN DEFAULT false,
+        slug VARCHAR(255) UNIQUE,
+        views INTEGER DEFAULT 0,
+        metadata JSONB DEFAULT '{}',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Create client_store_settings table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS client_store_settings (
+        id SERIAL PRIMARY KEY,
+        client_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+        store_name VARCHAR(255),
+        store_description TEXT,
+        store_logo TEXT,
+        primary_color VARCHAR(7) DEFAULT '#3b82f6',
+        secondary_color VARCHAR(7) DEFAULT '#8b5cf6',
+        custom_domain VARCHAR(255),
+        is_public BOOLEAN DEFAULT false,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Create indexes for store tables
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_client_store_products_client_id 
+      ON client_store_products(client_id);
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_client_store_products_status 
+      ON client_store_products(status);
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_client_store_products_slug 
+      ON client_store_products(slug);
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_client_store_products_featured 
+      ON client_store_products(is_featured);
+    `);
+
     console.log("✅ Database tables initialized");
   } catch (error) {
     console.error("❌ Database initialization error:", error);
