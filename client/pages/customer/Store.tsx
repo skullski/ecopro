@@ -73,12 +73,12 @@ export default function Store() {
   const [linkCopied, setLinkCopied] = useState(false);
   const [storeLinkCopied, setStoreLinkCopied] = useState(false);
   
-  // Form state
   const [formData, setFormData] = useState<Partial<StoreProduct>>({
     status: 'active',
     is_featured: false,
     stock_quantity: 0,
   });
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     loadProducts();
@@ -248,6 +248,52 @@ export default function Store() {
     navigator.clipboard.writeText(storeUrl);
     setStoreLinkCopied(true);
     setTimeout(() => setStoreLinkCopied(false), 2000);
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (2MB max)
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Image must be less than 2MB');
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const fullUrl = `${window.location.origin}${data.url}`;
+        setFormData(prev => ({ ...prev, images: [fullUrl] }));
+      } else {
+        const error = await res.json();
+        alert(error.error || 'Failed to upload image');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Failed to upload image');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const openEditModal = (product: StoreProduct) => {
@@ -723,16 +769,54 @@ export default function Store() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="images">Image URL</Label>
-              <Input
-                id="images"
-                value={formData.images?.[0] || ''}
-                onChange={(e) => setFormData({ ...formData, images: [e.target.value] })}
-                placeholder="https://example.com/image.jpg"
-              />
-              <p className="text-xs text-muted-foreground">
-                Paste a direct image URL (multiple images coming soon)
-              </p>
+              <Label htmlFor="images">Product Image</Label>
+              <div className="space-y-3">
+                {formData.images?.[0] && (
+                  <div className="relative w-full h-48 border rounded-lg overflow-hidden">
+                    <img
+                      src={formData.images[0]}
+                      alt="Product preview"
+                      className="w-full h-full object-cover"
+                    />
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="absolute top-2 right-2"
+                      onClick={() => setFormData({ ...formData, images: [] })}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                )}
+                <div className="flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      disabled={uploading}
+                      className="cursor-pointer"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={uploading}
+                      onClick={() => document.getElementById('image-upload')?.click()}
+                    >
+                      {uploading ? 'Uploading...' : 'Upload'}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Or paste image URL below (2MB max)
+                  </p>
+                  <Input
+                    id="images"
+                    value={formData.images?.[0] || ''}
+                    onChange={(e) => setFormData({ ...formData, images: [e.target.value] })}
+                    placeholder="https://example.com/image.jpg"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 

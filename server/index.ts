@@ -13,6 +13,7 @@ import * as productRoutes from "./routes/products";
 import * as stockRoutes from "./routes/stock";
 import * as clientStoreRoutes from "./routes/client-store";
 import * as publicStoreRoutes from "./routes/public-store";
+import { upload, uploadImage } from "./routes/uploads";
 import { authenticate, requireAdmin, requireSeller, requireClient } from "./middleware/auth";
 import * as adminRoutes from "./routes/admin";
 import * as dashboardRoutes from "./routes/dashboard";
@@ -360,6 +361,12 @@ export function createServer() {
   app.get("/api/storefront/:clientId/products", publicStoreRoutes.getStorefrontProducts);
   app.get("/api/storefront/:clientId/settings", publicStoreRoutes.getStorefrontSettings);
   app.get("/api/store/:clientId/:slug", publicStoreRoutes.getPublicProduct);
+
+  // Image upload route (authenticated users)
+  app.post("/api/upload", authenticate, upload.single('image'), uploadImage);
+
+  // Serve uploaded files statically
+  app.use('/uploads', express.static(path.join(process.cwd(), 'public', 'uploads')));
 
   // Serve static files from React build (only in production)
   if (process.env.NODE_ENV === "production") {
