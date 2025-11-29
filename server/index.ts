@@ -357,6 +357,8 @@ export function createServer() {
   );
 
   // Public store routes (no authentication required)
+  app.get("/api/storefront/:clientId/products", publicStoreRoutes.getStorefrontProducts);
+  app.get("/api/storefront/:clientId/settings", publicStoreRoutes.getStorefrontSettings);
   app.get("/api/store/:clientId/:slug", publicStoreRoutes.getPublicProduct);
 
   // Serve static files from React build (only in production)

@@ -1,6 +1,59 @@
 import { RequestHandler } from "express";
 import { pool } from "../utils/database";
 
+// Get all products for a storefront
+export const getStorefrontProducts: RequestHandler = async (req, res) => {
+  const { clientId } = req.params;
+
+  try {
+    const result = await pool.query(
+      `SELECT 
+        id, title, description, price, original_price, 
+        images, category, stock_quantity, is_featured, 
+        slug, views, created_at
+      FROM client_store_products
+      WHERE client_id = $1 AND status = 'active'
+      ORDER BY is_featured DESC, created_at DESC`,
+      [clientId]
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Get storefront products error:', error);
+    res.status(500).json({ error: 'Failed to fetch products' });
+  }
+};
+
+// Get store settings for a storefront
+export const getStorefrontSettings: RequestHandler = async (req, res) => {
+  const { clientId } = req.params;
+
+  try {
+    const result = await pool.query(
+      `SELECT store_name, store_description, store_logo, 
+              primary_color, secondary_color
+       FROM client_store_settings
+       WHERE client_id = $1`,
+      [clientId]
+    );
+
+    if (result.rows.length === 0) {
+      // Return default settings if none exist
+      return res.json({
+        store_name: 'Store',
+        primary_color: '#3b82f6',
+        secondary_color: '#8b5cf6',
+      });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Get storefront settings error:', error);
+    res.status(500).json({ error: 'Failed to fetch store settings' });
+  }
+};
+
+// Get single product for a storefront
 export const getPublicProduct: RequestHandler = async (req, res) => {
   const { clientId, slug } = req.params;
 

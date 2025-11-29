@@ -49,6 +49,7 @@ import DataMigration from "./pages/DataMigration";
 import StockManagement from "./pages/customer/StockManagement";
 import Store from "./pages/customer/Store";
 import PublicProduct from "./pages/PublicProduct";
+import Storefront from "./pages/Storefront";
 
 // Orders submenu pages
 import AddOrder from "./pages/admin/orders/AddOrder";
@@ -547,7 +548,8 @@ const App = () => (
                   <Route path="/contact" element={<Contact />} />
                   {/* Guest checkout route (public, no account needed) */}
                   <Route path="/guest-checkout/:productId" element={<GuestCheckout />} />
-                  {/* Public store product route (shareable links) */}
+                  {/* Public storefront routes (client's store) */}
+                  <Route path="/store/:clientId" element={<Storefront />} />
                   <Route path="/store/:clientId/:slug" element={<PublicProduct />} />
                   {/* REMOVE duplicate/non-existent custom routes */}
                   {/* <Route path="/product/:id" element={<ProductDetail />} /> */}

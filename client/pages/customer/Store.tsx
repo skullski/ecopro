@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { 
   Plus, Search, Eye, Copy, ExternalLink, Edit, Trash2, 
   Star, Package, DollarSign, Image as ImageIcon, Settings,
-  Link as LinkIcon, Check, Share2, Grid, List
+  Link as LinkIcon, Check, Share2, Grid, List, Store as StoreIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -58,6 +58,7 @@ export default function Store() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [loading, setLoading] = useState(true);
+  const [clientId, setClientId] = useState<number | null>(null);
   
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
@@ -94,6 +95,12 @@ export default function Store() {
       if (res.ok) {
         const data = await res.json();
         setProducts(data);
+        
+        // Get client ID from token (decode JWT)
+        if (token) {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          setClientId(payload.id);
+        }
       }
     } catch (error) {
       console.error('Failed to load products:', error);
@@ -263,16 +270,27 @@ export default function Store() {
               Manage your exclusive products and share individual links
             </p>
           </div>
-          <Button 
-            onClick={() => {
-              setFormData({ status: 'active', is_featured: false, stock_quantity: 0 });
-              setShowAddModal(true);
-            }}
-            className="bg-gradient-to-r from-primary to-purple-600"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Product
-          </Button>
+          <div className="flex items-center gap-3">
+            {clientId && (
+              <Button 
+                variant="outline"
+                onClick={() => window.open(`/store/${clientId}`, '_blank')}
+              >
+                <StoreIcon className="w-4 h-4 mr-2" />
+                View Storefront
+              </Button>
+            )}
+            <Button 
+              onClick={() => {
+                setFormData({ status: 'active', is_featured: false, stock_quantity: 0 });
+                setShowAddModal(true);
+              }}
+              className="bg-gradient-to-r from-primary to-purple-600"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Product
+            </Button>
+          </div>
         </div>
 
         {/* Stats */}
