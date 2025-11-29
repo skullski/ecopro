@@ -104,9 +104,9 @@ export function createServer() {
     })
   );
 
-  // Middleware
-  app.use(express.json({ limit: "10mb" }));
-  app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+  // Middleware - increase limit for product images
+  app.use(express.json({ limit: "50mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
   // Public routes
   app.get("/api/ping", (_req, res) => {

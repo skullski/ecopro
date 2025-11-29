@@ -240,7 +240,15 @@ export const createProduct: RequestHandler = async (req, res) => {
       original_price,
       category,
       imagesType: Array.isArray(images) ? 'array' : typeof images,
+      imagesCount: Array.isArray(images) ? images.length : 0,
+      payloadSize: JSON.stringify(req.body).length,
     });
+
+    // Validate payload size per image
+    const imageArray = Array.isArray(images) ? images : (images ? [images] : []);
+    if (imageArray.some((img: string) => img.length > 10_000_000)) {
+      return res.status(400).json({ error: 'Individual image exceeds 10MB limit' });
+    }
 
     const result = await pool.query(
       `INSERT INTO marketplace_products 
@@ -254,7 +262,7 @@ export const createProduct: RequestHandler = async (req, res) => {
         price,
         original_price || null,
         category || null,
-        Array.isArray(images) ? images : (images ? [images] : []),
+        imageArray,
         stock || 1,
         condition || 'new',
         location || null,

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Search, SlidersHorizontal, Star, ShoppingCart, Heart, TrendingUp, Zap, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -48,6 +48,30 @@ export default function Marketplace() {
     });
   }, []);
 
+  // Parallel initial fetch with optimistic cache
+  useEffect(() => {
+    const cached = sessionStorage.getItem('mp_first_page');
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed.products) && Date.now() - parsed.timestamp < 30000) {
+          setProducts(parsed.products);
+          setLoading(false);
+          // Refresh in background
+          loadProducts(1, true);
+        } else {
+          loadProducts(1);
+        }
+      } catch {
+        loadProducts(1);
+      }
+    } else {
+      // Fetch categories and products in parallel
+      Promise.all([loadCategories(), loadProducts(1)]).catch(() => {});
+    }
+  }, []);
+
+  // Refetch when filters change (no cache reuse)
   useEffect(() => {
     setPage(1);
     loadProducts(1);
@@ -65,7 +89,7 @@ export default function Marketplace() {
     }
   };
 
-  const loadProducts = async (pageNum: number = 1) => {
+  const loadProducts = async (pageNum: number = 1, background = false) => {
     if (pageNum === 1) {
       setLoading(true);
       setSlowConnection(false);
@@ -118,6 +142,9 @@ export default function Marketplace() {
         console.log('[Marketplace] Products loaded:', data.length);
         if (pageNum === 1) {
           setProducts(data);
+          if (!background) {
+            sessionStorage.setItem('mp_first_page', JSON.stringify({ products: data, timestamp: Date.now() }));
+          }
         } else {
           setProducts(prev => [...prev, ...data]);
         }
@@ -338,14 +365,41 @@ export default function Marketplace() {
                   !
                 </div>
               ) : (
-                products.map((product) => {
-                  const discount = product.original_price
-                    ? Math.round(((product.original_price - product.price) / product.original_price) * 100)
-                    : 0;
-                  const rating = (Math.random() * 2 + 3).toFixed(1); // Mock rating
-                  const reviews = Math.floor(Math.random() * 500) + 10; // Mock reviews
+                memoizedCards
+              )}
+            </div>
 
-                  return (
+            {/* Load More Button */}
+            {hasMore && (
+              <div className="mt-8 flex justify-center">
+                <Button
+                  onClick={loadMore}
+                  size="lg"
+                  className="bg-gradient-to-r from-primary via-accent to-neon-blue hover:from-primary/90 hover:via-accent/90 hover:to-neon-blue/90 text-white border-0 futuristic-glow px-8"
+                >
+                  Load More Products
+                </Button>
+              </div>
+            )}
+          </main>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Memoized product cards outside main render
+const memoizedCards = useMemo(() => 
+  products.map((product) => {
+    const discount = product.original_price
+      ? Math.round(((product.original_price - product.price) / product.original_price) * 100)
+      : 0;
+    // Deterministic pseudo rating based on id
+    const base = ((Number(product.id) * 9301 + 49297) % 233280) / 233280; // 0..1
+    const rating = (3 + base * 2).toFixed(1);
+    const reviews = Math.floor(base * 500) + 10;
+
+    return (
                     <Link
                       key={product.id}
                       to={`/product/${product.id}`}
@@ -426,26 +480,5 @@ export default function Marketplace() {
                         </div>
                       </div>
                     </Link>
-                  );
-                })
-              )}
-            </div>
-
-            {/* Load More Button */}
-            {hasMore && (
-              <div className="mt-8 flex justify-center">
-                <Button
-                  onClick={loadMore}
-                  size="lg"
-                  className="bg-gradient-to-r from-primary via-accent to-neon-blue hover:from-primary/90 hover:via-accent/90 hover:to-neon-blue/90 text-white border-0 futuristic-glow px-8"
-                >
-                  Load More Products
-                </Button>
-              </div>
-            )}
-          </main>
-        </div>
-      </div>
-    </div>
-  );
-}
+      );
+  }), [products]);
