@@ -65,11 +65,13 @@ export default function Store() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showStoreSettingsModal, setShowStoreSettingsModal] = useState(false);
   
   // Selected product
   const [selectedProduct, setSelectedProduct] = useState<StoreProduct | null>(null);
   const [shareLink, setShareLink] = useState('');
   const [linkCopied, setLinkCopied] = useState(false);
+  const [storeLinkCopied, setStoreLinkCopied] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState<Partial<StoreProduct>>({
@@ -231,6 +233,13 @@ export default function Store() {
     setTimeout(() => setLinkCopied(false), 2000);
   };
 
+  const copyStoreLink = () => {
+    const storeUrl = `${window.location.origin}/store/${clientId}`;
+    navigator.clipboard.writeText(storeUrl);
+    setStoreLinkCopied(true);
+    setTimeout(() => setStoreLinkCopied(false), 2000);
+  };
+
   const openEditModal = (product: StoreProduct) => {
     setSelectedProduct(product);
     setFormData(product);
@@ -280,6 +289,13 @@ export default function Store() {
                 View Storefront
               </Button>
             )}
+            <Button
+              variant="outline"
+              onClick={() => setShowStoreSettingsModal(true)}
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Store Settings
+            </Button>
             <Button 
               onClick={() => {
                 setFormData({ status: 'active', is_featured: false, stock_quantity: 0 });
@@ -794,6 +810,149 @@ export default function Store() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Store Settings Modal */}
+      <Dialog open={showStoreSettingsModal} onOpenChange={setShowStoreSettingsModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Store Settings</DialogTitle>
+            <DialogDescription>
+              Your private store URL and customization options
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            {/* Store URL Section */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-semibold">Your Store URL</Label>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => window.open(`/store/${clientId}`, '_blank')}
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Open Store
+                </Button>
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  value={clientId ? `${window.location.origin}/store/${clientId}` : ''}
+                  readOnly
+                  className="font-mono text-sm"
+                />
+                <Button onClick={copyStoreLink} variant="outline">
+                  {storeLinkCopied ? (
+                    <Check className="w-4 h-4 text-green-500" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+              {storeLinkCopied && (
+                <p className="text-sm text-green-600 flex items-center gap-2">
+                  <Check className="w-4 h-4" />
+                  Store link copied!
+                </p>
+              )}
+              <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+                <div className="flex gap-3">
+                  <LinkIcon className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm">
+                    <div className="font-medium text-blue-900 dark:text-blue-100 mb-1">
+                      Share Your Store
+                    </div>
+                    <p className="text-blue-700 dark:text-blue-300">
+                      Share this link with your customers so they can browse all your products in one place.
+                      They can search, filter by category, and view featured items.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Stats */}
+            <div className="border-t pt-6">
+              <Label className="text-base font-semibold mb-3 block">Store Statistics</Label>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-muted rounded-lg p-4">
+                  <div className="text-2xl font-bold text-primary">{products.length}</div>
+                  <div className="text-sm text-muted-foreground">Total Products</div>
+                </div>
+                <div className="bg-muted rounded-lg p-4">
+                  <div className="text-2xl font-bold text-green-600">
+                    {products.filter(p => p.status === 'active').length}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Active</div>
+                </div>
+                <div className="bg-muted rounded-lg p-4">
+                  <div className="text-2xl font-bold text-purple-600">
+                    {products.reduce((sum, p) => sum + p.views, 0)}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Total Views</div>
+                </div>
+              </div>
+            </div>
+
+            {/* How to Use */}
+            <div className="border-t pt-6">
+              <Label className="text-base font-semibold mb-3 block">How to Use Your Store</Label>
+              <div className="space-y-3">
+                <div className="flex gap-3 text-sm">
+                  <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                    1
+                  </div>
+                  <div>
+                    <div className="font-medium mb-1">Add Products</div>
+                    <p className="text-muted-foreground">
+                      Create products with images, prices, and descriptions
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3 text-sm">
+                  <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                    2
+                  </div>
+                  <div>
+                    <div className="font-medium mb-1">Share Your Store Link</div>
+                    <p className="text-muted-foreground">
+                      Copy the store URL above and share it with your customers on social media, WhatsApp, email, etc.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3 text-sm">
+                  <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                    3
+                  </div>
+                  <div>
+                    <div className="font-medium mb-1">Share Individual Products</div>
+                    <p className="text-muted-foreground">
+                      Click "Share" on any product to get a direct link for targeted advertising
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3 text-sm">
+                  <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                    4
+                  </div>
+                  <div>
+                    <div className="font-medium mb-1">Track Performance</div>
+                    <p className="text-muted-foreground">
+                      Monitor views and engagement for each product in your dashboard
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button onClick={() => setShowStoreSettingsModal(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

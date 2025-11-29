@@ -68,7 +68,9 @@ export default function Storefront() {
         fetch(`/api/storefront/${clientId}/settings`)
       ]);
 
-      if (!productsRes.ok) throw new Error('Store not found');
+      if (!productsRes.ok) {
+        throw new Error('Store not found');
+      }
       
       const productsData = await productsRes.json();
       const settingsData = settingsRes.ok ? await settingsRes.json() : {};
@@ -81,6 +83,7 @@ export default function Storefront() {
       setCategories(cats as string[]);
       
     } catch (err: any) {
+      console.error('Load store error:', err);
       setError(err.message || 'Failed to load store');
     } finally {
       setLoading(false);
@@ -124,13 +127,17 @@ export default function Storefront() {
   if (error || products.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="text-center space-y-4 p-6">
+        <div className="text-center space-y-4 p-6 max-w-md">
           <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
             <StoreIcon className="w-8 h-8 text-muted-foreground" />
           </div>
-          <h2 className="text-2xl font-bold">Store Not Available</h2>
+          <h2 className="text-2xl font-bold">
+            {error ? 'Store Not Available' : 'No Products Yet'}
+          </h2>
           <p className="text-muted-foreground">
-            {error || 'This store has no products yet.'}
+            {error 
+              ? 'This store could not be loaded. Please check the URL and try again.'
+              : 'This store is being set up. Check back soon for products!'}
           </p>
           <Button onClick={() => navigate('/marketplace')}>
             Browse Marketplace
