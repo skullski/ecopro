@@ -101,8 +101,13 @@ export default function Store() {
         // Get client ID from token (decode JWT)
         if (token) {
           const payload = JSON.parse(atob(token.split('.')[1]));
+          console.log('Client ID from token:', payload.id);
           setClientId(payload.id);
+        } else {
+          console.error('No token found');
         }
+      } else {
+        console.error('Failed to fetch products:', res.status);
       }
     } catch (error) {
       console.error('Failed to load products:', error);
@@ -829,7 +834,15 @@ export default function Store() {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => window.open(`/store/${clientId}`, '_blank')}
+                  onClick={() => {
+                    if (clientId) {
+                      window.open(`/store/${clientId}`, '_blank');
+                    } else {
+                      console.error('Client ID not available');
+                      alert('Please wait while your store loads...');
+                    }
+                  }}
+                  disabled={!clientId}
                 >
                   <ExternalLink className="w-4 h-4 mr-2" />
                   Open Store
@@ -837,11 +850,11 @@ export default function Store() {
               </div>
               <div className="flex gap-2">
                 <Input
-                  value={clientId ? `${window.location.origin}/store/${clientId}` : ''}
+                  value={clientId ? `${window.location.origin}/store/${clientId}` : 'Loading...'}
                   readOnly
                   className="font-mono text-sm"
                 />
-                <Button onClick={copyStoreLink} variant="outline">
+                <Button onClick={copyStoreLink} variant="outline" disabled={!clientId}>
                   {storeLinkCopied ? (
                     <Check className="w-4 h-4 text-green-500" />
                   ) : (
