@@ -3,7 +3,7 @@ import {
   Home, Eye, Store, ShoppingCart, Tag, FileText, Layers, 
   Truck, Megaphone, Star, Percent, Globe, BarChart3, 
   Users, Shield, Ban, Puzzle, CreditCard, Settings,
-  ChevronDown, ChevronRight, Menu, X
+  ChevronDown, ChevronRight, Menu, X, Package
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -25,6 +25,7 @@ interface EnhancedSidebarProps {
 const menuItems: MenuItem[] = [
   { titleKey: "sidebar.home", path: "/dashboard", icon: <Home className="w-5 h-5" /> },
   { titleKey: "sidebar.preview", path: "/dashboard/preview", icon: <Eye className="w-5 h-5" /> },
+  { titleKey: "sidebar.stock", path: "/dashboard/stock", icon: <Package className="w-5 h-5" /> },
   { 
     titleKey: "sidebar.orders", 
     path: "/dashboard/orders", 

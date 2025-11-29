@@ -10,7 +10,8 @@ import { handleDemo } from "./routes/demo";
 import * as authRoutes from "./routes/auth";
 import * as sellerAuthRoutes from "./routes/seller-auth";
 import * as productRoutes from "./routes/products";
-import { authenticate, requireAdmin, requireSeller } from "./middleware/auth";
+import * as stockRoutes from "./routes/stock";
+import { authenticate, requireAdmin, requireSeller, requireClient } from "./middleware/auth";
 import * as adminRoutes from "./routes/admin";
 import * as dashboardRoutes from "./routes/dashboard";
 import { initializeDatabase, createDefaultAdmin } from "./utils/database";
@@ -232,6 +233,66 @@ export function createServer() {
     authenticate,
     requireAdmin,
     adminRoutes.listUsers
+  );
+
+  // Client Stock Management routes (protected)
+  app.get(
+    "/api/client/stock",
+    authenticate,
+    requireClient,
+    apiLimiter,
+    stockRoutes.getClientStock
+  );
+  app.get(
+    "/api/client/stock/alerts/low-stock",
+    authenticate,
+    requireClient,
+    stockRoutes.getLowStockAlerts
+  );
+  app.get(
+    "/api/client/stock/categories",
+    authenticate,
+    requireClient,
+    stockRoutes.getStockCategories
+  );
+  app.get(
+    "/api/client/stock/:id",
+    authenticate,
+    requireClient,
+    stockRoutes.getStockById
+  );
+  app.get(
+    "/api/client/stock/:id/history",
+    authenticate,
+    requireClient,
+    stockRoutes.getStockHistory
+  );
+  app.post(
+    "/api/client/stock",
+    authenticate,
+    requireClient,
+    apiLimiter,
+    stockRoutes.createStock
+  );
+  app.put(
+    "/api/client/stock/:id",
+    authenticate,
+    requireClient,
+    apiLimiter,
+    stockRoutes.updateStock
+  );
+  app.post(
+    "/api/client/stock/:id/adjust",
+    authenticate,
+    requireClient,
+    apiLimiter,
+    stockRoutes.adjustStockQuantity
+  );
+  app.delete(
+    "/api/client/stock/:id",
+    authenticate,
+    requireClient,
+    stockRoutes.deleteStock
   );
 
   // Serve static files from React build (only in production)

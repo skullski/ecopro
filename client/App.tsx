@@ -45,6 +45,9 @@ import DataMigration from "./pages/DataMigration";
 
 // Admin store pages removed
 
+// Customer pages
+import StockManagement from "./pages/customer/StockManagement";
+
 // Orders submenu pages
 import AddOrder from "./pages/admin/orders/AddOrder";
 import AbandonedOrders from "./pages/admin/orders/AbandonedOrders";
@@ -505,6 +508,8 @@ const App = () => (
                     <Route index element={<AdminDashboard />} />
                     {/* Store submenu routes */}
                     {/* Admin store submenu removed */}
+                    {/* Customer stock management */}
+                    <Route path="stock" element={<StockManagement />} />
                     {/* Orders submenu routes */}
                     <Route path="orders" element={<AdminOrders />} />
                     <Route path="orders/add" element={<AddOrder />} />

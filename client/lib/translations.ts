@@ -176,6 +176,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     // Sidebar Menu
     "sidebar.home": "الرئيسية",
     "sidebar.preview": "معاينة المتجر",
+    "sidebar.stock": "إدارة المخزون",
     "sidebar.store": "المتجر",
     "sidebar.storeLogo": "الشعار",
     "sidebar.storeTemplate": "القالب",
@@ -677,6 +678,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     // Sidebar Menu
     "sidebar.home": "Home",
     "sidebar.preview": "Store Preview",
+    "sidebar.stock": "Stock Management",
     "sidebar.store": "Store",
     "sidebar.storeLogo": "Logo",
     "sidebar.storeTemplate": "Template",
@@ -1178,6 +1180,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     // Sidebar Menu
     "sidebar.home": "Accueil",
     "sidebar.preview": "Aperçu de la Boutique",
+    "sidebar.stock": "Gestion du Stock",
     "sidebar.store": "Boutique",
     "sidebar.storeLogo": "Logo",
     "sidebar.storeTemplate": "Modèle",

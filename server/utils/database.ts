@@ -112,6 +112,80 @@ export async function initializeDatabase(): Promise<void> {
       ON marketplace_orders(buyer_id);
     `);
 
+    // Create client_stock_products table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS client_stock_products (
+        id SERIAL PRIMARY KEY,
+        client_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        name VARCHAR(255) NOT NULL,
+        sku VARCHAR(100) UNIQUE,
+        description TEXT,
+        category VARCHAR(100),
+        quantity INTEGER NOT NULL DEFAULT 0,
+        unit_price DECIMAL(10, 2),
+        reorder_level INTEGER DEFAULT 10,
+        location VARCHAR(255),
+        supplier_name VARCHAR(255),
+        supplier_contact VARCHAR(255),
+        status VARCHAR(32) DEFAULT 'active',
+        notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Create client_stock_history table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS client_stock_history (
+        id SERIAL PRIMARY KEY,
+        stock_id INTEGER NOT NULL REFERENCES client_stock_products(id) ON DELETE CASCADE,
+        client_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        quantity_before INTEGER NOT NULL,
+        quantity_after INTEGER NOT NULL,
+        adjustment INTEGER NOT NULL,
+        reason VARCHAR(32) NOT NULL,
+        notes TEXT,
+        created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Create indexes for stock tables
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_client_stock_client_id 
+      ON client_stock_products(client_id);
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_client_stock_status 
+      ON client_stock_products(status);
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_client_stock_category 
+      ON client_stock_products(category);
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_client_stock_sku 
+      ON client_stock_products(sku);
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_client_stock_quantity 
+      ON client_stock_products(quantity);
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_stock_history_stock_id 
+      ON client_stock_history(stock_id);
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_stock_history_client_id 
+      ON client_stock_history(client_id);
+    `);
+
     console.log("✅ Database tables initialized");
   } catch (error) {
     console.error("❌ Database initialization error:", error);
