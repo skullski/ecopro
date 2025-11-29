@@ -19,16 +19,15 @@ Each user gets a personalized dashboard showing:
 #### Account Information Card
 - User's full name
 - Email address
-- Account type badge (Customer/Vendor/Admin)
+- Account type badge (Customer/Admin)
 
 #### Progress Statistics
 - **Total Orders**: Track all purchases (currently 0, ready for data)
-- **Active Products**: If user becomes a vendor (currently 0)
+- **Active Products**: (multi-vendor storefronts removed)
 - **Total Revenue**: Lifetime earnings (currently 0)
 
 #### Quick Actions
-- Browse Store
-- Access Vendor Dashboard (if vendor role)
+- Browse Products
 - Access Admin Panel (if admin role)
 - Settings (ready for implementation)
 - Logout
@@ -106,12 +105,8 @@ When users make purchases:
 - Order history displays recent purchases
 - Revenue statistics update
 
-### Vendor Progress
-If user becomes a vendor:
-- Active products count
-- Sales performance
-- Customer reviews
-- Revenue breakdown
+### Vendor Progress (Removed)
+Multi-vendor storefronts and vendor registration have been removed from this platform. The application now focuses on single-store product management and admin-controlled publishing. If you need multi-vendor capabilities in the future, reintroduce them intentionally.
 
 ### Customer Progress
 - Purchase history
@@ -235,7 +230,6 @@ All signup and dashboard text is translated:
 
 4. **Add Features**:
    - Order system (users can buy products)
-   - Vendor registration (users can become sellers)
    - Product reviews and ratings
    - User profile settings
    - Email notifications

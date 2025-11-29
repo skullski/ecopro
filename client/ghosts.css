@@ -1,24 +1,37 @@
-/* Ghost animation for admin panel */
+/* Minimal ghost styles used by admin placeholder and AnimatedGhosts */
+.ghost-float {
+  pointer-events: none;
+  opacity: 0.85;
+  will-change: transform, opacity;
+}
+
 @keyframes ghost-move {
   0% {
-    left: -100px;
-    opacity: 0.7;
-    transform: scale(1) rotate(-5deg);
+    transform: translateX(-20%);
+    opacity: 0;
   }
   10% {
-    opacity: 1;
-  }
-  90% {
-    opacity: 1;
+    opacity: 0.9;
   }
   100% {
-    left: 110vw;
-    opacity: 0.2;
-    transform: scale(1.1) rotate(5deg);
+    transform: translateX(120%);
+    opacity: 0;
   }
 }
-.ghost-float {
-  filter: drop-shadow(0 0 16px #fff8) drop-shadow(0 0 32px #fff4);
-  pointer-events: none;
-  user-select: none;
+
+/* optional small helper for background ghost */
+.ghost-bg {
+  opacity: 0.25;
+  filter: blur(2px) saturate(0.8);
+}
+
+/* fallback for any .ghostMove usage */
+@keyframes ghostMove {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+  100% { transform: translateY(0); }
+}
+
+.drop-shadow-glow {
+  filter: drop-shadow(0 4px 10px rgba(124,58,237,0.45));
 }

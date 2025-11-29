@@ -22,6 +22,9 @@ This document outlines the security measures implemented in the EcoPro platform.
   - `user` - Regular users
   - `vendor` - Sellers/merchants
   - `admin` - Platform administrators
+ - **Role-Based Access Control (RBAC)**:
+ - `user` - Regular users
+ - `admin` - Platform administrators
 - **Protected Routes**: Middleware to verify authentication and roles
 - **Token Extraction**: Secure token parsing from Authorization header
 

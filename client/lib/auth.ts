@@ -113,6 +113,8 @@ export const authApi = {
     localStorage.setItem("user", JSON.stringify(response.user));
     if (response.user.role === "admin") {
       localStorage.setItem("isAdmin", "true");
+    } else {
+      localStorage.removeItem("isAdmin");
     }
     return response;
   },

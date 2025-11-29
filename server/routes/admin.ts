@@ -32,7 +32,7 @@ export const promoteUserToAdmin: RequestHandler = async (req, res) => {
 export const listUsers: RequestHandler = async (_req, res) => {
   try {
     const { pool } = await import("../utils/database");
-    const result = await pool.query("SELECT id, email, name, role, created_at FROM users ORDER BY created_at DESC");
+    const result = await pool.query("SELECT id, email, name, role, user_type, created_at FROM users ORDER BY created_at DESC");
     res.json(result.rows);
   } catch (err) {
     console.error(err);

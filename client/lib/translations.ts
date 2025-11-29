@@ -187,7 +187,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "sidebar.orders": "الطلبات",
     "sidebar.ordersAll": "الكل",
     "sidebar.ordersAdd": "إضافة طلب",
-    "sidebar.ordersWasselni": "واش نوَجَّد ؟",
+    "sidebar.ordersWasselni": "طلبات المكالمات",
     "sidebar.ordersAbandoned": "الطلبات المتروكة",
     "sidebar.ordersFlexScan": "Flex Scan",
     "sidebar.products": "المنتجات",
@@ -302,7 +302,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "orders.time.days": "منذ {n} أيام",
     "orders.addOrder": "إضافة طلب",
     "orders.abandoned": "الطلبات المتروكة",
-    "orders.wasselni": "طلبات Wasselni",
+    "orders.wasselni": "طلبات المكالمات",
 
     // Store Management
     "store.management": "إدارة المتجر",
@@ -688,7 +688,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "sidebar.orders": "Orders",
     "sidebar.ordersAll": "All",
     "sidebar.ordersAdd": "Add Order",
-    "sidebar.ordersWasselni": "Wasselni Orders",
+    "sidebar.ordersWasselni": "Call Orders",
     "sidebar.ordersAbandoned": "Abandoned Orders",
     "sidebar.ordersFlexScan": "Flex Scan",
     "sidebar.products": "Products",
@@ -803,7 +803,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "orders.time.days": "{n} days ago",
     "orders.addOrder": "Add Order",
     "orders.abandoned": "Abandoned Orders",
-    "orders.wasselni": "Wasselni Orders",
+    "orders.wasselni": "Call Orders",
 
     // Store Management
     "store.management": "Store Management",
@@ -1189,7 +1189,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "sidebar.orders": "Commandes",
     "sidebar.ordersAll": "Toutes",
     "sidebar.ordersAdd": "Ajouter Commande",
-    "sidebar.ordersWasselni": "Commandes Wasselni",
+    "sidebar.ordersWasselni": "Commandes d'Appel",
     "sidebar.ordersAbandoned": "Commandes Abandonnées",
     "sidebar.ordersFlexScan": "Flex Scan",
     "sidebar.products": "Produits",
@@ -1304,7 +1304,7 @@ export const translations: Record<Locale, Record<string, string>> = {
     "orders.time.days": "il y a {n} jours",
     "orders.addOrder": "Ajouter une Commande",
     "orders.abandoned": "Commandes Abandonnées",
-    "orders.wasselni": "Commandes Wasselni",
+    "orders.wasselni": "Commandes d'Appel",
 
     // Store Management
     "store.management": "Gestion de la Boutique",

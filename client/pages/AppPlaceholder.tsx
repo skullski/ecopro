@@ -19,7 +19,7 @@ import {
   BarChart3,
   Package
 } from "lucide-react";
-import Ghost from "@/components/ui/ghost";
+// Ghost component removed — use simple decorative divs instead
 import AnimatedGhosts from "@/components/ui/animated-ghosts";
 import "../ghosts.css";
 
@@ -75,10 +75,10 @@ export default function AppPlaceholder() {
     >
       {/* Animated moving ghosts */}
       <AnimatedGhosts />
-      {/* Animated ghost SVGs */}
-      <Ghost className="absolute left-10 top-20 w-32 h-32 opacity-60 animate-float pointer-events-none" />
-      <Ghost className="absolute right-20 top-40 w-24 h-24 opacity-40 animate-float delay-1000 pointer-events-none" />
-      <Ghost className="absolute left-1/2 bottom-10 w-40 h-40 opacity-30 animate-float delay-2000 pointer-events-none" />
+      {/* Decorative ghost elements (static) */}
+      <div className="absolute left-10 top-20 w-32 h-32 opacity-60 pointer-events-none bg-[url('/admin/ghost1.png')] bg-contain bg-no-repeat" />
+      <div className="absolute right-20 top-40 w-24 h-24 opacity-40 pointer-events-none bg-[url('/admin/ghost2.png')] bg-contain bg-no-repeat" />
+      <div className="absolute left-1/2 bottom-10 w-40 h-40 opacity-30 pointer-events-none bg-[url('/admin/ghost3.png')] bg-contain bg-no-repeat" />
       {/* Horror background overlay */}
       {/* Dark overlay for horror readability */}
       <div className="absolute inset-0 bg-black/40 z-0" />

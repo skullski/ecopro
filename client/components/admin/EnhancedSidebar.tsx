@@ -165,7 +165,7 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
         {!collapsed && (
           <div>
             <span className="font-bold text-lg bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent block">
-              Wasselni
+              Call Verification
             </span>
             <span className="text-xs text-muted-foreground">{t("sidebar.controlPanel")}</span>
           </div>
@@ -208,7 +208,7 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-semibold text-sm truncate">Walid Walid</div>
-                <div className="text-xs text-muted-foreground truncate">admin@wasselni.com</div>
+                <div className="text-xs text-muted-foreground truncate">admin@ecopro.com</div>
               </div>
             </div>
           </div>

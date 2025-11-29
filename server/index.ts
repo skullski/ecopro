@@ -6,18 +6,16 @@ import { fileURLToPath } from "url";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { handleDemo } from "./routes/demo";
-import * as vendorRoutes from "./routes/vendors";
-import * as uploadRoutes from "./routes/uploads";
 import * as authRoutes from "./routes/auth";
-import storeProductsRouter from "./routes/storeProducts";
-import { authenticate, requireAdmin, requireVendor } from "./middleware/auth";
+import * as sellerAuthRoutes from "./routes/seller-auth";
+import * as productRoutes from "./routes/products";
+import { authenticate, requireAdmin, requireSeller } from "./middleware/auth";
 import * as adminRoutes from "./routes/admin";
+import * as dashboardRoutes from "./routes/dashboard";
 import {
   validate,
   registerValidation,
   loginValidation,
-  productValidation,
-  vendorValidation,
 } from "./middleware/validation";
 
 // Get __dirname equivalent in ES modules
@@ -26,11 +24,10 @@ const __dirname = path.dirname(__filename);
 
 export function createServer() {
   const app = express();
-  
+  app.use(express.json());
+
   // Trust proxy for rate limiting (required for deployment behind reverse proxies like Render)
-  app.set('trust proxy', 1);
-    app.get("/api/products/owner/:ownerKey", vendorRoutes.getProductsByOwnerKey);
-    app.get("/api/products/owner-email/:ownerEmail", vendorRoutes.getProductsByOwnerEmail);
+  app.set("trust proxy", 1);
 
   // Security: Helmet adds security headers
   app.use(
@@ -43,12 +40,9 @@ export function createServer() {
           scriptSrc: ["'self'", "'unsafe-inline'"],
           imgSrc: ["'self'", "data:", "https:"],
         },
-      },
+      }
     })
   );
-
-  // Claim a public product to this vendor
-  // Removed premium claim product route
 
   // Security: Rate limiting to prevent brute force attacks
   const authLimiter = rateLimit({
@@ -66,9 +60,6 @@ export function createServer() {
     standardHeaders: true,
     legacyHeaders: false,
   });
-
-  // Image upload for product images (multipart/form-data)
-  app.post("/api/products/upload", apiLimiter, uploadRoutes.upload.single('image'), uploadRoutes.uploadImage);
 
   // Security: CORS configuration
   const allowedOrigins = process.env.ALLOWED_ORIGINS
@@ -122,72 +113,77 @@ export function createServer() {
   app.get("/api/auth/me", authenticate, authRoutes.getCurrentUser);
   app.post("/api/auth/change-password", authenticate, authRoutes.changePassword);
 
-  // Disabled upgrade route: platform is 100% free. Keep endpoint to return explicit 410.
-  app.post("/api/auth/upgrade-vip", (_req, res) => {
-    res.status(410).json({ error: "VIP upgrades are no longer supported. Platform is free." });
-  });
+  // Seller auth routes (with rate limiting)
+  app.post(
+    "/api/seller/register",
+    authLimiter,
+    registerValidation,
+    validate,
+    sellerAuthRoutes.registerSeller
+  );
+  app.post(
+    "/api/seller/login",
+    authLimiter,
+    loginValidation,
+    validate,
+    sellerAuthRoutes.loginSeller
+  );
 
-  // Public listing endpoints removed: deprecated and returning 410 where used
-
-  // Store products (premium dashboard) routes
-  app.use("/api/store-products", storeProductsRouter);
-
-  // Public vendor/product routes
-  app.get("/api/vendors", apiLimiter, vendorRoutes.getVendors);
-  app.get("/api/vendors/:id", apiLimiter, vendorRoutes.getVendorById);
-  app.get("/api/vendors/slug/:slug", apiLimiter, vendorRoutes.getVendorBySlug);
-  app.get("/api/products", apiLimiter, vendorRoutes.getProducts);
+  // Public product routes
   app.get(
-    "/api/products/vendor/:vendorId",
+    "/api/products/categories/counts",
     apiLimiter,
-    vendorRoutes.getVendorProducts
+    productRoutes.getCategoryCounts
   );
+  app.get("/api/products", apiLimiter, productRoutes.getAllProducts);
+  app.get("/api/products/:id", apiLimiter, productRoutes.getProductById);
 
-  // Protected vendor routes (require authentication)
-  // Public vendor signup: allow unauthenticated users to create vendor accounts
+  // Guest checkout (no auth)
+  app.post("/api/guest/orders", apiLimiter, productRoutes.createGuestOrder);
+
+  // Seller product management routes (protected)
+  app.get(
+    "/api/seller/products",
+    authenticate,
+    requireSeller,
+    productRoutes.getSellerProducts
+  );
   app.post(
-    "/api/vendors",
-    vendorValidation,
-    validate,
-    vendorRoutes.createVendor
+    "/api/seller/products",
+    authenticate,
+    requireSeller,
+    apiLimiter,
+    productRoutes.createProduct
   );
   app.put(
-    "/api/vendors/:id",
+    "/api/seller/products/:id",
     authenticate,
-    requireVendor,
-    vendorValidation,
-    validate,
-    vendorRoutes.updateVendor
-  );
-
-  // Public product creation (anonymous sellers) - removed; return 410
-  app.post("/api/products/public", (_req, res) => {
-    res.status(410).json({ error: "Public listing feature removed" });
-  });
-
-  // Protected product routes (require authentication)
-  app.post(
-    "/api/products",
-    authenticate, // allow authenticated users to add products
-    productValidation,
-    validate,
-    vendorRoutes.createProduct
-  );
-  app.put(
-    "/api/products/:id",
-    authenticate,
-    requireVendor,
-    productValidation,
-    validate,
-    vendorRoutes.updateProduct
+    requireSeller,
+    apiLimiter,
+    productRoutes.updateProduct
   );
   app.delete(
-    "/api/products/:id",
+    "/api/seller/products/:id",
     authenticate,
-    requireVendor,
-    vendorRoutes.deleteProduct
+    requireSeller,
+    productRoutes.deleteProduct
   );
 
+  // Seller orders route (DB-backed)
+  app.get(
+    "/api/seller/orders",
+    authenticate,
+    requireSeller,
+    productRoutes.getSellerOrders
+  );
+
+  // Dashboard aggregated stats (authenticated users)
+  app.get(
+    "/api/dashboard/stats",
+    authenticate,
+    apiLimiter,
+    dashboardRoutes.getDashboardStats
+  );
 
   // Admin management routes (platform admin only)
   app.post(
@@ -203,8 +199,6 @@ export function createServer() {
     requireAdmin,
     adminRoutes.listUsers
   );
-
-
 
   // Serve static files from React build (only in production)
   if (process.env.NODE_ENV === "production") {

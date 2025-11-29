@@ -49,15 +49,15 @@ export default function Index() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/quick-sell">
+                <Link to="/signup">
                   <Button size="lg" className="group bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-700 hover:to-cyan-700 text-white shadow-xl hover:shadow-2xl px-8 h-14 text-lg">
-                    {t("home.startSelling")}
+                    {t("home.getStarted")}
                     <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
-                <Link to="/store">
+                <Link to="/about">
                   <Button size="lg" variant="outline" className="h-14 px-8 text-lg border-2 hover:border-indigo-600 hover:text-indigo-600">
-                    {t("menu.store")}
+                    {t("menu.about")}
                   </Button>
                 </Link>
               </div>
@@ -240,7 +240,7 @@ export default function Index() {
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
-              <Link to="/store">
+              <Link to="/marketplace">
                 <Button size="lg" variant="outline" className="border-2 border-white text-white hover:bg-white/10 h-14 px-8 text-lg">
                   {t("menu.store")}
                 </Button>

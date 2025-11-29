@@ -22,11 +22,13 @@ export default function Login() {
     try {
       const response = await authApi.login({ email, password });
       
-      // Redirect based on role
+      // Redirect based on user type and role
       if (response.user.role === "admin") {
-        navigate("/platform-control-x9k2m8p5q7w3"); // Secret platform admin URL
+        navigate("/platform-admin");
+      } else if (response.user.role === "seller") {
+        navigate("/seller/dashboard");
       } else {
-        navigate("/dashboard"); // Vendor dashboard (store owner)
+        navigate("/dashboard");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
@@ -49,7 +51,7 @@ export default function Login() {
             <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               {t("login")}
             </h2>
-            <p className="text-sm text-muted-foreground mt-2">مرحباً بعودتك! سجل دخولك للمتابعة</p>
+            <p className="text-sm text-muted-foreground mt-2">Welcome back! Sign in to continue</p>
           </div>
           
           {error && (
@@ -111,7 +113,7 @@ export default function Login() {
           
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">
-              ليس لديك حساب؟{" "}
+              Don't have an account?{" "}
               <Link to="/signup" className="text-primary hover:underline font-medium">
                 {t("signup")}
               </Link>

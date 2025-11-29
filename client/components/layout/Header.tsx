@@ -49,10 +49,10 @@ export default function Header() {
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center gap-1">
               <Link 
-                to="/store" 
+                to="/marketplace" 
                 className="px-4 py-2 rounded-lg text-sm font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 transition-all"
               >
-                {t("menu.store")}
+                Marketplace
               </Link>
               <Link 
                 to="/pricing" 
@@ -121,12 +121,28 @@ export default function Header() {
                 </>
               ) : (
                 <div className="hidden md:flex items-center gap-2">
-                  <Link to="/dashboard">
-                    <Button variant="outline" className="border-2 border-primary/40 text-primary hover:bg-primary/10 font-medium">
-                      <LayoutDashboard className="w-4 h-4 ml-2" />
-                      Dashboard
-                    </Button>
-                  </Link>
+                  {isAdmin ? (
+                    <Link to="/platform-admin">
+                      <Button variant="outline" className="border-2 border-primary/40 text-primary hover:bg-primary/10 font-medium">
+                        <Crown className="w-4 h-4 ml-2" />
+                        Admin
+                      </Button>
+                    </Link>
+                  ) : user?.role === "seller" ? (
+                    <Link to="/seller/dashboard">
+                      <Button variant="outline" className="border-2 border-primary/40 text-primary hover:bg-primary/10 font-medium">
+                        <ShoppingBag className="w-4 h-4 ml-2" />
+                        My Products
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Link to="/dashboard">
+                      <Button variant="outline" className="border-2 border-primary/40 text-primary hover:bg-primary/10 font-medium">
+                        <LayoutDashboard className="w-4 h-4 ml-2" />
+                        Dashboard
+                      </Button>
+                    </Link>
+                  )}
                   <Button 
                     variant="outline" 
                     onClick={handleLogout}
@@ -161,11 +177,11 @@ export default function Header() {
           <div className="container mx-auto px-4 py-6">
             <nav className="flex flex-col gap-2">
               <Link 
-                to="/store" 
+                to="/marketplace" 
                 onClick={() => setMobileMenuOpen(false)}
                 className="px-4 py-3 rounded-lg text-base font-medium text-foreground/80 hover:text-foreground hover:bg-primary/10 transition-all"
               >
-                {t("menu.store")}
+                Marketplace
               </Link>
               <Link 
                 to="/pricing" 
@@ -192,12 +208,28 @@ export default function Header() {
               {user && (
                 <>
                   <div className="h-px bg-border my-2" />
-                  <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="outline" className="justify-start border-2 border-primary/40 text-primary hover:bg-primary/10 font-medium w-full">
-                      <LayoutDashboard className="w-4 h-4 ml-2" />
-                      Dashboard
-                    </Button>
-                  </Link>
+                  {isAdmin ? (
+                    <Link to="/platform-admin" onClick={() => setMobileMenuOpen(false)}>
+                      <Button variant="outline" className="justify-start border-2 border-primary/40 text-primary hover:bg-primary/10 font-medium w-full">
+                        <Crown className="w-4 h-4 ml-2" />
+                        Admin
+                      </Button>
+                    </Link>
+                  ) : user?.role === "seller" ? (
+                    <Link to="/seller/dashboard" onClick={() => setMobileMenuOpen(false)}>
+                      <Button variant="outline" className="justify-start border-2 border-primary/40 text-primary hover:bg-primary/10 font-medium w-full">
+                        <ShoppingBag className="w-4 h-4 ml-2" />
+                        My Products
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>
+                      <Button variant="outline" className="justify-start border-2 border-primary/40 text-primary hover:bg-primary/10 font-medium w-full">
+                        <LayoutDashboard className="w-4 h-4 ml-2" />
+                        Dashboard
+                      </Button>
+                    </Link>
+                  )}
                   <Button 
                     variant="outline" 
                     onClick={() => {

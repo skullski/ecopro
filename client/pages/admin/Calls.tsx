@@ -6,15 +6,15 @@ export default function CallsAdmin(){
   const [product, setProduct] = useState('');
 
   useEffect(()=>{
-    setCalls(JSON.parse(localStorage.getItem('wasselni_calls')||'[]'));
+    setCalls(JSON.parse(localStorage.getItem('call_queue')||'[]'));
   },[]);
 
   function queueCall(){
     const id = Date.now().toString();
     const entry = { id, customer, product, status: 'scheduled', createdAt: Date.now() };
-    const all = JSON.parse(localStorage.getItem('wasselni_calls')||'[]');
+    const all = JSON.parse(localStorage.getItem('call_queue')||'[]');
     all.push(entry);
-    localStorage.setItem('wasselni_calls', JSON.stringify(all));
+    localStorage.setItem('call_queue', JSON.stringify(all));
     setCalls(all);
     setCustomer(''); setProduct('');
   }
@@ -22,16 +22,16 @@ export default function CallsAdmin(){
   function simulateCall(id:string){
     const outcome = prompt('Enter outcome: confirmed / cancelled / followup', 'confirmed');
     if (!outcome) return;
-    const all = JSON.parse(localStorage.getItem('wasselni_calls')||'[]');
+    const all = JSON.parse(localStorage.getItem('call_queue')||'[]');
     const next = all.map((c:any)=> c.id===id ? {...c, status: outcome, answeredAt: Date.now()} : c);
-    localStorage.setItem('wasselni_calls', JSON.stringify(next));
+    localStorage.setItem('call_queue', JSON.stringify(next));
     setCalls(next);
   }
 
   function remove(id:string){
-    const all = JSON.parse(localStorage.getItem('wasselni_calls')||'[]');
+    const all = JSON.parse(localStorage.getItem('call_queue')||'[]');
     const next = all.filter((c:any)=>c.id!==id);
-    localStorage.setItem('wasselni_calls', JSON.stringify(next));
+    localStorage.setItem('call_queue', JSON.stringify(next));
     setCalls(next);
   }
 

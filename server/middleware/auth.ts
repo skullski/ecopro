@@ -47,22 +47,6 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction) {
 }
 
 /**
- * Middleware to check if user has vendor role
- */
-export function requireVendor(req: Request, res: Response, next: NextFunction) {
-  if (!req.user) {
-    res.status(401).json({ error: "Authentication required" });
-    return;
-  }
-
-  if (req.user.role !== "vendor" && req.user.role !== "admin") {
-    return res.status(403).json({ error: "Vendor access required" });
-  }
-  next();
-}
-
-
-/**
  * Optional authentication - attaches user if token is valid, but doesn't reject if missing
  */
 export function optionalAuthenticate(req: Request, res: Response, next: NextFunction): void {
@@ -81,11 +65,33 @@ export function optionalAuthenticate(req: Request, res: Response, next: NextFunc
 }
 
 /**
- * Middleware to ensure user has seller role
+ * Middleware to check if user is a client (has dashboard access)
  */
-export function ensureSeller(req: Request, res: Response, next: NextFunction) {
-  if (!req.user || (req.user.role !== "vendor" && req.user.role !== "admin")) {
-    return res.status(403).json({ error: "Access denied." });
+export function requireClient(req: Request, res: Response, next: NextFunction) {
+  if (!req.user) {
+    res.status(401).json({ error: "Authentication required" });
+    return;
+  }
+
+  if (req.user.user_type !== "client" && req.user.user_type !== "admin") {
+    res.status(403).json({ error: "Client access required" });
+    return;
+  }
+  next();
+}
+
+/**
+ * Middleware to check if user is a seller
+ */
+export function requireSeller(req: Request, res: Response, next: NextFunction) {
+  if (!req.user) {
+    res.status(401).json({ error: "Authentication required" });
+    return;
+  }
+
+  if (req.user.user_type !== "seller" && req.user.user_type !== "admin") {
+    res.status(403).json({ error: "Seller access required" });
+    return;
   }
   next();
 }

@@ -57,6 +57,14 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        // Futuristic additions
+        cold: {
+          blue: '#1e3a8a',
+          cyan: '#06b6d4',
+          indigo: '#6366f1',
+          gray: '#1e293b',
+          border: '#334155',
+        },
       },
       fontFamily: {
         sans: [
@@ -94,10 +102,15 @@ export default {
             height: "0",
           },
         },
+        "glow": {
+          '0%, 100%': { filter: 'drop-shadow(0 0 8px #00eaff) drop-shadow(0 0 16px #a855f7aa)' },
+          '50%': { filter: 'drop-shadow(0 0 24px #00fff7) drop-shadow(0 0 32px #a855f7)' },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "glow": "glow 2.5s ease-in-out infinite alternate",
       },
     },
   },

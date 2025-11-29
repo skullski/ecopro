@@ -1,108 +1,150 @@
-import React, { useState } from "react";
-import { useTranslation } from "@/lib/i18n";
+import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Store, ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 export default function SellerSignup() {
-  const { t } = useTranslation();
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    storeName: "",
-    password: ""
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
   });
-  const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  function slugify(str: string) {
-    return str
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .replace(/--+/g, '-');
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
-    setError("");
-    setSuccess(false);
-    const payload = {
-      name: form.name,
-      email: form.email,
-      phone: form.phone,
-      businessName: form.storeName,
-      storeSlug: slugify(form.storeName) + "--" + Date.now(),
-      password: form.password
-    };
-    try {
-      const res = await fetch("/api/vendors", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Signup failed");
-      }
-      setSuccess(true);
-    } catch (e: any) {
-      setError(e.message || "Signup failed");
-    } finally {
-      setSubmitting(false);
+    setError('');
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
     }
-  }
+
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/seller/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Registration failed');
+        return;
+      }
+
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.removeItem('isAdmin');
+      navigate('/seller/dashboard');
+    } catch (err) {
+      setError('Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0f1021] via-[#181a2a] to-[#1a1a2e]">
-      <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-900 p-8 rounded shadow-md w-full max-w-md space-y-4">
-        <h2 className="text-2xl font-bold mb-4 text-center">{t("Create Seller Account")}</h2>
-        <input
-          className="input"
-          placeholder={t("Full Name")}
-          value={form.name}
-          onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-          required
-        />
-        <input
-          className="input"
-          placeholder={t("Email")}
-          type="email"
-          value={form.email}
-          onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-          required
-        />
-        <input
-          className="input"
-          placeholder={t("Phone")}
-          value={form.phone}
-          onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-        />
-        <input
-          className="input"
-          placeholder={t("Store Name")}
-          value={form.storeName}
-          onChange={e => setForm(f => ({ ...f, storeName: e.target.value }))}
-          required
-        />
-        <input
-          className="input"
-          placeholder={t("Password")}
-          type="password"
-          value={form.password}
-          onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-          required
-        />
-        {error && <div className="text-red-500 text-sm">{error}</div>}
-        {success && <div className="text-green-500 text-sm">{t("Signup successful! Please log in.")}</div>}
-        <button
-          type="submit"
-          className="btn btn-primary w-full"
-          disabled={submitting}
-        >
-          {submitting ? t("Submitting...") : t("Create Account")}
-        </button>
-      </form>
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md">
+        <Link to="/marketplace" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary mb-6">
+          <ArrowLeft className="w-4 h-4" />
+          Back to Marketplace
+        </Link>
+
+        <div className="bg-card rounded-xl border shadow-lg p-8">
+          <div className="flex items-center justify-center mb-6">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-r from-primary to-accent flex items-center justify-center">
+              <Store className="w-8 h-8 text-white" />
+            </div>
+          </div>
+
+          <h1 className="text-2xl font-bold text-center mb-2">Create Account</h1>
+          <p className="text-center text-muted-foreground mb-6">
+            Join our marketplace and start selling your products
+          </p>
+
+          {error && (
+            <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg mb-6">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Full Name</label>
+              <Input
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="John Doe"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Email</label>
+              <Input
+                type="email"
+                required
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="your@email.com"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Password</label>
+              <Input
+                type="password"
+                required
+                minLength={6}
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                placeholder="••••••••"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Confirm Password</label>
+              <Input
+                type="password"
+                required
+                minLength={6}
+                value={formData.confirmPassword}
+                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                placeholder="••••••••"
+              />
+            </div>
+
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-primary to-accent"
+            >
+              {loading ? 'Creating account...' : 'Create Account'}
+            </Button>
+          </form>
+
+          <div className="mt-6 text-center text-sm">
+            <span className="text-muted-foreground">Already have an account? </span>
+            <Link to="/seller/login" className="text-primary hover:underline font-medium">
+              Sign in
+            </Link>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

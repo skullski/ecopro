@@ -99,7 +99,7 @@ export default function GoogleSheetsIntegration() {
             <Input 
               type="email"
               placeholder="your-service-account@project-id.iam.gserviceaccount.com"
-              defaultValue={connected ? "wasselni-sync@wasselni-123.iam.gserviceaccount.com" : ""}
+              defaultValue={connected ? "sheets-sync@ecopro-123.iam.gserviceaccount.com" : ""}
             />
           </div>
 

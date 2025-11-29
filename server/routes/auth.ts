@@ -67,7 +67,7 @@ export const register: RequestHandler = async (req, res) => {
       email,
       password: hashedPassword,
       name,
-      role: (role as "vendor" | "user" | "admin") || "user",
+      role: (role as "user" | "admin") || "user",
     });
     console.log("[REGISTER] User created:", user.id, user.email);
 
@@ -75,7 +75,8 @@ export const register: RequestHandler = async (req, res) => {
     const token = generateToken({
       id: user.id,
       email: user.email,
-      role: (user.role as "vendor" | "user" | "admin") || "user",
+      role: (user.role as "user" | "admin") || "user",
+      user_type: user.role === "admin" ? "admin" : "client",
     });
     console.log("[REGISTER] Token generated");
 
@@ -118,7 +119,8 @@ export const login: RequestHandler = async (req, res) => {
     const token = generateToken({
       id: user.id,
       email: user.email,
-      role: (user.role as "vendor" | "user" | "admin") || "user",
+      role: (user.role as "user" | "admin") || "user",
+      user_type: user.role === "admin" ? "admin" : (user.user_type as "client" | "seller") || "client",
     });
 
     res.json({
@@ -156,7 +158,7 @@ export const getCurrentUser: RequestHandler = async (req, res) => {
       id: user.id,
       email: user.email,
       name: user.name,
-        role: user.role as "vendor" | "user" | "admin",
+        role: user.role as "user" | "admin",
     });
   } catch (error) {
     console.error("Get current user error:", error);

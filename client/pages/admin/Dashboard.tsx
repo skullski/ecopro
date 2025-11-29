@@ -1,18 +1,26 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { 
-  Package, ShoppingCart, DollarSign, TrendingUp, Eye, 
-  Plus, ArrowRight, Sparkles, Clock, CheckCircle, 
-  AlertCircle, Users, Star, BarChart3, ArrowUpRight,
-  Calendar, MapPin, CreditCard
+  Package, ShoppingCart, DollarSign, Plus, ArrowRight,
+  Clock, CheckCircle, AlertCircle, Users, Star, BarChart3
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useTranslation } from "@/lib/i18n";
+import { StatCard } from "@/components/admin/StatCard";
+
+interface DashboardStats {
+  products: number;
+  orders: number;
+  revenue: number;
+  pendingOrders: number;
+  completedOrders: number;
+  visitors: number;
+}
 
 export default function Dashboard() {
   const { t } = useTranslation();
-  const [stats, setStats] = useState({ 
+  const [stats, setStats] = useState<DashboardStats>({ 
     products: 0, 
     orders: 0, 
     revenue: 0,
@@ -21,108 +29,72 @@ export default function Dashboard() {
     visitors: 0
   });
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-      // Demo data: add a product and order if none exist
-      let products = JSON.parse(localStorage.getItem("products") || "[]");
-      let orders = JSON.parse(localStorage.getItem("orders") || "[]");
-      if (products.length === 0) {
-        products = [{ id: "demo-1", title: "Demo Product", price: 19.99, desc: "This is a demo product." }];
-        localStorage.setItem("products", JSON.stringify(products));
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const headers: HeadersInit = token ? { 'Authorization': `Bearer ${token}` } : {};
+      
+      const statsRes = await fetch('/api/dashboard/stats', { headers });
+      if (statsRes.ok) {
+        const statsData = await statsRes.json();
+        setStats(statsData);
       }
-      if (orders.length === 0) {
-        orders = [{ id: "order-1", total: 19.99, status: "completed", items: [products[0]], createdAt: new Date().toISOString() }];
-        localStorage.setItem("orders", JSON.stringify(orders));
+
+      const ordersRes = await fetch('/api/seller/orders', { headers });
+      if (ordersRes.ok) {
+        const ordersData = await ordersRes.json();
+        setRecentOrders(ordersData.slice(0, 5));
       }
-      const revenue = orders.reduce((s:any,o:any)=>s + (o.total || 0), 0);
-      const pendingOrders = orders.filter((o:any) => o.status === 'pending').length;
-      const completedOrders = orders.filter((o:any) => o.status === 'completed').length;
-      setStats({ 
-        products: products.length, 
-        orders: orders.length, 
-        revenue,
-        pendingOrders,
-        completedOrders,
-        visitors: Math.floor(Math.random() * 1000) + 500
-      });
-      setRecentOrders(orders.slice(-5).reverse());
-    }, []);
+    } catch (error) {
+      console.error('Failed to load dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
       {/* Top Stats Bar */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-full blur-3xl"></div>
-          <div className="relative p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white shadow-lg">
-                <ShoppingCart className="w-6 h-6" />
-              </div>
-              <div className="flex items-center gap-1 text-xs font-bold text-green-600 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">
-                <ArrowUpRight className="w-3 h-3" />
-                12%
-              </div>
-            </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t("dashboard.totalOrders")}</div>
-            <div className="text-3xl font-black">{stats.orders}</div>
-            <div className="text-xs text-gray-500 mt-2">{t("dashboard.compared")}</div>
-          </div>
-        </Card>
-
-        <Card className="relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-green-500/20 to-emerald-500/20 rounded-full blur-3xl"></div>
-          <div className="relative p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white shadow-lg">
-                <DollarSign className="w-6 h-6" />
-              </div>
-              <div className="flex items-center gap-1 text-xs font-bold text-green-600 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">
-                <ArrowUpRight className="w-3 h-3" />
-                23%
-              </div>
-            </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t("dashboard.revenue")}</div>
-            <div className="text-3xl font-black">${stats.revenue.toLocaleString()}</div>
-            <div className="text-xs text-gray-500 mt-2">{t("dashboard.compared")}</div>
-          </div>
-        </Card>
-
-        <Card className="relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-full blur-3xl"></div>
-          <div className="relative p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white shadow-lg">
-                <Users className="w-6 h-6" />
-              </div>
-              <div className="flex items-center gap-1 text-xs font-bold text-green-600 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">
-                <ArrowUpRight className="w-3 h-3" />
-                8%
-              </div>
-            </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t("dashboard.visitors")}</div>
-            <div className="text-3xl font-black">{stats.visitors.toLocaleString()}</div>
-            <div className="text-xs text-gray-500 mt-2">{t("dashboard.compared")}</div>
-          </div>
-        </Card>
-
-        <Card className="relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-orange-500/20 to-red-500/20 rounded-full blur-3xl"></div>
-          <div className="relative p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-white shadow-lg">
-                <Package className="w-6 h-6" />
-              </div>
-              <div className="flex items-center gap-1 text-xs font-bold text-orange-600 bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded-full">
-                <Clock className="w-3 h-3" />
-                {stats.pendingOrders}
-              </div>
-            </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t("dashboard.products")}</div>
-            <div className="text-3xl font-black">{stats.products}</div>
-            <div className="text-xs text-gray-500 mt-2">{t("dashboard.activeProducts")}</div>
-          </div>
-        </Card>
+        <StatCard
+          title={t("dashboard.totalOrders")}
+          value={loading ? "..." : stats.orders}
+          subtitle={t("dashboard.compared")}
+          icon={ShoppingCart}
+          gradient="bg-gradient-to-br from-blue-500/20 to-cyan-500/20"
+          badge={{ text: "12%", type: "success" }}
+        />
+        <StatCard
+          title={t("dashboard.revenue")}
+          value={loading ? "..." : `$${stats.revenue.toLocaleString()}`}
+          subtitle={t("dashboard.compared")}
+          icon={DollarSign}
+          gradient="bg-gradient-to-br from-green-500/20 to-emerald-500/20"
+          badge={{ text: "23%", type: "success" }}
+        />
+        <StatCard
+          title={t("dashboard.visitors")}
+          value={loading ? "..." : stats.visitors.toLocaleString()}
+          subtitle={t("dashboard.compared")}
+          icon={Users}
+          gradient="bg-gradient-to-br from-purple-500/20 to-pink-500/20"
+          badge={{ text: "8%", type: "success" }}
+        />
+        <StatCard
+          title={t("dashboard.products")}
+          value={loading ? "..." : stats.products}
+          subtitle={t("dashboard.activeProducts")}
+          icon={Package}
+          gradient="bg-gradient-to-br from-orange-500/20 to-red-500/20"
+          badge={{ text: `${stats.pendingOrders}`, type: "warning" }}
+        />
       </div>
 
       {/* Main Content Grid */}
@@ -143,12 +115,19 @@ export default function Dashboard() {
           </div>
           <div className="p-6">
             {/* Chart Placeholder with gradient bars */}
-            <div className="h-64 flex items-end justify-between gap-2">
+            <div 
+              className="h-64 flex items-end justify-between gap-2"
+              role="img"
+              aria-label="Bar chart showing monthly sales trends with values ranging from 45% to 95%"
+            >
               {[65, 85, 45, 78, 92, 58, 75, 88, 52, 95, 70, 82].map((height, i) => (
                 <div key={i} className="flex-1 flex flex-col items-center gap-2">
                   <div 
-                    className="w-full rounded-t-lg bg-gradient-to-t from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 transition-all cursor-pointer"
+                    className="w-full rounded-t-lg bg-gradient-to-t from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                     style={{ height: `${height}%` }}
+                    tabIndex={0}
+                    role="graphics-symbol"
+                    aria-label={`Month ${i + 1}: ${height}% of maximum sales`}
                   />
                   <span className="text-xs text-gray-500">{i + 1}</span>
                 </div>
@@ -176,7 +155,12 @@ export default function Dashboard() {
           <div className="p-6">
             {/* Donut Chart Placeholder */}
             <div className="relative w-48 h-48 mx-auto mb-6">
-              <svg className="w-full h-full" viewBox="0 0 100 100">
+              <svg 
+                className="w-full h-full" 
+                viewBox="0 0 100 100"
+                role="img"
+                aria-label={`Order status distribution: ${stats.completedOrders} completed, ${stats.pendingOrders} pending, ${stats.orders - stats.completedOrders - stats.pendingOrders} cancelled out of ${stats.orders} total orders`}
+              >
                 <circle
                   cx="50"
                   cy="50"
@@ -283,14 +267,21 @@ export default function Dashboard() {
           </div>
           
           <div className="p-6">
-            {recentOrders.length === 0 ? (
+            {loading ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <div className="animate-pulse space-y-3">
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mx-auto"></div>
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mx-auto"></div>
+                </div>
+              </div>
+            ) : recentOrders.length === 0 ? (
               <div className="text-center py-12">
                 <ShoppingCart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <p className="text-gray-500 mb-4">{t("dashboard.noOrders")}</p>
-                <Link to="/dashboard/products/add">
+                <Link to="/marketplace">
                   <Button>
                     <Plus className="w-4 h-4 mr-2" />
-                    {t("dashboard.addFirstProduct")}
+                    {t("dashboard.browseMarketplace")}
                   </Button>
                 </Link>
               </div>
@@ -299,19 +290,22 @@ export default function Dashboard() {
                 {recentOrders.map((order: any) => (
                   <div
                     key={order.id}
-                    className="flex items-center justify-between p-4 rounded-xl border hover:border-indigo-300 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/20 transition-all cursor-pointer group"
+                    className="flex items-center justify-between p-4 rounded-xl border hover:border-indigo-300 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/20 transition-all cursor-pointer group focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-offset-2"
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`Order ${order.id}, ${order.items?.length || 0} items, total $${order.total_price || 0}, status ${order.status}`}
                   >
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg group-hover:scale-110 transition-transform">
-                        #{order.id?.slice(-3)}
+                        #{order.id?.toString().slice(-3)}
                       </div>
                       <div>
                         <div className="font-bold">{t("orders.orderNumber")} {order.id}</div>
                         <div className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2 mt-1">
                           <Package className="w-3 h-3" />
-                          {order.items?.length || 0} {t("dashboard.items")}
-                          <Clock className="w-3 h-3 mr-2" />
-                          {new Date(order.createdAt || Date.now()).toLocaleDateString('ar-DZ')}
+                          {order.product_title || 'Product'}
+                          <Clock className="w-3 h-3 ml-2" />
+                          {new Date(order.created_at || Date.now()).toLocaleDateString()}
                         </div>
                       </div>
                     </div>
@@ -328,7 +322,7 @@ export default function Dashboard() {
                           {t("dashboard.pending")}
                         </span>
                       )}
-                      <div className="text-xl font-black">${order.total || 0}</div>
+                      <div className="text-xl font-black">${order.total_price || 0}</div>
                     </div>
                   </div>
                 ))}
@@ -344,22 +338,30 @@ export default function Dashboard() {
             <p className="text-sm text-muted-foreground mt-1">{t("dashboard.quickAccess")}</p>
           </div>
           <div className="p-6 space-y-3">
-            <Link to="/dashboard/products/add" className="block">
-              <div className="p-4 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white transition-all cursor-pointer group">
+            <Link to="/seller/dashboard" className="block">
+              <div 
+                className="p-4 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white transition-all cursor-pointer group focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                tabIndex={0}
+                role="button"
+              >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
                     <Plus className="w-5 h-5" />
                   </div>
                   <div>
-                    <div className="font-bold">{t("product.add")}</div>
-                    <div className="text-xs opacity-90">{t("dashboard.newProduct")}</div>
+                    <div className="font-bold">{t("dashboard.sellProducts")}</div>
+                    <div className="text-xs opacity-90">{t("dashboard.becomeASeller")}</div>
                   </div>
                 </div>
               </div>
             </Link>
 
             <Link to="/dashboard/orders" className="block">
-              <div className="p-4 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white transition-all cursor-pointer group">
+              <div 
+                className="p-4 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white transition-all cursor-pointer group focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                tabIndex={0}
+                role="button"
+              >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
                     <ShoppingCart className="w-5 h-5" />
@@ -373,7 +375,11 @@ export default function Dashboard() {
             </Link>
 
             <Link to="/dashboard/analytics" className="block">
-              <div className="p-4 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white transition-all cursor-pointer group">
+              <div 
+                className="p-4 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white transition-all cursor-pointer group focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                tabIndex={0}
+                role="button"
+              >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
                     <BarChart3 className="w-5 h-5" />
@@ -387,7 +393,11 @@ export default function Dashboard() {
             </Link>
 
             <Link to="/dashboard/settings" className="block">
-              <div className="p-4 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white transition-all cursor-pointer group">
+              <div 
+                className="p-4 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white transition-all cursor-pointer group focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                tabIndex={0}
+                role="button"
+              >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
                     <Star className="w-5 h-5" />
