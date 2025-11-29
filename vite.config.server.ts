@@ -32,6 +32,16 @@ export default defineConfig({
         // External dependencies that should not be bundled
         "express",
         "cors",
+        "compression",
+        "helmet",
+        "express-rate-limit",
+        "express-validator",
+        "bcrypt",
+        "jsonwebtoken",
+        "pg",
+        "dotenv",
+        "multer",
+        "uuid",
       ],
       output: {
         format: "es",
