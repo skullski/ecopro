@@ -58,7 +58,7 @@ export default function Store() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [loading, setLoading] = useState(true);
-  const [clientId, setClientId] = useState<number | null>(null);
+  const [clientId, setClientId] = useState<string | null>(null);
   
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
@@ -100,9 +100,14 @@ export default function Store() {
         
         // Get client ID from token (decode JWT)
         if (token) {
-          const payload = JSON.parse(atob(token.split('.')[1]));
-          console.log('Client ID from token:', payload.id);
-          setClientId(payload.id);
+          try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            console.log('JWT Payload:', payload);
+            console.log('Client ID from token:', payload.id, 'Type:', typeof payload.id);
+            setClientId(payload.id); // id is already a string in JWT
+          } catch (e) {
+            console.error('Failed to parse JWT token:', e);
+          }
         } else {
           console.error('No token found');
         }
