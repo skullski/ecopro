@@ -34,9 +34,18 @@ export default function Marketplace() {
   const [slowConnection, setSlowConnection] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadCategories();
+    
+    // Debug info for mobile
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    console.log('[Marketplace] Platform:', {
+      isMobile,
+      userAgent: navigator.userAgent,
+      url: window.location.href
+    });
   }, []);
 
   useEffect(() => {
@@ -60,6 +69,7 @@ export default function Marketplace() {
     if (pageNum === 1) {
       setLoading(true);
       setSlowConnection(false);
+      setError(null);
     }
     
     // Show warning if loading takes more than 2 seconds
@@ -88,9 +98,15 @@ export default function Marketplace() {
       params.append('limit', '20');
       params.append('offset', String((pageNum - 1) * 20));
 
-      const res = await fetch(`/api/products?${params}`);
+      const apiUrl = `/api/products?${params}`;
+      console.log('[Marketplace] Fetching products:', apiUrl);
+      
+      const res = await fetch(apiUrl);
+      console.log('[Marketplace] Response status:', res.status);
+      
       if (res.ok) {
         const data = await res.json();
+        console.log('[Marketplace] Products loaded:', data.length);
         if (pageNum === 1) {
           setProducts(data);
         } else {
@@ -99,10 +115,15 @@ export default function Marketplace() {
         setHasMore(data.length === 20);
         setSlowConnection(false);
       } else {
-        console.error('Failed to fetch products:', res.status);
+        const errorText = await res.text();
+        console.error('[Marketplace] Failed to fetch products:', res.status, errorText);
+        setError(`Failed to load products: ${res.status}`);
       }
     } catch (error) {
-      console.error('Failed to load products:', error);
+      console.error('[Marketplace] Failed to load products:', error);
+      setError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      // Show products array is empty on error for debugging
+      if (pageNum === 1) setProducts([]);
     } finally {
       clearTimeout(slowTimer);
       if (pageNum === 1) setLoading(false);
@@ -284,6 +305,17 @@ export default function Marketplace() {
 
             {/* Products Grid */}
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+              {error && (
+                <div className="col-span-full text-center py-8 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                  <p className="text-red-800 dark:text-red-200 font-medium">❌ {error}</p>
+                  <button 
+                    onClick={() => loadProducts(1)}
+                    className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              )}
               {loading ? (
                 <>
                   {/* Skeleton Loading */}
