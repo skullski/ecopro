@@ -62,10 +62,10 @@ export default function Marketplace() {
       setSlowConnection(false);
     }
     
-    // Show warning if loading takes more than 3 seconds
+    // Show warning if loading takes more than 2 seconds
     const slowTimer = setTimeout(() => {
       setSlowConnection(true);
-    }, 3000);
+    }, 2000);
 
     try {
       const params = new URLSearchParams();
@@ -85,7 +85,7 @@ export default function Marketplace() {
         params.append('sort', sortMap[sortBy] || 'created_at');
         params.append('order', sortBy === 'price-high' ? 'DESC' : 'ASC');
       }
-      params.append('limit', '20'); // Load 20 per page
+      params.append('limit', '20');
       params.append('offset', String((pageNum - 1) * 20));
 
       const res = await fetch(`/api/products?${params}`);
@@ -287,7 +287,7 @@ export default function Marketplace() {
               {loading ? (
                 <>
                   {/* Skeleton Loading */}
-                  {Array.from({ length: 8 }).map((_, i) => (
+                  {Array.from({ length: 4 }).map((_, i) => (
                     <div key={i} className="bg-card rounded-xl border overflow-hidden animate-pulse">
                       <div className="aspect-square bg-muted"></div>
                       <div className="p-3 space-y-2">
