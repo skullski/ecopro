@@ -23,15 +23,88 @@ export interface User {
 export async function initializeDatabase(): Promise<void> {
   const client = await pool.connect();
   try {
-    // Create users table if it doesn't exist
+    // Create users table
     await client.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
         name VARCHAR(255) NOT NULL,
-        role VARCHAR(32) NOT NULL DEFAULT 'vendor'
+        role VARCHAR(32) NOT NULL DEFAULT 'user',
+        user_type VARCHAR(32),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+    `);
+
+    // Create marketplace_products table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS marketplace_products (
+        id SERIAL PRIMARY KEY,
+        seller_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        price DECIMAL(10, 2) NOT NULL,
+        original_price DECIMAL(10, 2),
+        category VARCHAR(100),
+        images TEXT[] DEFAULT '{}',
+        stock INTEGER DEFAULT 1,
+        status VARCHAR(32) DEFAULT 'active',
+        condition VARCHAR(32) DEFAULT 'new',
+        location VARCHAR(255),
+        shipping_available BOOLEAN DEFAULT true,
+        views INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Create marketplace_orders table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS marketplace_orders (
+        id SERIAL PRIMARY KEY,
+        product_id INTEGER NOT NULL REFERENCES marketplace_products(id) ON DELETE CASCADE,
+        seller_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        buyer_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        status VARCHAR(32) DEFAULT 'pending',
+        total_price DECIMAL(10, 2) NOT NULL,
+        shipping_name VARCHAR(255),
+        shipping_line1 VARCHAR(255),
+        shipping_line2 VARCHAR(255),
+        shipping_city VARCHAR(100),
+        shipping_state VARCHAR(100),
+        shipping_postal_code VARCHAR(20),
+        shipping_country VARCHAR(100),
+        shipping_phone VARCHAR(20),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Create indexes for better performance
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_marketplace_products_seller_id 
+      ON marketplace_products(seller_id);
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_marketplace_products_status 
+      ON marketplace_products(status);
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_marketplace_products_category 
+      ON marketplace_products(category);
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_marketplace_orders_seller_id 
+      ON marketplace_orders(seller_id);
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_marketplace_orders_buyer_id 
+      ON marketplace_orders(buyer_id);
     `);
 
     console.log("✅ Database tables initialized");

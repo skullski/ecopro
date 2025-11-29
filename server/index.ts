@@ -12,6 +12,8 @@ import * as productRoutes from "./routes/products";
 import { authenticate, requireAdmin, requireSeller } from "./middleware/auth";
 import * as adminRoutes from "./routes/admin";
 import * as dashboardRoutes from "./routes/dashboard";
+import { initializeDatabase, createDefaultAdmin } from "./utils/database";
+import { hashPassword } from "./utils/auth";
 import {
   validate,
   registerValidation,
@@ -25,6 +27,17 @@ const __dirname = path.dirname(__filename);
 export function createServer() {
   const app = express();
   app.use(express.json());
+
+  // Initialize database on startup
+  initializeDatabase().catch((err) => {
+    console.error("Failed to initialize database:", err);
+    process.exit(1);
+  });
+
+  // Create default admin user
+  hashPassword("admin123").then((hashedPassword) => {
+    createDefaultAdmin("admin@ecopro.com", hashedPassword).catch(console.error);
+  });
 
   // Trust proxy for rate limiting (required for deployment behind reverse proxies like Render)
   app.set("trust proxy", 1);
