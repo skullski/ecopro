@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { 
-  Home, Eye, Store, ShoppingCart, Tag, FileText, Layers, 
+  Home, Eye, Store, ShoppingCart, Tag, FileText,
   Truck, Megaphone, Star, Percent, Globe, BarChart3, 
   Users, Shield, Ban, Puzzle, CreditCard, Settings,
   ChevronDown, ChevronRight, Menu, X, Package
@@ -33,15 +33,6 @@ const menuItems: MenuItem[] = [
     children: [
       { titleKey: "sidebar.ordersAll", path: "/dashboard/orders", icon: <ShoppingCart className="w-4 h-4" /> },
       { titleKey: "sidebar.ordersAdd", path: "/dashboard/orders/add", icon: <Tag className="w-4 h-4" /> },
-    ]
-  },
-  { 
-    titleKey: "sidebar.products", 
-    path: "/dashboard/products", 
-    icon: <Tag className="w-5 h-5" />,
-    children: [
-      { titleKey: "sidebar.productsAll", path: "/dashboard/products", icon: <Tag className="w-4 h-4" /> },
-      { titleKey: "sidebar.productsAdd", path: "/dashboard/products/add", icon: <Layers className="w-4 h-4" /> },
     ]
   },
   { 
