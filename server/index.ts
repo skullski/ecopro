@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express from "express";
+import compression from "compression";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -26,6 +27,13 @@ const __dirname = path.dirname(__filename);
 
 export function createServer() {
   const app = express();
+  // Compression early to reduce payload size
+  app.use(
+    compression({
+      threshold: 0,
+      level: 6,
+    })
+  );
   app.use(express.json());
 
   // Initialize database on startup
@@ -104,6 +112,19 @@ export function createServer() {
   app.get("/api/ping", (_req, res) => {
     const ping = process.env.PING_MESSAGE ?? "ping";
     res.json({ message: ping });
+  });
+
+  // Database connectivity ping (quick simple query)
+  app.get('/api/db/ping', async (_req, res) => {
+    const start = performance.now();
+    try {
+      const r = await (await import('./utils/database')).pool.query('SELECT 1 as ok');
+      const dur = performance.now() - start;
+      res.set('Server-Timing', `db;dur=${dur.toFixed(2)}`);
+      res.json({ ok: r.rows[0].ok, db_time_ms: dur });
+    } catch (e) {
+      res.status(500).json({ error: 'DB ping failed', details: (e as any).message });
+    }
   });
 
   app.get("/api/demo", handleDemo);

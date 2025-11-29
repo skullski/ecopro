@@ -34,6 +34,7 @@ export const getCategoryCounts: RequestHandler = async (req, res) => {
  */
 export const getAllProducts: RequestHandler = async (req, res) => {
   try {
+    const totalStart = performance.now();
     const { category, search, min_price, max_price, sort = 'created_at', order = 'DESC', limit = '8', offset = '0' } = req.query;
     
     // Ultra-minimal query - no JOIN for maximum speed
@@ -91,8 +92,10 @@ export const getAllProducts: RequestHandler = async (req, res) => {
     // Ultra-fast timeout of 2 seconds
     const client = await pool.connect();
     try {
+      const queryStart = performance.now();
       await client.query('SET statement_timeout = 2000');
       const result = await client.query(query, params);
+      const queryTime = performance.now() - queryStart;
       
       // Transform image field back to array for compatibility
       const products = result.rows.map(row => ({
@@ -103,7 +106,11 @@ export const getAllProducts: RequestHandler = async (req, res) => {
       }));
       
       // No cache for instant updates
-      res.set('Cache-Control', 'no-cache');
+      const totalTime = performance.now() - totalStart;
+      res.set('Cache-Control', 'public, max-age=30, stale-while-revalidate=120');
+      res.set('X-Query-Time', queryTime.toFixed(2));
+      res.set('X-Total-Time', totalTime.toFixed(2));
+      res.set('Server-Timing', `db;dur=${queryTime.toFixed(2)}, total;dur=${totalTime.toFixed(2)}`);
       res.json(products as Product[]);
     } finally {
       client.release();
@@ -200,7 +207,8 @@ export const getSellerProducts: RequestHandler = async (req, res) => {
  */
 export const createProduct: RequestHandler = async (req, res) => {
   try {
-    const sellerId = (req as any).user?.id;
+    const sellerIdRaw = (req as any).user?.id;
+    const sellerId = sellerIdRaw ? parseInt(sellerIdRaw, 10) : null;
 
     if (!sellerId) {
       res.status(401).json({ error: "Authentication required" });
@@ -225,6 +233,15 @@ export const createProduct: RequestHandler = async (req, res) => {
       return;
     }
 
+    console.log('[createProduct] incoming body:', {
+      sellerId,
+      title,
+      price,
+      original_price,
+      category,
+      imagesType: Array.isArray(images) ? 'array' : typeof images,
+    });
+
     const result = await pool.query(
       `INSERT INTO marketplace_products 
         (seller_id, title, description, price, original_price, category, images, stock, condition, location, shipping_available)
@@ -237,7 +254,7 @@ export const createProduct: RequestHandler = async (req, res) => {
         price,
         original_price || null,
         category || null,
-        images || [],
+        Array.isArray(images) ? images : (images ? [images] : []),
         stock || 1,
         condition || 'new',
         location || null,
@@ -247,8 +264,14 @@ export const createProduct: RequestHandler = async (req, res) => {
 
     res.status(201).json(result.rows[0] as Product);
   } catch (error) {
-    console.error("Create product error:", error);
-    res.status(500).json({ error: "Failed to create product" });
+    console.error('[createProduct] error:', error);
+    if ((error as any).code === '23503') {
+      return res.status(400).json({ error: 'Seller not found (foreign key)' });
+    }
+    if ((error as any).code === '22P02') {
+      return res.status(400).json({ error: 'Invalid data type provided' });
+    }
+    res.status(500).json({ error: 'Failed to create product' });
   }
 };
 
