@@ -63,19 +63,25 @@ export default function Storefront() {
 
   const loadStore = async () => {
     try {
+      // Validate clientId exists
+      if (!clientId) {
+        throw new Error('Store ID is missing');
+      }
+
       const [productsRes, settingsRes] = await Promise.all([
         fetch(`/api/storefront/${clientId}/products`),
         fetch(`/api/storefront/${clientId}/settings`)
       ]);
 
-      if (!productsRes.ok) {
+      // Only error if both requests fail (store doesn't exist)
+      if (!productsRes.ok && !settingsRes.ok) {
         throw new Error('Store not found');
       }
       
-      const productsData = await productsRes.json();
+      const productsData = productsRes.ok ? await productsRes.json() : [];
       const settingsData = settingsRes.ok ? await settingsRes.json() : {};
 
-      setProducts(productsData);
+      setProducts(Array.isArray(productsData) ? productsData : []);
       setStoreSettings(settingsData);
 
       // Extract unique categories

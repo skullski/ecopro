@@ -5,7 +5,23 @@ import { pool } from "../utils/database";
 export const getStorefrontProducts: RequestHandler = async (req, res) => {
   const { clientId } = req.params;
 
+  // Validate clientId
+  if (!clientId || clientId === 'null' || clientId === 'undefined') {
+    return res.status(400).json({ error: 'Invalid store ID' });
+  }
+
   try {
+    // First check if the client exists
+    const clientCheck = await pool.query(
+      'SELECT id FROM users WHERE id = $1 AND user_type = $2',
+      [clientId, 'client']
+    );
+
+    if (clientCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Store not found' });
+    }
+
+    // Get products (can be empty array)
     const result = await pool.query(
       `SELECT 
         id, title, description, price, original_price, 
