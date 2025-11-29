@@ -142,6 +142,72 @@ export default function DeliveryCompanies() {
       enabled: false,
     },
     {
+      id: "algerie-poste",
+      name: "Algérie Poste",
+      logo: "📯",
+      description: "بريد الجزائر - خدمة التوصيل الوطنية",
+      apiFields: [
+        { label: "Code Client", placeholder: "أدخل Code Client", field: "clientCode" },
+        { label: "Clé API", placeholder: "أدخل Clé API", field: "apiKey" },
+      ],
+      enabled: false,
+    },
+    {
+      id: "goldex",
+      name: "Goldex",
+      logo: "🥇",
+      description: "خدمة توصيل سريعة وآمنة",
+      apiFields: [
+        { label: "API Token", placeholder: "أدخل API Token", field: "apiToken" },
+        { label: "Client ID", placeholder: "أدخل Client ID", field: "clientId" },
+      ],
+      enabled: false,
+    },
+    {
+      id: "rapid-express",
+      name: "Rapid Express",
+      logo: "🚄",
+      description: "توصيل سريع في 48 ولاية",
+      apiFields: [
+        { label: "API Key", placeholder: "أدخل API Key", field: "apiKey" },
+        { label: "Merchant Code", placeholder: "أدخل Merchant Code", field: "merchantCode" },
+      ],
+      enabled: false,
+    },
+    {
+      id: "mypost",
+      name: "MyPost",
+      logo: "📨",
+      description: "حلول توصيل ذكية ومرنة",
+      apiFields: [
+        { label: "API Key", placeholder: "أدخل API Key", field: "apiKey" },
+        { label: "Account ID", placeholder: "أدخل Account ID", field: "accountId" },
+      ],
+      enabled: false,
+    },
+    {
+      id: "eurl-express",
+      name: "EURL Express",
+      logo: "🏢",
+      description: "شركة توصيل جزائرية معتمدة",
+      apiFields: [
+        { label: "API Token", placeholder: "أدخل API Token", field: "apiToken" },
+        { label: "Partner Code", placeholder: "أدخل Partner Code", field: "partnerCode" },
+      ],
+      enabled: false,
+    },
+    {
+      id: "flash-delivery",
+      name: "Flash Delivery",
+      logo: "⚡",
+      description: "توصيل فوري في نفس اليوم",
+      apiFields: [
+        { label: "API Key", placeholder: "أدخل API Key", field: "apiKey" },
+        { label: "Store ID", placeholder: "أدخل Store ID", field: "storeId" },
+      ],
+      enabled: false,
+    },
+    {
       id: "custom",
       name: "شركة توصيل مخصصة",
       logo: "🔧",
