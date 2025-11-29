@@ -36,6 +36,16 @@ const menuItems: MenuItem[] = [
     ]
   },
   { 
+    titleKey: "sidebar.delivery", 
+    path: "/dashboard/delivery/companies", 
+    icon: <Truck className="w-5 h-5" />,
+  },
+  { 
+    titleKey: "sidebar.addons", 
+    path: "/dashboard/addons/google-sheets", 
+    icon: <Puzzle className="w-5 h-5" />,
+  },
+  { 
     titleKey: "sidebar.analytics", 
     path: "/admin/analytics", 
     icon: <BarChart3 className="w-5 h-5" />,
