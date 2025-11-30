@@ -82,24 +82,59 @@ export const loginSeller: RequestHandler = async (req, res) => {
       return;
     }
 
-    // Find seller
-    const result = await pool.query(
+    // Find seller (check both sellers table and users table for backwards compatibility)
+    let result = await pool.query(
       "SELECT * FROM sellers WHERE email = $1",
       [email]
     );
 
-    if (result.rows.length === 0) {
+    let seller = result.rows[0];
+    let isFromUsersTable = false;
+
+    // Fallback: check old users table if not found in sellers
+    if (!seller) {
+      result = await pool.query(
+        "SELECT * FROM users WHERE email = $1 AND (user_type = 'seller' OR role = 'seller' OR role = 'admin')",
+        [email]
+      );
+      seller = result.rows[0];
+      isFromUsersTable = true;
+    }
+
+    if (!seller) {
       res.status(401).json({ error: "Invalid email or password" });
       return;
     }
-
-    const seller = result.rows[0];
 
     // Verify password
     const validPassword = await bcrypt.compare(password, seller.password);
     if (!validPassword) {
       res.status(401).json({ error: "Invalid email or password" });
       return;
+    }
+
+    // If user was found in old users table, migrate them to sellers table
+    if (isFromUsersTable) {
+      try {
+        const migrateResult = await pool.query(
+          "INSERT INTO sellers (email, password, name, phone, address, role, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT (email) DO NOTHING RETURNING id",
+          [
+            seller.email,
+            seller.password,
+            seller.name,
+            seller.phone,
+            seller.address,
+            seller.role === 'admin' ? 'admin' : 'seller',
+            seller.created_at,
+            seller.updated_at
+          ]
+        );
+        if (migrateResult.rows[0]) {
+          seller.id = migrateResult.rows[0].id;
+        }
+      } catch (migrateError) {
+        console.error("Migration error (non-fatal):", migrateError);
+      }
     }
 
     // Generate JWT token

@@ -101,8 +101,19 @@ export const login: RequestHandler = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Find client
-    const client = await findClientByEmail(email);
+    // Find client (check both clients table and users table for backwards compatibility)
+    let client = await findClientByEmail(email);
+    let isFromUsersTable = false;
+
+    // Fallback: check old users table if not found in clients
+    if (!client) {
+      const user = await findUserByEmail(email);
+      if (user && (user.user_type === 'client' || user.role === 'client' || user.role === 'user' || user.role === 'admin')) {
+        client = user as any;
+        isFromUsersTable = true;
+      }
+    }
+
     if (!client) {
       return jsonError(res, 401, "Invalid email or password");
     }
@@ -111,6 +122,27 @@ export const login: RequestHandler = async (req, res) => {
     const isValidPassword = await comparePassword(password, client.password);
     if (!isValidPassword) {
       return jsonError(res, 401, "Invalid email or password");
+    }
+
+    // If user was found in old users table, migrate them to clients table
+    if (isFromUsersTable) {
+      try {
+        const migratedClient = await createClient({
+          email: client.email,
+          password: client.password, // Already hashed
+          name: client.name,
+          phone: client.phone,
+          role: client.role === 'admin' ? 'admin' : 'client',
+        });
+        client = migratedClient;
+      } catch (migrateError: any) {
+        // If duplicate key error (already migrated), fetch from clients table
+        if (migrateError.code === '23505') {
+          client = await findClientByEmail(email);
+        } else {
+          console.error("Migration error (non-fatal):", migrateError);
+        }
+      }
     }
 
     // Generate token
