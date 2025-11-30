@@ -218,12 +218,12 @@ export default function Marketplace() {
         </div>
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
-        <div className="container mx-auto px-4 py-4 flex gap-6">
+      <div className="flex-1 flex overflow-hidden w-full">
+        <div className="w-full px-4 py-4 flex gap-6">
           {/* Sidebar - Always in DOM, slides in/out */}
           <aside className={`
-            w-64 flex-shrink-0 transition-all duration-300 ease-in-out overflow-y-auto
-            ${sidebarOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 w-0 overflow-hidden'}
+            flex-shrink-0 transition-all duration-300 ease-in-out overflow-y-auto
+            ${sidebarOpen ? 'w-64 opacity-100' : 'w-0 opacity-0 overflow-hidden'}
           `}>
             <div className="sticky top-4 space-y-4"
               style={{ maxHeight: 'calc(100vh - 8rem)' }}
