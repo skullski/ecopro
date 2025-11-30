@@ -74,19 +74,24 @@ export default function PlatformAdmin() {
         return;
       }
 
-      // Fetch users
-      const usersRes = await fetch('/api/admin/users', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      // Fetch all products
-      const productsRes = await fetch('/api/products');
+      // Fetch users and products in parallel for faster loading
+      const [usersRes, productsRes, statsRes] = await Promise.all([
+        fetch('/api/admin/users', {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        // Only fetch first 20 products for display
+        fetch('/api/products?limit=20&offset=0'),
+        // Fetch just the counts for stats
+        fetch('/api/admin/stats', {
+          headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => null), // Make stats optional
+      ]);
 
       if (usersRes.ok) {
         const usersData = await usersRes.json();
         setUsers(usersData);
 
-        // Calculate stats
+        // Calculate stats from users
         const clients = usersData.filter((u: User) => u.user_type === 'client').length;
         const sellers = usersData.filter((u: User) => u.user_type === 'seller').length;
 
@@ -108,6 +113,15 @@ export default function PlatformAdmin() {
           ...prev,
           totalProducts: productsData.length,
           activeProducts,
+        }));
+      }
+
+      // Use stats endpoint if available
+      if (statsRes && statsRes.ok) {
+        const statsData = await statsRes.json();
+        setStats(prev => ({
+          ...prev,
+          ...statsData,
         }));
       }
     } catch (error) {

@@ -249,6 +249,13 @@ export function createServer() {
     adminRoutes.listUsers
   );
 
+  app.get(
+    "/api/admin/stats",
+    authenticate,
+    requireAdmin,
+    adminRoutes.getPlatformStats
+  );
+
   // Client Stock Management routes (protected)
   app.get(
     "/api/client/stock",
