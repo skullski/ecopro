@@ -101,28 +101,40 @@ export const login: RequestHandler = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    console.log("[LOGIN] Attempting login for:", email);
+
     // Find client (check both clients table and users table for backwards compatibility)
     let client = await findClientByEmail(email);
     let isFromUsersTable = false;
 
+    console.log("[LOGIN] Found in clients table:", !!client);
+
     // Fallback: check old users table if not found in clients
     if (!client) {
+      console.log("[LOGIN] Checking users table...");
       const user = await findUserByEmail(email);
-      if (user && (user.user_type === 'client' || user.role === 'client' || user.role === 'user' || user.role === 'admin')) {
+      console.log("[LOGIN] Found in users table:", !!user, "role:", user?.role, "user_type:", user?.user_type);
+      
+      if (user) {
+        // Accept any user from users table (admin, client, user roles)
         client = user as any;
         isFromUsersTable = true;
       }
     }
 
     if (!client) {
+      console.log("[LOGIN] User not found in any table");
       return jsonError(res, 401, "Invalid email or password");
     }
 
     // Verify password
     const isValidPassword = await comparePassword(password, client.password);
     if (!isValidPassword) {
+      console.log("[LOGIN] Invalid password");
       return jsonError(res, 401, "Invalid email or password");
     }
+
+    console.log("[LOGIN] Password valid, attempting migration if needed...");
 
     // If user was found in old users table, migrate them to clients table
     if (isFromUsersTable) {
@@ -134,13 +146,15 @@ export const login: RequestHandler = async (req, res) => {
           phone: client.phone,
           role: client.role === 'admin' ? 'admin' : 'client',
         });
+        console.log("[LOGIN] User migrated to clients table:", migratedClient.id);
         client = migratedClient;
       } catch (migrateError: any) {
         // If duplicate key error (already migrated), fetch from clients table
         if (migrateError.code === '23505') {
+          console.log("[LOGIN] User already migrated, fetching from clients table");
           client = await findClientByEmail(email);
         } else {
-          console.error("Migration error (non-fatal):", migrateError);
+          console.error("[LOGIN] Migration error (non-fatal):", migrateError);
         }
       }
     }
@@ -153,6 +167,8 @@ export const login: RequestHandler = async (req, res) => {
       user_type: client.role === "admin" ? "admin" : "client",
     });
 
+    console.log("[LOGIN] Login successful for:", email, "role:", client.role);
+
     res.json({
       message: "Login successful",
       token,
@@ -161,11 +177,11 @@ export const login: RequestHandler = async (req, res) => {
         email: client.email,
         name: client.name,
         role: client.role,
-        user_type: "client",
+        user_type: client.role === "admin" ? "admin" : "client",
       },
     });
   } catch (error) {
-    console.error("Login error:", error);
+    console.error("[LOGIN] Login error:", error);
     return jsonError(res, 500, "Login failed");
   }
 };

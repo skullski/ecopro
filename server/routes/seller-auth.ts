@@ -82,6 +82,8 @@ export const loginSeller: RequestHandler = async (req, res) => {
       return;
     }
 
+    console.log("[SELLER LOGIN] Attempting login for:", email);
+
     // Find seller (check both sellers table and users table for backwards compatibility)
     let result = await pool.query(
       "SELECT * FROM sellers WHERE email = $1",
@@ -91,17 +93,26 @@ export const loginSeller: RequestHandler = async (req, res) => {
     let seller = result.rows[0];
     let isFromUsersTable = false;
 
+    console.log("[SELLER LOGIN] Found in sellers table:", !!seller);
+
     // Fallback: check old users table if not found in sellers
     if (!seller) {
+      console.log("[SELLER LOGIN] Checking users table...");
       result = await pool.query(
-        "SELECT * FROM users WHERE email = $1 AND (user_type = 'seller' OR role = 'seller' OR role = 'admin')",
+        "SELECT * FROM users WHERE email = $1",
         [email]
       );
-      seller = result.rows[0];
-      isFromUsersTable = true;
+      const user = result.rows[0];
+      console.log("[SELLER LOGIN] Found in users table:", !!user, "role:", user?.role, "user_type:", user?.user_type);
+      
+      if (user) {
+        seller = user;
+        isFromUsersTable = true;
+      }
     }
 
     if (!seller) {
+      console.log("[SELLER LOGIN] Seller not found in any table");
       res.status(401).json({ error: "Invalid email or password" });
       return;
     }
@@ -109,9 +120,12 @@ export const loginSeller: RequestHandler = async (req, res) => {
     // Verify password
     const validPassword = await bcrypt.compare(password, seller.password);
     if (!validPassword) {
+      console.log("[SELLER LOGIN] Invalid password");
       res.status(401).json({ error: "Invalid email or password" });
       return;
     }
+
+    console.log("[SELLER LOGIN] Password valid, attempting migration if needed...");
 
     // If user was found in old users table, migrate them to sellers table
     if (isFromUsersTable) {
@@ -131,11 +145,16 @@ export const loginSeller: RequestHandler = async (req, res) => {
         );
         if (migrateResult.rows[0]) {
           seller.id = migrateResult.rows[0].id;
+          console.log("[SELLER LOGIN] User migrated to sellers table:", seller.id);
+        } else {
+          console.log("[SELLER LOGIN] User already migrated");
         }
       } catch (migrateError) {
-        console.error("Migration error (non-fatal):", migrateError);
+        console.error("[SELLER LOGIN] Migration error (non-fatal):", migrateError);
       }
     }
+
+    console.log("[SELLER LOGIN] Login successful for:", email, "role:", seller.role);
 
     // Generate JWT token
     const token = jwt.sign(
@@ -160,7 +179,7 @@ export const loginSeller: RequestHandler = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Seller login error:", error);
+    console.error("[SELLER LOGIN] Seller login error:", error);
     res.status(500).json({ error: "Login failed" });
   }
 };
