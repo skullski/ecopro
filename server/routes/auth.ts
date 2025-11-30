@@ -28,6 +28,12 @@ import {
   initializeDatabase,
   createDefaultAdmin,
 } from "../utils/database";
+import {
+  findClientByEmail,
+  findClientById,
+  createClient,
+  updateClient,
+} from "../utils/client-database";
 
 // Database initialization moved to server startup (dev.ts / index.ts)
 // Removed immediate init to prevent crashes when DB is unavailable
@@ -43,9 +49,9 @@ export const register: RequestHandler = async (req, res) => {
     console.log("[REGISTER] Incoming body:", req.body);
     const { email, password, name, role } = req.body;
 
-    // Check if user already exists
-    const existingUser = await findUserByEmail(email);
-    if (existingUser) {
+    // Check if client already exists
+    const existingClient = await findClientByEmail(email);
+    if (existingClient) {
       console.log("[REGISTER] Email already registered:", email);
       return jsonError(res, 400, "Email already registered");
     }
@@ -54,21 +60,21 @@ export const register: RequestHandler = async (req, res) => {
     const hashedPassword = await hashPassword(password);
     console.log("[REGISTER] Password hashed");
 
-    // Create user
-    const user = await createUser({
+    // Create client
+    const client = await createClient({
       email,
       password: hashedPassword,
       name,
-      role: (role as "user" | "admin") || "user",
+      role: (role as "client" | "admin") || "client",
     });
-    console.log("[REGISTER] User created:", user.id, user.email);
+    console.log("[REGISTER] Client created:", client.id, client.email);
 
     // Generate token
     const token = generateToken({
-      id: user.id,
-      email: user.email,
-      role: (user.role as "user" | "admin") || "user",
-      user_type: user.role === "admin" ? "admin" : "client",
+      id: client.id.toString(),
+      email: client.email,
+      role: (client.role as "user" | "admin") || "user",
+      user_type: client.role === "admin" ? "admin" : "client",
     });
     console.log("[REGISTER] Token generated");
 
@@ -76,9 +82,9 @@ export const register: RequestHandler = async (req, res) => {
       message: "User registered successfully",
       token,
       user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
+        id: client.id,
+        email: client.email,
+        name: client.name,
       },
     });
   } catch (error) {
@@ -95,34 +101,35 @@ export const login: RequestHandler = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Find user
-    const user = await findUserByEmail(email);
-    if (!user) {
+    // Find client
+    const client = await findClientByEmail(email);
+    if (!client) {
       return jsonError(res, 401, "Invalid email or password");
     }
 
     // Verify password
-    const isValidPassword = await comparePassword(password, user.password);
+    const isValidPassword = await comparePassword(password, client.password);
     if (!isValidPassword) {
       return jsonError(res, 401, "Invalid email or password");
     }
 
     // Generate token
     const token = generateToken({
-      id: user.id,
-      email: user.email,
-      role: (user.role as "user" | "admin") || "user",
-      user_type: user.role === "admin" ? "admin" : (user.user_type as "client" | "seller") || "client",
+      id: client.id.toString(),
+      email: client.email,
+      role: (client.role as "user" | "admin") || "user",
+      user_type: client.role === "admin" ? "admin" : "client",
     });
 
     res.json({
       message: "Login successful",
       token,
       user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
+        id: client.id,
+        email: client.email,
+        name: client.name,
+        role: client.role,
+        user_type: "client",
       },
     });
   } catch (error) {
@@ -141,16 +148,16 @@ export const getCurrentUser: RequestHandler = async (req, res) => {
       return jsonError(res, 401, "Not authenticated");
     }
 
-    const user = await findUserById(req.user.id);
-    if (!user) {
+    const client = await findClientById(req.user.id);
+    if (!client) {
       return jsonError(res, 404, "User not found");
     }
 
     res.json({
-      id: user.id,
-      email: user.email,
-      name: user.name,
-        role: user.role as "user" | "admin",
+      id: client.id,
+      email: client.email,
+      name: client.name,
+      role: client.role as "user" | "admin",
     });
   } catch (error) {
     console.error("Get current user error:", error);
@@ -170,20 +177,20 @@ export const changePassword: RequestHandler = async (req, res) => {
 
     const { currentPassword, newPassword } = req.body;
 
-    const user = await findUserById(req.user.id);
-    if (!user) {
+    const client = await findClientById(req.user.id);
+    if (!client) {
       return jsonError(res, 404, "User not found");
     }
 
     // Verify current password
-    const isValidPassword = await comparePassword(currentPassword, user.password);
+    const isValidPassword = await comparePassword(currentPassword, client.password);
     if (!isValidPassword) {
       return jsonError(res, 401, "Current password is incorrect");
     }
 
     // Hash new password
     const hashedPassword = await hashPassword(newPassword);
-      await updateUser(user.id, { password: hashedPassword });
+    await updateClient(client.id, { password: hashedPassword });
 
     res.json({ message: "Password changed successfully" });
   } catch (error) {
