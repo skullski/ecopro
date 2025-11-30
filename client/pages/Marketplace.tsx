@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search, SlidersHorizontal, Star, ShoppingCart, Heart, TrendingUp, Zap, Plus } from 'lucide-react';
+import { Search, SlidersHorizontal, Star, ShoppingCart, Heart, TrendingUp, Zap, Plus, Menu, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +36,7 @@ export default function Marketplace() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     loadCategories();
@@ -180,79 +181,98 @@ export default function Marketplace() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Hero Banner */}
-      <div className="bg-gradient-to-r from-primary via-accent to-neon-blue text-white futuristic-glow">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="flex-1 max-w-3xl">
+      {/* Compact Header - Search Only */}
+      <div className="bg-gradient-to-r from-primary to-accent text-white sticky top-0 z-40 shadow-lg">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="lg:hidden text-white hover:bg-white/20"
+            >
+              <Menu className="w-5 h-5" />
+            </Button>
+            <div className="flex-1 max-w-4xl">
               <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
                   type="text"
                   placeholder="Search for products, brands and categories..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-12 pr-4 h-12 text-base bg-white text-gray-900 border-0 rounded-lg shadow-lg"
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  className="pl-10 pr-4 h-10 text-sm bg-white text-gray-900 border-0 rounded-lg"
                 />
               </div>
             </div>
-            <Button size="lg" className="bg-white text-primary hover:bg-neon-blue/10 font-bold px-8 h-12 shadow-lg futuristic-glow" onClick={handleSearch}>
+            <Button 
+              size="sm" 
+              className="bg-white text-primary hover:bg-gray-100 font-bold px-6 h-10"
+              onClick={handleSearch}
+            >
               Search
             </Button>
-          </div>
-          
-          {/* Flash Deals Banner */}
-          <div className="flex flex-wrap items-center gap-4 text-sm">
-            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg futuristic-glow">
-              <Zap className="w-4 h-4" />
-              <span className="font-bold">Flash Deals</span>
-            </div>
-            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg futuristic-glow">
-              <TrendingUp className="w-4 h-4" />
-              <span className="font-bold">Trending Now</span>
-            </div>
-            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg futuristic-glow">
-              <span className="font-bold">Free Shipping on Orders $50+</span>
-            </div>
-            <Link to="/seller/signup" className="ml-auto">
-              <Button size="sm" className="bg-white text-primary hover:bg-neon-blue/10 font-bold shadow-lg futuristic-glow">
-                <Plus className="w-4 h-4 mr-2" />
-                Start Selling
-              </Button>
-            </Link>
           </div>
         </div>
       </div>
 
+      {/* Collapsible Sidebar Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       <div className="container mx-auto px-4 py-4">
         <div className="flex gap-6">
-          {/* Sidebar Filters */}
-          <aside className="hidden lg:block w-64 flex-shrink-0">
-            <div className="sticky top-20 space-y-6 p-0">
+          {/* Sidebar - Collapsible */}
+          <aside className={`
+            fixed lg:sticky top-0 left-0 h-screen lg:h-auto lg:top-20 w-72 lg:w-64 flex-shrink-0 z-50 lg:z-0
+            bg-background lg:bg-transparent transform transition-transform duration-300 ease-in-out
+            ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+            overflow-y-auto shadow-xl lg:shadow-none
+          `}>
+            <div className="lg:sticky lg:top-20 space-y-4 p-4 lg:p-0">
+              {/* Close button for mobile */}
+              <div className="lg:hidden flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold">Filters</h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+
               {/* Categories */}
-              <div className="bg-gradient-to-b from-primary via-accent to-neon-blue text-white rounded-xl border-0 p-4 shadow-lg">
-                <h3 className="font-extrabold mb-4 flex items-center gap-2 text-white drop-shadow-lg">
+              <div className="bg-card rounded-lg border p-4">
+                <h3 className="font-bold mb-3 flex items-center gap-2">
                   <SlidersHorizontal className="w-4 h-4" />
                   Categories
                 </h3>
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {categories.map((cat) => (
                     <button
                       key={cat.category}
-                      onClick={() => setSelectedCategory(cat.category === selectedCategory ? null : cat.category)}
-                      className={`w-full text-left px-3 py-2 rounded-xl border-2 border-transparent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white/80 dark:focus:ring-black/80 transition-all shadow-sm
+                      onClick={() => {
+                        setSelectedCategory(cat.category === selectedCategory ? null : cat.category);
+                        setSidebarOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 rounded-md transition-colors text-sm
                         ${selectedCategory === cat.category
-                          ? 'bg-white text-primary font-extrabold border-white shadow-lg'
-                          : 'bg-black/40 text-white font-bold hover:bg-black/60 hover:text-accent'}
+                          ? 'bg-primary text-primary-foreground font-semibold'
+                          : 'hover:bg-muted'}
                       `}
-                      style={{ textShadow: '0 2px 8px rgba(0,0,0,0.45), 0 1px 2px rgba(0,0,0,0.22)' }}
                     >
                       <div className="flex items-center justify-between">
                         <span className="flex items-center gap-2">
                           <span>{categoryIcons[cat.category] || '📦'}</span>
-                          <span className="text-sm font-extrabold drop-shadow-lg">{cat.category || 'Uncategorized'}</span>
+                          <span>{cat.category || 'Uncategorized'}</span>
                         </span>
-                        <span className="text-xs font-extrabold opacity-95 drop-shadow-lg">({cat.count})</span>
+                        <span className="text-xs opacity-70">({cat.count})</span>
                       </div>
                     </button>
                   ))}
@@ -260,53 +280,48 @@ export default function Marketplace() {
               </div>
 
               {/* Price Range */}
-              <div className="bg-gradient-to-b from-primary via-accent to-neon-blue text-white rounded-xl border-0 p-4 shadow-lg">
-                <h3 className="font-extrabold mb-4 text-white drop-shadow-lg">Price Range</h3>
-                <div className="space-y-3">
+              <div className="bg-card rounded-lg border p-4">
+                <h3 className="font-bold mb-3">Price Range</h3>
+                <div className="space-y-2">
                   <div className="flex gap-2">
                     <Input
                       type="number"
                       placeholder="Min"
                       value={priceRange[0]}
                       onChange={(e) => setPriceRange([+e.target.value, priceRange[1]])}
-                      className="w-full text-black placeholder:text-gray-500"
+                      className="w-full text-sm"
                     />
                     <Input
                       type="number"
                       placeholder="Max"
                       value={priceRange[1]}
                       onChange={(e) => setPriceRange([priceRange[0], +e.target.value])}
-                      className="w-full text-black placeholder:text-gray-500"
+                      className="w-full text-sm"
                     />
                   </div>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="w-full rounded-xl border-2 border-white dark:border-black bg-white/80 dark:bg-black/80 text-primary dark:text-white font-bold shadow-sm hover:bg-white hover:dark:bg-black hover:shadow-lg transition-all"
-                    style={{ textShadow: '0 1px 4px rgba(0,0,0,0.18), 0 0px 1px rgba(0,0,0,0.12)' }}
+                    className="w-full"
                   >
                     Apply
                   </Button>
                 </div>
               </div>
 
-              {/* Quick Filters */}
-              <div className="bg-gradient-to-b from-primary via-accent to-neon-blue text-white rounded-xl border-0 p-4 shadow-lg">
-                <h3 className="font-extrabold mb-4 text.white drop-shadow-lg">Quick Filters</h3>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-sm cursor-pointer hover:text-primary">
-                    <input type="checkbox" className="rounded text-black" />
-                    <span className="text-black">Free Shipping</span>
-                  </label>
-                  <label className="flex items-center gap-2 text-sm cursor-pointer hover:text-primary">
-                    <input type="checkbox" className="rounded text-black" />
-                    <span className="text-black">On Sale</span>
-                  </label>
-                  <label className="flex items-center gap-2 text-sm cursor-pointer hover:text-primary">
-                    <input type="checkbox" className="rounded text-black" />
-                    <span className="text-black">4+ Stars</span>
-                  </label>
-                </div>
+              {/* Sort By */}
+              <div className="bg-card rounded-lg border p-4">
+                <h3 className="font-bold mb-3">Sort By</h3>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="w-full px-3 py-2 rounded-md border bg-background text-sm"
+                >
+                  <option value="relevant">Most Relevant</option>
+                  <option value="price-low">Price: Low to High</option>
+                  <option value="price-high">Price: High to Low</option>
+                  <option value="popular">Most Popular</option>
+                </select>
               </div>
             </div>
           </aside>
@@ -314,34 +329,20 @@ export default function Marketplace() {
           {/* Main Content */}
           <main className="flex-1">
             {/* Results Header */}
-            <div className="flex items-center justify-between mb-6 bg-card rounded-xl border p-4 shadow-sm futuristic-glow">
+            <div className="flex items-center justify-between mb-4 bg-card rounded-lg border p-3">
               <p className="text-sm text-muted-foreground">
                 {loading ? (
                   'Loading products...'
                 ) : (
                   <>
-                    Showing <span className="font-bold text-foreground">{products.length}</span> results
+                    Showing <span className="font-semibold text-foreground">{products.length}</span> results
                   </>
                 )}
               </p>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Sort by:</span>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="px-3 py-1.5 rounded-lg border bg-background text-sm font-medium"
-                >
-                  <option value="relevant">Most Relevant</option>
-                  <option value="price-low">Price: Low to High</option>
-                  <option value="price-high">Price: High to Low</option>
-                  <option value="rating">Best Rating</option>
-                  <option value="popular">Most Popular</option>
-                </select>
-              </div>
             </div>
 
             {/* Products Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
               {error && (
                 <div className="col-span-full text-center py-8 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
                   <p className="text-red-800 dark:text-red-200 font-medium">❌ {error}</p>
