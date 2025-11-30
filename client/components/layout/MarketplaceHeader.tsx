@@ -31,35 +31,35 @@ export default function MarketplaceHeader() {
                 </div>
               </div>
               <div className="hidden sm:block">
-                <span className="text-xl font-extrabold text-foreground drop-shadow-md">
+                <span className="text-xl font-black text-foreground drop-shadow-md">
                   Marketplace
                 </span>
-                <div className="text-[10px] text-foreground/80 font-medium -mt-1">Buy & Sell Locally</div>
+                <div className="text-[10px] text-foreground/80 font-bold -mt-1">Buy & Sell Locally</div>
               </div>
             </Link>
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center gap-1">
               <Link 
                 to="/" 
-                className="px-4 py-2 rounded-lg text-sm font-medium text-foreground hover:text-cold-cyan hover:bg-cold-blue/30 transition-all"
+                className="px-4 py-2 rounded-lg text-sm font-bold text-foreground hover:text-cold-cyan hover:bg-cold-blue/30 transition-all"
               >
                 Platform Home
               </Link>
               <Link 
                 to="/marketplace" 
-                className="px-4 py-2 rounded-lg text-sm font-medium text-foreground hover:text-cold-cyan hover:bg-cold-blue/30 transition-all"
+                className="px-4 py-2 rounded-lg text-sm font-bold text-foreground hover:text-cold-cyan hover:bg-cold-blue/30 transition-all"
               >
                 Marketplace
               </Link>
               <Link 
                 to="/about" 
-                className="px-4 py-2 rounded-lg text-sm font-medium text-foreground hover:text-cold-cyan hover:bg-cold-blue/30 transition-all"
+                className="px-4 py-2 rounded-lg text-sm font-bold text-foreground hover:text-cold-cyan hover:bg-cold-blue/30 transition-all"
               >
                 About
               </Link>
               <Link 
                 to="/contact" 
-                className="px-4 py-2 rounded-lg text-sm font-medium text-foreground hover:text-cold-cyan hover:bg-cold-blue/30 transition-all"
+                className="px-4 py-2 rounded-lg text-sm font-bold text-foreground hover:text-cold-cyan hover:bg-cold-blue/30 transition-all"
               >
                 Help
               </Link>
@@ -150,28 +150,28 @@ export default function MarketplaceHeader() {
               <Link 
                 to="/" 
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 rounded-lg text-base font-medium text-foreground hover:bg-white/20 transition-all"
+                className="px-4 py-3 rounded-lg text-base font-bold text-foreground hover:bg-white/20 transition-all"
               >
                 Platform Home
               </Link>
               <Link 
                 to="/marketplace" 
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 rounded-lg text-base font-medium text-foreground hover:bg-white/20 transition-all"
+                className="px-4 py-3 rounded-lg text-base font-bold text-foreground hover:bg-white/20 transition-all"
               >
                 Marketplace
               </Link>
               <Link 
                 to="/about" 
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 rounded-lg text-base font-medium text-foreground hover:bg-white/20 transition-all"
+                className="px-4 py-3 rounded-lg text-base font-bold text-foreground hover:bg-white/20 transition-all"
               >
                 About
               </Link>
               <Link 
                 to="/contact" 
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 rounded-lg text-base font-medium text-foreground hover:bg-white/20 transition-all"
+                className="px-4 py-3 rounded-lg text-base font-bold text-foreground hover:bg-white/20 transition-all"
               >
                 Help
               </Link>
