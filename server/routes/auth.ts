@@ -28,12 +28,6 @@ import {
   initializeDatabase,
   createDefaultAdmin,
 } from "../utils/database";
-import {
-  findClientByEmail,
-  findClientById,
-  createClient,
-  updateClient,
-} from "../utils/client-database";
 
 // Database initialization moved to server startup (dev.ts / index.ts)
 // Removed immediate init to prevent crashes when DB is unavailable
@@ -49,9 +43,9 @@ export const register: RequestHandler = async (req, res) => {
     console.log("[REGISTER] Incoming body:", req.body);
     const { email, password, name, role } = req.body;
 
-    // Check if client already exists
-    const existingClient = await findClientByEmail(email);
-    if (existingClient) {
+    // Check if user already exists
+    const existingUser = await findUserByEmail(email);
+    if (existingUser) {
       console.log("[REGISTER] Email already registered:", email);
       return jsonError(res, 400, "Email already registered");
     }
@@ -60,21 +54,21 @@ export const register: RequestHandler = async (req, res) => {
     const hashedPassword = await hashPassword(password);
     console.log("[REGISTER] Password hashed");
 
-    // Create client
-    const client = await createClient({
+    // Create user
+    const user = await createUser({
       email,
       password: hashedPassword,
       name,
-      role: (role as "client" | "admin") || "client",
+      role: (role as "user" | "admin") || "user",
     });
-    console.log("[REGISTER] Client created:", client.id, client.email);
+    console.log("[REGISTER] User created:", user.id, user.email);
 
     // Generate token
     const token = generateToken({
-      id: client.id.toString(),
-      email: client.email,
-      role: (client.role as "user" | "admin") || "user",
-      user_type: client.role === "admin" ? "admin" : "client",
+      id: user.id,
+      email: user.email,
+      role: (user.role as "user" | "admin") || "user",
+      user_type: user.role === "admin" ? "admin" : "client",
     });
     console.log("[REGISTER] Token generated");
 
@@ -82,9 +76,9 @@ export const register: RequestHandler = async (req, res) => {
       message: "User registered successfully",
       token,
       user: {
-        id: client.id,
-        email: client.email,
-        name: client.name,
+        id: user.id,
+        email: user.email,
+        name: user.name,
       },
     });
   } catch (error) {
@@ -103,81 +97,41 @@ export const login: RequestHandler = async (req, res) => {
 
     console.log("[LOGIN] Attempting login for:", email);
 
-    // Find client (check both clients table and users table for backwards compatibility)
-    let client = await findClientByEmail(email);
-    let isFromUsersTable = false;
+    // Find user
+    const user = await findUserByEmail(email);
+    console.log("[LOGIN] Found user:", !!user, "role:", user?.role);
 
-    console.log("[LOGIN] Found in clients table:", !!client);
-
-    // Fallback: check old users table if not found in clients
-    if (!client) {
-      console.log("[LOGIN] Checking users table...");
-      const user = await findUserByEmail(email);
-      console.log("[LOGIN] Found in users table:", !!user, "role:", user?.role, "user_type:", user?.user_type);
-      
-      if (user) {
-        // Accept any user from users table (admin, client, user roles)
-        client = user as any;
-        isFromUsersTable = true;
-      }
-    }
-
-    if (!client) {
-      console.log("[LOGIN] User not found in any table");
+    if (!user) {
+      console.log("[LOGIN] User not found");
       return jsonError(res, 401, "Invalid email or password");
     }
 
     // Verify password
-    const isValidPassword = await comparePassword(password, client.password);
+    const isValidPassword = await comparePassword(password, user.password);
     if (!isValidPassword) {
       console.log("[LOGIN] Invalid password");
       return jsonError(res, 401, "Invalid email or password");
     }
 
-    console.log("[LOGIN] Password valid, attempting migration if needed...");
-
-    // If user was found in old users table, migrate them to clients table
-    if (isFromUsersTable) {
-      try {
-        const migratedClient = await createClient({
-          email: client.email,
-          password: client.password, // Already hashed
-          name: client.name,
-          phone: client.phone,
-          role: client.role === 'admin' ? 'admin' : 'client',
-        });
-        console.log("[LOGIN] User migrated to clients table:", migratedClient.id);
-        client = migratedClient;
-      } catch (migrateError: any) {
-        // If duplicate key error (already migrated), fetch from clients table
-        if (migrateError.code === '23505') {
-          console.log("[LOGIN] User already migrated, fetching from clients table");
-          client = await findClientByEmail(email);
-        } else {
-          console.error("[LOGIN] Migration error (non-fatal):", migrateError);
-        }
-      }
-    }
+    console.log("[LOGIN] Login successful for:", email, "role:", user.role);
 
     // Generate token
     const token = generateToken({
-      id: client.id.toString(),
-      email: client.email,
-      role: (client.role as "user" | "admin") || "user",
-      user_type: client.role === "admin" ? "admin" : "client",
+      id: user.id,
+      email: user.email,
+      role: (user.role as "user" | "admin") || "user",
+      user_type: user.role === "admin" ? "admin" : (user.user_type as "client" | "seller") || "client",
     });
-
-    console.log("[LOGIN] Login successful for:", email, "role:", client.role);
 
     res.json({
       message: "Login successful",
       token,
       user: {
-        id: client.id,
-        email: client.email,
-        name: client.name,
-        role: client.role,
-        user_type: client.role === "admin" ? "admin" : "client",
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        user_type: user.role === "admin" ? "admin" : (user.user_type as "client" | "seller") || "client",
       },
     });
   } catch (error) {
@@ -196,16 +150,16 @@ export const getCurrentUser: RequestHandler = async (req, res) => {
       return jsonError(res, 401, "Not authenticated");
     }
 
-    const client = await findClientById(req.user.id);
-    if (!client) {
+    const user = await findUserById(req.user.id);
+    if (!user) {
       return jsonError(res, 404, "User not found");
     }
 
     res.json({
-      id: client.id,
-      email: client.email,
-      name: client.name,
-      role: client.role as "user" | "admin",
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role as "user" | "admin",
     });
   } catch (error) {
     console.error("Get current user error:", error);
@@ -225,20 +179,20 @@ export const changePassword: RequestHandler = async (req, res) => {
 
     const { currentPassword, newPassword } = req.body;
 
-    const client = await findClientById(req.user.id);
-    if (!client) {
+    const user = await findUserById(req.user.id);
+    if (!user) {
       return jsonError(res, 404, "User not found");
     }
 
     // Verify current password
-    const isValidPassword = await comparePassword(currentPassword, client.password);
+    const isValidPassword = await comparePassword(currentPassword, user.password);
     if (!isValidPassword) {
       return jsonError(res, 401, "Current password is incorrect");
     }
 
     // Hash new password
     const hashedPassword = await hashPassword(newPassword);
-    await updateClient(client.id, { password: hashedPassword });
+    await updateUser(user.id, { password: hashedPassword });
 
     res.json({ message: "Password changed successfully" });
   } catch (error) {
