@@ -36,7 +36,7 @@ export default function Marketplace() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
     loadCategories();
@@ -180,7 +180,7 @@ export default function Marketplace() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
       {/* Compact Header - Search Only */}
       <div className="bg-gradient-to-r from-primary to-accent text-white sticky top-0 z-40 shadow-lg">
         <div className="container mx-auto px-4 py-3">
@@ -189,7 +189,8 @@ export default function Marketplace() {
               variant="ghost"
               size="sm"
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="lg:hidden text-white hover:bg-white/20"
+              className="text-white hover:bg-white/20"
+              title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
             >
               <Menu className="w-5 h-5" />
             </Button>
@@ -217,37 +218,16 @@ export default function Marketplace() {
         </div>
       </div>
 
-      {/* Collapsible Sidebar Overlay */}
-      {sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      <div className="container mx-auto px-4 py-4">
-        <div className="flex gap-6">
-          {/* Sidebar - Collapsible */}
+      <div className="flex-1 flex overflow-hidden">
+        <div className="container mx-auto px-4 py-4 flex gap-6">
+          {/* Sidebar - Always in DOM, slides in/out */}
           <aside className={`
-            fixed lg:sticky top-0 left-0 h-screen lg:h-auto lg:top-20 w-72 lg:w-64 flex-shrink-0 z-50 lg:z-0
-            bg-background lg:bg-transparent transform transition-transform duration-300 ease-in-out
-            ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-            overflow-y-auto shadow-xl lg:shadow-none
+            w-64 flex-shrink-0 transition-all duration-300 ease-in-out overflow-y-auto
+            ${sidebarOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 w-0 overflow-hidden'}
           `}>
-            <div className="lg:sticky lg:top-20 space-y-4 p-4 lg:p-0">
-              {/* Header with collapse button */}
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold lg:hidden">Filters</h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="hover:bg-muted"
-                  title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
-                >
-                  {sidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-                </Button>
-              </div>
+            <div className="sticky top-4 space-y-4"
+              style={{ maxHeight: 'calc(100vh - 8rem)' }}
+            >
 
               {/* Categories */}
               <div className="bg-card rounded-lg border p-4">
@@ -261,7 +241,6 @@ export default function Marketplace() {
                       key={cat.category}
                       onClick={() => {
                         setSelectedCategory(cat.category === selectedCategory ? null : cat.category);
-                        if (window.innerWidth < 1024) setSidebarOpen(false);
                       }}
                       className={`w-full text-left px-3 py-2 rounded-md transition-colors text-sm
                         ${selectedCategory === cat.category
@@ -328,8 +307,8 @@ export default function Marketplace() {
             </div>
           </aside>
 
-          {/* Main Content */}
-          <main className="flex-1">
+          {/* Main Content - Stretches to fill space */}
+          <main className="flex-1 min-w-0">
             {/* Results Header */}
             <div className="flex items-center justify-between mb-4 bg-card rounded-lg border p-3">
               <p className="text-sm text-muted-foreground">
