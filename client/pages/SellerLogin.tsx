@@ -32,6 +32,12 @@ export default function SellerLogin() {
         return;
       }
 
+      // Validate that the user is actually a seller or admin
+      if (data.user.user_type !== 'seller' && data.user.user_type !== 'admin') {
+        setError('Access denied. This login is for sellers only. Please use the platform home login for client accounts.');
+        return;
+      }
+
       localStorage.setItem('authToken', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       if (data.user.role === 'admin') {

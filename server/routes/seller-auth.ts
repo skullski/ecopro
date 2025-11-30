@@ -111,6 +111,14 @@ export const loginSeller: RequestHandler = async (req, res) => {
       user.user_type = user.role === 'admin' ? 'admin' : 'seller';
     }
 
+    // Only allow sellers and admins to login here
+    if (user.user_type !== 'seller' && user.user_type !== 'admin') {
+      res.status(403).json({ 
+        error: "Access denied. This login is for sellers only. Please use the platform home login for client accounts." 
+      });
+      return;
+    }
+
     // Generate JWT token
     const token = jwt.sign(
       {
