@@ -81,6 +81,8 @@ export default function SellerDashboard() {
     images: [] as string[],
   });
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -125,7 +127,7 @@ export default function SellerDashboard() {
 
   const loadSellerData = async () => {
     try {
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('authToken') || localStorage.getItem('token');
       if (!token) {
         window.location.href = '/seller/login';
         return;
@@ -154,9 +156,11 @@ export default function SellerDashboard() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSaveError(null);
+    setSaving(true);
 
     try {
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('authToken') || localStorage.getItem('token');
       const url = editingProduct
         ? `/api/seller/products/${editingProduct.id}`
         : '/api/seller/products';
@@ -176,14 +180,25 @@ export default function SellerDashboard() {
         }),
       });
 
-      if (res.ok) {
-        await loadSellerData();
-        resetForm();
-        setShowAddProduct(false);
-        setEditingProduct(null);
+      if (!res.ok) {
+        let message = 'Failed to save product';
+        try {
+          const data = await res.json();
+          if (data?.error) message = data.error;
+        } catch {}
+        setSaveError(message);
+        return;
       }
+
+      await loadSellerData();
+      resetForm();
+      setShowAddProduct(false);
+      setEditingProduct(null);
     } catch (error) {
       console.error('Failed to save product:', error);
+      setSaveError(error instanceof Error ? error.message : 'Unexpected error');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -207,7 +222,7 @@ export default function SellerDashboard() {
   const handleDelete = async (id: number | string) => {
     if (!confirm('Are you sure you want to delete this product?')) return;
     try {
-      const token = localStorage.getItem('authToken');
+      const token = localStorage.getItem('authToken') || localStorage.getItem('token');
       const res = await fetch(`/api/seller/products/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
@@ -485,9 +500,15 @@ export default function SellerDashboard() {
                 )}
               </div>
 
+              {saveError && (
+                <div className="bg-destructive/10 border border-destructive/30 text-destructive text-sm px-4 py-3 rounded-md">
+                  {saveError}
+                </div>
+              )}
+
               <div className="flex gap-2">
-                <Button type="submit" className="bg-gradient-to-r from-primary to-accent">
-                  {editingProduct ? 'Update Product' : 'Add Product'}
+                <Button type="submit" className="bg-gradient-to-r from-primary to-accent" disabled={saving}>
+                  {saving ? (editingProduct ? 'Saving...' : 'Adding...') : (editingProduct ? 'Update Product' : 'Add Product')}
                 </Button>
                 <Button
                   type="button"
@@ -496,6 +517,7 @@ export default function SellerDashboard() {
                     setShowAddProduct(false);
                     setEditingProduct(null);
                     resetForm();
+                    setSaveError(null);
                   }}
                 >
                   Cancel
