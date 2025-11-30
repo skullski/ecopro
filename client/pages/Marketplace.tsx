@@ -235,13 +235,14 @@ export default function Marketplace() {
             overflow-y-auto shadow-xl lg:shadow-none
           `}>
             <div className="lg:sticky lg:top-20 space-y-4 p-4 lg:p-0">
-              {/* Close button for mobile */}
-              <div className="lg:hidden flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold">Filters</h2>
+              {/* Header with close button */}
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold lg:hidden">Filters</h2>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setSidebarOpen(false)}
+                  className="hover:bg-muted"
                 >
                   <X className="w-5 h-5" />
                 </Button>
