@@ -555,7 +555,7 @@ export default function SellerDashboard() {
               <p>No products yet. Add your first product to get started!</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-3 p-4">
               {products.map((product) => (
                 <div key={product.id} className="bg-card border rounded-lg overflow-hidden hover:shadow-lg transition-shadow group">
                   {/* Product Image */}
@@ -568,62 +568,59 @@ export default function SellerDashboard() {
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <Package className="w-16 h-16 text-muted-foreground opacity-20" />
+                        <Package className="w-8 h-8 text-muted-foreground opacity-20" />
                       </div>
                     )}
                     {/* Action Buttons - Show on Hover */}
-                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Button
                         size="sm"
                         variant="secondary"
-                        className="h-8 w-8 p-0"
+                        className="h-6 w-6 p-0"
                         onClick={() => handleEdit(product)}
                       >
-                        <Edit className="w-4 h-4" />
+                        <Edit className="w-3 h-3" />
                       </Button>
                       <Button
                         size="sm"
                         variant="secondary"
-                        className="h-8 w-8 p-0"
+                        className="h-6 w-6 p-0"
                         onClick={() => handleDelete(product.id)}
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3 h-3" />
                       </Button>
                     </div>
                     {/* Status Badge */}
-                    <div className="absolute top-2 left-2">
-                      <Badge variant={product.status === 'active' ? 'default' : 'secondary'}>
+                    <div className="absolute top-1 left-1">
+                      <Badge variant={product.status === 'active' ? 'default' : 'secondary'} className="text-[10px] px-1.5 py-0">
                         {product.status}
                       </Badge>
                     </div>
                   </div>
 
                   {/* Product Info */}
-                  <div className="p-4">
-                    <h3 className="font-bold text-sm mb-1 line-clamp-2 min-h-[2.5rem]">
+                  <div className="p-2">
+                    <h3 className="font-bold text-xs mb-0.5 line-clamp-1">
                       {product.title}
                     </h3>
-                    <p className="text-xs text-muted-foreground line-clamp-2 mb-3 min-h-[2.5rem]">
-                      {product.description || 'No description'}
-                    </p>
                     
                     {/* Price */}
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="font-bold text-lg text-primary">${product.price}</span>
+                    <div className="flex items-center gap-1 mb-2">
+                      <span className="font-bold text-sm text-primary">${product.price}</span>
                       {product.original_price && (
-                        <span className="text-xs text-muted-foreground line-through">
+                        <span className="text-[10px] text-muted-foreground line-through">
                           ${product.original_price}
                         </span>
                       )}
                     </div>
 
                     {/* Stats */}
-                    <div className="flex items-center justify-between text-xs text-muted-foreground pt-3 border-t">
-                      <span className="flex items-center gap-1">
-                        <Package className="w-3 h-3" /> {product.stock}
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1.5 border-t">
+                      <span className="flex items-center gap-0.5">
+                        <Package className="w-2.5 h-2.5" /> {product.stock}
                       </span>
-                      <span className="flex items-center gap-1">
-                        <Eye className="w-3 h-3" /> {product.views || 0}
+                      <span className="flex items-center gap-0.5">
+                        <Eye className="w-2.5 h-2.5" /> {product.views || 0}
                       </span>
                     </div>
                   </div>
