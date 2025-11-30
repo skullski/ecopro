@@ -543,7 +543,7 @@ export default function SellerDashboard() {
           </div>
         )}
 
-        {/* Products List */}
+        {/* Products Grid */}
         <div className="bg-card rounded-xl border shadow-sm">
           <div className="p-6 border-b">
             <h2 className="text-xl font-bold">Your Products</h2>
@@ -555,63 +555,76 @@ export default function SellerDashboard() {
               <p>No products yet. Add your first product to get started!</p>
             </div>
           ) : (
-            <div className="divide-y">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-6">
               {products.map((product) => (
-                <div key={product.id} className="p-4 hover:bg-muted/50 transition-colors">
-                  <div className="flex items-start gap-4">
+                <div key={product.id} className="bg-card border rounded-lg overflow-hidden hover:shadow-lg transition-shadow group">
+                  {/* Product Image */}
+                  <div className="relative aspect-square bg-muted">
                     {product.images?.[0] ? (
                       <img
                         src={product.images[0]}
                         alt={product.title}
-                        className="w-20 h-20 object-cover rounded-lg"
+                        className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-20 h-20 bg-muted rounded-lg flex items-center justify-center">
-                        <Package className="w-8 h-8 text-muted-foreground" />
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Package className="w-16 h-16 text-muted-foreground opacity-20" />
                       </div>
                     )}
+                    {/* Action Buttons - Show on Hover */}
+                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="h-8 w-8 p-0"
+                        onClick={() => handleEdit(product)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="h-8 w-8 p-0"
+                        onClick={() => handleDelete(product.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    {/* Status Badge */}
+                    <div className="absolute top-2 left-2">
+                      <Badge variant={product.status === 'active' ? 'default' : 'secondary'}>
+                        {product.status}
+                      </Badge>
+                    </div>
+                  </div>
 
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h3 className="font-bold">{product.title}</h3>
-                          <p className="text-sm text-muted-foreground line-clamp-2">
-                            {product.description}
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEdit(product)}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDelete(product.id)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-4 text-sm">
-                        <span className="font-bold text-primary">${product.price}</span>
-                        {product.original_price && (
-                          <span className="text-muted-foreground line-through">
-                            ${product.original_price}
-                          </span>
-                        )}
-                        <Badge variant={product.status === 'active' ? 'default' : 'secondary'}>
-                          {product.status}
-                        </Badge>
-                        <span className="text-muted-foreground">Stock: {product.stock}</span>
-                        <span className="text-muted-foreground flex items-center gap-1">
-                          <Eye className="w-3 h-3" /> {product.views || 0}
+                  {/* Product Info */}
+                  <div className="p-4">
+                    <h3 className="font-bold text-sm mb-1 line-clamp-2 min-h-[2.5rem]">
+                      {product.title}
+                    </h3>
+                    <p className="text-xs text-muted-foreground line-clamp-2 mb-3 min-h-[2.5rem]">
+                      {product.description || 'No description'}
+                    </p>
+                    
+                    {/* Price */}
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="font-bold text-lg text-primary">${product.price}</span>
+                      {product.original_price && (
+                        <span className="text-xs text-muted-foreground line-through">
+                          ${product.original_price}
                         </span>
-                      </div>
+                      )}
+                    </div>
+
+                    {/* Stats */}
+                    <div className="flex items-center justify-between text-xs text-muted-foreground pt-3 border-t">
+                      <span className="flex items-center gap-1">
+                        <Package className="w-3 h-3" /> {product.stock}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Eye className="w-3 h-3" /> {product.views || 0}
+                      </span>
                     </div>
                   </div>
                 </div>
