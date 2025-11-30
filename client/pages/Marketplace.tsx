@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search, SlidersHorizontal, Star, ShoppingCart, Heart, TrendingUp, Zap, Plus, Menu, X } from 'lucide-react';
+import { Search, SlidersHorizontal, Star, ShoppingCart, Heart, TrendingUp, Zap, Plus, Menu, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -220,7 +220,7 @@ export default function Marketplace() {
       {/* Collapsible Sidebar Overlay */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-40"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -231,20 +231,21 @@ export default function Marketplace() {
           <aside className={`
             fixed lg:sticky top-0 left-0 h-screen lg:h-auto lg:top-20 w-72 lg:w-64 flex-shrink-0 z-50 lg:z-0
             bg-background lg:bg-transparent transform transition-transform duration-300 ease-in-out
-            ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+            ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
             overflow-y-auto shadow-xl lg:shadow-none
           `}>
             <div className="lg:sticky lg:top-20 space-y-4 p-4 lg:p-0">
-              {/* Header with close button */}
+              {/* Header with collapse button */}
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-bold lg:hidden">Filters</h2>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setSidebarOpen(false)}
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
                   className="hover:bg-muted"
+                  title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
                 >
-                  <X className="w-5 h-5" />
+                  {sidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
                 </Button>
               </div>
 
@@ -260,7 +261,7 @@ export default function Marketplace() {
                       key={cat.category}
                       onClick={() => {
                         setSelectedCategory(cat.category === selectedCategory ? null : cat.category);
-                        setSidebarOpen(false);
+                        if (window.innerWidth < 1024) setSidebarOpen(false);
                       }}
                       className={`w-full text-left px-3 py-2 rounded-md transition-colors text-sm
                         ${selectedCategory === cat.category
@@ -343,7 +344,9 @@ export default function Marketplace() {
             </div>
 
             {/* Products Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            <div className={`grid grid-cols-2 md:grid-cols-3 gap-3 transition-all duration-300 ${
+              sidebarOpen ? 'lg:grid-cols-4' : 'lg:grid-cols-5'
+            }`}>
               {error && (
                 <div className="col-span-full text-center py-8 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
                   <p className="text-red-800 dark:text-red-200 font-medium">❌ {error}</p>
