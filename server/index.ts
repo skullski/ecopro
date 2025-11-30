@@ -13,6 +13,7 @@ import * as productRoutes from "./routes/products";
 import * as stockRoutes from "./routes/stock";
 import * as clientStoreRoutes from "./routes/client-store";
 import * as publicStoreRoutes from "./routes/public-store";
+import * as orderRoutes from "./routes/orders";
 import { upload, uploadImage } from "./routes/uploads";
 import { authenticate, requireAdmin, requireSeller, requireClient } from "./middleware/auth";
 import * as adminRoutes from "./routes/admin";
@@ -379,6 +380,11 @@ export function createServer() {
   app.get("/api/storefront/:clientId/products", publicStoreRoutes.getStorefrontProducts);
   app.get("/api/storefront/:clientId/settings", publicStoreRoutes.getStorefrontSettings);
   app.get("/api/store/:clientId/:slug", publicStoreRoutes.getPublicProduct);
+
+  // Order routes
+  app.post("/api/orders/create", orderRoutes.createOrder); // Public - buyers can create orders
+  app.get("/api/client/orders", authenticate, requireClient, orderRoutes.getClientOrders);
+  app.patch("/api/client/orders/:id/status", authenticate, requireClient, orderRoutes.updateOrderStatus);
 
   // Image upload route (authenticated users)
   app.post("/api/upload", authenticate, upload.single('image'), uploadImage);

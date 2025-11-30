@@ -6,6 +6,11 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
 
 interface PublicProduct {
   id: number;
@@ -28,10 +33,22 @@ interface PublicProduct {
 export default function PublicProduct() {
   const { clientId, slug } = useParams<{ clientId: string; slug: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [product, setProduct] = useState<PublicProduct | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedImage, setSelectedImage] = useState(0);
+  const [showCheckout, setShowCheckout] = useState(false);
+  const [quantity, setQuantity] = useState(1);
+  const [submitting, setSubmitting] = useState(false);
+  
+  // Customer info form state
+  const [customerInfo, setCustomerInfo] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: ''
+  });
 
   useEffect(() => {
     loadProduct();
@@ -67,6 +84,61 @@ export default function PublicProduct() {
     } else {
       navigator.clipboard.writeText(url);
       alert('Link copied to clipboard!');
+    }
+  };
+
+  const handleBuyNow = () => {
+    setShowCheckout(true);
+  };
+
+  const handleSubmitOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!product || !clientId) return;
+    
+    setSubmitting(true);
+    try {
+      const totalPrice = product.price * quantity;
+      
+      const res = await fetch('/api/orders/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          product_id: product.id,
+          client_id: parseInt(clientId),
+          quantity,
+          total_price: totalPrice,
+          customer_name: customerInfo.name,
+          customer_email: customerInfo.email,
+          customer_phone: customerInfo.phone,
+          customer_address: customerInfo.address,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to create order');
+      }
+
+      const data = await res.json();
+      
+      toast({
+        title: 'Order Placed Successfully!',
+        description: `Order #${data.orderId} has been submitted. The seller will contact you soon.`,
+      });
+
+      // Reset form and close modal
+      setShowCheckout(false);
+      setCustomerInfo({ name: '', email: '', phone: '', address: '' });
+      setQuantity(1);
+      
+    } catch (err: any) {
+      toast({
+        title: 'Order Failed',
+        description: err.message || 'Failed to place order. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -252,9 +324,10 @@ export default function PublicProduct() {
                     color: 'white'
                   }}
                   disabled={product.stock_quantity === 0}
+                  onClick={handleBuyNow}
                 >
                   <ShoppingCart className="w-5 h-5 mr-2" />
-                  {product.stock_quantity > 0 ? 'Add to Cart' : 'Out of Stock'}
+                  {product.stock_quantity > 0 ? 'Buy Now' : 'Out of Stock'}
                 </Button>
 
                 <div className="grid grid-cols-2 gap-3">
@@ -300,6 +373,141 @@ export default function PublicProduct() {
           </div>
         </div>
       </div>
+
+      {/* Checkout Modal */}
+      <Dialog open={showCheckout} onOpenChange={setShowCheckout}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Complete Your Purchase</DialogTitle>
+            <DialogDescription>
+              Fill in your information to place your order
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={handleSubmitOrder} className="space-y-4">
+            {/* Product Summary */}
+            <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="font-medium">{product?.title}</span>
+                <span className="font-semibold">${product?.price.toFixed(2)}</span>
+              </div>
+              
+              {/* Quantity Selector */}
+              <div className="flex items-center gap-3">
+                <Label htmlFor="quantity">Quantity:</Label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                  >
+                    -
+                  </Button>
+                  <Input
+                    id="quantity"
+                    type="number"
+                    min="1"
+                    max={product?.stock_quantity}
+                    value={quantity}
+                    onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                    className="w-16 text-center"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setQuantity(Math.min(product?.stock_quantity || 1, quantity + 1))}
+                  >
+                    +
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="flex justify-between items-center pt-2 border-t">
+                <span className="font-semibold">Total:</span>
+                <span className="text-xl font-bold" style={{ color: primaryColor }}>
+                  ${((product?.price || 0) * quantity).toFixed(2)}
+                </span>
+              </div>
+            </div>
+
+            {/* Customer Information */}
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="name">Full Name *</Label>
+                <Input
+                  id="name"
+                  required
+                  value={customerInfo.name}
+                  onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })}
+                  placeholder="John Doe"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="email">Email *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  required
+                  value={customerInfo.email}
+                  onChange={(e) => setCustomerInfo({ ...customerInfo, email: e.target.value })}
+                  placeholder="john@example.com"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="phone">Phone Number *</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  required
+                  value={customerInfo.phone}
+                  onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
+                  placeholder="+1 (555) 000-0000"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="address">Delivery Address *</Label>
+                <Textarea
+                  id="address"
+                  required
+                  value={customerInfo.address}
+                  onChange={(e) => setCustomerInfo({ ...customerInfo, address: e.target.value })}
+                  placeholder="Street address, city, state, zip code"
+                  rows={3}
+                />
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                onClick={() => setShowCheckout(false)}
+                disabled={submitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="flex-1"
+                style={{ 
+                  backgroundColor: primaryColor,
+                  color: 'white'
+                }}
+                disabled={submitting}
+              >
+                {submitting ? 'Placing Order...' : 'Place Order'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -90,7 +90,7 @@ export default function Store() {
 
   const loadProducts = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('authToken');
       const res = await fetch('/api/client/store/products', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -141,7 +141,7 @@ export default function Store() {
 
   const handleCreateProduct = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('authToken');
       const res = await fetch('/api/client/store/products', {
         method: 'POST',
         headers: {
@@ -169,7 +169,7 @@ export default function Store() {
     if (!selectedProduct) return;
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('authToken');
       const res = await fetch(`/api/client/store/products/${selectedProduct.id}`, {
         method: 'PUT',
         headers: {
@@ -198,7 +198,7 @@ export default function Store() {
     if (!selectedProduct) return;
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('authToken');
       const res = await fetch(`/api/client/store/products/${selectedProduct.id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
@@ -220,7 +220,7 @@ export default function Store() {
 
   const handleGetShareLink = async (product: StoreProduct) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('authToken');
       const res = await fetch(`/api/client/store/products/${product.id}/share-link`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -268,7 +268,7 @@ export default function Store() {
 
     setUploading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('authToken');
       const formData = new FormData();
       formData.append('image', file);
 

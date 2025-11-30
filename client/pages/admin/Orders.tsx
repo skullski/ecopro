@@ -40,15 +40,66 @@ export default function OrdersAdmin() {
   };
 
   useEffect(()=>{
-    const existing = JSON.parse(localStorage.getItem('orders')||'[]');
-    setOrders(existing);
+    loadOrders();
   },[]);
 
-  function setStatus(id:string, status:string){
-    const all = JSON.parse(localStorage.getItem('orders')||'[]');
-    const next = all.map((o:any)=> o.id===id ? {...o, status} : o);
-    localStorage.setItem('orders', JSON.stringify(next));
-    setOrders(next);
+  const loadOrders = async () => {
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) return;
+
+      const res = await fetch('/api/client/orders', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        // Transform API data to match our format
+        const transformedOrders = data.map((order: any) => ({
+          id: `ORD-${String(order.id).padStart(3, '0')}`,
+          customer: order.customer_name,
+          total: order.total_price,
+          status: order.status === 'confirmed' ? 'confirmed' : 
+                  order.status === 'cancelled' ? 'failed' :
+                  order.status === 'pending' ? 'pending' : 'pending',
+          time: getTimeStr(Math.floor((Date.now() - new Date(order.created_at).getTime()) / 60000)),
+          product_title: order.product_title,
+          quantity: order.quantity,
+          phone: order.customer_phone,
+          email: order.customer_email,
+          address: order.shipping_address,
+          raw_id: order.id
+        }));
+        setOrders(transformedOrders);
+      }
+    } catch (error) {
+      console.error('Failed to load orders:', error);
+    }
+  };
+
+  async function setStatus(id: string, status: string) {
+    try {
+      // Extract raw ID from ORD-XXX format
+      const rawId = orders.find(o => o.id === id)?.raw_id;
+      if (!rawId) return;
+
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const res = await fetch(`/api/client/orders/${rawId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ status })
+      });
+
+      if (res.ok) {
+        // Reload orders after status update
+        await loadOrders();
+      }
+    } catch (error) {
+      console.error('Failed to update status:', error);
+    }
   }
 
   return (

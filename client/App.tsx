@@ -88,10 +88,12 @@ function RequirePaidClient({ children }: { children: JSX.Element }) {
   if (!user) {
     return <Navigate to="/login" replace />;
   }
-  if (user.role === "admin") {
+  // Check user_type, not role
+  const userType = (user as any).user_type || 'client';
+  if (userType === "admin" || user.role === "admin") {
     return <Navigate to="/platform-admin" replace />;
   }
-  if (user.role === "seller") {
+  if (userType === "seller") {
     return <Navigate to="/seller/dashboard" replace />;
   }
   return children;
@@ -113,10 +115,12 @@ function RequireSeller({ children }: { children: JSX.Element }) {
   if (!user) {
     return <Navigate to="/seller/login" replace />;
   }
-  if (user.role === "admin") {
+  // Check user_type, not role
+  const userType = (user as any).user_type || 'client';
+  if (userType === "admin" || user.role === "admin") {
     return <Navigate to="/platform-admin" replace />;
   }
-  if (user.role !== "seller") {
+  if (userType !== "seller") {
     return <Navigate to="/dashboard" replace />;
   }
   return children;
