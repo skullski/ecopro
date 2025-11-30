@@ -182,10 +182,24 @@ export default function SellerDashboard() {
 
       if (!res.ok) {
         let message = 'Failed to save product';
+        // Status-specific guidance
+        if (res.status === 401) message = 'Authentication required. Please log in as a seller.';
+        else if (res.status === 403) message = 'Seller access required. Use a seller account.';
+        else if (res.status === 413) message = 'Images too large. Use smaller images or upload fewer.';
+        else if (res.status === 400) message = 'Invalid data. Ensure title, price and valid numbers.';
         try {
-          const data = await res.json();
-          if (data?.error) message = data.error;
-        } catch {}
+          const contentType = res.headers.get('Content-Type') || '';
+          if (contentType.includes('application/json')) {
+            const data = await res.json();
+            if (data?.error) message = data.error;
+          } else {
+            const text = await res.text();
+            if (text) message = text.slice(0, 200);
+          }
+        } catch (parseErr) {
+          console.warn('Failed to parse error response', parseErr);
+        }
+        console.warn('Product save failed', { status: res.status });
         setSaveError(message);
         return;
       }
@@ -229,6 +243,8 @@ export default function SellerDashboard() {
       });
       if (res.ok) {
         await loadSellerData();
+      } else {
+        console.warn('Delete failed', res.status);
       }
     } catch (error) {
       console.error('Failed to delete product:', error);

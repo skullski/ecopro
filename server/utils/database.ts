@@ -1,4 +1,7 @@
 import { Pool } from "pg";
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // Database connection pool with aggressive optimization
 const pool = new Pool({
@@ -41,6 +44,13 @@ export async function initializeDatabase(): Promise<void> {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    // Safeguard legacy deployments missing timestamp columns
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`);
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`);
+
+    // Ensure legacy deployments without created_at/updated_at get columns
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`);
+    await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;`);
 
     // Create marketplace_products table
     await client.query(`
@@ -246,10 +256,47 @@ export async function initializeDatabase(): Promise<void> {
       ON client_store_products(is_featured);
     `);
 
+    // Migration tracking table (idempotent)
+    await client.query(`CREATE TABLE IF NOT EXISTS schema_migrations (filename TEXT PRIMARY KEY, applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);`);
+
     console.log("✅ Database tables initialized");
   } catch (error) {
     console.error("❌ Database initialization error:", error);
     throw error;
+  } finally {
+    client.release();
+  }
+}
+
+// Run pending .sql migrations in migrations directory
+export async function runPendingMigrations(): Promise<void> {
+  const migrationsDir = path.join(path.dirname(fileURLToPath(import.meta.url)), 'migrations');
+  if (!fs.existsSync(migrationsDir)) return;
+  const files = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort();
+  const client = await pool.connect();
+  try {
+    for (const file of files) {
+      // Skip destructive drop-all migration in automated runs
+      if (file.includes('drop_all_tables')) {
+        console.log(`Skipping destructive migration: ${file}`);
+        continue;
+      }
+      const exists = await client.query('SELECT 1 FROM schema_migrations WHERE filename = $1', [file]);
+      if (exists.rowCount) continue;
+      const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf-8');
+      console.log(`Applying migration: ${file}`);
+      try {
+        await client.query('BEGIN');
+        await client.query(sql);
+        await client.query('INSERT INTO schema_migrations(filename) VALUES ($1)', [file]);
+        await client.query('COMMIT');
+        console.log(`✅ Migration applied: ${file}`);
+      } catch (e) {
+        await client.query('ROLLBACK');
+        console.error(`❌ Migration failed (${file}):`, (e as any).message);
+        break; // Stop further migrations on failure
+      }
+    }
   } finally {
     client.release();
   }

@@ -250,25 +250,52 @@ export const createProduct: RequestHandler = async (req, res) => {
       return res.status(400).json({ error: 'Individual image exceeds 10MB limit' });
     }
 
-    const result = await pool.query(
-      `INSERT INTO marketplace_products 
-        (seller_id, title, description, price, original_price, category, images, stock, condition, location, shipping_available)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-      RETURNING *`,
-      [
-        sellerId,
-        title,
-        description || null,
-        price,
-        original_price || null,
-        category || null,
-        imageArray,
-        stock || 1,
-        condition || 'new',
-        location || null,
-        shipping_available !== false,
-      ]
-    );
+    let result;
+    try {
+      result = await pool.query(
+        `INSERT INTO marketplace_products 
+          (seller_id, title, description, price, original_price, category, images, stock, condition, location, shipping_available)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        RETURNING *`,
+        [
+          sellerId,
+          title,
+          description || null,
+          price,
+          original_price || null,
+          category || null,
+          imageArray,
+          stock || 1,
+          condition || 'new',
+          location || null,
+          shipping_available !== false,
+        ]
+      );
+    } catch (dbErr: any) {
+      console.error('[createProduct] insert failed:', {
+        code: dbErr.code,
+        detail: dbErr.detail,
+        table: dbErr.table,
+        constraint: dbErr.constraint,
+        message: dbErr.message,
+      });
+      if (dbErr.code === '42P01') { // undefined_table
+        return res.status(500).json({ error: 'Marketplace products table missing. Run migrations.' });
+      }
+      if (dbErr.code === '42703') { // undefined_column
+        return res.status(500).json({ error: `Column missing: ${dbErr.message}` });
+      }
+      if (dbErr.code === '23505') { // unique_violation
+        return res.status(400).json({ error: 'Duplicate product data violates unique constraint.' });
+      }
+      if (dbErr.code === '22P02') {
+        return res.status(400).json({ error: 'Invalid numeric value (price or stock).' });
+      }
+      if (dbErr.code === '23503') {
+        return res.status(400).json({ error: 'Seller foreign key invalid. Seller may not exist.' });
+      }
+      return res.status(500).json({ error: 'Database error creating product', code: dbErr.code });
+    }
 
     res.status(201).json(result.rows[0] as Product);
   } catch (error) {

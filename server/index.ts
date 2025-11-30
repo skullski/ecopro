@@ -17,7 +17,7 @@ import { upload, uploadImage } from "./routes/uploads";
 import { authenticate, requireAdmin, requireSeller, requireClient } from "./middleware/auth";
 import * as adminRoutes from "./routes/admin";
 import * as dashboardRoutes from "./routes/dashboard";
-import { initializeDatabase, createDefaultAdmin } from "./utils/database";
+import { initializeDatabase, createDefaultAdmin, runPendingMigrations } from "./utils/database";
 import { hashPassword } from "./utils/auth";
 import {
   validate,
@@ -38,13 +38,17 @@ export function createServer() {
       level: 6,
     })
   );
-  app.use(express.json());
+  // Single body parsers with elevated limits BEFORE routes
+  app.use(express.json({ limit: "50mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-  // Initialize database on startup
-  initializeDatabase().catch((err) => {
-    console.error("Failed to initialize database:", err);
-    process.exit(1);
-  });
+  // Initialize database then run pending migrations
+  initializeDatabase()
+    .then(() => runPendingMigrations())
+    .catch((err) => {
+      console.error("Failed to initialize database:", err);
+      process.exit(1);
+    });
 
   // Create default admin user
   hashPassword("admin123").then((hashedPassword) => {
@@ -108,9 +112,16 @@ export function createServer() {
     })
   );
 
-  // Middleware - increase limit for product images
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+  // NOTE: Removed duplicate express.json()/urlencoded registrations to avoid
+  // early PayloadTooLargeError from default 100kb parser.
+
+  // Graceful handler for payload too large errors
+  app.use((err: any, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (err && err.type === 'entity.too.large') {
+      return res.status(413).json({ error: 'Payload too large. Use image upload endpoint or reduce size.' });
+    }
+    return next(err);
+  });
 
   // Public routes
   app.get("/api/ping", (_req, res) => {
@@ -385,6 +396,47 @@ export function createServer() {
       }
     });
   }
+
+  // Lightweight health endpoint
+  app.get('/api/health', (_req, res) => {
+    res.json({
+      status: 'ok',
+      uptime_seconds: process.uptime(),
+      timestamp: new Date().toISOString(),
+      commit: process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || null
+    });
+  });
+
+  // Debug schema route (guarded by admin auth)
+  app.get('/api/debug/schema', authenticate, requireAdmin, async (_req, res) => {
+    try {
+      const { pool } = await import('./utils/database');
+      const tables = await pool.query(`
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema='public'
+        ORDER BY table_name`);
+      const details: Record<string, any[]> = {};
+      for (const row of tables.rows) {
+        const cols = await pool.query(`
+          SELECT column_name, data_type, is_nullable
+          FROM information_schema.columns
+          WHERE table_name = $1 AND table_schema='public'`, [row.table_name]);
+        details[row.table_name] = cols.rows;
+      }
+      res.json({ tables: tables.rows.map(r => r.table_name), columns: details });
+    } catch (e) {
+      res.status(500).json({ error: 'Schema introspection failed', details: (e as any).message });
+    }
+  });
+
+  // Global error handler (after routes)
+  app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    if (res.headersSent) return;
+    const status = err.status || 500;
+    console.error('Unhandled error:', err);
+    res.status(status).json({ error: err.message || 'Internal Server Error', status });
+  });
 
   return app;
 }
