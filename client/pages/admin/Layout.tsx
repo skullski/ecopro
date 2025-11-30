@@ -1,15 +1,20 @@
 import { Outlet, useNavigate } from "react-router-dom";
 import { EnhancedSidebar } from "@/components/admin/EnhancedSidebar";
 import { useState, useEffect } from "react";
-import { useTranslation } from "@/lib/i18n";
+import { useTranslation } from "../../lib/i18n";
 import { cn } from "@/lib/utils";
 import { getCurrentUser } from "@/lib/auth";
+import { Bell, Search, User, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function AdminLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { locale } = useTranslation();
+  const { toggle, theme } = useTheme();
   const isRTL = locale === "ar";
   const navigate = useNavigate();
+  const user = getCurrentUser();
 
   useEffect(() => {
     // Check if user is logged in
@@ -37,7 +42,7 @@ export default function AdminLayout() {
           ? (sidebarCollapsed ? 'mr-0 lg:mr-20' : 'mr-0 lg:mr-72')
           : (sidebarCollapsed ? 'ml-0 lg:ml-20' : 'ml-0 lg:ml-72')
       )}>
-        <div className="container mx-auto p-6">
+        <div className="p-6 md:p-8">
           <Outlet />
         </div>
       </main>

@@ -51,7 +51,7 @@ export default function Login() {
             <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               {t("login")}
             </h2>
-            <p className="text-sm text-muted-foreground mt-2">Welcome back! Sign in to continue</p>
+            <p className="text-sm text-muted-foreground mt-2">{t('login.subtitle')}</p>
           </div>
           
           {error && (
@@ -87,7 +87,7 @@ export default function Login() {
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
                 className="mt-1 w-full rounded-xl border-2 border-primary/20 bg-background px-4 py-3 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all" 
-                placeholder="••••••••"
+                placeholder={t('auth.passwordPlaceholder')}
                 required
                 disabled={loading}
                 autoComplete="off"
@@ -113,7 +113,7 @@ export default function Login() {
           
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">
-              Don't have an account?{" "}
+              {t('login.noAccount')}{" "}
               <Link to="/signup" className="text-primary hover:underline font-medium">
                 {t("signup")}
               </Link>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from '@/lib/i18n';
 import { 
   Users, 
   ShoppingBag, 
@@ -47,6 +48,7 @@ interface Product {
 }
 
 export default function PlatformAdmin() {
+  const { t } = useTranslation();
   const [stats, setStats] = useState<PlatformStats>({
     totalUsers: 0,
     totalClients: 0,
@@ -157,23 +159,61 @@ export default function PlatformAdmin() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Loading platform data...</div>
+        <div className="text-lg">{t('loading')}</div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-primary via-primary/90 to-accent text-white">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center gap-4 mb-2">
-            <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-              <Shield className="w-6 h-6" />
+      {/* Modern Admin Header with Pattern Background */}
+      <div className="relative bg-gradient-to-br from-purple-600 via-violet-600 to-indigo-700 text-white overflow-hidden">
+        {/* Animated Pattern Background */}
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC40Ij48cGF0aCBkPSJNMzYgMzR2LTRoLTJ2NGgtNHYyaDR2NGgydi00aDR2LTJoLTR6bTAtMzBoLTJ2Mmgydi0yem0wIDI4aC0ydjJoMnYtMnptLTItMmgtMnYyaDJ2LTJ6bS0yLTJoLTJ2Mmgydi0yem0tMi0yaC0ydjJoMnYtMnptLTYgMHYtMmgtMnYyaDJ6bS0yIDJ2LTJoLTJ2MmgyeiIvPjwvZz48L2c+PC9zdmc+')] animate-[slide_20s_linear_infinite]"></div>
+        </div>
+        
+        {/* Glowing Orbs */}
+        <div className="absolute top-0 right-0 w-72 h-72 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+        <div className="absolute bottom-0 left-0 w-72 h-72 bg-indigo-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{animationDelay: '2s'}}></div>
+        
+        <div className="container relative mx-auto px-4 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <div className="absolute inset-0 bg-white/30 rounded-xl blur-lg"></div>
+                <div className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-white/30 to-white/10 backdrop-blur-md border border-white/40 flex items-center justify-center shadow-2xl">
+                  <Shield className="w-6 h-6 text-white drop-shadow-lg" strokeWidth={2.5} />
+                </div>
+              </div>
+              <div>
+                <h1 className="text-2xl font-black drop-shadow-lg">{t('admin.dashboardTitle')}</h1>
+                <p className="text-white/90 text-xs font-semibold drop-shadow">{t('admin.dashboardSubtitle')}</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-              <p className="text-white/80">Platform admin-only overview and control</p>
+            
+            {/* Quick Actions */}
+            <div className="hidden lg:flex items-center gap-2">
+              <div className="px-3 py-1.5 rounded-lg bg-white/20 backdrop-blur-md border border-white/30 hover:bg-white/30 transition-all cursor-pointer">
+                <div className="flex items-center gap-2">
+                  <Users className="w-3.5 h-3.5" />
+                  <span className="text-xs font-bold">{stats.totalUsers}</span>
+                </div>
+              </div>
+              <div className="px-3 py-1.5 rounded-lg bg-white/20 backdrop-blur-md border border-white/30 hover:bg-white/30 transition-all cursor-pointer">
+                <div className="flex items-center gap-2">
+                  <Package className="w-3.5 h-3.5" />
+                  <span className="text-xs font-bold">{stats.totalProducts}</span>
+                </div>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="text-white hover:bg-white/20 border border-white/30"
+                onClick={() => window.location.href = '/'}
+              >
+                {t('admin.exit')}
+              </Button>
             </div>
           </div>
         </div>
@@ -188,7 +228,7 @@ export default function PlatformAdmin() {
             className="flex-1"
           >
             <Activity className="w-4 h-4 mr-2" />
-            Overview
+            {t('admin.tab.overview')}
           </Button>
           <Button
             variant={activeTab === 'users' ? 'default' : 'ghost'}
@@ -196,7 +236,7 @@ export default function PlatformAdmin() {
             className="flex-1"
           >
             <Users className="w-4 h-4 mr-2" />
-            Users ({stats.totalUsers})
+            {t('admin.tab.users', { n: stats.totalUsers })}
           </Button>
           <Button
             variant={activeTab === 'products' ? 'default' : 'ghost'}
@@ -204,7 +244,7 @@ export default function PlatformAdmin() {
             className="flex-1"
           >
             <Package className="w-4 h-4 mr-2" />
-            Products ({stats.totalProducts})
+            {t('admin.tab.products', { n: stats.totalProducts })}
           </Button>
         </div>
 
@@ -220,7 +260,7 @@ export default function PlatformAdmin() {
                   </div>
                   <TrendingUp className="w-5 h-5 text-green-500" />
                 </div>
-                <p className="text-sm text-muted-foreground mb-1">Total Users</p>
+                <p className="text-sm text-muted-foreground mb-1">{t('admin.stats.totalUsers')}</p>
                 <p className="text-3xl font-bold">{stats.totalUsers}</p>
               </div>
 
@@ -231,7 +271,7 @@ export default function PlatformAdmin() {
                   </div>
                   <TrendingUp className="w-5 h-5 text-green-500" />
                 </div>
-                <p className="text-sm text-muted-foreground mb-1">Clients</p>
+                <p className="text-sm text-muted-foreground mb-1">{t('admin.stats.clients')}</p>
                 <p className="text-3xl font-bold">{stats.totalClients}</p>
               </div>
 
@@ -242,7 +282,7 @@ export default function PlatformAdmin() {
                   </div>
                   <TrendingUp className="w-5 h-5 text-green-500" />
                 </div>
-                <p className="text-sm text-muted-foreground mb-1">Sellers</p>
+                <p className="text-sm text-muted-foreground mb-1">{t('admin.stats.sellers')}</p>
                 <p className="text-3xl font-bold">{stats.totalSellers}</p>
               </div>
 
@@ -253,7 +293,7 @@ export default function PlatformAdmin() {
                   </div>
                   <Badge variant="secondary">{stats.activeProducts} active</Badge>
                 </div>
-                <p className="text-sm text-muted-foreground mb-1">Total Products</p>
+                <p className="text-sm text-muted-foreground mb-1">{t('admin.stats.totalProducts')}</p>
                 <p className="text-3xl font-bold">{stats.totalProducts}</p>
               </div>
             </div>
@@ -265,7 +305,7 @@ export default function PlatformAdmin() {
                 <div className="p-6 border-b">
                   <h2 className="text-xl font-bold flex items-center gap-2">
                     <Users className="w-5 h-5" />
-                    Recent Users
+                    {t('admin.recentUsers')}
                   </h2>
                 </div>
                 <div className="divide-y max-h-96 overflow-auto">
@@ -278,7 +318,7 @@ export default function PlatformAdmin() {
                         </div>
                         <div className="text-right">
                           <Badge variant={user.user_type === 'admin' ? 'default' : 'secondary'}>
-                            {user.user_type}
+                            {t('user.type.' + user.user_type)}
                           </Badge>
                           <p className="text-xs text-muted-foreground mt-1">
                             {new Date(user.created_at).toLocaleDateString()}
@@ -295,7 +335,7 @@ export default function PlatformAdmin() {
                 <div className="p-6 border-b">
                   <h2 className="text-xl font-bold flex items-center gap-2">
                     <Package className="w-5 h-5" />
-                    Recent Products
+                    {t('admin.recentProducts')}
                   </h2>
                 </div>
                 <div className="divide-y max-h-96 overflow-auto">
@@ -304,10 +344,10 @@ export default function PlatformAdmin() {
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <p className="font-medium line-clamp-1">{product.title}</p>
-                          <p className="text-sm text-muted-foreground">by {product.seller_name}</p>
+                          <p className="text-sm text-muted-foreground">{t('admin.bySeller', { name: product.seller_name })}</p>
                         </div>
                         <div className="text-right ml-4">
-                          <p className="font-bold text-primary">${product.price}</p>
+                          <p className="font-bold text-primary">{product.price} {t('currency')}</p>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                             <Eye className="w-3 h-3" />
                             {product.views}
@@ -326,18 +366,18 @@ export default function PlatformAdmin() {
         {activeTab === 'users' && (
           <div className="bg-card rounded-xl border shadow-sm">
             <div className="p-6 border-b">
-              <h2 className="text-xl font-bold">All Users</h2>
+              <h2 className="text-xl font-bold">{t('admin.allUsers')}</h2>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-muted/50">
                   <tr>
-                    <th className="text-left p-4 font-medium">Name</th>
-                    <th className="text-left p-4 font-medium">Email</th>
-                    <th className="text-left p-4 font-medium">Type</th>
-                    <th className="text-left p-4 font-medium">Role</th>
-                    <th className="text-left p-4 font-medium">Joined</th>
-                    <th className="text-left p-4 font-medium">Actions</th>
+                    <th className="text-left p-4 font-medium">{t('user.name')}</th>
+                    <th className="text-left p-4 font-medium">{t('user.email')}</th>
+                    <th className="text-left p-4 font-medium">{t('user.type')}</th>
+                    <th className="text-left p-4 font-medium">{t('user.role')}</th>
+                    <th className="text-left p-4 font-medium">{t('user.joined')}</th>
+                    <th className="text-left p-4 font-medium">{t('actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -347,11 +387,11 @@ export default function PlatformAdmin() {
                       <td className="p-4 text-sm text-muted-foreground">{user.email}</td>
                       <td className="p-4">
                         <Badge variant={user.user_type === 'admin' ? 'default' : 'secondary'}>
-                          {user.user_type}
+                          {t('user.type.' + user.user_type)}
                         </Badge>
                       </td>
                       <td className="p-4">
-                        <Badge variant="outline">{user.role}</Badge>
+                        <Badge variant="outline">{t('user.role.' + user.role)}</Badge>
                       </td>
                       <td className="p-4 text-sm text-muted-foreground">
                         {new Date(user.created_at).toLocaleDateString()}
@@ -363,7 +403,7 @@ export default function PlatformAdmin() {
                             variant="outline"
                             onClick={() => handlePromoteToAdmin(user.id)}
                           >
-                            Promote to Admin
+                            {t('admin.promoteToAdmin')}
                           </Button>
                         )}
                       </td>
@@ -379,18 +419,18 @@ export default function PlatformAdmin() {
         {activeTab === 'products' && (
           <div className="bg-card rounded-xl border shadow-sm">
             <div className="p-6 border-b">
-              <h2 className="text-xl font-bold">All Products</h2>
+              <h2 className="text-xl font-bold">{t('admin.allProducts')}</h2>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-muted/50">
                   <tr>
-                    <th className="text-left p-4 font-medium">Product</th>
-                    <th className="text-left p-4 font-medium">Seller</th>
-                    <th className="text-left p-4 font-medium">Price</th>
-                    <th className="text-left p-4 font-medium">Status</th>
-                    <th className="text-left p-4 font-medium">Views</th>
-                    <th className="text-left p-4 font-medium">Created</th>
+                    <th className="text-left p-4 font-medium">{t('product.name')}</th>
+                    <th className="text-left p-4 font-medium">{t('product.seller')}</th>
+                    <th className="text-left p-4 font-medium">{t('product.price')}</th>
+                    <th className="text-left p-4 font-medium">{t('product.status')}</th>
+                    <th className="text-left p-4 font-medium">{t('product.views')}</th>
+                    <th className="text-left p-4 font-medium">{t('product.created')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -406,7 +446,7 @@ export default function PlatformAdmin() {
                       <td className="p-4 font-bold text-primary">${product.price}</td>
                       <td className="p-4">
                         <Badge variant={product.status === 'active' ? 'default' : 'secondary'}>
-                          {product.status}
+                          {t('product.status.' + product.status)}
                         </Badge>
                       </td>
                       <td className="p-4">

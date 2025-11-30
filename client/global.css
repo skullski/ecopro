@@ -38,6 +38,16 @@
   .animate-float {
     animation: float 6s ease-in-out infinite;
   }
+
+  /* Sliding animation for admin header pattern */
+  @keyframes slide {
+    0% {
+      transform: translate(0, 0);
+    }
+    100% {
+      transform: translate(60px, 60px);
+    }
+  }
 }
 
 @layer base {
@@ -138,7 +148,8 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
     font-family: "Cairo", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
   }
 

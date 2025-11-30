@@ -3,27 +3,27 @@ import { pool } from "../utils/database";
 
 // Get all products for a storefront
 export const getStorefrontProducts: RequestHandler = async (req, res) => {
-  const { clientId } = req.params;
+  const { storeSlug } = req.params;
 
-  // Validate clientId
-  if (!clientId || clientId === 'null' || clientId === 'undefined') {
+  // Validate storeSlug
+  if (!storeSlug || storeSlug === 'null' || storeSlug === 'undefined') {
     return res.status(400).json({ error: 'Invalid store ID' });
   }
 
   try {
-    // First check if the client exists (any user can have a store)
-    const clientCheck = await pool.query(
-      'SELECT id, user_type FROM users WHERE id = $1',
-      [clientId]
+    // Get client_id from store_slug
+    const storeCheck = await pool.query(
+      'SELECT client_id FROM client_store_settings WHERE store_slug = $1',
+      [storeSlug]
     );
 
-    if (clientCheck.rows.length === 0) {
-      console.log(`Store not found: User ID ${clientId} does not exist`);
+    if (storeCheck.rows.length === 0) {
+      console.log(`Store not found: ${storeSlug}`);
       return res.status(404).json({ error: 'Store not found' });
     }
 
-    const user = clientCheck.rows[0];
-    console.log(`Loading store for user ID ${clientId}, type: ${user.user_type}`);
+    const clientId = storeCheck.rows[0].client_id;
+    console.log(`Loading store ${storeSlug} for client ID ${clientId}`);
 
     // Get products (can be empty array)
     const result = await pool.query(
@@ -37,7 +37,7 @@ export const getStorefrontProducts: RequestHandler = async (req, res) => {
       [clientId]
     );
 
-    console.log(`Found ${result.rows.length} products for store ${clientId}`);
+    console.log(`Found ${result.rows.length} products for store ${storeSlug}`);
     res.json(result.rows);
   } catch (error) {
     console.error('Get storefront products error:', error);
@@ -47,15 +47,16 @@ export const getStorefrontProducts: RequestHandler = async (req, res) => {
 
 // Get store settings for a storefront
 export const getStorefrontSettings: RequestHandler = async (req, res) => {
-  const { clientId } = req.params;
+  const { storeSlug } = req.params;
 
   try {
     const result = await pool.query(
       `SELECT store_name, store_description, store_logo, 
-              primary_color, secondary_color
+              primary_color, secondary_color,
+              template, banner_url, currency_code
        FROM client_store_settings
-       WHERE client_id = $1`,
-      [clientId]
+       WHERE store_slug = $1`,
+      [storeSlug]
     );
 
     if (result.rows.length === 0) {
@@ -64,6 +65,9 @@ export const getStorefrontSettings: RequestHandler = async (req, res) => {
         store_name: 'Store',
         primary_color: '#3b82f6',
         secondary_color: '#8b5cf6',
+        template: 'classic',
+        currency_code: 'DZD',
+        banner_url: null
       });
     }
 
@@ -76,7 +80,7 @@ export const getStorefrontSettings: RequestHandler = async (req, res) => {
 
 // Get single product for a storefront
 export const getPublicProduct: RequestHandler = async (req, res) => {
-  const { clientId, slug } = req.params;
+  const { storeSlug, productSlug } = req.params;
 
   try {
     // Get product with store settings
@@ -88,8 +92,8 @@ export const getPublicProduct: RequestHandler = async (req, res) => {
         s.secondary_color
       FROM client_store_products p
       LEFT JOIN client_store_settings s ON p.client_id = s.client_id
-      WHERE p.client_id = $1 AND p.slug = $2 AND p.status = 'active'`,
-      [clientId, slug]
+      WHERE s.store_slug = $1 AND p.slug = $2 AND p.status = 'active'`,
+      [storeSlug, productSlug]
     );
 
     if (productResult.rows.length === 0) {

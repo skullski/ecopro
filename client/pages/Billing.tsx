@@ -1,5 +1,8 @@
+
+import { useTranslation } from "../lib/i18n";
 import React from 'react';
 
 export default function Billing() {
-  return <div>Billing (placeholder)</div>;
+  const { t } = useTranslation();
+  return <div>{t('billing.placeholder')}</div>;
 }

@@ -18,6 +18,7 @@ import { upload, uploadImage } from "./routes/uploads";
 import { authenticate, requireAdmin, requireSeller, requireClient } from "./middleware/auth";
 import * as adminRoutes from "./routes/admin";
 import * as dashboardRoutes from "./routes/dashboard";
+import * as botRoutes from "./routes/bot";
 import { initializeDatabase, createDefaultAdmin, runPendingMigrations } from "./utils/database";
 import { hashPassword } from "./utils/auth";
 import {
@@ -235,6 +236,23 @@ export function createServer() {
     dashboardRoutes.getDashboardStats
   );
 
+  // Bot settings routes (authenticated clients)
+  app.get(
+    "/api/bot/settings",
+    authenticate,
+    requireClient,
+    apiLimiter,
+    botRoutes.getBotSettings
+  );
+
+  app.put(
+    "/api/bot/settings",
+    authenticate,
+    requireClient,
+    apiLimiter,
+    botRoutes.updateBotSettings
+  );
+
   // Admin management routes (platform admin only)
   app.post(
     "/api/admin/promote",
@@ -377,9 +395,9 @@ export function createServer() {
   );
 
   // Public store routes (no authentication required)
-  app.get("/api/storefront/:clientId/products", publicStoreRoutes.getStorefrontProducts);
-  app.get("/api/storefront/:clientId/settings", publicStoreRoutes.getStorefrontSettings);
-  app.get("/api/store/:clientId/:slug", publicStoreRoutes.getPublicProduct);
+  app.get("/api/storefront/:storeSlug/products", publicStoreRoutes.getStorefrontProducts);
+  app.get("/api/storefront/:storeSlug/settings", publicStoreRoutes.getStorefrontSettings);
+  app.get("/api/store/:storeSlug/:productSlug", publicStoreRoutes.getPublicProduct);
 
   // Order routes
   app.post("/api/orders/create", orderRoutes.createOrder); // Public - buyers can create orders

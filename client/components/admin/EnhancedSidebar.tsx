@@ -3,7 +3,7 @@ import {
   Home, Eye, Store, ShoppingCart, Tag, FileText,
   Truck, Megaphone, Star, Percent, Globe, BarChart3, 
   Users, Shield, Ban, Puzzle, CreditCard, Settings,
-  ChevronDown, ChevronRight, Menu, X, Package
+  ChevronDown, ChevronRight, Menu, X, Package, Bot
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -36,6 +36,11 @@ const menuItems: MenuItem[] = [
     titleKey: "sidebar.addons", 
     path: "/dashboard/addons/google-sheets", 
     icon: <Puzzle className="w-5 h-5" />,
+  },
+  { 
+    titleKey: "sidebar.wasselni", 
+    path: "/dashboard/wasselni-settings", 
+    icon: <Bot className="w-5 h-5" />,
   },
   { 
     titleKey: "sidebar.analytics", 
@@ -159,7 +164,7 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
         {!collapsed && (
           <div>
             <span className="font-bold text-lg bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent block">
-              Call Verification
+              {t('sidebar.brand')}
             </span>
             <span className="text-xs text-muted-foreground">{t("sidebar.controlPanel")}</span>
           </div>

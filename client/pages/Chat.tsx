@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { apiFetch } from "@/lib/api";
+import { useTranslation } from "../lib/i18n";
 
 type Msg = { id: string; fromUserId: string; body: string; createdAt: number };
 
@@ -37,9 +38,10 @@ export default function Chat() {
     setInput("");
   }
 
+  const { t } = useTranslation();
   return (
     <div className="max-w-3xl mx-auto p-6 h-[80vh] flex flex-col">
-      <div className="text-xl font-semibold mb-3">Chat</div>
+      <div className="text-xl font-semibold mb-3">{t('chat.title')}</div>
       <div ref={listRef} className="flex-1 overflow-auto border rounded p-3 space-y-2 bg-gray-50">
         {messages.map((m) => (
           <div key={m.id} className="max-w-[70%] p-2 rounded bg-white shadow">
@@ -49,8 +51,8 @@ export default function Chat() {
         ))}
       </div>
       <div className="mt-3 flex gap-2">
-        <input className="input input-bordered flex-1" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Type a message..." />
-        <button className="btn btn-primary" onClick={send}>Send</button>
+        <input className="input input-bordered flex-1" value={input} onChange={(e) => setInput(e.target.value)} placeholder={t('chat.inputPlaceholder')} />
+        <button className="btn btn-primary" onClick={send}>{t('chat.send')}</button>
       </div>
     </div>
   );

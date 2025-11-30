@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { AddressForm, AddressFormValue } from "@/components/AddressForm";
+import { useTranslation } from "../lib/i18n";
 
 type User = {
   id: string;
@@ -59,22 +60,23 @@ export default function BuyerInfo() {
     }
   }
 
+  const { t } = useTranslation();
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-5">
-      <h1 className="text-2xl font-semibold">Your information</h1>
+      <h1 className="text-2xl font-semibold">{t('buyerInfo.title')}</h1>
       <div className="grid gap-3">
-        <input className="input input-bordered" placeholder="Full name" value={name} onChange={(e) => setName(e.target.value)} />
-        <input className="input input-bordered" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <input className="input input-bordered" placeholder={t('buyerInfo.fullNamePlaceholder')} value={name} onChange={(e) => setName(e.target.value)} />
+        <input className="input input-bordered" placeholder={t('buyerInfo.emailPlaceholder')} value={email} onChange={(e) => setEmail(e.target.value)} />
       </div>
       <div>
-        <h2 className="text-lg font-semibold mb-2">Default shipping address</h2>
+        <h2 className="text-lg font-semibold mb-2">{t('buyerInfo.defaultShippingAddress')}</h2>
         <AddressForm value={addr} onChange={setAddr} />
       </div>
       <div className="flex gap-2">
         <button className="btn btn-primary" disabled={saving} onClick={save}>
-          {saving ? "Saving..." : "Save"}
+          {saving ? t('buyerInfo.saving') : t('buyerInfo.save')}
         </button>
-        {saved && <div className="text-green-600 self-center">Saved.</div>}
+        {saved && <div className="text-green-600 self-center">{t('buyerInfo.saved')}</div>}
       </div>
     </div>
   );

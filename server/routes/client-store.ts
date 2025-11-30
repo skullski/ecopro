@@ -228,11 +228,14 @@ export const getStoreSettings: RequestHandler = async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      // Create default settings
+      // Generate unique slug
+      const randomSlug = 'store-' + Math.random().toString(36).substr(2, 8);
+      
+      // Create default settings with slug
       result = await pool.query(
-        `INSERT INTO client_store_settings (client_id) 
-         VALUES ($1) RETURNING *`,
-        [clientId]
+        `INSERT INTO client_store_settings (client_id, store_slug) 
+         VALUES ($1, $2) RETURNING *`,
+        [clientId, randomSlug]
       );
     }
 

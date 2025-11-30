@@ -46,7 +46,7 @@ export default function Signup() {
             </h2>
             <p className="text-sm text-muted-foreground mt-2 flex items-center justify-center gap-1">
               <Sparkles className="w-4 h-4 text-accent" />
-              Create your client account
+              {t('signup.subtitle')}
             </p>
           </div>
           
@@ -82,7 +82,7 @@ export default function Signup() {
                 value={email} 
                 onChange={(e) => setEmail(e.target.value)} 
                 className="mt-1 w-full rounded-xl border-2 border-accent/20 bg-background px-4 py-3 focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all" 
-                placeholder="example@gmail.com"
+                placeholder={t('auth.emailPlaceholder')}
                 type="email"
                 required
                 disabled={loading}
@@ -98,7 +98,7 @@ export default function Signup() {
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
                 className="mt-1 w-full rounded-xl border-2 border-accent/20 bg-background px-4 py-3 focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all" 
-                placeholder="••••••••"
+                placeholder={t('auth.passwordPlaceholder')}
                 required
                 disabled={loading}
                 minLength={6}

@@ -36,6 +36,7 @@ import AdminSettings from "./pages/admin/Settings";
 // OrderSuccess, AdminProducts, and top-level Billing pages were removed.
 import AdminBilling from "./pages/admin/Billing";
 import AdminCalls from "./pages/admin/Calls";
+import AdminWasselniSettings from "./pages/admin/WasselniSettings";
 // AdminStores removed
 // Storefront page removed
 import LogoDemo from "./pages/LogoDemo";
@@ -534,6 +535,7 @@ const App = () => (
                     <Route path="settings" element={<AdminSettings />} />
                     <Route path="billing" element={<AdminBilling />} />
                     <Route path="calls" element={<AdminCalls />} />
+                    <Route path="wasselni-settings" element={<AdminWasselniSettings />} />
                   </Route>
                   {/* Secret Platform Admin Panel removed */}
                   {/* Old admin routes: redirect to /dashboard (preserve subpath) */}
