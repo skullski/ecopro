@@ -45,10 +45,20 @@ export const listUsers: RequestHandler = async (_req, res) => {
 export const listSellers: RequestHandler = async (_req, res) => {
   try {
     const { pool } = await import("../utils/database");
-    const result = await pool.query(
+    // Primary source: dedicated sellers table
+    const sellersRes = await pool.query(
       "SELECT id, email, name, created_at, updated_at FROM sellers ORDER BY created_at DESC"
     );
-    res.json(result.rows);
+    let sellers = sellersRes.rows;
+
+    // Fallback: if sellers table empty or missing rows due to migration order, infer from users
+    if (!sellers || sellers.length === 0) {
+      const usersRes = await pool.query(
+        "SELECT id, email, name, created_at, updated_at FROM users WHERE user_type='seller' ORDER BY created_at DESC"
+      );
+      sellers = usersRes.rows.map((u: any) => ({ ...u, inferred: true }));
+    }
+    res.json(sellers);
   } catch (err) {
     console.error(err);
     return jsonError(res, 500, "Failed to list sellers");
