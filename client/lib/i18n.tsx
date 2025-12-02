@@ -33,8 +33,9 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   }, [locale]);
 
   function t(key: string, params?: Record<string, string | number>): string {
-    let value = translations[locale][key];
-    if (!value) return key;
+    // Prefer current locale; fallback to English; never expose raw keys to end-users
+    let value = translations[locale][key] || translations['en'][key];
+    if (!value) return "";
 
     if (params) {
       Object.entries(params).forEach(([key, val]) => {
