@@ -189,7 +189,10 @@ export default function BaseTemplate(props: TemplateProps & { variant: 'classic'
                         <span className="text-xl font-bold" style={{ color: primaryColor }}>{formatPrice(Number(product.price))}</span>
                         {product.original_price && <span className="text-sm text-muted-foreground line-through ml-2">{formatPrice(Number(product.original_price))}</span>}
                       </div>
-                      <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">View</Button>
+                      <div className="flex gap-2">
+                        <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); navigate(`/store/${storeSlug}/${product.slug}`); }}>View</Button>
+                        <Button size="sm" className="bg-primary text-primary-foreground" onClick={(e) => { e.stopPropagation(); navigate(`/checkout/${product.id}`); }}>Buy</Button>
+                      </div>
                     </div>
                   </div>
                 </button>
