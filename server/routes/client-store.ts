@@ -265,6 +265,16 @@ export const getStoreSettings: RequestHandler = async (req, res) => {
       );
     }
 
+    // Handle legacy rows missing store_slug
+    if (result.rows[0].store_slug == null) {
+      const newSlug = 'store-' + Math.random().toString(36).substr(2, 8);
+      const updated = await pool.query(
+        `UPDATE client_store_settings SET store_slug = $1 WHERE client_id = $2 RETURNING *`,
+        [newSlug, clientId]
+      );
+      result.rows[0] = updated.rows[0];
+    }
+
     res.json(result.rows[0]);
   } catch (error) {
     console.error("Get store settings error:", error);

@@ -534,6 +534,32 @@ export default function Store() {
           </div>
         </div>
 
+        {/* Store Link Quick Access */}
+        {storeSettings.store_slug && (
+          <div className="bg-card border rounded-xl p-4 flex flex-wrap gap-4 items-center">
+            <div className="flex-1 min-w-[240px]">
+              <p className="text-sm font-medium mb-1">Public Storefront URL</p>
+              <div className="flex gap-2">
+                <Input
+                  readOnly
+                  value={`${window.location.origin}/store/${storeSettings.store_slug}`}
+                  className="font-mono text-xs"
+                />
+                <Button size="sm" variant="outline" onClick={copyStoreLink}>
+                  {storeLinkCopied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => window.open(`/store/${storeSettings.store_slug}`, '_blank')}>
+                  <ExternalLink className="w-4 h-4" />
+                </Button>
+              </div>
+              {storeLinkCopied && <p className="text-xs text-green-600 mt-1 flex items-center gap-1"><Check className="w-3 h-3" />Copied!</p>}
+            </div>
+            <div className="text-xs text-muted-foreground max-w-md">
+              Share this link with customers to let them browse all your products. Individual product share links remain private.
+            </div>
+          </div>
+        )}
+
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white">
