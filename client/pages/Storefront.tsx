@@ -172,7 +172,16 @@ export default function Storefront() {
     );
   }
 
-  return RenderStorefront(template as any, {
+  return (
+    <>
+      {/* Active template badge for quick visibility */}
+      <div className="fixed top-20 right-4 z-40">
+        <div className="inline-flex items-center gap-2 rounded-full border bg-card/80 backdrop-blur px-3 py-1 text-xs shadow-sm">
+          <span className="font-semibold">Template:</span>
+          <span className="font-mono">{template}</span>
+        </div>
+      </div>
+      {RenderStorefront(template as any, {
     storeSlug: storeSlug!,
     products,
     filtered: filteredProducts,
@@ -191,5 +200,7 @@ export default function Storefront() {
     secondaryColor,
     bannerUrl: bannerUrl || null,
     navigate: (to: any) => navigate(to),
-    });
+      })}
+    </>
+  );
   }
