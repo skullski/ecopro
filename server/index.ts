@@ -425,6 +425,7 @@ export function createServer() {
   app.get("/api/storefront/:storeSlug/products", publicStoreRoutes.getStorefrontProducts);
   app.get("/api/storefront/:storeSlug/settings", publicStoreRoutes.getStorefrontSettings);
   app.get("/api/store/:storeSlug/:productSlug", publicStoreRoutes.getPublicProduct);
+  app.post("/api/storefront/:storeSlug/orders", publicStoreRoutes.createPublicStoreOrder);
 
   // Order routes
   app.post("/api/orders/create", orderRoutes.createOrder); // Public - buyers can create orders

@@ -1,5 +1,6 @@
 import { RequestHandler } from "express";
 import { pool } from "../utils/database";
+import { sendWhatsAppMessage } from "../utils/messaging";
 
 // Get all products for a storefront
 export const getStorefrontProducts: RequestHandler = async (req, res) => {
@@ -115,5 +116,75 @@ export const getPublicProduct: RequestHandler = async (req, res) => {
   } catch (error) {
     console.error('Get public product error:', error);
     res.status(500).json({ error: 'Failed to fetch product' });
+  }
+};
+
+// Create order via public storefront using storeSlug
+export const createPublicStoreOrder: RequestHandler = async (req, res) => {
+  const { storeSlug } = req.params as any;
+  try {
+    const {
+      product_id,
+      quantity,
+      total_price,
+      customer_name,
+      customer_email,
+      customer_phone,
+      customer_address,
+    } = req.body;
+
+    if (!product_id || !quantity || !total_price || !customer_name) {
+      res.status(400).json({ error: 'Missing required fields' });
+      return;
+    }
+
+    const cs = await pool.query('SELECT client_id, store_name FROM client_store_settings WHERE store_slug = $1', [storeSlug]);
+    if (!cs.rows.length) {
+      res.status(404).json({ error: 'Store not found' });
+      return;
+    }
+    const clientId = cs.rows[0].client_id;
+    const storeName = cs.rows[0].store_name || 'EcoPro Store';
+
+    const result = await pool.query(
+      `INSERT INTO store_orders (
+        product_id, client_id, quantity, total_price,
+        customer_name, customer_email, customer_phone, shipping_address,
+        status, payment_status, created_at
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,NOW()) RETURNING *`,
+      [
+        product_id,
+        clientId,
+        quantity,
+        total_price,
+        customer_name,
+        customer_email || null,
+        customer_phone || null,
+        customer_address || null,
+        'pending',
+        'unpaid'
+      ]
+    );
+
+    // Audit log
+    try {
+      await pool.query(
+        `INSERT INTO audit_logs(actor_type, actor_id, action, target_type, target_id, details, created_at)
+         VALUES($1,$2,$3,$4,$5,$6,NOW())`,
+        ['system', clientId, 'create_order', 'order', result.rows[0]?.id || null, JSON.stringify({ product_id, customer_name })]
+      );
+    } catch {}
+
+    // WhatsApp confirmation
+    if (customer_phone) {
+      const productTitle = (await pool.query('SELECT title FROM client_store_products WHERE id = $1', [product_id])).rows?.[0]?.title || 'Product';
+      const msg = `Hi ${customer_name}, your order for ${productTitle} at ${storeName} is received. Total: ${total_price}. We will contact you soon.`;
+      sendWhatsAppMessage(customer_phone, msg).catch(() => {});
+    }
+
+    res.status(201).json({ success: true, order: result.rows[0] });
+  } catch (error) {
+    console.error('Create public store order error:', error);
+    res.status(500).json({ error: 'Failed to create order' });
   }
 };
