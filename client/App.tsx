@@ -151,6 +151,19 @@ function GuardMarketplaceAuthPages({ children }: { children: JSX.Element }) {
   return children;
 }
 
+// Strict admin guard: render 404 if not admin
+function RequireAdmin({ children }: { children: JSX.Element }) {
+  const userStr = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
+  if (!userStr) return <NotFound />;
+  try {
+    const user = JSON.parse(userStr);
+    if (user?.role === 'admin') return children;
+    return <NotFound />;
+  } catch {
+    return <NotFound />;
+  }
+}
+
 // Inline guest checkout page (no new file)
 function GuestCheckout() {
   const navigate = useNavigate();
@@ -522,8 +535,8 @@ const App = () => (
                       </RequireSeller>
                     }
                   />
-                  {/* Platform Admin route */}
-                  <Route path="/platform-admin" element={<PlatformAdmin />} />
+                  {/* Platform Admin route (guarded) */}
+                  <Route path="/platform-admin" element={<RequireAdmin><PlatformAdmin /></RequireAdmin>} />
                   {/* /seller-signup removed */}
                   {/* /quick-sell removed */}
                   {/* /my-items removed */}
