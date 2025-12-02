@@ -13,8 +13,7 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const user = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user") || "null") : null;
-
-  const isAdmin = typeof window !== "undefined" ? localStorage.getItem("isAdmin") === 'true' : false;
+  const isAdmin = user?.role === "admin";
   const isSeller = user?.role === "seller";
 
   function handleLogout() {

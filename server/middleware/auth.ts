@@ -34,16 +34,11 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
 /**
  * Middleware to check if user has admin role
  */
-export function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  if (!req.user) {
-    res.status(401).json({ error: "Authentication required" });
-    return;
-  }
-
-  if (req.user.role !== "admin") {
-    return res.status(403).json({ error: "Admin access required" });
-  }
-  next();
+export const requireAdmin: RequestHandler = (req, res, next) => {
+  const user = (req as any).user;
+  if (!user) return res.status(401).json({ error: "Unauthorized" });
+  if (user.role !== "admin") return res.status(403).json({ error: "Forbidden" });
+  return next();
 }
 
 /**

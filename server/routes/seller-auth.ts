@@ -63,7 +63,11 @@ export const registerSeller: RequestHandler = async (req, res) => {
     });
   } catch (error) {
     console.error("Seller registration error:", error);
-    res.status(500).json({ error: "Registration failed" });
+    const msg = (error as any)?.message || "Registration failed";
+    if (msg.includes("unique") || msg.includes("already exists")) {
+      return res.status(400).json({ error: "Email already registered" });
+    }
+    res.status(500).json({ error: msg });
   }
 };
 

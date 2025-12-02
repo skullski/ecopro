@@ -104,10 +104,27 @@ export const deleteUser: RequestHandler = async (req, res) => {
     if (userRes.rows.length === 0) {
       return jsonError(res, 404, "User not found");
     }
+    const targetRole = userRes.rows[0].role;
+    if (targetRole === 'admin') {
+      const adminsCountRes = await pool.query("SELECT COUNT(*)::int AS cnt FROM users WHERE role='admin'", []);
+      const adminsCount = adminsCountRes.rows[0].cnt;
+      if (adminsCount <= 1) {
+        return jsonError(res, 400, 'Cannot delete the last admin');
+      }
+    }
 
     // Optional: cascade deletes for marketplace products/orders owned by this user
     // For safety, we soft-delete by removing user and leaving products orphaned only if FK allows
     await pool.query('DELETE FROM users WHERE id = $1', [userId]);
+
+    // Audit log
+    const actorId = (req as any).user?.id ? parseInt((req as any).user.id, 10) : null;
+    if (actorId) {
+      await pool.query(
+        'INSERT INTO audit_logs(actor_id, action, target_type, target_id, details) VALUES ($1, $2, $3, $4, $5)',
+        [actorId, 'delete_user', 'user', userId, JSON.stringify({ role: targetRole })]
+      );
+    }
 
     res.json({ message: 'User deleted successfully', id: userId });
   } catch (err) {
@@ -142,6 +159,15 @@ export const convertUserToSeller: RequestHandler = async (req, res) => {
       [user.email, hashed, user.name]
     );
 
+    // Audit log
+    const actorId = (req as any).user?.id ? parseInt((req as any).user.id, 10) : null;
+    if (actorId) {
+      await pool.query(
+        'INSERT INTO audit_logs(actor_id, action, target_type, target_id, details) VALUES ($1, $2, $3, $4, $5)',
+        [actorId, 'convert_user_to_seller', 'user', userId, JSON.stringify({ seller_id: ins.rows[0].id })]
+      );
+    }
+
     res.json({
       message: 'User converted to seller',
       seller: ins.rows[0],
@@ -166,6 +192,14 @@ export const deleteSeller: RequestHandler = async (req, res) => {
 
     // Optional: ensure no products linked, or handle cascade strategy externally
     await pool.query('DELETE FROM sellers WHERE id = $1', [sellerId]);
+    // Audit log
+    const actorId = (req as any).user?.id ? parseInt((req as any).user.id, 10) : null;
+    if (actorId) {
+      await pool.query(
+        'INSERT INTO audit_logs(actor_id, action, target_type, target_id) VALUES ($1, $2, $3, $4)',
+        [actorId, 'delete_seller', 'seller', sellerId]
+      );
+    }
     res.json({ message: 'Seller deleted successfully', id: sellerId });
   } catch (err) {
     console.error('Delete seller error:', err);
