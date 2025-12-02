@@ -31,7 +31,10 @@ interface PublicProduct {
 }
 
 export default function PublicProduct() {
-  const { clientId, slug } = useParams<{ clientId: string; slug: string }>();
+  // Support both legacy route params (:clientId/:slug) and new ones (:storeSlug/:productSlug)
+  const params = useParams();
+  const clientId = (params.clientId as string) || (params.storeSlug as string);
+  const slug = (params.slug as string) || (params.productSlug as string);
   const navigate = useNavigate();
   const { toast } = useToast();
   const [product, setProduct] = useState<PublicProduct | null>(null);

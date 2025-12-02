@@ -594,9 +594,9 @@ const App = () => (
                   <Route path="/guest-checkout/:productId" element={<GuestCheckout />} />
                   {/* My Store - logged in client viewing their own store */}
                   <Route path="/my-store" element={<MyStore />} />
-                  {/* Public storefront routes (client's store) */}
-                  <Route path="/store/:clientId" element={<Storefront />} />
-                  <Route path="/store/:clientId/:slug" element={<PublicProduct />} />
+                  {/* Public storefront routes (client's store by store_slug) */}
+                  <Route path="/store/:storeSlug" element={<Storefront />} />
+                  <Route path="/store/:storeSlug/:productSlug" element={<PublicProduct />} />
                   {/* REMOVE duplicate/non-existent custom routes */}
                   {/* <Route path="/product/:id" element={<ProductDetail />} /> */}
                   {/* <Route path="/cart" element={<Cart />} /> */}
