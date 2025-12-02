@@ -228,6 +228,7 @@ export default function BaseTemplate(props: TemplateProps & { variant: 'classic'
                         <Badge variant="outline" className="text-xs"><Eye className="w-3 h-3 mr-1" />{product.views} views</Badge>
                         {discount > 0 && <Badge className="bg-red-500 text-xs">Save {discount}%</Badge>}
                         {product.stock_quantity === 0 && <Badge variant="secondary">Out of Stock</Badge>}
+                        <Button size="sm" className="ml-auto" onClick={(e) => { e.stopPropagation(); navigate(`/store/${storeSlug}/checkout/${product.slug}`); }}>Buy</Button>
                       </div>
                     </div>
                   </div>

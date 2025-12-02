@@ -7,7 +7,7 @@ import { z } from "zod";
 type Product = { id: string; title: string; price: number; imageUrl?: string };
 
 export default function Checkout() {
-  const { productId } = useParams();
+  const { productId, storeSlug, productSlug } = useParams();
   const nav = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
   const [addr, setAddr] = useState<AddressFormValue>({
@@ -20,13 +20,27 @@ export default function Checkout() {
   const [orderId, setOrderId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!productId) return;
-    apiFetch<Product>(`/api/products/${productId}`).then(setProduct);
+    // Determine source: private store product via slug, else marketplace by id
+    const load = async () => {
+      try {
+        if (storeSlug && productSlug) {
+          const res = await fetch(`/api/store/${storeSlug}/${productSlug}`);
+          if (res.ok) {
+            const p = await res.json();
+            setProduct({ id: String(p.id), title: p.title, price: Number(p.price), imageUrl: p.images?.[0] });
+          }
+        } else if (productId) {
+          const p = await apiFetch<Product>(`/api/products/${productId}`);
+          setProduct(p);
+        }
+      } catch {}
+    };
+    load();
     apiFetch<any>("/api/me").then((me) => {
       const def = me.addresses?.find((a: any) => a.id === me.defaultAddressId) || me.addresses?.[0];
       if (def) setAddr({ line1: def.line1, line2: def.line2, city: def.city, state: def.state, postalCode: def.postalCode, country: def.country, phone: def.phone });
     });
-  }, [productId]);
+  }, [productId, storeSlug, productSlug]);
 
   async function placeOrder() {
     if (!productId || !product) return;
@@ -52,7 +66,8 @@ export default function Checkout() {
         customer_address: addressStr,
         store_slug: undefined,
       };
-      const res = await fetch('/api/orders/create', {
+      const endpoint = storeSlug ? `/api/storefront/${storeSlug}/orders` : '/api/orders/create';
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
