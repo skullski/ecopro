@@ -13,6 +13,7 @@ export const createOrder: RequestHandler = async (req, res) => {
     const {
       product_id,
       client_id,
+      store_slug,
       quantity,
       total_price,
       customer_name,
@@ -27,6 +28,17 @@ export const createOrder: RequestHandler = async (req, res) => {
       return;
     }
 
+    // Infer client_id by product or store_slug if not provided
+    let resolvedClientId = client_id;
+    if (!resolvedClientId && product_id) {
+      const pid = await pool.query('SELECT client_id FROM client_store_products WHERE id = $1', [product_id]);
+      resolvedClientId = pid.rows?.[0]?.client_id || resolvedClientId;
+    }
+    if (!resolvedClientId && store_slug) {
+      const cs = await pool.query('SELECT client_id FROM client_store_settings WHERE store_slug = $1', [store_slug]);
+      resolvedClientId = cs.rows?.[0]?.client_id || resolvedClientId;
+    }
+
     // Create order with pending status
     const result = await pool.query(
       `INSERT INTO store_orders (
@@ -37,7 +49,7 @@ export const createOrder: RequestHandler = async (req, res) => {
       RETURNING *`,
       [
         product_id,
-        client_id,
+        resolvedClientId,
         quantity,
         total_price,
         customer_name,
@@ -55,13 +67,22 @@ export const createOrder: RequestHandler = async (req, res) => {
       message: 'Order created successfully'
     });
 
+    // Audit log
+    try {
+      await pool.query(
+        `INSERT INTO audit_logs(actor_type, actor_id, action, target_type, target_id, details, created_at)
+         VALUES($1,$2,$3,$4,$5,$6,NOW())`,
+        ['system', resolvedClientId || null, 'create_order', 'order', result.rows[0]?.id || null, JSON.stringify({ product_id, customer_name })]
+      );
+    } catch {}
+
     // Fire-and-forget WhatsApp confirmation (non-blocking)
     const order = result.rows[0];
     const toPhone = customer_phone;
     if (toPhone) {
       const storeName = (await pool.query(
         'SELECT store_name FROM client_store_settings WHERE client_id = $1 LIMIT 1',
-        [client_id]
+        [resolvedClientId]
       )).rows?.[0]?.store_name || 'EcoPro Store';
       const productTitle = (await pool.query(
         'SELECT title FROM store_products WHERE id = $1 LIMIT 1',

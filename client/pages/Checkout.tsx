@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AddressForm, AddressFormValue } from "@/components/AddressForm";
 import { apiFetch } from "@/lib/api";
+import { z } from "zod";
 
 type Product = { id: string; title: string; price: number; imageUrl?: string };
 
@@ -31,6 +32,15 @@ export default function Checkout() {
     if (!productId || !product) return;
     setSubmitting(true);
     try {
+      const schema = z.object({
+        name: z.string().min(2, "Name is required"),
+        phone: z.string().regex(/^\+\d{6,15}$/,{ message: "Enter WhatsApp phone in E.164 format" }).optional(),
+        email: z.string().email().optional(),
+        address: z.string().min(5, "Address is required"),
+      });
+      const addressStr = [addr.line1, addr.line2, addr.city, addr.state, addr.postalCode, addr.country].filter(Boolean).join(', ');
+      schema.parse({ name: addr?.name || '', phone: addr?.phone, email: addr?.email, address: addressStr });
+
       const payload = {
         product_id: Number(productId),
         client_id: null,
@@ -39,7 +49,8 @@ export default function Checkout() {
         customer_name: addr?.name || '',
         customer_email: addr?.email || '',
         customer_phone: addr?.phone || '',
-        customer_address: [addr.line1, addr.line2, addr.city, addr.state, addr.postalCode, addr.country].filter(Boolean).join(', '),
+        customer_address: addressStr,
+        store_slug: undefined,
       };
       const res = await fetch('/api/orders/create', {
         method: 'POST',
