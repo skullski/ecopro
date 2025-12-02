@@ -215,6 +215,19 @@ export const createProduct: RequestHandler = async (req, res) => {
       return;
     }
 
+    // Ensure seller exists in sellers table to avoid FK errors
+    try {
+      const exists = await pool.query('SELECT id FROM sellers WHERE id = $1', [sellerId]);
+      if (exists.rows.length === 0) {
+        return res.status(400).json({
+          error: 'Seller account not found. Register via /api/seller/register or ask admin to convert your user to seller.'
+        });
+      }
+    } catch (chkErr) {
+      console.error('[createProduct] seller existence check failed:', chkErr);
+      return res.status(500).json({ error: 'Failed to verify seller account' });
+    }
+
     const {
       title,
       description,
@@ -292,7 +305,7 @@ export const createProduct: RequestHandler = async (req, res) => {
         return res.status(400).json({ error: 'Invalid numeric value (price or stock).' });
       }
       if (dbErr.code === '23503') {
-        return res.status(400).json({ error: 'Seller foreign key invalid. Seller may not exist.' });
+        return res.status(400).json({ error: 'Seller foreign key invalid. Ensure you are logged in as a seller account.' });
       }
       return res.status(500).json({ error: 'Database error creating product', code: dbErr.code });
     }

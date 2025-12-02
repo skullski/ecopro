@@ -26,5 +26,6 @@ INSERT INTO marketplace_products (seller_id, title, description, price, original
 (1, 'Nespresso Vertuo Plus', 'Coffee machine with frother, like new', 149.99, 199.99, 'Home & Kitchen', ARRAY['https://images.unsplash.com/photo-1517668808822-9ebb02f2a0e6'], 1, 'used', 'Minneapolis, MN', true, 98),
 (1, 'Lego Architecture Set', 'Taj Mahal #21056, sealed box, rare collectible', 399.99, 369.99, 'Toys', ARRAY['https://images.unsplash.com/photo-1587654780291-39c9404d746b'], 1, 'new', 'Detroit, MI', true, 67);
 
--- Update the sequence to continue from the last inserted ID
-SELECT setval('marketplace_products_id_seq', (SELECT MAX(id) FROM marketplace_products));
+-- Note: No explicit sequence bump needed.
+-- For SERIAL/IDENTITY columns, PostgreSQL auto-advances based on default nextval.
+-- Removing setval avoids errors when using IDENTITY (no named serial sequence).

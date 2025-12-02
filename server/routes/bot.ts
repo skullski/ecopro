@@ -4,57 +4,40 @@ import { pool } from "../utils/database";
 // Get bot settings for the current client
 export const getBotSettings: RequestHandler = async (req, res) => {
   try {
-    const userId = (req as any).user?.id;
+    const clientId = (req as any).user?.id;
     
-    if (!userId) {
+    if (!clientId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
     // Get bot settings from database
     const result = await pool.query(
-      `SELECT * FROM bot_settings WHERE user_id = $1`,
-      [userId]
+      `SELECT * FROM bot_settings WHERE client_id = $1`,
+      [clientId]
     );
 
     if (result.rows.length === 0) {
       // Return default settings
       return res.json({
-        enabled: false,
-        language: 'ar',
-        whatsappDelay: 5,
-        smsDelay: 30,
-        companyName: '',
-        supportPhone: '',
-        storeUrl: '',
-        whatsappTemplate: `السلام عليكم {customerName}! 🌟
-
-شكراً لك على طلبك من {companyName}! 
-
-📦 تفاصيل الطلب:
-• المنتج: {productName}
-• السعر: {totalPrice} دج
-• العنوان: {address}
-
-هل تؤكد الطلب؟ رد ب "نعم" للتأكيد أو "لا" للإلغاء.
-
-للمساعدة: {supportPhone}`,
-        smsTemplate: `مرحبا {customerName}! طلبك #{orderId} من {companyName} بـ {totalPrice} دج. رد "نعم" للتأكيد. {supportPhone}`
+        enabled: true,
+        provider: 'whatsapp_cloud',
+        whatsappPhoneId: '',
+        whatsappToken: '',
+        templateOrderConfirmation: `السلام عليكم {customerName}! 🌟\n\nشكراً لك على طلبك من {companyName}! \n\n📦 تفاصيل الطلب:\n• المنتج: {productName}\n• السعر: {totalPrice} دج\n• العنوان: {address}\n\nهل تؤكد الطلب؟ رد ب "نعم" للتأكيد أو "لا" للإلغاء.`,
+        templatePayment: `تم تأكيد طلبك #{orderId}. يرجى الدفع بـ {totalPrice} دج.`,
+        templateShipping: `تم شحن طلبك #{orderId}. رقم التتبع: {trackingNumber}.`
       });
     }
 
     const settings = result.rows[0];
-    
-    // Parse JSON fields
     const response = {
       enabled: settings.enabled,
-      language: settings.language,
-      whatsappDelay: settings.whatsapp_delay,
-      smsDelay: settings.sms_delay,
-      companyName: settings.company_name,
-      supportPhone: settings.support_phone,
-      storeUrl: settings.store_url,
-      whatsappTemplate: settings.whatsapp_template,
-      smsTemplate: settings.sms_template
+      provider: settings.provider,
+      whatsappPhoneId: settings.whatsapp_phone_id,
+      whatsappToken: settings.whatsapp_token,
+      templateOrderConfirmation: settings.template_order_confirmation,
+      templatePayment: settings.template_payment,
+      templateShipping: settings.template_shipping,
     };
 
     res.json(response);
@@ -67,42 +50,39 @@ export const getBotSettings: RequestHandler = async (req, res) => {
 // Update bot settings for the current client
 export const updateBotSettings: RequestHandler = async (req, res) => {
   try {
-    const userId = (req as any).user?.id;
+    const clientId = (req as any).user?.id;
     
-    if (!userId) {
+    if (!clientId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
     const {
       enabled,
-      language,
-      whatsappDelay,
-      smsDelay,
-      companyName,
-      supportPhone,
-      storeUrl,
-      whatsappTemplate,
-      smsTemplate
+      provider,
+      whatsappPhoneId,
+      whatsappToken,
+      templateOrderConfirmation,
+      templatePayment,
+      templateShipping
     } = req.body;
 
     // Check if settings exist
     const existingResult = await pool.query(
-      `SELECT id FROM bot_settings WHERE user_id = $1`,
-      [userId]
+      `SELECT id FROM bot_settings WHERE client_id = $1`,
+      [clientId]
     );
 
     if (existingResult.rows.length === 0) {
       // Insert new settings
       await pool.query(
         `INSERT INTO bot_settings (
-          user_id, enabled, language, whatsapp_delay, sms_delay,
-          company_name, support_phone, store_url,
-          whatsapp_template, sms_template, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())`,
+          client_id, enabled, provider, whatsapp_phone_id, whatsapp_token,
+          template_order_confirmation, template_payment, template_shipping,
+          created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())`,
         [
-          userId, enabled, language, whatsappDelay, smsDelay,
-          companyName, supportPhone, storeUrl,
-          whatsappTemplate, smsTemplate
+          clientId, enabled ?? true, provider ?? 'whatsapp_cloud', whatsappPhoneId ?? null, whatsappToken ?? null,
+          templateOrderConfirmation ?? null, templatePayment ?? null, templateShipping ?? null
         ]
       );
     } else {
@@ -110,20 +90,17 @@ export const updateBotSettings: RequestHandler = async (req, res) => {
       await pool.query(
         `UPDATE bot_settings SET
           enabled = $2,
-          language = $3,
-          whatsapp_delay = $4,
-          sms_delay = $5,
-          company_name = $6,
-          support_phone = $7,
-          store_url = $8,
-          whatsapp_template = $9,
-          sms_template = $10,
+          provider = $3,
+          whatsapp_phone_id = $4,
+          whatsapp_token = $5,
+          template_order_confirmation = $6,
+          template_payment = $7,
+          template_shipping = $8,
           updated_at = NOW()
-        WHERE user_id = $1`,
+        WHERE client_id = $1`,
         [
-          userId, enabled, language, whatsappDelay, smsDelay,
-          companyName, supportPhone, storeUrl,
-          whatsappTemplate, smsTemplate
+          clientId, enabled ?? true, provider ?? 'whatsapp_cloud', whatsappPhoneId ?? null, whatsappToken ?? null,
+          templateOrderConfirmation ?? null, templatePayment ?? null, templateShipping ?? null
         ]
       );
     }
