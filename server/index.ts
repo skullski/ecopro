@@ -409,6 +409,12 @@ export function createServer() {
     clientStoreRoutes.updateStoreSettings
   );
   app.get(
+    "/api/client/store/stats",
+    authenticate,
+    requireClient,
+    clientStoreRoutes.getStoreStats
+  );
+  app.get(
     "/api/client/store/products/:id/share-link",
     authenticate,
     requireClient,

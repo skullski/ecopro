@@ -62,6 +62,7 @@ export default function Store() {
   const [savingSettings, setSavingSettings] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [statsServer, setStatsServer] = useState<{total_products:number;active_products:number;draft_products:number;total_views:number}|null>(null);
   
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
@@ -90,6 +91,7 @@ export default function Store() {
   useEffect(() => {
     loadProducts();
     loadStoreSettings();
+    loadStats();
   }, []);
 
   useEffect(() => {
@@ -128,6 +130,22 @@ export default function Store() {
       }
     } catch (e) {
       console.error('Failed to load store settings', e);
+    }
+  };
+
+  const loadStats = async () => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const res = await fetch('/api/client/store/stats', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setStatsServer(data);
+      }
+    } catch (e) {
+      // Non-fatal
+      console.error('Failed to load stats', e);
     }
   };
 
@@ -450,7 +468,12 @@ export default function Store() {
     setShowDeleteDialog(true);
   };
 
-  const stats = {
+  const stats = statsServer ? {
+    total: statsServer.total_products,
+    active: statsServer.active_products,
+    draft: statsServer.draft_products,
+    totalViews: statsServer.total_views,
+  } : {
     total: products.length,
     active: products.filter(p => p.status === 'active').length,
     draft: products.filter(p => p.status === 'draft').length,

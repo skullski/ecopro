@@ -120,6 +120,16 @@ export const createStoreProduct: RequestHandler = async (req, res) => {
     );
 
     product.slug = slug;
+    // Audit log create
+    try {
+      await pool.query(
+        'INSERT INTO audit_logs(actor_id, action, target_type, target_id, details) VALUES ($1,$2,$3,$4,$5)',
+        [clientId, 'create_store_product', 'client_store_product', product.id, JSON.stringify({ title })]
+      );
+    } catch (e) {
+      // Non-fatal
+      console.error('Audit log (create_store_product) failed:', (e as any).message);
+    }
     res.status(201).json(product);
   } catch (error) {
     console.error("Create store product error:", error);
@@ -165,7 +175,16 @@ export const updateStoreProduct: RequestHandler = async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Product not found" });
     }
-
+    // Audit log update (record the fields changed, excluding large arrays)
+    const changedKeys = Object.keys(updates).filter(k => !['images'].includes(k));
+    try {
+      await pool.query(
+        'INSERT INTO audit_logs(actor_id, action, target_type, target_id, details) VALUES ($1,$2,$3,$4,$5)',
+        [clientId, 'update_store_product', 'client_store_product', id, JSON.stringify({ changed: changedKeys })]
+      );
+    } catch (e) {
+      console.error('Audit log (update_store_product) failed:', (e as any).message);
+    }
     res.json(result.rows[0]);
   } catch (error) {
     console.error("Update store product error:", error);
@@ -189,7 +208,14 @@ export const deleteStoreProduct: RequestHandler = async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: "Product not found" });
     }
-
+    try {
+      await pool.query(
+        'INSERT INTO audit_logs(actor_id, action, target_type, target_id) VALUES ($1,$2,$3,$4)',
+        [clientId, 'delete_store_product', 'client_store_product', id]
+      );
+    } catch (e) {
+      console.error('Audit log (delete_store_product) failed:', (e as any).message);
+    }
     res.json({ success: true, id: result.rows[0].id });
   } catch (error) {
     console.error("Delete store product error:", error);
@@ -279,10 +305,41 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
       values
     );
 
+    // Audit log settings update
+    const changedSettings = Object.keys(updates);
+    try {
+      await pool.query(
+        'INSERT INTO audit_logs(actor_id, action, target_type, target_id, details) VALUES ($1,$2,$3,$4,$5)',
+        [clientId, 'update_store_settings', 'client_store_settings', clientId, JSON.stringify({ changed: changedSettings })]
+      );
+    } catch (e) {
+      console.error('Audit log (update_store_settings) failed:', (e as any).message);
+    }
     res.json(result.rows[0]);
   } catch (error) {
     console.error("Update store settings error:", error);
     res.status(500).json({ error: "Failed to update store settings" });
+  }
+};
+
+// Store stats (aggregated)
+export const getStoreStats: RequestHandler = async (req, res) => {
+  try {
+    const clientId = (req as any).user.id;
+    const statsRes = await pool.query(
+      `SELECT 
+        COUNT(*) AS total_products,
+        COUNT(*) FILTER (WHERE status='active') AS active_products,
+        COUNT(*) FILTER (WHERE status='draft') AS draft_products,
+        COALESCE(SUM(views),0) AS total_views
+       FROM client_store_products
+       WHERE client_id = $1`,
+      [clientId]
+    );
+    res.json(statsRes.rows[0]);
+  } catch (e) {
+    console.error('Get store stats error:', e);
+    res.status(500).json({ error: 'Failed to fetch stats' });
   }
 };
 
