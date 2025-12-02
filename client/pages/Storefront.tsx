@@ -43,7 +43,9 @@ interface StoreSettings {
 }
 
 export default function Storefront() {
-  const { storeSlug } = useParams<{ storeSlug: string }>();
+  // Support both new (:storeSlug) and legacy (:clientId) route params
+  const params = useParams();
+  const storeSlug = (params as any).storeSlug || (params as any).clientId;
   const navigate = useNavigate();
   const location = useLocation();
   
