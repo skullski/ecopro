@@ -7,6 +7,7 @@ export default function OrdersAdmin() {
   const { t, locale } = useTranslation();
   const navigate = useNavigate();
   const [orders, setOrders] = useState<any[]>([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const customerNames = {
     ar: [
@@ -43,8 +44,17 @@ export default function OrdersAdmin() {
     loadOrders();
   },[]);
 
-  const loadOrders = async () => {
+  // Poll orders every 10 seconds for near-real-time updates
+  useEffect(() => {
+    const id = setInterval(() => {
+      loadOrders(true);
+    }, 10000);
+    return () => clearInterval(id);
+  }, []);
+
+  const loadOrders = async (silent = false) => {
     try {
+      if (!silent) setIsRefreshing(true);
       const token = localStorage.getItem('authToken');
       if (!token) return;
 
@@ -74,6 +84,8 @@ export default function OrdersAdmin() {
       }
     } catch (error) {
       console.error('Failed to load orders:', error);
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -113,7 +125,7 @@ export default function OrdersAdmin() {
             </div>
             <div>
               <div className="text-sm text-muted-foreground">إجمالي الطلبات</div>
-              <div className="text-2xl font-bold">0</div>
+              <div className="text-2xl font-bold">{orders.length}</div>
             </div>
           </div>
         </div>
@@ -124,7 +136,7 @@ export default function OrdersAdmin() {
             </div>
             <div>
               <div className="text-sm text-muted-foreground">الطلبات المؤكدة</div>
-              <div className="text-2xl font-bold">0</div>
+              <div className="text-2xl font-bold">{orders.filter(o => o.status === 'confirmed').length}</div>
             </div>
           </div>
         </div>
@@ -136,7 +148,7 @@ export default function OrdersAdmin() {
             <div>
               <div className="text-sm text-muted-foreground">الإيرادات</div>
               <div className="text-2xl font-bold bg-gradient-to-r from-accent to-orange-500 bg-clip-text text-transparent">
-                0.00 دج
+                {orders.reduce((sum, o) => sum + (Number(o.total) || 0), 0).toLocaleString()} دج
               </div>
             </div>
           </div>
@@ -151,6 +163,13 @@ export default function OrdersAdmin() {
               {t('orders.title')}
             </h3>
             <div className="flex items-center gap-3">
+              <button 
+                onClick={() => loadOrders()}
+                className="inline-flex items-center gap-2 rounded-lg border-2 border-primary/30 bg-background px-4 py-2 text-sm font-medium hover:bg-primary/10 transition-colors disabled:opacity-50"
+                disabled={isRefreshing}
+              >
+                {isRefreshing ? t('orders.refreshing') || 'Refreshing…' : t('orders.refresh') || 'Refresh'}
+              </button>
               <button 
                 onClick={() => navigate('/dashboard/orders/add')}
                 className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 text-sm font-medium hover:from-green-600 hover:to-green-700 transition-colors shadow-md"

@@ -71,10 +71,12 @@ export default function BaseTemplate(props: TemplateProps & { variant: 'classic'
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {featured.map((product) => (
-                <button
+                <div
                   key={product.id}
                   onClick={() => navigate(`/store/${storeSlug}/${product.slug}`)}
-                  className="group bg-card rounded-xl border overflow-hidden hover:shadow-lg transition-all text-left"
+                  className="group bg-card rounded-xl border overflow-hidden hover:shadow-lg transition-all cursor-pointer"
+                  role="button"
+                  tabIndex={0}
                 >
                   <div className="relative aspect-square bg-muted">
                     {product.images?.[0] ? (
@@ -102,7 +104,7 @@ export default function BaseTemplate(props: TemplateProps & { variant: 'classic'
                       )}
                     </div>
                   </div>
-                </button>
+                </div>
               ))}
             </div>
           </div>
@@ -167,7 +169,7 @@ export default function BaseTemplate(props: TemplateProps & { variant: 'classic'
             {filtered.map((product) => {
               const discount = product.original_price ? Math.round(((Number(product.original_price) - Number(product.price)) / Number(product.original_price)) * 100) : 0;
               return (
-                <button key={product.id} onClick={() => navigate(`/store/${storeSlug}/${product.slug}`)} className="group bg-card/70 backdrop-blur supports-[backdrop-filter]:bg-card/60 rounded-2xl border overflow-hidden hover:shadow-xl hover:-translate-y-0.5 transition-all text-left ring-1 ring-transparent hover:ring-primary/10">
+                <div key={product.id} onClick={() => navigate(`/store/${storeSlug}/${product.slug}`)} className="group bg-card/70 backdrop-blur supports-[backdrop-filter]:bg-card/60 rounded-2xl border overflow-hidden hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer ring-1 ring-transparent hover:ring-primary/10" role="button" tabIndex={0}>
                   <div className={`relative aspect-[4/5] bg-muted`}>
                     {product.images?.[0] ? (
                       <img src={product.images[0]} alt={product.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
@@ -195,7 +197,7 @@ export default function BaseTemplate(props: TemplateProps & { variant: 'classic'
                       </div>
                     </div>
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>
@@ -204,7 +206,7 @@ export default function BaseTemplate(props: TemplateProps & { variant: 'classic'
             {filtered.map((product) => {
               const discount = product.original_price ? Math.round(((Number(product.original_price) - Number(product.price)) / Number(product.original_price)) * 100) : 0;
               return (
-                <button key={product.id} onClick={() => navigate(`/store/${storeSlug}/${product.slug}`)} className="w-full group bg-card rounded-2xl border p-4 hover:shadow-xl transition-all text-left ring-1 ring-transparent hover:ring-primary/10">
+                <div key={product.id} onClick={() => navigate(`/store/${storeSlug}/${product.slug}`)} className="w-full group bg-card rounded-2xl border p-4 hover:shadow-xl transition-all cursor-pointer ring-1 ring-transparent hover:ring-primary/10" role="button" tabIndex={0}>
                   <div className="flex gap-4">
                     <div className="w-32 h-32 bg-muted rounded-lg overflow-hidden flex-shrink-0">
                       {product.images?.[0] ? (
@@ -232,7 +234,7 @@ export default function BaseTemplate(props: TemplateProps & { variant: 'classic'
                       </div>
                     </div>
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>

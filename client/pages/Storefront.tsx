@@ -48,6 +48,104 @@ export default function Storefront() {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  // Sorting option for templates that support sorting
+  const [sortOption, setSortOption] = useState<'newest' | 'price-asc' | 'price-desc' | 'featured' | 'views-desc'>('newest');
+
+  // Derived visual tokens from store settings
+  const template = storeSettings.template || 'classic';
+  const primaryColor = storeSettings.primary_color || '#16a34a';
+  const secondaryColor = storeSettings.secondary_color || '#0ea5e9';
+  const bannerUrl = storeSettings.banner_url || '';
+
+  // Price formatter based on store currency
+  const formatPrice = (n: number) => {
+    const code = storeSettings.currency_code || 'USD';
+    try {
+      return new Intl.NumberFormat(undefined, { style: 'currency', currency: code }).format(n);
+    } catch {
+      return `$${n.toFixed(2)}`;
+    }
+  };
+
+  // Recompute filtered products when query/category/sort changes
+  useEffect(() => {
+    let next = [...products];
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      next = next.filter(p => (
+        p.title?.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q)
+      ));
+    }
+    if (categoryFilter && categoryFilter !== 'all') {
+      next = next.filter(p => p.category === categoryFilter);
+    }
+    switch (sortOption) {
+      case 'price-asc':
+        next.sort((a,b) => Number(a.price) - Number(b.price));
+        break;
+      case 'price-desc':
+        next.sort((a,b) => Number(b.price) - Number(a.price));
+        break;
+      case 'featured':
+        next.sort((a,b) => Number(b.is_featured) - Number(a.is_featured));
+        break;
+      case 'views-desc':
+        next.sort((a,b) => Number(b.views) - Number(a.views));
+        break;
+      case 'newest':
+      default:
+        // Assume server returns newest first; keep order
+        break;
+    }
+    setFilteredProducts(next);
+  }, [products, searchQuery, categoryFilter, sortOption]);
+
+  // Fetch store settings and products by slug (with timeout guard)
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchAll() {
+      if (!storeSlug) {
+        if (isMounted) {
+          setError('Missing store slug');
+          setLoading(false);
+        }
+        return;
+      }
+      try {
+        setLoading(true);
+        setError('');
+        // Race with a timeout to avoid infinite spinner
+        const timeout = new Promise<Response>((_, reject) => setTimeout(() => reject(new Error('Request timed out')), 9000));
+        const [settingsRes, productsRes] = await Promise.all([
+          Promise.race([fetch(`/api/storefront/${storeSlug}/settings`), timeout]) as Promise<Response>,
+          Promise.race([fetch(`/api/storefront/${storeSlug}/products`), timeout]) as Promise<Response>,
+        ]);
+        if (!settingsRes.ok || !productsRes.ok) {
+          throw new Error('Failed to load store');
+        }
+        const settingsData = await settingsRes.json();
+        const productsData = await productsRes.json();
+        if (!isMounted) return;
+        setStoreSettings(settingsData?.settings || settingsData || {});
+        const items = productsData?.products || productsData || [];
+        setProducts(items);
+        const cats = Array.from(new Set(items.map((p: any) => p.category).filter(Boolean))) as string[];
+        setCategories(['all', ...cats]);
+        setLoading(false);
+      } catch (e: any) {
+        if (!isMounted) return;
+        setError(e?.message || 'Store Not Available');
+        setLoading(false);
+      }
+    }
+    fetchAll();
+    return () => {
+      isMounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storeSlug]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
@@ -93,5 +191,5 @@ export default function Storefront() {
     secondaryColor,
     bannerUrl: bannerUrl || null,
     navigate: (to: any) => navigate(to),
-  });
-}
+    });
+  }
