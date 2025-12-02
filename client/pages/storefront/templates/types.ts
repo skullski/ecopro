@@ -1,0 +1,47 @@
+import { Dispatch, SetStateAction } from 'react';
+
+export interface StoreProduct {
+  id: number;
+  title: string;
+  description?: string;
+  price: number;
+  original_price?: number;
+  images?: string[];
+  category?: string;
+  stock_quantity: number;
+  is_featured: boolean;
+  slug: string;
+  views: number;
+}
+
+export interface StoreSettings {
+  store_name?: string;
+  store_description?: string;
+  store_logo?: string;
+  primary_color?: string;
+  secondary_color?: string;
+  template?: string;
+  banner_url?: string | null;
+  currency_code?: string;
+}
+
+export interface TemplateProps {
+  storeSlug: string;
+  products: StoreProduct[];
+  filtered: StoreProduct[];
+  settings: StoreSettings;
+  categories: string[];
+  searchQuery: string;
+  setSearchQuery: Dispatch<SetStateAction<string>>;
+  categoryFilter: string;
+  setCategoryFilter: Dispatch<SetStateAction<string>>;
+  sortOption: 'featured' | 'price-asc' | 'price-desc' | 'views-desc' | 'newest';
+  setSortOption: Dispatch<SetStateAction<'featured' | 'price-asc' | 'price-desc' | 'views-desc' | 'newest'>>;
+  viewMode: 'grid' | 'list';
+  setViewMode: Dispatch<SetStateAction<'grid' | 'list'>>;
+  formatPrice: (n: number) => string;
+  primaryColor: string;
+  secondaryColor: string;
+  bannerUrl: string | null;
+  navigate: (to: string | number) => void;
+}

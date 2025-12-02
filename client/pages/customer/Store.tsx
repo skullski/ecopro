@@ -304,6 +304,20 @@ export default function Store() {
       description: 'Clean professional layout with modern aesthetics',
       image: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=800&auto=format&fit=crop',
       features: ['Professional', 'Clean design', 'Easy navigation', 'Business focused']
+    },
+    {
+      id: 'minimal',
+      name: 'Minimal',
+      description: 'Ultra-clean layout with focus on product cards',
+      image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&auto=format&fit=crop',
+      features: ['Minimal chrome', 'Clean cards', 'Focus on content']
+    },
+    {
+      id: 'catalog',
+      name: 'Catalog',
+      description: 'Classic catalog look with simple listing',
+      image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&auto=format&fit=crop',
+      features: ['List view', 'Simple cards', 'Fast browsing']
     }
   ];
 
