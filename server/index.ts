@@ -268,6 +268,27 @@ export function createServer() {
     adminRoutes.listUsers
   );
 
+  app.delete(
+    "/api/admin/users/:id",
+    authenticate,
+    requireAdmin,
+    adminRoutes.deleteUser
+  );
+
+  app.post(
+    "/api/admin/users/:id/convert-to-seller",
+    authenticate,
+    requireAdmin,
+    adminRoutes.convertUserToSeller
+  );
+
+  app.delete(
+    "/api/admin/sellers/:id",
+    authenticate,
+    requireAdmin,
+    adminRoutes.deleteSeller
+  );
+
   app.get(
     "/api/admin/stats",
     authenticate,

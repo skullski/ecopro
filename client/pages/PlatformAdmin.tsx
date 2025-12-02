@@ -63,6 +63,7 @@ export default function PlatformAdmin() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'products'>('overview');
+  const [converting, setConverting] = useState<number | null>(null);
 
   useEffect(() => {
     loadPlatformData();
@@ -153,6 +154,56 @@ export default function PlatformAdmin() {
       }
     } catch (error) {
       console.error('Failed to promote user:', error);
+    }
+  };
+
+  const handleDeleteUser = async (userId: number) => {
+    const confirmDelete = confirm('Are you sure you want to delete this user account? This action cannot be undone.');
+    if (!confirmDelete) return;
+
+    try {
+      const token = localStorage.getItem('authToken');
+      const res = await fetch(`/api/admin/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        await loadPlatformData();
+        alert('User deleted successfully');
+      } else {
+        const txt = await res.text();
+        alert(`Failed to delete user: ${txt}`);
+      }
+    } catch (error) {
+      console.error('Failed to delete user:', error);
+      alert('Failed to delete user');
+    }
+  };
+
+  const handleConvertToSeller = async (userId: number) => {
+    setConverting(userId);
+    try {
+      const token = localStorage.getItem('authToken');
+      const res = await fetch(`/api/admin/users/${userId}/convert-to-seller`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        await loadPlatformData();
+        alert(`User converted to seller. Temporary password: ${data.temp_password}`);
+      } else {
+        const txt = await res.text();
+        alert(`Failed to convert: ${txt}`);
+      }
+    } catch (e) {
+      console.error('Convert to seller failed:', e);
+      alert('Failed to convert user to seller');
+    } finally {
+      setConverting(null);
     }
   };
 
@@ -396,7 +447,7 @@ export default function PlatformAdmin() {
                       <td className="p-4 text-sm text-muted-foreground">
                         {new Date(user.created_at).toLocaleDateString()}
                       </td>
-                      <td className="p-4">
+                      <td className="p-4 flex gap-2">
                         {user.user_type !== 'admin' && (
                           <Button
                             size="sm"
@@ -406,6 +457,21 @@ export default function PlatformAdmin() {
                             {t('admin.promoteToAdmin')}
                           </Button>
                         )}
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => handleConvertToSeller(user.id)}
+                          disabled={converting === user.id}
+                        >
+                          {converting === user.id ? 'Converting...' : 'Convert to Seller'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDeleteUser(user.id)}
+                        >
+                          Delete
+                        </Button>
                       </td>
                     </tr>
                   ))}

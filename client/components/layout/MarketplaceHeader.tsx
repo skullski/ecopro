@@ -12,10 +12,12 @@ export default function MarketplaceHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const user = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user") || "null") : null;
-  const isMarketplaceUser = user?.role === "seller";
+  const isMarketplaceUser = user?.role === "seller" || user?.role === "admin";
 
   function handleLogout() {
     localStorage.removeItem("user");
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("isAdmin");
     navigate("/marketplace");
   }
   return (

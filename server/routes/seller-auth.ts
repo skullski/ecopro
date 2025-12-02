@@ -19,35 +19,33 @@ export const registerSeller: RequestHandler = async (req, res) => {
       return;
     }
 
-    // Check if user already exists in users table
-    const existingUser = await pool.query(
-      "SELECT * FROM users WHERE email = $1",
+    // Check if seller already exists in sellers table
+    const existingSeller = await pool.query(
+      "SELECT id FROM sellers WHERE email = $1",
       [email]
     );
-
-    if (existingUser.rows.length > 0) {
-      res.status(400).json({ error: "Email already registered" });
-      return;
+    if (existingSeller.rows.length > 0) {
+      return res.status(400).json({ error: "Email already registered as seller" });
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user in users table with seller role
+    // Create seller in sellers table
     const result = await pool.query(
-      "INSERT INTO users (email, password, name, role, user_type) VALUES ($1, $2, $3, $4, $5) RETURNING id, email, name, role, user_type",
-      [email, hashedPassword, name || email.split("@")[0], "seller", "seller"]
+      "INSERT INTO sellers (email, password, name) VALUES ($1, $2, $3) RETURNING id, email, name",
+      [email, hashedPassword, name || email.split("@")[0]]
     );
 
-    const user = result.rows[0];
+    const seller = result.rows[0];
 
     // Generate JWT token
     const token = jwt.sign(
       {
-        id: user.id.toString(),
-        email: user.email,
-        role: user.role,
-        user_type: user.user_type,
+        id: seller.id.toString(),
+        email: seller.email,
+        role: 'seller',
+        user_type: 'seller',
       } as JWTPayload,
       JWT_SECRET,
       { expiresIn: "7d" }
@@ -56,11 +54,11 @@ export const registerSeller: RequestHandler = async (req, res) => {
     res.json({
       token,
       user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        user_type: user.user_type,
+        id: seller.id,
+        email: seller.email,
+        name: seller.name,
+        role: 'seller',
+        user_type: 'seller',
       },
     });
   } catch (error) {
@@ -84,9 +82,9 @@ export const loginSeller: RequestHandler = async (req, res) => {
 
     console.log("[SELLER LOGIN] Attempting login for:", email);
 
-    // Use users table directly (sellers/clients tables don't exist yet)
+    // Use sellers table for marketplace authentication
     const result = await pool.query(
-      "SELECT * FROM users WHERE email = $1",
+      "SELECT * FROM sellers WHERE email = $1",
       [email]
     );
 
@@ -96,26 +94,28 @@ export const loginSeller: RequestHandler = async (req, res) => {
       return;
     }
 
-    const user = result.rows[0];
-    console.log("[SELLER LOGIN] Found user, role:", user.role, "user_type:", user.user_type);
+    const seller = result.rows[0];
+    console.log("[SELLER LOGIN] Found seller:", seller.email);
 
     // Verify password
-    const validPassword = await bcrypt.compare(password, user.password);
+    const validPassword = await bcrypt.compare(password, seller.password);
     if (!validPassword) {
       console.log("[SELLER LOGIN] Invalid password");
       res.status(401).json({ error: "Invalid email or password" });
       return;
     }
 
+    // No role mixing here: sellers table implies seller access
+
     console.log("[SELLER LOGIN] Login successful for:", email);
 
     // Generate JWT token
     const token = jwt.sign(
       {
-        id: user.id.toString(),
-        email: user.email,
-        role: user.role,
-        user_type: user.user_type || 'seller',
+        id: seller.id.toString(),
+        email: seller.email,
+        role: 'seller',
+        user_type: 'seller',
       } as JWTPayload,
       JWT_SECRET,
       { expiresIn: "7d" }
@@ -124,11 +124,11 @@ export const loginSeller: RequestHandler = async (req, res) => {
     res.json({
       token,
       user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        user_type: user.user_type || 'seller',
+        id: seller.id,
+        email: seller.email,
+        name: seller.name,
+        role: 'seller',
+        user_type: 'seller',
       },
     });
   } catch (error) {

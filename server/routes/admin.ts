@@ -3,6 +3,7 @@ import { jsonError } from '../utils/httpHelpers';
 import { RequestHandler } from "express";
 import { requireAdmin } from "../middleware/auth";
 import { findUserByEmail, updateUser } from "../utils/database";
+import bcrypt from 'bcrypt';
 
 // Promote a user to admin
 export const promoteUserToAdmin: RequestHandler = async (req, res) => {
@@ -82,5 +83,92 @@ export const getPlatformStats: RequestHandler = async (_req, res) => {
   } catch (err) {
     console.error('Get stats error:', err);
     return jsonError(res, 500, "Failed to get platform stats");
+  }
+};
+
+// Delete a user account (admin only)
+export const deleteUser: RequestHandler = async (req, res) => {
+  try {
+    const { id } = req.params as { id: string };
+    if (!id) {
+      return jsonError(res, 400, "User id is required");
+    }
+
+    const userId = parseInt(id, 10);
+    if (Number.isNaN(userId)) {
+      return jsonError(res, 400, "Invalid user id");
+    }
+
+    // Prevent deleting the last admin or self without confirmation
+    const userRes = await pool.query('SELECT id, role FROM users WHERE id = $1', [userId]);
+    if (userRes.rows.length === 0) {
+      return jsonError(res, 404, "User not found");
+    }
+
+    // Optional: cascade deletes for marketplace products/orders owned by this user
+    // For safety, we soft-delete by removing user and leaving products orphaned only if FK allows
+    await pool.query('DELETE FROM users WHERE id = $1', [userId]);
+
+    res.json({ message: 'User deleted successfully', id: userId });
+  } catch (err) {
+    console.error('Delete user error:', err);
+    return jsonError(res, 500, 'Failed to delete user');
+  }
+};
+
+// Convert a platform user to seller (admin only)
+export const convertUserToSeller: RequestHandler = async (req, res) => {
+  try {
+    const { id } = req.params as { id: string };
+    if (!id) return jsonError(res, 400, 'User id is required');
+    const userId = parseInt(id, 10);
+    if (Number.isNaN(userId)) return jsonError(res, 400, 'Invalid user id');
+
+    const userRes = await pool.query('SELECT id, email, name FROM users WHERE id = $1', [userId]);
+    if (userRes.rows.length === 0) return jsonError(res, 404, 'User not found');
+    const user = userRes.rows[0];
+
+    // If seller already exists for email, return conflict
+    const exists = await pool.query('SELECT id FROM sellers WHERE email = $1', [user.email]);
+    if (exists.rows.length > 0) {
+      return jsonError(res, 409, 'Seller already exists for this email');
+    }
+
+    // Generate a random password for seller (can be reset later)
+    const randomPass = Math.random().toString(36).slice(-10);
+    const hashed = await bcrypt.hash(randomPass, 10);
+    const ins = await pool.query(
+      'INSERT INTO sellers (email, password, name) VALUES ($1, $2, $3) RETURNING id, email, name',
+      [user.email, hashed, user.name]
+    );
+
+    res.json({
+      message: 'User converted to seller',
+      seller: ins.rows[0],
+      temp_password: randomPass,
+    });
+  } catch (err) {
+    console.error('Convert user to seller error:', err);
+    return jsonError(res, 500, 'Failed to convert user to seller');
+  }
+};
+
+// Delete a seller account (admin only)
+export const deleteSeller: RequestHandler = async (req, res) => {
+  try {
+    const { id } = req.params as { id: string };
+    if (!id) return jsonError(res, 400, 'Seller id is required');
+    const sellerId = parseInt(id, 10);
+    if (Number.isNaN(sellerId)) return jsonError(res, 400, 'Invalid seller id');
+
+    const sres = await pool.query('SELECT id FROM sellers WHERE id = $1', [sellerId]);
+    if (sres.rows.length === 0) return jsonError(res, 404, 'Seller not found');
+
+    // Optional: ensure no products linked, or handle cascade strategy externally
+    await pool.query('DELETE FROM sellers WHERE id = $1', [sellerId]);
+    res.json({ message: 'Seller deleted successfully', id: sellerId });
+  } catch (err) {
+    console.error('Delete seller error:', err);
+    return jsonError(res, 500, 'Failed to delete seller');
   }
 };

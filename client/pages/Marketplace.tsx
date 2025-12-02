@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search, SlidersHorizontal, Star, ShoppingCart, Heart, TrendingUp, Zap, Plus, Menu, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, SlidersHorizontal, Star, ShoppingCart, Heart, TrendingUp, Zap, Plus, Menu, X, ChevronLeft, ChevronRight, LogOut, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,6 +37,8 @@ export default function Marketplace() {
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [currentUser, setCurrentUser] = useState<any | null>(null);
+  const [showMyListings, setShowMyListings] = useState(false);
 
   useEffect(() => {
     loadCategories();
@@ -48,6 +50,15 @@ export default function Marketplace() {
       userAgent: navigator.userAgent,
       url: window.location.href
     });
+
+    // Detect logged-in user (seller/admin) for header actions
+    try {
+      const raw = safeStorage.getItem('user') || localStorage.getItem('user');
+      if (raw) {
+        const u = JSON.parse(raw);
+        setCurrentUser(u);
+      }
+    } catch {}
   }, []);
 
   // Parallel initial fetch with optimistic cache
@@ -104,6 +115,20 @@ export default function Marketplace() {
     }, 800);
 
     try {
+      // If showing my listings and logged in as seller/admin, hit seller products endpoint (no filters/pagination for now)
+      if (showMyListings && (currentUser?.user_type === 'seller' || currentUser?.role === 'admin')) {
+        const res = await fetch('/api/seller/products', { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          setProducts(data);
+          setHasMore(false);
+          setSlowConnection(false);
+          return;
+        } else {
+          const txt = await res.text();
+          console.error('[Marketplace] My listings fetch failed:', res.status, txt);
+        }
+      }
       const params = new URLSearchParams();
       if (selectedCategory) {
         params.append('category', selectedCategory);
@@ -174,6 +199,21 @@ export default function Marketplace() {
     loadProducts(nextPage);
   };
 
+  const handleLogout = () => {
+    try {
+      safeStorage.removeItem('authToken');
+      safeStorage.removeItem('user');
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
+      localStorage.removeItem('isAdmin');
+    } catch {}
+    setCurrentUser(null);
+    setShowMyListings(false);
+    // Reload products as anonymous
+    setPage(1);
+    loadProducts(1);
+  };
+
   const handleSearch = () => {
     setPage(1);
     loadProducts(1);
@@ -214,6 +254,34 @@ export default function Marketplace() {
             >
               Search
             </Button>
+            {/* Auth-aware actions */}
+            {currentUser?.user_type === 'seller' || currentUser?.role === 'admin' ? (
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="bg-white text-primary hover:bg-gray-100 font-bold h-10"
+                  onClick={() => setShowMyListings((v) => !v)}
+                  title={showMyListings ? 'Show marketplace' : 'Show my listings'}
+                >
+                  {showMyListings ? 'All Products' : 'My Listings'}
+                </Button>
+                <Link to={currentUser?.role === 'admin' ? '/platform-admin' : '/seller/dashboard'}>
+                  <Button size="sm" variant="outline" className="bg-white text-primary hover:bg-gray-100 font-bold h-10">
+                    {currentUser?.role === 'admin' ? 'Admin' : 'Dashboard'}
+                  </Button>
+                </Link>
+                <Button size="sm" variant="outline" className="bg-white text-primary hover:bg-gray-100 font-bold h-10" onClick={handleLogout}>
+                  <LogOut className="w-4 h-4 mr-1" /> Logout
+                </Button>
+              </div>
+            ) : (
+              <Link to="/seller/login">
+                <Button size="sm" variant="outline" className="bg-white text-primary hover:bg-gray-100 font-bold h-10">
+                  Seller Login
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -320,6 +388,12 @@ export default function Marketplace() {
                   </>
                 )}
               </p>
+              {currentUser && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <User className="w-4 h-4" />
+                  <span>Welcome, <span className="font-medium text-foreground">{currentUser.name || currentUser.email}</span></span>
+                </div>
+              )}
             </div>
 
             {/* Products Grid */}

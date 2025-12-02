@@ -138,10 +138,10 @@ export const getProductById: RequestHandler = async (req, res) => {
     const result = await pool.query(
       `SELECT 
         p.*,
-        u.name as seller_name,
-        u.email as seller_email
+        s.name as seller_name,
+        s.email as seller_email
       FROM marketplace_products p
-      LEFT JOIN users u ON p.seller_id = u.id
+      LEFT JOIN sellers s ON p.seller_id = s.id
       WHERE p.id = $1`,
       [id]
     );
