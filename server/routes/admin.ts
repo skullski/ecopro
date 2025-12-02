@@ -41,6 +41,20 @@ export const listUsers: RequestHandler = async (_req, res) => {
   }
 };
 
+// List all sellers (platform admin only)
+export const listSellers: RequestHandler = async (_req, res) => {
+  try {
+    const { pool } = await import("../utils/database");
+    const result = await pool.query(
+      "SELECT id, email, name, created_at, updated_at FROM sellers ORDER BY created_at DESC"
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    return jsonError(res, 500, "Failed to list sellers");
+  }
+};
+
 // Get platform statistics (fast aggregated query)
 export const getPlatformStats: RequestHandler = async (_req, res) => {
   try {

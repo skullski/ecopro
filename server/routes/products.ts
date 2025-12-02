@@ -263,6 +263,32 @@ export const createProduct: RequestHandler = async (req, res) => {
       return res.status(400).json({ error: 'Individual image exceeds 10MB limit' });
     }
 
+    // Validate price fields against DECIMAL(10,2) constraints
+    const toNumber = (v: any) => {
+      if (v === null || v === undefined || v === '') return null;
+      const n = Number(v);
+      return Number.isFinite(n) ? n : NaN;
+    };
+    const priceNum = toNumber(price);
+    const originalPriceNum = toNumber(original_price);
+    const MAX_DECIMAL_ABS = 100_000_000 - 0.01; // less than 10^8, 2 decimals
+    const withinRange = (n: number) => Math.abs(n) < 100_000_000 && Math.abs(n) <= MAX_DECIMAL_ABS;
+
+    if (priceNum === null || Number.isNaN(priceNum)) {
+      return res.status(400).json({ error: 'Price must be a valid number' });
+    }
+    if (!withinRange(priceNum)) {
+      return res.status(400).json({ error: 'Price exceeds allowed range (max 99,999,999.99)' });
+    }
+    if (originalPriceNum !== null) {
+      if (Number.isNaN(originalPriceNum)) {
+        return res.status(400).json({ error: 'Original price must be a valid number' });
+      }
+      if (!withinRange(originalPriceNum)) {
+        return res.status(400).json({ error: 'Original price exceeds allowed range (max 99,999,999.99)' });
+      }
+    }
+
     let result;
     try {
       result = await pool.query(
@@ -274,8 +300,8 @@ export const createProduct: RequestHandler = async (req, res) => {
           sellerId,
           title,
           description || null,
-          price,
-          original_price || null,
+          priceNum,
+          originalPriceNum,
           category || null,
           imageArray,
           stock || 1,

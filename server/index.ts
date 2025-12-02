@@ -268,6 +268,13 @@ export function createServer() {
     adminRoutes.listUsers
   );
 
+  app.get(
+    "/api/admin/sellers",
+    authenticate,
+    requireAdmin,
+    adminRoutes.listSellers
+  );
+
   app.delete(
     "/api/admin/users/:id",
     authenticate,
