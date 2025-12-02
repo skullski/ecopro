@@ -51,6 +51,7 @@ import StockManagement from "./pages/customer/StockManagement";
 import Store from "./pages/customer/Store";
 import PublicProduct from "./pages/PublicProduct";
 import Storefront from "./pages/Storefront";
+import Checkout from "./pages/Checkout";
 import MyStore from "./pages/MyStore";
 
 // Orders submenu pages
@@ -597,10 +598,11 @@ const App = () => (
                   {/* Public storefront routes (client's store by store_slug) */}
                   <Route path="/store/:storeSlug" element={<Storefront />} />
                   <Route path="/store/:storeSlug/:productSlug" element={<PublicProduct />} />
+                  <Route path="/store/:storeSlug/checkout/:productSlug" element={<Checkout />} />
                   {/* REMOVE duplicate/non-existent custom routes */}
                   {/* <Route path="/product/:id" element={<ProductDetail />} /> */}
                   {/* <Route path="/cart" element={<Cart />} /> */}
-                  {/* <Route path="/checkout/:productId" element={<Checkout />} /> */}
+                  <Route path="/checkout/:productId" element={<Checkout />} />
                   {/* <Route path="/chat/:conversationId" element={<Chat />} /> */}
                   {/* <Route path="/seller" element={<SellerDashboard />} /> */}
                   {/* <Route path="/buyer-info" element={<BuyerInfo />} /> */}
