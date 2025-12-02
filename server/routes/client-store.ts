@@ -359,10 +359,16 @@ export const getProductShareLink: RequestHandler = async (req, res) => {
       return res.status(404).json({ error: "Product not found" });
     }
 
+    // Fetch store slug to build human-friendly URL
+    const settingsRes = await pool.query(
+      `SELECT store_slug FROM client_store_settings WHERE client_id = $1`,
+      [clientId]
+    );
+    const storeSlug = settingsRes.rows[0]?.store_slug || clientId;
     const baseUrl = process.env.BASE_URL || "https://ecopro-1lbl.onrender.com";
-    const shareLink = `${baseUrl}/store/${clientId}/${result.rows[0].slug}`;
+    const shareLink = `${baseUrl}/store/${storeSlug}/${result.rows[0].slug}`;
 
-    res.json({ shareLink, slug: result.rows[0].slug });
+    res.json({ shareLink, slug: result.rows[0].slug, store_slug: storeSlug });
   } catch (error) {
     console.error("Get share link error:", error);
     res.status(500).json({ error: "Failed to generate share link" });

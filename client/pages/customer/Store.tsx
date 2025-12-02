@@ -78,8 +78,8 @@ export default function Store() {
   const [linkCopied, setLinkCopied] = useState(false);
   const [storeLinkCopied, setStoreLinkCopied] = useState(false);
 
-  // Use storeSettings.store_slug as clientId for store URLs
-  const clientId = storeSettings.store_slug;
+  // Public-facing slug used for storefront URLs
+  const storeSlug = storeSettings.store_slug;
 
   const [formData, setFormData] = useState<Partial<StoreProduct>>({
     status: 'active',
@@ -405,7 +405,7 @@ export default function Store() {
   };
 
   const copyStoreLink = () => {
-    const storeUrl = `${window.location.origin}/store/${clientId}`;
+    const storeUrl = `${window.location.origin}/store/${storeSlug}`;
     navigator.clipboard.writeText(storeUrl);
     setStoreLinkCopied(true);
     setTimeout(() => setStoreLinkCopied(false), 2000);
@@ -505,11 +505,11 @@ export default function Store() {
             <Button 
               variant="outline"
               onClick={() => {
-                if (clientId) {
-                  window.open(`/store/${clientId}`, '_blank');
+                if (storeSlug) {
+                  window.open(`/store/${storeSlug}`, '_blank');
                 }
               }}
-              disabled={!clientId}
+              disabled={!storeSlug}
             >
               <StoreIcon className="w-4 h-4 mr-2" />
               View Storefront
