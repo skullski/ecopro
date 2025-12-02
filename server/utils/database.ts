@@ -235,6 +235,13 @@ export async function initializeDatabase(): Promise<void> {
       );
     `);
 
+    // Ensure newly introduced columns exist on legacy deployments
+    await client.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS store_slug VARCHAR(255) UNIQUE;`);
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_client_store_settings_slug ON client_store_settings(store_slug);`);
+    await client.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS template VARCHAR(24) DEFAULT 'classic';`);
+    await client.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS banner_url TEXT;`);
+    await client.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS currency_code VARCHAR(16) DEFAULT 'DZD';`);
+
     // Create indexes for store tables
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_client_store_products_client_id 
@@ -270,8 +277,17 @@ export async function initializeDatabase(): Promise<void> {
 
 // Run pending .sql migrations in migrations directory
 export async function runPendingMigrations(): Promise<void> {
-  const migrationsDir = path.join(path.dirname(fileURLToPath(import.meta.url)), 'migrations');
-  if (!fs.existsSync(migrationsDir)) return;
+  // Prefer the source tree migrations directory so production builds can find .sql files
+  const candidates = [
+    path.resolve(process.cwd(), 'server', 'migrations'),
+    path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'migrations'),
+    path.join(path.dirname(fileURLToPath(import.meta.url)), 'migrations'),
+  ];
+  const migrationsDir = candidates.find((p) => fs.existsSync(p));
+  if (!migrationsDir) {
+    console.log('No migrations directory found; skipping SQL migrations');
+    return;
+  }
   const files = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort();
   const client = await pool.connect();
   try {
