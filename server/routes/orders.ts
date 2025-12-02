@@ -1,5 +1,6 @@
 import { Router, RequestHandler } from "express";
 import { pool } from "../utils/database";
+import { sendWhatsAppMessage } from "../utils/messaging";
 
 export const ordersRouter = Router();
 
@@ -53,6 +54,23 @@ export const createOrder: RequestHandler = async (req, res) => {
       order: result.rows[0],
       message: 'Order created successfully'
     });
+
+    // Fire-and-forget WhatsApp confirmation (non-blocking)
+    const order = result.rows[0];
+    const toPhone = customer_phone;
+    if (toPhone) {
+      const storeName = (await pool.query(
+        'SELECT store_name FROM client_store_settings WHERE client_id = $1 LIMIT 1',
+        [client_id]
+      )).rows?.[0]?.store_name || 'EcoPro Store';
+      const productTitle = (await pool.query(
+        'SELECT title FROM store_products WHERE id = $1 LIMIT 1',
+        [product_id]
+      )).rows?.[0]?.title || 'Product';
+      const price = total_price;
+      const msg = `Hi ${customer_name}, your order for ${productTitle} at ${storeName} is received. Total: ${price}. We will contact you soon. Thank you!`;
+      sendWhatsAppMessage(toPhone, msg).catch(() => {/* swallow errors */});
+    }
   } catch (error) {
     console.error("Create order error:", error);
     res.status(500).json({ error: "Failed to create order" });
