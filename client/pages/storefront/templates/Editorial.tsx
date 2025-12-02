@@ -57,7 +57,10 @@ export default function EditorialTemplate(props: TemplateProps & { mode: 'suprem
                   <div className="font-medium line-clamp-2 min-h-[2.5rem]">{p.title}</div>
                   <div className="mt-1 font-semibold" style={{ color: primaryColor }}>{formatPrice(Number(p.price))}</div>
                 </div>
-              </button>
+                  <div className="flex gap-2">
+                    <Button variant="secondary" onClick={() => navigate(`/store/${storeSlug}/${p.slug}`)}>View</Button>
+                    <Button onClick={() => navigate(`/store/${storeSlug}/checkout/${p.slug}`)}>Buy</Button>
+                  </div>
             ))}
           </div>
         </div>
