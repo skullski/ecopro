@@ -242,6 +242,23 @@ export async function initializeDatabase(): Promise<void> {
     await client.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS banner_url TEXT;`);
     await client.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS currency_code VARCHAR(16) DEFAULT 'DZD';`);
 
+    // Bot settings (per client) for messaging templates and provider config
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS bot_settings (
+        id SERIAL PRIMARY KEY,
+        client_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+        provider VARCHAR(32) DEFAULT 'whatsapp_cloud',
+        whatsapp_phone_id TEXT,
+        whatsapp_token TEXT,
+        template_order_confirmation TEXT,
+        template_payment TEXT,
+        template_shipping TEXT,
+        enabled BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     // Create indexes for store tables
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_client_store_products_client_id 
