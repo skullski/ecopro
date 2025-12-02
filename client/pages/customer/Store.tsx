@@ -98,6 +98,31 @@ export default function Store() {
     filterProducts();
   }, [products, searchQuery, statusFilter]);
 
+  // Fallback: if settings loaded without slug but we have products,
+  // derive store_slug via a product share-link response (which includes store_slug)
+  useEffect(() => {
+    const deriveSlug = async () => {
+      if (storeSettings?.store_slug || products.length === 0) return;
+      try {
+        const token = localStorage.getItem('authToken');
+        const first = products[0];
+        const res = await fetch(`/api/client/store/products/${first.id}/share-link`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.store_slug) {
+            setStoreSettings((s: any) => ({ ...s, store_slug: data.store_slug }));
+          }
+        }
+      } catch (e) {
+        // Non-fatal
+        console.error('Fallback derive store slug failed', e);
+      }
+    };
+    deriveSlug();
+  }, [products, storeSettings?.store_slug]);
+
   const loadProducts = async () => {
     try {
       const token = localStorage.getItem('authToken');
@@ -1280,6 +1305,15 @@ export default function Store() {
                     <Copy className="w-4 h-4" />
                   )}
                 </Button>
+                {!storeSettings.store_slug && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={loadStoreSettings}
+                  >
+                    Retry
+                  </Button>
+                )}
               </div>
               {storeLinkCopied && (
                 <p className="text-sm text-green-600 flex items-center gap-2">
