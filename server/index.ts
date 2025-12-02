@@ -289,6 +289,20 @@ export function createServer() {
     adminRoutes.deleteSeller
   );
 
+  // Admin product moderation routes
+  app.delete(
+    "/api/admin/marketplace/products/:id",
+    authenticate,
+    requireAdmin,
+    adminRoutes.deleteMarketplaceProduct
+  );
+  app.delete(
+    "/api/admin/client-store/products/:id",
+    authenticate,
+    requireAdmin,
+    adminRoutes.deleteClientStoreProduct
+  );
+
   app.get(
     "/api/admin/stats",
     authenticate,

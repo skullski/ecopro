@@ -206,3 +206,57 @@ export const deleteSeller: RequestHandler = async (req, res) => {
     return jsonError(res, 500, 'Failed to delete seller');
   }
 };
+
+// Delete a marketplace product (admin only)
+export const deleteMarketplaceProduct: RequestHandler = async (req, res) => {
+  try {
+    const { id } = req.params as { id: string };
+    if (!id) return jsonError(res, 400, 'Product id is required');
+    const productId = parseInt(id, 10);
+    if (Number.isNaN(productId)) return jsonError(res, 400, 'Invalid product id');
+
+    const exists = await pool.query('SELECT id FROM marketplace_products WHERE id = $1', [productId]);
+    if (!exists.rows.length) return jsonError(res, 404, 'Product not found');
+
+    await pool.query('DELETE FROM marketplace_products WHERE id = $1', [productId]);
+
+    const actorId = (req as any).user?.id ? parseInt((req as any).user.id, 10) : null;
+    if (actorId) {
+      await pool.query(
+        'INSERT INTO audit_logs(actor_id, action, target_type, target_id) VALUES ($1, $2, $3, $4)',
+        [actorId, 'delete_product', 'marketplace_product', productId]
+      );
+    }
+    res.json({ message: 'Marketplace product deleted', id: productId });
+  } catch (err) {
+    console.error('Delete marketplace product error:', err);
+    return jsonError(res, 500, 'Failed to delete product');
+  }
+};
+
+// Delete a client store product (admin only)
+export const deleteClientStoreProduct: RequestHandler = async (req, res) => {
+  try {
+    const { id } = req.params as { id: string };
+    if (!id) return jsonError(res, 400, 'Product id is required');
+    const productId = parseInt(id, 10);
+    if (Number.isNaN(productId)) return jsonError(res, 400, 'Invalid product id');
+
+    const exists = await pool.query('SELECT id FROM client_store_products WHERE id = $1', [productId]);
+    if (!exists.rows.length) return jsonError(res, 404, 'Product not found');
+
+    await pool.query('DELETE FROM client_store_products WHERE id = $1', [productId]);
+
+    const actorId = (req as any).user?.id ? parseInt((req as any).user.id, 10) : null;
+    if (actorId) {
+      await pool.query(
+        'INSERT INTO audit_logs(actor_id, action, target_type, target_id) VALUES ($1, $2, $3, $4)',
+        [actorId, 'delete_product', 'client_store_product', productId]
+      );
+    }
+    res.json({ message: 'Client store product deleted', id: productId });
+  } catch (err) {
+    console.error('Delete client store product error:', err);
+    return jsonError(res, 500, 'Failed to delete product');
+  }
+};
