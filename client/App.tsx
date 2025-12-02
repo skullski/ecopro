@@ -127,6 +127,30 @@ function RequireSeller({ children }: { children: JSX.Element }) {
   return children;
 }
 
+// Simple cross-area guards to avoid wrong redirects when token persists
+function GuardPlatformAuthPages({ children }: { children: JSX.Element }) {
+  const user = getCurrentUser();
+  const userType = (user as any)?.user_type || 'client';
+  // If a seller/admin tries to access platform login/signup, redirect them to marketplace
+  if (user && (userType === 'seller' || user.role === 'seller' || user.role === 'admin')) {
+    return <Navigate to="/marketplace" replace />;
+  }
+  return children;
+}
+
+function GuardMarketplaceAuthPages({ children }: { children: JSX.Element }) {
+  const user = getCurrentUser();
+  const userType = (user as any)?.user_type || 'client';
+  // If a client/admin tries to access seller login/signup while already logged into platform, redirect appropriately
+  if (user && userType === 'client' && user.role !== 'seller' && user.role !== 'admin') {
+    return <Navigate to="/dashboard" replace />;
+  }
+  if (user && (user.role === 'admin')) {
+    return <Navigate to="/platform-admin" replace />;
+  }
+  return children;
+}
+
 // Inline guest checkout page (no new file)
 function GuestCheckout() {
   const navigate = useNavigate();
@@ -485,11 +509,11 @@ const App = () => (
                   <Route path="/" element={<Index />} />
                   <Route path="/marketplace" element={<Marketplace />} />
                   <Route path="/product/:id" element={<Product />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/signup" element={<Signup />} />
+                  <Route path="/login" element={<GuardPlatformAuthPages><Login /></GuardPlatformAuthPages>} />
+                  <Route path="/signup" element={<GuardPlatformAuthPages><Signup /></GuardPlatformAuthPages>} />
                   {/* Seller routes */}
-                  <Route path="/seller/login" element={<SellerLogin />} />
-                  <Route path="/seller/signup" element={<SellerSignup />} />
+                  <Route path="/seller/login" element={<GuardMarketplaceAuthPages><SellerLogin /></GuardMarketplaceAuthPages>} />
+                  <Route path="/seller/signup" element={<GuardMarketplaceAuthPages><SellerSignup /></GuardMarketplaceAuthPages>} />
                   <Route
                     path="/seller/dashboard"
                     element={

@@ -4,6 +4,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/lib/i18n";
 import { Sparkles, Menu, X, LogOut, LayoutDashboard, ShoppingBag, Crown, PlusCircle } from "lucide-react";
 import { useState } from "react";
+import { authApi } from "@/lib/auth";
 
 export default function Header() {
   const { toggle, theme } = useTheme();
@@ -17,9 +18,14 @@ export default function Header() {
   const isSeller = user?.role === "seller";
 
   function handleLogout() {
-    localStorage.removeItem("user");
-    localStorage.removeItem("isAdmin");
-    navigate("/");
+    try {
+      authApi.logout();
+    } catch {
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("user");
+      localStorage.removeItem("isAdmin");
+      navigate("/");
+    }
   }
 
   return (

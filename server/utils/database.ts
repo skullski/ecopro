@@ -332,12 +332,13 @@ export async function createUser(user: {
   password: string;
   name: string;
   role?: string;
+  user_type?: string;
 }): Promise<User> {
   const result = await pool.query(
-    `INSERT INTO users (email, password, name, role) 
-     VALUES ($1, $2, $3, $4) 
+    `INSERT INTO users (email, password, name, role, user_type) 
+     VALUES ($1, $2, $3, $4, $5) 
      RETURNING *`,
-    [user.email, user.password, user.name, user.role || 'vendor']
+    [user.email, user.password, user.name, user.role || 'user', user.user_type || 'client']
   );
   return result.rows[0];
 }
@@ -397,7 +398,9 @@ export async function createDefaultAdmin(
     await createUser({
       email,
       password: hashedPassword,
-      name: "Admin User"
+      name: "Admin User",
+      role: 'admin',
+      user_type: 'admin'
     });
     console.log(`✅ Default admin user created: ${email}`);
   }
