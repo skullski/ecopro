@@ -28,14 +28,29 @@ export default function Checkout() {
   }, [productId]);
 
   async function placeOrder() {
-    if (!productId) return;
+    if (!productId || !product) return;
     setSubmitting(true);
     try {
-      const order = await apiFetch<{ id: string }>(`/api/orders`, {
-        method: "POST",
-        body: JSON.stringify({ productId, shippingAddress: addr }),
+      const payload = {
+        product_id: Number(productId),
+        client_id: null,
+        quantity: 1,
+        total_price: Number(product.price ?? 0),
+        customer_name: addr?.name || '',
+        customer_email: addr?.email || '',
+        customer_phone: addr?.phone || '',
+        customer_address: [addr.line1, addr.line2, addr.city, addr.state, addr.postalCode, addr.country].filter(Boolean).join(', '),
+      };
+      const res = await fetch('/api/orders/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       });
-      setOrderId(order.id);
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      setOrderId(String(data?.order?.id || ''));
+    } catch (e: any) {
+      console.error('Order create failed', e);
     } finally {
       setSubmitting(false);
     }
