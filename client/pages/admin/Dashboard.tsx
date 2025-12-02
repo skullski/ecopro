@@ -30,6 +30,7 @@ export default function Dashboard() {
   });
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sellers, setSellers] = useState<any[]>([]);
 
   useEffect(() => {
     loadDashboardData();
@@ -51,6 +52,13 @@ export default function Dashboard() {
       if (ordersRes.ok) {
         const ordersData = await ordersRes.json();
         setRecentOrders(ordersData.slice(0, 5));
+      }
+
+      // Admin-only sellers list (ignore failures if not admin)
+      const sellersRes = await fetch('/api/admin/sellers', { headers });
+      if (sellersRes.ok) {
+        const sellersData = await sellersRes.json();
+        setSellers(sellersData);
       }
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
@@ -412,6 +420,25 @@ export default function Dashboard() {
           </div>
         </Card>
       </div>
+
+      {/* Sellers List (Admin) */}
+      {sellers.length > 0 && (
+        <div className="bg-card rounded-xl border shadow-sm mt-8">
+          <div className="p-6 border-b">
+            <h2 className="text-xl font-bold">Sellers</h2>
+            <p className="text-sm text-muted-foreground">Registered marketplace sellers</p>
+          </div>
+          <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {sellers.map((s) => (
+              <div key={s.id} className="p-4 border rounded-lg">
+                <div className="font-bold">{s.name || s.email}</div>
+                <div className="text-sm text-muted-foreground">{s.email}</div>
+                <div className="text-xs text-muted-foreground mt-1">ID: {s.id}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

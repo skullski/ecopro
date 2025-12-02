@@ -160,6 +160,33 @@ export default function SellerDashboard() {
     setSaving(true);
 
     try {
+      // Client-side validation for price caps
+      const priceNum = parseFloat(formData.price);
+      const originalNum = formData.original_price ? parseFloat(formData.original_price) : null;
+      const MAX = 99999999.99; // DECIMAL(10,2)
+      if (!Number.isFinite(priceNum)) {
+        setSaveError('Price must be a valid number');
+        setSaving(false);
+        return;
+      }
+      if (priceNum > MAX || priceNum < 0) {
+        setSaveError('Price exceeds allowed range (max 99,999,999.99)');
+        setSaving(false);
+        return;
+      }
+      if (originalNum != null) {
+        if (!Number.isFinite(originalNum)) {
+          setSaveError('Original price must be a valid number');
+          setSaving(false);
+          return;
+        }
+        if (originalNum > MAX || originalNum < 0) {
+          setSaveError('Original price exceeds allowed range (max 99,999,999.99)');
+          setSaving(false);
+          return;
+        }
+      }
+
       const token = localStorage.getItem('authToken') || localStorage.getItem('token');
       const url = editingProduct
         ? `/api/seller/products/${editingProduct.id}`
@@ -174,8 +201,8 @@ export default function SellerDashboard() {
         },
         body: JSON.stringify({
           ...formData,
-          price: parseFloat(formData.price),
-          original_price: formData.original_price ? parseFloat(formData.original_price) : null,
+          price: priceNum,
+          original_price: originalNum,
           stock: parseInt(formData.stock),
         }),
       });
