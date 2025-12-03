@@ -47,7 +47,7 @@ export const listSellers: RequestHandler = async (_req, res) => {
     const { pool } = await import("../utils/database");
     // Primary source: dedicated sellers table
     const sellersRes = await pool.query(
-      "SELECT id, email, name, created_at, updated_at FROM sellers ORDER BY created_at DESC"
+      "SELECT id, email, name, created_at FROM sellers ORDER BY created_at DESC"
     );
     let sellers = sellersRes.rows;
 

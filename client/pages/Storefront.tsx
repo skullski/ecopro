@@ -4,6 +4,7 @@ import {
   Search, Grid, List
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { useTranslation } from '@/lib/i18n';
 import { RenderStorefront } from './storefront/templates';
 
 interface StoreProduct {
@@ -32,6 +33,7 @@ interface StoreSettings {
 }
 
 export default function Storefront() {
+  const { t } = useTranslation();
   // Support both new (:storeSlug) and legacy (:clientId) route params
   const params = useParams();
   const storeSlug = (params as any).storeSlug || (params as any).clientId;
@@ -40,7 +42,16 @@ export default function Storefront() {
   
   const [products, setProducts] = useState<StoreProduct[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<StoreProduct[]>([]);
-  const [storeSettings, setStoreSettings] = useState<StoreSettings>({});
+  const [storeSettings, setStoreSettings] = useState<StoreSettings>({
+    template: 'classic',
+    primary_color: '#16a34a',
+    secondary_color: '#0ea5e9',
+    currency_code: 'USD',
+    store_name: '',
+    store_description: '',
+    store_logo: '',
+    banner_url: ''
+  });
   const [categories, setCategories] = useState<string[]>([]);
   
   const [loading, setLoading] = useState(true);
@@ -127,11 +138,23 @@ export default function Storefront() {
         const settingsData = await settingsRes.json();
         const productsData = await productsRes.json();
         if (!isMounted) return;
-        setStoreSettings(settingsData?.settings || settingsData || {});
+        const incomingSettings = settingsData?.settings || settingsData || {};
+        setStoreSettings((prev) => ({
+          template: 'classic',
+          primary_color: '#16a34a',
+          secondary_color: '#0ea5e9',
+          currency_code: 'USD',
+          store_name: '',
+          store_description: '',
+          store_logo: '',
+          banner_url: '',
+          ...prev,
+          ...incomingSettings,
+        }));
         const items = productsData?.products || productsData || [];
         setProducts(items);
         const cats = Array.from(new Set(items.map((p: any) => p.category).filter(Boolean))) as string[];
-        setCategories(['all', ...cats]);
+        setCategories(cats.length ? ['all', ...cats] : ['all']);
         setLoading(false);
       } catch (e: any) {
         if (!isMounted) return;
@@ -151,7 +174,7 @@ export default function Storefront() {
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading store...</p>
+          <p className="text-muted-foreground">{t('storefront.loading')}</p>
         </div>
       </div>
     );
@@ -164,9 +187,9 @@ export default function Storefront() {
           <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
             <svg className="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M3 12h18M3 17h18"/></svg>
           </div>
-          <h2 className="text-2xl font-bold">Store Not Available</h2>
-          <p className="text-muted-foreground">This store could not be loaded. Please check the URL and try again.</p>
-          <a href="/marketplace" className="px-4 py-2 border rounded-md">Browse Marketplace</a>
+          <h2 className="text-2xl font-bold">{t('storefront.notAvailable')}</h2>
+          <p className="text-muted-foreground">{t('storefront.notAvailableDesc')}</p>
+          <a href="/marketplace" className="px-4 py-2 border rounded-md">{t('storefront.browseMarketplace')}</a>
         </div>
       </div>
     );
@@ -177,8 +200,17 @@ export default function Storefront() {
       {/* Active template badge for quick visibility */}
       <div className="fixed top-20 right-4 z-40">
         <div className="inline-flex items-center gap-2 rounded-full border bg-card/80 backdrop-blur px-3 py-1 text-xs shadow-sm">
-          <span className="font-semibold">Template:</span>
+          <span className="font-semibold">{t('storefront.template')}:</span>
           <span className="font-mono">{template}</span>
+        </div>
+        {/* Roles box for quick context */}
+        <div className="mt-3 rounded-md border bg-card/80 backdrop-blur p-3 shadow-sm">
+          <div className="text-xs font-semibold text-muted-foreground mb-2">Roles</div>
+          <div className="flex flex-wrap gap-2">
+            <span className="inline-flex items-center rounded-md border px-2 py-1 text-xs bg-background">Admin</span>
+            <span className="inline-flex items-center rounded-md border px-2 py-1 text-xs bg-background">Client</span>
+            <span className="inline-flex items-center rounded-md border px-2 py-1 text-xs bg-background">User</span>
+          </div>
         </div>
       </div>
       {RenderStorefront(template as any, {
@@ -203,4 +235,4 @@ export default function Storefront() {
       })}
     </>
   );
-  }
+}

@@ -47,6 +47,13 @@ interface Product {
   created_at: string;
 }
 
+interface Seller {
+  id: number;
+  email: string;
+  name: string;
+  created_at: string;
+}
+
 export default function PlatformAdmin() {
   const { t } = useTranslation();
   const [stats, setStats] = useState<PlatformStats>({
@@ -61,6 +68,7 @@ export default function PlatformAdmin() {
   });
   const [users, setUsers] = useState<User[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [sellers, setSellers] = useState<Seller[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'products'>('overview');
   const [converting, setConverting] = useState<number | null>(null);
@@ -78,7 +86,7 @@ export default function PlatformAdmin() {
       }
 
       // Fetch users and products in parallel for faster loading
-      const [usersRes, productsRes, statsRes] = await Promise.all([
+      const [usersRes, productsRes, statsRes, sellersRes] = await Promise.all([
         fetch('/api/admin/users', {
           headers: { Authorization: `Bearer ${token}` },
         }),
@@ -88,6 +96,9 @@ export default function PlatformAdmin() {
         fetch('/api/admin/stats', {
           headers: { Authorization: `Bearer ${token}` },
         }).catch(() => null), // Make stats optional
+        fetch('/api/admin/sellers', {
+          headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => null),
       ]);
 
       if (usersRes.ok) {
@@ -116,6 +127,16 @@ export default function PlatformAdmin() {
           ...prev,
           totalProducts: productsData.length,
           activeProducts,
+        }));
+      }
+
+      // Sellers endpoint with fallback behavior
+      if (sellersRes && sellersRes.ok) {
+        const sellersData = await sellersRes.json();
+        setSellers(sellersData || []);
+        setStats(prev => ({
+          ...prev,
+          totalSellers: Array.isArray(sellersData) ? sellersData.length : prev.totalSellers,
         }));
       }
 
@@ -207,6 +228,28 @@ export default function PlatformAdmin() {
     }
   };
 
+  const handleDeleteSeller = async (sellerId: number) => {
+    const confirmDelete = confirm('Delete this seller account? This action cannot be undone.');
+    if (!confirmDelete) return;
+    try {
+      const token = localStorage.getItem('authToken');
+      const res = await fetch(`/api/admin/sellers/${sellerId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setSellers(prev => prev.filter(s => s.id !== sellerId));
+        setStats(prev => ({ ...prev, totalSellers: Math.max(0, prev.totalSellers - 1) }));
+      } else {
+        const txt = await res.text();
+        alert(`Failed to delete seller: ${txt}`);
+      }
+    } catch (e) {
+      console.error('Failed to delete seller:', e);
+      alert('Failed to delete seller');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -238,8 +281,11 @@ export default function PlatformAdmin() {
                 </div>
               </div>
               <div>
-                <h1 className="text-2xl font-black drop-shadow-lg">{t('admin.dashboardTitle')}</h1>
-                <p className="text-white/90 text-xs font-semibold drop-shadow">{t('admin.dashboardSubtitle')}</p>
+                <h1 className="text-2xl font-black drop-shadow-lg">{t('admin.dashboardTitle') || 'Admin Dashboard'}</h1>
+                <p className="text-white/90 text-xs font-semibold drop-shadow">{t('admin.dashboardSubtitle') || 'Platform Management'}</p>
+                <p className="mt-1 text-white/80 text-xs drop-shadow">
+                  {t('admin.header.help') || 'Manage users, sellers, marketplace products and orders from here.'}
+                </p>
               </div>
             </div>
             
@@ -255,6 +301,15 @@ export default function PlatformAdmin() {
                 <div className="flex items-center gap-2">
                   <Package className="w-3.5 h-3.5" />
                   <span className="text-xs font-bold">{stats.totalProducts}</span>
+                </div>
+              </div>
+              {/* Roles box for quick context */}
+              <div className="ml-2 px-3 py-2 rounded-lg bg-white/15 backdrop-blur-md border border-white/30 shadow-sm">
+                <div className="text-[10px] font-semibold text-white/90 mb-1">Roles</div>
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-flex items-center rounded-md border border-white/30 px-2 py-0.5 text-[10px] bg-white/10 text-white">Admin</span>
+                  <span className="inline-flex items-center rounded-md border border-white/30 px-2 py-0.5 text-[10px] bg-white/10 text-white">Client</span>
+                  <span className="inline-flex items-center rounded-md border border-white/30 px-2 py-0.5 text-[10px] bg-white/10 text-white">User</span>
                 </div>
               </div>
               <Button 
@@ -349,18 +404,25 @@ export default function PlatformAdmin() {
               </div>
             </div>
 
-            {/* Recent Activity */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Recent Users */}
+            {/* Overview shows stats only */}
+          </>
+        )}
+
+        {/* Users Tab */}
+        {activeTab === 'users' && (
+          <div className="space-y-6">
+            {/* Role Boxes */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Admins Box */}
               <div className="bg-card rounded-xl border shadow-sm">
                 <div className="p-6 border-b">
                   <h2 className="text-xl font-bold flex items-center gap-2">
-                    <Users className="w-5 h-5" />
-                    {t('admin.recentUsers')}
+                    <Shield className="w-5 h-5" />
+                    {t('admin.box.admins') || 'Admins'}
                   </h2>
                 </div>
                 <div className="divide-y max-h-96 overflow-auto">
-                  {users.slice(0, 10).map((user) => (
+                  {users.filter(u => u.user_type === 'admin').map((user) => (
                     <div key={user.id} className="p-4 hover:bg-muted/50 transition-colors">
                       <div className="flex items-center justify-between">
                         <div>
@@ -368,9 +430,12 @@ export default function PlatformAdmin() {
                           <p className="text-sm text-muted-foreground">{user.email}</p>
                         </div>
                         <div className="text-right">
-                          <Badge variant={user.user_type === 'admin' ? 'default' : 'secondary'}>
-                            {t('user.type.' + user.user_type)}
-                          </Badge>
+                          <div className="flex items-center gap-2 justify-end">
+                            <Badge variant="default">{t('user.type.admin') || 'Admin'}</Badge>
+                            <Button size="sm" variant="destructive" onClick={() => handleDeleteUser(user.id)}>
+                              {t('delete') || 'Delete'}
+                            </Button>
+                          </div>
                           <p className="text-xs text-muted-foreground mt-1">
                             {new Date(user.created_at).toLocaleDateString()}
                           </p>
@@ -378,105 +443,84 @@ export default function PlatformAdmin() {
                       </div>
                     </div>
                   ))}
+                  {users.filter(u => u.user_type === 'admin').length === 0 && (
+                    <div className="p-6 text-sm text-muted-foreground">No admins.</div>
+                  )}
                 </div>
               </div>
 
-              {/* Recent Products */}
+              {/* Clients Box */}
               <div className="bg-card rounded-xl border shadow-sm">
                 <div className="p-6 border-b">
                   <h2 className="text-xl font-bold flex items-center gap-2">
-                    <Package className="w-5 h-5" />
-                    {t('admin.recentProducts')}
+                    <Users className="w-5 h-5" />
+                    {t('admin.box.clients') || 'Clients'}
                   </h2>
                 </div>
                 <div className="divide-y max-h-96 overflow-auto">
-                  {products.slice(0, 10).map((product) => (
-                    <div key={product.id} className="p-4 hover:bg-muted/50 transition-colors">
+                  {users.filter(u => u.user_type === 'client').map((user) => (
+                    <div key={user.id} className="p-4 hover:bg-muted/50 transition-colors">
                       <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <p className="font-medium line-clamp-1">{product.title}</p>
-                          <p className="text-sm text-muted-foreground">{t('admin.bySeller', { name: product.seller_name })}</p>
+                        <div>
+                          <p className="font-medium">{user.name}</p>
+                          <p className="text-sm text-muted-foreground">{user.email}</p>
                         </div>
-                        <div className="text-right ml-4">
-                          <p className="font-bold text-primary">{product.price} {t('currency')}</p>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                            <Eye className="w-3 h-3" />
-                            {product.views}
+                        <div className="text-right">
+                          <div className="flex items-center gap-2 justify-end">
+                            <Badge variant="secondary">{t('user.type.client') || 'Client'}</Badge>
+                            <Button size="sm" variant="destructive" onClick={() => handleDeleteUser(user.id)}>
+                              {t('delete') || 'Delete'}
+                            </Button>
                           </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {new Date(user.created_at).toLocaleDateString()}
+                          </p>
                         </div>
                       </div>
                     </div>
                   ))}
+                  {users.filter(u => u.user_type === 'client').length === 0 && (
+                    <div className="p-6 text-sm text-muted-foreground">No clients.</div>
+                  )}
                 </div>
               </div>
-            </div>
-          </>
-        )}
 
-        {/* Users Tab */}
-        {activeTab === 'users' && (
-          <div className="bg-card rounded-xl border shadow-sm">
-            <div className="p-6 border-b">
-              <h2 className="text-xl font-bold">{t('admin.allUsers')}</h2>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-muted/50">
-                  <tr>
-                    <th className="text-left p-4 font-medium">{t('user.name')}</th>
-                    <th className="text-left p-4 font-medium">{t('user.email')}</th>
-                    <th className="text-left p-4 font-medium">{t('user.type')}</th>
-                    <th className="text-left p-4 font-medium">{t('user.role')}</th>
-                    <th className="text-left p-4 font-medium">{t('user.joined')}</th>
-                    <th className="text-left p-4 font-medium">{t('actions')}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {users.map((user) => (
-                    <tr key={user.id} className="hover:bg-muted/50 transition-colors">
-                      <td className="p-4">{user.name}</td>
-                      <td className="p-4 text-sm text-muted-foreground">{user.email}</td>
-                      <td className="p-4">
-                        <Badge variant={user.user_type === 'admin' ? 'default' : 'secondary'}>
-                          {t('user.type.' + user.user_type)}
-                        </Badge>
-                      </td>
-                      <td className="p-4">
-                        <Badge variant="outline">{t('user.role.' + user.role)}</Badge>
-                      </td>
-                      <td className="p-4 text-sm text-muted-foreground">
-                        {new Date(user.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="p-4 flex gap-2">
-                        {user.user_type !== 'admin' && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handlePromoteToAdmin(user.id)}
-                          >
-                            {t('admin.promoteToAdmin')}
-                          </Button>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => handleConvertToSeller(user.id)}
-                          disabled={converting === user.id}
-                        >
-                          {converting === user.id ? 'Converting...' : 'Convert to Seller'}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDeleteUser(user.id)}
-                        >
-                          Delete
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              {/* Sellers Box */}
+              <div className="bg-card rounded-xl border shadow-sm">
+                <div className="p-6 border-b">
+                  <h2 className="text-xl font-bold flex items-center gap-2">
+                    <Store className="w-5 h-5" />
+                    {t('admin.box.sellers') || 'Sellers'}
+                  </h2>
+                </div>
+                <div className="divide-y max-h-96 overflow-auto">
+                  {sellers.length === 0 ? (
+                    <div className="p-6 text-sm text-muted-foreground">No sellers yet.</div>
+                  ) : (
+                    sellers.map((seller) => (
+                      <div key={seller.id} className="p-4 hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">{seller.name || seller.email}</p>
+                            <p className="text-sm text-muted-foreground">{seller.email}</p>
+                          </div>
+                          <div className="text-right">
+                            <div className="flex items-center gap-2 justify-end">
+                              <Badge variant="secondary">{t('user.type.seller')}</Badge>
+                              <Button size="sm" variant="destructive" onClick={() => handleDeleteSeller(seller.id)}>
+                                {t('delete') || 'Delete'}
+                              </Button>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {seller.created_at ? new Date(seller.created_at).toLocaleDateString() : ''}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -497,6 +541,7 @@ export default function PlatformAdmin() {
                     <th className="text-left p-4 font-medium">{t('product.status')}</th>
                     <th className="text-left p-4 font-medium">{t('product.views')}</th>
                     <th className="text-left p-4 font-medium">{t('product.created')}</th>
+                    <th className="text-left p-4 font-medium">{t('actions') || 'Actions'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -523,6 +568,31 @@ export default function PlatformAdmin() {
                       </td>
                       <td className="p-4 text-sm text-muted-foreground">
                         {new Date(product.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="p-4">
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={async () => {
+                            const ok = confirm('Delete this marketplace product?');
+                            if (!ok) return;
+                            try {
+                              const token = localStorage.getItem('authToken');
+                              const res = await fetch(`/api/admin/marketplace/products/${product.id}`,
+                                { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+                              if (res.ok) {
+                                setProducts(prev => prev.filter(p => p.id !== product.id));
+                                setStats(prev => ({ ...prev, totalProducts: Math.max(0, prev.totalProducts - 1) }));
+                              } else {
+                                alert(await res.text());
+                              }
+                            } catch (e) {
+                              alert('Failed to delete product');
+                            }
+                          }}
+                        >
+                          {t('delete') || 'Delete'}
+                        </Button>
                       </td>
                     </tr>
                   ))}
