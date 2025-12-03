@@ -105,8 +105,10 @@ export const fr = {
 
   // Login Page
   "login.subtitle": "Bon retour ! Connectez-vous pour continuer",
+  "login": "Connexion",
   "auth.passwordPlaceholder": "••••••••",
   "login.noAccount": "Vous n'avez pas de compte ?",
+  "signup": "S'inscrire",
 
   // Pricing Page
   "pricing.badge": "100% Gratuit pour toujours",
@@ -129,6 +131,13 @@ export const fr = {
   "pricing.future.desc": "Nous nous engageons à garder la plateforme principale gratuite. À l'avenir, nous pourrions introduire des outils payants optionnels comme l'analytique avancée, des boosts marketing ou des thèmes premium — mais vendre et acheter resteront toujours accessibles à tous.",
   "pricing.questions": "Des questions sur les tarifs ?",
   "pricing.contact": "Contactez notre équipe",
+
+  // Storefront Page
+  "storefront.loading": "Chargement de la boutique...",
+  "storefront.notAvailable": "Boutique indisponible",
+  "storefront.notAvailableDesc": "Impossible de charger cette boutique. Vérifiez l'URL et réessayez.",
+  "storefront.browseMarketplace": "Parcourir la marketplace",
+  "storefront.template": "Modèle",
 
   // User
   "user.name": "Nom",

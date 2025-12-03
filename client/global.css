@@ -7,6 +7,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Calligraphic store name font */
+@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap');
+
+.font-calligraphic {
+  font-family: 'Great Vibes', cursive;
+}
 @layer utilities {
   /* Hide scrollbar for Chrome, Safari and Opera */
   .scrollbar-hide::-webkit-scrollbar {
@@ -88,6 +94,14 @@
 
     --radius: 0.8rem;
 
+    /* Header theming */
+    --header-bg-from: 200 100% 97%;
+    --header-bg-via: 210 100% 99%;
+    --header-bg-to: 200 100% 97%;
+    --header-gradient-text-from: 190 100% 45%;
+    --header-gradient-text-to: 270 100% 50%;
+    --neon-glow: 190 100% 60%;
+
     --sidebar-background: 210 40% 98%;
     --sidebar-foreground: 222 47% 5%;
     --sidebar-primary: 210 100% 50%;
@@ -134,10 +148,27 @@
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 222 47% 22%;
     --sidebar-ring: 210 100% 60%;
+
+    /* Header theming */
+    --header-bg-from: 222 47% 6%;
+    --header-bg-via: 222 47% 8%;
+    --header-bg-to: 222 47% 6%;
+    --header-gradient-text-from: 190 100% 60%;
+    --header-gradient-text-to: 270 100% 65%;
+    --neon-glow: 190 100% 60%;
   }
 @layer utilities {
   .marketplace-cold-bg {
     background: linear-gradient(135deg, #1e293b 0%, #222b3a 100%);
+  }
+  .futuristic-neon {
+    box-shadow: 0 0 12px hsla(var(--neon-glow)/0.35), 0 0 24px hsla(var(--neon-glow)/0.25);
+  }
+  .header-gradient-text {
+    background-image: linear-gradient(90deg, hsl(var(--header-gradient-text-from)), hsl(var(--header-gradient-text-to)));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
 }
 }

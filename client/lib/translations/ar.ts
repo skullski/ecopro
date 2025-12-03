@@ -125,8 +125,10 @@ export const ar = {
 
   // Login Page
   "login.subtitle": "مرحباً بعودتك! سجل الدخول للمتابعة",
+  "login": "تسجيل الدخول",
   "auth.passwordPlaceholder": "••••••••",
   "login.noAccount": "ليس لديك حساب؟",
+  "signup": "إنشاء حساب",
 
   // Pricing Page
   "pricing.badge": "مجاني 100% للأبد",
@@ -149,6 +151,13 @@ export const ar = {
   "pricing.future.desc": "نلتزم بأن تظل المنصة الأساسية مجانية. مستقبلاً قد نقدم أدوات مدفوعة اختيارية مثل تحليلات متقدمة أو تعزيزات تسويقية أو قوالب مميزة — لكن البيع والشراء سيبقيان متاحين للجميع.",
   "pricing.questions": "أسئلة حول التسعير؟",
   "pricing.contact": "تواصل مع فريقنا",
+
+  // Storefront Page
+  "storefront.loading": "جاري تحميل المتجر...",
+  "storefront.notAvailable": "المتجر غير متاح",
+  "storefront.notAvailableDesc": "تعذر تحميل هذا المتجر. يرجى التحقق من الرابط والمحاولة مرة أخرى.",
+  "storefront.browseMarketplace": "تصفح السوق",
+  "storefront.template": "القالب",
 
   // User
   "user.name": "الاسم",

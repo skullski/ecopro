@@ -55,11 +55,14 @@ export const register: RequestHandler = async (req, res) => {
     console.log("[REGISTER] Password hashed");
 
     // Create user
+    // Allow 'seller' role and map user_type accordingly
+    const normalizedRole = (role === 'admin' || role === 'seller') ? role : 'user';
     const user = await createUser({
       email,
       password: hashedPassword,
       name,
-      role: (role as "user" | "admin") || "user",
+      role: normalizedRole,
+      user_type: normalizedRole === 'admin' ? 'admin' : (normalizedRole === 'seller' ? 'seller' : 'client'),
     });
     console.log("[REGISTER] User created:", user.id, user.email);
 
@@ -67,8 +70,8 @@ export const register: RequestHandler = async (req, res) => {
     const token = generateToken({
       id: user.id,
       email: user.email,
-      role: (user.role as "user" | "admin") || "user",
-      user_type: user.role === "admin" ? "admin" : "client",
+      role: (user.role as "user" | "admin" | "seller") || "user",
+      user_type: user.role === "admin" ? "admin" : (user.user_type as "client" | "seller") || "client",
     });
     console.log("[REGISTER] Token generated");
 
@@ -119,8 +122,8 @@ export const login: RequestHandler = async (req, res) => {
     const token = generateToken({
       id: user.id,
       email: user.email,
-      role: (user.role as "user" | "admin") || "user",
-      user_type: user.role === "admin" ? "admin" : (user.user_type as "client" | "seller") || "client",
+      role: (user.role as "user" | "admin" | "seller") || "user",
+      user_type: user.role === "admin" ? "admin" : (user.user_type as "client" | "seller") || (user.role === 'seller' ? 'seller' : 'client'),
     });
 
     res.json({
@@ -131,7 +134,7 @@ export const login: RequestHandler = async (req, res) => {
         email: user.email,
         name: user.name,
         role: user.role,
-        user_type: user.role === "admin" ? "admin" : (user.user_type as "client" | "seller") || "client",
+        user_type: user.role === "admin" ? "admin" : (user.user_type as "client" | "seller") || (user.role === 'seller' ? 'seller' : 'client'),
       },
     });
   } catch (error) {

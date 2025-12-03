@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import type { RequestHandler } from 'express';
 import { verifyToken, extractToken } from "../utils/auth";
 import { JWTPayload } from "@shared/api";
 
@@ -34,7 +35,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
 /**
  * Middleware to check if user has admin role
  */
-export const requireAdmin: RequestHandler = (req, res, next) => {
+export const requireAdmin: RequestHandler = (req: Request, res: Response, next: NextFunction) => {
   const user = (req as any).user;
   if (!user) return res.status(401).json({ error: "Unauthorized" });
   if (user.role !== "admin") return res.status(403).json({ error: "Forbidden" });

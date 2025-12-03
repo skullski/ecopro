@@ -1,7 +1,7 @@
 -- Create bot settings table for per-client configuration
 CREATE TABLE IF NOT EXISTS bot_settings (
   id SERIAL PRIMARY KEY,
-  user_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+  client_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
   enabled BOOLEAN DEFAULT FALSE,
   language VARCHAR(10) DEFAULT 'ar',
   whatsapp_delay INTEGER DEFAULT 5,
@@ -15,4 +15,4 @@ CREATE TABLE IF NOT EXISTS bot_settings (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_bot_settings_user_id ON bot_settings(user_id);
+CREATE INDEX IF NOT EXISTS idx_bot_settings_client_id ON bot_settings(client_id);

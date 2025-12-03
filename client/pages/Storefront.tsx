@@ -140,7 +140,6 @@ export default function Storefront() {
         if (!isMounted) return;
         const incomingSettings = settingsData?.settings || settingsData || {};
         setStoreSettings((prev) => ({
-          template: 'classic',
           primary_color: '#16a34a',
           secondary_color: '#0ea5e9',
           currency_code: 'USD',
@@ -150,6 +149,8 @@ export default function Storefront() {
           banner_url: '',
           ...prev,
           ...incomingSettings,
+          // Force private stores to Mercury theme regardless of incoming template
+          template: 'mercury',
         }));
         const items = productsData?.products || productsData || [];
         setProducts(items);
@@ -203,15 +204,7 @@ export default function Storefront() {
           <span className="font-semibold">{t('storefront.template')}:</span>
           <span className="font-mono">{template}</span>
         </div>
-        {/* Roles box for quick context */}
-        <div className="mt-3 rounded-md border bg-card/80 backdrop-blur p-3 shadow-sm">
-          <div className="text-xs font-semibold text-muted-foreground mb-2">Roles</div>
-          <div className="flex flex-wrap gap-2">
-            <span className="inline-flex items-center rounded-md border px-2 py-1 text-xs bg-background">Admin</span>
-            <span className="inline-flex items-center rounded-md border px-2 py-1 text-xs bg-background">Client</span>
-            <span className="inline-flex items-center rounded-md border px-2 py-1 text-xs bg-background">User</span>
-          </div>
-        </div>
+        {/* Removed Roles box per request */}
       </div>
       {RenderStorefront(template as any, {
     storeSlug: storeSlug!,
@@ -231,7 +224,9 @@ export default function Storefront() {
     primaryColor,
     secondaryColor,
     bannerUrl: bannerUrl || null,
-    navigate: (to: any) => navigate(to),
+        navigate: (to: any) => navigate(to),
+        // Public storefront: do not show management controls
+        canManage: false,
       })}
     </>
   );

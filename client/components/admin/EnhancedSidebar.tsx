@@ -166,7 +166,7 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
             <span className="font-bold text-lg bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent block">
               {t('sidebar.brand')}
             </span>
-            <span className="text-xs text-muted-foreground">{t("sidebar.controlPanel")}</span>
+            <span className="text-base text-muted-foreground">{t("sidebar.controlPanel")}</span>
           </div>
         )}
         

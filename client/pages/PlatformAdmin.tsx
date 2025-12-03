@@ -303,15 +303,7 @@ export default function PlatformAdmin() {
                   <span className="text-xs font-bold">{stats.totalProducts}</span>
                 </div>
               </div>
-              {/* Roles box for quick context */}
-              <div className="ml-2 px-3 py-2 rounded-lg bg-white/15 backdrop-blur-md border border-white/30 shadow-sm">
-                <div className="text-[10px] font-semibold text-white/90 mb-1">Roles</div>
-                <div className="flex items-center gap-1.5">
-                  <span className="inline-flex items-center rounded-md border border-white/30 px-2 py-0.5 text-[10px] bg-white/10 text-white">Admin</span>
-                  <span className="inline-flex items-center rounded-md border border-white/30 px-2 py-0.5 text-[10px] bg-white/10 text-white">Client</span>
-                  <span className="inline-flex items-center rounded-md border border-white/30 px-2 py-0.5 text-[10px] bg-white/10 text-white">User</span>
-                </div>
-              </div>
+              {/* Removed Roles badge box per request */}
               <Button 
                 variant="ghost" 
                 size="sm"

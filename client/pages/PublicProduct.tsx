@@ -33,8 +33,8 @@ interface PublicProduct {
 export default function PublicProduct() {
   // Support both legacy route params (:clientId/:slug) and new ones (:storeSlug/:productSlug)
   const params = useParams();
-  const clientId = (params.clientId as string) || (params.storeSlug as string);
-  const slug = (params.slug as string) || (params.productSlug as string);
+  const storeSlug = (params.storeSlug as string) || (params.clientId as string);
+  const productSlug = (params.productSlug as string) || (params.slug as string);
   const navigate = useNavigate();
   const { toast } = useToast();
   const [product, setProduct] = useState<PublicProduct | null>(null);
@@ -55,11 +55,11 @@ export default function PublicProduct() {
 
   useEffect(() => {
     loadProduct();
-  }, [clientId, slug]);
+  }, [storeSlug, productSlug]);
 
   const loadProduct = async () => {
     try {
-      const res = await fetch(`/api/store/${clientId}/${slug}`);
+      const res = await fetch(`/api/store/${storeSlug}/${productSlug}`);
       if (!res.ok) {
         throw new Error('Product not found');
       }
@@ -97,18 +97,17 @@ export default function PublicProduct() {
   const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!product || !clientId) return;
+    if (!product || !storeSlug) return;
     
     setSubmitting(true);
     try {
       const totalPrice = product.price * quantity;
       
-      const res = await fetch('/api/orders/create', {
+      const res = await fetch(`/api/storefront/${storeSlug}/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           product_id: product.id,
-          client_id: parseInt(clientId),
           quantity,
           total_price: totalPrice,
           customer_name: customerInfo.name,
@@ -126,7 +125,7 @@ export default function PublicProduct() {
       
       toast({
         title: 'Order Placed Successfully!',
-        description: `Order #${data.orderId} has been submitted. The seller will contact you soon.`,
+        description: `Your order has been submitted. The seller will contact you soon.`,
       });
 
       // Reset form and close modal
@@ -175,10 +174,15 @@ export default function PublicProduct() {
     );
   }
 
-  const primaryColor = product.primary_color || '#3b82f6';
-  const discount = product.original_price 
-    ? Math.round(((product.original_price - product.price) / product.original_price) * 100)
-    : 0;
+  const primaryColor = product?.primary_color || '#3b82f6';
+  const priceNum = Number(product?.price ?? 0);
+  const originalPriceNum = Number(product?.original_price ?? 0);
+  const hasOriginal = !!product?.original_price && originalPriceNum > 0 && originalPriceNum >= priceNum;
+  let discount = 0;
+  if (hasOriginal) {
+    const d = Math.round(((originalPriceNum - priceNum) / originalPriceNum) * 100);
+    discount = Number.isFinite(d) && d > 0 ? d : 0;
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -215,10 +219,10 @@ export default function PublicProduct() {
             <div className="space-y-4">
               {/* Main Image */}
               <div className="relative aspect-square bg-muted rounded-2xl overflow-hidden border">
-                {product.images?.[selectedImage] ? (
+                {Array.isArray(product.images) && product.images[selectedImage] ? (
                   <img
                     src={product.images[selectedImage]}
-                    alt={product.title}
+                    alt={product.title || 'Product'}
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -240,7 +244,7 @@ export default function PublicProduct() {
               </div>
 
               {/* Thumbnail Gallery */}
-              {product.images && product.images.length > 1 && (
+              {Array.isArray(product.images) && product.images.length > 1 && (
                 <div className="grid grid-cols-4 gap-2">
                   {product.images.map((img, idx) => (
                     <button
@@ -252,11 +256,17 @@ export default function PublicProduct() {
                           : 'border-transparent hover:border-muted-foreground/30'
                       }`}
                     >
-                      <img
-                        src={img}
-                        alt={`${product.title} ${idx + 1}`}
-                        className="w-full h-full object-cover"
-                      />
+                      {img ? (
+                        <img
+                          src={img}
+                          alt={`${product.title || 'Product'} ${idx + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-muted">
+                          <Package className="w-6 h-6 text-muted-foreground opacity-30" />
+                        </div>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -266,7 +276,7 @@ export default function PublicProduct() {
             {/* Right Column - Details */}
             <div className="space-y-6">
               {/* Store Name */}
-              {product.store_name && (
+              {product?.store_name && (
                 <div>
                   <p className="text-sm text-muted-foreground">Sold by</p>
                   <p className="text-lg font-semibold" style={{ color: primaryColor }}>
@@ -277,8 +287,8 @@ export default function PublicProduct() {
 
               {/* Title & Category */}
               <div>
-                <h1 className="text-3xl md:text-4xl font-bold mb-2">{product.title}</h1>
-                {product.category && (
+                <h1 className="text-3xl md:text-4xl font-bold mb-2">{product?.title || 'Product'}</h1>
+                {product?.category && (
                   <Badge variant="secondary">{product.category}</Badge>
                 )}
               </div>
@@ -286,11 +296,11 @@ export default function PublicProduct() {
               {/* Price */}
               <div className="flex items-baseline gap-3">
                 <span className="text-4xl font-bold" style={{ color: primaryColor }}>
-                  ${product.price.toFixed(2)}
+                  ${Number.isFinite(priceNum) ? priceNum.toFixed(2) : '0.00'}
                 </span>
-                {product.original_price && (
+                {hasOriginal && (
                   <span className="text-2xl text-muted-foreground line-through">
-                    ${product.original_price.toFixed(2)}
+                    ${originalPriceNum.toFixed(2)}
                   </span>
                 )}
               </div>

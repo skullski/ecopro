@@ -19,16 +19,16 @@ export default function About() {
           <div className="text-center mb-20">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border shadow-lg mb-6">
               <Heart className="w-4 h-4 text-red-500" />
-              <span className="text-sm font-medium">{t('about.badge')}</span>
+              <span className="text-sm font-medium">{t('about.badge') || 'Built with passion'}</span>
             </div>
             
             <h1 className="text-5xl md:text-7xl font-black mb-6">
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-600">
-                {t('about.title')}
+                {t('about.title') || 'Our Mission'}
               </span>
             </h1>
             <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
-              {t('about.subtitle')}
+              {t('about.subtitle') || 'Empowering sellers, connecting buyers, and helping online businesses grow.'}
             </p>
           </div>
 
@@ -40,16 +40,16 @@ export default function About() {
                   <Sparkles className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-3xl font-bold mb-4">{t('about.storyTitle')}</h2>
+                  <h2 className="text-3xl font-bold mb-4">{t('about.storyTitle') || 'Our Story'}</h2>
                 </div>
               </div>
               <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed mb-6">
-                {t('about.storyDesc')}
+                {t('about.storyDesc') || 'We created this marketplace to remove barriers and bring communities together.'}
               </p>
               <div className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-indigo-50 to-cyan-50 dark:from-indigo-900/20 dark:to-cyan-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800">
                 <Shield className="w-5 h-5 text-indigo-600" />
                 <p className="font-semibold text-gray-700 dark:text-gray-300">
-                  {t('about.unique')}
+                  {t('about.unique') || 'What makes us unique? Openness, fairness, and real support—for everyone.'}
                 </p>
               </div>
             </div>
@@ -60,18 +60,18 @@ export default function About() {
             {[
               {
                 icon: Target,
-                title: t('about.visionTitle'),
-                description: t('about.visionDesc')
+                title: t('about.visionTitle') || 'Our Vision',
+                description: t('about.visionDesc') || 'To become the most accessible and trusted marketplace.'
               },
               {
                 icon: Users,
-                title: t('about.communityTitle'),
-                description: t('about.communityDesc')
+                title: t('about.communityTitle') || 'Community First',
+                description: t('about.communityDesc') || 'We build trust and transparency between sellers and buyers.'
               },
               {
                 icon: Globe,
-                title: t('about.globalTitle'),
-                description: t('about.globalDesc')
+                title: t('about.globalTitle') || 'Global Reach',
+                description: t('about.globalDesc') || 'We support growth from local businesses to international sellers.'
               }
             ].map((item, i) => (
               <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-100 dark:border-gray-700 hover:shadow-2xl hover:-translate-y-1 transition-all">
@@ -87,13 +87,13 @@ export default function About() {
           {/* Team Section */}
           <div className="text-center max-w-3xl mx-auto mb-12">
             <div className="bg-gradient-to-br from-indigo-50 to-cyan-50 dark:from-indigo-900/20 dark:to-cyan-900/20 rounded-2xl p-8 border border-indigo-100 dark:border-indigo-800">
-              <h2 className="text-2xl font-bold mb-4">{t('about.teamTitle')}</h2>
+              <h2 className="text-2xl font-bold mb-4">{t('about.teamTitle') || 'Meet the Team'}</h2>
               <p className="text-gray-600 dark:text-gray-300 leading-relaxed mb-6">
-                {t('about.teamDesc')}
+                {t('about.teamDesc') || 'Founded by Walid and friends—builders passionate about making a difference.'}
               </p>
               <Link to="/contact">
                 <Button size="lg" className="bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-700 hover:to-cyan-700 text-white shadow-xl">
-                  {t('about.teamCta')}
+                  {t('about.teamCta') || 'Get in Touch'}
                 </Button>
               </Link>
             </div>

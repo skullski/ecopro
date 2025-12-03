@@ -1,5 +1,6 @@
 import { Router, RequestHandler } from "express";
 import { pool } from "../utils/database";
+import { logStoreSettings } from "../utils/logger";
 
 const router = Router();
 
@@ -247,6 +248,7 @@ export const getStoreCategories: RequestHandler = async (req, res) => {
 export const getStoreSettings: RequestHandler = async (req, res) => {
   try {
     const clientId = (req as any).user.id;
+    logStoreSettings('getStoreSettings:start', { clientId });
 
     let result = await pool.query(
       `SELECT * FROM client_store_settings WHERE client_id = $1`,
@@ -275,9 +277,11 @@ export const getStoreSettings: RequestHandler = async (req, res) => {
       result.rows[0] = updated.rows[0];
     }
 
+    logStoreSettings('getStoreSettings:success', { clientId, result: result.rows[0] });
     res.json(result.rows[0]);
   } catch (error) {
     console.error("Get store settings error:", error);
+    logStoreSettings('getStoreSettings:error', { error: (error as any)?.message });
     res.status(500).json({ error: "Failed to fetch store settings" });
   }
 };
@@ -287,6 +291,33 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
   try {
     const clientId = (req as any).user.id;
     const updates = req.body;
+    logStoreSettings('updateStoreSettings:start', { clientId, keys: Object.keys(updates), updates });
+
+    // Normalize image list fields: trim whitespace, remove duplicate commas, convert empty to NULL
+    const imageKeys = new Set(['banner_url', 'hero_main_url', 'hero_tile1_url', 'hero_tile2_url']);
+    Object.keys(updates).forEach((key) => {
+      const val = updates[key];
+      if (imageKeys.has(key) && typeof val === 'string') {
+        // Normalize: split by comma, trim each, filter empties, dedupe
+        const parts = val
+          .split(',')
+          .map((s: string) => s.trim())
+          .filter((s: string) => s.length > 0);
+        const deduped: string[] = [];
+        parts.forEach((p: string) => {
+          if (!deduped.includes(p)) deduped.push(p);
+        });
+        if (deduped.length === 0) {
+          updates[key] = null;
+        } else {
+          updates[key] = deduped.join(',');
+        }
+      }
+      // Explicitly allow clearing by sending null
+      if (imageKeys.has(key) && (val === '' || val === undefined)) {
+        updates[key] = null;
+      }
+    });
 
     const fields: string[] = [];
     const values: any[] = [];
@@ -315,6 +346,8 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
       values
     );
 
+    logStoreSettings('updateStoreSettings:success', { clientId, updated: result.rows[0] });
+
     // Audit log settings update
     const changedSettings = Object.keys(updates);
     try {
@@ -328,6 +361,7 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
     res.json(result.rows[0]);
   } catch (error) {
     console.error("Update store settings error:", error);
+    logStoreSettings('updateStoreSettings:error', { error: (error as any)?.message });
     res.status(500).json({ error: "Failed to update store settings" });
   }
 };

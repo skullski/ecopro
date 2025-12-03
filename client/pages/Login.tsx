@@ -49,9 +49,9 @@ export default function Login() {
               <LogIn className="w-8 h-8 text-white" />
             </div>
             <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              {t("login")}
+              {t("login") || "Log in"}
             </h2>
-            <p className="text-sm text-muted-foreground mt-2">{t('login.subtitle')}</p>
+            <p className="text-sm text-muted-foreground mt-2">{t('login.subtitle') || "Welcome back! Sign in to continue"}</p>
           </div>
           
           {error && (
@@ -64,7 +64,7 @@ export default function Login() {
             <div>
               <label className="block text-sm font-medium mb-2 flex items-center gap-2">
                 <Mail className="w-4 h-4 text-primary" />
-                {t("auth.email")}
+                {t("auth.email") || "Email"}
               </label>
               <input 
                 value={email} 
@@ -80,7 +80,7 @@ export default function Login() {
             <div>
               <label className="block text-sm font-medium mb-2 flex items-center gap-2">
                 <Lock className="w-4 h-4 text-primary" />
-                {t("auth.password")}
+                {t("auth.password") || "Password"}
               </label>
               <input 
                 type="password" 
@@ -102,10 +102,10 @@ export default function Login() {
                 {loading ? (
                   <>
                     <Loader2 className="w-5 h-5 ml-2 animate-spin" />
-                    {t("loading")}
+                    {t("loading") || "Loading..."}
                   </>
                 ) : (
-                  t("login")
+                  t("login") || "Log in"
                 )}
               </Button>
             </div>

@@ -105,8 +105,39 @@ export const en = {
 
   // Login Page
   "login.subtitle": "Welcome back! Sign in to continue",
+  "login": "Log in",
   "auth.passwordPlaceholder": "••••••••",
   "login.noAccount": "Don't have an account?",
+  "signup": "Sign up",
+
+  // Pricing Page
+  "pricing.badge": "100% Free Forever",
+  "pricing.title": "Simple Pricing",
+  "pricing.subtitle": "No hidden fees. No subscriptions. No premium barriers. Grow your business at zero cost.",
+  "pricing.plan.free": "Free Plan",
+  "pricing.plan.desc": "Everything you need to succeed",
+  "pricing.plan.price": "$0",
+  "pricing.plan.forever": "Forever",
+  "pricing.feature.unlimited": "Unlimited product listings",
+  "pricing.feature.custom": "Custom storefront",
+  "pricing.feature.orders": "Order management",
+  "pricing.feature.analytics": "Real-time analytics",
+  "pricing.feature.responsive": "Mobile responsive",
+  "pricing.feature.payments": "Secure payments",
+  "pricing.feature.support": "24/7 support",
+  "pricing.feature.noFees": "No transaction fees",
+  "pricing.cta": "Start Free",
+  "pricing.future.title": "Upcoming premium features",
+  "pricing.future.desc": "We are committed to keeping the core platform free. In the future we may introduce optional paid tools like advanced analytics, marketing boosts, or premium themes — but buying and selling will always remain accessible to everyone.",
+  "pricing.questions": "Questions about pricing?",
+  "pricing.contact": "Contact our team",
+
+  // Storefront Page
+  "storefront.loading": "Loading store...",
+  "storefront.notAvailable": "Store Not Available",
+  "storefront.notAvailableDesc": "This store could not be loaded. Please check the URL and try again.",
+  "storefront.browseMarketplace": "Browse Marketplace",
+  "storefront.template": "Template",
 
   // User
   "user.name": "Name",

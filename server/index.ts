@@ -13,6 +13,7 @@ import * as productRoutes from "./routes/products";
 import * as stockRoutes from "./routes/stock";
 import * as clientStoreRoutes from "./routes/client-store";
 import * as publicStoreRoutes from "./routes/public-store";
+import { createProduct as createStorefrontProduct, updateProduct as updateStorefrontProduct, deleteProduct as deleteStorefrontProduct, handleUploadImages as uploadStorefrontImages } from "./routes/storefront";
 import * as orderRoutes from "./routes/orders";
 import { upload, uploadImage } from "./routes/uploads";
 import { authenticate, requireAdmin, requireSeller, requireClient } from "./middleware/auth";
@@ -20,6 +21,7 @@ import * as adminRoutes from "./routes/admin";
 import * as dashboardRoutes from "./routes/dashboard";
 import * as botRoutes from "./routes/bot";
 import { initializeDatabase, createDefaultAdmin, runPendingMigrations } from "./utils/database";
+import { handleDbCheck } from "./routes/db-check";
 import { hashPassword } from "./utils/auth";
 import {
   validate,
@@ -46,7 +48,13 @@ export function createServer() {
 
   // Initialize database then run pending migrations
   initializeDatabase()
-    .then(() => runPendingMigrations())
+    .then(() => {
+      if (process.env.SKIP_MIGRATIONS === 'true') {
+        console.log('⏭️ SKIP_MIGRATIONS=true — skipping SQL migrations');
+        return;
+      }
+      return runPendingMigrations();
+    })
     .catch((err) => {
       console.error("Failed to initialize database:", err);
       process.exit(1);
@@ -130,6 +138,9 @@ export function createServer() {
     const ping = process.env.PING_MESSAGE ?? "ping";
     res.json({ message: ping });
   });
+
+  // DB details check (non-sensitive; shows current_database and socket)
+  app.get("/api/db-check", handleDbCheck);
 
   // Database connectivity ping (quick simple query)
   app.get('/api/db/ping', async (_req, res) => {
@@ -447,6 +458,12 @@ export function createServer() {
   app.get("/api/storefront/:storeSlug/settings", publicStoreRoutes.getStorefrontSettings);
   app.get("/api/store/:storeSlug/:productSlug", publicStoreRoutes.getPublicProduct);
   app.post("/api/storefront/:storeSlug/orders", publicStoreRoutes.createPublicStoreOrder);
+
+  // Private store product management (seller/client must be authenticated)
+  app.post("/api/storefront/:storeSlug/products", authenticate, requireClient, apiLimiter, createStorefrontProduct);
+  app.put("/api/storefront/:storeSlug/products/:id", authenticate, requireClient, apiLimiter, updateStorefrontProduct);
+  app.delete("/api/storefront/:storeSlug/products/:id", authenticate, requireClient, deleteStorefrontProduct);
+  app.post("/api/storefront/:storeSlug/products/:id/images", authenticate, requireClient, uploadStorefrontImages);
 
   // Order routes
   app.post("/api/orders/create", orderRoutes.createOrder); // Public - buyers can create orders

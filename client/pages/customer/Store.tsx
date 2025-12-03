@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { 
   Plus, Search, Eye, Copy, ExternalLink, Edit, Trash2, 
   Star, Package, DollarSign, Image as ImageIcon, Settings,
-  Link as LinkIcon, Check, Share2, Grid, List, Store as StoreIcon
+  Link as LinkIcon, Check, Share2, Grid, List, Store as StoreIcon, CheckCircle2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -60,8 +60,11 @@ export default function Store() {
   const [loading, setLoading] = useState(true);
   const [storeSettings, setStoreSettings] = useState<any>({});
   const [savingSettings, setSavingSettings] = useState(false);
+  const [showSavedOverlay, setShowSavedOverlay] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [uploadingHeroTile1, setUploadingHeroTile1] = useState(false);
+  const [uploadingHeroTile2, setUploadingHeroTile2] = useState(false);
   const [statsServer, setStatsServer] = useState<{total_products:number;active_products:number;draft_products:number;total_views:number}|null>(null);
   
   // Modals
@@ -69,8 +72,8 @@ export default function Store() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  // Store settings (simplified) for logo & banner image uploads and currency
   const [showStoreSettingsModal, setShowStoreSettingsModal] = useState(false);
-  const [showTemplateGallery, setShowTemplateGallery] = useState(false);
   
   // Selected product
   const [selectedProduct, setSelectedProduct] = useState<StoreProduct | null>(null);
@@ -188,19 +191,128 @@ export default function Store() {
           store_name: storeSettings.store_name || null,
           store_description: storeSettings.store_description || null,
           store_logo: storeSettings.store_logo || null,
-          template: storeSettings.template || 'classic',
           banner_url: storeSettings.banner_url || null,
-          currency_code: storeSettings.currency_code || 'DZD',
+          hero_tile1_url: storeSettings.hero_tile1_url || null,
+          hero_tile2_url: storeSettings.hero_tile2_url || null,
+          // Keep payload minimal: only name, logo, banner
         }),
       });
       if (!res.ok) throw new Error('Save failed');
       const data = await res.json();
       setStoreSettings(data);
-      setShowTemplateGallery(false);
+      setShowSavedOverlay(true);
+      setTimeout(() => setShowSavedOverlay(false), 1600);
     } catch (e) {
       console.error('Failed to save store settings', e);
     } finally {
       setSavingSettings(false);
+    }
+  };
+
+  // Save only provided updates, merging with existing minimal fields
+  const saveSettingsPartial = async (updates: Record<string, any>) => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const payload = {
+        store_name: storeSettings.store_name || null,
+        store_description: storeSettings.store_description || null,
+        store_logo: storeSettings.store_logo || null,
+        banner_url: storeSettings.banner_url || null,
+        hero_tile1_url: storeSettings.hero_tile1_url || null,
+        hero_tile2_url: storeSettings.hero_tile2_url || null,
+        ...updates,
+      };
+      const res = await fetch('/api/client/store/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error('Save failed');
+      const data = await res.json();
+      setStoreSettings(data);
+      setShowSavedOverlay(true);
+      setTimeout(() => setShowSavedOverlay(false), 1600);
+    } catch (e) {
+      console.error('Failed to save store settings (partial)', e);
+    }
+  };
+
+  // Helpers to manage comma-separated slideshow lists
+  const splitList = (val?: string) => {
+    const arr = (val || '').split(',').map(s=>s.trim()).filter(Boolean);
+    const seen = new Set<string>();
+    return arr.filter(u => {
+      const key = u.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
+  const joinList = (arr: string[]) => arr.join(',');
+  const removeFromList = async (field: 'banner_url'|'hero_tile1_url'|'hero_tile2_url', url: string) => {
+    const current = splitList(storeSettings[field]);
+    const next = current.filter(u => u !== url);
+    const payload: any = {};
+    payload[field] = joinList(next);
+    await saveSettingsPartial(payload);
+  };
+
+  const handleHeroTile1Upload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    try {
+      setUploadingHeroTile1(true);
+      const token = localStorage.getItem('authToken');
+      const urls: string[] = [];
+      for (const file of Array.from(files)) {
+        const formData = new FormData();
+        formData.append('image', file);
+        const res = await fetch('/api/upload', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formData });
+        if (!res.ok) throw new Error('Upload failed');
+        const data = await res.json();
+        urls.push(data.url);
+      }
+      const prev = (storeSettings.hero_tile1_url || '').split(',').map((s:string)=>s.trim()).filter(Boolean);
+      const combined = [...prev, ...urls].join(',');
+      setStoreSettings((s: any) => ({ ...s, hero_tile1_url: combined }));
+      await saveSettingsPartial({ hero_tile1_url: combined });
+    } catch (error) {
+      console.error('Failed to upload hero tile 1:', error);
+      alert('Failed to upload image(s). Please try again.');
+    } finally {
+      setUploadingHeroTile1(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleHeroTile2Upload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    try {
+      setUploadingHeroTile2(true);
+      const token = localStorage.getItem('authToken');
+      const urls: string[] = [];
+      for (const file of Array.from(files)) {
+        const formData = new FormData();
+        formData.append('image', file);
+        const res = await fetch('/api/upload', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formData });
+        if (!res.ok) throw new Error('Upload failed');
+        const data = await res.json();
+        urls.push(data.url);
+      }
+      const prev = (storeSettings.hero_tile2_url || '').split(',').map((s:string)=>s.trim()).filter(Boolean);
+      const combined = [...prev, ...urls].join(',');
+      setStoreSettings((s: any) => ({ ...s, hero_tile2_url: combined }));
+      await saveSettingsPartial({ hero_tile2_url: combined });
+    } catch (error) {
+      console.error('Failed to upload hero tile 2:', error);
+      alert('Failed to upload image(s). Please try again.');
+    } finally {
+      setUploadingHeroTile2(false);
+      e.target.value = '';
     }
   };
 
@@ -225,6 +337,7 @@ export default function Store() {
       if (!res.ok) throw new Error('Upload failed');
       const data = await res.json();
       setStoreSettings((s: any) => ({ ...s, store_logo: data.url }));
+      await saveSettingsPartial({ store_logo: data.url });
     } catch (error) {
       console.error('Failed to upload logo:', error);
       alert('Failed to upload image. Please try again.');
@@ -234,92 +347,37 @@ export default function Store() {
   };
 
   const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     try {
       setUploadingBanner(true);
-      const formData = new FormData();
-      formData.append('image', file);
-
       const token = localStorage.getItem('authToken');
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      if (!res.ok) throw new Error('Upload failed');
-      const data = await res.json();
-      setStoreSettings((s: any) => ({ ...s, banner_url: data.url }));
+      const urls: string[] = [];
+      for (const file of Array.from(files)) {
+        const formData = new FormData();
+        formData.append('image', file);
+        const res = await fetch('/api/upload', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formData });
+        if (!res.ok) throw new Error('Upload failed');
+        const data = await res.json();
+        urls.push(data.url);
+      }
+      const prev = (storeSettings.banner_url || '').split(',').map((s:string)=>s.trim()).filter(Boolean);
+      const combined = [...prev, ...urls].join(',');
+      setStoreSettings((s: any) => ({ ...s, banner_url: combined }));
+      await saveSettingsPartial({ banner_url: combined });
     } catch (error) {
       console.error('Failed to upload banner:', error);
-      alert('Failed to upload image. Please try again.');
+      alert('Failed to upload image(s). Please try again.');
     } finally {
       setUploadingBanner(false);
+      e.target.value = '';
     }
   };
 
-  const templates = [
-    {
-      id: 'classic',
-      name: 'Classic',
-      description: 'Modern gradient hero with sticky filters and premium cards',
-      image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&auto=format&fit=crop',
-      features: ['Gradient hero', 'Frosted glass cards', 'Quick view overlay', 'Category chips']
-    },
-    {
-      id: 'supreme',
-      name: 'Supreme',
-      description: 'Editorial full-bleed hero with large typography',
-      image: 'https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=800&auto=format&fit=crop',
-      features: ['Full-bleed banner', 'Large headlines', 'Minimal chrome', 'Premium feel']
-    },
-    {
-      id: 'maximize',
-      name: 'Maximize',
-      description: 'Dense marketplace grid with sidebar filters',
-      image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format&fit=crop',
-      features: ['Left sidebar', 'Dense grid', 'Square images', 'Utility-first']
-    },
-    {
-      id: 'fullframe',
-      name: 'Fullframe',
-      description: 'Mosaic editorial layout with oversized hero',
-      image: 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=800&auto=format&fit=crop',
-      features: ['Oversized text', 'Editorial feel', 'Immersive banner', 'Magazine style']
-    },
-    {
-      id: 'stockist',
-      name: 'Stockist',
-      description: 'Playful pastel cards with soft shadows',
-      image: 'https://images.unsplash.com/photo-1515347619252-60a4bf4fff4f?w=800&auto=format&fit=crop',
-      features: ['Pastel colors', 'Rounded cards', 'Playful vibe', 'Clean spacing']
-    },
-    {
-      id: 'walidstore',
-      name: 'Walid Store',
-      description: 'Clean professional layout with modern aesthetics',
-      image: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=800&auto=format&fit=crop',
-      features: ['Professional', 'Clean design', 'Easy navigation', 'Business focused']
-    },
-    {
-      id: 'minimal',
-      name: 'Minimal',
-      description: 'Ultra-clean layout with focus on product cards',
-      image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&auto=format&fit=crop',
-      features: ['Minimal chrome', 'Clean cards', 'Focus on content']
-    },
-    {
-      id: 'catalog',
-      name: 'Catalog',
-      description: 'Classic catalog look with simple listing',
-      image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&auto=format&fit=crop',
-      features: ['List view', 'Simple cards', 'Fast browsing']
-    }
-  ];
+  // Removed hero image uploads for a simpler settings experience
+
+  // Removed template gallery; keeping settings minimal per request
 
   const filterProducts = () => {
     let filtered = [...products];
@@ -553,13 +611,6 @@ export default function Store() {
               <StoreIcon className="w-4 h-4 mr-2" />
               View Storefront
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => setShowStoreSettingsModal(true)}
-            >
-              <Settings className="w-4 h-4 mr-2" />
-              Store Settings
-            </Button>
             <Button 
               onClick={() => {
                 setFormData({ status: 'active', is_featured: false, stock_quantity: 0 });
@@ -569,6 +620,13 @@ export default function Store() {
             >
               <Plus className="w-4 h-4 mr-2" />
               Add Product
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowStoreSettingsModal(true)}
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Store Images
             </Button>
           </div>
         </div>
@@ -1139,57 +1197,137 @@ export default function Store() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Store Settings Modal */}
+      {/* Store Settings Modal (simplified for images & currency) */}
       <Dialog open={showStoreSettingsModal} onOpenChange={setShowStoreSettingsModal}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl bg-muted">
           <DialogHeader>
             <DialogTitle>Store Settings</DialogTitle>
             <DialogDescription>
-              Your private store URL and customization options
+              Set your store name and upload logo/banner.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-6 py-4">
-            {/* Store Branding */}
-            <div className="space-y-4 border-b pb-6">
-              <h3 className="text-base font-semibold">Store Branding</h3>
-              
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Store Name *</Label>
+            {/* Store Name */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Store Name</Label>
+              <Input
+                placeholder="Your Store Name"
+                value={storeSettings.store_name || ''}
+                onChange={(e) => setStoreSettings((s: any) => ({ ...s, store_name: e.target.value }))}
+              />
+            </div>
+
+            {/* Store Logo */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Store Logo URL</Label>
+              <div className="flex gap-2 items-center">
                 <Input
-                  placeholder="My Awesome Store"
-                  value={storeSettings.store_name || ''}
-                  onChange={(e) => setStoreSettings((s: any) => ({ ...s, store_name: e.target.value }))}
+                  placeholder="https://example.com/logo.png"
+                  value={storeSettings.store_logo || ''}
+                  onChange={(e) => setStoreSettings((s: any) => ({ ...s, store_logo: e.target.value }))}
+                  className="flex-1"
                 />
-                <p className="text-xs text-muted-foreground">This will be the main title of your store</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Store Description</Label>
-                <Textarea
-                  placeholder="Tell customers what makes your store special..."
-                  value={storeSettings.store_description || ''}
-                  onChange={(e) => setStoreSettings((s: any) => ({ ...s, store_description: e.target.value }))}
-                  rows={3}
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={uploadingLogo}
+                  onClick={() => document.getElementById('logo-upload')?.click()}
+                >
+                  {uploadingLogo ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <ImageIcon className="w-4 h-4 mr-2" />
+                      Upload
+                    </>
+                  )}
+                </Button>
+                <input
+                  id="logo-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  className="hidden"
                 />
               </div>
+              <p className="text-xs text-muted-foreground">Paste a URL or upload an image.</p>
+            </div>
 
+            {/* Banner Image */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Banner Image URL</Label>
+              <div className="flex gap-2 items-center">
+                <Input
+                  placeholder="https://example.com/banner.jpg"
+                  value={storeSettings.banner_url || ''}
+                  onChange={(e) => setStoreSettings((s: any) => ({ ...s, banner_url: e.target.value }))}
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={uploadingBanner}
+                  onClick={() => document.getElementById('banner-upload')?.click()}
+                >
+                  {uploadingBanner ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <ImageIcon className="w-4 h-4 mr-2" />
+                      Upload
+                    </>
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => saveSettingsPartial({ banner_url: '' })}
+                >
+                  Clear
+                </Button>
+                <input
+                  id="banner-upload"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleBannerUpload}
+                  className="hidden"
+                />
+              </div>
+              {/* Existing banner slideshow items */}
+              {splitList(storeSettings.banner_url).length > 0 && (
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  {splitList(storeSettings.banner_url).map((u: string, idx: number) => (
+                    <div key={idx} className="relative rounded-md overflow-hidden border">
+                      <img src={u} alt={`Banner ${idx+1}`} className="w-full h-20 object-cover" />
+                      <Button size="xs" variant="destructive" className="absolute top-1 right-1" onClick={() => removeFromList('banner_url', u)}>Remove</Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">Displayed behind the hero section.</p>
+            </div>
+
+            {/* Hero Tiles (optional) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Store Logo URL</Label>
-                <div className="flex gap-2">
+                <Label className="text-sm font-medium">Right Tile 1 URL</Label>
+                <div className="flex gap-2 items-center">
                   <Input
-                    placeholder="https://example.com/logo.png"
-                    value={storeSettings.store_logo || ''}
-                    onChange={(e) => setStoreSettings((s: any) => ({ ...s, store_logo: e.target.value }))}
+                    placeholder="https://example.com/tile-1.jpg"
+                    value={storeSettings.hero_tile1_url || ''}
+                    onChange={(e) => setStoreSettings((s: any) => ({ ...s, hero_tile1_url: e.target.value }))}
                     className="flex-1"
                   />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={uploadingLogo}
-                    onClick={() => document.getElementById('logo-upload')?.click()}
-                  >
-                    {uploadingLogo ? (
+                  <Button type="button" variant="outline" disabled={uploadingHeroTile1} onClick={() => document.getElementById('hero-tile1-upload')?.click()}>
+                    {uploadingHeroTile1 ? (
                       <>
                         <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
                         Uploading...
@@ -1201,227 +1339,57 @@ export default function Store() {
                       </>
                     )}
                   </Button>
-                  <input
-                    id="logo-upload"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleLogoUpload}
-                    className="hidden"
-                  />
+                  <Button type="button" variant="destructive" onClick={() => saveSettingsPartial({ hero_tile1_url: '' })}>Clear</Button>
+                  <input id="hero-tile1-upload" type="file" accept="image/*" multiple onChange={handleHeroTile1Upload} className="hidden" />
                 </div>
-                <p className="text-xs text-muted-foreground">Upload or paste a direct link to your logo</p>
-              </div>
-            </div>
-
-            {/* Template Selection */}
-            <div className="space-y-2 border-b pb-6">
-              <h3 className="text-base font-semibold mb-3">Store Template</h3>
-              <div className="flex gap-2">
-                <Input 
-                  value={templates.find(t => t.id === (storeSettings.template || 'classic'))?.name || 'Classic'} 
-                  readOnly 
-                  className="flex-1"
-                />
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowTemplateGallery(true)}
-                >
-                  Choose Template
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {templates.find(t => t.id === (storeSettings.template || 'classic'))?.description}
-              </p>
-            </div>
-
-            {/* Customization */}
-            <div className="space-y-4 border-b pb-6">
-              <h3 className="text-base font-semibold">Customization</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Banner Image URL</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="https://example.com/banner.jpg"
-                      value={storeSettings.banner_url || ''}
-                      onChange={(e) => setStoreSettings((s: any) => ({ ...s, banner_url: e.target.value }))}
-                      className="flex-1"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={uploadingBanner}
-                      onClick={() => document.getElementById('banner-upload')?.click()}
-                    >
-                      {uploadingBanner ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-                          Uploading...
-                        </>
-                      ) : (
-                        <>
-                          <ImageIcon className="w-4 h-4 mr-2" />
-                          Upload
-                        </>
-                      )}
-                    </Button>
-                    <input
-                      id="banner-upload"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleBannerUpload}
-                      className="hidden"
-                    />
+                {/* Existing Tile 1 slideshow items */}
+                {splitList(storeSettings.hero_tile1_url).length > 0 && (
+                  <div className="mt-2 grid grid-cols-3 gap-2">
+                    {splitList(storeSettings.hero_tile1_url).map((u: string, idx: number) => (
+                      <div key={idx} className="relative rounded-md overflow-hidden border">
+                        <img src={u} alt={`Tile 1 - ${idx+1}`} className="w-full h-20 object-cover" />
+                        <Button size="xs" variant="destructive" className="absolute top-1 right-1" onClick={() => removeFromList('hero_tile1_url', u)}>Remove</Button>
+                      </div>
+                    ))}
                   </div>
-                  <p className="text-xs text-muted-foreground">Hero section background image</p>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Currency Code</Label>
-                  <Input
-                    placeholder="DZD"
-                    value={storeSettings.currency_code || 'DZD'}
-                    onChange={(e) => setStoreSettings((s: any) => ({ ...s, currency_code: e.target.value.toUpperCase().slice(0, 6) }))}
-                  />
-                  <p className="text-xs text-muted-foreground">e.g., DZD, USD, EUR</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Store URL Section */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-base font-semibold">Your Store URL</Label>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    if (storeSettings.store_slug) {
-                      window.open(`/store/${storeSettings.store_slug}`, '_blank');
-                    }
-                  }}
-                  disabled={!storeSettings.store_slug}
-                >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  Open Store
-                </Button>
-              </div>
-              <div className="flex gap-2">
-                <Input
-                  value={storeSettings.store_slug ? `${window.location.origin}/store/${storeSettings.store_slug}` : 'Loading...'}
-                  readOnly
-                  className="font-mono text-sm"
-                />
-                <Button onClick={copyStoreLink} variant="outline" disabled={!storeSettings.store_slug}>
-                  {storeLinkCopied ? (
-                    <Check className="w-4 h-4 text-green-500" />
-                  ) : (
-                    <Copy className="w-4 h-4" />
-                  )}
-                </Button>
-                {!storeSettings.store_slug && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={loadStoreSettings}
-                  >
-                    Retry
-                  </Button>
                 )}
               </div>
-              {storeLinkCopied && (
-                <p className="text-sm text-green-600 flex items-center gap-2">
-                  <Check className="w-4 h-4" />
-                  Store link copied!
-                </p>
-              )}
-              <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-                <div className="flex gap-3">
-                  <LinkIcon className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm">
-                    <div className="font-medium text-blue-900 dark:text-blue-100 mb-1">
-                      Share Your Store
-                    </div>
-                    <p className="text-blue-700 dark:text-blue-300">
-                      Share this link with your customers so they can browse all your products in one place.
-                      They can search, filter by category, and view featured items.
-                    </p>
-                  </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Right Tile 2 URL</Label>
+                <div className="flex gap-2 items-center">
+                  <Input
+                    placeholder="https://example.com/tile-2.jpg"
+                    value={storeSettings.hero_tile2_url || ''}
+                    onChange={(e) => setStoreSettings((s: any) => ({ ...s, hero_tile2_url: e.target.value }))}
+                    className="flex-1"
+                  />
+                  <Button type="button" variant="outline" disabled={uploadingHeroTile2} onClick={() => document.getElementById('hero-tile2-upload')?.click()}>
+                    {uploadingHeroTile2 ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <ImageIcon className="w-4 h-4 mr-2" />
+                        Upload
+                      </>
+                    )}
+                  </Button>
+                  <Button type="button" variant="destructive" onClick={() => saveSettingsPartial({ hero_tile2_url: '' })}>Clear</Button>
+                  <input id="hero-tile2-upload" type="file" accept="image/*" multiple onChange={handleHeroTile2Upload} className="hidden" />
                 </div>
-              </div>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="border-t pt-6">
-              <Label className="text-base font-semibold mb-3 block">Store Statistics</Label>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="bg-muted rounded-lg p-4">
-                  <div className="text-2xl font-bold text-primary">{products.length}</div>
-                  <div className="text-sm text-muted-foreground">Total Products</div>
-                </div>
-                <div className="bg-muted rounded-lg p-4">
-                  <div className="text-2xl font-bold text-green-600">
-                    {products.filter(p => p.status === 'active').length}
+                {/* Existing Tile 2 slideshow items */}
+                {splitList(storeSettings.hero_tile2_url).length > 0 && (
+                  <div className="mt-2 grid grid-cols-3 gap-2">
+                    {splitList(storeSettings.hero_tile2_url).map((u: string, idx: number) => (
+                      <div key={idx} className="relative rounded-md overflow-hidden border">
+                        <img src={u} alt={`Tile 2 - ${idx+1}`} className="w-full h-20 object-cover" />
+                        <Button size="xs" variant="destructive" className="absolute top-1 right-1" onClick={() => removeFromList('hero_tile2_url', u)}>Remove</Button>
+                      </div>
+                    ))}
                   </div>
-                  <div className="text-sm text-muted-foreground">Active</div>
-                </div>
-                <div className="bg-muted rounded-lg p-4">
-                  <div className="text-2xl font-bold text-purple-600">
-                    {products.reduce((sum, p) => sum + p.views, 0)}
-                  </div>
-                  <div className="text-sm text-muted-foreground">Total Views</div>
-                </div>
-              </div>
-            </div>
-
-            {/* How to Use */}
-            <div className="border-t pt-6">
-              <Label className="text-base font-semibold mb-3 block">How to Use Your Store</Label>
-              <div className="space-y-3">
-                <div className="flex gap-3 text-sm">
-                  <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">
-                    1
-                  </div>
-                  <div>
-                    <div className="font-medium mb-1">Add Products</div>
-                    <p className="text-muted-foreground">
-                      Create products with images, prices, and descriptions
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-3 text-sm">
-                  <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">
-                    2
-                  </div>
-                  <div>
-                    <div className="font-medium mb-1">Share Your Store Link</div>
-                    <p className="text-muted-foreground">
-                      Copy the store URL above and share it with your customers on social media, WhatsApp, email, etc.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-3 text-sm">
-                  <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">
-                    3
-                  </div>
-                  <div>
-                    <div className="font-medium mb-1">Share Individual Products</div>
-                    <p className="text-muted-foreground">
-                      Click "Share" on any product to get a direct link for targeted advertising
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-3 text-sm">
-                  <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">
-                    4
-                  </div>
-                  <div>
-                    <div className="font-medium mb-1">Track Performance</div>
-                    <p className="text-muted-foreground">
-                      Monitor views and engagement for each product in your dashboard
-                    </p>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -1437,97 +1405,16 @@ export default function Store() {
         </DialogContent>
       </Dialog>
 
-      {/* Template Gallery Modal */}
-      <Dialog open={showTemplateGallery} onOpenChange={setShowTemplateGallery}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Choose Your Store Template</DialogTitle>
-            <DialogDescription>
-              Select a template that best fits your brand. You can change it anytime.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
-            {templates.map((template) => (
-              <button
-                key={template.id}
-                onClick={() => {
-                  setStoreSettings((s: any) => ({ ...s, template: template.id }));
-                }}
-                className={`group relative overflow-hidden rounded-xl border-2 transition-all text-left ${
-                  (storeSettings.template || 'classic') === template.id
-                    ? 'border-primary ring-2 ring-primary/20 shadow-lg'
-                    : 'border-border hover:border-primary/50 hover:shadow-md'
-                }`}
-              >
-                {/* Template Preview Image */}
-                <div className="relative aspect-video overflow-hidden bg-muted">
-                  <img 
-                    src={template.image} 
-                    alt={template.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  {(storeSettings.template || 'classic') === template.id && (
-                    <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
-                      <div className="bg-primary text-white px-4 py-2 rounded-full font-semibold flex items-center gap-2">
-                        <Check className="w-4 h-4" />
-                        Selected
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Template Info */}
-                <div className="p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <h3 className="font-bold text-lg">{template.name}</h3>
-                      <p className="text-sm text-muted-foreground mt-1">{template.description}</p>
-                    </div>
-                  </div>
-                  
-                  {/* Features */}
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {template.features.map((feature, idx) => (
-                      <Badge key={idx} variant="secondary" className="text-xs">
-                        {feature}
-                      </Badge>
-                    ))}
-                  </div>
-
-                  {/* Action Button */}
-                  {(storeSettings.template || 'classic') === template.id ? (
-                    <Button className="w-full mt-4" disabled>
-                      <Check className="w-4 h-4 mr-2" />
-                      Current Template
-                    </Button>
-                  ) : (
-                    <Button 
-                      className="w-full mt-4" 
-                      variant="outline"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setStoreSettings((s: any) => ({ ...s, template: template.id }));
-                      }}
-                    >
-                      Select Template
-                    </Button>
-                  )}
-                </div>
-              </button>
-            ))}
+      {/* Center-screen success overlay */}
+      {showSavedOverlay && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="relative bg-card border rounded-xl shadow-lg px-6 py-4 flex items-center gap-3">
+            <CheckCircle2 className="w-6 h-6 text-green-500" />
+            <span className="font-medium">Settings saved</span>
           </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowTemplateGallery(false)}>
-              Cancel
-            </Button>
-            <Button onClick={saveStoreSettings} disabled={savingSettings}>
-              {savingSettings ? 'Saving...' : 'Save & Apply'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </div>
   );
 }

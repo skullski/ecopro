@@ -3,14 +3,30 @@ import { pool } from "../utils/database";
 
 // GET /api/dashboard/stats
 // Aggregated metrics for the client/vendor dashboard
-export const getDashboardStats: RequestHandler = async (_req, res) => {
+export const getDashboardStats: RequestHandler = async (req, res) => {
   try {
+    const clientId = (req as any).user?.id;
     const [productsRes, ordersRes, revenueRes, pendingRes, completedRes] = await Promise.all([
-      pool.query(`SELECT COUNT(*)::int AS products FROM marketplace_products WHERE status = 'active'`),
-      pool.query(`SELECT COUNT(*)::int AS orders FROM marketplace_orders`),
-      pool.query(`SELECT COALESCE(SUM(total_price),0)::float AS revenue FROM marketplace_orders WHERE status = 'completed'`),
-      pool.query(`SELECT COUNT(*)::int AS pending FROM marketplace_orders WHERE status = 'pending'`),
-      pool.query(`SELECT COUNT(*)::int AS completed FROM marketplace_orders WHERE status = 'completed'`),
+      pool.query(
+        `SELECT COUNT(*)::int AS products FROM client_store_products WHERE client_id = $1 AND status = 'active'`,
+        [clientId]
+      ),
+      pool.query(
+        `SELECT COUNT(*)::int AS orders FROM marketplace_orders WHERE seller_id = $1`,
+        [clientId]
+      ),
+      pool.query(
+        `SELECT COALESCE(SUM(total_price),0)::float AS revenue FROM marketplace_orders WHERE status = 'completed' AND seller_id = $1`,
+        [clientId]
+      ),
+      pool.query(
+        `SELECT COUNT(*)::int AS pending FROM marketplace_orders WHERE status = 'pending' AND seller_id = $1`,
+        [clientId]
+      ),
+      pool.query(
+        `SELECT COUNT(*)::int AS completed FROM marketplace_orders WHERE status = 'completed' AND seller_id = $1`,
+        [clientId]
+      ),
     ]);
 
     const stats = {

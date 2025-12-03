@@ -42,7 +42,7 @@ export default function Signup() {
               <UserPlus className="w-8 h-8 text-white" />
             </div>
             <h2 className="text-3xl font-bold bg-gradient-to-r from-accent to-orange-600 bg-clip-text text-transparent">
-              {t("signup")}
+              {t("signup") || "Sign up"}
             </h2>
             <p className="text-sm text-muted-foreground mt-2 flex items-center justify-center gap-1">
               <Sparkles className="w-4 h-4 text-accent" />
@@ -60,7 +60,7 @@ export default function Signup() {
             <div>
               <label className="block text-sm font-medium mb-2 flex items-center gap-2">
                 <User className="w-4 h-4 text-accent" />
-                {t("auth.name")}
+                {t("auth.name") || "Name"}
               </label>
               <input 
                 value={name} 
@@ -76,7 +76,7 @@ export default function Signup() {
             <div>
               <label className="block text-sm font-medium mb-2 flex items-center gap-2">
                 <Mail className="w-4 h-4 text-accent" />
-                {t("auth.email")}
+                {t("auth.email") || "Email"}
               </label>
               <input 
                 value={email} 
@@ -91,7 +91,7 @@ export default function Signup() {
             <div>
               <label className="block text-sm font-medium mb-2 flex items-center gap-2">
                 <Lock className="w-4 h-4 text-accent" />
-                {t("auth.password")}
+                {t("auth.password") || "Password"}
               </label>
               <input 
                 type="password" 
@@ -116,12 +116,12 @@ export default function Signup() {
                 {loading ? (
                   <>
                     <Loader2 className="w-5 h-5 ml-2 animate-spin" />
-                    {t("loading")}
+                    {t("loading") || "Loading..."}
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-5 h-5 ml-2" />
-                    {t("signup")}
+                    {t("signup") || "Sign up"}
                   </>
                 )}
               </Button>
@@ -130,9 +130,9 @@ export default function Signup() {
           
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">
-              {t("auth.haveAccount")}{" "}
+              {t("auth.haveAccount") || "Already have an account?"}{" "}
               <Link to="/login" className="text-accent hover:underline font-medium">
-                {t("login")}
+                {t("login") || "Log in"}
               </Link>
             </p>
           </div>

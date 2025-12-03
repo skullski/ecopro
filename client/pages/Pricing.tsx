@@ -18,16 +18,16 @@ export default function Pricing() {
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border shadow-lg mb-6">
               <Sparkles className="w-4 h-4 text-indigo-600" />
-              <span className="text-sm font-medium">{t('pricing.badge')}</span>
+              <span className="text-sm font-medium">{t('pricing.badge') || '100% Free Forever'}</span>
             </div>
             
             <h1 className="text-5xl md:text-7xl font-black mb-6">
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-600">
-                {t('pricing.title')}
+                {t('pricing.title') || 'Simple Pricing'}
               </span>
             </h1>
             <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              {t('pricing.subtitle')}
+              {t('pricing.subtitle') || 'No hidden fees. No subscriptions. No premium barriers.'}
             </p>
           </div>
 
@@ -40,27 +40,27 @@ export default function Pricing() {
               <div className="p-8 md:p-12">
                 <div className="flex items-center justify-between mb-8">
                   <div>
-                    <h2 className="text-3xl font-bold mb-2">{t('pricing.plan.free')}</h2>
-                    <p className="text-gray-600 dark:text-gray-400">{t('pricing.plan.desc')}</p>
+                    <h2 className="text-3xl font-bold mb-2">{t('pricing.plan.free') || 'Free Plan'}</h2>
+                    <p className="text-gray-600 dark:text-gray-400">{t('pricing.plan.desc') || 'Everything you need to succeed'}</p>
                   </div>
                   <div className="text-right">
                     <div className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-600">
-                      {t('pricing.plan.price')}
+                      {t('pricing.plan.price') || '$0'}
                     </div>
-                    <p className="text-sm text-gray-500">{t('pricing.plan.forever')}</p>
+                    <p className="text-sm text-gray-500">{t('pricing.plan.forever') || 'Forever'}</p>
                   </div>
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-4 mb-8">
                   {[
-                    t('pricing.feature.unlimited'),
-                    t('pricing.feature.custom'),
-                    t('pricing.feature.orders'),
-                    t('pricing.feature.analytics'),
-                    t('pricing.feature.responsive'),
-                    t('pricing.feature.payments'),
-                    t('pricing.feature.support'),
-                    t('pricing.feature.noFees')
+                    t('pricing.feature.unlimited') || 'Unlimited product listings',
+                    t('pricing.feature.custom') || 'Custom storefront',
+                    t('pricing.feature.orders') || 'Order management',
+                    t('pricing.feature.analytics') || 'Real-time analytics',
+                    t('pricing.feature.responsive') || 'Mobile responsive',
+                    t('pricing.feature.payments') || 'Secure payments',
+                    t('pricing.feature.support') || '24/7 support',
+                    t('pricing.feature.noFees') || 'No transaction fees'
                   ].map((feature, i) => (
                     <div key={i} className="flex items-center gap-3">
                       <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
@@ -74,7 +74,7 @@ export default function Pricing() {
                 <Link to="/signup">
                   <Button size="lg" className="w-full bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-700 hover:to-cyan-700 text-white shadow-xl h-14 text-lg">
                     <Rocket className="w-5 h-5 mr-2" />
-                    {t('pricing.cta')}
+                    {t('pricing.cta') || 'Start Free'}
                   </Button>
                 </Link>
               </div>
@@ -89,9 +89,9 @@ export default function Pricing() {
                   <Zap className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold mb-2">{t('pricing.future.title')}</h3>
+                  <h3 className="text-xl font-bold mb-2">{t('pricing.future.title') || 'Upcoming premium features'}</h3>
                   <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-                    {t('pricing.future.desc')}
+                    {t('pricing.future.desc') || 'We are committed to keeping the core platform free. Optional paid tools may be introduced later.'}
                   </p>
                 </div>
               </div>
@@ -101,9 +101,9 @@ export default function Pricing() {
           {/* CTA Section */}
           <div className="text-center mt-16">
             <p className="text-gray-600 dark:text-gray-400">
-              {t('pricing.questions')}{" "}
+              {t('pricing.questions') || 'Questions about pricing?'}{" "}
               <Link to="/contact" className="text-indigo-600 hover:text-indigo-700 font-semibold underline">
-                {t('pricing.contact')}
+                {t('pricing.contact') || 'Contact our team'}
               </Link>
             </p>
           </div>

@@ -56,7 +56,7 @@ export async function initializeDatabase(): Promise<void> {
     await client.query(`
       CREATE TABLE IF NOT EXISTS marketplace_products (
         id SERIAL PRIMARY KEY,
-        seller_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        seller_id INTEGER NOT NULL,
         title VARCHAR(255) NOT NULL,
         description TEXT,
         price DECIMAL(10, 2) NOT NULL,
@@ -69,6 +69,18 @@ export async function initializeDatabase(): Promise<void> {
         location VARCHAR(255),
         shipping_available BOOLEAN DEFAULT true,
         views INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Ensure sellers table exists (for marketplace auth)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS sellers (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        name VARCHAR(255),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
@@ -241,6 +253,10 @@ export async function initializeDatabase(): Promise<void> {
     await client.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS template VARCHAR(24) DEFAULT 'classic';`);
     await client.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS banner_url TEXT;`);
     await client.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS currency_code VARCHAR(16) DEFAULT 'DZD';`);
+    // Mercury hero image fields for storefront visual configuration
+    await client.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS hero_main_url TEXT;`);
+    await client.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS hero_tile1_url TEXT;`);
+    await client.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS hero_tile2_url TEXT;`);
 
     // Bot settings (per client) for messaging templates and provider config
     await client.query(`
@@ -326,8 +342,16 @@ export async function runPendingMigrations(): Promise<void> {
         console.log(`✅ Migration applied: ${file}`);
       } catch (e) {
         await client.query('ROLLBACK');
-        console.error(`❌ Migration failed (${file}):`, (e as any).message);
-        break; // Stop further migrations on failure
+        const msg = (e as any)?.message || '';
+        // If the failure is due to existing relations or objects, consider the migration idempotent and mark as applied
+        if (msg.includes('already exists') || msg.includes('relation') && msg.includes('already exists')) {
+          console.warn(`⚠️ Migration reported existing objects (${file}); marking as applied.`);
+          await client.query('INSERT INTO schema_migrations(filename) VALUES ($1) ON CONFLICT DO NOTHING', [file]);
+          console.log(`✅ Migration marked applied: ${file}`);
+          continue;
+        }
+        console.error(`❌ Migration failed (${file}):`, msg);
+        break; // Stop further migrations on unexpected failure
       }
     }
   } finally {

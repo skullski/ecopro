@@ -15,6 +15,7 @@ export default function Header() {
   const user = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user") || "null") : null;
   const isAdmin = user?.role === "admin";
   const isSeller = user?.role === "seller";
+  const isClient = !isAdmin && !isSeller;
 
   function handleLogout() {
     try {
@@ -53,12 +54,14 @@ export default function Header() {
 
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center gap-1">
-              <Link 
-                to="/marketplace" 
-                className="px-4 py-2 rounded-lg text-sm font-semibold text-foreground hover:text-primary hover:bg-primary/10 transition-all"
-              >
-                Marketplace
-              </Link>
+              {!user && (
+                <Link 
+                  to="/marketplace" 
+                  className="px-4 py-2 rounded-lg text-sm font-semibold text-foreground hover:text-primary hover:bg-primary/10 transition-all"
+                >
+                  Marketplace
+                </Link>
+              )}
               <Link 
                 to="/pricing" 
                 className="px-4 py-2 rounded-lg text-sm font-semibold text-foreground hover:text-primary hover:bg-primary/10 transition-all"
@@ -77,6 +80,14 @@ export default function Header() {
               >
                 Support
               </Link>
+              {user && isClient && (
+                <Link 
+                  to="/dashboard/preview" 
+                  className="px-4 py-2 rounded-lg text-sm font-semibold text-primary hover:text-primary hover:bg-primary/10 transition-all"
+                >
+                  My Store
+                </Link>
+              )}
             </nav>
 
             {/* Right Side Actions */}
@@ -181,13 +192,15 @@ export default function Header() {
         <div className="lg:hidden fixed inset-0 top-20 z-40 bg-background/95 backdrop-blur-xl border-t border-primary/10">
           <div className="container mx-auto px-4 py-6">
             <nav className="flex flex-col gap-2">
-              <Link 
-                to="/marketplace" 
-                onClick={() => setMobileMenuOpen(false)}
-                className="px-4 py-3 rounded-lg text-base font-semibold text-foreground hover:text-primary hover:bg-primary/10 transition-all"
-              >
-                Marketplace
-              </Link>
+              {!user && (
+                <Link 
+                  to="/marketplace" 
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="px-4 py-3 rounded-lg text-base font-semibold text-foreground hover:text-primary hover:bg-primary/10 transition-all"
+                >
+                  Marketplace
+                </Link>
+              )}
               <Link 
                 to="/pricing" 
                 onClick={() => setMobileMenuOpen(false)}
@@ -232,6 +245,14 @@ export default function Header() {
                       <Button variant="outline" className="justify-start border-2 border-primary/40 text-primary hover:bg-primary/10 font-medium w-full">
                         <LayoutDashboard className="w-4 h-4 ml-2" />
                         Dashboard
+                      </Button>
+                    </Link>
+                  )}
+                  {isClient && (
+                    <Link to="/dashboard/preview" onClick={() => setMobileMenuOpen(false)}>
+                      <Button variant="outline" className="justify-start border-2 border-primary/40 text-primary hover:bg-primary/10 font-medium w-full">
+                        <ShoppingBag className="w-4 h-4 ml-2" />
+                        My Store
                       </Button>
                     </Link>
                   )}

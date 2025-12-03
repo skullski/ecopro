@@ -54,7 +54,8 @@ export const getStorefrontSettings: RequestHandler = async (req, res) => {
     const result = await pool.query(
       `SELECT store_name, store_description, store_logo, 
               primary_color, secondary_color,
-              template, banner_url, currency_code
+              template, banner_url, currency_code,
+              hero_main_url, hero_tile1_url, hero_tile2_url
        FROM client_store_settings
        WHERE store_slug = $1`,
       [storeSlug]
@@ -68,11 +69,36 @@ export const getStorefrontSettings: RequestHandler = async (req, res) => {
         secondary_color: '#8b5cf6',
         template: 'classic',
         currency_code: 'DZD',
-        banner_url: null
+        banner_url: null,
+        hero_main_url: null,
+        hero_tile1_url: null,
+        hero_tile2_url: null
       });
     }
 
-    res.json(result.rows[0]);
+    const row = result.rows[0];
+    // Sanitize image list fields: trim, remove empties; return null if empty
+    const sanitize = (v: any) => {
+      if (v == null) return null;
+      if (typeof v !== 'string') return v;
+      const parts = v
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter((s: string) => s.length > 0);
+      const deduped: string[] = [];
+      parts.forEach((p: string) => {
+        if (!deduped.includes(p)) deduped.push(p);
+      });
+      return deduped.length ? deduped.join(',') : null;
+    };
+
+    res.json({
+      ...row,
+      banner_url: sanitize(row.banner_url),
+      hero_main_url: sanitize(row.hero_main_url),
+      hero_tile1_url: sanitize(row.hero_tile1_url),
+      hero_tile2_url: sanitize(row.hero_tile2_url),
+    });
   } catch (error) {
     console.error('Get storefront settings error:', error);
     res.status(500).json({ error: 'Failed to fetch store settings' });

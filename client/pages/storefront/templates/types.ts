@@ -23,6 +23,9 @@ export interface StoreSettings {
   template?: string;
   banner_url?: string | null;
   currency_code?: string;
+  hero_main_url?: string | null;
+  hero_tile1_url?: string | null;
+  hero_tile2_url?: string | null;
 }
 
 export interface TemplateProps {
@@ -44,4 +47,5 @@ export interface TemplateProps {
   secondaryColor: string;
   bannerUrl: string | null;
   navigate: (to: string | number) => void;
+  canManage?: boolean;
 }

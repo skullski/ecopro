@@ -47,21 +47,19 @@ export default function Checkout() {
     setSubmitting(true);
     try {
       const schema = z.object({
-        name: z.string().min(2, "Name is required"),
         phone: z.string().regex(/^\+\d{6,15}$/,{ message: "Enter WhatsApp phone in E.164 format" }).optional(),
-        email: z.string().email().optional(),
         address: z.string().min(5, "Address is required"),
       });
       const addressStr = [addr.line1, addr.line2, addr.city, addr.state, addr.postalCode, addr.country].filter(Boolean).join(', ');
-      schema.parse({ name: addr?.name || '', phone: addr?.phone, email: addr?.email, address: addressStr });
+      schema.parse({ phone: addr?.phone, address: addressStr });
 
       const payload = {
         product_id: Number(productId),
         client_id: null,
         quantity: 1,
         total_price: Number(product.price ?? 0),
-        customer_name: addr?.name || '',
-        customer_email: addr?.email || '',
+        customer_name: '',
+        customer_email: '',
         customer_phone: addr?.phone || '',
         customer_address: addressStr,
         store_slug: undefined,

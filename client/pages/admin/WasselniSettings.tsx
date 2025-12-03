@@ -13,14 +13,12 @@ import { useToast } from "@/hooks/use-toast";
 
 interface BotSettings {
   enabled: boolean;
-  language: string;
-  whatsappDelay: number;
-  smsDelay: number;
-  companyName: string;
-  supportPhone: string;
-  storeUrl: string;
-  whatsappTemplate: string;
-  smsTemplate: string;
+  provider: 'whatsapp_cloud' | 'twilio_sms' | string;
+  whatsappPhoneId: string;
+  whatsappToken: string;
+  templateOrderConfirmation: string;
+  templatePayment: string;
+  templateShipping: string;
 }
 
 export default function AdminWasselniSettings() {
@@ -29,26 +27,13 @@ export default function AdminWasselniSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState<BotSettings>({
-    enabled: false,
-    language: 'ar',
-    whatsappDelay: 5,
-    smsDelay: 30,
-    companyName: '',
-    supportPhone: '',
-    storeUrl: '',
-    whatsappTemplate: `السلام عليكم {customerName}! 🌟
-
-شكراً لك على طلبك من {companyName}! 
-
-📦 تفاصيل الطلب:
-• المنتج: {productName}
-• السعر: {totalPrice} دج
-• العنوان: {address}
-
-هل تؤكد الطلب؟ رد ب "نعم" للتأكيد أو "لا" للإلغاء.
-
-للمساعدة: {supportPhone}`,
-    smsTemplate: `مرحبا {customerName}! طلبك #{orderId} من {companyName} بـ {totalPrice} دج. رد "نعم" للتأكيد. {supportPhone}`
+    enabled: true,
+    provider: 'whatsapp_cloud',
+    whatsappPhoneId: '',
+    whatsappToken: '',
+    templateOrderConfirmation: `السلام عليكم {customerName}! 🌟\n\nشكراً لك على طلبك من {companyName}! \n\n📦 تفاصيل الطلب:\n• المنتج: {productName}\n• السعر: {totalPrice} دج\n• العنوان: {address}\n\nهل تؤكد الطلب؟ رد ب "نعم" للتأكيد أو "لا" للإلغاء.`,
+    templatePayment: `تم تأكيد طلبك #{orderId}. يرجى الدفع بـ {totalPrice} دج.`,
+    templateShipping: `تم شحن طلبك #{orderId}. رقم التتبع: {trackingNumber}.`
   });
 
   useEffect(() => {
@@ -134,7 +119,8 @@ export default function AdminWasselniSettings() {
     { key: '{address}', desc: 'Delivery address' },
     { key: '{companyName}', desc: 'Your company name' },
     { key: '{supportPhone}', desc: 'Support phone number' },
-    { key: '{storeUrl}', desc: 'Store URL' }
+    { key: '{storeUrl}', desc: 'Store URL' },
+    { key: '{trackingNumber}', desc: 'Shipping tracking number' }
   ];
 
   return (
@@ -203,9 +189,9 @@ export default function AdminWasselniSettings() {
             <Phone className="h-4 w-4 mr-2" />
             WhatsApp
           </TabsTrigger>
-          <TabsTrigger value="sms">
+          <TabsTrigger value="templates">
             <MessageSquare className="h-4 w-4 mr-2" />
-            SMS
+            Templates
           </TabsTrigger>
         </TabsList>
 
@@ -221,88 +207,40 @@ export default function AdminWasselniSettings() {
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="language">Language</Label>
+                  <Label htmlFor="provider">Provider</Label>
                   <Select 
-                    value={settings.language} 
-                    onValueChange={(value) => updateSetting('language', value)}
+                    value={settings.provider}
+                    onValueChange={(value) => updateSetting('provider', value)}
                   >
-                    <SelectTrigger id="language">
-                      <SelectValue placeholder="Select language" />
+                    <SelectTrigger id="provider">
+                      <SelectValue placeholder="Select provider" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ar">العربية (Arabic)</SelectItem>
-                      <SelectItem value="en">English</SelectItem>
-                      <SelectItem value="fr">Français (French)</SelectItem>
+                      <SelectItem value="whatsapp_cloud">WhatsApp Cloud</SelectItem>
+                      <SelectItem value="twilio_sms">Twilio SMS</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="companyName">Company Name</Label>
+                  <Label htmlFor="whatsappPhoneId">WhatsApp Phone ID</Label>
                   <Input
-                    id="companyName"
-                    value={settings.companyName}
-                    onChange={(e) => updateSetting('companyName', e.target.value)}
-                    placeholder="Your company name"
+                    id="whatsappPhoneId"
+                    value={settings.whatsappPhoneId}
+                    onChange={(e) => updateSetting('whatsappPhoneId', e.target.value)}
+                    placeholder="e.g. 123456789012345"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="supportPhone">Support Phone</Label>
+                  <Label htmlFor="whatsappToken">WhatsApp Access Token</Label>
                   <Input
-                    id="supportPhone"
-                    value={settings.supportPhone}
-                    onChange={(e) => updateSetting('supportPhone', e.target.value)}
-                    placeholder="+213 555 123 456"
+                    id="whatsappToken"
+                    type="password"
+                    value={settings.whatsappToken}
+                    onChange={(e) => updateSetting('whatsappToken', e.target.value)}
+                    placeholder="Paste access token"
                   />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="storeUrl">Store URL</Label>
-                  <Input
-                    id="storeUrl"
-                    value={settings.storeUrl}
-                    onChange={(e) => updateSetting('storeUrl', e.target.value)}
-                    placeholder="https://yourstore.com"
-                  />
-                </div>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2 pt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="whatsappDelay" className="flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    WhatsApp Delay (minutes)
-                  </Label>
-                  <Input
-                    id="whatsappDelay"
-                    type="number"
-                    min="0"
-                    max="60"
-                    value={settings.whatsappDelay}
-                    onChange={(e) => updateSetting('whatsappDelay', parseInt(e.target.value))}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Time to wait before sending WhatsApp message after order
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="smsDelay" className="flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    SMS Delay (minutes)
-                  </Label>
-                  <Input
-                    id="smsDelay"
-                    type="number"
-                    min="0"
-                    max="120"
-                    value={settings.smsDelay}
-                    onChange={(e) => updateSetting('smsDelay', parseInt(e.target.value))}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Time to wait before sending SMS if no WhatsApp response
-                  </p>
                 </div>
               </div>
             </CardContent>
@@ -323,8 +261,8 @@ export default function AdminWasselniSettings() {
                 <Label htmlFor="whatsappTemplate">Message Template</Label>
                 <Textarea
                   id="whatsappTemplate"
-                  value={settings.whatsappTemplate}
-                  onChange={(e) => updateSetting('whatsappTemplate', e.target.value)}
+                  value={settings.templateOrderConfirmation}
+                  onChange={(e) => updateSetting('templateOrderConfirmation', e.target.value)}
                   rows={12}
                   className="font-mono text-sm"
                 />
@@ -350,51 +288,39 @@ export default function AdminWasselniSettings() {
                   Preview
                 </h4>
                 <div className="bg-background rounded-lg p-3 whitespace-pre-wrap text-sm border">
-                  {settings.whatsappTemplate
+                  {settings.templateOrderConfirmation
                     .replace('{customerName}', 'أحمد')
-                    .replace('{companyName}', settings.companyName || 'Your Store')
+                    .replace('{companyName}', 'Your Store')
                     .replace('{productName}', 'iPhone 15 Pro')
                     .replace('{totalPrice}', '150,000')
                     .replace('{address}', 'الجزائر، حسين داي')
-                    .replace('{supportPhone}', settings.supportPhone || '+213 555 123 456')
+                    .replace('{supportPhone}', '+213 555 123 456')
                     .replace('{orderId}', '12345')
-                    .replace('{storeUrl}', settings.storeUrl || 'https://yourstore.com')}
+                    .replace('{storeUrl}', 'https://yourstore.com')}
                 </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* SMS Template */}
-        <TabsContent value="sms" className="space-y-4">
+        {/* Templates: Payment + Shipping */}
+        <TabsContent value="templates" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>SMS Message Template</CardTitle>
+              <CardTitle>Payment Confirmation Template</CardTitle>
               <CardDescription>
-                Customize the SMS message sent to customers (max 160 characters)
+                Customize the payment confirmation message
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="smsTemplate">Message Template</Label>
-                  <span className={`text-xs ${settings.smsTemplate.length > 160 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                    {settings.smsTemplate.length} / 160 characters
-                  </span>
-                </div>
                 <Textarea
-                  id="smsTemplate"
-                  value={settings.smsTemplate}
-                  onChange={(e) => updateSetting('smsTemplate', e.target.value)}
-                  rows={4}
+                  id="paymentTemplate"
+                  value={settings.templatePayment}
+                  onChange={(e) => updateSetting('templatePayment', e.target.value)}
+                  rows={6}
                   className="font-mono text-sm"
-                  maxLength={160}
                 />
-                {settings.smsTemplate.length > 160 && (
-                  <p className="text-xs text-destructive">
-                    SMS messages should be 160 characters or less for best delivery
-                  </p>
-                )}
               </div>
 
               <div className="rounded-lg border bg-muted/50 p-4">
@@ -417,15 +343,54 @@ export default function AdminWasselniSettings() {
                   Preview
                 </h4>
                 <div className="bg-background rounded-lg p-3 text-sm border">
-                  {settings.smsTemplate
+                  {settings.templatePayment
                     .replace('{customerName}', 'أحمد')
-                    .replace('{companyName}', settings.companyName || 'Your Store')
+                    .replace('{companyName}', 'Your Store')
                     .replace('{productName}', 'iPhone 15 Pro')
                     .replace('{totalPrice}', '150,000')
                     .replace('{address}', 'الجزائر، حسين داي')
-                    .replace('{supportPhone}', settings.supportPhone || '+213 555 123 456')
+                    .replace('{supportPhone}', '+213 555 123 456')
                     .replace('{orderId}', '12345')
-                    .replace('{storeUrl}', settings.storeUrl || 'https://yourstore.com')}
+                    .replace('{storeUrl}', 'https://yourstore.com')}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Shipping Template</CardTitle>
+              <CardDescription>
+                Customize the shipping notification message
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Textarea
+                  id="shippingTemplate"
+                  value={settings.templateShipping}
+                  onChange={(e) => updateSetting('templateShipping', e.target.value)}
+                  rows={6}
+                  className="font-mono text-sm"
+                />
+              </div>
+
+              <div className="rounded-lg border bg-muted/10 p-4">
+                <h4 className="font-semibold mb-2 text-sm flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  Preview
+                </h4>
+                <div className="bg-background rounded-lg p-3 text-sm border whitespace-pre-wrap">
+                  {settings.templateShipping
+                    .replace('{customerName}', 'أحمد')
+                    .replace('{companyName}', 'Your Store')
+                    .replace('{productName}', 'iPhone 15 Pro')
+                    .replace('{totalPrice}', '150,000')
+                    .replace('{address}', 'الجزائر، حسين داي')
+                    .replace('{supportPhone}', '+213 555 123 456')
+                    .replace('{orderId}', '12345')
+                    .replace('{storeUrl}', 'https://yourstore.com')
+                    .replace('{trackingNumber}', 'DZ-TRACK-987654')}
                 </div>
               </div>
             </CardContent>

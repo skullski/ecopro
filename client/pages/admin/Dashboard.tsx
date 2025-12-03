@@ -48,18 +48,13 @@ export default function Dashboard() {
         setStats(statsData);
       }
 
-      const ordersRes = await fetch('/api/seller/orders', { headers });
+      const ordersRes = await fetch('/api/client/orders', { headers });
       if (ordersRes.ok) {
         const ordersData = await ordersRes.json();
         setRecentOrders(ordersData.slice(0, 5));
       }
 
-      // Admin-only sellers list (ignore failures if not admin)
-      const sellersRes = await fetch('/api/admin/sellers', { headers });
-      if (sellersRes.ok) {
-        const sellersData = await sellersRes.json();
-        setSellers(sellersData);
-      }
+      // Remove marketplace seller list from client dashboard
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
     } finally {
@@ -112,8 +107,8 @@ export default function Dashboard() {
           <div className="p-6 border-b">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-bold">{t("dashboard.salesOverview")}</h3>
-                <p className="text-sm text-muted-foreground mt-1">{t("dashboard.recentPurchases")}</p>
+                <h3 className="text-lg font-bold">Store Sales Overview</h3>
+                <p className="text-sm text-muted-foreground mt-1">Recent purchases from your store</p>
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm">{t("dashboard.month")}</Button>
@@ -144,11 +139,11 @@ export default function Dashboard() {
             <div className="flex items-center justify-center gap-6 mt-6">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 to-cyan-400"></div>
-                <span className="text-sm text-gray-600 dark:text-gray-400">{t("dashboard.sales")}</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Store sales</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-gradient-to-r from-green-500 to-emerald-400"></div>
-                <span className="text-sm text-gray-600 dark:text-gray-400">{t("dashboard.profits")}</span>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Store profits</span>
               </div>
             </div>
           </div>
@@ -286,10 +281,10 @@ export default function Dashboard() {
               <div className="text-center py-12">
                 <ShoppingCart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <p className="text-gray-500 mb-4">{t("dashboard.noOrders")}</p>
-                <Link to="/marketplace">
+                <Link to="/dashboard/preview">
                   <Button>
                     <Plus className="w-4 h-4 mr-2" />
-                    {t("dashboard.browseMarketplace")}
+                    Manage Your Store
                   </Button>
                 </Link>
               </div>
@@ -346,7 +341,7 @@ export default function Dashboard() {
             <p className="text-sm text-muted-foreground mt-1">{t("dashboard.quickAccess")}</p>
           </div>
           <div className="p-6 space-y-3">
-            <Link to="/seller/dashboard" className="block">
+            <Link to="/dashboard/preview" className="block">
               <div 
                 className="p-4 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white transition-all cursor-pointer group focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 tabIndex={0}
@@ -357,8 +352,8 @@ export default function Dashboard() {
                     <Plus className="w-5 h-5" />
                   </div>
                   <div>
-                    <div className="font-bold">{t("dashboard.sellProducts")}</div>
-                    <div className="text-xs opacity-90">{t("dashboard.becomeASeller")}</div>
+                    <div className="font-bold">Private Store</div>
+                    <div className="text-xs opacity-90">Add products to your store</div>
                   </div>
                 </div>
               </div>
@@ -421,24 +416,7 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Sellers List (Admin) */}
-      {sellers.length > 0 && (
-        <div className="bg-card rounded-xl border shadow-sm mt-8">
-          <div className="p-6 border-b">
-            <h2 className="text-xl font-bold">Sellers</h2>
-            <p className="text-sm text-muted-foreground">Registered marketplace sellers</p>
-          </div>
-          <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {sellers.map((s) => (
-              <div key={s.id} className="p-4 border rounded-lg">
-                <div className="font-bold">{s.name || s.email}</div>
-                <div className="text-sm text-muted-foreground">{s.email}</div>
-                <div className="text-xs text-muted-foreground mt-1">ID: {s.id}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Marketplace seller list removed for client dashboard */}
     </div>
   );
 }

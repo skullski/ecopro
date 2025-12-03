@@ -44,7 +44,7 @@ export const registerSeller: RequestHandler = async (req, res) => {
       {
         id: seller.id.toString(),
         email: seller.email,
-        role: 'seller',
+        role: 'user',
         user_type: 'seller',
       } as JWTPayload,
       JWT_SECRET,
@@ -118,7 +118,7 @@ export const loginSeller: RequestHandler = async (req, res) => {
       {
         id: seller.id.toString(),
         email: seller.email,
-        role: 'seller',
+        role: 'user',
         user_type: 'seller',
       } as JWTPayload,
       JWT_SECRET,
