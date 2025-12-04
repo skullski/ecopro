@@ -79,8 +79,8 @@ export default function MaximizeTemplate(props: TemplateProps) {
                           <span className="text-muted-foreground line-through text-xs">{formatPrice(Number(product.original_price))}</span>
                         )}
                         <div className="ml-auto flex gap-2">
-                          <Button variant="ghost" size="sm" onClick={() => props.navigate(`/store/${storeSlug}/${product.slug}`)}>View</Button>
-                          <Button size="sm" onClick={() => props.navigate(`/store/${storeSlug}/checkout/${product.slug}`)}>Buy</Button>
+                          <Button variant="ghost" size="sm" onClick={() => { const slug = product.slug; if (slug && slug.length > 0) props.navigate(`/store/${storeSlug}/${slug}`); else props.navigate(`/product/${product.id}`); }}>View</Button>
+                          <Button size="sm" onClick={() => { const slug = product.slug; if (slug && slug.length > 0) props.navigate(`/store/${storeSlug}/checkout/${slug}`); else props.navigate(`/guest-checkout/${product.id}`); }}>Buy</Button>
                         </div>
                       </div>
                     </CardContent>

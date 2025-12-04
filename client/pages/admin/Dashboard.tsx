@@ -7,7 +7,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useTranslation } from "@/lib/i18n";
-import { StatCard } from "@/components/admin/StatCard";
+import { GradientCard } from "@/components/ui/GradientCard";
 
 interface DashboardStats {
   products: number;
@@ -63,52 +63,60 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 dark:bg-black">
       {/* Top Stats Bar */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
+        <GradientCard
           title={t("dashboard.totalOrders")}
           value={loading ? "..." : stats.orders}
-          subtitle={t("dashboard.compared")}
-          icon={ShoppingCart}
-          gradient="bg-gradient-to-br from-blue-500/20 to-cyan-500/20"
-          badge={{ text: "12%", type: "success" }}
+          icon={<ShoppingCart className="w-6 h-6 text-blue-600" />}
+          from="from-blue-500/20"
+          to="to-cyan-500/5"
+          border="border-blue-500/30"
+          iconBg="bg-blue-500/20"
+          valueClassName="text-blue-600 dark:text-blue-400"
         />
-        <StatCard
+        <GradientCard
           title={t("dashboard.revenue")}
           value={loading ? "..." : `$${stats.revenue.toLocaleString()}`}
-          subtitle={t("dashboard.compared")}
-          icon={DollarSign}
-          gradient="bg-gradient-to-br from-green-500/20 to-emerald-500/20"
-          badge={{ text: "23%", type: "success" }}
+          icon={<DollarSign className="w-6 h-6 text-emerald-600" />}
+          from="from-emerald-500/20"
+          to="to-emerald-500/5"
+          border="border-emerald-500/30"
+          iconBg="bg-emerald-500/20"
+          valueClassName="text-emerald-600 dark:text-emerald-400"
         />
-        <StatCard
+        <GradientCard
           title={t("dashboard.visitors")}
           value={loading ? "..." : stats.visitors.toLocaleString()}
-          subtitle={t("dashboard.compared")}
-          icon={Users}
-          gradient="bg-gradient-to-br from-purple-500/20 to-pink-500/20"
-          badge={{ text: "8%", type: "success" }}
+          icon={<Users className="w-6 h-6 text-purple-600" />}
+          from="from-purple-500/20"
+          to="to-pink-500/5"
+          border="border-purple-500/30"
+          iconBg="bg-purple-500/20"
+          valueClassName="text-purple-600 dark:text-purple-400"
         />
-        <StatCard
+        <GradientCard
           title={t("dashboard.products")}
           value={loading ? "..." : stats.products}
-          subtitle={t("dashboard.activeProducts")}
-          icon={Package}
-          gradient="bg-gradient-to-br from-orange-500/20 to-red-500/20"
-          badge={{ text: `${stats.pendingOrders}`, type: "warning" }}
+          icon={<Package className="w-6 h-6 text-orange-600" />}
+          from="from-orange-500/20"
+          to="to-red-500/5"
+          border="border-orange-500/30"
+          iconBg="bg-orange-500/20"
+          valueClassName="text-orange-600 dark:text-orange-400"
         />
       </div>
 
       {/* Main Content Grid */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Sales Chart */}
-        <Card className="lg:col-span-2">
-          <div className="p-6 border-b">
+        <Card className="lg:col-span-2 bg-panel dark:bg-gray-900 dark:border-gray-700">
+          <div className="p-6 border-b border-subtle dark:border-gray-800">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-bold">Store Sales Overview</h3>
-                <p className="text-sm text-muted-foreground mt-1">Recent purchases from your store</p>
+                <p className="text-sm text-muted-soft mt-1">Recent purchases from your store</p>
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm">{t("dashboard.month")}</Button>
@@ -117,7 +125,7 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="p-6">
-            {/* Chart Placeholder with gradient bars */}
+            {/* Chart Placeholder with softer bars */}
             <div 
               className="h-64 flex items-end justify-between gap-2"
               role="img"
@@ -126,34 +134,34 @@ export default function Dashboard() {
               {[65, 85, 45, 78, 92, 58, 75, 88, 52, 95, 70, 82].map((height, i) => (
                 <div key={i} className="flex-1 flex flex-col items-center gap-2">
                   <div 
-                    className="w-full rounded-t-lg bg-gradient-to-t from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    className="w-full rounded-t-lg bg-blue-400/70 hover:bg-blue-500/70 transition-all cursor-pointer focus:outline-none"
                     style={{ height: `${height}%` }}
                     tabIndex={0}
                     role="graphics-symbol"
                     aria-label={`Month ${i + 1}: ${height}% of maximum sales`}
                   />
-                  <span className="text-xs text-gray-500">{i + 1}</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">{i + 1}</span>
                 </div>
               ))}
             </div>
             <div className="flex items-center justify-center gap-6 mt-6">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 to-cyan-400"></div>
-                <span className="text-sm text-gray-600 dark:text-gray-400">Store sales</span>
+                <div className="w-3 h-3 rounded-full bg-blue-400/70"></div>
+                <span className="text-sm text-muted-soft">Store sales</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-gradient-to-r from-green-500 to-emerald-400"></div>
-                <span className="text-sm text-gray-600 dark:text-gray-400">Store profits</span>
+                <div className="w-3 h-3 rounded-full bg-green-400/70"></div>
+                <span className="text-sm text-muted-soft">Store profits</span>
               </div>
             </div>
           </div>
         </Card>
 
         {/* Order Status Distribution */}
-        <Card>
-          <div className="p-6 border-b">
+        <Card className="bg-panel dark:bg-gray-900 dark:border-gray-700">
+          <div className="p-6 border-b border-subtle dark:border-gray-800">
             <h3 className="text-lg font-bold">{t("dashboard.orderStatus")}</h3>
-            <p className="text-sm text-muted-foreground mt-1">{t("dashboard.orderDistribution")}</p>
+            <p className="text-sm text-muted-soft mt-1">{t("dashboard.orderDistribution")}</p>
           </div>
           <div className="p-6">
             {/* Donut Chart Placeholder */}
@@ -214,31 +222,31 @@ export default function Dashboard() {
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center">
                   <div className="text-2xl font-black">{stats.orders}</div>
-                  <div className="text-xs text-gray-500">{t("dashboard.total")}</div>
+                  <div className="text-xs text-muted-soft">{t("dashboard.total")}</div>
                 </div>
               </div>
             </div>
 
             <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 rounded-lg bg-green-50 dark:bg-green-900/20">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-card dark:bg-gray-800/80">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-gradient-to-r from-green-500 to-emerald-400"></div>
+                  <div className="w-3 h-3 rounded-full bg-green-400/70"></div>
                   <span className="text-sm font-medium">{t("dashboard.completedOrders")}</span>
                 </div>
                 <span className="text-sm font-bold">{stats.completedOrders}</span>
               </div>
               
-              <div className="flex items-center justify-between p-3 rounded-lg bg-orange-50 dark:bg-orange-900/20">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-card dark:bg-gray-800/80">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-gradient-to-r from-orange-500 to-yellow-400"></div>
+                  <div className="w-3 h-3 rounded-full bg-orange-400/70"></div>
                   <span className="text-sm font-medium">{t("dashboard.pendingOrders")}</span>
                 </div>
                 <span className="text-sm font-bold">{stats.pendingOrders}</span>
               </div>
 
-              <div className="flex items-center justify-between p-3 rounded-lg bg-red-50 dark:bg-red-900/20">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-card dark:bg-gray-800/80">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-gradient-to-r from-red-500 to-rose-400"></div>
+                  <div className="w-3 h-3 rounded-full bg-red-400/70"></div>
                   <span className="text-sm font-medium">{t("dashboard.cancelledOrders")}</span>
                 </div>
                 <span className="text-sm font-bold">
@@ -253,12 +261,12 @@ export default function Dashboard() {
       {/* Recent Orders & Quick Actions */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Recent Orders */}
-        <Card className="lg:col-span-2">
-          <div className="p-6 border-b">
+        <Card className="lg:col-span-2 bg-panel dark:bg-gray-900 dark:border-gray-700">
+          <div className="p-6 border-b border-subtle dark:border-gray-800">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-bold">{t("dashboard.recentOrders")}</h3>
-                <p className="text-sm text-muted-foreground mt-1">{t("dashboard.recentPurchases")}</p>
+                <p className="text-sm text-muted-soft mt-1">{t("dashboard.recentPurchases")}</p>
               </div>
               <Link to="/dashboard/orders">
                 <Button variant="ghost" size="sm">
@@ -271,7 +279,7 @@ export default function Dashboard() {
           
           <div className="p-6">
             {loading ? (
-              <div className="text-center py-12 text-muted-foreground">
+              <div className="text-center py-12 text-muted-soft">
                 <div className="animate-pulse space-y-3">
                   <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mx-auto"></div>
                   <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mx-auto"></div>
@@ -279,8 +287,8 @@ export default function Dashboard() {
               </div>
             ) : recentOrders.length === 0 ? (
               <div className="text-center py-12">
-                <ShoppingCart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500 mb-4">{t("dashboard.noOrders")}</p>
+                <ShoppingCart className="w-16 h-16 text-gray-300 dark:text-gray-500 mx-auto mb-4" />
+                <p className="text-muted-soft mb-4">{t("dashboard.noOrders")}</p>
                 <Link to="/dashboard/preview">
                   <Button>
                     <Plus className="w-4 h-4 mr-2" />
@@ -335,15 +343,15 @@ export default function Dashboard() {
         </Card>
 
         {/* Quick Actions */}
-        <Card>
-          <div className="p-6 border-b">
+        <Card className="dark:bg-gray-900 dark:border-gray-700">
+          <div className="p-6 border-b border-subtle">
             <h3 className="text-lg font-bold">{t("dashboard.quickActions")}</h3>
-            <p className="text-sm text-muted-foreground mt-1">{t("dashboard.quickAccess")}</p>
+            <p className="text-sm text-muted-soft mt-1">{t("dashboard.quickAccess")}</p>
           </div>
           <div className="p-6 space-y-3">
             <Link to="/dashboard/preview" className="block">
               <div 
-                className="p-4 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white transition-all cursor-pointer group focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                className="p-4 rounded-xl bg-blue-500/80 hover:bg-blue-600/80 text-white transition-all cursor-pointer group"
                 tabIndex={0}
                 role="button"
               >
@@ -361,7 +369,7 @@ export default function Dashboard() {
 
             <Link to="/dashboard/orders" className="block">
               <div 
-                className="p-4 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white transition-all cursor-pointer group focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                className="p-4 rounded-xl bg-green-500/80 hover:bg-green-600/80 text-white transition-all cursor-pointer group"
                 tabIndex={0}
                 role="button"
               >
@@ -379,7 +387,7 @@ export default function Dashboard() {
 
             <Link to="/dashboard/analytics" className="block">
               <div 
-                className="p-4 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white transition-all cursor-pointer group focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                className="p-4 rounded-xl bg-purple-500/80 hover:bg-purple-600/80 text-white transition-all cursor-pointer group"
                 tabIndex={0}
                 role="button"
               >
@@ -397,7 +405,7 @@ export default function Dashboard() {
 
             <Link to="/dashboard/settings" className="block">
               <div 
-                className="p-4 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white transition-all cursor-pointer group focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                className="p-4 rounded-xl bg-orange-500/80 hover:bg-orange-600/80 text-white transition-all cursor-pointer group"
                 tabIndex={0}
                 role="button"
               >

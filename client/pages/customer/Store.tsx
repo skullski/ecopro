@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Plus, Search, Eye, Copy, ExternalLink, Edit, Trash2, 
   Star, Package, DollarSign, Image as ImageIcon, Settings,
@@ -52,6 +53,7 @@ interface StoreProduct {
 }
 
 export default function Store() {
+  const navigate = useNavigate();
   const [products, setProducts] = useState<StoreProduct[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<StoreProduct[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -772,7 +774,10 @@ export default function Store() {
                     <img
                       src={product.images[0]}
                       alt={product.title}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover cursor-pointer"
+                      onClick={() => {
+                        if (storeSlug && product.slug) navigate(`/store/${storeSlug}/${product.slug}`);
+                      }}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
@@ -796,7 +801,14 @@ export default function Store() {
                 {/* Content */}
                 <div className="p-4 space-y-3">
                   <div>
-                    <h3 className="font-semibold line-clamp-2 mb-1">{product.title}</h3>
+                    <h3
+                      className="font-semibold line-clamp-2 mb-1 cursor-pointer hover:underline"
+                      onClick={() => {
+                        if (storeSlug && product.slug) navigate(`/store/${storeSlug}/${product.slug}`);
+                      }}
+                    >
+                      {product.title}
+                    </h3>
                     <p className="text-sm text-muted-foreground line-clamp-2">
                       {product.description || 'No description'}
                     </p>
@@ -832,6 +844,16 @@ export default function Store() {
                     </Button>
                     <Button
                       size="sm"
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                      onClick={() => {
+                        if (storeSlug && product.slug) navigate(`/store/${storeSlug}/checkout/${product.slug}`);
+                        else navigate(`/guest-checkout/${product.id}`);
+                      }}
+                    >
+                      Buy Now
+                    </Button>
+                    <Button
+                      size="sm"
                       variant="outline"
                       onClick={() => openEditModal(product)}
                     >
@@ -859,7 +881,10 @@ export default function Store() {
                       <img
                         src={product.images[0]}
                         alt={product.title}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover cursor-pointer"
+                        onClick={() => {
+                          if (storeSlug && product.slug) navigate(`/store/${storeSlug}/${product.slug}`);
+                        }}
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
@@ -871,7 +896,14 @@ export default function Store() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
-                        <h3 className="font-semibold mb-1">{product.title}</h3>
+                        <h3
+                          className="font-semibold mb-1 cursor-pointer hover:underline"
+                          onClick={() => {
+                            if (storeSlug && product.slug) navigate(`/store/${storeSlug}/${product.slug}`);
+                          }}
+                        >
+                          {product.title}
+                        </h3>
                         <p className="text-sm text-muted-foreground line-clamp-1">
                           {product.description || 'No description'}
                         </p>
@@ -911,6 +943,16 @@ export default function Store() {
                       onClick={() => handleGetShareLink(product)}
                     >
                       <Share2 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                      onClick={() => {
+                        if (storeSlug && product.slug) navigate(`/store/${storeSlug}/checkout/${product.slug}`);
+                        else navigate(`/guest-checkout/${product.id}`);
+                      }}
+                    >
+                      Buy Now
                     </Button>
                     <Button
                       size="sm"

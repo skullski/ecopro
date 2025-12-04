@@ -14,6 +14,7 @@ import {
   Shield
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { GradientCard } from '@/components/ui/GradientCard';
 import { Button } from '@/components/ui/button';
 
 interface PlatformStats {
@@ -349,51 +350,40 @@ export default function PlatformAdmin() {
         {/* Overview Tab */}
         {activeTab === 'overview' && (
           <>
-            {/* Stats Grid */}
+            {/* Stats Grid (vibrant presets) */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <div className="bg-card rounded-xl border p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center">
-                    <Users className="w-6 h-6 text-blue-500" />
-                  </div>
-                  <TrendingUp className="w-5 h-5 text-green-500" />
-                </div>
-                <p className="text-sm text-muted-foreground mb-1">{t('admin.stats.totalUsers')}</p>
-                <p className="text-3xl font-bold">{stats.totalUsers}</p>
-              </div>
+              <GradientCard
+                title={t('admin.stats.totalUsers')}
+                value={stats.totalUsers}
+                preset="blue"
+                icon={<Users className="w-6 h-6 text-blue-400" />}
+              />
 
-              <div className="bg-card rounded-xl border p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center">
-                    <UserCheck className="w-6 h-6 text-purple-500" />
-                  </div>
-                  <TrendingUp className="w-5 h-5 text-green-500" />
-                </div>
-                <p className="text-sm text-muted-foreground mb-1">{t('admin.stats.clients')}</p>
-                <p className="text-3xl font-bold">{stats.totalClients}</p>
-              </div>
+              <GradientCard
+                title={t('admin.stats.clients')}
+                value={stats.totalClients}
+                preset="purple"
+                icon={<UserCheck className="w-6 h-6 text-purple-400" />}
+              />
 
-              <div className="bg-card rounded-xl border p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center">
-                    <Store className="w-6 h-6 text-orange-500" />
-                  </div>
-                  <TrendingUp className="w-5 h-5 text-green-500" />
-                </div>
-                <p className="text-sm text-muted-foreground mb-1">{t('admin.stats.sellers')}</p>
-                <p className="text-3xl font-bold">{stats.totalSellers}</p>
-              </div>
+              <GradientCard
+                title={t('admin.stats.sellers')}
+                value={stats.totalSellers}
+                preset="orange"
+                icon={<Store className="w-6 h-6 text-orange-400" />}
+              />
 
-              <div className="bg-card rounded-xl border p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center">
-                    <Package className="w-6 h-6 text-green-500" />
+              <GradientCard
+                title={t('admin.stats.totalProducts')}
+                value={
+                  <div className="flex items-center justify-between">
+                    <span>{stats.totalProducts}</span>
+                    <Badge variant="secondary">{stats.activeProducts} active</Badge>
                   </div>
-                  <Badge variant="secondary">{stats.activeProducts} active</Badge>
-                </div>
-                <p className="text-sm text-muted-foreground mb-1">{t('admin.stats.totalProducts')}</p>
-                <p className="text-3xl font-bold">{stats.totalProducts}</p>
-              </div>
+                }
+                preset="emerald"
+                icon={<Package className="w-6 h-6 text-emerald-400" />}
+              />
             </div>
 
             {/* Overview shows stats only */}

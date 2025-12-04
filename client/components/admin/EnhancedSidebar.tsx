@@ -3,7 +3,8 @@ import {
   Home, Eye, Store, ShoppingCart, Tag, FileText,
   Truck, Megaphone, Star, Percent, Globe, BarChart3, 
   Users, Shield, Ban, Puzzle, CreditCard, Settings,
-  ChevronDown, ChevronRight, Menu, X, Package, Bot
+  ChevronDown, ChevronRight, Menu, X, Package, Bot,
+  Divide
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -156,24 +157,25 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
 
   const sidebarContent = (
     <div className={cn(
-      "flex flex-col h-full bg-card",
-      isRTL ? "border-l" : "border-r"
+      "flex flex-col h-full bg-panel pt-20 dark:bg-gray-900",
+      isRTL ? "border-l" : "border-r",
+      "border-subtle dark:border-gray-700"
     )}>
       {/* Header with unique design */}
-      <div className="p-4 border-b flex items-center justify-between bg-gradient-to-br from-primary/5 to-accent/5">
+      <div className="p-4 border-b border-subtle dark:border-gray-800 flex items-center justify-between bg-card dark:bg-gray-900">
         {!collapsed && (
           <div>
             <span className="font-bold text-lg bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent block">
               {t('sidebar.brand')}
             </span>
-            <span className="text-base text-muted-foreground">{t("sidebar.controlPanel")}</span>
+            <span className="text-base text-muted-soft">{t("sidebar.controlPanel")}</span>
           </div>
         )}
         
         {/* Toggle button for desktop (collapse/expand) */}
         <button
           onClick={() => handleCollapse(!collapsed)}
-          className="hidden lg:flex items-center justify-center p-2.5 hover:bg-primary/20 rounded-lg transition-colors border-2 border-primary/30 hover:border-primary/50 bg-primary/10"
+          className="hidden lg:flex items-center justify-center p-2.5 hover:bg-muted rounded-lg transition-colors border border-subtle dark:border-gray-700 dark:hover:bg-gray-800/80"
           title={collapsed ? t("sidebar.expandMenu") : t("sidebar.collapseMenu")}
         >
           <Menu className="w-5 h-5 text-primary" />
@@ -195,19 +197,19 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
 
       {/* User Section with unique card design */}
       {!collapsed && (
-        <div className="p-4 border-t">
-          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary/10 via-accent/5 to-purple-500/10 p-4 border border-primary/20">
+        <div className="p-4 border-t border-subtle dark:border-gray-700">
+          <div className="relative overflow-hidden rounded-xl bg-card dark:bg-gray-900 p-4 border border-subtle dark:border-gray-700">
             <div className={cn(
-              "absolute top-0 w-20 h-20 bg-primary/10 rounded-full blur-2xl",
+              "hidden",
               isRTL ? "right-0" : "left-0"
             )}></div>
             <div className="relative flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-sm shadow-lg">
+              <div className="w-10 h-10 rounded-full bg-muted dark:bg-gray-800 flex items-center justify-center text-foreground font-bold text-sm shadow">
                 WW
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-semibold text-sm truncate">Walid Walid</div>
-                <div className="text-xs text-muted-foreground truncate">admin@ecopro.com</div>
+                <div className="font-semibold text-sm truncate">SAHL</div>
+                <div className="text-xs text-muted-soft truncate">sahlsupport@gmail.com</div>
               </div>
             </div>
           </div>
@@ -220,9 +222,10 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
     <>
       {/* Desktop Sidebar */}
       <aside className={cn(
-        "hidden lg:block fixed top-20 h-[calc(100vh-5rem)] bg-card transition-all duration-300 z-40",
+        "hidden lg:block fixed top-0 h-screen bg-panel dark:bg-gray-900 transition-all duration-300 z-40",
         isRTL ? "right-0 border-l" : "left-0 border-r",
-        collapsed ? "w-20" : "w-72"
+        collapsed ? "w-20" : "w-72",
+        "border-subtle dark:border-gray-700"
       )}>
         {sidebarContent}
       </aside>
@@ -235,7 +238,7 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
             onClick={() => setMobileOpen(false)}
           />
           <aside className={cn(
-            "lg:hidden fixed top-0 h-screen w-72 bg-card shadow-2xl z-[70]",
+            "lg:hidden fixed top-0 h-screen w-72 bg-panel dark:bg-gray-900 shadow-xl z[70] border-subtle dark:border-gray-700",
             isRTL ? "right-0" : "left-0"
           )}>
             {sidebarContent}

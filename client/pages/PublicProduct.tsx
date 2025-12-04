@@ -59,13 +59,16 @@ export default function PublicProduct() {
 
   const loadProduct = async () => {
     try {
+      console.debug('[PublicProduct] fetching', { storeSlug, productSlug });
       const res = await fetch(`/api/store/${storeSlug}/${productSlug}`);
       if (!res.ok) {
-        throw new Error('Product not found');
+        const text = await res.text().catch(() => '');
+        throw new Error(text || 'Product not found');
       }
       const data = await res.json();
       setProduct(data);
     } catch (err: any) {
+      console.error('[PublicProduct] load error:', err);
       setError(err.message || 'Failed to load product');
     } finally {
       setLoading(false);
@@ -146,7 +149,7 @@ export default function PublicProduct() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
+      <div className="flex items-center justify-center min-h-screen bg-background dark:bg-black">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading product...</p>
@@ -157,8 +160,8 @@ export default function PublicProduct() {
 
   if (error || !product) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="text-center space-y-4 p-6">
+      <div className="flex items-center justify-center min-h-screen bg-background dark:bg-black">
+        <div className="text-center space-y-4 p-6 bg-card dark:bg-gray-900 border dark:border-gray-700 rounded-xl">
           <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto">
             <Package className="w-8 h-8 text-red-600" />
           </div>
@@ -166,6 +169,10 @@ export default function PublicProduct() {
           <p className="text-muted-foreground">
             {error || 'This product may have been removed or is no longer available.'}
           </p>
+          <div className="text-xs text-muted-foreground bg-muted/40 rounded-md p-3">
+            <div>storeSlug: <span className="font-mono">{storeSlug || 'null'}</span></div>
+            <div>productSlug: <span className="font-mono">{productSlug || 'null'}</span></div>
+          </div>
           <Button onClick={() => navigate('/marketplace')}>
             Browse Marketplace
           </Button>
@@ -185,7 +192,7 @@ export default function PublicProduct() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background dark:bg-black">
       {/* Header */}
       <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4">
@@ -218,7 +225,7 @@ export default function PublicProduct() {
             {/* Left Column - Images */}
             <div className="space-y-4">
               {/* Main Image */}
-              <div className="relative aspect-square bg-muted rounded-2xl overflow-hidden border">
+              <div className="relative aspect-square bg-muted rounded-2xl overflow-hidden border dark:bg-gray-900 dark:border-gray-700">
                 {Array.isArray(product.images) && product.images[selectedImage] ? (
                   <img
                     src={product.images[selectedImage]}
@@ -315,7 +322,7 @@ export default function PublicProduct() {
               )}
 
               {/* Stock Status */}
-              <div className="flex items-center gap-2 p-4 bg-muted/50 rounded-lg">
+              <div className="flex items-center gap-2 p-4 bg-muted/50 rounded-lg dark:bg-gray-800/60">
                 <Package className="w-5 h-5 text-muted-foreground" />
                 <div>
                   <p className="text-sm font-medium">Stock Status</p>
@@ -372,7 +379,7 @@ export default function PublicProduct() {
               </div>
 
               {/* CTA */}
-              <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-xl p-6 border">
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-xl p-6 border dark:border-gray-700">
                 <h3 className="font-semibold mb-2">Interested in this product?</h3>
                 <p className="text-sm text-muted-foreground mb-4">
                   Contact the seller directly or explore more products on our marketplace

@@ -1,9 +1,10 @@
 import type { RequestHandler } from "express";
-import { pool } from "../utils/database";
+import { ensureConnection } from "../utils/database";
 
 // Returns basic DB connectivity details to confirm target database
 export const handleDbCheck: RequestHandler = async (_req, res) => {
   try {
+    const pool = await ensureConnection(2);
     const dbNameResult = await pool.query("SELECT current_database() as db");
     const versionResult = await pool.query("SELECT version() as version");
     const inetAddrResult = await pool.query(

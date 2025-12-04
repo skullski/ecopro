@@ -12,6 +12,7 @@ export default function AdminLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { locale } = useTranslation();
   const { toggle, theme } = useTheme();
+  const isDark = theme === "dark";
   const isRTL = locale === "ar";
   const navigate = useNavigate();
   const user = getCurrentUser();
@@ -33,11 +34,15 @@ export default function AdminLayout() {
   }, [navigate]);
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className={cn(
+      "flex min-h-screen",
+      isDark ? "bg-black" : "bg-gradient-to-br from-slate-100 via-blue-50 to-cyan-50"
+    )}>
       <EnhancedSidebar onCollapseChange={setSidebarCollapsed} />
       {/* Adjust margin based on sidebar state and language direction */}
       <main className={cn(
         "flex-1 overflow-auto transition-all duration-300",
+        isDark ? "bg-black" : "bg-gradient-to-br from-slate-100 via-blue-50 to-cyan-50",
         isRTL 
           ? (sidebarCollapsed ? 'mr-0 lg:mr-20' : 'mr-0 lg:mr-72')
           : (sidebarCollapsed ? 'ml-0 lg:ml-20' : 'ml-0 lg:ml-72')

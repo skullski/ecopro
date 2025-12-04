@@ -215,41 +215,50 @@ export default function MercuryTemplate(props: TemplateProps & { canManage?: boo
           <div className="grid grid-cols-1 md:grid-cols-3 gap-[0.3rem] rounded-2xl">
             {/* Left: Main banner */}
             <div
-              className="relative md:col-span-2 h-[280px] md:h-[420px] rounded-2xl overflow-hidden ring-1 ring-neutral-800"
+              className="md:col-span-2 h-[280px] md:h-[420px] rounded-2xl overflow-hidden"
               onMouseEnter={() => { pausedRef.current.main = true; }}
               onMouseLeave={() => { pausedRef.current.main = false; }}
               onTouchStart={() => { pausedRef.current.main = true; }}
               onTouchEnd={() => { pausedRef.current.main = false; }}
             >
-              <img src={heroMainList[mainIdx] || heroMainList[0]} alt="Hero" className="absolute inset-0 w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/60 via-neutral-900/20 to-neutral-950/40" />
-              <div className="absolute left-6 md:left-10 bottom-6 md:bottom-10">
-                <div className="text-3xl md:text-5xl font-extrabold tracking-tight">MAKE AN IMPACT</div>
-                <Button className="mt-4 bg-cyan-500 hover:bg-cyan-400 text-neutral-950">Shop Now</Button>
-              </div>
+              <img
+                src={heroMainList[mainIdx] || heroMainList[0]}
+                alt="Hero"
+                className="w-full h-full"
+                decoding="async"
+                fetchpriority="high"
+              />
             </div>
 
             {/* Right: Two tiles stacked */}
             <div className="grid grid-rows-2 gap-[0.3rem] h-[280px] md:h-[420px]">
               <div
-                className="relative rounded-2xl overflow-hidden ring-1 ring-neutral-800"
+                className="rounded-2xl overflow-hidden"
                 onMouseEnter={() => { pausedRef.current.t1 = true; }}
                 onMouseLeave={() => { pausedRef.current.t1 = false; }}
                 onTouchStart={() => { pausedRef.current.t1 = true; }}
                 onTouchEnd={() => { pausedRef.current.t1 = false; }}
               >
-                <img src={heroTile1List[t1Idx] || heroTile1List[0]} alt="Tile 1" className="absolute inset-0 w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/40 to-transparent" />
+                <img
+                  src={heroTile1List[t1Idx] || heroTile1List[0]}
+                  alt="Tile 1"
+                  className="w-full h-full"
+                  decoding="async"
+                />
               </div>
               <div
-                className="relative rounded-2xl overflow-hidden ring-1 ring-neutral-800"
+                className="rounded-2xl overflow-hidden"
                 onMouseEnter={() => { pausedRef.current.t2 = true; }}
                 onMouseLeave={() => { pausedRef.current.t2 = false; }}
                 onTouchStart={() => { pausedRef.current.t2 = true; }}
                 onTouchEnd={() => { pausedRef.current.t2 = false; }}
               >
-                <img src={heroTile2List[t2Idx] || heroTile2List[0]} alt="Tile 2" className="absolute inset-0 w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/40 to-transparent" />
+                <img
+                  src={heroTile2List[t2Idx] || heroTile2List[0]}
+                  alt="Tile 2"
+                  className="w-full h-full"
+                  decoding="async"
+                />
               </div>
             </div>
           </div>
@@ -266,17 +275,23 @@ export default function MercuryTemplate(props: TemplateProps & { canManage?: boo
                     backgroundColor: 'hsl(var(--card))',
                     border: '1px solid hsl(var(--border))',
                   }}
-                  onClick={()=>navigate(`/store/${storeSlug}/${product.slug}`)}
+                  onClick={()=>{
+                    const slug = product.slug;
+                    if (slug && slug.length > 0) {
+                      navigate(`/store/${storeSlug}/${slug}`);
+                    } else {
+                      navigate(`/product/${product.id}`);
+                    }
+                  }}
                 >
-                  {/* Taller image area without growing total card; we compress info below */}
-                  <div className="rounded-2xl overflow-hidden flex items-center justify-center" style={{ backgroundColor: 'hsl(var(--muted))', height: '338px' }}>
-                    <img
-                      src={product.images?.[0] || (product as any)?.imageUrls?.[0] || DEFAULTS.product}
-                      alt={product.title}
-                      className="w-[95%] h-[95%] object-cover object-center"
-                      loading="lazy"
-                    />
-                  </div>
+                  {/* Larger image area, ~90% fill, object-cover */}
+                  <img
+                    src={product.images?.[0] || (product as any)?.imageUrls?.[0] || DEFAULTS.product}
+                    alt={product.title}
+                    className="rounded-2xl w-full h-[338px]"
+                    decoding="async"
+                    loading="lazy"
+                  />
                   {/* Minimal info: title + price only, tight spacing */}
                   <div className="mt-3 flex items-center justify-between">
                     <span className="text-base font-medium truncate" style={{ color: 'hsl(var(--foreground))' }}>{product.title}</span>
@@ -284,7 +299,15 @@ export default function MercuryTemplate(props: TemplateProps & { canManage?: boo
                   </div>
                   {canManage && (
                     <div className="mt-3 flex items-center gap-2">
-                      <Button variant="outline" size="sm" className="border-neutral-700" onClick={(e)=>{e.stopPropagation(); navigate(`/store/${storeSlug}/${product.slug}/edit`);}}>Edit</Button>
+                      <Button variant="outline" size="sm" className="border-neutral-700" onClick={(e)=>{
+                        e.stopPropagation();
+                        const slug = product.slug;
+                        if (slug && slug.length > 0) {
+                          navigate(`/store/${storeSlug}/${slug}/edit`);
+                        } else {
+                          navigate(`/product/${product.id}`);
+                        }
+                      }}>Edit</Button>
                       <Button variant="destructive" size="sm" onClick={(e)=>{e.stopPropagation(); handleDelete(product.id);}}>Delete</Button>
                     </div>
                   )}

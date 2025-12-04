@@ -317,49 +317,43 @@ export default function SellerDashboard() {
           <p className="text-muted-foreground">Manage your marketplace listings and track sales</p>
         </div>
 
-        {/* Stats */}
+        {/* Stats with standardized vibrant presets */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-card rounded-xl border p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Products</p>
-                <p className="text-3xl font-bold">{products.length}</p>
-              </div>
-              <Package className="w-10 h-10 text-primary opacity-20" />
-            </div>
-          </div>
+          <GradientCard
+            title="Total Products"
+            value={products.length}
+            preset="purple"
+            icon={
+              <Package className="w-6 h-6 text-purple-400" />
+            }
+          />
 
-          <div className="bg-card rounded-xl border p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Revenue</p>
-                <p className="text-3xl font-bold">${totalRevenue.toFixed(2)}</p>
-              </div>
-              <DollarSign className="w-10 h-10 text-green-500 opacity-20" />
-            </div>
-          </div>
+          <GradientCard
+            title="Total Revenue"
+            value={`$${totalRevenue.toFixed(2)}`}
+            preset="emerald"
+            icon={
+              <DollarSign className="w-6 h-6 text-emerald-400" />
+            }
+          />
 
-          <div className="bg-card rounded-xl border p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Pending Orders</p>
-                <p className="text-3xl font-bold">{pendingOrders}</p>
-              </div>
-              <ShoppingBag className="w-10 h-10 text-orange-500 opacity-20" />
-            </div>
-          </div>
+          <GradientCard
+            title="Pending Orders"
+            value={pendingOrders}
+            preset="orange"
+            icon={
+              <ShoppingBag className="w-6 h-6 text-orange-400" />
+            }
+          />
 
-          <div className="bg-card rounded-xl border p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Views</p>
-                <p className="text-3xl font-bold">
-                  {products.reduce((sum, p) => sum + (p.views || 0), 0)}
-                </p>
-              </div>
-              <Eye className="w-10 h-10 text-blue-500 opacity-20" />
-            </div>
-          </div>
+          <GradientCard
+            title="Total Views"
+            value={products.reduce((sum, p) => sum + (p.views || 0), 0)}
+            preset="blue"
+            icon={
+              <Eye className="w-6 h-6 text-blue-400" />
+            }
+          />
         </div>
 
         {/* Add Product Button */}

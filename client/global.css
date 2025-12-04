@@ -1,4 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap');
+
 /* Horror glowing effect for admin panel */
 .drop-shadow-glow {
   filter: drop-shadow(0 0 8px #a855f7) drop-shadow(0 0 16px #a855f7aa);
@@ -8,8 +10,6 @@
 @tailwind utilities;
 
 /* Calligraphic store name font */
-@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap');
-
 .font-calligraphic {
   font-family: 'Great Vibes', cursive;
 }
@@ -94,6 +94,13 @@
 
     --radius: 0.8rem;
 
+    /* Layered palette for dashboard comfort */
+    --bg-app: 0 0% 100%;
+    --bg-panel: 210 40% 99%;
+    --bg-card: var(--card);
+    --border-subtle: 210 30% 88%;
+    --text-muted-soft: 220 15% 40%;
+
     /* Header theming */
     --header-bg-from: 200 100% 97%;
     --header-bg-via: 210 100% 99%;
@@ -156,6 +163,13 @@
     --header-gradient-text-from: 190 100% 60%;
     --header-gradient-text-to: 270 100% 65%;
     --neon-glow: 190 100% 60%;
+
+    /* Layered palette for dashboard comfort */
+    --bg-app: 0 0% 0%;
+    --bg-panel: 0 0% 0%;
+    --bg-card: var(--card);
+    --border-subtle: 222 20% 20%;
+    --text-muted-soft: 220 15% 70%;
   }
 @layer utilities {
   .marketplace-cold-bg {
@@ -179,7 +193,7 @@
   }
 
   body {
-    background-color: hsl(var(--background));
+    background-color: hsl(var(--bg-app));
     color: hsl(var(--foreground));
     font-family: "Cairo", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
   }
@@ -232,4 +246,12 @@
     box-shadow: var(--elevated-shadow);
     transition: box-shadow 0.2s cubic-bezier(.4,0,.2,1);
   }
+}
+
+/* Comfort utilities */
+@layer utilities {
+  .bg-panel { background-color: hsl(var(--bg-panel)); }
+  .bg-card { background-color: hsl(var(--bg-card)); }
+  .border-subtle { border-color: hsl(var(--border-subtle)); }
+  .text-muted-soft { color: hsl(var(--text-muted-soft)); }
 }

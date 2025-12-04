@@ -8,7 +8,9 @@ async function startServer() {
   try {
     // Initialize database and create tables (skip if no DATABASE_URL for local dev)
     if (process.env.DATABASE_URL) {
-      console.log("🔄 Initializing database...");
+      const url = process.env.DATABASE_URL || '';
+      const masked = url.replace(/:(.*?)@/, ':****@');
+      console.log("🔄 Initializing database... using DATABASE_URL=", masked);
       await initializeDatabase();
 
       // Create default admin user

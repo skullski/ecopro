@@ -14,15 +14,26 @@ const categoryIcons: Record<string, string> = {
   'Home & Garden': '🏡',
   'Sports': '⚽',
   'Beauty': '💄',
-  'Toys': '🧸',
   'Books': '📚',
   'Automotive': '🚗',
+  // Extra categories
+  'Gaming': '🎮',
 };
 
 interface Category {
   category: string;
   count: string;
 }
+
+// Predefined list to always show common categories
+const PRESET_CATEGORIES: string[] = [
+  'Electronics',
+  'Sports',
+  'Home & Garden',
+  'Fashion',
+  'Automotive',
+  'Beauty',
+];
 
 export default function Marketplace() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -95,10 +106,25 @@ export default function Marketplace() {
       const res = await fetch('/api/products/categories/counts');
       if (res.ok) {
         const data = await res.json();
-        setCategories(data);
+        // Merge server categories with preset list and de-duplicate
+        const byName: Record<string, Category> = {};
+        for (const c of data as Category[]) {
+          if (c?.category) byName[c.category] = { category: c.category, count: c.count };
+        }
+        for (const name of PRESET_CATEGORIES) {
+          if (!byName[name]) byName[name] = { category: name, count: '0' };
+        }
+        // Stable order based on PRESET_CATEGORIES then any additional server categories
+        const merged: Category[] = [
+          ...PRESET_CATEGORIES.map((n) => byName[n]).filter(Boolean),
+          ...Object.values(byName).filter((c) => !PRESET_CATEGORIES.includes(c.category)),
+        ];
+        setCategories(merged);
       }
     } catch (error) {
       console.error('Failed to load categories:', error);
+      // Fallback to preset categories if server fails
+      setCategories(PRESET_CATEGORIES.map((n) => ({ category: n, count: '0' })));
     }
   };
 
@@ -246,6 +272,7 @@ export default function Marketplace() {
                   className="pl-10 pr-4 h-10 text-sm bg-white text-gray-900 border-0 rounded-lg"
                 />
               </div>
+              {/* Categories moved below results header */}
             </div>
             <Button 
               size="sm" 
@@ -285,116 +312,121 @@ export default function Marketplace() {
           </div>
         </div>
       </div>
-
       <div className="flex-1 flex overflow-hidden w-full">
-        <div className="w-full px-4 py-4 flex gap-6">
+        <div className={`container mx-auto px-4 py-4 flex ${sidebarOpen ? 'gap-6' : 'gap-0'}`}>
           {/* Sidebar - Always in DOM, slides in/out */}
           <aside className={`
-            flex-shrink-0 transition-all duration-300 ease-in-out overflow-y-auto
-            ${sidebarOpen ? 'w-64 opacity-100' : 'w-0 opacity-0 overflow-hidden'}
-          `}>
-            <div className="sticky top-4 space-y-4"
-              style={{ maxHeight: 'calc(100vh - 8rem)' }}
-            >
+              flex-shrink-0 transition-all duration-300 ease-in-out overflow-y-auto
+              ${sidebarOpen ? 'w-64 opacity-100' : 'hidden'}
+            `}>
+              <div className="sticky top-4 space-y-4"
+                style={{ maxHeight: 'calc(100vh - 8rem)' }}
+              >
+                {/* Categories */}
+                <div className="bg-card rounded-lg border p-4">
+                  <h3 className="font-bold mb-3 flex items-center gap-2">
+                    <SlidersHorizontal className="w-4 h-4" />
+                    Categories
+                  </h3>
+                  <div className="space-y-1.5">
+                    {categories.filter((c) => !['Pets','Toys','Music','Health'].includes(c.category)).map((cat) => (
+                      <button
+                        key={cat.category}
+                        onClick={() => {
+                          setSelectedCategory(cat.category === selectedCategory ? null : cat.category);
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded-md transition-colors text-sm
+                          ${selectedCategory === cat.category
+                            ? 'bg-primary text-primary-foreground font-semibold'
+                            : 'hover:bg-muted'}
+                        `}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="flex items-center gap-2">
+                            <span>{categoryIcons[cat.category] || '📦'}</span>
+                            <span>{cat.category || 'Uncategorized'}</span>
+                          </span>
+                          <span className="text-xs opacity-70">({cat.count})</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-              {/* Categories */}
-              <div className="bg-card rounded-lg border p-4">
-                <h3 className="font-bold mb-3 flex items-center gap-2">
-                  <SlidersHorizontal className="w-4 h-4" />
-                  Categories
-                </h3>
-                <div className="space-y-1.5">
-                  {categories.map((cat) => (
+                {/* Price Range */}
+                <div className="bg-card rounded-lg border p-4">
+                  <h3 className="font-bold mb-3">Price Range</h3>
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <Input
+                        type="number"
+                        placeholder="Min"
+                        value={priceRange[0]}
+                        onChange={(e) => setPriceRange([+e.target.value, priceRange[1]])}
+                        className="w-full text-sm"
+                      />
+                      <Input
+                        type="number"
+                        placeholder="Max"
+                        value={priceRange[1]}
+                        onChange={(e) => setPriceRange([priceRange[0], +e.target.value])}
+                        className="w-full text-sm"
+                      />
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                    >
+                      Apply
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Sort By */}
+                <div className="bg-card rounded-lg border p-4">
+                  <h3 className="font-bold mb-3">Sort By</h3>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="w-full px-3 py-2 rounded-md border bg-background text-sm"
+                  >
+                    <option value="relevant">Most Relevant</option>
+                    <option value="price-low">Price: Low to High</option>
+                    <option value="price-high">Price: High to Low</option>
+                    <option value="popular">Most Popular</option>
+                  </select>
+                </div>
+              </div>
+            </aside>
+
+          {/* Main Content - Stretches to fill space */}
+          <main className="flex-1 min-w-0">
+            {/* Inline categories row when sidebar is hidden (single block above the grid) */}
+            {!sidebarOpen && (
+              <div className="mb-4 bg-card rounded-lg border px-2 py-2 overflow-x-auto">
+                <div className="flex gap-2 min-w-0">
+                  {categories.filter((c) => !['Pets','Toys','Music','Health'].includes(c.category)).map((cat) => (
                     <button
                       key={cat.category}
                       onClick={() => {
                         setSelectedCategory(cat.category === selectedCategory ? null : cat.category);
+                        setPage(1);
+                        loadProducts(1);
                       }}
-                      className={`w-full text-left px-3 py-2 rounded-md transition-colors text-sm
-                        ${selectedCategory === cat.category
-                          ? 'bg-primary text-primary-foreground font-semibold'
-                          : 'hover:bg-muted'}
-                      `}
+                      className={`shrink-0 px-3 py-1.5 rounded-full text-sm border transition-colors
+                        ${selectedCategory === cat.category ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-foreground hover:bg-muted border-border'}`}
+                      title={`${cat.category} (${cat.count})`}
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-2">
-                          <span>{categoryIcons[cat.category] || '📦'}</span>
-                          <span>{cat.category || 'Uncategorized'}</span>
-                        </span>
-                        <span className="text-xs opacity-70">({cat.count})</span>
-                      </div>
+                      <span className="mr-1">{categoryIcons[cat.category] || '📦'}</span>
+                      {cat.category || 'Uncategorized'}
                     </button>
                   ))}
                 </div>
               </div>
+            )}
 
-              {/* Price Range */}
-              <div className="bg-card rounded-lg border p-4">
-                <h3 className="font-bold mb-3">Price Range</h3>
-                <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <Input
-                      type="number"
-                      placeholder="Min"
-                      value={priceRange[0]}
-                      onChange={(e) => setPriceRange([+e.target.value, priceRange[1]])}
-                      className="w-full text-sm"
-                    />
-                    <Input
-                      type="number"
-                      placeholder="Max"
-                      value={priceRange[1]}
-                      onChange={(e) => setPriceRange([priceRange[0], +e.target.value])}
-                      className="w-full text-sm"
-                    />
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                  >
-                    Apply
-                  </Button>
-                </div>
-              </div>
-
-              {/* Sort By */}
-              <div className="bg-card rounded-lg border p-4">
-                <h3 className="font-bold mb-3">Sort By</h3>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="w-full px-3 py-2 rounded-md border bg-background text-sm"
-                >
-                  <option value="relevant">Most Relevant</option>
-                  <option value="price-low">Price: Low to High</option>
-                  <option value="price-high">Price: High to Low</option>
-                  <option value="popular">Most Popular</option>
-                </select>
-              </div>
-            </div>
-          </aside>
-
-          {/* Main Content - Stretches to fill space */}
-          <main className="flex-1 min-w-0">
-            {/* Results Header */}
-            <div className="flex items-center justify-between mb-4 bg-card rounded-lg border p-3">
-              <p className="text-sm text-muted-foreground">
-                {loading ? (
-                  'Loading products...'
-                ) : (
-                  <>
-                    Showing <span className="font-semibold text-foreground">{products.length}</span> results
-                  </>
-                )}
-              </p>
-              {currentUser && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <User className="w-4 h-4" />
-                  <span>Welcome, <span className="font-medium text-foreground">{currentUser.name || currentUser.email}</span></span>
-                </div>
-              )}
-            </div>
+            {/* Categories strip remains under the search bar in header */}
 
             {/* Products Grid */}
             <div className={`grid grid-cols-2 md:grid-cols-3 gap-3 transition-all duration-300 ${

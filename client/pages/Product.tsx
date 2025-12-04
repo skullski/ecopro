@@ -79,7 +79,7 @@ export default function Product() {
   const reviews = Math.floor(Math.random() * 500) + 10; // Mock reviews
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground dark:bg-black">
       <div className="container mx-auto px-4 py-8">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
@@ -94,7 +94,7 @@ export default function Product() {
           {/* Left Column - Images */}
           <div className="space-y-4">
             {/* Main Image */}
-            <div className="relative aspect-square rounded-xl overflow-hidden bg-muted shadow-elevated">
+            <div className="relative aspect-square rounded-xl overflow-hidden bg-muted shadow-elevated dark:bg-gray-900 dark:border dark:border-gray-700">
               {product.images && product.images.length > 0 ? (
                 <>
                   <img
@@ -237,7 +237,7 @@ export default function Product() {
 
             {/* Seller Info */}
             {product.seller_name && (
-              <div className="bg-card border rounded-xl p-4 shadow-elevated">
+              <div className="bg-card border rounded-xl p-4 shadow-elevated dark:bg-gray-900 dark:border-gray-700">
                 <h4 className="font-semibold mb-2">Seller Information</h4>
                 <p className="text-sm text-muted-foreground mb-1">
                   <span className="font-medium text-foreground">{product.seller_name}</span>
@@ -314,21 +314,21 @@ export default function Product() {
 
         {/* Additional Info Section */}
         <div className="mt-12 grid md:grid-cols-3 gap-6">
-          <div className="bg-card border rounded-xl p-6 shadow-elevated text-center">
+          <div className="bg-card border rounded-xl p-6 shadow-elevated text-center dark:bg-gray-900 dark:border-gray-700">
             <Truck className="w-8 h-8 mx-auto mb-3 text-primary" />
             <h4 className="font-semibold mb-2">Fast Delivery</h4>
             <p className="text-sm text-muted-foreground">
               Get your products delivered quickly and safely
             </p>
           </div>
-          <div className="bg-card border rounded-xl p-6 shadow-elevated text-center">
+          <div className="bg-card border rounded-xl p-6 shadow-elevated text-center dark:bg-gray-900 dark:border-gray-700">
             <Shield className="w-8 h-8 mx-auto mb-3 text-primary" />
             <h4 className="font-semibold mb-2">Buyer Protection</h4>
             <p className="text-sm text-muted-foreground">
               Your purchase is protected with our guarantee
             </p>
           </div>
-          <div className="bg-card border rounded-xl p-6 shadow-elevated text-center">
+          <div className="bg-card border rounded-xl p-6 shadow-elevated text-center dark:bg-gray-900 dark:border-gray-700">
             <Star className="w-8 h-8 mx-auto mb-3 text-primary" />
             <h4 className="font-semibold mb-2">Quality Verified</h4>
             <p className="text-sm text-muted-foreground">

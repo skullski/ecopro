@@ -21,6 +21,7 @@ import * as adminRoutes from "./routes/admin";
 import * as dashboardRoutes from "./routes/dashboard";
 import * as botRoutes from "./routes/bot";
 import { initializeDatabase, createDefaultAdmin, runPendingMigrations } from "./utils/database";
+import { handleHealth } from "./routes/health";
 import { handleDbCheck } from "./routes/db-check";
 import { hashPassword } from "./utils/auth";
 import {
@@ -47,6 +48,9 @@ export function createServer() {
   app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
   // Initialize database then run pending migrations
+  const url = process.env.DATABASE_URL || '';
+  const masked = url.replace(/:(.*?)@/, ':****@');
+  console.log('🗄️ DATABASE_URL:', masked || '(not set)');
   initializeDatabase()
     .then(() => {
       if (process.env.SKIP_MIGRATIONS === 'true') {
@@ -110,11 +114,12 @@ export function createServer() {
       origin: (origin, callback) => {
         // Allow requests with no origin (mobile apps, curl, etc.)
         if (!origin) return callback(null, true);
-        if (allowedOrigins.includes(origin)) {
-          callback(null, true);
-        } else {
-          callback(new Error("Not allowed by CORS"));
+        // Allow any localhost port for dev convenience
+        const isLocalhost = /^http:\/\/localhost:\d+$/.test(origin);
+        if (isLocalhost || allowedOrigins.includes(origin)) {
+          return callback(null, true);
         }
+        callback(new Error("Not allowed by CORS"));
       },
       credentials: true,
       methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -138,6 +143,9 @@ export function createServer() {
     const ping = process.env.PING_MESSAGE ?? "ping";
     res.json({ message: ping });
   });
+
+  // Health check: confirms DB connectivity regardless of frontend port
+  app.get("/api/health", handleHealth);
 
   // DB details check (non-sensitive; shows current_database and socket)
   app.get("/api/db-check", handleDbCheck);

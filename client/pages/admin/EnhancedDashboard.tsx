@@ -1,6 +1,7 @@
 import { Clock, Download, Eye, ShoppingCart, Tag, DollarSign, Check, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
+import { GradientCard } from "@/components/ui/GradientCard";
 
 export default function EnhancedDashboard() {
   const [timeLeft, setTimeLeft] = useState({
@@ -34,34 +35,50 @@ export default function EnhancedDashboard() {
     { 
       title: "الزيارات", 
       value: "1", 
-      icon: <Eye className="w-6 h-6" />, 
+      icon: <Eye className="w-6 h-6" style={{ color: '#1d4ed8' }} />, 
       gradient: "from-blue-500 to-cyan-500",
-      iconBg: "bg-blue-500/20",
-      textColor: "text-blue-600 dark:text-blue-400"
+      iconBg: "bg-blue-200 dark:bg-blue-500/20",
+      iconColor: "text-blue-700 dark:text-blue-400",
+      textColor: "text-blue-500 dark:text-blue-400",
+      cardFrom: "from-blue-500/20",
+      cardTo: "to-blue-500/5",
+      cardBorder: "border-blue-500/30"
     },
     { 
       title: "الأرباح", 
       value: "0 دج", 
-      icon: <DollarSign className="w-6 h-6" />, 
+      icon: <DollarSign className="w-6 h-6" style={{ color: '#15803d' }} />, 
       gradient: "from-green-500 to-emerald-500",
-      iconBg: "bg-green-500/20",
-      textColor: "text-green-600 dark:text-green-400"
+      iconBg: "bg-green-200 dark:bg-green-500/20",
+      iconColor: "text-green-700 dark:text-green-400",
+      textColor: "text-green-500 dark:text-green-400",
+      cardFrom: "from-green-500/20",
+      cardTo: "to-green-500/5",
+      cardBorder: "border-green-500/30"
     },
     { 
       title: "المنتجات المتاحة", 
       value: "0", 
-      icon: <Tag className="w-6 h-6" />, 
+      icon: <Tag className="w-6 h-6" style={{ color: '#7e22ce' }} />, 
       gradient: "from-purple-500 to-pink-500",
-      iconBg: "bg-purple-500/20",
-      textColor: "text-purple-600 dark:text-purple-400"
+      iconBg: "bg-purple-200 dark:bg-purple-500/20",
+      iconColor: "text-purple-700 dark:text-purple-400",
+      textColor: "text-purple-500 dark:text-purple-400",
+      cardFrom: "from-purple-500/20",
+      cardTo: "to-purple-500/5",
+      cardBorder: "border-purple-500/30"
     },
     { 
       title: "الطلبات الجديدة", 
       value: "0", 
-      icon: <ShoppingCart className="w-6 h-6" />, 
+      icon: <ShoppingCart className="w-6 h-6" style={{ color: '#c2410c' }} />, 
       gradient: "from-orange-500 to-red-500",
-      iconBg: "bg-orange-500/20",
-      textColor: "text-orange-600 dark:text-orange-400"
+      iconBg: "bg-orange-200 dark:bg-orange-500/20",
+      iconColor: "text-orange-700 dark:text-orange-400",
+      textColor: "text-orange-500 dark:text-orange-400",
+      cardFrom: "from-orange-500/20",
+      cardTo: "to-orange-500/5",
+      cardBorder: "border-orange-500/30"
     },
   ];
 
@@ -87,9 +104,9 @@ export default function EnhancedDashboard() {
   return (
     <div className="space-y-6">
       {/* Welcome Banner - Unique diagonal split design */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-background via-primary/5 to-accent/10 border-2 border-primary/20">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(var(--primary),0.1),transparent_50%)]"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_50%,rgba(var(--accent),0.1),transparent_50%)]"></div>
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-100 via-blue-100 to-cyan-100 dark:from-black dark:via-black dark:to-black border-2 border-violet-300 dark:border-gray-800 shadow-xl">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(139,92,246,0.2),transparent_50%)] dark:bg-[radial-gradient(circle_at_30%_50%,rgba(139,92,246,0.1),transparent_50%)]"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_50%,rgba(6,182,212,0.2),transparent_50%)] dark:bg-[radial-gradient(circle_at_70%_50%,rgba(6,182,212,0.1),transparent_50%)]"></div>
         
         <div className="relative z-10 p-8 md:p-12">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
@@ -121,36 +138,23 @@ export default function EnhancedDashboard() {
       </div>
 
       {/* Stats Grid - Unique card design with diagonal accent */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, idx) => (
-          <div 
+          <GradientCard
             key={idx}
-            className="group relative overflow-hidden rounded-2xl bg-card border-2 border-border hover:border-primary/50 transition-all duration-300"
+            title={stat.title}
+            value={stat.value}
+            icon={<div className={stat.iconColor}>{stat.icon}</div>}
+            from={stat.cardFrom}
+            to={stat.cardTo}
+            border={stat.cardBorder}
+            iconBg={stat.iconBg}
+            valueClassName={stat.textColor}
+            className="group relative hover:shadow-2xl hover:scale-105"
           >
             {/* Diagonal accent line */}
-            <div className={`absolute top-0 left-0 w-1 h-full bg-gradient-to-b ${stat.gradient}`}></div>
-            
-            <div className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className={`p-3 rounded-xl ${stat.iconBg} group-hover:scale-110 transition-transform`}>
-                  <div className={stat.textColor}>
-                    {stat.icon}
-                  </div>
-                </div>
-                <div className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">
-                  اليوم
-                </div>
-              </div>
-              <div className="space-y-1">
-                <div className="text-sm text-muted-foreground font-medium">
-                  {stat.title}
-                </div>
-                <div className={`text-2xl font-bold ${stat.textColor}`}>
-                  {stat.value}
-                </div>
-              </div>
-            </div>
-          </div>
+            <div className={`absolute top-0 left-0 w-2 h-full bg-gradient-to-b ${stat.gradient}`}></div>
+          </GradientCard>
         ))}
       </div>
 
@@ -159,10 +163,10 @@ export default function EnhancedDashboard() {
         {/* Left Column - Subscription & Stats */}
         <div className="lg:col-span-2 space-y-6">
           {/* Subscription Card */}
-          <div className="relative rounded-2xl border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-card to-accent/5 p-8 text-center overflow-hidden shadow-lg">
+          <div className="relative rounded-2xl border-2 border-rose-300 dark:border-gray-800 bg-gradient-to-br from-rose-100 via-amber-100 to-orange-100 dark:from-black dark:via-black dark:to-black p-8 text-center overflow-hidden shadow-2xl">
             {/* Decorative elements */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-yellow-400/20 to-orange-500/20 rounded-full blur-2xl"></div>
-            <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-blue-400/20 to-purple-500/20 rounded-full blur-2xl"></div>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-pink-400/30 to-rose-500/30 rounded-full blur-2xl"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-amber-400/30 to-orange-500/30 rounded-full blur-2xl"></div>
             
             <div className="relative z-10">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-500/10 border border-yellow-500/20 mb-4">
@@ -235,37 +239,41 @@ export default function EnhancedDashboard() {
               <span className="text-2xl">📊</span>
               نظرة عامة
             </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
               {stats.map((stat, index) => (
-                <div key={index} className="group relative rounded-2xl bg-card border-2 border-transparent hover:border-primary/20 p-6 text-center overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1">
-                  {/* Gradient background */}
+                <GradientCard
+                  key={index}
+                  title={stat.title}
+                  value={stat.value}
+                  icon={<div className={stat.iconColor}>{stat.icon}</div>}
+                  from={stat.cardFrom}
+                  to={stat.cardTo}
+                  border={stat.cardBorder}
+                  iconBg={stat.iconBg}
+                  valueClassName={stat.textColor}
+                  className="group text-center relative hover:shadow-2xl hover:-translate-y-2"
+                >
                   <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-5 group-hover:opacity-10 transition-opacity`}></div>
-                  
-                  {/* Content */}
-                  <div className="relative z-10">
-                    <div className={`inline-flex items-center justify-center w-14 h-14 rounded-xl ${stat.iconBg} mb-3 ${stat.textColor} group-hover:scale-110 transition-transform`}>
-                      {stat.icon}
+                  <div className="relative z-10 mt-3 flex items-center justify-center">
+                    <div className={"inline-flex items-center justify-center w-14 h-14 rounded-xl " + stat.iconBg + " mb-3 group-hover:scale-110 transition-transform"}>
+                      {/* icon already colored via wrapper */}
                     </div>
-                    <div className="text-sm text-muted-foreground mb-2">{stat.title}</div>
-                    <div className={`text-3xl font-bold ${stat.textColor}`}>{stat.value}</div>
                   </div>
-                  
-                  {/* Decorative corner */}
                   <div className={`absolute -top-8 -right-8 w-24 h-24 bg-gradient-to-br ${stat.gradient} opacity-10 rounded-full`}></div>
-                </div>
+                </GradientCard>
               ))}
             </div>
           </div>
 
           {/* Quick Stats */}
-          <div className="rounded-2xl border-2 border-primary/10 bg-gradient-to-br from-card to-primary/5 p-6 shadow-lg">
+          <div className="rounded-2xl border-2 border-teal-300 dark:border-gray-800 bg-gradient-to-br from-cyan-50 via-teal-50 to-emerald-50 dark:from-black dark:via-black dark:to-black p-6 shadow-2xl">
             <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
               <span className="text-xl">📈</span>
               إحصائيات سريعة
             </h3>
             <div className="space-y-2">
               {quickStats.map((stat, index) => (
-                <div key={index} className="flex items-center justify-between py-3 px-4 rounded-xl bg-background/50 hover:bg-background transition-colors">
+                <div key={index} className="flex items-center justify-between py-3 px-4 rounded-xl bg-white dark:bg-black hover:bg-blue-50 dark:hover:bg-gray-900 transition-colors shadow-md border border-gray-200 dark:border-gray-800">
                   <div className="flex items-center gap-3">
                     {stat.status === "success" ? (
                       <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
@@ -288,7 +296,7 @@ export default function EnhancedDashboard() {
         {/* Right Column - Setup & App */}
         <div className="space-y-6">
           {/* Setup Checklist */}
-          <div className="rounded-2xl border-2 border-accent/20 bg-gradient-to-br from-card to-accent/5 p-6 shadow-lg">
+          <div className="rounded-2xl border-2 border-lime-300 dark:border-gray-800 bg-gradient-to-br from-lime-50 via-emerald-50 to-teal-50 dark:from-black dark:via-black dark:to-black p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-lg flex items-center gap-2">
                 <span className="text-xl">✅</span>
@@ -300,9 +308,9 @@ export default function EnhancedDashboard() {
             </div>
             
             {/* Progress bar */}
-            <div className="mb-4 h-2 bg-muted rounded-full overflow-hidden">
+            <div className="mb-4 h-3 bg-gradient-to-r from-gray-200 to-gray-300 dark:bg-muted rounded-full overflow-hidden shadow-inner">
               <div 
-                className="h-full bg-gradient-to-r from-accent to-green-500 transition-all duration-500"
+                className="h-full bg-gradient-to-r from-lime-400 via-emerald-500 to-teal-500 transition-all duration-500 shadow-lg"
                 style={{ width: `${(completedSteps / totalSteps) * 100}%` }}
               ></div>
             </div>
@@ -311,8 +319,8 @@ export default function EnhancedDashboard() {
               {setupSteps.map((step, index) => (
                 <div key={index} className={`flex items-start gap-3 p-4 rounded-xl transition-all ${
                   step.completed 
-                    ? 'bg-green-500/10 border-2 border-green-500/20' 
-                    : 'bg-background/50 border-2 border-transparent hover:border-primary/20'
+                    ? 'bg-green-100 dark:bg-green-950 border-2 border-green-400 dark:border-green-800 shadow-md' 
+                    : 'bg-white dark:bg-black border-2 border-gray-300 dark:border-gray-800 hover:border-primary hover:shadow-lg'
                 }`}>
                   <button className="mt-0.5 hover:scale-110 transition-transform">
                     <ChevronLeft className="w-5 h-5 text-primary" />
@@ -335,12 +343,12 @@ export default function EnhancedDashboard() {
           </div>
 
           {/* App Promotion */}
-          <div className="relative rounded-2xl border-2 border-purple-500/20 bg-gradient-to-br from-purple-500/10 via-pink-500/10 to-blue-500/10 p-8 text-center overflow-hidden shadow-xl">
+          <div className="relative rounded-2xl border-2 border-fuchsia-400 dark:border-gray-800 bg-gradient-to-br from-fuchsia-100 via-purple-100 to-indigo-100 dark:from-black dark:via-black dark:to-black p-8 text-center overflow-hidden shadow-2xl">
             {/* Animated background */}
             <div className="absolute inset-0">
-              <div className="absolute top-0 left-0 w-32 h-32 bg-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
-              <div className="absolute bottom-0 right-0 w-40 h-40 bg-pink-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-blue-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+              <div className="absolute top-0 left-0 w-32 h-32 bg-fuchsia-400/30 rounded-full blur-3xl animate-pulse"></div>
+              <div className="absolute bottom-0 right-0 w-40 h-40 bg-purple-400/30 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-indigo-400/30 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '0.5s' }}></div>
             </div>
             
             <div className="relative z-10">

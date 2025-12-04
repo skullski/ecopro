@@ -52,7 +52,11 @@ export default function EditorialTemplate(props: TemplateProps & { mode: 'suprem
               <div
                 key={p.id}
                 className="group rounded-xl overflow-hidden border bg-card hover:shadow-xl transition"
-                onClick={() => navigate(`/store/${storeSlug}/${p.slug}`)}
+                onClick={() => {
+                  const slug = p.slug;
+                  if (slug && slug.length > 0) navigate(`/store/${storeSlug}/${slug}`);
+                  else navigate(`/product/${p.id}`);
+                }}
               >
                 <div className="relative aspect-square bg-muted">
                   {p.images?.[0]
@@ -65,12 +69,12 @@ export default function EditorialTemplate(props: TemplateProps & { mode: 'suprem
                   <div className="mt-3 flex gap-2">
                     <Button
                       variant="secondary"
-                      onClick={(e) => { e.stopPropagation(); navigate(`/store/${storeSlug}/${p.slug}`); }}
+                      onClick={(e) => { e.stopPropagation(); const slug = p.slug; if (slug && slug.length > 0) navigate(`/store/${storeSlug}/${slug}`); else navigate(`/product/${p.id}`); }}
                     >
                       View
                     </Button>
                     <Button
-                      onClick={(e) => { e.stopPropagation(); navigate(`/store/${storeSlug}/checkout/${p.slug}`); }}
+                      onClick={(e) => { e.stopPropagation(); const slug = p.slug; if (slug && slug.length > 0) navigate(`/store/${storeSlug}/checkout/${slug}`); else navigate(`/guest-checkout/${p.id}`); }}
                     >
                       Buy
                     </Button>
@@ -88,7 +92,7 @@ export default function EditorialTemplate(props: TemplateProps & { mode: 'suprem
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {filtered.map(p => (
-              <button key={p.id} onClick={() => navigate(`/store/${storeSlug}/${p.slug}`)} className="group rounded-xl overflow-hidden border bg-card hover:shadow-lg transition">
+              <button key={p.id} onClick={() => { const slug = p.slug; if (slug && slug.length > 0) navigate(`/store/${storeSlug}/${slug}`); else navigate(`/product/${p.id}`); }} className="group rounded-xl overflow-hidden border bg-card hover:shadow-lg transition">
                 <div className="relative aspect-square bg-muted">
                   {p.images?.[0] ? <img src={p.images[0]} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition" /> : <div className="w-full h-full flex items-center justify-center"><Package className="w-10 h-10 text-muted-foreground opacity-20"/></div>}
                 </div>
