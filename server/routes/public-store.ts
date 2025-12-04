@@ -112,7 +112,7 @@ export const getPublicProduct: RequestHandler = async (req, res) => {
   try {
     console.log('[getPublicProduct] Looking for:', { storeSlug, productSlug });
     
-    // Get product with store settings
+    // Get product with store settings - make status check more lenient
     const productResult = await pool.query(
       `SELECT 
         p.*,
@@ -122,7 +122,7 @@ export const getPublicProduct: RequestHandler = async (req, res) => {
         s.store_slug
       FROM client_store_products p
       INNER JOIN client_store_settings s ON p.client_id = s.client_id
-      WHERE s.store_slug = $1 AND p.slug = $2 AND p.status = 'active'`,
+      WHERE s.store_slug = $1 AND p.slug = $2`,
       [storeSlug, productSlug]
     );
 
