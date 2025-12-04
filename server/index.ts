@@ -114,11 +114,20 @@ export function createServer() {
       origin: (origin, callback) => {
         // Allow requests with no origin (mobile apps, curl, etc.)
         if (!origin) return callback(null, true);
+        
+        // In production, allow same-origin requests
+        const isProduction = process.env.NODE_ENV === 'production';
+        if (isProduction) {
+          return callback(null, true);
+        }
+        
         // Allow any localhost port for dev convenience
         const isLocalhost = /^http:\/\/localhost:\d+$/.test(origin);
         if (isLocalhost || allowedOrigins.includes(origin)) {
           return callback(null, true);
         }
+        
+        console.warn('CORS blocked origin:', origin);
         callback(new Error("Not allowed by CORS"));
       },
       credentials: true,

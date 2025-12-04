@@ -40,34 +40,82 @@ CREATE TABLE IF NOT EXISTS clients (
 );
 
 -- Migrate existing users with user_type='seller' to sellers table
-INSERT INTO sellers (email, password, name, phone, address, role, created_at, updated_at)
-SELECT 
-  email, 
-  password, 
-  name, 
-  phone, 
-  address,
-  CASE WHEN role = 'admin' THEN 'admin' ELSE 'seller' END,
-  created_at, 
-  updated_at
-FROM users 
-WHERE user_type = 'seller'
-ON CONFLICT (email) DO NOTHING;
+DO $$
+BEGIN
+  -- Check if phone and address columns exist in users table
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'users' AND column_name = 'phone'
+  ) AND EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'users' AND column_name = 'address'
+  ) THEN
+    INSERT INTO sellers (email, password, name, phone, address, role, created_at, updated_at)
+    SELECT 
+      email, 
+      password, 
+      name, 
+      phone, 
+      address,
+      CASE WHEN role = 'admin' THEN 'admin' ELSE 'seller' END,
+      created_at, 
+      updated_at
+    FROM users 
+    WHERE user_type = 'seller'
+    ON CONFLICT (email) DO NOTHING;
+  ELSE
+    INSERT INTO sellers (email, password, name, role, created_at, updated_at)
+    SELECT 
+      email, 
+      password, 
+      name, 
+      CASE WHEN role = 'admin' THEN 'admin' ELSE 'seller' END,
+      created_at, 
+      updated_at
+    FROM users 
+    WHERE user_type = 'seller'
+    ON CONFLICT (email) DO NOTHING;
+  END IF;
+END $$;
 
 -- Migrate existing users with user_type='client' to clients table
-INSERT INTO clients (email, password, name, phone, address, role, created_at, updated_at)
-SELECT 
-  email, 
-  password, 
-  name, 
-  phone, 
-  address,
-  CASE WHEN role = 'admin' THEN 'admin' ELSE 'client' END,
-  created_at, 
-  updated_at
-FROM users 
-WHERE user_type = 'client'
-ON CONFLICT (email) DO NOTHING;
+DO $$
+BEGIN
+  -- Check if phone and address columns exist in users table
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'users' AND column_name = 'phone'
+  ) AND EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'users' AND column_name = 'address'
+  ) THEN
+    INSERT INTO clients (email, password, name, phone, address, role, created_at, updated_at)
+    SELECT 
+      email, 
+      password, 
+      name, 
+      phone, 
+      address,
+      CASE WHEN role = 'admin' THEN 'admin' ELSE 'client' END,
+      created_at, 
+      updated_at
+    FROM users 
+    WHERE user_type = 'client'
+    ON CONFLICT (email) DO NOTHING;
+  ELSE
+    INSERT INTO clients (email, password, name, role, created_at, updated_at)
+    SELECT 
+      email, 
+      password, 
+      name, 
+      CASE WHEN role = 'admin' THEN 'admin' ELSE 'client' END,
+      created_at, 
+      updated_at
+    FROM users 
+    WHERE user_type = 'client'
+    ON CONFLICT (email) DO NOTHING;
+  END IF;
+END $$;
 
 -- Update marketplace_products to reference sellers table
 ALTER TABLE marketplace_products 
