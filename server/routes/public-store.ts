@@ -110,20 +110,35 @@ export const getPublicProduct: RequestHandler = async (req, res) => {
   const { storeSlug, productSlug } = req.params;
 
   try {
+    console.log('[getPublicProduct] Looking for:', { storeSlug, productSlug });
+    
     // Get product with store settings
     const productResult = await pool.query(
       `SELECT 
         p.*,
         s.store_name,
         s.primary_color,
-        s.secondary_color
+        s.secondary_color,
+        s.store_slug
       FROM client_store_products p
-      LEFT JOIN client_store_settings s ON p.client_id = s.client_id
+      INNER JOIN client_store_settings s ON p.client_id = s.client_id
       WHERE s.store_slug = $1 AND p.slug = $2 AND p.status = 'active'`,
       [storeSlug, productSlug]
     );
 
+    console.log('[getPublicProduct] Found rows:', productResult.rows.length);
+    
     if (productResult.rows.length === 0) {
+      // Debug: Check if product exists with different criteria
+      const debugResult = await pool.query(
+        `SELECT p.id, p.slug, p.status, p.client_id, s.store_slug 
+         FROM client_store_products p
+         LEFT JOIN client_store_settings s ON p.client_id = s.client_id
+         WHERE p.slug = $1`,
+        [productSlug]
+      );
+      console.log('[getPublicProduct] Debug - Product by slug:', debugResult.rows);
+      
       return res.status(404).json({ error: 'Product not found' });
     }
 
