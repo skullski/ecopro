@@ -41,78 +41,112 @@ CREATE TABLE IF NOT EXISTS clients (
 
 -- Migrate existing users with user_type='seller' to sellers table
 DO $$
+DECLARE
+  has_phone BOOLEAN;
+  has_address BOOLEAN;
+  has_role BOOLEAN;
+  has_user_type BOOLEAN;
 BEGIN
-  -- Check if phone and address columns exist in users table
-  IF EXISTS (
-    SELECT 1 FROM information_schema.columns 
-    WHERE table_name = 'users' AND column_name = 'phone'
-  ) AND EXISTS (
-    SELECT 1 FROM information_schema.columns 
-    WHERE table_name = 'users' AND column_name = 'address'
-  ) THEN
+  -- Check if users table exists
+  IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'users') THEN
+    RAISE NOTICE 'Users table does not exist, skipping migration';
+    RETURN;
+  END IF;
+
+  -- Check which columns exist
+  has_phone := EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'phone');
+  has_address := EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'address');
+  has_role := EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'role');
+  has_user_type := EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'user_type');
+
+  -- Skip if no user_type column (nothing to migrate)
+  IF NOT has_user_type THEN
+    RAISE NOTICE 'No user_type column in users table, skipping migration';
+    RETURN;
+  END IF;
+
+  -- Build and execute dynamic SQL based on available columns
+  IF has_phone AND has_address AND has_role THEN
     INSERT INTO sellers (email, password, name, phone, address, role, created_at, updated_at)
     SELECT 
-      email, 
-      password, 
-      name, 
-      phone, 
-      address,
+      email, password, name, phone, address,
       CASE WHEN role = 'admin' THEN 'admin' ELSE 'seller' END,
-      created_at, 
-      updated_at
-    FROM users 
-    WHERE user_type = 'seller'
+      created_at, updated_at
+    FROM users WHERE user_type = 'seller'
     ON CONFLICT (email) DO NOTHING;
-  ELSE
+  ELSIF has_phone AND has_address THEN
+    INSERT INTO sellers (email, password, name, phone, address, created_at, updated_at)
+    SELECT email, password, name, phone, address, created_at, updated_at
+    FROM users WHERE user_type = 'seller'
+    ON CONFLICT (email) DO NOTHING;
+  ELSIF has_role THEN
     INSERT INTO sellers (email, password, name, role, created_at, updated_at)
     SELECT 
-      email, 
-      password, 
-      name, 
+      email, password, name,
       CASE WHEN role = 'admin' THEN 'admin' ELSE 'seller' END,
-      created_at, 
-      updated_at
-    FROM users 
-    WHERE user_type = 'seller'
+      created_at, updated_at
+    FROM users WHERE user_type = 'seller'
+    ON CONFLICT (email) DO NOTHING;
+  ELSE
+    INSERT INTO sellers (email, password, name, created_at, updated_at)
+    SELECT email, password, name, created_at, updated_at
+    FROM users WHERE user_type = 'seller'
     ON CONFLICT (email) DO NOTHING;
   END IF;
 END $$;
 
 -- Migrate existing users with user_type='client' to clients table
 DO $$
+DECLARE
+  has_phone BOOLEAN;
+  has_address BOOLEAN;
+  has_role BOOLEAN;
+  has_user_type BOOLEAN;
 BEGIN
-  -- Check if phone and address columns exist in users table
-  IF EXISTS (
-    SELECT 1 FROM information_schema.columns 
-    WHERE table_name = 'users' AND column_name = 'phone'
-  ) AND EXISTS (
-    SELECT 1 FROM information_schema.columns 
-    WHERE table_name = 'users' AND column_name = 'address'
-  ) THEN
+  -- Check if users table exists
+  IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'users') THEN
+    RAISE NOTICE 'Users table does not exist, skipping migration';
+    RETURN;
+  END IF;
+
+  -- Check which columns exist
+  has_phone := EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'phone');
+  has_address := EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'address');
+  has_role := EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'role');
+  has_user_type := EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'user_type');
+
+  -- Skip if no user_type column
+  IF NOT has_user_type THEN
+    RAISE NOTICE 'No user_type column in users table, skipping migration';
+    RETURN;
+  END IF;
+
+  -- Build and execute based on available columns
+  IF has_phone AND has_address AND has_role THEN
     INSERT INTO clients (email, password, name, phone, address, role, created_at, updated_at)
     SELECT 
-      email, 
-      password, 
-      name, 
-      phone, 
-      address,
+      email, password, name, phone, address,
       CASE WHEN role = 'admin' THEN 'admin' ELSE 'client' END,
-      created_at, 
-      updated_at
-    FROM users 
-    WHERE user_type = 'client'
+      created_at, updated_at
+    FROM users WHERE user_type = 'client'
     ON CONFLICT (email) DO NOTHING;
-  ELSE
+  ELSIF has_phone AND has_address THEN
+    INSERT INTO clients (email, password, name, phone, address, created_at, updated_at)
+    SELECT email, password, name, phone, address, created_at, updated_at
+    FROM users WHERE user_type = 'client'
+    ON CONFLICT (email) DO NOTHING;
+  ELSIF has_role THEN
     INSERT INTO clients (email, password, name, role, created_at, updated_at)
     SELECT 
-      email, 
-      password, 
-      name, 
+      email, password, name,
       CASE WHEN role = 'admin' THEN 'admin' ELSE 'client' END,
-      created_at, 
-      updated_at
-    FROM users 
-    WHERE user_type = 'client'
+      created_at, updated_at
+    FROM users WHERE user_type = 'client'
+    ON CONFLICT (email) DO NOTHING;
+  ELSE
+    INSERT INTO clients (email, password, name, created_at, updated_at)
+    SELECT email, password, name, created_at, updated_at
+    FROM users WHERE user_type = 'client'
     ON CONFLICT (email) DO NOTHING;
   END IF;
 END $$;
