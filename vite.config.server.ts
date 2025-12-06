@@ -44,8 +44,8 @@ export default defineConfig({
         "uuid",
       ],
       output: {
-        format: "es",
-        entryFileNames: "[name].mjs",
+        format: "cjs",
+        entryFileNames: "[name].cjs",
       },
     },
     minify: false, // Keep readable for debugging
