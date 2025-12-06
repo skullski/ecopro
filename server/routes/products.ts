@@ -480,25 +480,43 @@ export const deleteProduct: RequestHandler = async (req, res) => {
 export const getSellerOrders: RequestHandler = async (req, res) => {
   try {
     const sellerId = (req as any).user?.id;
-
     if (!sellerId) {
       res.status(401).json({ error: "Authentication required" });
       return;
     }
 
-    const result = await pool.query(
+    // Marketplace orders
+    const marketplaceOrders = await pool.query(
       `SELECT 
-        o.*,
-        p.title as product_title,
-        p.images as product_images
+        o.id, o.product_id, o.status, o.total_price, o.created_at,
+        o.shipping_name, o.shipping_line1, o.shipping_line2, o.shipping_city, o.shipping_state, o.shipping_postal_code, o.shipping_country, o.shipping_phone,
+        p.title as product_title, p.images as product_images
       FROM marketplace_orders o
       LEFT JOIN marketplace_products p ON o.product_id = p.id
-      WHERE o.seller_id = $1
-      ORDER BY o.created_at DESC`,
+      WHERE o.seller_id = $1`,
       [sellerId]
     );
 
-    res.json(result.rows);
+
+    // Store orders (for store products) - match by product's client_id or seller_id, or order's client_id
+    const storeOrders = await pool.query(
+      `SELECT 
+        o.id, o.product_id, o.status, o.total_price, o.created_at,
+        o.customer_name as shipping_name, o.shipping_address as shipping_line1, NULL as shipping_line2, NULL as shipping_city, NULL as shipping_state, NULL as shipping_postal_code, NULL as shipping_country, o.customer_phone as shipping_phone,
+        p.title as product_title, p.images as product_images
+      FROM store_orders o
+      LEFT JOIN client_store_products p ON o.product_id = p.id
+      WHERE (p.client_id = $1 OR p.seller_id = $1 OR o.client_id = $1)
+      AND p.id IS NOT NULL`,
+      [sellerId]
+    );
+
+    console.log('[getSellerOrders] marketplaceOrders:', marketplaceOrders.rows);
+    console.log('[getSellerOrders] storeOrders:', storeOrders.rows);
+    // Merge and sort all orders by created_at desc
+    const allOrders = [...marketplaceOrders.rows, ...storeOrders.rows].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    console.log('[getSellerOrders] allOrders:', allOrders);
+    res.json(allOrders);
   } catch (error) {
     console.error("Get seller orders error:", error);
     res.status(500).json({ error: "Failed to fetch orders" });

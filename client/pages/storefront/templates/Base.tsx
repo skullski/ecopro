@@ -7,7 +7,7 @@ import { TemplateProps } from './types';
 export default function BaseTemplate(props: TemplateProps & { variant: 'classic' | 'stockist' | 'walidstore' | 'minimal' | 'catalog' }) {
   const { storeSlug, products, filtered, settings, categories, searchQuery, setSearchQuery, categoryFilter, setCategoryFilter, sortOption, setSortOption, viewMode, setViewMode, formatPrice, primaryColor, secondaryColor, bannerUrl, navigate } = props;
 
-  const featured = products.filter(p => p.is_featured).slice(0, 4);
+  const featured = products.filter(p => p.is_featured);
 
   return (
     <div className="min-h-screen bg-background">
@@ -179,9 +179,12 @@ export default function BaseTemplate(props: TemplateProps & { variant: 'classic'
                 <div key={product.id} onClick={() => {
                   const slug = product.slug;
                   if (slug && slug.length > 0) {
+                    // Debug: log navigation
+                    console.log('[Storefront] Navigating to', `/store/${storeSlug}/${slug}`);
                     navigate(`/store/${storeSlug}/${slug}`);
                   } else {
-                    navigate(`/product/${product.id}`);
+                    alert('Error: Product slug missing! Cannot preview this product.');
+                    console.error('[Storefront] Product slug missing for product:', product);
                   }
                 }} className="group bg-card/70 backdrop-blur supports-[backdrop-filter]:bg-card/60 rounded-2xl border overflow-hidden hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer ring-1 ring-transparent hover:ring-primary/10" role="button" tabIndex={0}>
                   <div className={`relative aspect-[4/5] bg-muted`}>

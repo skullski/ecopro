@@ -16,6 +16,7 @@ export default function BuyerInfo() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [addr, setAddr] = useState<AddressFormValue>({
+    name: "",
     line1: "",
     city: "",
     postalCode: "",
@@ -30,7 +31,7 @@ export default function BuyerInfo() {
       setName(u.name || "");
       setEmail(u.email || "");
       const def = u.addresses?.find((a) => a.id === u.defaultAddressId) || u.addresses?.[0];
-      if (def) setAddr({ line1: def.line1, line2: def.line2, city: def.city, state: def.state, postalCode: def.postalCode, country: def.country, phone: def.phone });
+      if (def) setAddr({ name: def.name || '', line1: def.line1, line2: def.line2, city: def.city, state: def.state, postalCode: def.postalCode, country: def.country, phone: def.phone });
     });
   }, []);
 

@@ -1,533 +1,217 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  ShoppingCart, Heart, Share2, Eye, Star, 
-  Package, Check, ArrowLeft, ExternalLink 
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+
+import React, { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
-
-interface PublicProduct {
-  id: number;
-  title: string;
-  description?: string;
-  price: number;
-  original_price?: number;
-  images?: string[];
-  category?: string;
-  stock_quantity: number;
-  status: string;
-  is_featured: boolean;
-  views: number;
-  client_id: number;
-  store_name?: string;
-  primary_color?: string;
-  secondary_color?: string;
-}
-
-export default function PublicProduct() {
-  // Support both legacy route params (:clientId/:slug) and new ones (:storeSlug/:productSlug)
-  const params = useParams();
-  const storeSlug = (params.storeSlug as string) || (params.clientId as string);
-  const productSlug = (params.productSlug as string) || (params.slug as string);
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const [product, setProduct] = useState<PublicProduct | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [selectedImage, setSelectedImage] = useState(0);
-  const [showCheckout, setShowCheckout] = useState(false);
-  const [quantity, setQuantity] = useState(1);
-  const [submitting, setSubmitting] = useState(false);
-  
-  // Customer info form state
-  const [customerInfo, setCustomerInfo] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: ''
-  });
-
-  useEffect(() => {
-    loadProduct();
-  }, [storeSlug, productSlug]);
-
-  const loadProduct = async () => {
-    try {
-      console.debug('[PublicProduct] fetching', { storeSlug, productSlug });
-      const res = await fetch(`/api/store/${storeSlug}/${productSlug}`);
-      if (!res.ok) {
-        const text = await res.text().catch(() => '');
-        throw new Error(text || 'Product not found');
-      }
-      const data = await res.json();
-      setProduct(data);
-    } catch (err: any) {
-      console.error('[PublicProduct] load error:', err);
-      setError(err.message || 'Failed to load product');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleShare = async () => {
-    const url = window.location.href;
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: product?.title,
-          text: product?.description,
-          url: url,
-        });
-      } catch (err) {
-        console.log('Share cancelled');
-      }
-    } else {
-      navigator.clipboard.writeText(url);
-      alert('Link copied to clipboard!');
-    }
-  };
-
-  const handleBuyNow = () => {
-    setShowCheckout(true);
-  };
-
-  const handleSubmitOrder = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!product || !storeSlug) return;
-    
-    setSubmitting(true);
-    try {
-      const totalPrice = product.price * quantity;
-      
-      const res = await fetch(`/api/storefront/${storeSlug}/orders`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          product_id: product.id,
-          quantity,
-          total_price: totalPrice,
-          customer_name: customerInfo.name,
-          customer_email: customerInfo.email,
-          customer_phone: customerInfo.phone,
-          customer_address: customerInfo.address,
-        }),
-      });
-
-      if (!res.ok) {
-        throw new Error('Failed to create order');
-      }
-
-      const data = await res.json();
-      
-      toast({
-        title: 'Order Placed Successfully!',
-        description: `Your order has been submitted. The seller will contact you soon.`,
-      });
-
-      // Reset form and close modal
-      setShowCheckout(false);
-      setCustomerInfo({ name: '', email: '', phone: '', address: '' });
-      setQuantity(1);
-      
-    } catch (err: any) {
-      toast({
-        title: 'Order Failed',
-        description: err.message || 'Failed to place order. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background dark:bg-black">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading product...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !product) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background dark:bg-black">
-        <div className="text-center space-y-4 p-6 bg-card dark:bg-gray-900 border dark:border-gray-700 rounded-xl">
-          <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto">
-            <Package className="w-8 h-8 text-red-600" />
-          </div>
-          <h2 className="text-2xl font-bold">Product Not Found</h2>
-          <p className="text-muted-foreground">
-            {error || 'This product may have been removed or is no longer available.'}
-          </p>
-          <div className="text-xs text-muted-foreground bg-muted/40 rounded-md p-3">
-            <div>storeSlug: <span className="font-mono">{storeSlug || 'null'}</span></div>
-            <div>productSlug: <span className="font-mono">{productSlug || 'null'}</span></div>
-          </div>
-          <Button onClick={() => navigate('/marketplace')}>
-            Browse Marketplace
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  const primaryColor = product?.primary_color || '#3b82f6';
-  const priceNum = Number(product?.price ?? 0);
-  const originalPriceNum = Number(product?.original_price ?? 0);
-  const hasOriginal = !!product?.original_price && originalPriceNum > 0 && originalPriceNum >= priceNum;
-  let discount = 0;
-  if (hasOriginal) {
-    const d = Math.round(((originalPriceNum - priceNum) / originalPriceNum) * 100);
-    discount = Number.isFinite(d) && d > 0 ? d : 0;
-  }
-
+import { Button } from '@/components/ui/button';
+import { Search, ShoppingCart, PlusCircle, Share2, Flag } from 'lucide-react';
+import { useTheme } from '@/contexts/ThemeContext';
+// Inline ThemeToggleButton (copied from Mercury template)
+function ThemeToggleButton() {
+  const { theme, toggle } = useTheme();
   return (
-    <div className="min-h-screen bg-background dark:bg-black">
-      {/* Header */}
-      <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/marketplace')}
-              className="gap-2"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back
-            </Button>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="gap-1">
-                <Eye className="w-3 h-3" />
-                {product.views} views
-              </Badge>
-              <Button variant="outline" size="sm" onClick={handleShare}>
-                <Share2 className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
-            {/* Left Column - Images */}
-            <div className="space-y-4">
-              {/* Main Image */}
-              <div className="relative aspect-square bg-muted rounded-2xl overflow-hidden border dark:bg-gray-900 dark:border-gray-700">
-                {Array.isArray(product.images) && product.images[selectedImage] ? (
-                  <img
-                    src={product.images[selectedImage]}
-                    alt={product.title || 'Product'}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Package className="w-24 h-24 text-muted-foreground opacity-20" />
-                  </div>
-                )}
-                {product.is_featured && (
-                  <Badge className="absolute top-4 left-4 bg-yellow-500">
-                    <Star className="w-3 h-3 mr-1 fill-current" />
-                    Featured
-                  </Badge>
-                )}
-                {discount > 0 && (
-                  <Badge className="absolute top-4 right-4 bg-red-500">
-                    -{discount}%
-                  </Badge>
-                )}
-              </div>
-
-              {/* Thumbnail Gallery */}
-              {Array.isArray(product.images) && product.images.length > 1 && (
-                <div className="grid grid-cols-4 gap-2">
-                  {product.images.map((img, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setSelectedImage(idx)}
-                      className={`aspect-square rounded-lg overflow-hidden border-2 transition-all ${
-                        idx === selectedImage
-                          ? 'border-primary scale-95'
-                          : 'border-transparent hover:border-muted-foreground/30'
-                      }`}
-                    >
-                      {img ? (
-                        <img
-                          src={img}
-                          alt={`${product.title || 'Product'} ${idx + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-muted">
-                          <Package className="w-6 h-6 text-muted-foreground opacity-30" />
-                        </div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Right Column - Details */}
-            <div className="space-y-6">
-              {/* Store Name */}
-              {product?.store_name && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Sold by</p>
-                  <p className="text-lg font-semibold" style={{ color: primaryColor }}>
-                    {product.store_name}
-                  </p>
-                </div>
-              )}
-
-              {/* Title & Category */}
-              <div>
-                <h1 className="text-3xl md:text-4xl font-bold mb-2">{product?.title || 'Product'}</h1>
-                {product?.category && (
-                  <Badge variant="secondary">{product.category}</Badge>
-                )}
-              </div>
-
-              {/* Price */}
-              <div className="flex items-baseline gap-3">
-                <span className="text-4xl font-bold" style={{ color: primaryColor }}>
-                  ${Number.isFinite(priceNum) ? priceNum.toFixed(2) : '0.00'}
-                </span>
-                {hasOriginal && (
-                  <span className="text-2xl text-muted-foreground line-through">
-                    ${originalPriceNum.toFixed(2)}
-                  </span>
-                )}
-              </div>
-
-              {/* Description */}
-              {product.description && (
-                <div className="prose prose-sm max-w-none">
-                  <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                    {product.description}
-                  </p>
-                </div>
-              )}
-
-              {/* Stock Status */}
-              <div className="flex items-center gap-2 p-4 bg-muted/50 rounded-lg dark:bg-gray-800/60">
-                <Package className="w-5 h-5 text-muted-foreground" />
-                <div>
-                  <p className="text-sm font-medium">Stock Status</p>
-                  <p className="text-sm text-muted-foreground">
-                    {product.stock_quantity > 0 
-                      ? `${product.stock_quantity} units available`
-                      : 'Contact seller for availability'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="space-y-3 pt-4">
-                <Button
-                  size="lg"
-                  className="w-full text-lg"
-                  style={{ 
-                    backgroundColor: primaryColor,
-                    color: 'white'
-                  }}
-                  disabled={product.stock_quantity === 0}
-                  onClick={handleBuyNow}
-                >
-                  <ShoppingCart className="w-5 h-5 mr-2" />
-                  {product.stock_quantity > 0 ? 'Buy Now' : 'Out of Stock'}
-                </Button>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <Button variant="outline" size="lg" className="w-full">
-                    <Heart className="w-5 h-5 mr-2" />
-                    Save
-                  </Button>
-                  <Button variant="outline" size="lg" className="w-full" onClick={handleShare}>
-                    <Share2 className="w-5 h-5 mr-2" />
-                    Share
-                  </Button>
-                </div>
-              </div>
-
-              {/* Trust Badges */}
-              <div className="space-y-3 pt-6 border-t">
-                <div className="flex items-center gap-3 text-sm">
-                  <Check className="w-5 h-5 text-green-600" />
-                  <span>Secure checkout</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <Check className="w-5 h-5 text-green-600" />
-                  <span>Buyer protection guarantee</span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <Check className="w-5 h-5 text-green-600" />
-                  <span>Direct from seller</span>
-                </div>
-              </div>
-
-              {/* CTA */}
-              <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-xl p-6 border dark:border-gray-700">
-                <h3 className="font-semibold mb-2">Interested in this product?</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Contact the seller directly or explore more products on our marketplace
-                </p>
-                <Button variant="outline" className="w-full" onClick={() => navigate('/marketplace')}>
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  Browse More Products
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Checkout Modal */}
-      <Dialog open={showCheckout} onOpenChange={setShowCheckout}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Complete Your Purchase</DialogTitle>
-            <DialogDescription>
-              Fill in your information to place your order
-            </DialogDescription>
-          </DialogHeader>
-          
-          <form onSubmit={handleSubmitOrder} className="space-y-4">
-            {/* Product Summary */}
-            <div className="p-4 bg-muted/50 rounded-lg space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="font-medium">{product?.title}</span>
-                <span className="font-semibold">${product?.price.toFixed(2)}</span>
-              </div>
-              
-              {/* Quantity Selector */}
-              <div className="flex items-center gap-3">
-                <Label htmlFor="quantity">Quantity:</Label>
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  >
-                    -
-                  </Button>
-                  <Input
-                    id="quantity"
-                    type="number"
-                    min="1"
-                    max={product?.stock_quantity}
-                    value={quantity}
-                    onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
-                    className="w-16 text-center"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setQuantity(Math.min(product?.stock_quantity || 1, quantity + 1))}
-                  >
-                    +
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="flex justify-between items-center pt-2 border-t">
-                <span className="font-semibold">Total:</span>
-                <span className="text-xl font-bold" style={{ color: primaryColor }}>
-                  ${((product?.price || 0) * quantity).toFixed(2)}
-                </span>
-              </div>
-            </div>
-
-            {/* Customer Information */}
-            <div className="space-y-3">
-              <div>
-                <Label htmlFor="name">Full Name *</Label>
-                <Input
-                  id="name"
-                  required
-                  value={customerInfo.name}
-                  onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })}
-                  placeholder="John Doe"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  required
-                  value={customerInfo.email}
-                  onChange={(e) => setCustomerInfo({ ...customerInfo, email: e.target.value })}
-                  placeholder="john@example.com"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="phone">Phone Number *</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  required
-                  value={customerInfo.phone}
-                  onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
-                  placeholder="+1 (555) 000-0000"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="address">Delivery Address *</Label>
-                <Textarea
-                  id="address"
-                  required
-                  value={customerInfo.address}
-                  onChange={(e) => setCustomerInfo({ ...customerInfo, address: e.target.value })}
-                  placeholder="Street address, city, state, zip code"
-                  rows={3}
-                />
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-3 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1"
-                onClick={() => setShowCheckout(false)}
-                disabled={submitting}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="flex-1"
-                style={{ 
-                  backgroundColor: primaryColor,
-                  color: 'white'
-                }}
-                disabled={submitting}
-              >
-                {submitting ? 'Placing Order...' : 'Place Order'}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-    </div>
+    <Button variant="outline" className="h-9 px-3 text-sm" onClick={toggle} style={{ borderColor: 'hsl(var(--border))' }}>
+      {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+    </Button>
   );
 }
+
+interface Product {
+  [key: string]: any;
+}
+
+const PublicProduct: React.FC = () => {
+  const { storeSlug, productSlug } = useParams();
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+  // Store header is now handled by StoreLayout
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState(0);
+  const [quantity, setQuantity] = useState(1);
+  const [seller, setSeller] = useState<any>(null);
+
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    setProduct(null);
+    setSeller(null);
+    fetch(`/api/store/${storeSlug}/${productSlug}`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error('Product not found');
+        return res.json();
+      })
+      .then((data) => {
+        const prod = data.product || data;
+        setProduct(prod);
+        // Fetch seller info if seller_id exists
+        if (prod.seller_id) {
+          fetch(`/api/sellers/${prod.seller_id}`)
+            .then(async (res) => {
+              if (res.ok) setSeller(await res.json());
+            });
+        }
+      })
+      .catch((err) => setError(err.message || 'Failed to load product'))
+      .finally(() => setLoading(false));
+  }, [storeSlug, productSlug]);
+
+  if (loading) return <div className="p-8 text-center">Loading...</div>;
+  if (error) return <div className="p-8 text-center text-red-600">{error}</div>;
+  if (!product) return <div className="p-8 text-center">No product found.</div>;
+
+  // Calculate discount
+  const hasDiscount = product.original_price && Number(product.original_price) > Number(product.price);
+  const discountPercent = hasDiscount
+    ? Math.round(((Number(product.original_price) - Number(product.price)) / Number(product.original_price)) * 100)
+    : 0;
+
+  return (
+    <>
+
+      {/* End Mercury Store Header */}
+
+      <div className="min-h-screen bg-[#f6f8fb] dark:bg-[#181a20] py-8 px-2 text-gray-900 dark:text-gray-100">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-8">
+        {/* Left: Image Gallery */}
+        <div className="md:w-1/2 w-full flex flex-col items-center">
+          <div className="w-full aspect-square bg-white dark:bg-[#23272f] rounded-2xl overflow-hidden flex items-center justify-center mb-4 shadow-lg border border-gray-100 dark:border-gray-700 relative">
+            {product.images && product.images.length > 0 ? (
+              <img
+                src={product.images[selectedImage]}
+                alt={product.title}
+                className="object-contain w-full h-full bg-white"
+                style={{ aspectRatio: '1/1', display: 'block' }}
+              />
+            ) : (
+              <div className="text-6xl text-gray-300">📦</div>
+            )}
+            {hasDiscount && (
+              <span className="absolute top-4 left-4 bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-bold">
+                -{discountPercent}%
+              </span>
+            )}
+          </div>
+          {product.images && product.images.length > 1 && (
+            <div className="flex gap-2 mb-2">
+              {product.images.map((img: string, idx: number) => (
+                <button
+                  key={idx}
+                  className={`w-14 h-14 rounded-xl border-2 transition-all duration-200 ${selectedImage === idx ? 'border-blue-600 shadow-lg' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                  onClick={() => setSelectedImage(idx)}
+                >
+                  <img src={img} alt={product.title + ' ' + (idx + 1)} className="object-contain w-full h-full rounded-xl bg-white" style={{ aspectRatio: '1/1', display: 'block' }} />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        {/* Right: Product Info */}
+        <div className="md:w-1/2 w-full flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-1">{product.title}</h1>
+            <div className="flex items-center gap-2 text-yellow-500 text-lg">
+              <span>★</span>
+              <span className="font-semibold text-gray-700">3.2</span>
+              <span className="text-gray-400">(206 reviews)</span>
+              <span className="text-green-600 ml-2">· 135 views</span>
+            </div>
+            <div className="flex items-end gap-3 mt-2">
+              <span className="text-4xl font-bold text-green-600">${product.price}</span>
+              {hasDiscount && (
+                <span className="text-2xl text-gray-400 dark:text-gray-500 line-through">${product.original_price}</span>
+              )}
+            </div>
+            <div className="flex gap-2 mt-2">
+              <span className="bg-green-100 dark:bg-green-900 dark:text-green-200 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">In Stock ({product.stock_quantity || 1} available)</span>
+              <span className="bg-gray-100 dark:bg-gray-800 dark:text-gray-300 text-gray-700 px-3 py-1 rounded-full text-xs font-semibold">used</span>
+            </div>
+            <div className="border-b my-4 dark:border-gray-700" />
+            <div>
+              <h2 className="font-semibold mb-1 text-gray-800 dark:text-gray-200">Description</h2>
+              <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line text-base">{product.description}</p>
+            </div>
+            <div className="flex flex-col gap-1 text-sm mt-2">
+              <div><span className="font-semibold dark:text-gray-200">Location:</span> New York, NY</div>
+              <div className="text-green-600 dark:text-green-400">Free shipping available</div>
+              <div className="text-blue-600 dark:text-blue-400">Buyer Protection</div>
+            </div>
+            <div className="bg-white dark:bg-[#23272f] border dark:border-gray-700 rounded-xl p-4 shadow flex flex-col gap-3 mt-4">
+              <h3 className="font-semibold mb-1 text-sm text-gray-700 dark:text-gray-200">Seller Information</h3>
+              <div className="flex items-center gap-3">
+                <img
+                  src={
+                    (seller && seller.avatar)
+                      ? seller.avatar
+                      : product.seller_avatar || 'https://api.dicebear.com/7.x/identicon/svg?seed=' + encodeURIComponent((seller && seller.name) || product.seller_name || 'seller')
+                  }
+                  alt={(seller && seller.name) || product.seller_name || 'Seller'}
+                  className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-gray-700"
+                />
+                <div>
+                  <div className="font-medium text-gray-900 dark:text-white">{(seller && seller.name) || product.seller_name || 'imad'}</div>
+                  <div className="text-gray-600 dark:text-gray-400 text-xs">{(seller && seller.email) || product.seller_email || 'ima2d@gmail.com'}</div>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 mt-4">
+              <span className="font-medium dark:text-gray-200">Quantity:</span>
+              <button className="w-8 h-8 border rounded dark:bg-[#23272f] dark:border-gray-700 dark:text-white" onClick={() => setQuantity(q => Math.max(1, q - 1))}>-</button>
+              <input
+                type="number"
+                className="w-12 text-center border rounded dark:bg-[#23272f] dark:border-gray-700 dark:text-white"
+                min={1}
+                max={product.stock_quantity || 1}
+                value={quantity}
+                onChange={e => setQuantity(Math.max(1, Math.min(product.stock_quantity || 1, Number(e.target.value))))}
+              />
+              <button className="w-8 h-8 border rounded dark:bg-[#23272f] dark:border-gray-700 dark:text-white" onClick={() => setQuantity(q => Math.min(product.stock_quantity || 1, q + 1))}>+</button>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <Button
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg text-lg flex items-center justify-center gap-2 shadow-md dark:bg-green-700 dark:hover:bg-green-800"
+                size="lg"
+                onClick={() => navigate(`/store/${storeSlug}/checkout/${productSlug}`)}
+              >
+                <ShoppingCart className="w-5 h-5" /> Buy Now
+              </Button>
+              <Button variant="outline" className="flex-1 border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-900 dark:text-white font-bold py-3 px-4 rounded-lg text-lg flex items-center justify-center gap-2 shadow-md" size="lg">
+                <PlusCircle className="w-5 h-5" /> Add to Cart
+              </Button>
+            </div>
+            <div className="flex gap-2 mt-2">
+              <Button variant="outline" className="flex-1 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 py-2 rounded-lg flex items-center justify-center gap-2" size="sm">
+                <Share2 className="w-4 h-4" /> Share
+              </Button>
+              <Button variant="outline" className="flex-1 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-red-500 py-2 rounded-lg flex items-center justify-center gap-2" size="sm">
+                <Flag className="w-4 h-4" /> Report
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* Bottom Feature Cards */}
+
+      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+        <div className="bg-white dark:bg-[#23272f] rounded-xl shadow p-6 flex flex-col items-center text-center">
+          <span className="material-icons text-4xl text-blue-500 dark:text-blue-400 mb-2">local_shipping</span>
+          <div className="font-bold mb-1 dark:text-white">Fast Delivery</div>
+          <div className="text-gray-500 dark:text-gray-300 text-sm">Get your products delivered quickly and safely</div>
+        </div>
+        <div className="bg-white dark:bg-[#23272f] rounded-xl shadow p-6 flex flex-col items-center text-center">
+          <span className="material-icons text-4xl text-blue-500 dark:text-blue-400 mb-2">verified_user</span>
+          <div className="font-bold mb-1 dark:text-white">Buyer Protection</div>
+          <div className="text-gray-500 dark:text-gray-300 text-sm">Your purchase is protected with our guarantee</div>
+        </div>
+        <div className="bg-white dark:bg-[#23272f] rounded-xl shadow p-6 flex flex-col items-center text-center">
+          <span className="material-icons text-4xl text-blue-500 dark:text-blue-400 mb-2">star</span>
+          <div className="font-bold mb-1 dark:text-white">Quality Verified</div>
+          <div className="text-gray-500 dark:text-gray-300 text-sm">All products are verified by our team</div>
+        </div>
+      </div>
+    </div>
+    </>
+  );
+}
+
+export default PublicProduct;

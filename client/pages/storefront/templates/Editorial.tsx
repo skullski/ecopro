@@ -6,7 +6,7 @@ import { TemplateProps } from './types';
 
 export default function EditorialTemplate(props: TemplateProps & { mode: 'supreme' | 'fullframe' }) {
   const { storeSlug, products, filtered, settings, categories, searchQuery, setSearchQuery, formatPrice, primaryColor, secondaryColor, bannerUrl, navigate } = props;
-  const featured = products.filter(p => p.is_featured).slice(0, 8);
+  const featured = products.filter(p => p.is_featured);
   const bigTitle = props.mode === 'fullframe';
 
   return (

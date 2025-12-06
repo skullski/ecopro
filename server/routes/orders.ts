@@ -66,6 +66,10 @@ export const createOrder: RequestHandler = async (req, res) => {
       order: result.rows[0],
       message: 'Order created successfully'
     });
+    // Broadcast order creation
+    if (global.broadcastOrderUpdate) {
+      global.broadcastOrderUpdate(result.rows[0]);
+    }
 
     // Audit log
     try {
@@ -108,7 +112,6 @@ export const getClientOrders: RequestHandler = async (req, res) => {
       res.status(401).json({ error: "Not authenticated" });
       return;
     }
-
     const result = await pool.query(
       `SELECT 
         o.*,
@@ -121,7 +124,6 @@ export const getClientOrders: RequestHandler = async (req, res) => {
       ORDER BY o.created_at DESC`,
       [req.user.id]
     );
-
     res.json(result.rows);
   } catch (error) {
     console.error("Get client orders error:", error);
@@ -163,6 +165,10 @@ export const updateOrderStatus: RequestHandler = async (req, res) => {
     }
 
     res.json(result.rows[0]);
+    // Broadcast order status update
+    if (global.broadcastOrderUpdate) {
+      global.broadcastOrderUpdate(result.rows[0]);
+    }
   } catch (error) {
     console.error("Update order status error:", error);
     res.status(500).json({ error: "Failed to update order" });

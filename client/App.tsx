@@ -53,6 +53,7 @@ import PublicProduct from "./pages/PublicProduct";
 import Storefront from "./pages/Storefront";
 import Checkout from "./pages/Checkout";
 import MyStore from "./pages/MyStore";
+import StoreLayout from "./pages/StoreLayout";
 
 // Orders submenu pages
 import AddOrder from "./pages/admin/orders/AddOrder";
@@ -595,10 +596,12 @@ const App = () => (
                   <Route path="/guest-checkout/:productId" element={<GuestCheckout />} />
                   {/* My Store - logged in client viewing their own store */}
                   <Route path="/my-store" element={<MyStore />} />
-                  {/* Public storefront routes (client's store by store_slug) */}
-                  <Route path="/store/:storeSlug" element={<Storefront />} />
-                  <Route path="/store/:storeSlug/:productSlug" element={<PublicProduct />} />
-                  <Route path="/store/:storeSlug/checkout/:productSlug" element={<Checkout />} />
+                  {/* Public storefront routes (client's store by store_slug) with persistent header */}
+                  <Route path="/store/:storeSlug" element={<StoreLayout />}>
+                    <Route index element={<Storefront />} />
+                    <Route path=":productSlug" element={<PublicProduct />} />
+                    <Route path="checkout/:productSlug" element={<Checkout />} />
+                  </Route>
                   {/* REMOVE duplicate/non-existent custom routes */}
                   {/* <Route path="/product/:id" element={<ProductDetail />} /> */}
                   {/* <Route path="/cart" element={<Cart />} /> */}

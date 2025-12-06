@@ -96,7 +96,11 @@ export default function MercuryTemplate(props: TemplateProps & { canManage?: boo
       alert('Upload failed');
     }
   }
-  const featured = products.slice(0, 6);
+  // Show all featured products (no hard limit). If none are explicitly featured, fall back to showing all products.
+  const featured = products.filter(p => p.is_featured);
+
+  // If there are no featured flags, show all products as featured (no limits)
+  const featuredToShow = (featured && featured.length > 0) ? featured : products;
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState<{ title: string; description: string; price: string; category: string }>({ title: '', description: '', price: '', category: '' });
 
@@ -226,7 +230,7 @@ export default function MercuryTemplate(props: TemplateProps & { canManage?: boo
                 alt="Hero"
                 className="w-full h-full"
                 decoding="async"
-                fetchpriority="high"
+                fetchPriority="high"
               />
             </div>
 
@@ -267,7 +271,7 @@ export default function MercuryTemplate(props: TemplateProps & { canManage?: boo
           <div>
             <div className="pb-2 mb-4 font-semibold tracking-wide" style={{ borderBottom: '1px solid hsl(var(--border))' }}>FEATURED PRODUCTS</div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {featured.map((product) => (
+              {featuredToShow.map((product) => (
                 <div
                   key={product.id}
                   className="rounded-2xl p-4 transition cursor-pointer futuristic-neon flex flex-col"
@@ -314,6 +318,37 @@ export default function MercuryTemplate(props: TemplateProps & { canManage?: boo
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* All Products (no limit) */}
+          <div className="container max-w-7xl mx-auto px-4 py-8">
+            <div className="pb-2 mb-4 font-semibold tracking-wide" style={{ borderBottom: '1px solid hsl(var(--border))' }}>ALL PRODUCTS</div>
+            {filtered.length === 0 ? (
+              <div className="text-center py-16 text-muted-foreground">No products found</div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {filtered.map((product) => (
+                  <button
+                    key={product.id}
+                    className="group rounded-2xl p-4 transition cursor-pointer futuristic-neon flex flex-col"
+                    onClick={() => {
+                      const slug = product.slug;
+                      if (slug && slug.length > 0) {
+                        navigate(`/store/${storeSlug}/${slug}`);
+                      } else {
+                        navigate(`/product/${product.id}`);
+                      }
+                    }}
+                  >
+                    <img src={product.images?.[0] || DEFAULTS.product} alt={product.title} className="rounded-2xl w-full h-[220px] object-cover" />
+                    <div className="mt-3 flex items-center justify-between">
+                      <span className="text-base font-medium truncate" style={{ color: 'hsl(var(--foreground))' }}>{product.title}</span>
+                      <span className="text-base font-bold" style={{ color: 'hsl(var(--foreground))' }}>{formatPrice(Number(product.price))}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

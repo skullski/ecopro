@@ -42,9 +42,20 @@ export default function OrdersAdmin() {
 
   useEffect(()=>{
     loadOrders();
+    // Connect to WebSocket for real-time updates
+    const ws = new window.WebSocket(`ws://${window.location.hostname}:3000`);
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'order-update') {
+          loadOrders(true);
+        }
+      } catch {}
+    };
+    return () => ws.close();
   },[]);
 
-  // Poll orders every 10 seconds for near-real-time updates
+  // Poll orders every 10 seconds for near-real-time updates (fallback)
   useEffect(() => {
     const id = setInterval(() => {
       loadOrders(true);

@@ -5,7 +5,7 @@ export interface JWTPayload {
   id: string; // user id
   userId?: string; // alias for compatibility
   email: string;
-  role: "user" | "admin";
+  role: "user" | "admin" | "seller";
   user_type: "admin" | "client" | "seller";
   // Add other JWT payload properties as needed
 }

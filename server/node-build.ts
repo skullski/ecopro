@@ -16,11 +16,31 @@ async function startServer() {
     console.log(`✅ Default admin user created: ${adminEmail}`);
     console.log(`🔑 Default password: ${adminPassword}`);
 
-    // Create and start server
+    // Create and start server with WebSocket support
     const app = createServer();
     const port = process.env.PORT || 3000;
+    const http = require('http');
+    const server = http.createServer(app);
+    // WebSocket setup
+    const WebSocket = require('ws');
+    const wss = new WebSocket.Server({ server });
 
-    app.listen(port, () => {
+    wss.on('connection', (ws: any) => {
+      ws.on('message', (msg: string) => {
+        // Optionally handle incoming messages from clients
+      });
+    });
+
+    // Broadcast function for order updates
+    function broadcastOrderUpdate(order: any) {
+      wss.clients.forEach((client: any) => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({ type: 'order-update', order }));
+        }
+      });
+    }
+
+    server.listen(port, () => {
       console.log(`\n🚀 EcoPro server running on port ${port}`);
       console.log(`📱 Frontend: http://localhost:${port}`);
       console.log(`🔧 API: http://localhost:${port}/api`);

@@ -26,6 +26,8 @@ export interface StoreSettings {
   hero_main_url?: string | null;
   hero_tile1_url?: string | null;
   hero_tile2_url?: string | null;
+  owner_name?: string; // Store owner display name
+  owner_email?: string; // Store owner email
 }
 
 export interface TemplateProps {

@@ -55,7 +55,8 @@ export const getStorefrontSettings: RequestHandler = async (req, res) => {
       `SELECT store_name, store_description, store_logo, 
               primary_color, secondary_color,
               template, banner_url, currency_code,
-              hero_main_url, hero_tile1_url, hero_tile2_url
+              hero_main_url, hero_tile1_url, hero_tile2_url,
+              owner_name, owner_email
        FROM client_store_settings
        WHERE store_slug = $1`,
       [storeSlug]
@@ -164,6 +165,7 @@ export const getPublicProduct: RequestHandler = async (req, res) => {
 export const createPublicStoreOrder: RequestHandler = async (req, res) => {
   const { storeSlug } = req.params as any;
   try {
+    console.log('[createPublicStoreOrder] Incoming:', req.body);
     const {
       product_id,
       quantity,
@@ -180,6 +182,7 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
     }
 
     const cs = await pool.query('SELECT client_id, store_name FROM client_store_settings WHERE store_slug = $1', [storeSlug]);
+    console.log('[createPublicStoreOrder] Store lookup:', cs.rows);
     if (!cs.rows.length) {
       res.status(404).json({ error: 'Store not found' });
       return;
@@ -187,6 +190,18 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
     const clientId = cs.rows[0].client_id;
     const storeName = cs.rows[0].store_name || 'EcoPro Store';
 
+    console.log('[createPublicStoreOrder] Insert order params:', [
+      product_id,
+      clientId,
+      quantity,
+      total_price,
+      customer_name,
+      customer_email || null,
+      customer_phone || null,
+      customer_address || null,
+      'pending',
+      'unpaid'
+    ]);
     const result = await pool.query(
       `INSERT INTO store_orders (
         product_id, client_id, quantity, total_price,
@@ -206,7 +221,7 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
         'unpaid'
       ]
     );
-
+    console.log('[createPublicStoreOrder] Inserted order:', result.rows);
     // Audit log
     try {
       await pool.query(

@@ -204,30 +204,38 @@ export default function Storefront() {
           <span className="font-semibold">{t('storefront.template')}:</span>
           <span className="font-mono">{template}</span>
         </div>
-        {/* Removed Roles box per request */}
       </div>
-      {RenderStorefront(template as any, {
-    storeSlug: storeSlug!,
-    products,
-    filtered: filteredProducts,
-    settings: storeSettings,
-    categories,
-    searchQuery,
-    setSearchQuery,
-    categoryFilter,
-    setCategoryFilter,
-    sortOption,
-    setSortOption,
-    viewMode,
-    setViewMode,
-    formatPrice: (n: number) => formatPrice(n),
-    primaryColor,
-    secondaryColor,
-    bannerUrl: bannerUrl || null,
-        navigate: (to: any) => navigate(to),
-        // Public storefront: do not show management controls
-        canManage: false,
-      })}
+      {products.length === 0 ? (
+        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center gap-4">
+          <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-2">
+            <svg className="w-10 h-10 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M3 12h18M3 17h18"/></svg>
+          </div>
+          <h2 className="text-2xl font-bold">{t('storefront.noProducts') || 'No products yet'}</h2>
+          <p className="text-muted-foreground">{t('storefront.noProductsDesc') || 'This store has no products yet. Please check back later.'}</p>
+        </div>
+      ) : (
+        RenderStorefront(template as any, {
+          storeSlug: storeSlug!,
+          products,
+          filtered: filteredProducts,
+          settings: storeSettings,
+          categories,
+          searchQuery,
+          setSearchQuery,
+          categoryFilter,
+          setCategoryFilter,
+          sortOption,
+          setSortOption,
+          viewMode,
+          setViewMode,
+          formatPrice: (n: number) => formatPrice(n),
+          primaryColor,
+          secondaryColor,
+          bannerUrl: bannerUrl || null,
+          navigate: (to: any) => navigate(to),
+          canManage: false,
+        })
+      )}
     </>
   );
 }

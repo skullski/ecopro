@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { 
   Plus, Search, Eye, Copy, ExternalLink, Edit, Trash2, 
   Star, Package, DollarSign, Image as ImageIcon, Settings,
-  Link as LinkIcon, Check, Share2, Grid, List, Store as StoreIcon, CheckCircle2
+  Link as LinkIcon, Check, Share2, Grid, List, Store as StoreIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,449 +53,732 @@ interface StoreProduct {
 }
 
 export default function Store() {
-  const navigate = useNavigate();
+  // Copy store link to clipboard
+  // This must be above all JSX usage
+  let storeSettingsRef: any = null;
+  let setStoreLinkCopiedRef: any = null;
+  const copyStoreLink = () => {
+    if (!storeSettingsRef?.store_slug) return;
+    const storeUrl = `${window.location.origin}/store/${storeSettingsRef.store_slug}`;
+    navigator.clipboard.writeText(storeUrl);
+    setStoreLinkCopiedRef(true);
+    setTimeout(() => setStoreLinkCopiedRef(false), 2000);
+  };
+
+  // Fetch store settings and products on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem('authToken');
+        // Fetch store settings
+        const settingsRes = await fetch('/api/client/store/settings', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (settingsRes.ok) {
+          const settingsData = await settingsRes.json();
+          setStoreSettings(settingsData);
+        }
+        // Fetch products
+        const productsRes = await fetch('/api/client/store/products', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (productsRes.ok) {
+          const productsData = await productsRes.json();
+          setProducts(productsData);
+          setFilteredProducts(productsData);
+        }
+      } catch (err) {
+        console.error('Failed to fetch store data', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+  // Product action states
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareLink, setShareLink] = useState('');
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+          // Product action handlers
+          const handleCreateProduct = async () => {
+            try {
+              const token = localStorage.getItem('authToken');
+              const res = await fetch('/api/client/store/products', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify(formData)
+              });
+              if (res.ok) {
+                // reload products
+                setShowAddModal(false);
+                setFormData({ status: 'active', is_featured: false, stock_quantity: 0 });
+              } else {
+                const error = await res.json();
+                alert(error.error || 'Failed to create product');
+              }
+            } catch (error) {
+              console.error('Create product error:', error);
+              alert('Failed to create product');
+            }
+          };
+          const handleUpdateProduct = async () => {
+            if (!selectedProduct) return;
+            try {
+              const token = localStorage.getItem('authToken');
+              const res = await fetch(`/api/client/store/products/${selectedProduct.id}`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify(formData)
+              });
+              if (res.ok) {
+                // reload products
+                setShowEditModal(false);
+                setSelectedProduct(null);
+                setFormData({ status: 'active', is_featured: false, stock_quantity: 0 });
+              } else {
+                const error = await res.json();
+                alert(error.error || 'Failed to update product');
+              }
+            } catch (error) {
+              console.error('Update product error:', error);
+              alert('Failed to update product');
+            }
+          };
+          const handleDeleteProduct = async () => {
+            if (!selectedProduct) return;
+            try {
+              const token = localStorage.getItem('authToken');
+              const res = await fetch(`/api/client/store/products/${selectedProduct.id}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` }
+              });
+              if (res.ok) {
+                // reload products
+                setShowDeleteDialog(false);
+                setSelectedProduct(null);
+              } else {
+                const error = await res.json();
+                alert(error.error || 'Failed to delete product');
+              }
+            } catch (error) {
+              console.error('Delete product error:', error);
+              alert('Failed to delete product');
+            }
+          };
+          const handleGetShareLink = async (product: StoreProduct) => {
+            try {
+              const token = localStorage.getItem('authToken');
+              const res = await fetch(`/api/client/store/products/${product.id}/share-link`, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+              if (res.ok) {
+                const data = await res.json();
+                setShareLink(data.shareLink);
+                setSelectedProduct(product);
+                setShowShareModal(true);
+                setLinkCopied(false);
+              }
+            } catch (error) {
+              console.error('Get share link error:', error);
+            }
+          };
+  // Product form state
+  const [formData, setFormData] = useState<Partial<StoreProduct>>({
+    status: 'active',
+    is_featured: false,
+    stock_quantity: 0,
+  });
+  // Product modal state
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  // Product logic
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [statsServer, setStatsServer] = useState<{total_products:number;active_products:number;draft_products:number;total_views:number}|null>(null);
+  // Handler for saving store settings
+  const saveStoreSettings = async () => {
+          try {
+            setSavingSettings(true);
+            const token = localStorage.getItem('authToken');
+            const res = await fetch('/api/client/store/settings', {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                store_name: storeSettings.store_name || null,
+                owner_name: storeSettings.seller_name || storeSettings.owner_name || null,
+                owner_email: storeSettings.seller_email || storeSettings.owner_email || null,
+                seller_name: storeSettings.seller_name || null,
+                seller_email: storeSettings.seller_email || null,
+                store_description: storeSettings.store_description || null,
+                store_logo: storeSettings.store_logo || null,
+                store_images: storeSettings.store_images || [],
+                template: storeSettings.template || 'classic',
+                banner_url: storeSettings.banner_url || null,
+                hero_main_url: storeSettings.hero_main_url || null,
+                hero_tile1_url: storeSettings.hero_tile1_url || null,
+                hero_tile2_url: storeSettings.hero_tile2_url || null,
+                currency_code: storeSettings.currency_code || 'DZD',
+              }),
+            });
+            if (!res.ok) throw new Error('Save failed');
+            const data = await res.json();
+            setStoreSettings(data);
+          } catch (e) {
+            console.error('Failed to save store settings', e);
+          } finally {
+            setSavingSettings(false);
+          }
+        };
+      // Product states
   const [products, setProducts] = useState<StoreProduct[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<StoreProduct[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [loading, setLoading] = useState(true);
-  const [storeSettings, setStoreSettings] = useState<any>({});
-  const [savingSettings, setSavingSettings] = useState(false);
-  const [showSavedOverlay, setShowSavedOverlay] = useState(false);
-  const [uploadingLogo, setUploadingLogo] = useState(false);
-  const [uploadingBanner, setUploadingBanner] = useState(false);
-  const [uploadingHeroTile1, setUploadingHeroTile1] = useState(false);
-  const [uploadingHeroTile2, setUploadingHeroTile2] = useState(false);
-  const [statsServer, setStatsServer] = useState<{total_products:number;active_products:number;draft_products:number;total_views:number}|null>(null);
-  
-  // Modals
+  // Product modals
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showShareModal, setShowShareModal] = useState(false);
-  // Store settings (simplified) for logo & banner image uploads and currency
-  const [showStoreSettingsModal, setShowStoreSettingsModal] = useState(false);
-  
   // Selected product
   const [selectedProduct, setSelectedProduct] = useState<StoreProduct | null>(null);
-  const [shareLink, setShareLink] = useState('');
-  const [linkCopied, setLinkCopied] = useState(false);
-  const [storeLinkCopied, setStoreLinkCopied] = useState(false);
-
-  // Public-facing slug used for storefront URLs
-  const storeSlug = storeSettings.store_slug;
-
-  const [formData, setFormData] = useState<Partial<StoreProduct>>({
-    status: 'active',
-    is_featured: false,
-    stock_quantity: 0,
+  // Modal and tab states
+  const [showStoreSettingsModal, setShowStoreSettingsModal] = useState(false);
+  const [selectedTab, setSelectedTab] = useState(0);
+  const [storeSettings, setStoreSettings] = useState<any>({
+    store_slug: '',
+    store_name: '',
+    seller_name: '',
+    seller_email: '',
+    store_description: '',
+    store_logo: '',
+    store_images: [],
+    template: 'classic',
+    banner_url: '',
+    hero_main_url: '',
+    hero_tile1_url: '',
+    hero_tile2_url: '',
+    currency_code: 'DZD',
   });
-  const [uploading, setUploading] = useState(false);
-
-  useEffect(() => {
-    loadProducts();
-    loadStoreSettings();
-    loadStats();
-  }, []);
-
-  useEffect(() => {
-    filterProducts();
-  }, [products, searchQuery, statusFilter]);
-
-  // Fallback: if settings loaded without slug but we have products,
-  // derive store_slug via a product share-link response (which includes store_slug)
-  useEffect(() => {
-    const deriveSlug = async () => {
-      if (storeSettings?.store_slug || products.length === 0) return;
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [uploadingStoreImages, setUploadingStoreImages] = useState(false);
+  const [storeLinkCopied, setStoreLinkCopied] = useState(false);
+  // Set refs for copyStoreLink
+  storeSettingsRef = storeSettings;
+  setStoreLinkCopiedRef = setStoreLinkCopied;
+    // Handlers for uploads and removals
+    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
       try {
+        setUploadingLogo(true);
+        const formData = new FormData();
+        formData.append('image', file);
         const token = localStorage.getItem('authToken');
-        const first = products[0];
-        const res = await fetch(`/api/client/store/products/${first.id}/share-link`, {
-          headers: { Authorization: `Bearer ${token}` }
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
         });
-        if (res.ok) {
-          const data = await res.json();
-          if (data?.store_slug) {
-            setStoreSettings((s: any) => ({ ...s, store_slug: data.store_slug }));
-          }
-        }
-      } catch (e) {
-        // Non-fatal
-        console.error('Fallback derive store slug failed', e);
+        if (!res.ok) throw new Error('Upload failed');
+        const data = await res.json();
+        setStoreSettings((s: any) => ({ ...s, store_logo: data.url }));
+      } catch (error) {
+        console.error('Failed to upload logo:', error);
+        alert('Failed to upload image. Please try again.');
+      } finally {
+        setUploadingLogo(false);
       }
     };
-    deriveSlug();
-  }, [products, storeSettings?.store_slug]);
-
-  const loadProducts = async () => {
-    try {
-      const token = localStorage.getItem('authToken');
-      
-      const res = await fetch('/api/client/store/products', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setProducts(data);
-      } else {
-        console.error('Failed to fetch products:', res.status);
-      }
-    } catch (error) {
-      console.error('Failed to load products:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadStoreSettings = async () => {
-    try {
-      const token = localStorage.getItem('authToken');
-      const res = await fetch('/api/client/store/settings', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setStoreSettings(data || {});
-      }
-    } catch (e) {
-      console.error('Failed to load store settings', e);
-    }
-  };
-
-  const loadStats = async () => {
-    try {
-      const token = localStorage.getItem('authToken');
-      const res = await fetch('/api/client/store/stats', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setStatsServer(data);
-      }
-    } catch (e) {
-      // Non-fatal
-      console.error('Failed to load stats', e);
-    }
-  };
-
-  const saveStoreSettings = async () => {
-    try {
-      setSavingSettings(true);
-      const token = localStorage.getItem('authToken');
-      const res = await fetch('/api/client/store/settings', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          store_name: storeSettings.store_name || null,
-          store_description: storeSettings.store_description || null,
-          store_logo: storeSettings.store_logo || null,
-          banner_url: storeSettings.banner_url || null,
-          hero_tile1_url: storeSettings.hero_tile1_url || null,
-          hero_tile2_url: storeSettings.hero_tile2_url || null,
-          // Keep payload minimal: only name, logo, banner
-        }),
-      });
-      if (!res.ok) throw new Error('Save failed');
-      const data = await res.json();
-      setStoreSettings(data);
-      setShowSavedOverlay(true);
-      setTimeout(() => setShowSavedOverlay(false), 1600);
-    } catch (e) {
-      console.error('Failed to save store settings', e);
-    } finally {
-      setSavingSettings(false);
-    }
-  };
-
-  // Save only provided updates, merging with existing minimal fields
-  const saveSettingsPartial = async (updates: Record<string, any>) => {
-    try {
-      const token = localStorage.getItem('authToken');
-      const payload = {
-        store_name: storeSettings.store_name || null,
-        store_description: storeSettings.store_description || null,
-        store_logo: storeSettings.store_logo || null,
-        banner_url: storeSettings.banner_url || null,
-        hero_tile1_url: storeSettings.hero_tile1_url || null,
-        hero_tile2_url: storeSettings.hero_tile2_url || null,
-        ...updates,
-      };
-      const res = await fetch('/api/client/store/settings', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error('Save failed');
-      const data = await res.json();
-      setStoreSettings(data);
-      setShowSavedOverlay(true);
-      setTimeout(() => setShowSavedOverlay(false), 1600);
-    } catch (e) {
-      console.error('Failed to save store settings (partial)', e);
-    }
-  };
-
-  // Helpers to manage comma-separated slideshow lists
-  const splitList = (val?: string) => {
-    const arr = (val || '').split(',').map(s=>s.trim()).filter(Boolean);
-    const seen = new Set<string>();
-    return arr.filter(u => {
-      const key = u.toLowerCase();
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-  };
-  const joinList = (arr: string[]) => arr.join(',');
-  const removeFromList = async (field: 'banner_url'|'hero_tile1_url'|'hero_tile2_url', url: string) => {
-    const current = splitList(storeSettings[field]);
-    const next = current.filter(u => u !== url);
-    const payload: any = {};
-    payload[field] = joinList(next);
-    await saveSettingsPartial(payload);
-  };
-
-  const handleHeroTile1Upload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    try {
-      setUploadingHeroTile1(true);
-      const token = localStorage.getItem('authToken');
-      const urls: string[] = [];
-      for (const file of Array.from(files)) {
+    const removeLogo = () => {
+      setStoreSettings((s: any) => ({ ...s, store_logo: '' }));
+    };
+    const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      try {
+        setUploadingBanner(true);
         const formData = new FormData();
         formData.append('image', file);
-        const res = await fetch('/api/upload', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formData });
+        const token = localStorage.getItem('authToken');
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
         if (!res.ok) throw new Error('Upload failed');
         const data = await res.json();
-        urls.push(data.url);
+        setStoreSettings((s: any) => ({ ...s, banner_url: data.url }));
+      } catch (error) {
+        console.error('Failed to upload banner:', error);
+        alert('Failed to upload image. Please try again.');
+      } finally {
+        setUploadingBanner(false);
       }
-      const prev = (storeSettings.hero_tile1_url || '').split(',').map((s:string)=>s.trim()).filter(Boolean);
-      const combined = [...prev, ...urls].join(',');
-      setStoreSettings((s: any) => ({ ...s, hero_tile1_url: combined }));
-      await saveSettingsPartial({ hero_tile1_url: combined });
-    } catch (error) {
-      console.error('Failed to upload hero tile 1:', error);
-      alert('Failed to upload image(s). Please try again.');
-    } finally {
-      setUploadingHeroTile1(false);
-      e.target.value = '';
-    }
-  };
-
-  const handleHeroTile2Upload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    try {
-      setUploadingHeroTile2(true);
-      const token = localStorage.getItem('authToken');
-      const urls: string[] = [];
-      for (const file of Array.from(files)) {
+    };
+    const removeBanner = () => {
+      setStoreSettings((s: any) => ({ ...s, banner_url: '' }));
+    };
+    const handleFieldUpload = async (field: string, e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      try {
         const formData = new FormData();
         formData.append('image', file);
-        const res = await fetch('/api/upload', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formData });
+        const token = localStorage.getItem('authToken');
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
         if (!res.ok) throw new Error('Upload failed');
         const data = await res.json();
-        urls.push(data.url);
+        setStoreSettings((s: any) => ({ ...s, [field]: data.url }));
+      } catch (err) {
+        console.error('Field upload error', err);
+        alert('Failed to upload image');
+      } finally {
+        if (e && (e.target as HTMLInputElement)) (e.target as HTMLInputElement).value = '';
       }
-      const prev = (storeSettings.hero_tile2_url || '').split(',').map((s:string)=>s.trim()).filter(Boolean);
-      const combined = [...prev, ...urls].join(',');
-      setStoreSettings((s: any) => ({ ...s, hero_tile2_url: combined }));
-      await saveSettingsPartial({ hero_tile2_url: combined });
-    } catch (error) {
-      console.error('Failed to upload hero tile 2:', error);
-      alert('Failed to upload image(s). Please try again.');
-    } finally {
-      setUploadingHeroTile2(false);
-      e.target.value = '';
-    }
-  };
-
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      setUploadingLogo(true);
-      const formData = new FormData();
-      formData.append('image', file);
-
-      const token = localStorage.getItem('authToken');
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
+    };
+    const removeField = (field: string) => {
+      setStoreSettings((s: any) => ({ ...s, [field]: '' }));
+    };
+    const handleStoreImagesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+      setUploadingStoreImages(true);
+      try {
+        const token = localStorage.getItem('authToken');
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          if (!file.type.startsWith('image/')) continue;
+          const form = new FormData();
+          form.append('image', file);
+          const res = await fetch('/api/upload', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            body: form,
+          });
+          if (!res.ok) continue;
+          const data = await res.json();
+          setStoreSettings((s: any) => {
+            const prev: string[] = Array.isArray(s?.store_images) ? s.store_images : [];
+            const next = [...prev, data.url].slice(0, 3);
+            return { ...s, store_images: next };
+          });
+        }
+      } catch (err) {
+        console.error('store images upload error', err);
+        alert('Failed to upload one or more images');
+      } finally {
+        setUploadingStoreImages(false);
+        if (e && (e.target as HTMLInputElement)) (e.target as HTMLInputElement).value = '';
+      }
+    };
+    const removeStoreImage = (index: number) => {
+      setStoreSettings((s: any) => {
+        const prev: string[] = Array.isArray(s?.store_images) ? s.store_images : [];
+        const next = prev.filter((_, i) => i !== index);
+        return { ...s, store_images: next };
       });
+    };
+  // Remove duplicate state declarations (already declared above)
+      {/* Store Settings Modal with Tabs */}
+      <Dialog open={showStoreSettingsModal} onOpenChange={setShowStoreSettingsModal}>
+        <DialogContent className="max-w-[950px] w-full p-4 max-h-[90vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>Store Settings</DialogTitle>
+            <DialogDescription>
+              Your private store URL and customization options
+            </DialogDescription>
+          </DialogHeader>
 
-      if (!res.ok) throw new Error('Upload failed');
-      const data = await res.json();
-      setStoreSettings((s: any) => ({ ...s, store_logo: data.url }));
-      await saveSettingsPartial({ store_logo: data.url });
-    } catch (error) {
-      console.error('Failed to upload logo:', error);
-      alert('Failed to upload image. Please try again.');
-    } finally {
-      setUploadingLogo(false);
-    }
-  };
+          {/* Tabs Navigation */}
+          <div className="flex gap-2 mb-4 border-b pb-2">
+            {['Branding', 'Customization', 'Store URL', 'Stats & Help'].map((tab, idx) => (
+              <button
+                key={tab}
+                className={`px-4 py-2 rounded-t font-medium transition-colors focus:outline-none ${selectedTab === idx ? 'bg-primary text-white dark:bg-primary dark:text-white' : 'bg-muted text-muted-foreground dark:bg-slate-800 dark:text-slate-300'}`}
+                onClick={() => setSelectedTab(idx)}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
 
-  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+          {/* Tab Panels */}
+          <div className="py-2">
+            {selectedTab === 0 && (
+              <div className="space-y-3 rounded-xl bg-gradient-to-br from-white via-slate-50 to-slate-100 dark:from-transparent dark:via-transparent dark:to-transparent p-4 shadow-sm dark:bg-slate-800 dark:text-slate-100">
+                <h3 className="text-base font-semibold">Store Branding</h3>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Store Name *</Label>
+                  <Input
+                    placeholder="My Awesome Store"
+                    value={storeSettings.store_name || ''}
+                    onChange={(e) => setStoreSettings((s: any) => ({ ...s, store_name: e.target.value }))}
+                  />
+                  <p className="text-xs text-muted-foreground">This will be the main title of your store</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Seller Name *</Label>
+                  <Input
+                    placeholder="John Doe"
+                    value={storeSettings.seller_name || ''}
+                    onChange={(e) => setStoreSettings((s: any) => ({ ...s, seller_name: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Seller Email (Gmail)</Label>
+                  <Input
+                    placeholder="you@gmail.com"
+                    value={storeSettings.seller_email || ''}
+                    onChange={(e) => setStoreSettings((s: any) => ({ ...s, seller_email: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Store Description</Label>
+                  <Textarea
+                    placeholder="Tell customers what makes your store special..."
+                    value={storeSettings.store_description || ''}
+                    onChange={(e) => setStoreSettings((s: any) => ({ ...s, store_description: e.target.value }))}
+                    rows={3}
+                  />
+                </div>
+              </div>
+            )}
+            {selectedTab === 1 && (
+              <div className="space-y-3 rounded-xl bg-gradient-to-br from-white via-slate-50 to-slate-100 dark:from-transparent dark:via-transparent dark:to-transparent p-4 shadow-sm dark:bg-slate-900 dark:text-slate-100 overflow-hidden max-w-full">
+                <h3 className="text-base font-semibold">Customization</h3>
+                {/* Store Logo */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Store Logo</Label>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex-1">
+                      <Input
+                        placeholder="https://example.com/logo.png"
+                        value={storeSettings.store_logo || ''}
+                        onChange={(e) => setStoreSettings((s: any) => ({ ...s, store_logo: e.target.value }))}
+                        className="min-w-0"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={uploadingLogo}
+                      onClick={() => document.getElementById('logo-upload')?.click()}
+                    >
+                      {uploadingLogo ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <ImageIcon className="w-4 h-4 mr-2" />
+                          Upload
+                        </>
+                      )}
+                    </Button>
+                    <input
+                      id="logo-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoUpload}
+                      className="hidden"
+                    />
+                  </div>
+                  {storeSettings.store_logo ? (
+                    <div className="mt-2">
+                      <div className="relative w-20 h-20 rounded overflow-hidden border bg-white dark:bg-black">
+                        <img src={storeSettings.store_logo} alt="logo" className="w-full h-full object-contain" />
+                        <button type="button" onClick={removeLogo} className="absolute top-1 right-1 bg-white/80 dark:bg-black/60 text-red-600 rounded-full p-1 text-xs">
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+                  <p className="text-xs text-muted-foreground">Upload or paste a direct link to your logo</p>
+                </div>
+                {/* Banner, Hero Images, Store Images */}
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Banner Image URL</Label>
+                    <div className="flex gap-2 min-w-0">
+                      <Input
+                        placeholder="https://example.com/banner.jpg"
+                        value={storeSettings.banner_url || ''}
+                        onChange={(e) => setStoreSettings((s: any) => ({ ...s, banner_url: e.target.value }))}
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={uploadingBanner}
+                        onClick={() => document.getElementById('banner-upload')?.click()}
+                      >
+                        {uploadingBanner ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <ImageIcon className="w-4 h-4 mr-2" />
+                            Upload
+                          </>
+                        )}
+                      </Button>
+                      <input
+                        id="banner-upload"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleBannerUpload}
+                        className="hidden"
+                      />
+                    </div>
+                    {storeSettings.banner_url ? (
+                        <div className="mt-2">
+                        <div className="relative w-full h-28 overflow-hidden rounded bg-muted">
+                          <img src={storeSettings.banner_url} alt="banner" className="w-full h-full object-cover" />
+                          <button type="button" onClick={removeBanner} className="absolute top-2 right-2 bg-white/80 dark:bg-black/60 rounded-full p-1 text-xs">
+                            <Trash2 className="w-4 h-4 text-red-600" />
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+                    <p className="text-xs text-muted-foreground">Hero section background image</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Hero Images (main + tiles)</Label>
+                    <div className="grid grid-cols-1 gap-3 items-start max-w-full overflow-hidden">
+                      <div className="md:col-span-1">
+                        <div className="text-xs mb-2">Main hero image</div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <input id="hero-main-upload" type="file" accept="image/*" onChange={(e) => handleFieldUpload('hero_main_url', e)} className="hidden" />
+                          <Button type="button" variant="outline" onClick={() => document.getElementById('hero-main-upload')?.click()}>Upload Main</Button>
+                          {storeSettings.hero_main_url ? (
+                            <div className="ml-3 mt-2">
+                              <div className="relative w-28 h-16 rounded overflow-hidden">
+                                <img src={storeSettings.hero_main_url} alt="hero-main" className="w-full h-full object-cover" />
+                                <button type="button" onClick={() => removeField('hero_main_url')} className="absolute top-1 right-1 bg-white/80 dark:bg-black/60 rounded-full p-1 text-xs">
+                                  <Trash2 className="w-3 h-3 text-red-600" />
+                                </button>
+                              </div>
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
+                      <div className="md:col-span-1">
+                        <Label className="text-sm font-medium">Store Images (up to 3)</Label>
+                        <div className="flex gap-2 flex-wrap mt-2">
+                          {(storeSettings.store_images || []).map((img: string, idx: number) => (
+                            <div key={idx} className="relative rounded overflow-hidden bg-muted w-20 h-20 flex-shrink-0">
+                              <img src={img} alt={`store-${idx}`} className="w-full h-full object-cover" />
+                              <button type="button" onClick={() => removeStoreImage(idx)} className="absolute top-1 right-1 bg-white/80 dark:bg-black/60 rounded-full p-1 text-xs">
+                                <Trash2 className="w-3 h-3 text-red-600" />
+                              </button>
+                            </div>
+                          ))}
+                          {((storeSettings.store_images || []).length < 3) && (
+                            <div className="flex items-center justify-center w-20 h-20 rounded border border-dashed text-sm text-muted-foreground">Empty</div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <input id="store-images-upload" type="file" accept="image/*" multiple onChange={handleStoreImagesUpload} className="hidden" />
+                          <Button type="button" variant="outline" onClick={() => document.getElementById('store-images-upload')?.click()} disabled={uploadingStoreImages}>
+                            {uploadingStoreImages ? 'Uploading...' : 'Upload Images'}
+                          </Button>
+                          <p className="text-xs text-muted-foreground">Max 3 images, 2MB each</p>
+                        </div>
+                      </div>
+                      <div className="md:col-span-1 grid grid-cols-2 gap-2">
+                        <div>
+                          <div className="text-xs mb-2">Tile 1</div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <input id="hero-tile1-upload" type="file" accept="image/*" onChange={(e) => handleFieldUpload('hero_tile1_url', e)} className="hidden" />
+                            <Button type="button" variant="outline" onClick={() => document.getElementById('hero-tile1-upload')?.click()}>Upload Tile 1</Button>
+                            {storeSettings.hero_tile1_url ? (
+                              <div className="ml-3 mt-2">
+                                <div className="relative w-20 h-12 rounded overflow-hidden">
+                                  <img src={storeSettings.hero_tile1_url} alt="hero-t1" className="w-full h-full object-cover" />
+                                  <button type="button" onClick={() => removeField('hero_tile1_url')} className="absolute top-1 right-1 bg-white/80 dark:bg-black/60 rounded-full p-1 text-xs">
+                                    <Trash2 className="w-3 h-3 text-red-600" />
+                                  </button>
+                                </div>
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-xs mb-2">Tile 2</div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <input id="hero-tile2-upload" type="file" accept="image/*" onChange={(e) => handleFieldUpload('hero_tile2_url', e)} className="hidden" />
+                            <Button type="button" variant="outline" onClick={() => document.getElementById('hero-tile2-upload')?.click()}>Upload Tile 2</Button>
+                            {storeSettings.hero_tile2_url ? (
+                              <div className="ml-3 mt-2">
+                                <div className="relative w-20 h-12 rounded overflow-hidden">
+                                  <img src={storeSettings.hero_tile2_url} alt="hero-t2" className="w-full h-full object-cover" />
+                                  <button type="button" onClick={() => removeField('hero_tile2_url')} className="absolute top-1 right-1 bg-white/80 dark:bg-black/60 rounded-full p-1 text-xs">
+                                    <Trash2 className="w-3 h-3 text-red-600" />
+                                  </button>
+                                </div>
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">Main hero and two tiles used on storefront hero sections</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            {selectedTab === 2 && (
+              <div className="space-y-3 lg:col-span-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-base font-semibold">Your Store URL</Label>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      if (storeSettings.store_slug) {
+                        window.open(`/store/${storeSettings.store_slug}`, '_blank');
+                      }
+                    }}
+                    disabled={!storeSettings.store_slug}
+                  >
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Open Store
+                  </Button>
+                </div>
+                <div className="flex gap-2 min-w-0">
+                  <Input
+                    value={storeSettings.store_slug ? `${window.location.origin}/store/${storeSettings.store_slug}` : 'Loading...'}
+                    readOnly
+                    className="font-mono text-sm min-w-0"
+                  />
+                  <Button onClick={copyStoreLink} variant="outline" disabled={!storeSettings.store_slug}>
+                    {storeLinkCopied ? (
+                      <Check className="w-4 h-4 text-green-500" />
+                    ) : (
+                      <Copy className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+                {storeLinkCopied && (
+                  <p className="text-sm text-green-600 flex items-center gap-2">
+                    <Check className="w-4 h-4" />
+                    Store link copied!
+                  </p>
+                )}
+                <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+                  <div className="flex gap-3">
+                    <LinkIcon className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm">
+                      <div className="font-medium text-blue-900 dark:text-blue-100 mb-1">
+                        Share Your Store
+                      </div>
+                      <p className="text-blue-700 dark:text-blue-300">
+                        Share this link with your customers so they can browse all your products in one place.
+                        They can search, filter by category, and view featured items.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            {selectedTab === 3 && (
+              <>
+                <div className="border-t pt-4 lg:col-span-2">
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <div className="px-3 py-2 bg-muted rounded-md">
+                      <div className="text-sm font-semibold text-primary">{products.length}</div>
+                      <div className="text-xs">Products</div>
+                    </div>
+                    <div className="px-3 py-2 bg-muted rounded-md">
+                      <div className="text-sm font-semibold text-green-600">{products.filter(p => p.status === 'active').length}</div>
+                      <div className="text-xs">Active</div>
+                    </div>
+                    <div className="px-3 py-2 bg-muted rounded-md">
+                      <div className="text-sm font-semibold text-purple-600">{products.reduce((sum, p) => sum + p.views, 0)}</div>
+                      <div className="text-xs">Views</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="border-t pt-6 lg:col-span-2">
+                  <Label className="text-base font-semibold mb-3 block">How to Use Your Store</Label>
+                  <div className="space-y-3">
+                    <div className="flex gap-3 text-sm">
+                      <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                        1
+                      </div>
+                      <div>
+                        <div className="font-medium mb-1">Add Products</div>
+                        <p className="text-muted-foreground">
+                          Create products with images, prices, and descriptions
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3 text-sm">
+                      <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                        2
+                      </div>
+                      <div>
+                        <div className="font-medium mb-1">Share Your Store Link</div>
+                        <p className="text-muted-foreground">
+                          Copy the store URL above and share it with your customers on social media, WhatsApp, email, etc.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3 text-sm">
+                      <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                        3
+                      </div>
+                      <div>
+                        <div className="font-medium mb-1">Share Individual Products</div>
+                        <p className="text-muted-foreground">
+                          Click "Share" on any product to get a direct link for targeted advertising
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3 text-sm">
+                      <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                        4
+                      </div>
+                      <div>
+                        <div className="font-medium mb-1">Track Performance</div>
+                        <p className="text-muted-foreground">
+                          Monitor views and engagement for each product in your dashboard
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
 
-    try {
-      setUploadingBanner(true);
-      const token = localStorage.getItem('authToken');
-      const urls: string[] = [];
-      for (const file of Array.from(files)) {
-        const formData = new FormData();
-        formData.append('image', file);
-        const res = await fetch('/api/upload', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formData });
-        if (!res.ok) throw new Error('Upload failed');
-        const data = await res.json();
-        urls.push(data.url);
-      }
-      const prev = (storeSettings.banner_url || '').split(',').map((s:string)=>s.trim()).filter(Boolean);
-      const combined = [...prev, ...urls].join(',');
-      setStoreSettings((s: any) => ({ ...s, banner_url: combined }));
-      await saveSettingsPartial({ banner_url: combined });
-    } catch (error) {
-      console.error('Failed to upload banner:', error);
-      alert('Failed to upload image(s). Please try again.');
-    } finally {
-      setUploadingBanner(false);
-      e.target.value = '';
-    }
-  };
-
-  // Removed hero image uploads for a simpler settings experience
-
-  // Removed template gallery; keeping settings minimal per request
-
-  const filterProducts = () => {
-    let filtered = [...products];
-
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(p =>
-        p.title.toLowerCase().includes(query) ||
-        p.description?.toLowerCase().includes(query)
-      );
-    }
-
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(p => p.status === statusFilter);
-    }
-
-    setFilteredProducts(filtered);
-  };
-
-  const handleCreateProduct = async () => {
-    try {
-      const token = localStorage.getItem('authToken');
-      const res = await fetch('/api/client/store/products', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(formData)
-      });
-
-      if (res.ok) {
-        await loadProducts();
-        setShowAddModal(false);
-        setFormData({ status: 'active', is_featured: false, stock_quantity: 0 });
-      } else {
-        const error = await res.json();
-        alert(error.error || 'Failed to create product');
-      }
-    } catch (error) {
-      console.error('Create product error:', error);
-      alert('Failed to create product');
-    }
-  };
-
-  const handleUpdateProduct = async () => {
-    if (!selectedProduct) return;
-
-    try {
-      const token = localStorage.getItem('authToken');
-      const res = await fetch(`/api/client/store/products/${selectedProduct.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(formData)
-      });
-
-      if (res.ok) {
-        await loadProducts();
-        setShowEditModal(false);
-        setSelectedProduct(null);
-        setFormData({ status: 'active', is_featured: false, stock_quantity: 0 });
-      } else {
-        const error = await res.json();
-        alert(error.error || 'Failed to update product');
-      }
-    } catch (error) {
-      console.error('Update product error:', error);
-      alert('Failed to update product');
-    }
-  };
-
-  const handleDeleteProduct = async () => {
-    if (!selectedProduct) return;
-
-    try {
-      const token = localStorage.getItem('authToken');
-      const res = await fetch(`/api/client/store/products/${selectedProduct.id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      if (res.ok) {
-        await loadProducts();
-        setShowDeleteDialog(false);
-        setSelectedProduct(null);
-      } else {
-        const error = await res.json();
-        alert(error.error || 'Failed to delete product');
-      }
-    } catch (error) {
-      console.error('Delete product error:', error);
-      alert('Failed to delete product');
-    }
-  };
-
-  const handleGetShareLink = async (product: StoreProduct) => {
-    try {
-      const token = localStorage.getItem('authToken');
-      const res = await fetch(`/api/client/store/products/${product.id}/share-link`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      if (res.ok) {
-        const data = await res.json();
-        setShareLink(data.shareLink);
-        setSelectedProduct(product);
-        setShowShareModal(true);
-        setLinkCopied(false);
-      }
-    } catch (error) {
-      console.error('Get share link error:', error);
-    }
-  };
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowStoreSettingsModal(false)}>
+              Close
+            </Button>
+            <Button onClick={saveStoreSettings} disabled={savingSettings}>
+              {savingSettings ? 'Saving...' : 'Save Settings'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(shareLink);
@@ -503,12 +786,6 @@ export default function Store() {
     setTimeout(() => setLinkCopied(false), 2000);
   };
 
-  const copyStoreLink = () => {
-    const storeUrl = `${window.location.origin}/store/${storeSlug}`;
-    navigator.clipboard.writeText(storeUrl);
-    setStoreLinkCopied(true);
-    setTimeout(() => setStoreLinkCopied(false), 2000);
-  };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -604,14 +881,21 @@ export default function Store() {
             <Button 
               variant="outline"
               onClick={() => {
-                if (storeSlug) {
-                  window.open(`/store/${storeSlug}`, '_blank');
+                if (storeSettings.store_slug) {
+                  window.open(`/store/${storeSettings.store_slug}`, '_blank');
                 }
               }}
-              disabled={!storeSlug}
+              disabled={!storeSettings.store_slug}
             >
               <StoreIcon className="w-4 h-4 mr-2" />
               View Storefront
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowStoreSettingsModal(true)}
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Store Settings
             </Button>
             <Button 
               onClick={() => {
@@ -623,41 +907,8 @@ export default function Store() {
               <Plus className="w-4 h-4 mr-2" />
               Add Product
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => setShowStoreSettingsModal(true)}
-            >
-              <Settings className="w-4 h-4 mr-2" />
-              Store Images
-            </Button>
           </div>
         </div>
-
-        {/* Store Link Quick Access */}
-        {storeSettings.store_slug && (
-          <div className="bg-card border rounded-xl p-4 flex flex-wrap gap-4 items-center">
-            <div className="flex-1 min-w-[240px]">
-              <p className="text-sm font-medium mb-1">Public Storefront URL</p>
-              <div className="flex gap-2">
-                <Input
-                  readOnly
-                  value={`${window.location.origin}/store/${storeSettings.store_slug}`}
-                  className="font-mono text-xs"
-                />
-                <Button size="sm" variant="outline" onClick={copyStoreLink}>
-                  {storeLinkCopied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => window.open(`/store/${storeSettings.store_slug}`, '_blank')}>
-                  <ExternalLink className="w-4 h-4" />
-                </Button>
-              </div>
-              {storeLinkCopied && <p className="text-xs text-green-600 mt-1 flex items-center gap-1"><Check className="w-3 h-3" />Copied!</p>}
-            </div>
-            <div className="text-xs text-muted-foreground max-w-md">
-              Share this link with customers to let them browse all your products. Individual product share links remain private.
-            </div>
-          </div>
-        )}
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -774,10 +1025,7 @@ export default function Store() {
                     <img
                       src={product.images[0]}
                       alt={product.title}
-                      className="w-full h-full object-cover cursor-pointer"
-                      onClick={() => {
-                        if (storeSlug && product.slug) navigate(`/store/${storeSlug}/${product.slug}`);
-                      }}
+                      className="w-full h-full object-cover"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
@@ -796,23 +1044,7 @@ export default function Store() {
                   }>
                     {product.status}
                   </Badge>
-                </div>
-
-                {/* Content */}
-                <div className="p-4 space-y-3">
-                  <div>
-                    <h3
-                      className="font-semibold line-clamp-2 mb-1 cursor-pointer hover:underline"
-                      onClick={() => {
-                        if (storeSlug && product.slug) navigate(`/store/${storeSlug}/${product.slug}`);
-                      }}
-                    >
-                      {product.title}
-                    </h3>
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {product.description || 'No description'}
-                    </p>
-                  </div>
+                      // Remove duplicate states and handlers (already defined above)
 
                   <div className="flex items-center justify-between">
                     <div>
@@ -844,16 +1076,6 @@ export default function Store() {
                     </Button>
                     <Button
                       size="sm"
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                      onClick={() => {
-                        if (storeSlug && product.slug) navigate(`/store/${storeSlug}/checkout/${product.slug}`);
-                        else navigate(`/guest-checkout/${product.id}`);
-                      }}
-                    >
-                      Buy Now
-                    </Button>
-                    <Button
-                      size="sm"
                       variant="outline"
                       onClick={() => openEditModal(product)}
                     >
@@ -881,10 +1103,7 @@ export default function Store() {
                       <img
                         src={product.images[0]}
                         alt={product.title}
-                        className="w-full h-full object-cover cursor-pointer"
-                        onClick={() => {
-                          if (storeSlug && product.slug) navigate(`/store/${storeSlug}/${product.slug}`);
-                        }}
+                        className="w-full h-full object-cover"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
@@ -896,14 +1115,7 @@ export default function Store() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
-                        <h3
-                          className="font-semibold mb-1 cursor-pointer hover:underline"
-                          onClick={() => {
-                            if (storeSlug && product.slug) navigate(`/store/${storeSlug}/${product.slug}`);
-                          }}
-                        >
-                          {product.title}
-                        </h3>
+                        <h3 className="font-semibold mb-1">{product.title}</h3>
                         <p className="text-sm text-muted-foreground line-clamp-1">
                           {product.description || 'No description'}
                         </p>
@@ -943,16 +1155,6 @@ export default function Store() {
                       onClick={() => handleGetShareLink(product)}
                     >
                       <Share2 className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="bg-green-600 hover:bg-green-700 text-white"
-                      onClick={() => {
-                        if (storeSlug && product.slug) navigate(`/store/${storeSlug}/checkout/${product.slug}`);
-                        else navigate(`/guest-checkout/${product.id}`);
-                      }}
-                    >
-                      Buy Now
                     </Button>
                     <Button
                       size="sm"
@@ -1239,199 +1441,377 @@ export default function Store() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Store Settings Modal (simplified for images & currency) */}
+      {/* Store Settings Modal */}
       <Dialog open={showStoreSettingsModal} onOpenChange={setShowStoreSettingsModal}>
-        <DialogContent className="max-w-2xl bg-muted">
+        <DialogContent className="max-w-[950px] w-full p-4 max-h-[90vh] overflow-auto">
           <DialogHeader>
             <DialogTitle>Store Settings</DialogTitle>
             <DialogDescription>
-              Set your store name and upload logo/banner.
+              Your private store URL and customization options
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-6 py-4">
-            {/* Store Name */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Store Name</Label>
-              <Input
-                placeholder="Your Store Name"
-                value={storeSettings.store_name || ''}
-                onChange={(e) => setStoreSettings((s: any) => ({ ...s, store_name: e.target.value }))}
-              />
-            </div>
-
-            {/* Store Logo */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Store Logo URL</Label>
-              <div className="flex gap-2 items-center">
+          <div className="grid grid-cols-1 gap-4 py-2">
+            {/* Store Branding */}
+            <div className="space-y-3 rounded-xl bg-gradient-to-br from-white via-slate-50 to-slate-100 dark:from-transparent dark:via-transparent dark:to-transparent p-4 shadow-sm dark:bg-slate-800 dark:text-slate-100">
+              <h3 className="text-base font-semibold">Store Branding</h3>
+              
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Store Name *</Label>
                 <Input
-                  placeholder="https://example.com/logo.png"
-                  value={storeSettings.store_logo || ''}
-                  onChange={(e) => setStoreSettings((s: any) => ({ ...s, store_logo: e.target.value }))}
-                  className="flex-1"
+                  placeholder="My Awesome Store"
+                  value={storeSettings.store_name || ''}
+                  onChange={(e) => setStoreSettings((s: any) => ({ ...s, store_name: e.target.value }))}
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={uploadingLogo}
-                  onClick={() => document.getElementById('logo-upload')?.click()}
-                >
-                  {uploadingLogo ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-                      Uploading...
-                    </>
-                  ) : (
-                    <>
-                      <ImageIcon className="w-4 h-4 mr-2" />
-                      Upload
-                    </>
-                  )}
-                </Button>
-                <input
-                  id="logo-upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleLogoUpload}
-                  className="hidden"
+                <p className="text-xs text-muted-foreground">This will be the main title of your store</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Seller Name *</Label>
+                <Input
+                  placeholder="John Doe"
+                  value={storeSettings.seller_name || ''}
+                  onChange={(e) => setStoreSettings((s: any) => ({ ...s, seller_name: e.target.value }))}
                 />
               </div>
-              <p className="text-xs text-muted-foreground">Paste a URL or upload an image.</p>
-            </div>
 
-            {/* Banner Image */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Banner Image URL</Label>
-              <div className="flex gap-2 items-center">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Seller Email (Gmail)</Label>
                 <Input
-                  placeholder="https://example.com/banner.jpg"
-                  value={storeSettings.banner_url || ''}
-                  onChange={(e) => setStoreSettings((s: any) => ({ ...s, banner_url: e.target.value }))}
-                  className="flex-1"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={uploadingBanner}
-                  onClick={() => document.getElementById('banner-upload')?.click()}
-                >
-                  {uploadingBanner ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-                      Uploading...
-                    </>
-                  ) : (
-                    <>
-                      <ImageIcon className="w-4 h-4 mr-2" />
-                      Upload
-                    </>
-                  )}
-                </Button>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={() => saveSettingsPartial({ banner_url: '' })}
-                >
-                  Clear
-                </Button>
-                <input
-                  id="banner-upload"
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleBannerUpload}
-                  className="hidden"
+                  placeholder="you@gmail.com"
+                  value={storeSettings.seller_email || ''}
+                  onChange={(e) => setStoreSettings((s: any) => ({ ...s, seller_email: e.target.value }))}
                 />
               </div>
-              {/* Existing banner slideshow items */}
-              {splitList(storeSettings.banner_url).length > 0 && (
-                <div className="mt-3 grid grid-cols-3 gap-2">
-                  {splitList(storeSettings.banner_url).map((u: string, idx: number) => (
-                    <div key={idx} className="relative rounded-md overflow-hidden border">
-                      <img src={u} alt={`Banner ${idx+1}`} className="w-full h-20 object-cover" />
-                      <Button size="xs" variant="destructive" className="absolute top-1 right-1" onClick={() => removeFromList('banner_url', u)}>Remove</Button>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Store Description</Label>
+                <Textarea
+                  placeholder="Tell customers what makes your store special..."
+                  value={storeSettings.store_description || ''}
+                  onChange={(e) => setStoreSettings((s: any) => ({ ...s, store_description: e.target.value }))}
+                  rows={3}
+                />
+              </div>
+
+              {/* logo moved to Customization column to keep branding compact */}
+
+            
+            </div>
+
+            {/* Template selection removed */}
+
+            {/* Customization */}
+              <div className="space-y-3 rounded-xl bg-gradient-to-br from-white via-slate-50 to-slate-100 dark:from-transparent dark:via-transparent dark:to-transparent p-4 shadow-sm dark:bg-slate-900 dark:text-slate-100 overflow-hidden max-w-full">
+              <h3 className="text-base font-semibold">Customization</h3>
+              {/* Store Logo (moved from Branding) */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Store Logo</Label>
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="https://example.com/logo.png"
+                      value={storeSettings.store_logo || ''}
+                      onChange={(e) => setStoreSettings((s: any) => ({ ...s, store_logo: e.target.value }))}
+                      className="min-w-0"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={uploadingLogo}
+                    onClick={() => document.getElementById('logo-upload')?.click()}
+                  >
+                    {uploadingLogo ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <ImageIcon className="w-4 h-4 mr-2" />
+                        Upload
+                      </>
+                    )}
+                  </Button>
+                  <input
+                    id="logo-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoUpload}
+                    className="hidden"
+                  />
+                </div>
+                {storeSettings.store_logo ? (
+                  <div className="mt-2">
+                    <div className="relative w-20 h-20 rounded overflow-hidden border bg-white dark:bg-black">
+                      <img src={storeSettings.store_logo} alt="logo" className="w-full h-full object-contain" />
+                      <button type="button" onClick={removeLogo} className="absolute top-1 right-1 bg-white/80 dark:bg-black/60 text-red-600 rounded-full p-1 text-xs">
+                        <Trash2 className="w-3 h-3" />
+                      </button>
                     </div>
-                  ))}
+                  </div>
+                ) : null}
+                <p className="text-xs text-muted-foreground">Upload or paste a direct link to your logo</p>
+              </div>
+              
+              <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Banner Image URL</Label>
+                  <div className="flex gap-2 min-w-0">
+                    <Input
+                      placeholder="https://example.com/banner.jpg"
+                      value={storeSettings.banner_url || ''}
+                      onChange={(e) => setStoreSettings((s: any) => ({ ...s, banner_url: e.target.value }))}
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={uploadingBanner}
+                      onClick={() => document.getElementById('banner-upload')?.click()}
+                    >
+                      {uploadingBanner ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <ImageIcon className="w-4 h-4 mr-2" />
+                          Upload
+                        </>
+                      )}
+                    </Button>
+                    <input
+                      id="banner-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleBannerUpload}
+                      className="hidden"
+                    />
+                  </div>
+                  {storeSettings.banner_url ? (
+                      <div className="mt-2">
+                      <div className="relative w-full h-28 overflow-hidden rounded bg-muted">
+                        <img src={storeSettings.banner_url} alt="banner" className="w-full h-full object-cover" />
+                        <button type="button" onClick={removeBanner} className="absolute top-2 right-2 bg-white/80 dark:bg-black/60 rounded-full p-1 text-xs">
+                          <Trash2 className="w-4 h-4 text-red-600" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <p className="text-xs text-muted-foreground">Hero section background image</p>
                 </div>
-              )}
-              <p className="text-xs text-muted-foreground">Displayed behind the hero section.</p>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Hero Images (main + tiles)</Label>
+                  <div className="grid grid-cols-1 gap-3 items-start max-w-full overflow-hidden">
+                    <div className="md:col-span-1">
+                      <div className="text-xs mb-2">Main hero image</div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <input id="hero-main-upload" type="file" accept="image/*" onChange={(e) => handleFieldUpload('hero_main_url', e)} className="hidden" />
+                        <Button type="button" variant="outline" onClick={() => document.getElementById('hero-main-upload')?.click()}>Upload Main</Button>
+                        {storeSettings.hero_main_url ? (
+                          <div className="ml-3 mt-2">
+                            <div className="relative w-28 h-16 rounded overflow-hidden">
+                              <img src={storeSettings.hero_main_url} alt="hero-main" className="w-full h-full object-cover" />
+                              <button type="button" onClick={() => removeField('hero_main_url')} className="absolute top-1 right-1 bg-white/80 dark:bg-black/60 rounded-full p-1 text-xs">
+                                <Trash2 className="w-3 h-3 text-red-600" />
+                              </button>
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    <div className="md:col-span-1">
+                      <Label className="text-sm font-medium">Store Images (up to 3)</Label>
+                      <div className="flex gap-2 flex-wrap mt-2">
+                        {(storeSettings.store_images || []).map((img: string, idx: number) => (
+                          <div key={idx} className="relative rounded overflow-hidden bg-muted w-20 h-20 flex-shrink-0">
+                            <img src={img} alt={`store-${idx}`} className="w-full h-full object-cover" />
+                            <button type="button" onClick={() => removeStoreImage(idx)} className="absolute top-1 right-1 bg-white/80 dark:bg-black/60 rounded-full p-1 text-xs">
+                              <Trash2 className="w-3 h-3 text-red-600" />
+                            </button>
+                          </div>
+                        ))}
+                        {((storeSettings.store_images || []).length < 3) && (
+                          <div className="flex items-center justify-center w-20 h-20 rounded border border-dashed text-sm text-muted-foreground">Empty</div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-2">
+                        <input id="store-images-upload" type="file" accept="image/*" multiple onChange={handleStoreImagesUpload} className="hidden" />
+                        <Button type="button" variant="outline" onClick={() => document.getElementById('store-images-upload')?.click()} disabled={uploadingStoreImages}>
+                          {uploadingStoreImages ? 'Uploading...' : 'Upload Images'}
+                        </Button>
+                        <p className="text-xs text-muted-foreground">Max 3 images, 2MB each</p>
+                      </div>
+                    </div>
+
+                    <div className="md:col-span-1 grid grid-cols-2 gap-2">
+                      <div>
+                        <div className="text-xs mb-2">Tile 1</div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <input id="hero-tile1-upload" type="file" accept="image/*" onChange={(e) => handleFieldUpload('hero_tile1_url', e)} className="hidden" />
+                          <Button type="button" variant="outline" onClick={() => document.getElementById('hero-tile1-upload')?.click()}>Upload Tile 1</Button>
+                          {storeSettings.hero_tile1_url ? (
+                            <div className="ml-3 mt-2">
+                              <div className="relative w-20 h-12 rounded overflow-hidden">
+                                <img src={storeSettings.hero_tile1_url} alt="hero-t1" className="w-full h-full object-cover" />
+                                <button type="button" onClick={() => removeField('hero_tile1_url')} className="absolute top-1 right-1 bg-white/80 dark:bg-black/60 rounded-full p-1 text-xs">
+                                  <Trash2 className="w-3 h-3 text-red-600" />
+                                </button>
+                              </div>
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs mb-2">Tile 2</div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <input id="hero-tile2-upload" type="file" accept="image/*" onChange={(e) => handleFieldUpload('hero_tile2_url', e)} className="hidden" />
+                          <Button type="button" variant="outline" onClick={() => document.getElementById('hero-tile2-upload')?.click()}>Upload Tile 2</Button>
+                          {storeSettings.hero_tile2_url ? (
+                            <div className="ml-3 mt-2">
+                              <div className="relative w-20 h-12 rounded overflow-hidden">
+                                <img src={storeSettings.hero_tile2_url} alt="hero-t2" className="w-full h-full object-cover" />
+                                <button type="button" onClick={() => removeField('hero_tile2_url')} className="absolute top-1 right-1 bg-white/80 dark:bg-black/60 rounded-full p-1 text-xs">
+                                  <Trash2 className="w-3 h-3 text-red-600" />
+                                </button>
+                              </div>
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">Main hero and two tiles used on storefront hero sections</p>
+                </div>
+                {/* Currency code removed per design request */}
+              </div>
             </div>
 
-            {/* Hero Tiles (optional) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Right Tile 1 URL</Label>
-                <div className="flex gap-2 items-center">
-                  <Input
-                    placeholder="https://example.com/tile-1.jpg"
-                    value={storeSettings.hero_tile1_url || ''}
-                    onChange={(e) => setStoreSettings((s: any) => ({ ...s, hero_tile1_url: e.target.value }))}
-                    className="flex-1"
-                  />
-                  <Button type="button" variant="outline" disabled={uploadingHeroTile1} onClick={() => document.getElementById('hero-tile1-upload')?.click()}>
-                    {uploadingHeroTile1 ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-                        Uploading...
-                      </>
-                    ) : (
-                      <>
-                        <ImageIcon className="w-4 h-4 mr-2" />
-                        Upload
-                      </>
-                    )}
-                  </Button>
-                  <Button type="button" variant="destructive" onClick={() => saveSettingsPartial({ hero_tile1_url: '' })}>Clear</Button>
-                  <input id="hero-tile1-upload" type="file" accept="image/*" multiple onChange={handleHeroTile1Upload} className="hidden" />
-                </div>
-                {/* Existing Tile 1 slideshow items */}
-                {splitList(storeSettings.hero_tile1_url).length > 0 && (
-                  <div className="mt-2 grid grid-cols-3 gap-2">
-                    {splitList(storeSettings.hero_tile1_url).map((u: string, idx: number) => (
-                      <div key={idx} className="relative rounded-md overflow-hidden border">
-                        <img src={u} alt={`Tile 1 - ${idx+1}`} className="w-full h-20 object-cover" />
-                        <Button size="xs" variant="destructive" className="absolute top-1 right-1" onClick={() => removeFromList('hero_tile1_url', u)}>Remove</Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+            {/* Store URL Section */}
+            <div className="space-y-3 lg:col-span-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-semibold">Your Store URL</Label>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    if (storeSettings.store_slug) {
+                      window.open(`/store/${storeSettings.store_slug}`, '_blank');
+                    }
+                  }}
+                  disabled={!storeSettings.store_slug}
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Open Store
+                </Button>
               </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Right Tile 2 URL</Label>
-                <div className="flex gap-2 items-center">
-                  <Input
-                    placeholder="https://example.com/tile-2.jpg"
-                    value={storeSettings.hero_tile2_url || ''}
-                    onChange={(e) => setStoreSettings((s: any) => ({ ...s, hero_tile2_url: e.target.value }))}
-                    className="flex-1"
-                  />
-                  <Button type="button" variant="outline" disabled={uploadingHeroTile2} onClick={() => document.getElementById('hero-tile2-upload')?.click()}>
-                    {uploadingHeroTile2 ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-                        Uploading...
-                      </>
-                    ) : (
-                      <>
-                        <ImageIcon className="w-4 h-4 mr-2" />
-                        Upload
-                      </>
-                    )}
-                  </Button>
-                  <Button type="button" variant="destructive" onClick={() => saveSettingsPartial({ hero_tile2_url: '' })}>Clear</Button>
-                  <input id="hero-tile2-upload" type="file" accept="image/*" multiple onChange={handleHeroTile2Upload} className="hidden" />
-                </div>
-                {/* Existing Tile 2 slideshow items */}
-                {splitList(storeSettings.hero_tile2_url).length > 0 && (
-                  <div className="mt-2 grid grid-cols-3 gap-2">
-                    {splitList(storeSettings.hero_tile2_url).map((u: string, idx: number) => (
-                      <div key={idx} className="relative rounded-md overflow-hidden border">
-                        <img src={u} alt={`Tile 2 - ${idx+1}`} className="w-full h-20 object-cover" />
-                        <Button size="xs" variant="destructive" className="absolute top-1 right-1" onClick={() => removeFromList('hero_tile2_url', u)}>Remove</Button>
-                      </div>
-                    ))}
+              <div className="flex gap-2 min-w-0">
+                <Input
+                  value={storeSettings.store_slug ? `${window.location.origin}/store/${storeSettings.store_slug}` : 'Loading...'}
+                  readOnly
+                  className="font-mono text-sm min-w-0"
+                />
+                <Button onClick={copyStoreLink} variant="outline" disabled={!storeSettings.store_slug}>
+                  {storeLinkCopied ? (
+                    <Check className="w-4 h-4 text-green-500" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+              {storeLinkCopied && (
+                <p className="text-sm text-green-600 flex items-center gap-2">
+                  <Check className="w-4 h-4" />
+                  Store link copied!
+                </p>
+              )}
+              <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+                <div className="flex gap-3">
+                  <LinkIcon className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm">
+                    <div className="font-medium text-blue-900 dark:text-blue-100 mb-1">
+                      Share Your Store
+                    </div>
+                    <p className="text-blue-700 dark:text-blue-300">
+                      Share this link with your customers so they can browse all your products in one place.
+                      They can search, filter by category, and view featured items.
+                    </p>
                   </div>
-                )}
+                </div>
+              </div>
+            </div>
+
+            {/* Compact stats summary (kept small inside settings) */}
+            <div className="border-t pt-4 lg:col-span-2">
+              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                <div className="px-3 py-2 bg-muted rounded-md">
+                  <div className="text-sm font-semibold text-primary">{products.length}</div>
+                  <div className="text-xs">Products</div>
+                </div>
+                <div className="px-3 py-2 bg-muted rounded-md">
+                  <div className="text-sm font-semibold text-green-600">{products.filter(p => p.status === 'active').length}</div>
+                  <div className="text-xs">Active</div>
+                </div>
+                <div className="px-3 py-2 bg-muted rounded-md">
+                  <div className="text-sm font-semibold text-purple-600">{products.reduce((sum, p) => sum + p.views, 0)}</div>
+                  <div className="text-xs">Views</div>
+                </div>
+              </div>
+            </div>
+
+            {/* How to Use */}
+            <div className="border-t pt-6 lg:col-span-2">
+              <Label className="text-base font-semibold mb-3 block">How to Use Your Store</Label>
+              <div className="space-y-3">
+                <div className="flex gap-3 text-sm">
+                  <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                    1
+                  </div>
+                  <div>
+                    <div className="font-medium mb-1">Add Products</div>
+                    <p className="text-muted-foreground">
+                      Create products with images, prices, and descriptions
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3 text-sm">
+                  <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                    2
+                  </div>
+                  <div>
+                    <div className="font-medium mb-1">Share Your Store Link</div>
+                    <p className="text-muted-foreground">
+                      Copy the store URL above and share it with your customers on social media, WhatsApp, email, etc.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3 text-sm">
+                  <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                    3
+                  </div>
+                  <div>
+                    <div className="font-medium mb-1">Share Individual Products</div>
+                    <p className="text-muted-foreground">
+                      Click "Share" on any product to get a direct link for targeted advertising
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3 text-sm">
+                  <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                    4
+                  </div>
+                  <div>
+                    <div className="font-medium mb-1">Track Performance</div>
+                    <p className="text-muted-foreground">
+                      Monitor views and engagement for each product in your dashboard
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1447,16 +1827,7 @@ export default function Store() {
         </DialogContent>
       </Dialog>
 
-      {/* Center-screen success overlay */}
-      {showSavedOverlay && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-          <div className="absolute inset-0 bg-black/40" />
-          <div className="relative bg-card border rounded-xl shadow-lg px-6 py-4 flex items-center gap-3">
-            <CheckCircle2 className="w-6 h-6 text-green-500" />
-            <span className="font-medium">Settings saved</span>
-          </div>
-        </div>
-      )}
+      {/* Template gallery removed */}
     </div>
   );
 }
