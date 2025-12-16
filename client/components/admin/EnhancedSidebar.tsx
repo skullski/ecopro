@@ -43,14 +43,7 @@ const menuItems: MenuItem[] = [
     path: "/dashboard/wasselni-settings", 
     icon: <Bot className="w-5 h-5" />,
   },
-  { 
-    titleKey: "sidebar.analytics", 
-    path: "/admin/analytics", 
-    icon: <BarChart3 className="w-5 h-5" />,
-    children: [
-      { titleKey: "sidebar.analyticsOverview", path: "/admin/analytics", icon: <BarChart3 className="w-4 h-4" /> },
-    ]
-  },
+  { titleKey: "sidebar.analytics", path: "/dashboard/analytics", icon: <BarChart3 className="w-5 h-5" /> },
   { titleKey: "sidebar.billing", path: "/admin/billing", icon: <CreditCard className="w-5 h-5" /> },
   { titleKey: "sidebar.settingsOwner", path: "/admin/settings", icon: <Settings className="w-5 h-5" /> },
 ];

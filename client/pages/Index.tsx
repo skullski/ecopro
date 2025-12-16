@@ -11,9 +11,44 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "@/lib/i18n";
+import { useState, useEffect } from "react";
 
 export default function Index() {
   const { t } = useTranslation();
+  const [stats, setStats] = useState({
+    totalOrders: 0,
+    totalRevenue: 0,
+    activeVendors: 0,
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        // Fetch total orders
+        const ordersRes = await fetch('/api/orders');
+        if (ordersRes.ok) {
+          const orders = await ordersRes.json();
+          const totalOrders = Array.isArray(orders) ? orders.length : 0;
+          const totalRevenue = Array.isArray(orders) 
+            ? orders.reduce((sum, o) => sum + (Number(o.total_price) || 0), 0) 
+            : 0;
+          
+          setStats(prev => ({
+            ...prev,
+            totalOrders,
+            totalRevenue,
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+      }
+    };
+
+    fetchStats();
+    // Refresh stats every 10 seconds
+    const interval = setInterval(fetchStats, 10000);
+    return () => clearInterval(interval);
+  }, []);
   
   return (
     <div className="min-h-screen">
@@ -87,7 +122,7 @@ export default function Index() {
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">{t("home.salesToday")}</p>
-                      <p className="text-2xl font-bold">$12,450</p>
+                      <p className="text-2xl font-bold">${(stats.totalRevenue / 100).toFixed(2)}</p>
                     </div>
                   </div>
                   <div className="h-20 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg"></div>
@@ -116,10 +151,10 @@ export default function Index() {
                 <div className="absolute bottom-0 right-8 w-56 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 animate-float" style={{animationDelay: '1s'}}>
                   <div className="flex items-center gap-2 mb-4">
                     <Users className="w-5 h-5 text-purple-600" />
-                    <p className="text-sm font-medium">{t("home.activeVendors")}</p>
+                    <p className="text-sm font-medium">Total Orders</p>
                   </div>
-                  <p className="text-4xl font-black bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">1,247</p>
-                  <p className="text-xs text-gray-500 mt-2">{t("home.thisWeek")}</p>
+                  <p className="text-4xl font-black bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">{stats.totalOrders.toLocaleString()}</p>
+                  <p className="text-xs text-gray-500 mt-2">Real-time</p>
                 </div>
               </div>
             </div>

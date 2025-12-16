@@ -115,11 +115,12 @@ export const getClientOrders: RequestHandler = async (req, res) => {
     const result = await pool.query(
       `SELECT 
         o.*,
-        p.title as product_title,
-        p.price as product_price,
-        p.images as product_images
+        COALESCE(p.title, cp.title) as product_title,
+        COALESCE(p.price, cp.price) as product_price,
+        COALESCE(p.images, cp.images) as product_images
       FROM store_orders o
       LEFT JOIN store_products p ON o.product_id = p.id
+      LEFT JOIN client_store_products cp ON o.product_id = cp.id
       WHERE o.client_id = $1
       ORDER BY o.created_at DESC`,
       [req.user.id]

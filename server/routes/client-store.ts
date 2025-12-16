@@ -7,6 +7,9 @@ const router = Router();
 // Get all store products for client
 export const getStoreProducts: RequestHandler = async (req, res) => {
   try {
+    // Admins are platform users and should not manage client storefronts.
+    const user = (req as any).user;
+    if (user && user.role === 'admin') return res.status(403).json({ error: 'Admins are not allowed to manage client storefronts' });
     const clientId = (req as any).user.id;
     const { status, category, search } = req.query;
 
@@ -51,6 +54,8 @@ export const getStoreProducts: RequestHandler = async (req, res) => {
 // Get single product
 export const getStoreProduct: RequestHandler = async (req, res) => {
   try {
+    const user = (req as any).user;
+    if (user && user.role === 'admin') return res.status(403).json({ error: 'Admins are not allowed to manage client storefronts' });
     const clientId = (req as any).user.id;
     const { id } = req.params;
 
@@ -74,6 +79,8 @@ export const getStoreProduct: RequestHandler = async (req, res) => {
 // Create product
 export const createStoreProduct: RequestHandler = async (req, res) => {
   try {
+    const user = (req as any).user;
+    if (user && user.role === 'admin') return res.status(403).json({ error: 'Admins are not allowed to manage client storefronts' });
     const clientId = (req as any).user.id;
     const {
       title,
@@ -141,6 +148,8 @@ export const createStoreProduct: RequestHandler = async (req, res) => {
 // Update product
 export const updateStoreProduct: RequestHandler = async (req, res) => {
   try {
+    const user = (req as any).user;
+    if (user && user.role === 'admin') return res.status(403).json({ error: 'Admins are not allowed to manage client storefronts' });
     const clientId = (req as any).user.id;
     const { id } = req.params;
     const updates = req.body;
@@ -196,6 +205,8 @@ export const updateStoreProduct: RequestHandler = async (req, res) => {
 // Delete product
 export const deleteStoreProduct: RequestHandler = async (req, res) => {
   try {
+    const user = (req as any).user;
+    if (user && user.role === 'admin') return res.status(403).json({ error: 'Admins are not allowed to manage client storefronts' });
     const clientId = (req as any).user.id;
     const { id } = req.params;
 
@@ -227,6 +238,8 @@ export const deleteStoreProduct: RequestHandler = async (req, res) => {
 // Get store categories
 export const getStoreCategories: RequestHandler = async (req, res) => {
   try {
+    const user = (req as any).user;
+    if (user && user.role === 'admin') return res.status(403).json({ error: 'Admins are not allowed to manage client storefronts' });
     const clientId = (req as any).user.id;
 
     const result = await pool.query(
@@ -247,6 +260,8 @@ export const getStoreCategories: RequestHandler = async (req, res) => {
 // Get store settings
 export const getStoreSettings: RequestHandler = async (req, res) => {
   try {
+    const user = (req as any).user;
+    if (user && user.role === 'admin') return res.status(403).json({ error: 'Admins do not have a client store' });
     const clientId = (req as any).user.id;
     logStoreSettings('getStoreSettings:start', { clientId });
 
@@ -289,8 +304,12 @@ export const getStoreSettings: RequestHandler = async (req, res) => {
 // Update store settings
 export const updateStoreSettings: RequestHandler = async (req, res) => {
   try {
+    const user = (req as any).user;
+    if (user && user.role === 'admin') return res.status(403).json({ error: 'Admins are not allowed to manage client storefronts' });
     const clientId = (req as any).user.id;
     const updates = req.body;
+    // Debug: log incoming updates for easier diagnosis during development
+    console.log('[updateStoreSettings] clientId=', clientId, 'payload=', JSON.stringify(updates));
     logStoreSettings('updateStoreSettings:start', { clientId, keys: Object.keys(updates), updates });
 
     // Normalize image list fields: trim whitespace, remove duplicate commas, convert empty to NULL
@@ -319,16 +338,57 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
       }
     });
 
+    // Support `store_images` (array) for gallery images. Normalize to text[] or NULL.
+    if (Object.prototype.hasOwnProperty.call(updates, 'store_images')) {
+      const v = updates.store_images;
+      if (v == null) {
+        updates.store_images = null;
+      } else if (Array.isArray(v)) {
+        const arr = v.map((s: any) => (s == null ? '' : String(s).trim())).filter((s: string) => s.length > 0);
+        updates.store_images = arr.length ? arr : null;
+      } else if (typeof v === 'string') {
+        const arr = v
+          .split(',')
+          .map((s: string) => s.trim())
+          .filter((s: string) => s.length > 0);
+        updates.store_images = arr.length ? arr : null;
+      } else {
+        // Unknown type - coerce to null
+        updates.store_images = null;
+      }
+    }
+
+    // Ensure DB has a column for store_images (safe to run on each update)
+    try {
+      await pool.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS store_images TEXT[]`);
+    } catch (e) {
+      // Non-fatal if DB doesn't allow alter; we'll attempt update and let it fail loudly
+      console.error('Could not ensure store_images column exists:', (e as any).message);
+    }
+
     const fields: string[] = [];
     const values: any[] = [];
     let paramCount = 1;
 
+    // Whitelist of allowed store settings columns (avoid unknown keys causing DB errors)
+    const allowedCols = new Set([
+      'store_name', 'store_description', 'store_logo', 'primary_color', 'secondary_color',
+      'custom_domain', 'is_public', 'store_slug', 'template', 'banner_url', 'currency_code',
+      'hero_main_url', 'hero_tile1_url', 'hero_tile2_url', 'owner_name', 'owner_email', 'store_images',
+      // allow older/client payloads to include seller fields without failing
+      'seller_name', 'seller_email'
+    ]);
+
     Object.entries(updates).forEach(([key, value]) => {
-      if (key !== "id" && key !== "client_id") {
-        fields.push(`${key} = $${paramCount}`);
-        values.push(value);
-        paramCount++;
+      if (key === 'id' || key === 'client_id') return;
+      if (!allowedCols.has(key)) {
+        // Skip unknown/legacy keys (log for visibility)
+        console.warn('[updateStoreSettings] skipping unknown key:', key);
+        return;
       }
+      fields.push(`${key} = $${paramCount}`);
+      values.push(value);
+      paramCount++;
     });
 
     if (fields.length === 0) {
@@ -338,14 +398,17 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
     fields.push(`updated_at = CURRENT_TIMESTAMP`);
     values.push(clientId);
 
-    const result = await pool.query(
-      `UPDATE client_store_settings 
+    const queryText = `UPDATE client_store_settings 
        SET ${fields.join(", ")}
        WHERE client_id = $${paramCount}
-       RETURNING *`,
-      values
-    );
+       RETURNING *`;
+    // Debug: log the exact SQL and parameter values sent to Postgres
+    console.log('[updateStoreSettings] SQL=', queryText);
+    console.log('[updateStoreSettings] SQL values=', JSON.stringify(values));
+    const result = await pool.query(queryText, values);
 
+    // Debug: log the DB result so we can confirm persisted values
+    console.log('[updateStoreSettings] updatedRow=', JSON.stringify(result.rows[0]));
     logStoreSettings('updateStoreSettings:success', { clientId, updated: result.rows[0] });
 
     // Audit log settings update
@@ -362,13 +425,19 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
   } catch (error) {
     console.error("Update store settings error:", error);
     logStoreSettings('updateStoreSettings:error', { error: (error as any)?.message });
-    res.status(500).json({ error: "Failed to update store settings" });
+    const payload: any = { error: "Failed to update store settings" };
+    if (process.env.NODE_ENV !== 'production') {
+      payload.details = (error as any)?.message || String(error);
+    }
+    res.status(500).json(payload);
   }
 };
 
 // Store stats (aggregated)
 export const getStoreStats: RequestHandler = async (req, res) => {
   try {
+    const user = (req as any).user;
+    if (user && user.role === 'admin') return res.status(403).json({ error: 'Admins do not have a client store' });
     const clientId = (req as any).user.id;
     const statsRes = await pool.query(
       `SELECT 
@@ -390,6 +459,8 @@ export const getStoreStats: RequestHandler = async (req, res) => {
 // Generate shareable link for product
 export const getProductShareLink: RequestHandler = async (req, res) => {
   try {
+    const user = (req as any).user;
+    if (user && user.role === 'admin') return res.status(403).json({ error: 'Admins do not have a client store' });
     const clientId = (req as any).user.id;
     const { id } = req.params;
 

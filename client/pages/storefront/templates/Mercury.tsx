@@ -19,25 +19,26 @@ export default function MercuryTemplate(props: TemplateProps & { canManage?: boo
     return urls.length ? urls : (fallback || []);
   };
 
+  // When store settings are empty we should avoid pulling third-party images
+  // (Unsplash) automatically; prefer a local placeholder to avoid showing
+  // unexpected images on the storefront.
   const heroMainList = useMemo(() => parseList(
     settings?.banner_url,
-    [
-      settings?.hero_main_url || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1600&auto=format&fit=crop'
-    ]
+    [settings?.hero_main_url || '/placeholder.png']
   ), [settings?.banner_url, settings?.hero_main_url]);
 
   const heroTile1List = useMemo(() => parseList(
     settings?.hero_tile1_url,
-    ['https://images.unsplash.com/photo-1519741497674-611b54f68947?q=80&w=1200&auto=format&fit=crop']
+    ['/placeholder.png']
   ), [settings?.hero_tile1_url]);
 
   const heroTile2List = useMemo(() => parseList(
     settings?.hero_tile2_url,
-    ['https://images.unsplash.com/photo-1520975922203-c0d7a3b5c7a9?q=80&w=1200&auto=format&fit=crop']
+    ['/placeholder.png']
   ), [settings?.hero_tile2_url]);
 
   const DEFAULTS = {
-    product: 'https://images.unsplash.com/photo-1519744346361-7fa1c1b421c9?q=80&w=800&auto=format&fit=crop',
+    product: '/placeholder.png',
   } as const;
 
   // Slideshow state and timers (2s) with hover/touch pause
@@ -129,56 +130,7 @@ export default function MercuryTemplate(props: TemplateProps & { canManage?: boo
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'hsl(var(--background))', color: 'hsl(var(--foreground))' }}>
-      {/* Header */}
-      <div
-        className="border-b futuristic-neon"
-        style={{
-          borderColor: 'hsl(var(--border))',
-          backgroundImage: 'linear-gradient(90deg, hsl(var(--header-bg-from)), hsl(var(--header-bg-via)), hsl(var(--header-bg-to)))',
-        }}
-      >
-        <div className="mx-auto max-w-7xl px-4 py-3 grid grid-cols-3 items-center">
-          <div className="col-span-1">
-            <div className="flex items-center gap-3">
-              {settings?.store_logo && (
-                <img
-                  src={settings.store_logo}
-                  alt={settings?.store_name || 'Store logo'}
-                  className="w-9 h-9 rounded-full object-cover"
-                  style={{ boxShadow: '0 0 0 1px hsl(var(--border))' }}
-                />
-              )}
-              <div className="text-3xl md:text-4xl font-calligraphic tracking-normal">
-                <span className="header-gradient-text">
-                  {(settings?.store_name || 'MERCURY').toUpperCase()}
-                </span>
-              </div>
-            </div>
-          </div>
-          <div className="col-span-1">
-            <div className="relative mx-auto max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'hsl(var(--muted-foreground))' }} />
-              <Input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search the future"
-                className="pl-10 h-9 text-sm rounded-full"
-                style={{
-                  backgroundColor: 'hsl(var(--input))',
-                  borderColor: 'hsl(var(--border))',
-                }}
-              />
-            </div>
-          </div>
-          <div className="col-span-1 flex justify-end items-center gap-2">
-            <Button variant="outline" className="h-9 px-3 text-sm" onClick={() => navigate(`/cart`)}
-              style={{ borderColor: 'hsl(var(--border))' }}
-            >My Cart</Button>
-            {/* Theme toggle */}
-            <ThemeToggleButton />
-          </div>
-        </div>
-      </div>
+          {/* Header is rendered by `StoreLayout` so templates should not duplicate it. */}
 
       {/* Main layout */}
       <div className="mx-auto max-w-7xl px-4 py-8 space-y-10">
@@ -298,7 +250,10 @@ export default function MercuryTemplate(props: TemplateProps & { canManage?: boo
                   />
                   {/* Minimal info: title + price only, tight spacing */}
                   <div className="mt-3 flex items-center justify-between">
-                    <span className="text-base font-medium truncate" style={{ color: 'hsl(var(--foreground))' }}>{product.title}</span>
+                    <div className="flex-1">
+                      <div className="text-base font-medium truncate" style={{ color: 'hsl(var(--foreground))' }}>{product.title}</div>
+                      <div className="text-xs text-muted-foreground mt-1">{product.seller_name || settings?.owner_name || settings?.store_name}</div>
+                    </div>
                     <span className="text-base font-bold" style={{ color: 'hsl(var(--foreground))' }}>{formatPrice(Number(product.price))}</span>
                   </div>
                   {canManage && (

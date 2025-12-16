@@ -183,6 +183,18 @@ export const convertUserToSeller: RequestHandler = async (req, res) => {
       [user.email, hashed, user.name]
     );
 
+    // Ensure seller store settings exists
+    try {
+      const slug = 'seller-' + (ins.rows[0].id || Math.random().toString(36).substr(2,8));
+      await pool.query(
+        `INSERT INTO seller_store_settings (seller_id, store_name, store_slug, created_at)
+         VALUES ($1, $2, $3, NOW()) ON CONFLICT (seller_id) DO NOTHING`,
+        [ins.rows[0].id, user.name || user.email.split('@')[0], slug]
+      );
+    } catch (e) {
+      console.error('Could not create seller_store_settings for converted seller:', (e as any).message);
+    }
+
     // Audit log
     const actorId = (req as any).user?.id ? parseInt((req as any).user.id, 10) : null;
     if (actorId) {

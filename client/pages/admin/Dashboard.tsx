@@ -34,10 +34,14 @@ export default function Dashboard() {
 
   useEffect(() => {
     loadDashboardData();
+    // Refresh stats every 5 seconds for real-time updates
+    const interval = setInterval(() => {
+      loadDashboardData();
+    }, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const loadDashboardData = async () => {
-    setLoading(true);
     try {
       const token = localStorage.getItem('authToken');
       const headers: HeadersInit = token ? { 'Authorization': `Bearer ${token}` } : {};
@@ -46,6 +50,7 @@ export default function Dashboard() {
       if (statsRes.ok) {
         const statsData = await statsRes.json();
         setStats(statsData);
+        setLoading(false);
       }
 
       const ordersRes = await fetch('/api/client/orders', { headers });
@@ -57,7 +62,6 @@ export default function Dashboard() {
       // Remove marketplace seller list from client dashboard
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
-    } finally {
       setLoading(false);
     }
   };

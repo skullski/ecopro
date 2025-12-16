@@ -1,5 +1,9 @@
 @import url("https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap");
 @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Alex+Brush&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Euphoria+Script&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Allura&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Satisfy&display=swap');
 
 /* Horror glowing effect for admin panel */
 .drop-shadow-glow {
@@ -9,10 +13,28 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Calligraphic store name font */
+/* Calligraphic store name font: prefer Alex Brush, fall back to Great Vibes */
 .font-calligraphic {
-  font-family: 'Great Vibes', cursive;
+  /* Try Euphoria Script for a high-contrast calligraphic look */
+  font-family: 'Euphoria Script', 'Great Vibes', 'Alex Brush', 'Allura', 'Satisfy', cursive;
+  font-weight: 400;
+  font-style: normal;
+  letter-spacing: 0.02em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-variant-ligatures: discretionary-ligatures;
+  -webkit-font-feature-settings: "liga" 1, "dlig" 1;
+  font-feature-settings: "liga" 1, "dlig" 1;
+  text-transform: none;
 }
+
+/* Per-font helper classes for preview toggler */
+.font-euphoria { font-family: 'Euphoria Script', cursive; }
+.font-greatvibes { font-family: 'Great Vibes', cursive; }
+.font-alexbrush { font-family: 'Alex Brush', cursive; }
+.font-allura { font-family: 'Allura', cursive; }
+.font-satisfy { font-family: 'Satisfy', cursive; }
 @layer utilities {
   /* Hide scrollbar for Chrome, Safari and Opera */
   .scrollbar-hide::-webkit-scrollbar {
@@ -183,6 +205,11 @@
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+    /* subtle inner glow and outline to match screenshot */
+    text-shadow: 0 1px 0 rgba(0,0,0,0.35), 0 8px 26px rgba(124,58,237,0.12);
+    display: inline-block;
+    line-height: 1;
+    font-size: inherit;
   }
 }
 }

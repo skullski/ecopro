@@ -18,6 +18,7 @@ import * as orderRoutes from "./routes/orders";
 import { upload, uploadImage } from "./routes/uploads";
 import { authenticate, requireAdmin, requireSeller, requireClient } from "./middleware/auth";
 import * as adminRoutes from "./routes/admin";
+import * as sellerStoreRoutes from "./routes/seller-store";
 import * as dashboardRoutes from "./routes/dashboard";
 import * as botRoutes from "./routes/bot";
 import { initializeDatabase, createDefaultAdmin, runPendingMigrations } from "./utils/database";
@@ -29,6 +30,7 @@ import {
   registerValidation,
   loginValidation,
 } from "./middleware/validation";
+import { deleteStoreImage } from "./routes/store";
 
 // Get __dirname equivalent in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -207,6 +209,10 @@ export function createServer() {
     validate,
     sellerAuthRoutes.loginSeller
   );
+
+  // Seller storefront settings (authenticated sellers)
+  app.get('/api/seller/store/settings', authenticate, requireSeller, sellerStoreRoutes.getSellerStoreSettings);
+  app.put('/api/seller/store/settings', authenticate, requireSeller, sellerStoreRoutes.updateSellerStoreSettings);
 
   // Public product routes
   app.get(
@@ -489,6 +495,9 @@ export function createServer() {
 
   // Image upload route (authenticated users)
   app.post("/api/upload", authenticate, upload.single('image'), uploadImage);
+
+  // Register the delete store image route
+  app.delete("/api/store/image", deleteStoreImage);
 
   // Serve uploaded files statically
   app.use('/uploads', express.static(path.join(process.cwd(), 'public', 'uploads')));

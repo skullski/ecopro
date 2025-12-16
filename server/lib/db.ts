@@ -1,11 +1,12 @@
-import { Address, ChatMessage, Conversation, ID, Order, Product, Review, User } from "@shared/marketplace";
+import { Address, ChatMessage, Conversation, ID, Order, Review, User } from "@shared/marketplace";
+import { Product } from "@shared/types"; // Unified Product type
 
 const now = () => Date.now();
 const id = () => Math.random().toString(36).slice(2);
 
 export const db = {
   users: new Map<ID, User>(),
-  products: new Map<ID, Product>(),
+  products: new Map<ID, Product>(), // Update to use unified Product type
   reviews: new Map<ID, Review>(),
   orders: new Map<ID, Order>(),
   conversations: new Map<ID, Conversation>(),
@@ -48,7 +49,8 @@ function seed() {
     sellerId: seller.id,
     likes: new Set<ID>(),
     createdAt: now(),
-    imageUrl: "https://picsum.photos/seed/bottle/600/400",
+    images: ["https://example.com/images/eco-bottle.jpg"],
+    category: "Drinkware",
   };
   const p2: Product = {
     id: "p2",
@@ -58,7 +60,8 @@ function seed() {
     sellerId: seller.id,
     likes: new Set<ID>(),
     createdAt: now(),
-    imageUrl: "https://picsum.photos/seed/tote/600/400",
+    images: ["https://example.com/images/tote-bag.jpg"],
+    category: "Bags",
   };
   db.products.set(p1.id, p1);
   db.products.set(p2.id, p2);

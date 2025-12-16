@@ -63,8 +63,9 @@ export default function EditorialTemplate(props: TemplateProps & { mode: 'suprem
                     ? <img src={p.images[0]} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition" />
                     : <div className="w-full h-full flex items-center justify-center"><Package className="w-12 h-12 text-muted-foreground opacity-20"/></div>}
                 </div>
-                <div className="p-3">
+                  <div className="p-3">
                   <div className="font-medium line-clamp-2 min-h-[2.5rem]">{p.title}</div>
+                  <div className="text-xs text-muted-foreground mt-1">{(p as any).seller_name || settings?.owner_name || settings?.store_name}</div>
                   <div className="mt-1 font-semibold" style={{ color: primaryColor }}>{formatPrice(Number(p.price))}</div>
                   <div className="mt-3 flex gap-2">
                     <Button
@@ -98,6 +99,7 @@ export default function EditorialTemplate(props: TemplateProps & { mode: 'suprem
                 </div>
                 <div className="p-3">
                   <div className="font-medium line-clamp-2 min-h-[2.5rem]">{p.title}</div>
+                  <div className="text-xs text-muted-foreground mt-1">{(p as any).seller_name || settings?.owner_name || settings?.store_name}</div>
                   <div className="mt-1 font-semibold" style={{ color: primaryColor }}>{formatPrice(Number(p.price))}</div>
                 </div>
               </button>

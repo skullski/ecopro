@@ -12,19 +12,19 @@ export const getDashboardStats: RequestHandler = async (req, res) => {
         [clientId]
       ),
       pool.query(
-        `SELECT COUNT(*)::int AS orders FROM marketplace_orders WHERE seller_id = $1`,
+        `SELECT COUNT(*)::int AS orders FROM store_orders WHERE client_id = $1`,
         [clientId]
       ),
       pool.query(
-        `SELECT COALESCE(SUM(total_price),0)::float AS revenue FROM marketplace_orders WHERE status = 'completed' AND seller_id = $1`,
+        `SELECT COALESCE(SUM(total_price),0)::float AS revenue FROM store_orders WHERE client_id = $1`,
         [clientId]
       ),
       pool.query(
-        `SELECT COUNT(*)::int AS pending FROM marketplace_orders WHERE status = 'pending' AND seller_id = $1`,
+        `SELECT COUNT(*)::int AS pending FROM store_orders WHERE status = 'pending' AND client_id = $1`,
         [clientId]
       ),
       pool.query(
-        `SELECT COUNT(*)::int AS completed FROM marketplace_orders WHERE status = 'completed' AND seller_id = $1`,
+        `SELECT COUNT(*)::int AS completed FROM store_orders WHERE status = 'completed' AND client_id = $1`,
         [clientId]
       ),
     ]);

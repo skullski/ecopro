@@ -98,9 +98,10 @@ export default function BaseTemplate(props: TemplateProps & { variant: 'classic'
                       Featured
                     </Badge>
                   </div>
-                  <div className="p-4">
+                    <div className="p-4">
                     <h3 className="font-semibold line-clamp-2 mb-2">{product.title}</h3>
-                    <div className="flex items-center justify-between">
+                    <div className="text-xs text-muted-foreground mt-1">{(product as any).seller_name || settings?.owner_name || settings?.store_name}</div>
+                    <div className="flex items-center justify-between mt-2">
                       <span className="text-lg font-bold" style={{ color: primaryColor }}>
                         {formatPrice(Number(product.price))}
                       </span>
@@ -198,9 +199,10 @@ export default function BaseTemplate(props: TemplateProps & { variant: 'classic'
                     {discount > 0 && <Badge className="absolute top-2 right-2 bg-red-500">-{discount}%</Badge>}
                     {product.stock_quantity === 0 && <div className="absolute inset-0 bg-black/60 flex items-center justify-center"><Badge variant="secondary">Sold Out</Badge></div>}
                   </div>
-                  <div className="p-4 space-y-2">
+                    <div className="p-4 space-y-2">
                     <div>
                       <h3 className="font-semibold tracking-tight line-clamp-2">{product.title}</h3>
+                      <div className="text-xs text-muted-foreground mt-1">{(product as any).seller_name || settings?.owner_name || settings?.store_name}</div>
                       {product.category && <p className="text-xs text-muted-foreground mt-1">{product.category}</p>}
                     </div>
                     <div className="flex items-center justify-between pt-1">

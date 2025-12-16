@@ -212,28 +212,47 @@ export default function Store() {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${token}`,
               },
-              body: JSON.stringify({
-                store_name: storeSettings.store_name || null,
-                owner_name: storeSettings.seller_name || storeSettings.owner_name || null,
-                owner_email: storeSettings.seller_email || storeSettings.owner_email || null,
-                seller_name: storeSettings.seller_name || null,
-                seller_email: storeSettings.seller_email || null,
-                store_description: storeSettings.store_description || null,
-                store_logo: storeSettings.store_logo || null,
-                store_images: storeSettings.store_images || [],
-                template: storeSettings.template || 'classic',
-                banner_url: storeSettings.banner_url || null,
-                hero_main_url: storeSettings.hero_main_url || null,
-                hero_tile1_url: storeSettings.hero_tile1_url || null,
-                hero_tile2_url: storeSettings.hero_tile2_url || null,
-                currency_code: storeSettings.currency_code || 'DZD',
-              }),
+                body: JSON.stringify({
+                  store_name: storeSettings.store_name || null,
+                  // Prefer explicit owner_name/owner_email fields. These are per-client and scoped to your account.
+                  owner_name: storeSettings.owner_name || storeSettings.seller_name || null,
+                  owner_email: storeSettings.owner_email || storeSettings.seller_email || null,
+                  // Keep seller_* for backward compatibility but server will scope updates to your account only
+                  seller_name: storeSettings.seller_name || null,
+                  seller_email: storeSettings.seller_email || null,
+                  store_description: storeSettings.store_description || null,
+                  store_logo: storeSettings.store_logo || null,
+                  template: storeSettings.template || 'classic',
+                  banner_url: storeSettings.banner_url || null,
+                  // hero_main_url removed
+                  hero_tile1_url: storeSettings.hero_tile1_url || null,
+                  hero_tile2_url: storeSettings.hero_tile2_url || null,
+                  currency_code: storeSettings.currency_code || 'DZD',
+                }),
             });
-            if (!res.ok) throw new Error('Save failed');
-            const data = await res.json();
-            setStoreSettings(data);
+            if (!res.ok) {
+              // try to surface server error message
+              const err = await res.json().catch(() => ({}));
+              throw new Error(err.error || 'Save failed');
+            }
+            // Server may return the updated row; still re-fetch to ensure canonical persisted state
+            const saved = await res.json().catch(() => null);
+            try {
+              const settingsRes = await fetch('/api/client/store/settings', {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              if (settingsRes.ok) {
+                const fresh = await settingsRes.json();
+                setStoreSettings(fresh);
+              } else if (saved) {
+                setStoreSettings(saved);
+              }
+            } catch (e) {
+              if (saved) setStoreSettings(saved);
+            }
           } catch (e) {
             console.error('Failed to save store settings', e);
+            alert(`Failed to save settings: ${(e as any)?.message || e}`);
           } finally {
             setSavingSettings(false);
           }
@@ -260,17 +279,15 @@ export default function Store() {
     seller_email: '',
     store_description: '',
     store_logo: '',
-    store_images: [],
     template: 'classic',
     banner_url: '',
-    hero_main_url: '',
+    // hero_main_url removed
     hero_tile1_url: '',
     hero_tile2_url: '',
     currency_code: 'DZD',
   });
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
-  const [uploadingStoreImages, setUploadingStoreImages] = useState(false);
   const [storeLinkCopied, setStoreLinkCopied] = useState(false);
   // Set refs for copyStoreLink
   storeSettingsRef = storeSettings;
@@ -291,7 +308,24 @@ export default function Store() {
         });
         if (!res.ok) throw new Error('Upload failed');
         const data = await res.json();
+        // Persist the uploaded logo immediately
         setStoreSettings((s: any) => ({ ...s, store_logo: data.url }));
+        try {
+          const saveRes = await fetch('/api/client/store/settings', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ store_logo: data.url }),
+          });
+          if (saveRes.ok) {
+            const updated = await saveRes.json();
+            setStoreSettings(updated);
+          }
+        } catch (e) {
+          console.error('Failed to persist uploaded logo', e);
+        }
       } catch (error) {
         console.error('Failed to upload logo:', error);
         alert('Failed to upload image. Please try again.');
@@ -299,8 +333,31 @@ export default function Store() {
         setUploadingLogo(false);
       }
     };
-    const removeLogo = () => {
+    const removeLogo = async () => {
+      // Optimistically remove locally
       setStoreSettings((s: any) => ({ ...s, store_logo: '' }));
+      try {
+        const token = localStorage.getItem('authToken');
+        const res = await fetch('/api/client/store/settings', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ store_logo: null }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          console.error('Failed to persist removeLogo', err);
+          alert('Failed to remove logo');
+          return;
+        }
+        const updated = await res.json();
+        setStoreSettings(updated);
+      } catch (error) {
+        console.error('removeLogo error:', error);
+        alert('Failed to remove logo');
+      }
     };
     const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -317,7 +374,24 @@ export default function Store() {
         });
         if (!res.ok) throw new Error('Upload failed');
         const data = await res.json();
+        // Persist the uploaded banner immediately
         setStoreSettings((s: any) => ({ ...s, banner_url: data.url }));
+        try {
+          const saveRes = await fetch('/api/client/store/settings', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ banner_url: data.url }),
+          });
+          if (saveRes.ok) {
+            const updated = await saveRes.json();
+            setStoreSettings(updated);
+          }
+        } catch (e) {
+          console.error('Failed to persist uploaded banner', e);
+        }
       } catch (error) {
         console.error('Failed to upload banner:', error);
         alert('Failed to upload image. Please try again.');
@@ -325,8 +399,30 @@ export default function Store() {
         setUploadingBanner(false);
       }
     };
-    const removeBanner = () => {
+    const removeBanner = async () => {
       setStoreSettings((s: any) => ({ ...s, banner_url: '' }));
+      try {
+        const token = localStorage.getItem('authToken');
+        const res = await fetch('/api/client/store/settings', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ banner_url: null }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          console.error('Failed to persist removeBanner', err);
+          alert('Failed to remove banner');
+          return;
+        }
+        const updated = await res.json();
+        setStoreSettings(updated);
+      } catch (error) {
+        console.error('removeBanner error:', error);
+        alert('Failed to remove banner');
+      }
     };
     const handleFieldUpload = async (field: string, e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -342,7 +438,24 @@ export default function Store() {
         });
         if (!res.ok) throw new Error('Upload failed');
         const data = await res.json();
+        // Persist the uploaded field immediately
         setStoreSettings((s: any) => ({ ...s, [field]: data.url }));
+        try {
+          const saveRes = await fetch('/api/client/store/settings', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ [field]: data.url }),
+          });
+          if (saveRes.ok) {
+            const updated = await saveRes.json();
+            setStoreSettings(updated);
+          }
+        } catch (e) {
+          console.error('Failed to persist uploaded field', e);
+        }
       } catch (err) {
         console.error('Field upload error', err);
         alert('Failed to upload image');
@@ -350,52 +463,39 @@ export default function Store() {
         if (e && (e.target as HTMLInputElement)) (e.target as HTMLInputElement).value = '';
       }
     };
-    const removeField = (field: string) => {
+    const removeField = async (field: string) => {
+      // Clear locally
       setStoreSettings((s: any) => ({ ...s, [field]: '' }));
-    };
-    const handleStoreImagesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = e.target.files;
-      if (!files || files.length === 0) return;
-      setUploadingStoreImages(true);
       try {
         const token = localStorage.getItem('authToken');
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
-          if (!file.type.startsWith('image/')) continue;
-          const form = new FormData();
-          form.append('image', file);
-          const res = await fetch('/api/upload', {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${token}` },
-            body: form,
-          });
-          if (!res.ok) continue;
-          const data = await res.json();
-          setStoreSettings((s: any) => {
-            const prev: string[] = Array.isArray(s?.store_images) ? s.store_images : [];
-            const next = [...prev, data.url].slice(0, 3);
-            return { ...s, store_images: next };
-          });
+        const body: any = {};
+        body[field] = null;
+        const res = await fetch('/api/client/store/settings', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          console.error('Failed to persist removeField', err);
+          alert('Failed to remove image');
+          return;
         }
-      } catch (err) {
-        console.error('store images upload error', err);
-        alert('Failed to upload one or more images');
-      } finally {
-        setUploadingStoreImages(false);
-        if (e && (e.target as HTMLInputElement)) (e.target as HTMLInputElement).value = '';
+        const updated = await res.json();
+        setStoreSettings(updated);
+      } catch (error) {
+        console.error('removeField error:', error);
+        alert('Failed to remove image');
       }
     };
-    const removeStoreImage = (index: number) => {
-      setStoreSettings((s: any) => {
-        const prev: string[] = Array.isArray(s?.store_images) ? s.store_images : [];
-        const next = prev.filter((_, i) => i !== index);
-        return { ...s, store_images: next };
-      });
-    };
+    // store images handlers removed (not used)
   // Remove duplicate state declarations (already declared above)
       {/* Store Settings Modal with Tabs */}
       <Dialog open={showStoreSettingsModal} onOpenChange={setShowStoreSettingsModal}>
-        <DialogContent className="max-w-[950px] w-full p-4 max-h-[90vh] overflow-auto">
+        <DialogContent className="max-w-[400px] w-full p-2 max-h-[60vh] overflow-auto">
           <DialogHeader>
             <DialogTitle>Store Settings</DialogTitle>
             <DialogDescription>
@@ -404,7 +504,7 @@ export default function Store() {
           </DialogHeader>
 
           {/* Tabs Navigation */}
-          <div className="flex gap-2 mb-4 border-b pb-2">
+          <div className="flex gap-2 mb-3 border-b pb-2">
             {['Branding', 'Customization', 'Store URL', 'Stats & Help'].map((tab, idx) => (
               <button
                 key={tab}
@@ -419,7 +519,7 @@ export default function Store() {
           {/* Tab Panels */}
           <div className="py-2">
             {selectedTab === 0 && (
-              <div className="space-y-3 rounded-xl bg-gradient-to-br from-white via-slate-50 to-slate-100 dark:from-transparent dark:via-transparent dark:to-transparent p-4 shadow-sm dark:bg-slate-800 dark:text-slate-100">
+              <div className="space-y-3 rounded-xl bg-gradient-to-br from-white via-slate-50 to-slate-100 dark:from-transparent dark:via-transparent dark:to-transparent p-3 shadow-sm dark:bg-slate-800 dark:text-slate-100">
                 <h3 className="text-base font-semibold">Store Branding</h3>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Store Name *</Label>
@@ -429,6 +529,8 @@ export default function Store() {
                     onChange={(e) => setStoreSettings((s: any) => ({ ...s, store_name: e.target.value }))}
                   />
                   <p className="text-xs text-muted-foreground">This will be the main title of your store</p>
+                  <p className="text-xs text-muted-foreground mt-1">Store slug: <code className="px-1 py-0.5 bg-gray-100 rounded">{storeSettings.store_slug || '—'}</code></p>
+                  <p className="text-xs mt-1 text-amber-600">These settings apply only to this store (slug shown above).</p>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Seller Name *</Label>
@@ -458,7 +560,7 @@ export default function Store() {
               </div>
             )}
             {selectedTab === 1 && (
-              <div className="space-y-3 rounded-xl bg-gradient-to-br from-white via-slate-50 to-slate-100 dark:from-transparent dark:via-transparent dark:to-transparent p-4 shadow-sm dark:bg-slate-900 dark:text-slate-100 overflow-hidden max-w-full">
+              <div className="space-y-3 rounded-xl bg-gradient-to-br from-white via-slate-50 to-slate-100 dark:from-transparent dark:via-transparent dark:to-transparent p-3 shadow-sm dark:bg-slate-900 dark:text-slate-100 overflow-hidden max-w-full">
                 <h3 className="text-base font-semibold">Customization</h3>
                 {/* Store Logo */}
                 <div className="space-y-2">
@@ -469,7 +571,7 @@ export default function Store() {
                         placeholder="https://example.com/logo.png"
                         value={storeSettings.store_logo || ''}
                         onChange={(e) => setStoreSettings((s: any) => ({ ...s, store_logo: e.target.value }))}
-                        className="min-w-0"
+                        className="max-w-0"
                       />
                     </div>
                     <Button
@@ -500,7 +602,7 @@ export default function Store() {
                   </div>
                   {storeSettings.store_logo ? (
                     <div className="mt-2">
-                      <div className="relative w-20 h-20 rounded overflow-hidden border bg-white dark:bg-black">
+                      <div className="relative w-40 h-40 rounded overflow-hidden border bg-white dark:bg-black">
                         <img src={storeSettings.store_logo} alt="logo" className="w-full h-full object-contain" />
                         <button type="button" onClick={removeLogo} className="absolute top-1 right-1 bg-white/80 dark:bg-black/60 text-red-600 rounded-full p-1 text-xs">
                           <Trash2 className="w-3 h-3" />
@@ -511,7 +613,7 @@ export default function Store() {
                   <p className="text-xs text-muted-foreground">Upload or paste a direct link to your logo</p>
                 </div>
                 {/* Banner, Hero Images, Store Images */}
-                <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-1 gap-3">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Banner Image URL</Label>
                     <div className="flex gap-2 min-w-0">
@@ -562,46 +664,8 @@ export default function Store() {
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Hero Images (main + tiles)</Label>
                     <div className="grid grid-cols-1 gap-3 items-start max-w-full overflow-hidden">
-                      <div className="md:col-span-1">
-                        <div className="text-xs mb-2">Main hero image</div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <input id="hero-main-upload" type="file" accept="image/*" onChange={(e) => handleFieldUpload('hero_main_url', e)} className="hidden" />
-                          <Button type="button" variant="outline" onClick={() => document.getElementById('hero-main-upload')?.click()}>Upload Main</Button>
-                          {storeSettings.hero_main_url ? (
-                            <div className="ml-3 mt-2">
-                              <div className="relative w-28 h-16 rounded overflow-hidden">
-                                <img src={storeSettings.hero_main_url} alt="hero-main" className="w-full h-full object-cover" />
-                                <button type="button" onClick={() => removeField('hero_main_url')} className="absolute top-1 right-1 bg-white/80 dark:bg-black/60 rounded-full p-1 text-xs">
-                                  <Trash2 className="w-3 h-3 text-red-600" />
-                                </button>
-                              </div>
-                            </div>
-                          ) : null}
-                        </div>
-                      </div>
-                      <div className="md:col-span-1">
-                        <Label className="text-sm font-medium">Store Images (up to 3)</Label>
-                        <div className="flex gap-2 flex-wrap mt-2">
-                          {(storeSettings.store_images || []).map((img: string, idx: number) => (
-                            <div key={idx} className="relative rounded overflow-hidden bg-muted w-20 h-20 flex-shrink-0">
-                              <img src={img} alt={`store-${idx}`} className="w-full h-full object-cover" />
-                              <button type="button" onClick={() => removeStoreImage(idx)} className="absolute top-1 right-1 bg-white/80 dark:bg-black/60 rounded-full p-1 text-xs">
-                                <Trash2 className="w-3 h-3 text-red-600" />
-                              </button>
-                            </div>
-                          ))}
-                          {((storeSettings.store_images || []).length < 3) && (
-                            <div className="flex items-center justify-center w-20 h-20 rounded border border-dashed text-sm text-muted-foreground">Empty</div>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 mt-2">
-                          <input id="store-images-upload" type="file" accept="image/*" multiple onChange={handleStoreImagesUpload} className="hidden" />
-                          <Button type="button" variant="outline" onClick={() => document.getElementById('store-images-upload')?.click()} disabled={uploadingStoreImages}>
-                            {uploadingStoreImages ? 'Uploading...' : 'Upload Images'}
-                          </Button>
-                          <p className="text-xs text-muted-foreground">Max 3 images, 2MB each</p>
-                        </div>
-                      </div>
+                      {/* Main hero image upload removed */}
+                      {/* Store Images upload removed */}
                       <div className="md:col-span-1 grid grid-cols-2 gap-2">
                         <div>
                           <div className="text-xs mb-2">Tile 1</div>
@@ -644,129 +708,7 @@ export default function Store() {
                 </div>
               </div>
             )}
-            {selectedTab === 2 && (
-              <div className="space-y-3 lg:col-span-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-base font-semibold">Your Store URL</Label>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      if (storeSettings.store_slug) {
-                        window.open(`/store/${storeSettings.store_slug}`, '_blank');
-                      }
-                    }}
-                    disabled={!storeSettings.store_slug}
-                  >
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    Open Store
-                  </Button>
-                </div>
-                <div className="flex gap-2 min-w-0">
-                  <Input
-                    value={storeSettings.store_slug ? `${window.location.origin}/store/${storeSettings.store_slug}` : 'Loading...'}
-                    readOnly
-                    className="font-mono text-sm min-w-0"
-                  />
-                  <Button onClick={copyStoreLink} variant="outline" disabled={!storeSettings.store_slug}>
-                    {storeLinkCopied ? (
-                      <Check className="w-4 h-4 text-green-500" />
-                    ) : (
-                      <Copy className="w-4 h-4" />
-                    )}
-                  </Button>
-                </div>
-                {storeLinkCopied && (
-                  <p className="text-sm text-green-600 flex items-center gap-2">
-                    <Check className="w-4 h-4" />
-                    Store link copied!
-                  </p>
-                )}
-                <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-                  <div className="flex gap-3">
-                    <LinkIcon className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <div className="text-sm">
-                      <div className="font-medium text-blue-900 dark:text-blue-100 mb-1">
-                        Share Your Store
-                      </div>
-                      <p className="text-blue-700 dark:text-blue-300">
-                        Share this link with your customers so they can browse all your products in one place.
-                        They can search, filter by category, and view featured items.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            {selectedTab === 3 && (
-              <>
-                <div className="border-t pt-4 lg:col-span-2">
-                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                    <div className="px-3 py-2 bg-muted rounded-md">
-                      <div className="text-sm font-semibold text-primary">{products.length}</div>
-                      <div className="text-xs">Products</div>
-                    </div>
-                    <div className="px-3 py-2 bg-muted rounded-md">
-                      <div className="text-sm font-semibold text-green-600">{products.filter(p => p.status === 'active').length}</div>
-                      <div className="text-xs">Active</div>
-                    </div>
-                    <div className="px-3 py-2 bg-muted rounded-md">
-                      <div className="text-sm font-semibold text-purple-600">{products.reduce((sum, p) => sum + p.views, 0)}</div>
-                      <div className="text-xs">Views</div>
-                    </div>
-                  </div>
-                </div>
-                <div className="border-t pt-6 lg:col-span-2">
-                  <Label className="text-base font-semibold mb-3 block">How to Use Your Store</Label>
-                  <div className="space-y-3">
-                    <div className="flex gap-3 text-sm">
-                      <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">
-                        1
-                      </div>
-                      <div>
-                        <div className="font-medium mb-1">Add Products</div>
-                        <p className="text-muted-foreground">
-                          Create products with images, prices, and descriptions
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex gap-3 text-sm">
-                      <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">
-                        2
-                      </div>
-                      <div>
-                        <div className="font-medium mb-1">Share Your Store Link</div>
-                        <p className="text-muted-foreground">
-                          Copy the store URL above and share it with your customers on social media, WhatsApp, email, etc.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex gap-3 text-sm">
-                      <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">
-                        3
-                      </div>
-                      <div>
-                        <div className="font-medium mb-1">Share Individual Products</div>
-                        <p className="text-muted-foreground">
-                          Click "Share" on any product to get a direct link for targeted advertising
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex gap-3 text-sm">
-                      <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">
-                        4
-                      </div>
-                      <div>
-                        <div className="font-medium mb-1">Track Performance</div>
-                        <p className="text-muted-foreground">
-                          Monitor views and engagement for each product in your dashboard
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
+            {/* Store URL, product summary badges and 'How to Use Your Store' moved to Store Dashboard */}
           </div>
 
           <DialogFooter>
@@ -953,6 +895,60 @@ export default function Store() {
           </div>
         </div>
 
+        {/* Store Preview: Store URL, compact badges, and How-to guide (hidden here; rendered at bottom) */}
+        {false && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2 bg-card rounded-xl border p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-sm font-semibold">Your Store URL</Label>
+                <p className="text-xs text-muted-foreground">Share this with customers to browse your storefront</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    if (storeSettings.store_slug) {
+                      window.open(`/store/${storeSettings.store_slug}`, '_blank');
+                    }
+                  }}
+                  disabled={!storeSettings.store_slug}
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Open Store
+                </Button>
+              </div>
+            </div>
+
+            <div className="mt-3 flex gap-2 items-center">
+              <Input
+                value={storeSettings.store_slug ? `${window.location.origin}/store/${storeSettings.store_slug}` : ''}
+                readOnly
+                className="font-mono text-sm flex-1"
+              />
+              <Button onClick={copyStoreLink} variant="outline" disabled={!storeSettings.store_slug}>
+                {storeLinkCopied ? (
+                  <Check className="w-4 h-4 text-green-500" />
+                ) : (
+                  <Copy className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
+
+            <div className="mt-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3 border border-blue-200 flex gap-3">
+              <LinkIcon className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <div className="font-medium text-blue-900 dark:text-blue-100 mb-1">Share Your Store</div>
+                <p className="text-blue-700 dark:text-blue-300">Share this link so customers can browse all your products in one place. Use social channels, WhatsApp, or direct messages.</p>
+              </div>
+            </div>
+          </div>
+
+          {/** summary panel moved down below filters */}
+        </div>
+        )}
+
         {/* Filters */}
         <div className="bg-card rounded-xl border p-4">
           <div className="flex flex-wrap gap-4 items-center">
@@ -1000,6 +996,7 @@ export default function Store() {
         </div>
 
         {/* Products Grid/List */}
+        {/* Store Summary will render at bottom of page */}
         {filteredProducts.length === 0 ? (
           <div className="bg-card rounded-xl border p-12 text-center">
             <Package className="w-16 h-16 mx-auto text-muted-foreground opacity-20 mb-4" />
@@ -1044,8 +1041,7 @@ export default function Store() {
                   }>
                     {product.status}
                   </Badge>
-                      // Remove duplicate states and handlers (already defined above)
-
+                  
                   <div className="flex items-center justify-between">
                     <div>
                       <span className="text-lg font-bold text-primary">
@@ -1443,7 +1439,7 @@ export default function Store() {
 
       {/* Store Settings Modal */}
       <Dialog open={showStoreSettingsModal} onOpenChange={setShowStoreSettingsModal}>
-        <DialogContent className="max-w-[950px] w-full p-4 max-h-[90vh] overflow-auto">
+        <DialogContent className="max-w-[800px] w-full p-6 max-h-[80vh] overflow-auto">
           <DialogHeader>
             <DialogTitle>Store Settings</DialogTitle>
             <DialogDescription>
@@ -1493,13 +1489,7 @@ export default function Store() {
                   rows={3}
                 />
               </div>
-
-              {/* logo moved to Customization column to keep branding compact */}
-
-            
             </div>
-
-            {/* Template selection removed */}
 
             {/* Customization */}
               <div className="space-y-3 rounded-xl bg-gradient-to-br from-white via-slate-50 to-slate-100 dark:from-transparent dark:via-transparent dark:to-transparent p-4 shadow-sm dark:bg-slate-900 dark:text-slate-100 overflow-hidden max-w-full">
@@ -1544,7 +1534,7 @@ export default function Store() {
                 </div>
                 {storeSettings.store_logo ? (
                   <div className="mt-2">
-                    <div className="relative w-20 h-20 rounded overflow-hidden border bg-white dark:bg-black">
+                    <div className="relative w-40 h-30 rounded overflow-hidden border bg-white dark:bg-black">
                       <img src={storeSettings.store_logo} alt="logo" className="w-full h-full object-contain" />
                       <button type="button" onClick={removeLogo} className="absolute top-1 right-1 bg-white/80 dark:bg-black/60 text-red-600 rounded-full p-1 text-xs">
                         <Trash2 className="w-3 h-3" />
@@ -1556,7 +1546,7 @@ export default function Store() {
               </div>
               
               <div className="grid grid-cols-1 gap-4">
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <Label className="text-sm font-medium">Banner Image URL</Label>
                   <div className="flex gap-2 min-w-0">
                     <Input
@@ -1593,10 +1583,10 @@ export default function Store() {
                   </div>
                   {storeSettings.banner_url ? (
                       <div className="mt-2">
-                      <div className="relative w-full h-28 overflow-hidden rounded bg-muted">
+                      <div className="relative w-40 h-40 overflow-hidden rounded bg-muted">
                         <img src={storeSettings.banner_url} alt="banner" className="w-full h-full object-cover" />
                         <button type="button" onClick={removeBanner} className="absolute top-2 right-2 bg-white/80 dark:bg-black/60 rounded-full p-1 text-xs">
-                          <Trash2 className="w-4 h-4 text-red-600" />
+                          <Trash2 className="w-6 h-6 text-red-600" />
                         </button>
                       </div>
                     </div>
@@ -1605,49 +1595,11 @@ export default function Store() {
                   <p className="text-xs text-muted-foreground">Hero section background image</p>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">Hero Images (main + tiles)</Label>
-                  <div className="grid grid-cols-1 gap-3 items-start max-w-full overflow-hidden">
-                    <div className="md:col-span-1">
-                      <div className="text-xs mb-2">Main hero image</div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <input id="hero-main-upload" type="file" accept="image/*" onChange={(e) => handleFieldUpload('hero_main_url', e)} className="hidden" />
-                        <Button type="button" variant="outline" onClick={() => document.getElementById('hero-main-upload')?.click()}>Upload Main</Button>
-                        {storeSettings.hero_main_url ? (
-                          <div className="ml-3 mt-2">
-                            <div className="relative w-28 h-16 rounded overflow-hidden">
-                              <img src={storeSettings.hero_main_url} alt="hero-main" className="w-full h-full object-cover" />
-                              <button type="button" onClick={() => removeField('hero_main_url')} className="absolute top-1 right-1 bg-white/80 dark:bg-black/60 rounded-full p-1 text-xs">
-                                <Trash2 className="w-3 h-3 text-red-600" />
-                              </button>
-                            </div>
-                          </div>
-                        ) : null}
-                      </div>
-                    </div>
+                  <Label className="text-sm font-bold">Hero Images (main + tiles)</Label>
+                  <div className="grid grid-cols-1 gap-6 items-start max-w-full overflow-hidden">
+                    {/* Main hero image upload removed */}
 
-                    <div className="md:col-span-1">
-                      <Label className="text-sm font-medium">Store Images (up to 3)</Label>
-                      <div className="flex gap-2 flex-wrap mt-2">
-                        {(storeSettings.store_images || []).map((img: string, idx: number) => (
-                          <div key={idx} className="relative rounded overflow-hidden bg-muted w-20 h-20 flex-shrink-0">
-                            <img src={img} alt={`store-${idx}`} className="w-full h-full object-cover" />
-                            <button type="button" onClick={() => removeStoreImage(idx)} className="absolute top-1 right-1 bg-white/80 dark:bg-black/60 rounded-full p-1 text-xs">
-                              <Trash2 className="w-3 h-3 text-red-600" />
-                            </button>
-                          </div>
-                        ))}
-                        {((storeSettings.store_images || []).length < 3) && (
-                          <div className="flex items-center justify-center w-20 h-20 rounded border border-dashed text-sm text-muted-foreground">Empty</div>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 mt-2">
-                        <input id="store-images-upload" type="file" accept="image/*" multiple onChange={handleStoreImagesUpload} className="hidden" />
-                        <Button type="button" variant="outline" onClick={() => document.getElementById('store-images-upload')?.click()} disabled={uploadingStoreImages}>
-                          {uploadingStoreImages ? 'Uploading...' : 'Upload Images'}
-                        </Button>
-                        <p className="text-xs text-muted-foreground">Max 3 images, 2MB each</p>
-                      </div>
-                    </div>
+                    {/* Store Images upload removed */}
 
                     <div className="md:col-span-1 grid grid-cols-2 gap-2">
                       <div>
@@ -1657,10 +1609,10 @@ export default function Store() {
                           <Button type="button" variant="outline" onClick={() => document.getElementById('hero-tile1-upload')?.click()}>Upload Tile 1</Button>
                           {storeSettings.hero_tile1_url ? (
                             <div className="ml-3 mt-2">
-                              <div className="relative w-20 h-12 rounded overflow-hidden">
+                              <div className="relative w-40 h-30 rounded overflow-hidden">
                                 <img src={storeSettings.hero_tile1_url} alt="hero-t1" className="w-full h-full object-cover" />
                                 <button type="button" onClick={() => removeField('hero_tile1_url')} className="absolute top-1 right-1 bg-white/80 dark:bg-black/60 rounded-full p-1 text-xs">
-                                  <Trash2 className="w-3 h-3 text-red-600" />
+                                  <Trash2 className="w-4 h-4 text-red-600" />
                                 </button>
                               </div>
                             </div>
@@ -1674,10 +1626,10 @@ export default function Store() {
                           <Button type="button" variant="outline" onClick={() => document.getElementById('hero-tile2-upload')?.click()}>Upload Tile 2</Button>
                           {storeSettings.hero_tile2_url ? (
                             <div className="ml-3 mt-2">
-                              <div className="relative w-20 h-12 rounded overflow-hidden">
+                              <div className="relative w-40 h-30 rounded overflow-hidden">
                                 <img src={storeSettings.hero_tile2_url} alt="hero-t2" className="w-full h-full object-cover" />
                                 <button type="button" onClick={() => removeField('hero_tile2_url')} className="absolute top-1 right-1 bg-white/80 dark:bg-black/60 rounded-full p-1 text-xs">
-                                  <Trash2 className="w-3 h-3 text-red-600" />
+                                  <Trash2 className="w-4 h-4 text-red-600" />
                                 </button>
                               </div>
                             </div>
@@ -1692,128 +1644,7 @@ export default function Store() {
               </div>
             </div>
 
-            {/* Store URL Section */}
-            <div className="space-y-3 lg:col-span-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-base font-semibold">Your Store URL</Label>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    if (storeSettings.store_slug) {
-                      window.open(`/store/${storeSettings.store_slug}`, '_blank');
-                    }
-                  }}
-                  disabled={!storeSettings.store_slug}
-                >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  Open Store
-                </Button>
-              </div>
-              <div className="flex gap-2 min-w-0">
-                <Input
-                  value={storeSettings.store_slug ? `${window.location.origin}/store/${storeSettings.store_slug}` : 'Loading...'}
-                  readOnly
-                  className="font-mono text-sm min-w-0"
-                />
-                <Button onClick={copyStoreLink} variant="outline" disabled={!storeSettings.store_slug}>
-                  {storeLinkCopied ? (
-                    <Check className="w-4 h-4 text-green-500" />
-                  ) : (
-                    <Copy className="w-4 h-4" />
-                  )}
-                </Button>
-              </div>
-              {storeLinkCopied && (
-                <p className="text-sm text-green-600 flex items-center gap-2">
-                  <Check className="w-4 h-4" />
-                  Store link copied!
-                </p>
-              )}
-              <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-                <div className="flex gap-3">
-                  <LinkIcon className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm">
-                    <div className="font-medium text-blue-900 dark:text-blue-100 mb-1">
-                      Share Your Store
-                    </div>
-                    <p className="text-blue-700 dark:text-blue-300">
-                      Share this link with your customers so they can browse all your products in one place.
-                      They can search, filter by category, and view featured items.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Compact stats summary (kept small inside settings) */}
-            <div className="border-t pt-4 lg:col-span-2">
-              <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                <div className="px-3 py-2 bg-muted rounded-md">
-                  <div className="text-sm font-semibold text-primary">{products.length}</div>
-                  <div className="text-xs">Products</div>
-                </div>
-                <div className="px-3 py-2 bg-muted rounded-md">
-                  <div className="text-sm font-semibold text-green-600">{products.filter(p => p.status === 'active').length}</div>
-                  <div className="text-xs">Active</div>
-                </div>
-                <div className="px-3 py-2 bg-muted rounded-md">
-                  <div className="text-sm font-semibold text-purple-600">{products.reduce((sum, p) => sum + p.views, 0)}</div>
-                  <div className="text-xs">Views</div>
-                </div>
-              </div>
-            </div>
-
-            {/* How to Use */}
-            <div className="border-t pt-6 lg:col-span-2">
-              <Label className="text-base font-semibold mb-3 block">How to Use Your Store</Label>
-              <div className="space-y-3">
-                <div className="flex gap-3 text-sm">
-                  <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">
-                    1
-                  </div>
-                  <div>
-                    <div className="font-medium mb-1">Add Products</div>
-                    <p className="text-muted-foreground">
-                      Create products with images, prices, and descriptions
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-3 text-sm">
-                  <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">
-                    2
-                  </div>
-                  <div>
-                    <div className="font-medium mb-1">Share Your Store Link</div>
-                    <p className="text-muted-foreground">
-                      Copy the store URL above and share it with your customers on social media, WhatsApp, email, etc.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-3 text-sm">
-                  <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">
-                    3
-                  </div>
-                  <div>
-                    <div className="font-medium mb-1">Share Individual Products</div>
-                    <p className="text-muted-foreground">
-                      Click "Share" on any product to get a direct link for targeted advertising
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-3 text-sm">
-                  <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">
-                    4
-                  </div>
-                  <div>
-                    <div className="font-medium mb-1">Track Performance</div>
-                    <p className="text-muted-foreground">
-                      Monitor views and engagement for each product in your dashboard
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
+            {/* Store URL, product summary badges and 'How to Use Your Store' moved to Store Dashboard */}
           </div>
 
           <DialogFooter>
@@ -1826,6 +1657,26 @@ export default function Store() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Store Summary (moved here) */}
+      <div className="max-w-7xl mx-auto mt-8">
+        <div className="bg-card rounded-xl border p-4">
+          <div className="flex items-center justify-between mb-3">
+            <Label className="text-sm font-semibold">Store Summary</Label>
+          </div>
+        
+
+          <div>
+            <Label className="text-sm font-semibold">How to Use Your Store</Label>
+            <ol className="mt-2 text-sm space-y-2">
+              <li className="flex gap-2 items-start"><div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">1</div><div><span className="font-medium">Add Products</span><div className="text-muted-foreground">Create products with images, prices, and descriptions</div></div></li>
+              <li className="flex gap-2 items-start"><div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">2</div><div><span className="font-medium">Share Your Store Link</span><div className="text-muted-foreground">Copy the store URL above and share it with customers on social media, WhatsApp, email, etc.</div></div></li>
+              <li className="flex gap-2 items-start"><div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">3</div><div><span className="font-medium">Share Individual Products</span><div className="text-muted-foreground">Click "Share" on any product to get a direct link for targeted advertising</div></div></li>
+              <li className="flex gap-2 items-start"><div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">4</div><div><span className="font-medium">Track Performance</span><div className="text-muted-foreground">Monitor views and engagement for each product in your dashboard</div></div></li>
+            </ol>
+          </div>
+        </div>
+      </div>
 
       {/* Template gallery removed */}
     </div>

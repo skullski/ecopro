@@ -22,9 +22,12 @@ export default function Checkout() {
     name: "",
     email: "",
     line1: "",
+    line2: "",
     city: "",
+    state: "",
     postalCode: "",
     country: "",
+    phone: "",
   } as AddressFormValue);
   const [submitting, setSubmitting] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
@@ -58,15 +61,15 @@ export default function Checkout() {
     setErrorMsg(null);
     setSubmitting(true);
     try {
-      const schema = z.object({
-        phone: z.string().regex(/^\\+\d{6,15}$/,{ message: "Enter WhatsApp phone in E.164 format" }).optional(),
-        address: z.string().min(5, "Address is required"),
-      });
+      if (!addr.name || !addr.line1 || !addr.city || !addr.postalCode || !addr.country) {
+        setErrorMsg("Please fill in all required fields");
+        setSubmitting(false);
+        return;
+      }
       const addressStr = [addr.line1, addr.line2, addr.city, addr.state, addr.postalCode, addr.country].filter(Boolean).join(', ');
-      schema.parse({ phone: addr?.phone, address: addressStr });
 
       const payload = {
-        product_id: Number(productId),
+        product_id: Number(product?.id) || Number(productId),
         client_id: null,
         quantity: 1,
         total_price: Number(product?.price ?? 0),
@@ -92,16 +95,18 @@ export default function Checkout() {
         responseJson = null;
       }
       if (!res.ok) {
-        setErrorMsg(`Order failed: ${responseText}`);
-        console.error('Order failed:', responseText);
+        const errorDetail = responseJson?.error || responseJson?.message || responseText;
+        setErrorMsg(`❌ Order failed: ${errorDetail}`);
+        console.error('Order failed:', { status: res.status, response: responseJson, text: responseText });
         return;
       }
-      setOrderId(String(responseJson?.order?.id || responseJson?.id || ''));
-      setErrorMsg(`Order response: ${responseText}`);
-      console.log('Order response:', responseJson);
+      const orderId = String(responseJson?.order?.id || responseJson?.id || '');
+      setOrderId(orderId);
+      console.log('✅ Order created successfully:', { orderId, response: responseJson });
     } catch (e: any) {
-      setErrorMsg(`Order create failed: ${e.message}`);
-      console.error('Order create failed', e);
+      const errorMsg = e?.message || String(e) || "Unknown error";
+      setErrorMsg(`❌ Network error: ${errorMsg}`);
+      console.error('Order create failed:', { error: e, stack: e?.stack });
     } finally {
       setSubmitting(false);
     }
@@ -167,7 +172,7 @@ export default function Checkout() {
           {/* Right: Shipping Form */}
           <div className="bg-[#13162a] rounded-2xl shadow-lg border border-[#23264a] p-8 flex flex-col justify-center">
             <h2 className="text-xl font-bold text-white mb-4">Shipping Information</h2>
-            <form className="flex flex-col gap-4" onSubmit={e => { e.preventDefault(); placeOrder(); }}>
+            <form className="flex flex-col gap-4" onSubmit={e => { e.preventDefault(); console.log('Form submitted, placing order...'); placeOrder(); }}>
               {/* Restore previous input field styles for clarity */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Full Name <span className="text-red-500">*</span></label>
@@ -209,7 +214,7 @@ export default function Checkout() {
                 <label className="block text-sm font-medium text-gray-300 mb-1">Phone Number</label>
                 <input type="tel" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-[#4fd1c5] focus:border-transparent transition-all" value={addr.phone || ''} onChange={e => setAddr({ ...addr, phone: e.target.value })} placeholder="+1 (555) 000-0000" />
               </div>
-              <button type="submit" className="w-full py-3 mt-2 rounded-lg bg-gradient-to-r from-green-400 to-green-500 text-white font-bold text-lg shadow-lg hover:from-green-500 hover:to-green-600 focus:ring-2 focus:ring-green-400 focus:outline-none transition-all disabled:opacity-60" disabled={submitting || !productId || !product}>
+              <button type="submit" className="w-full py-3 mt-2 rounded-lg bg-gradient-to-r from-green-400 to-green-500 text-white font-bold text-lg shadow-lg hover:from-green-500 hover:to-green-600 focus:ring-2 focus:ring-green-400 focus:outline-none transition-all disabled:opacity-60" disabled={submitting || !product}>
                 {submitting ? "Placing..." : "Place Order"}
               </button>
               {errorMsg && (
@@ -227,136 +232,6 @@ export default function Checkout() {
           </div>
         </div>
       )}
-    </div>
-  );
-
-  return (
-    <div className="min-h-screen bg-[#0a0c15] flex flex-col items-center justify-center py-10 px-2">
-      {/* Store Header */}
-      <header className="w-full max-w-5xl mx-auto flex items-center justify-between py-6 px-4">
-        <div className="flex items-center gap-3">
-          <img src={product.imageUrl} alt={product.title} className="w-12 h-12 object-cover rounded-xl border border-[#23264a]" />
-          <span className="text-2xl font-bold text-white">{product.title}</span>
-        </div>
-        <span className="text-lg font-semibold text-[#4fd1c5]">Checkout</span>
-      </header>
-      <div className="w-full max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10">
-        {/* Left: Order Summary */}
-        <div className="flex flex-col gap-6">
-          <div className="bg-[#13162a] rounded-2xl shadow-lg border border-[#23264a] p-6">
-            <h2 className="text-xl font-bold text-white mb-4">Order Summary</h2>
-            <div className="flex items-center gap-4">
-              <img src={product.imageUrl} alt={product.title} className="w-20 h-20 object-cover rounded-xl border border-[#23264a]" />
-              <div>
-                <div className="font-semibold text-white text-lg mb-1">{product.title}</div>
-                <div className="text-[#4fd1c5] text-3xl font-extrabold">${(product.price / 100).toFixed(2)}</div>
-                <div className="text-gray-400 text-sm mt-1">{product.description}</div>
-              </div>
-            </div>
-          </div>
-          <div className="bg-[#13162a] rounded-2xl shadow-lg border border-[#23264a] p-6">
-            <h3 className="text-lg font-semibold text-white mb-3">Order Details</h3>
-            <div className="flex flex-col gap-2 text-base">
-              <div className="flex justify-between text-gray-300">
-                <span>Subtotal</span>
-                <span className="font-medium text-white">${(product.price / 100).toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-gray-300">
-                <span>Shipping</span>
-                <span className="font-medium text-green-400">Free</span>
-              </div>
-              <div className="border-t border-[#23264a] my-2"></div>
-              <div className="flex justify-between text-lg">
-                <span className="font-bold text-white">Total</span>
-                <span className="font-extrabold text-[#4fd1c5]">${(product.price / 100).toFixed(2)}</span>
-              </div>
-            </div>
-          </div>
-          <div className="bg-[#13162a] rounded-2xl shadow-lg border border-[#23264a] p-5">
-            <div className="flex gap-3 items-start">
-              <svg className="w-5 h-5 text-[#4fd1c5] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <div className="text-sm">
-                <div className="font-semibold text-white mb-1">Buyer Protection</div>
-                <p className="text-gray-400">Your order is protected. The seller will receive your shipping information to fulfill your order.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        {/* Right: Shipping Form */}
-        <div className="bg-[#13162a] rounded-2xl shadow-lg border border-[#23264a] p-8 flex flex-col justify-center">
-          <h2 className="text-xl font-bold text-white mb-4">Shipping Information</h2>
-          <form className="flex flex-col gap-4" onSubmit={e => { e.preventDefault(); placeOrder(); }}>
-            {/* Restore previous input field styles for clarity */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Full Name <span className="text-red-500">*</span></label>
-              <input type="text" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-[#4fd1c5] focus:border-transparent transition-all" value={addr.name || ''} onChange={e => setAddr({ ...addr, name: e.target.value })} required />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
-              <input type="email" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-[#4fd1c5] focus:border-transparent transition-all" value={addr.email || ''} onChange={e => setAddr({ ...addr, email: e.target.value })} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Address Line 1 <span className="text-red-500">*</span></label>
-              <input type="text" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-[#4fd1c5] focus:border-transparent transition-all" value={addr.line1 || ''} onChange={e => setAddr({ ...addr, line1: e.target.value })} required />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Address Line 2</label>
-              <input type="text" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-[#4fd1c5] focus:border-transparent transition-all" value={addr.line2 || ''} onChange={e => setAddr({ ...addr, line2: e.target.value })} placeholder="Apartment, suite, etc. (optional)" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">City <span className="text-red-500">*</span></label>
-                <input type="text" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-[#4fd1c5] focus:border-transparent transition-all" value={addr.city || ''} onChange={e => setAddr({ ...addr, city: e.target.value })} required />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">State/Region</label>
-                <input type="text" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-[#4fd1c5] focus:border-transparent transition-all" value={addr.state || ''} onChange={e => setAddr({ ...addr, state: e.target.value })} />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Postal Code <span className="text-red-500">*</span></label>
-                <input type="text" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-[#4fd1c5] focus:border-transparent transition-all" value={addr.postalCode || ''} onChange={e => setAddr({ ...addr, postalCode: e.target.value })} required />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Country <span className="text-red-500">*</span></label>
-                <input type="text" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-[#4fd1c5] focus:border-transparent transition-all" value={addr.country || ''} onChange={e => setAddr({ ...addr, country: e.target.value })} required />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Phone Number</label>
-              <input type="tel" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-[#4fd1c5] focus:border-transparent transition-all" value={addr.phone || ''} onChange={e => setAddr({ ...addr, phone: e.target.value })} placeholder="+1 (555) 000-0000" />
-            </div>
-            <button type="submit" className="w-full py-3 mt-2 rounded-lg bg-gradient-to-r from-green-400 to-green-500 text-white font-bold text-lg shadow-lg hover:from-green-500 hover:to-green-600 focus:ring-2 focus:ring-green-400 focus:outline-none transition-all disabled:opacity-60 flex items-center justify-center gap-2" disabled={submitting || !productId || !product}>
-              {submitting ? (
-                <>
-                  <span className="animate-spin inline-block w-5 h-5 border-2 border-t-green-400 border-white rounded-full"></span>
-                  Placing...
-                </>
-              ) : (
-                <>Place Order</>
-              )}
-            </button>
-            {/* Debug: show if button is clicked */}
-            {submitting && (
-              <div className="text-xs text-green-400 text-center mt-2">Submitting order...</div>
-            )}
-            {errorMsg && (
-              <div className="mt-4 bg-red-900/20 border border-red-700 text-red-300 text-center px-4 py-3 rounded-lg font-semibold shadow">
-                {errorMsg}
-              </div>
-            )}
-            <p className="text-xs text-center text-gray-500 mt-2">By placing this order, you agree to our terms of service and privacy policy</p>
-            {orderId && (
-              <div className="mt-4 bg-green-900/20 border border-green-700 text-green-300 text-center px-4 py-3 rounded-lg font-semibold shadow">
-                Order created: {orderId}. The seller received your shipping info.
-              </div>
-            )}
-          </form>
-        </div>
-      </div>
     </div>
   );
 }

@@ -39,6 +39,18 @@ export const registerSeller: RequestHandler = async (req, res) => {
 
     const seller = result.rows[0];
 
+    // Ensure seller has a storefront settings row
+    try {
+      const slug = 'seller-' + (seller.id || Math.random().toString(36).substr(2,8));
+      await pool.query(
+        `INSERT INTO seller_store_settings (seller_id, store_name, store_slug, created_at)
+         VALUES ($1, $2, $3, NOW()) ON CONFLICT (seller_id) DO NOTHING`,
+        [seller.id, seller.name || email.split('@')[0], slug]
+      );
+    } catch (e) {
+      console.error('Could not create seller_store_settings for seller:', seller.id, (e as any).message);
+    }
+
     // Generate JWT token
     const token = jwt.sign(
       {

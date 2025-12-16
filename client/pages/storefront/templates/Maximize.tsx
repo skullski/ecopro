@@ -73,6 +73,7 @@ export default function MaximizeTemplate(props: TemplateProps) {
                     </div>
                     <CardContent className="p-3">
                       <div className="text-sm font-medium line-clamp-2 min-h-[2.5rem]">{product.title}</div>
+                      <div className="text-xs text-muted-foreground mt-1">{(product as any).seller_name || props.settings?.owner_name || props.settings?.store_name}</div>
                       <div className="mt-2 flex items-center gap-2">
                         <span className="font-semibold">{formatPrice(Number(product.price))}</span>
                         {product.original_price && (

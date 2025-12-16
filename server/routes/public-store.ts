@@ -12,34 +12,55 @@ export const getStorefrontProducts: RequestHandler = async (req, res) => {
   }
 
   try {
-    // Get client_id from store_slug
-    const storeCheck = await pool.query(
+    // First try client storefronts (client_store_settings)
+    const clientCheck = await pool.query(
       'SELECT client_id FROM client_store_settings WHERE store_slug = $1',
       [storeSlug]
     );
 
-    if (storeCheck.rows.length === 0) {
+    if (clientCheck.rows.length > 0) {
+      const clientId = clientCheck.rows[0].client_id;
+      console.log(`Loading client store ${storeSlug} for client ID ${clientId}`);
+      // Include store-level fields so product cards can show owner/store info without extra round-trip
+      const result = await pool.query(
+        `SELECT 
+          p.id, p.title, p.description, p.price, p.original_price, 
+          p.images, p.category, p.stock_quantity, p.is_featured, 
+          p.slug, p.views, p.created_at,
+          s.store_name, s.owner_name AS seller_name, s.owner_email AS seller_email
+        FROM client_store_products p
+        INNER JOIN client_store_settings s ON p.client_id = s.client_id
+        WHERE p.client_id = $1 AND p.status = 'active'
+        ORDER BY p.is_featured DESC, p.created_at DESC`,
+        [clientId]
+      );
+      console.log(`Found ${result.rows.length} client products for store ${storeSlug}`);
+      return res.json(result.rows);
+    }
+
+    // Otherwise try seller storefronts (seller_store_settings) and return marketplace_products
+    const sellerCheck = await pool.query(
+      'SELECT seller_id FROM seller_store_settings WHERE store_slug = $1',
+      [storeSlug]
+    );
+    if (sellerCheck.rows.length === 0) {
       console.log(`Store not found: ${storeSlug}`);
       return res.status(404).json({ error: 'Store not found' });
     }
-
-    const clientId = storeCheck.rows[0].client_id;
-    console.log(`Loading store ${storeSlug} for client ID ${clientId}`);
-
-    // Get products (can be empty array)
-    const result = await pool.query(
-      `SELECT 
-        id, title, description, price, original_price, 
-        images, category, stock_quantity, is_featured, 
-        slug, views, created_at
-      FROM client_store_products
-      WHERE client_id = $1 AND status = 'active'
-      ORDER BY is_featured DESC, created_at DESC`,
-      [clientId]
+    const sellerId = sellerCheck.rows[0].seller_id;
+    console.log(`Loading seller store ${storeSlug} for seller ID ${sellerId}`);
+    const mResult = await pool.query(
+      `SELECT p.id, p.title, p.description, p.price, p.original_price, p.images, p.category, p.stock, p.condition, p.location, p.shipping_available AS shipping, p.views, p.created_at,
+              ss.store_name, sel.name AS seller_name, sel.email AS seller_email
+       FROM marketplace_products p
+       INNER JOIN seller_store_settings ss ON p.seller_id = ss.seller_id
+       LEFT JOIN sellers sel ON p.seller_id = sel.id
+       WHERE p.seller_id = $1 AND p.status = 'active'
+       ORDER BY p.created_at DESC`,
+      [sellerId]
     );
-
-    console.log(`Found ${result.rows.length} products for store ${storeSlug}`);
-    res.json(result.rows);
+    console.log(`Found ${mResult.rows.length} marketplace products for seller store ${storeSlug}`);
+    res.json(mResult.rows);
   } catch (error) {
     console.error('Get storefront products error:', error);
     res.status(500).json({ error: 'Failed to fetch products' });
@@ -51,33 +72,43 @@ export const getStorefrontSettings: RequestHandler = async (req, res) => {
   const { storeSlug } = req.params;
 
   try {
-    const result = await pool.query(
+    // Try client storefront settings first
+    const clientRes = await pool.query(
       `SELECT store_name, store_description, store_logo, 
               primary_color, secondary_color,
               template, banner_url, currency_code,
-              hero_main_url, hero_tile1_url, hero_tile2_url,
+              hero_main_url, hero_tile1_url, hero_tile2_url, store_images,
               owner_name, owner_email
        FROM client_store_settings
        WHERE store_slug = $1`,
       [storeSlug]
     );
 
-    if (result.rows.length === 0) {
-      // Return default settings if none exist
-      return res.json({
-        store_name: 'Store',
-        primary_color: '#3b82f6',
-        secondary_color: '#8b5cf6',
-        template: 'classic',
-        currency_code: 'DZD',
-        banner_url: null,
-        hero_main_url: null,
-        hero_tile1_url: null,
-        hero_tile2_url: null
-      });
+    let row: any = null;
+    if (clientRes.rows.length > 0) {
+      row = clientRes.rows[0];
+    } else {
+      // Fall back to seller storefront settings
+      const sellerRes = await pool.query(
+        `SELECT store_name, store_description, store_logo, primary_color, secondary_color, template, banner_url, currency_code, hero_main_url, hero_tile1_url, hero_tile2_url, store_images
+         FROM seller_store_settings WHERE store_slug = $1`,
+        [storeSlug]
+      );
+      if (sellerRes.rows.length === 0) {
+        return res.json({
+          store_name: 'Store',
+          primary_color: '#3b82f6',
+          secondary_color: '#8b5cf6',
+          template: 'classic',
+          currency_code: 'DZD',
+          banner_url: null,
+          hero_main_url: null,
+          hero_tile1_url: null,
+          hero_tile2_url: null
+        });
+      }
+      row = sellerRes.rows[0];
     }
-
-    const row = result.rows[0];
     // Sanitize image list fields: trim, remove empties; return null if empty
     const sanitize = (v: any) => {
       if (v == null) return null;
@@ -93,12 +124,23 @@ export const getStorefrontSettings: RequestHandler = async (req, res) => {
       return deduped.length ? deduped.join(',') : null;
     };
 
+    // Convert store_images (text[]) to JS array or fallback to hero tiles
+    let storeImagesArr: string[] | null = null;
+    if (row.store_images && Array.isArray(row.store_images) && row.store_images.length) {
+      storeImagesArr = row.store_images.map((s: string) => (s == null ? '' : String(s).trim())).filter((s: string) => s.length > 0);
+    } else {
+      // Fallback to hero tiles if no explicit store_images
+      storeImagesArr = [row.hero_main_url, row.hero_tile1_url, row.hero_tile2_url].filter((s: any) => s != null && String(s).trim().length > 0) as string[];
+      if (storeImagesArr.length === 0) storeImagesArr = null;
+    }
+
     res.json({
       ...row,
       banner_url: sanitize(row.banner_url),
       hero_main_url: sanitize(row.hero_main_url),
       hero_tile1_url: sanitize(row.hero_tile1_url),
       hero_tile2_url: sanitize(row.hero_tile2_url),
+      store_images: storeImagesArr,
     });
   } catch (error) {
     console.error('Get storefront settings error:', error);
@@ -113,14 +155,16 @@ export const getPublicProduct: RequestHandler = async (req, res) => {
   try {
     console.log('[getPublicProduct] Looking for:', { storeSlug, productSlug });
     
-    // Get product with store settings - make status check more lenient
+    // Try client store product first
     const productResult = await pool.query(
       `SELECT 
         p.*,
         s.store_name,
         s.primary_color,
         s.secondary_color,
-        s.store_slug
+        s.store_slug,
+        s.owner_name AS seller_name,
+        s.owner_email AS seller_email
       FROM client_store_products p
       INNER JOIN client_store_settings s ON p.client_id = s.client_id
       WHERE s.store_slug = $1 AND p.slug = $2`,
@@ -130,17 +174,31 @@ export const getPublicProduct: RequestHandler = async (req, res) => {
     console.log('[getPublicProduct] Found rows:', productResult.rows.length);
     
     if (productResult.rows.length === 0) {
-      // Debug: Check if product exists with different criteria
-      const debugResult = await pool.query(
-        `SELECT p.id, p.slug, p.status, p.client_id, s.store_slug 
-         FROM client_store_products p
-         LEFT JOIN client_store_settings s ON p.client_id = s.client_id
-         WHERE p.slug = $1`,
-        [productSlug]
+      // Try marketplace product for seller storefronts
+      const mResult = await pool.query(
+        `SELECT p.*, ss.store_name, ss.primary_color, ss.secondary_color, ss.store_slug, sel.name AS seller_name, sel.email AS seller_email
+         FROM marketplace_products p
+         INNER JOIN seller_store_settings ss ON p.seller_id = ss.seller_id
+         LEFT JOIN sellers sel ON p.seller_id = sel.id
+         WHERE ss.store_slug = $1 AND p.slug = $2`,
+        [storeSlug, productSlug]
       );
-      console.log('[getPublicProduct] Debug - Product by slug:', debugResult.rows);
-      
-      return res.status(404).json({ error: 'Product not found' });
+
+      if (mResult.rows.length === 0) {
+        // Debug: Check if product exists with different criteria
+        const debugResult = await pool.query(
+          `SELECT p.id, p.slug, p.status, p.client_id, p.seller_id
+           FROM client_store_products p
+           WHERE p.slug = $1`,
+          [productSlug]
+        );
+        console.log('[getPublicProduct] Debug - Product by slug:', debugResult.rows);
+        return res.status(404).json({ error: 'Product not found' });
+      }
+
+      const mprod = mResult.rows[0];
+      await pool.query('UPDATE marketplace_products SET views = views + 1 WHERE id = $1', [mprod.id]);
+      return res.json({ ...mprod, views: (mprod.views || 0) + 1 });
     }
 
     const product = productResult.rows[0];

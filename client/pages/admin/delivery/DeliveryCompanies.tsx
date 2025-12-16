@@ -26,20 +26,9 @@ export default function DeliveryCompanies() {
   const [credentials, setCredentials] = useState<Record<string, string>>({});
   const [companies, setCompanies] = useState<DeliveryCompany[]>([
     {
-      id: "yalidine",
-      name: "Yalidine",
-      logo: "🚚",
-      description: "خدمة توصيل سريعة تغطي كل الوطن",
-      apiFields: [
-        { label: "API Token", placeholder: "أدخل API Token الخاص بك", field: "apiToken" },
-        { label: "API ID", placeholder: "أدخل API ID", field: "apiId" },
-      ],
-      enabled: false,
-    },
-    {
       id: "zr-express",
       name: "ZR Express",
-      logo: "⚡",
+      logo: "/delivery-logos/ZR-Express-1.webp",
       description: "توصيل سريع وموثوق في جميع الولايات",
       apiFields: [
         { label: "API Key", placeholder: "أدخل API Key", field: "apiKey" },
@@ -50,7 +39,7 @@ export default function DeliveryCompanies() {
     {
       id: "procolis",
       name: "Procolis",
-      logo: "📦",
+      logo: "/delivery-logos/prologis-logo-png_seeklogo-311359.webp",
       description: "شريكك الموثوق للتوصيل السريع",
       apiFields: [
         { label: "API Token", placeholder: "أدخل API Token", field: "apiToken" },
@@ -59,20 +48,9 @@ export default function DeliveryCompanies() {
       enabled: false,
     },
     {
-      id: "maystro-delivery",
-      name: "Maystro Delivery",
-      logo: "🎯",
-      description: "حلول توصيل احترافية للتجار",
-      apiFields: [
-        { label: "API Key", placeholder: "أدخل API Key", field: "apiKey" },
-        { label: "Secret Key", placeholder: "أدخل Secret Key", field: "secretKey" },
-      ],
-      enabled: false,
-    },
-    {
       id: "ecf-express",
       name: "ECF Express",
-      logo: "🚀",
+      logo: "/delivery-logos/ecf-logo-png_seeklogo-45349.webp",
       description: "توصيل فعال وسريع في الجزائر",
       apiFields: [
         { label: "API Token", placeholder: "أدخل API Token", field: "apiToken" },
@@ -81,42 +59,9 @@ export default function DeliveryCompanies() {
       enabled: false,
     },
     {
-      id: "sonic-delivery",
-      name: "Sonic Delivery",
-      logo: "💨",
-      description: "توصيل بسرعة الصوت",
-      apiFields: [
-        { label: "API Key", placeholder: "أدخل API Key", field: "apiKey" },
-        { label: "Account ID", placeholder: "أدخل Account ID", field: "accountId" },
-      ],
-      enabled: false,
-    },
-    {
-      id: "speedaf",
-      name: "Speedaf",
-      logo: "🏃",
-      description: "خدمة توصيل دولية وسريعة",
-      apiFields: [
-        { label: "API Key", placeholder: "أدخل API Key", field: "apiKey" },
-        { label: "Customer Code", placeholder: "أدخل Customer Code", field: "customerCode" },
-      ],
-      enabled: false,
-    },
-    {
-      id: "express-dz",
-      name: "Express DZ",
-      logo: "🇩🇿",
-      description: "شركة توصيل جزائرية 100%",
-      apiFields: [
-        { label: "API Token", placeholder: "أدخل API Token", field: "apiToken" },
-        { label: "Partner ID", placeholder: "أدخل Partner ID", field: "partnerId" },
-      ],
-      enabled: false,
-    },
-    {
       id: "baridiMob",
       name: "BaridiMob",
-      logo: "💳",
+      logo: "/delivery-logos/baridimob-logo-png_seeklogo-445029.webp",
       description: "خدمة بريد الجزائر للدفع والتوصيل",
       apiFields: [
         { label: "Merchant ID", placeholder: "أدخل Merchant ID", field: "merchantId" },
@@ -126,31 +71,9 @@ export default function DeliveryCompanies() {
       enabled: false,
     },
     {
-      id: "coliship",
-      name: "Coliship",
-      logo: "📮",
-      description: "منصة مقارنة وإدارة شركات التوصيل",
-      apiFields: [
-        { label: "API Token", placeholder: "أدخل API Token", field: "apiToken" },
-        { label: "User ID", placeholder: "أدخل User ID", field: "userId" },
-      ],
-      enabled: false,
-    },
-    {
-      id: "fast-dz",
-      name: "Fast DZ",
-      logo: "⚡",
-      description: "توصيل سريع في الجزائر",
-      apiFields: [
-        { label: "API Key", placeholder: "أدخل API Key", field: "apiKey" },
-        { label: "Store Code", placeholder: "أدخل Store Code", field: "storeCode" },
-      ],
-      enabled: false,
-    },
-    {
       id: "algerie-poste",
       name: "Algérie Poste",
-      logo: "📯",
+      logo: "/delivery-logos/poste-algerie-logo-png_seeklogo-272140.webp",
       description: "بريد الجزائر - خدمة التوصيل الوطنية",
       apiFields: [
         { label: "Code Client", placeholder: "أدخل Code Client", field: "clientCode" },
@@ -159,57 +82,13 @@ export default function DeliveryCompanies() {
       enabled: false,
     },
     {
-      id: "goldex",
-      name: "Goldex",
-      logo: "🥇",
-      description: "خدمة توصيل سريعة وآمنة",
+      id: "yalidine",
+      name: "Yalidine",
+      logo: "/delivery-logos/da7c3e116870469.60dcd939c8198.webp",
+      description: "خدمة توصيل سريعة تغطي كل الوطن",
       apiFields: [
-        { label: "API Token", placeholder: "أدخل API Token", field: "apiToken" },
-        { label: "Client ID", placeholder: "أدخل Client ID", field: "clientId" },
-      ],
-      enabled: false,
-    },
-    {
-      id: "rapid-express",
-      name: "Rapid Express",
-      logo: "🚄",
-      description: "توصيل سريع في 48 ولاية",
-      apiFields: [
-        { label: "API Key", placeholder: "أدخل API Key", field: "apiKey" },
-        { label: "Merchant Code", placeholder: "أدخل Merchant Code", field: "merchantCode" },
-      ],
-      enabled: false,
-    },
-    {
-      id: "mypost",
-      name: "MyPost",
-      logo: "📨",
-      description: "حلول توصيل ذكية ومرنة",
-      apiFields: [
-        { label: "API Key", placeholder: "أدخل API Key", field: "apiKey" },
-        { label: "Account ID", placeholder: "أدخل Account ID", field: "accountId" },
-      ],
-      enabled: false,
-    },
-    {
-      id: "eurl-express",
-      name: "EURL Express",
-      logo: "🏢",
-      description: "شركة توصيل جزائرية معتمدة",
-      apiFields: [
-        { label: "API Token", placeholder: "أدخل API Token", field: "apiToken" },
-        { label: "Partner Code", placeholder: "أدخل Partner Code", field: "partnerCode" },
-      ],
-      enabled: false,
-    },
-    {
-      id: "flash-delivery",
-      name: "Flash Delivery",
-      logo: "⚡",
-      description: "توصيل فوري في نفس اليوم",
-      apiFields: [
-        { label: "API Key", placeholder: "أدخل API Key", field: "apiKey" },
-        { label: "Store ID", placeholder: "أدخل Store ID", field: "storeId" },
+        { label: "API Token", placeholder: "أدخل API Token الخاص بك", field: "apiToken" },
+        { label: "API ID", placeholder: "أدخل API ID", field: "apiId" },
       ],
       enabled: false,
     },
@@ -283,8 +162,27 @@ export default function DeliveryCompanies() {
             )}
             <CardContent className="pt-6 pb-4">
               <div className="flex flex-col items-center text-center space-y-3">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center text-3xl">
-                  {company.logo}
+                <div className="w-20 h-20 rounded-lg bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center text-3xl overflow-hidden border border-border/50">
+                  {company.logo.startsWith('http') || company.logo.startsWith('data:') || company.logo.startsWith('/') ? (
+                    <img 
+                      src={company.logo} 
+                      alt={company.name}
+                      className="w-full h-full object-contain p-2"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        if (e.currentTarget.nextElementSibling) {
+                          e.currentTarget.nextElementSibling.style.display = 'flex';
+                        }
+                      }}
+                    />
+                  ) : (
+                    <span>{company.logo}</span>
+                  )}
+                  {(company.logo.startsWith('http') || company.logo.startsWith('data:') || company.logo.startsWith('/')) && (
+                    <div className="hidden w-full h-full items-center justify-center bg-gradient-to-br from-primary/10 to-accent/10 text-2xl">
+                      📦
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-1">
                   <h3 className="font-semibold text-base">{company.name}</h3>
