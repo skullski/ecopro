@@ -2,6 +2,8 @@
 
 A modern, full-stack multi-vendor e-commerce platform (storefront) built with React, TypeScript, Express, and Vite.
 
+> **📖 [READ CONTEXT.md BEFORE EDITING](./CONTEXT.md)** - Contains architecture, patterns, and key instructions for developers
+
 ## Features
 
 - 🛍️ **Multi-Vendor Marketplace** - Multiple sellers with individual storefronts
