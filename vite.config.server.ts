@@ -7,8 +7,8 @@ export default defineConfig({
     lib: {
       entry: path.resolve(__dirname, "server/node-build.ts"),
       name: "server",
-      fileName: "production",
-      formats: ["es"],
+      fileName: (format) => `production.cjs`,
+      formats: ["cjs"],
     },
     outDir: "dist/server",
     target: "node22",
@@ -43,10 +43,6 @@ export default defineConfig({
         "multer",
         "uuid",
       ],
-      output: {
-        format: "cjs",
-        entryFileNames: "[name].cjs",
-      },
     },
     minify: false, // Keep readable for debugging
     sourcemap: true,
