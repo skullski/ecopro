@@ -159,6 +159,79 @@ const res = await pool.query(
 
 ---
 
+## BOT & MESSAGING SYSTEM
+
+### Current Status:
+- ✅ UI exists: `/client/pages/admin/WasselniSettings.tsx` (Apple design)
+- ✅ Backend endpoints: `/api/bot/settings` (GET/POST)
+- ✅ Database table: `bot_settings` (stores config)
+- ✅ Provider options in UI: WhatsApp Cloud API + Twilio SMS
+- ❌ **NOT IMPLEMENTED**: Actual message sending logic
+
+### Architecture:
+```
+Order Created → Check if bot enabled → Get provider config → Send message
+```
+
+### Planned Integration: Ubuntu Home Server SMS Gateway
+**User has a local Ubuntu server for SMS messages (not Twilio)**
+
+**Requirements to implement:**
+1. New provider option: `'local_ubuntu_sms'`
+2. Backend integration to POST to Ubuntu server API
+3. Fields needed in bot_settings:
+   - `ubuntu_server_url` - Server IP/hostname
+   - `ubuntu_api_key` - API authentication
+   - `ubuntu_phone_number` - SMS sender number
+4. Message templates (already exist, reuse):
+   - Order confirmation
+   - Payment confirmation
+   - Shipping notification
+
+**Expected Flow:**
+1. User configures bot settings: selects "Ubuntu SMS" provider
+2. User enters: server URL, API key, sender phone number
+3. When order is placed → Bot checks if enabled
+4. POST to `http://ubuntu-server:port/api/send-sms`
+5. Ubuntu server processes and sends SMS via local gateway
+
+### Message Template Variables:
+- `{customerName}` - Order customer name
+- `{productName}` - Product title
+- `{totalPrice}` - Order total
+- `{address}` - Shipping address
+- `{orderId}` - Order ID
+- `{trackingNumber}` - Tracking info
+
+### Default Arabic Templates (Already defined):
+- Order Confirmation: "السلام عليكم {customerName}! شكراً لطلبك..."
+- Payment: "تم تأكيد طلبك #{orderId}. يرجى الدفع بـ {totalPrice} دج."
+- Shipping: "تم شحن طلبك #{orderId}. رقم التتبع: {trackingNumber}."
+
+### TO IMPLEMENT (End of project):
+1. Create `/server/utils/messaging.ts` - Message sending logic
+2. Add `/server/routes/messaging.ts` - Webhook for message events
+3. Add message sending trigger in `/server/routes/orders.ts` when order status changes
+4. Add Ubuntu SMS provider option to bot settings UI
+5. Add Ubuntu server configuration fields to WasselniSettings.tsx
+6. Test end-to-end: Create order → Auto-send SMS to customer
+
+### Ubuntu Server API Contract (TO CONFIRM):
+```typescript
+POST http://ubuntu-server/api/send-sms
+Headers: { 'Authorization': 'Bearer {apiKey}' }
+Body: {
+  to: '+213XXXXXXXXX',
+  message: 'Order message here...'
+}
+Response: {
+  success: boolean,
+  messageId: string
+}
+```
+
+---
+
 ## TODO / IN PROGRESS
 
 - [ ] **Store Templates System** (Next Phase)
@@ -167,6 +240,13 @@ const res = await pool.query(
   - Build 3+ templates (Minimalist, Grid, Showcase, Apple)
   - Make storefront load correct template dynamically
   - Products auto-map to new template layout
+
+- [ ] **SMS/Bot Messaging** (End of project, waiting for Ubuntu server details)
+  - Implement local Ubuntu SMS gateway provider
+  - Add message sending logic when orders change status
+  - Add Ubuntu server configuration to bot settings UI
+  - Test end-to-end message flow
+  - Handle errors and retries
 
 - [ ] Improve chunk size warnings (consider code splitting)
 - [ ] Add real visitor tracking (currently placeholder: 0)
