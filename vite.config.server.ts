@@ -42,6 +42,7 @@ export default defineConfig({
         "dotenv",
         "multer",
         "uuid",
+        "ws",
       ],
     },
     minify: false, // Keep readable for debugging
