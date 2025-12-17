@@ -160,9 +160,14 @@ export const updateStoreProduct: RequestHandler = async (req, res) => {
     let paramCount = 1;
 
     Object.entries(updates).forEach(([key, value]) => {
-      if (key !== "id" && key !== "client_id" && key !== "slug") {
+      if (key !== "id" && key !== "client_id" && key !== "slug" && key !== "created_at") {
         fields.push(`${key} = $${paramCount}`);
-        values.push(value);
+        // For arrays (like images), ensure proper formatting
+        if (Array.isArray(value)) {
+          values.push(value);
+        } else {
+          values.push(value);
+        }
         paramCount++;
       }
     });
@@ -173,6 +178,9 @@ export const updateStoreProduct: RequestHandler = async (req, res) => {
 
     fields.push(`updated_at = CURRENT_TIMESTAMP`);
     values.push(id, clientId);
+
+    console.log('[updateStoreProduct] SQL:', `UPDATE client_store_products SET ${fields.join(", ")} WHERE id = $${paramCount} AND client_id = $${paramCount + 1}`);
+    console.log('[updateStoreProduct] Values:', values.map((v, i) => (Array.isArray(v) ? `[array of ${v.length} items]` : typeof v === 'string' && v.length > 100 ? v.substring(0, 100) + '...' : v)));
 
     const result = await pool.query(
       `UPDATE client_store_products 
@@ -197,8 +205,9 @@ export const updateStoreProduct: RequestHandler = async (req, res) => {
     }
     res.json(result.rows[0]);
   } catch (error) {
-    console.error("Update store product error:", error);
-    res.status(500).json({ error: "Failed to update product" });
+    console.error("Update store product error:", error instanceof Error ? error.message : String(error));
+    console.error("Full error:", error);
+    res.status(500).json({ error: "Failed to update product", details: error instanceof Error ? error.message : String(error) });
   }
 };
 
