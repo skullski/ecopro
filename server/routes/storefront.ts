@@ -6,7 +6,13 @@ import multer from 'multer';
 
 const uploadDir = path.join(process.cwd(), 'public', 'uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-const upload = multer({ dest: uploadDir });
+
+// Use memory storage for better Render deployment compatibility
+// Images will be stored as base64 in the database instead of on disk
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
 
 export const createProduct: RequestHandler = async (req, res) => {
   const { storeSlug } = req.params as any;
@@ -56,7 +62,13 @@ export const handleUploadImages = [
   (async (req: any, res: any) => {
     const { storeSlug, id } = req.params;
     try {
-      const files = (req.files as Express.Multer.File[]).map((f) => `/uploads/${path.basename(f.path)}`);
+      // Convert uploaded files to base64 data URLs for persistent storage
+      const files = (req.files as Express.Multer.File[]).map((f) => {
+        const base64 = f.buffer.toString('base64');
+        const mimeType = f.mimetype || 'image/jpeg';
+        return `data:${mimeType};base64,${base64}`;
+      });
+      
       const r = await pool.query(`SELECT images FROM client_store_products WHERE id=$2 AND store_slug=$1`, [storeSlug, id]);
       const existing = Array.isArray(r.rows[0]?.images) ? r.rows[0].images : [];
       const next = [...existing, ...files].slice(0, 6);
