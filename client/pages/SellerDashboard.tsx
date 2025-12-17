@@ -7,23 +7,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { GradientCard } from '@/components/ui/GradientCard';
 
-// Apple color palette constants
-const APPLE_COLORS = {
-  bg: '#f5f5f7',
-  bgCard: '#ffffff',
-  textPrimary: '#000000',
-  textSecondary: '#1d1d1d',
-  textTertiary: '#86868b',
-  blue: '#0071e3',
-  blueDark: '#0066cc',
-  blueActive: '#005ab3',
-  green: '#34c759',
-  red: '#ff3b30',
-  purple: '#5856d6',
-  border: '#e5e5e7',
-  borderLight: 'rgba(0,0,0,0.05)',
-};
-
 const CATEGORIES = [
   'Electronics',
   'Fashion',
@@ -320,181 +303,100 @@ export default function SellerDashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: APPLE_COLORS.bg }}>
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center p-4 rounded-full bg-white shadow-md mb-6 backdrop-blur-sm" style={{ backgroundColor: APPLE_COLORS.bgCard }}>
-            <div className="w-8 h-8 border-3 rounded-full animate-spin" style={{ 
-              borderColor: `${APPLE_COLORS.blue} transparent ${APPLE_COLORS.blue} transparent`
-            }}></div>
-          </div>
-          <p className="text-sm font-medium" style={{ color: APPLE_COLORS.textTertiary }}>Loading your store...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: APPLE_COLORS.bg }}>
-      {/* Apple-style fixed header */}
-      <div className="fixed top-0 left-0 right-0 h-14 z-50 backdrop-blur-md border-b" 
-        style={{ 
-          backgroundColor: 'rgba(255,255,255,0.8)',
-          borderColor: APPLE_COLORS.borderLight
-        }}>
-        <div className="flex items-center justify-center h-full px-6 max-w-6xl mx-auto w-full">
-          <h1 className="text-base font-bold" style={{ color: APPLE_COLORS.textPrimary }}>Store Manager</h1>
-        </div>
-      </div>
-
-      <div className="pt-20 pb-12">
-        <div className="max-w-6xl mx-auto px-4 md:px-6">
-          {/* Page Header */}
-          <div className="mb-10 mt-2">
-            <h1 className="text-4xl md:text-5xl font-bold mb-3" style={{ color: APPLE_COLORS.textPrimary }}>My Products</h1>
-            <p className="text-lg" style={{ color: APPLE_COLORS.textTertiary }}>Manage your marketplace listings and track sales</p>
-          </div>
-
-          {/* Apple iOS-style stats cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-            {/* Total Products Card */}
-            <div className="rounded-3xl p-6 shadow-sm hover:shadow-md transition-all duration-300 border backdrop-blur-sm"
-              style={{ 
-                backgroundColor: APPLE_COLORS.bgCard,
-                borderColor: APPLE_COLORS.borderLight
-              }}>
-              <div className="flex items-start justify-between mb-10">
-                <div className="flex-1">
-                  <p className="text-sm font-semibold mb-2.5" style={{ color: APPLE_COLORS.textTertiary }}>Total Products</p>
-                  <p className="text-4xl md:text-5xl font-bold" style={{ color: APPLE_COLORS.textPrimary }}>{products.length}</p>
-                </div>
-                <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" 
-                  style={{ backgroundColor: `${APPLE_COLORS.blue}15` }}>
-                  <Package className="w-6 h-6" style={{ color: APPLE_COLORS.blue }} />
-                </div>
-              </div>
-              <div className="h-0.5 rounded-full" style={{ backgroundImage: `linear-gradient(to right, ${APPLE_COLORS.blue}, ${APPLE_COLORS.blue}33)` }}></div>
-            </div>
-
-            {/* Total Revenue Card */}
-            <div className="rounded-3xl p-6 shadow-sm hover:shadow-md transition-all duration-300 border backdrop-blur-sm"
-              style={{ 
-                backgroundColor: APPLE_COLORS.bgCard,
-                borderColor: APPLE_COLORS.borderLight
-              }}>
-              <div className="flex items-start justify-between mb-10">
-                <div className="flex-1">
-                  <p className="text-sm font-semibold mb-2.5" style={{ color: APPLE_COLORS.textTertiary }}>Total Revenue</p>
-                  <p className="text-4xl md:text-5xl font-bold" style={{ color: APPLE_COLORS.textPrimary }}>${totalRevenue.toFixed(2)}</p>
-                </div>
-                <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" 
-                  style={{ backgroundColor: `${APPLE_COLORS.green}15` }}>
-                  <DollarSign className="w-6 h-6" style={{ color: APPLE_COLORS.green }} />
-                </div>
-              </div>
-              <div className="h-0.5 rounded-full" style={{ backgroundImage: `linear-gradient(to right, ${APPLE_COLORS.green}, ${APPLE_COLORS.green}33)` }}></div>
-            </div>
-
-            {/* Pending Orders Card */}
-            <div className="rounded-3xl p-6 shadow-sm hover:shadow-md transition-all duration-300 border backdrop-blur-sm"
-              style={{ 
-                backgroundColor: APPLE_COLORS.bgCard,
-                borderColor: APPLE_COLORS.borderLight
-              }}>
-              <div className="flex items-start justify-between mb-10">
-                <div className="flex-1">
-                  <p className="text-sm font-semibold mb-2.5" style={{ color: APPLE_COLORS.textTertiary }}>Pending Orders</p>
-                  <p className="text-4xl md:text-5xl font-bold" style={{ color: APPLE_COLORS.textPrimary }}>{pendingOrders}</p>
-                </div>
-                <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" 
-                  style={{ backgroundColor: `${APPLE_COLORS.red}15` }}>
-                  <ShoppingBag className="w-6 h-6" style={{ color: APPLE_COLORS.red }} />
-                </div>
-              </div>
-              <div className="h-0.5 rounded-full" style={{ backgroundImage: `linear-gradient(to right, ${APPLE_COLORS.red}, ${APPLE_COLORS.red}33)` }}></div>
-            </div>
-
-            {/* Total Views Card */}
-            <div className="rounded-3xl p-6 shadow-sm hover:shadow-md transition-all duration-300 border backdrop-blur-sm"
-              style={{ 
-                backgroundColor: APPLE_COLORS.bgCard,
-                borderColor: APPLE_COLORS.borderLight
-              }}>
-              <div className="flex items-start justify-between mb-10">
-                <div className="flex-1">
-                  <p className="text-sm font-semibold mb-2.5" style={{ color: APPLE_COLORS.textTertiary }}>Total Views</p>
-                  <p className="text-4xl md:text-5xl font-bold" style={{ color: APPLE_COLORS.textPrimary }}>{products.reduce((sum, p) => sum + (p.views || 0), 0)}</p>
-                </div>
-                <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" 
-                  style={{ backgroundColor: `${APPLE_COLORS.purple}15` }}>
-                  <Eye className="w-6 h-6" style={{ color: APPLE_COLORS.purple }} />
-                </div>
-              </div>
-              <div className="h-0.5 rounded-full" style={{ backgroundImage: `linear-gradient(to right, ${APPLE_COLORS.purple}, ${APPLE_COLORS.purple}33)` }}></div>
-            </div>
-          </div>
-
-        {/* Add Product Button - Apple Style */}
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
         <div className="mb-8">
-          <button
+          <h1 className="text-3xl font-bold mb-2">My Products</h1>
+          <p className="text-muted-foreground">Manage your marketplace listings and track sales</p>
+        </div>
+
+        {/* Stats with standardized vibrant presets */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <GradientCard
+            title="Total Products"
+            value={products.length}
+            preset="purple"
+            icon={
+              <Package className="w-6 h-6 text-purple-400" />
+            }
+          />
+
+          <GradientCard
+            title="Total Revenue"
+            value={`$${totalRevenue.toFixed(2)}`}
+            preset="emerald"
+            icon={
+              <DollarSign className="w-6 h-6 text-emerald-400" />
+            }
+          />
+
+          <GradientCard
+            title="Pending Orders"
+            value={pendingOrders}
+            preset="orange"
+            icon={
+              <ShoppingBag className="w-6 h-6 text-orange-400" />
+            }
+          />
+
+          <GradientCard
+            title="Total Views"
+            value={products.reduce((sum, p) => sum + (p.views || 0), 0)}
+            preset="blue"
+            icon={
+              <Eye className="w-6 h-6 text-blue-400" />
+            }
+          />
+        </div>
+
+        {/* Add Product Button */}
+        <div className="mb-6">
+          <Button
             onClick={() => {
               resetForm();
               setEditingProduct(null);
               setShowAddProduct(!showAddProduct);
             }}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
-            style={{
-              backgroundColor: APPLE_COLORS.blue,
-              color: APPLE_COLORS.bgCard,
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = APPLE_COLORS.blueDark}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = APPLE_COLORS.blue}
+            className="bg-gradient-to-r from-primary to-accent"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-4 h-4 mr-2" />
             Add New Product
-          </button>
+          </Button>
         </div>
 
-        {/* Add/Edit Product Form - Apple Style */}
+        {/* Add/Edit Product Form */}
         {showAddProduct && (
-          <div className="rounded-3xl border p-8 shadow-sm mb-10 backdrop-blur-sm"
-            style={{ 
-              backgroundColor: APPLE_COLORS.bgCard,
-              borderColor: APPLE_COLORS.borderLight
-            }}>
-            <h2 className="text-3xl md:text-4xl font-bold mb-8" style={{ color: APPLE_COLORS.textPrimary }}>
+          <div className="bg-card rounded-xl border p-6 shadow-sm mb-8">
+            <h2 className="text-xl font-bold mb-4">
               {editingProduct ? 'Edit Product' : 'Add New Product'}
             </h2>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Product Title */}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-semibold mb-2.5 block" style={{ color: APPLE_COLORS.textSecondary }}>Product Title*</label>
+                  <label className="text-sm font-medium mb-2 block">Product Title*</label>
                   <Input
                     required
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     placeholder="e.g., iPhone 13 Pro"
-                    className="h-11 rounded-xl border focus:ring-0 text-base"
-                    style={{
-                      borderColor: APPLE_COLORS.border,
-                      backgroundColor: '#f5f5f7',
-                    }}
                   />
                 </div>
 
-                {/* Category */}
                 <div>
-                  <label className="text-sm font-semibold mb-2.5 block" style={{ color: APPLE_COLORS.textSecondary }}>Category*</label>
+                  <label className="text-sm font-medium mb-2 block">Category*</label>
                   <select
                     required
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full h-11 px-4 rounded-xl border font-medium transition-all text-base"
-                    style={{
-                      borderColor: APPLE_COLORS.border,
-                      backgroundColor: '#f5f5f7',
-                      color: APPLE_COLORS.textPrimary,
-                    }}
+                    className="w-full px-3 py-2 rounded-lg border bg-background"
                   >
                     <option value="">Select a category</option>
                     {CATEGORIES.map((cat) => (
@@ -503,9 +405,8 @@ export default function SellerDashboard() {
                   </select>
                 </div>
 
-                {/* Price */}
                 <div>
-                  <label className="text-sm font-semibold mb-2.5 block" style={{ color: APPLE_COLORS.textSecondary }}>Price*</label>
+                  <label className="text-sm font-medium mb-2 block">Price*</label>
                   <Input
                     required
                     type="number"
@@ -513,59 +414,36 @@ export default function SellerDashboard() {
                     value={formData.price}
                     onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                     placeholder="0.00"
-                    className="h-11 rounded-xl border focus:ring-0 text-base"
-                    style={{
-                      borderColor: APPLE_COLORS.border,
-                      backgroundColor: '#f5f5f7',
-                    }}
                   />
                 </div>
 
-                {/* Original Price */}
                 <div>
-                  <label className="text-sm font-semibold mb-2.5 block" style={{ color: APPLE_COLORS.textSecondary }}>Original Price</label>
+                  <label className="text-sm font-medium mb-2 block">Original Price</label>
                   <Input
                     type="number"
                     step="0.01"
                     value={formData.original_price}
                     onChange={(e) => setFormData({ ...formData, original_price: e.target.value })}
                     placeholder="0.00"
-                    className="h-11 rounded-xl border focus:ring-0 text-base"
-                    style={{
-                      borderColor: APPLE_COLORS.border,
-                      backgroundColor: '#f5f5f7',
-                    }}
                   />
                 </div>
 
-                {/* Stock */}
                 <div>
-                  <label className="text-sm font-semibold mb-2.5 block" style={{ color: APPLE_COLORS.textSecondary }}>Stock</label>
+                  <label className="text-sm font-medium mb-2 block">Stock</label>
                   <Input
                     type="number"
                     value={formData.stock}
                     onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
                     placeholder="1"
-                    className="h-11 rounded-xl border focus:ring-0 text-base"
-                    style={{
-                      borderColor: APPLE_COLORS.border,
-                      backgroundColor: '#f5f5f7',
-                    }}
                   />
                 </div>
 
-                {/* Condition */}
                 <div>
-                  <label className="text-sm font-semibold mb-2.5 block" style={{ color: APPLE_COLORS.textSecondary }}>Condition</label>
+                  <label className="text-sm font-medium mb-2 block">Condition</label>
                   <select
                     value={formData.condition}
                     onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
-                    className="w-full h-11 px-4 rounded-xl border font-medium transition-all text-base"
-                    style={{
-                      borderColor: APPLE_COLORS.border,
-                      backgroundColor: '#f5f5f7',
-                      color: APPLE_COLORS.textPrimary,
-                    }}
+                    className="w-full px-3 py-2 rounded-lg border bg-background"
                   >
                     <option value="new">New</option>
                     <option value="used">Used</option>
@@ -573,78 +451,59 @@ export default function SellerDashboard() {
                   </select>
                 </div>
 
-                {/* Location */}
                 <div>
-                  <label className="text-sm font-semibold mb-2.5 block" style={{ color: APPLE_COLORS.textSecondary }}>Location</label>
+                  <label className="text-sm font-medium mb-2 block">Location</label>
                   <Input
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                     placeholder="e.g., New York, NY"
-                    className="h-11 rounded-xl border focus:ring-0 text-base"
-                    style={{
-                      borderColor: APPLE_COLORS.border,
-                      backgroundColor: '#f5f5f7',
-                    }}
                   />
                 </div>
 
-                {/* Shipping Available */}
-                <div className="flex items-center gap-3 pt-2">
+                <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
                     id="shipping"
                     checked={formData.shipping_available}
                     onChange={(e) => setFormData({ ...formData, shipping_available: e.target.checked })}
-                    className="w-5 h-5 rounded cursor-pointer"
-                    style={{
-                      accentColor: APPLE_COLORS.blue,
-                    }}
+                    className="rounded"
                   />
-                  <label htmlFor="shipping" className="text-sm font-semibold cursor-pointer" style={{ color: APPLE_COLORS.textSecondary }}>
+                  <label htmlFor="shipping" className="text-sm font-medium">
                     Shipping Available
                   </label>
                 </div>
               </div>
 
-              {/* Description */}
               <div>
-                <label className="text-sm font-semibold mb-2.5 block" style={{ color: APPLE_COLORS.textSecondary }}>Description</label>
+                <label className="text-sm font-medium mb-2 block">Description</label>
                 <Textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Describe your product..."
                   rows={4}
-                  className="rounded-xl border font-medium resize-none text-base"
-                  style={{
-                    borderColor: APPLE_COLORS.border,
-                    backgroundColor: '#f5f5f7',
-                    color: APPLE_COLORS.textPrimary,
-                  }}
                 />
               </div>
 
               {/* Product Images */}
               <div>
-                <label className="text-sm font-semibold mb-3 block" style={{ color: APPLE_COLORS.textSecondary }}>Product Images (Max 5)</label>
+                <label className="text-sm font-medium mb-2 block">Product Images (Max 5)</label>
                 
                 {/* Image Preview Grid */}
                 {formData.images.length > 0 && (
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-3">
                     {formData.images.map((image, index) => (
-                      <div key={index} className="relative group aspect-square rounded-xl overflow-hidden border" 
-                        style={{ borderColor: APPLE_COLORS.border }}>
+                      <div key={index} className="relative group aspect-square">
                         <img
                           src={image}
                           alt={`Product ${index + 1}`}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover rounded-lg border"
                         />
                         <button
                           type="button"
                           onClick={() => removeImage(index)}
-                          className="absolute top-2 right-2 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                          style={{ backgroundColor: APPLE_COLORS.red }}
+                          className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                         >
-                          <X className="w-4 h-4 text-white" />
+                          <X className="w-4 h-4" />
                         </button>
                       </div>
                     ))}
@@ -653,11 +512,7 @@ export default function SellerDashboard() {
 
                 {/* Upload Button */}
                 {formData.images.length < 5 && (
-                  <div className="border-2 border-dashed rounded-2xl p-8 text-center transition-colors" 
-                    style={{ 
-                      borderColor: APPLE_COLORS.border,
-                      backgroundColor: '#f5f5f7',
-                    }}>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                     <input
                       type="file"
                       id="image-upload"
@@ -669,13 +524,13 @@ export default function SellerDashboard() {
                     />
                     <label
                       htmlFor="image-upload"
-                      className="cursor-pointer flex flex-col items-center gap-3"
+                      className="cursor-pointer flex flex-col items-center gap-2"
                     >
-                      <Upload className="w-8 h-8" style={{ color: APPLE_COLORS.textTertiary }} />
-                      <span className="text-sm font-medium" style={{ color: APPLE_COLORS.textSecondary }}>
+                      <Upload className="w-8 h-8 text-gray-400" />
+                      <span className="text-sm text-gray-600">
                         {uploadingImage ? 'Uploading...' : 'Click to upload images'}
                       </span>
-                      <span className="text-xs" style={{ color: APPLE_COLORS.textTertiary }}>
+                      <span className="text-xs text-gray-500">
                         PNG, JPG up to 5MB each ({5 - formData.images.length} remaining)
                       </span>
                     </label>
@@ -683,147 +538,111 @@ export default function SellerDashboard() {
                 )}
               </div>
 
-              {/* Error Message */}
               {saveError && (
-                <div className="rounded-xl border-l-4 px-4 py-3" 
-                  style={{ 
-                    backgroundColor: `${APPLE_COLORS.red}10`,
-                    borderColor: APPLE_COLORS.red,
-                    color: APPLE_COLORS.red,
-                  }}>
-                  <p className="text-sm font-medium">{saveError}</p>
+                <div className="bg-destructive/10 border border-destructive/30 text-destructive text-sm px-4 py-3 rounded-md">
+                  {saveError}
                 </div>
               )}
 
-              {/* Form Actions */}
-              <div className="flex gap-3 pt-4">
-                <button 
-                  type="submit"
-                  disabled={saving}
-                  className="px-6 py-3 rounded-full font-semibold transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 text-white"
-                  style={{ backgroundColor: APPLE_COLORS.blue }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = APPLE_COLORS.blueDark}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = APPLE_COLORS.blue}
-                >
+              <div className="flex gap-2">
+                <Button type="submit" className="bg-gradient-to-r from-primary to-accent" disabled={saving}>
                   {saving ? (editingProduct ? 'Saving...' : 'Adding...') : (editingProduct ? 'Update Product' : 'Add Product')}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  variant="outline"
                   onClick={() => {
                     setShowAddProduct(false);
                     setEditingProduct(null);
                     resetForm();
                     setSaveError(null);
                   }}
-                  className="px-6 py-3 rounded-full font-semibold transition-all duration-200 border"
-                  style={{ 
-                    color: APPLE_COLORS.blue,
-                    borderColor: APPLE_COLORS.blue,
-                    backgroundColor: 'transparent',
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = `${APPLE_COLORS.blue}10`}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             </form>
           </div>
         )}
 
-        {/* Products Grid - iOS Style Cards */}
-        <div className="rounded-3xl border shadow-sm overflow-hidden"
-          style={{ 
-            backgroundColor: APPLE_COLORS.bgCard,
-            borderColor: APPLE_COLORS.borderLight
-          }}>
-          <div className="p-6 border-b" style={{ borderColor: APPLE_COLORS.borderLight }}>
-            <h2 className="text-2xl font-bold" style={{ color: APPLE_COLORS.textPrimary }}>Your Products</h2>
+        {/* Products Grid */}
+        <div className="bg-card rounded-xl border shadow-sm">
+          <div className="p-6 border-b">
+            <h2 className="text-xl font-bold">Your Products</h2>
           </div>
 
           {products.length === 0 ? (
-            <div className="p-16 text-center">
-              <Package className="w-16 h-16 mx-auto mb-4 opacity-20" style={{ color: APPLE_COLORS.textTertiary }} />
-              <p className="text-base font-medium" style={{ color: APPLE_COLORS.textTertiary }}>No products yet. Add your first product to get started!</p>
+            <div className="p-12 text-center text-muted-foreground">
+              <Package className="w-16 h-16 mx-auto mb-4 opacity-20" />
+              <p>No products yet. Add your first product to get started!</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-4 p-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-3 p-4">
               {products.map((product) => (
-                <div key={product.id} className="rounded-xl overflow-hidden border shadow-sm hover:shadow-md transition-all duration-300 group"
-                  style={{ 
-                    backgroundColor: APPLE_COLORS.bgCard,
-                    borderColor: APPLE_COLORS.borderLight
-                  }}>
-                  {/* Product Image Container */}
-                  <div className="relative aspect-square overflow-hidden" style={{ backgroundColor: '#f5f5f7' }}>
+                <div key={product.id} className="bg-card border rounded-lg overflow-hidden hover:shadow-lg transition-shadow group">
+                  {/* Product Image */}
+                  <div className="relative aspect-square bg-muted">
                     {product.images?.[0] ? (
                       <img
                         src={product.images[0]}
                         alt={product.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="w-full h-full object-cover"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <Package className="w-8 h-8" style={{ color: APPLE_COLORS.textTertiary, opacity: 0.3 }} />
+                        <Package className="w-8 h-8 text-muted-foreground opacity-20" />
                       </div>
                     )}
-                    
-                    {/* Action Buttons Overlay */}
-                    <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <button
-                        className="flex items-center justify-center w-8 h-8 rounded-full shadow-sm transition-all duration-200 active:scale-90"
-                        style={{ backgroundColor: APPLE_COLORS.bgCard }}
+                    {/* Action Buttons - Show on Hover */}
+                    <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="h-6 w-6 p-0"
                         onClick={() => handleEdit(product)}
-                        title="Edit product"
                       >
-                        <Edit className="w-4 h-4" style={{ color: APPLE_COLORS.blue }} />
-                      </button>
-                      <button
-                        className="flex items-center justify-center w-8 h-8 rounded-full shadow-sm transition-all duration-200 active:scale-90"
-                        style={{ backgroundColor: APPLE_COLORS.bgCard }}
+                        <Edit className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="h-6 w-6 p-0"
                         onClick={() => handleDelete(product.id)}
-                        title="Delete product"
                       >
-                        <Trash2 className="w-4 h-4" style={{ color: APPLE_COLORS.red }} />
-                      </button>
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
                     </div>
-
                     {/* Status Badge */}
-                    <div className="absolute top-2 left-2">
-                      <div className="text-xs font-bold px-2.5 py-1 rounded-full" 
-                        style={{
-                          backgroundColor: product.status === 'active' ? APPLE_COLORS.green : APPLE_COLORS.textTertiary,
-                          color: APPLE_COLORS.bgCard,
-                        }}>
+                    <div className="absolute top-1 left-1">
+                      <Badge variant={product.status === 'active' ? 'default' : 'secondary'} className="text-[10px] px-1.5 py-0">
                         {product.status}
-                      </div>
+                      </Badge>
                     </div>
                   </div>
 
                   {/* Product Info */}
-                  <div className="p-3">
-                    <h3 className="font-bold text-xs mb-2 line-clamp-2" style={{ color: APPLE_COLORS.textPrimary }}>
+                  <div className="p-2">
+                    <h3 className="font-bold text-xs mb-0.5 line-clamp-1">
                       {product.title}
                     </h3>
                     
-                    {/* Price Section */}
-                    <div className="flex items-center gap-1.5 mb-3">
-                      <span className="font-bold text-sm" style={{ color: APPLE_COLORS.blue }}>${product.price}</span>
+                    {/* Price */}
+                    <div className="flex items-center gap-1 mb-2">
+                      <span className="font-bold text-sm text-primary">${product.price}</span>
                       {product.original_price && (
-                        <span className="text-xs line-through" style={{ color: APPLE_COLORS.textTertiary }}>
+                        <span className="text-[10px] text-muted-foreground line-through">
                           ${product.original_price}
                         </span>
                       )}
                     </div>
 
-                    {/* Stats Footer */}
-                    <div className="flex items-center justify-between text-xs border-t pt-2.5" 
-                      style={{ borderColor: APPLE_COLORS.borderLight, color: APPLE_COLORS.textTertiary }}>
-                      <span className="flex items-center gap-1">
-                        <Package className="w-3 h-3" /> {product.stock}
+                    {/* Stats */}
+                    <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1.5 border-t">
+                      <span className="flex items-center gap-0.5">
+                        <Package className="w-2.5 h-2.5" /> {product.stock}
                       </span>
-                      <span className="flex items-center gap-1">
-                        <Eye className="w-3 h-3" /> {product.views || 0}
+                      <span className="flex items-center gap-0.5">
+                        <Eye className="w-2.5 h-2.5" /> {product.views || 0}
                       </span>
                     </div>
                   </div>
@@ -833,82 +652,58 @@ export default function SellerDashboard() {
           )}
         </div>
 
-        {/* Orders Section - Apple Style */}
-        <div className="rounded-3xl border shadow-sm mt-10 overflow-hidden"
-          style={{ 
-            backgroundColor: APPLE_COLORS.bgCard,
-            borderColor: APPLE_COLORS.borderLight
-          }}>
-          <div className="p-6 border-b" style={{ borderColor: APPLE_COLORS.borderLight }}>
-            <h2 className="text-2xl font-bold" style={{ color: APPLE_COLORS.textPrimary }}>Incoming Orders</h2>
+        {/* Orders Section */}
+        <div className="bg-card rounded-xl border shadow-sm mt-8">
+          <div className="p-6 border-b">
+            <h2 className="text-xl font-bold">Incoming Orders</h2>
           </div>
 
           {orders.length === 0 ? (
-            <div className="p-16 text-center">
-              <ShoppingBag className="w-16 h-16 mx-auto mb-4 opacity-20" style={{ color: APPLE_COLORS.textTertiary }} />
-              <p className="text-base font-medium" style={{ color: APPLE_COLORS.textTertiary }}>No orders yet.</p>
+            <div className="p-12 text-center text-muted-foreground">
+              <Package className="w-16 h-16 mx-auto mb-4 opacity-20" />
+              <p>No orders yet.</p>
             </div>
           ) : (
-            <div className="divide-y" style={{ borderColor: APPLE_COLORS.borderLight }}>
+            <div className="divide-y">
               {orders.map((order) => {
                 const createdAt = new Date(order.created_at).toLocaleString();
                 return (
-                  <div key={order.id} className="p-5 hover:bg-opacity-30 transition-colors duration-200" 
-                    style={{ backgroundColor: 'rgba(0,0,0,0)' }}>
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <div className="text-sm font-medium mb-1.5" style={{ color: APPLE_COLORS.textTertiary }}>
-                          Order #{order.id} • {createdAt}
+                  <div key={order.id} className="p-4 hover:bg-muted/50 transition-colors">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <div className="text-sm text-muted-foreground">
+                          Order {order.id} • {createdAt}
                         </div>
-                        <div className="font-semibold text-base" style={{ color: APPLE_COLORS.textPrimary }}>
-                          {order.product_title || `Product #${order.product_id}`}
+                        <div className="font-medium">
+                          Product: {order.product_title || order.product_id}
                         </div>
                       </div>
-                      {order.total_price && (
-                        <div className="text-right">
-                          <div className="text-sm font-medium" style={{ color: APPLE_COLORS.textTertiary }}>Amount</div>
-                          <div className="text-lg font-bold" style={{ color: APPLE_COLORS.green }}>
-                            ${typeof order.total_price === 'string' ? parseFloat(order.total_price).toFixed(2) : (order.total_price?.toFixed(2) || '0.00')}
-                          </div>
-                        </div>
-                      )}
                     </div>
 
-                    {/* Shipping Info */}
+                    {/* Shipping info (optional if your DB has these columns) */}
                     {(order.shipping_line1 || order.shipping_city || order.shipping_country) ? (
-                      <div className="mt-4 p-3 rounded-lg" style={{ backgroundColor: '#f5f5f7' }}>
-                        <div className="font-semibold text-sm mb-2" style={{ color: APPLE_COLORS.textPrimary }}>Ship to</div>
-                        <div className="text-sm space-y-1" style={{ color: APPLE_COLORS.textSecondary }}>
-                          {order.shipping_line1 && (
-                            <div>{order.shipping_line1}</div>
-                          )}
-                          {order.shipping_line2 && (
-                            <div>{order.shipping_line2}</div>
-                          )}
-                          <div>
-                            {order.shipping_city}
-                            {order.shipping_state ? `, ${order.shipping_state}` : ''}{' '}
-                            {order.shipping_postal_code}
-                          </div>
-                          {order.shipping_country && (
-                            <div>{order.shipping_country}</div>
-                          )}
-                          {order.shipping_phone && (
-                            <div className="font-medium">📞 {order.shipping_phone}</div>
-                          )}
+                      <div className="text-sm text-muted-foreground">
+                        <div className="font-semibold">Ship to</div>
+                        <div>
+                          {order.shipping_line1}
+                          {order.shipping_line2 ? `, ${order.shipping_line2}` : ''}
                         </div>
+                        <div>
+                          {order.shipping_city}
+                          {order.shipping_state ? `, ${order.shipping_state}` : ''}{' '}
+                          {order.shipping_postal_code}
+                        </div>
+                        <div>{order.shipping_country}</div>
+                        {order.shipping_phone && <div>Phone: {order.shipping_phone}</div>}
                       </div>
                     ) : (
-                      <div className="text-sm" style={{ color: APPLE_COLORS.textTertiary }}>
-                        No shipping info on file.
-                      </div>
+                      <div className="text-sm text-muted-foreground">No shipping info on file.</div>
                     )}
                   </div>
                 );
               })}
             </div>
           )}
-        </div>
         </div>
       </div>
     </div>
