@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>BabyOS – Modern Baby Store</title>
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+      body {
+        margin: 0;
+        background: url('https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&w=2000&q=80')
+          center/cover no-repeat fixed;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+          sans-serif;
+        color: #374151;
+      }
+
+      .page-shell {
+        max-width: 1240px;
+        margin: 32px auto 48px;
+        padding: 24px 32px 48px;
+        background: rgba(255, 253, 249, 0.86);
+        backdrop-filter: blur(18px);
+        border-radius: 28px;
+        box-shadow:
+          0 32px 80px rgba(15, 23, 42, 0.35),
+          0 8px 24px rgba(15, 23, 42, 0.45);
+      }
+
+      .brand-mark {
+        font-size: 20px;
+        font-weight: 800;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: #f59e0b;
+      }
+
+      .hero-img {
+        width: 100%;
+        height: 360px;
+        object-fit: cover;
+        border-radius: 28px;
+        box-shadow:
+          0 24px 50px rgba(15, 23, 42, 0.26),
+          0 8px 20px rgba(15, 23, 42, 0.35);
+      }
+
+      .hero-badge {
+        font-size: 11px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        padding: 6px 14px;
+        border-radius: 999px;
+        background: #fee2e2;
+        color: #b91c1c;
+      }
+
+      .hero-title {
+        font-size: 32px;
+        line-height: 1.2;
+        font-weight: 700;
+        color: #111827;
+      }
+
+      .hero-pill {
+        border-radius: 999px;
+        padding: 9px 16px;
+        font-size: 11px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        background: #fef3c7;
+        color: #92400e;
+      }
+
+      .hero-cta {
+        padding: 10px 20px;
+        border-radius: 999px;
+        border: none;
+        font-size: 12px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        cursor: pointer;
+        background: linear-gradient(135deg, #facc15, #fb7185);
+        color: #111827;
+        box-shadow:
+          0 16px 32px rgba(248, 181, 0, 0.45),
+          0 6px 14px rgba(219, 39, 119, 0.55);
+      }
+
+      .float-shape {
+        position: absolute;
+        border-radius: 999px;
+        opacity: 0.8;
+        filter: blur(2px);
+      }
+
+      .float-blue {
+        background: #aee1ff;
+      }
+
+      .float-mint {
+        background: #c8f7dc;
+      }
+
+      .float-peach {
+        background: #ffd7c2;
+      }
+
+      .float-lavender {
+        background: #e8d7ff;
+      }
+
+      .category-pill {
+        border-radius: 999px;
+        border: 1px solid #e5e7eb;
+        padding: 7px 16px;
+        font-size: 11px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        cursor: pointer;
+        background: #ffffff;
+        color: #6b7280;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: 0.2s;
+      }
+
+      .category-pill span.icon {
+        font-size: 14px;
+      }
+
+      .category-pill.active {
+        background: linear-gradient(135deg, #bfdbfe, #fef3c7);
+        border-color: #facc15;
+        color: #374151;
+        box-shadow:
+          0 10px 22px rgba(59, 130, 246, 0.32),
+          0 4px 10px rgba(245, 158, 11, 0.4);
+      }
+
+      .section-title {
+        font-family: "Georgia", "Times New Roman", serif;
+        font-size: 24px;
+        font-weight: 600;
+        color: #111827;
+      }
+
+      .section-label {
+        font-size: 11px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: #9ca3af;
+      }
+
+      .featured-block {
+        border-radius: 24px;
+        background: linear-gradient(
+          135deg,
+          rgba(191, 219, 254, 0.75),
+          rgba(254, 249, 195, 0.85)
+        );
+        padding: 20px;
+      }
+
+      .product-card {
+        background: #ffffff;
+        border-radius: 22px;
+        padding: 10px;
+        box-shadow:
+          0 18px 34px rgba(15, 23, 42, 0.16),
+          0 7px 16px rgba(15, 23, 42, 0.26);
+        transition: 0.18s;
+      }
+
+      .product-card:hover {
+        transform: translateY(-4px);
+        box-shadow:
+          0 24px 40px rgba(15, 23, 42, 0.2),
+          0 10px 20px rgba(15, 23, 42, 0.3);
+      }
+
+      .product-img {
+        width: 100%;
+        height: 210px;
+        object-fit: cover;
+        border-radius: 18px;
+      }
+
+      .badge {
+        font-size: 10px;
+        padding: 3px 9px;
+        border-radius: 999px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .badge-soft {
+        background: #fee2e2;
+        color: #b91c1c;
+      }
+
+      .badge-age {
+        background: #e0f2fe;
+        color: #1d4ed8;
+      }
+
+      .badge-new {
+        background: #dcfce7;
+        color: #15803d;
+      }
+
+      .price-pill {
+        font-size: 12px;
+        font-weight: 700;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: #fef3c7;
+        color: #92400e;
+        display: inline-block;
+      }
+
+      .footer {
+        border-top: 1px solid #e5e7eb;
+        padding-top: 16px;
+        margin-top: 16px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const HERO =
+        "https://images.unsplash.com/photo-1606041008023-472dfb5e530f?auto=format&fit=crop&w=1600&q=80";
+
+      const PRODUCTS = [
+        {
+          id: 1,
+          name: "Soft Plush Elephant",
+          category: "Toys",
+          age: "0–6m",
+          tag: "Soft",
+          price: 3200,
+          image:
+            "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=900&q=80",
+        },
+        {
+          id: 2,
+          name: "Cloudy Comfort Blanket",
+          category: "Nursery",
+          age: "0–12m",
+          tag: "New",
+          price: 4200,
+          image:
+            "https://images.unsplash.com/photo-1520186994231-5c21a1728a1b?auto=format&fit=crop&w=900&q=80",
+        },
+        {
+          id: 3,
+          name: "Baby Feeding Bottle",
+          category: "Feeding",
+          age: "0–12m",
+          tag: "Daily",
+          price: 1800,
+          image:
+            "https://images.unsplash.com/photo-1581579188871-45ea61f2a0c8?auto=format&fit=crop&w=900&q=80",
+        },
+        {
+          id: 4,
+          name: "First Steps Shoes",
+          category: "Shoes",
+          age: "6–12m",
+          tag: "Soft",
+          price: 2600,
+          image:
+            "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=900&q=80",
+        },
+        {
+          id: 5,
+          name: "Bath Bubbles Set",
+          category: "Bath",
+          age: "0–18m",
+          tag: "Fresh",
+          price: 5400,
+          image:
+            "https://images.unsplash.com/photo-1581579188871-45ea61f2a0c8?auto=format&fit=crop&w=900&q=80",
+        },
+        {
+          id: 6,
+          name: "Mini City Stroller",
+          category: "Strollers",
+          age: "0–3y",
+          tag: "New",
+          price: 14500,
+          image:
+            "https://images.unsplash.com/photo-1527631746610-bca00a040d60?auto=format&fit=crop&w=900&q=80",
+        },
+        {
+          id: 7,
+          name: "Gift Box – Welcome Baby",
+          category: "Gifts",
+          age: "0–6m",
+          tag: "Gift",
+          price: 8600,
+          image:
+            "https://images.unsplash.com/photo-1516557070061-c3d1653fa646?auto=format&fit=crop&w=900&q=80",
+        },
+        {
+          id: 8,
+          name: "Soft Cotton Bodysuit",
+          category: "Clothing",
+          age: "0–6m",
+          tag: "Soft",
+          price: 2100,
+          image:
+            "https://images.unsplash.com/photo-1578898887932-ec8cba05be8e?auto=format&fit=crop&w=900&q=80",
+        },
+      ];
+
+      const CATEGORIES = [
+        { label: "All", icon: "✨" },
+        { label: "Toys", icon: "🧸" },
+        { label: "Clothing", icon: "👕" },
+        { label: "Feeding", icon: "🍼" },
+        { label: "Strollers", icon: "🚼" },
+        { label: "Nursery", icon: "🛏" },
+        { label: "Bath", icon: "🛁" },
+        { label: "Shoes", icon: "🧦" },
+        { label: "Gifts", icon: "🎁" },
+      ];
+
+      function ProductCard({ product }) {
+        const tagClass =
+          product.tag === "New"
+            ? "badge badge-new"
+            : product.tag === "Soft"
+            ? "badge badge-soft"
+            : "badge badge-age";
+
+        return (
+          <div className="product-card">
+            <img src={product.image} alt={product.name} className="product-img" />
+            <div className="mt-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className={tagClass}>{product.tag}</div>
+                <div className="badge badge-age">{product.age}</div>
+              </div>
+              <div>
+                <div className="text-[11px] uppercase tracking-[0.18em] text-gray-400">
+                  {product.category}
+                </div>
+                <h3 className="text-sm font-semibold text-gray-900 mt-1">
+                  {product.name}
+                </h3>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="price-pill">
+                  {product.price.toLocaleString()} DZD
+                </span>
+                <button className="text-[11px] uppercase tracking-[0.16em] text-blue-500">
+                  View
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      function App() {
+        const [activeCategory, setActiveCategory] = React.useState("All");
+
+        const filteredProducts =
+          activeCategory === "All"
+            ? PRODUCTS
+            : PRODUCTS.filter((p) => p.category === activeCategory);
+
+        const heroHighlight = PRODUCTS[0];
+
+        return (
+          <div className="page-shell">
+            {/* HEADER */}
+            <header className="flex items-center justify-between mb-6">
+              <div className="brand-mark">BABYOS</div>
+              <div className="flex items-center gap-4 text-[12px] text-gray-500">
+                <button className="uppercase tracking-[0.18em]">
+                  Search
+                </button>
+                <button className="uppercase tracking-[0.18em]">
+                  Cart (0)
+                </button>
+              </div>
+            </header>
+
+            {/* HERO */}
+            <section className="grid md:grid-cols-[1.05fr,0.95fr] gap-10 items-center mb-10 relative">
+              {/* floating shapes */}
+              <div
+                className="float-shape float-blue"
+                style={{ width: 70, height: 70, top: -30, right: 80 }}
+              ></div>
+              <div
+                className="float-shape float-mint"
+                style={{ width: 52, height: 52, top: 40, left: -10 }}
+              ></div>
+              <div
+                className="float-shape float-peach"
+                style={{ width: 48, height: 48, bottom: -10, left: 120 }}
+              ></div>
+              <div
+                className="float-shape float-lavender"
+                style={{ width: 60, height: 60, bottom: -30, right: 60 }}
+              ></div>
+
+              <div className="space-y-4 relative z-10">
+                <div className="hero-badge inline-flex items-center gap-2">
+                  <span>New season</span>
+                  <span>•</span>
+                  <span>Soft & Playful</span>
+                </div>
+                <h1 className="hero-title">
+                  A soft, modern universe  
+                  for every little moment.
+                </h1>
+                <p className="text-sm text-gray-600 max-w-md">
+                  Toys, outfits, feeding essentials, nursery finds and tiny gifts —
+                  curated for newborns and toddlers in one balanced, playful store.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <span className="hero-pill">0–6 months</span>
+                  <span className="hero-pill">6–12 months</span>
+                  <span className="hero-pill">1–3 years</span>
+                </div>
+                <div className="flex flex-wrap gap-3 pt-2">
+                  <button className="hero-cta">Shop baby essentials</button>
+                  <button className="text-[11px] uppercase tracking-[0.2em] text-blue-500">
+                    View all toys
+                  </button>
+                </div>
+              </div>
+
+              <div className="relative z-10">
+                <img src={HERO} alt="Baby hero" className="hero-img" />
+                <div className="absolute left-5 bottom-5 bg-white/95 px-4 py-3 rounded-2xl border border-yellow-100 shadow-md">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400">
+                    Featured toy
+                  </div>
+                  <div className="text-sm font-semibold text-gray-900 mt-1">
+                    {heroHighlight.name}
+                  </div>
+                  <div className="text-[12px] text-yellow-700 font-bold mt-1">
+                    {heroHighlight.price.toLocaleString()} DZD
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* CATEGORY FILTERS */}
+            <section className="mb-8">
+              <div className="section-label mb-2">Browse by category</div>
+              <div className="flex gap-3 overflow-x-auto pb-1">
+                {CATEGORIES.map((c) => (
+                  <button
+                    key={c.label}
+                    className={
+                      "category-pill " +
+                      (activeCategory === c.label ? "active" : "")
+                    }
+                    onClick={() => setActiveCategory(c.label)}
+                  >
+                    <span className="icon">{c.icon}</span>
+                    <span>{c.label}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            {/* FEATURED SECTION */}
+            <section className="featured-block mb-10">
+              <div className="grid md:grid-cols-[0.9fr,1.1fr] gap-6 items-center">
+                <div className="space-y-3">
+                  <div className="section-label">Soft & snuggly picks</div>
+                  <h2 className="section-title">
+                    Plush friends and warm layers.
+                  </h2>
+                  <p className="text-sm text-gray-700 max-w-sm">
+                    A small edit of plush toys, blankets and first outfits designed
+                    to feel soft against newborn skin. Gentle colors, cozy textures,
+                    and everyday comfort.
+                  </p>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <ProductCard product={PRODUCTS[0]} />
+                  <ProductCard product={PRODUCTS[1]} />
+                  <ProductCard product={PRODUCTS[7]} />
+                </div>
+              </div>
+            </section>
+
+            {/* PRODUCT GRID */}
+            <section>
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <div className="section-label mb-1">All baby products</div>
+                  <h2 className="section-title">
+                    Pieces in this universe
+                  </h2>
+                </div>
+                <div className="text-[11px] text-gray-500 uppercase tracking-[0.18em]">
+                  {filteredProducts.length} items
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {filteredProducts.map((p) => (
+                  <ProductCard key={p.id} product={p} />
+                ))}
+              </div>
+            </section>
+
+            {/* FOOTER */}
+            <footer className="footer text-[11px] text-gray-500 mt-8">
+              <div className="flex flex-col sm:flex-row justify-between gap-3">
+                <span>
+                  © {new Date().getFullYear()} BabyOS · Modern Baby Store
+                </span>
+                <div className="flex gap-4">
+                  <span>0–6m</span>
+                  <span>6–12m</span>
+                  <span>1–3y</span>
+                  <span>Care guide</span>
+                </div>
+              </div>
+            </footer>
+          </div>
+        );
+      }
+
+      ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+    </script>
+  </body>
+</html>
