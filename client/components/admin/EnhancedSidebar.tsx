@@ -10,6 +10,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { AnimatedLogo } from "@/components/ui/animated-logo";
 import { useTranslation } from "@/lib/i18n";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface MenuItem {
   titleKey: string;
@@ -79,14 +80,27 @@ const menuItems: MenuItem[] = [
 
 export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {}) {
   const { t, locale } = useTranslation();
+  const { theme: platformTheme } = useTheme();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
+  const [themeCustomizationEnabled, setThemeCustomizationEnabled] = useState(true);
   const [sidebarTheme, setSidebarTheme] = useState<keyof typeof SIDEBAR_THEMES>('slate');
   const location = useLocation();
   
   const isRTL = locale === "ar";
+
+  // Determine active theme based on customization toggle and platform theme
+  const getActiveTheme = (): keyof typeof SIDEBAR_THEMES => {
+    if (themeCustomizationEnabled) {
+      return sidebarTheme; // Use user's selected custom theme
+    }
+    // When customization is OFF, sync with platform theme
+    return platformTheme === 'dark' ? 'navy' : 'slate';
+  };
+
+  const activeTheme = getActiveTheme();
 
   const handleCollapse = (newCollapsed: boolean) => {
     setCollapsed(newCollapsed);
@@ -111,7 +125,7 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
     // Get category color based on menu item
     const categoryKey = item.titleKey.split('.')[1] || 'home';
     const categoryColor = CATEGORY_COLORS[categoryKey] || CATEGORY_COLORS.home;
-    const theme = SIDEBAR_THEMES[sidebarTheme];
+    const theme = SIDEBAR_THEMES[activeTheme];
 
     return (
       <div key={item.path}>
@@ -185,24 +199,24 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
   const sidebarContent = (
     <div className="flex flex-col h-full pt-20 transition-all duration-300"
       style={{
-        backgroundColor: SIDEBAR_THEMES[sidebarTheme].bg,
-        color: SIDEBAR_THEMES[sidebarTheme].text,
-        borderColor: SIDEBAR_THEMES[sidebarTheme].border,
+        backgroundColor: SIDEBAR_THEMES[activeTheme].bg,
+        color: SIDEBAR_THEMES[activeTheme].text,
+        borderColor: SIDEBAR_THEMES[activeTheme].border,
       }}>
       {/* Header with unique design */}
       <div className="p-4 border-b flex items-center justify-between transition-all duration-300"
         style={{
-          backgroundColor: SIDEBAR_THEMES[sidebarTheme].bg,
-          borderColor: SIDEBAR_THEMES[sidebarTheme].border,
+          backgroundColor: SIDEBAR_THEMES[activeTheme].bg,
+          borderColor: SIDEBAR_THEMES[activeTheme].border,
         }}>
         {!collapsed && (
           <div>
             <span className="font-bold text-lg block transition-colors duration-200" 
-              style={{ color: SIDEBAR_THEMES[sidebarTheme].accent }}>
+              style={{ color: SIDEBAR_THEMES[activeTheme].accent }}>
               {t('sidebar.brand')}
             </span>
             <span className="text-base transition-colors duration-200" 
-              style={{ color: SIDEBAR_THEMES[sidebarTheme].text }}>
+              style={{ color: SIDEBAR_THEMES[activeTheme].text }}>
               {t("sidebar.controlPanel")}
             </span>
           </div>
@@ -213,9 +227,9 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
           onClick={() => handleCollapse(!collapsed)}
           className="hidden lg:flex items-center justify-center p-2.5 rounded-lg transition-all border duration-200"
           style={{
-            borderColor: SIDEBAR_THEMES[sidebarTheme].border,
-            color: SIDEBAR_THEMES[sidebarTheme].accent,
-            backgroundColor: `${SIDEBAR_THEMES[sidebarTheme].accent}10`,
+            borderColor: SIDEBAR_THEMES[activeTheme].border,
+            color: SIDEBAR_THEMES[activeTheme].accent,
+            backgroundColor: `${SIDEBAR_THEMES[activeTheme].accent}10`,
           }}
           title={collapsed ? t("sidebar.expandMenu") : t("sidebar.collapseMenu")}
         >
@@ -226,7 +240,7 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
         <button
           onClick={() => setMobileOpen(false)}
           className="lg:hidden p-2 rounded-lg transition-all"
-          style={{ color: SIDEBAR_THEMES[sidebarTheme].accent }}
+          style={{ color: SIDEBAR_THEMES[activeTheme].accent }}
         >
           <X className="w-5 h-5" />
         </button>
@@ -241,74 +255,100 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
       {!collapsed && (
         <div className="p-4 border-t space-y-3 transition-all duration-300"
           style={{
-            borderColor: SIDEBAR_THEMES[sidebarTheme].border,
+            borderColor: SIDEBAR_THEMES[activeTheme].border,
           }}>
           
-          {/* Color Picker Button */}
-          <div className="relative">
-            <button
-              onClick={() => setColorPickerOpen(!colorPickerOpen)}
-              className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border transition-all duration-200 font-medium text-sm"
-              style={{
-                backgroundColor: `${SIDEBAR_THEMES[sidebarTheme].accent}10`,
-                borderColor: SIDEBAR_THEMES[sidebarTheme].accent,
-                color: SIDEBAR_THEMES[sidebarTheme].accent,
-              }}
-            >
-              <Palette className="w-4 h-4" />
+          {/* Theme Customization Toggle */}
+          <div className="flex items-center justify-between px-2">
+            <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: SIDEBAR_THEMES[activeTheme].text }}>
               {t("sidebar.customizeColor") || "Theme"}
+            </span>
+            <button
+              onClick={() => setThemeCustomizationEnabled(!themeCustomizationEnabled)}
+              className={cn(
+                "relative w-10 h-5 rounded-full transition-all duration-300 flex-shrink-0",
+                themeCustomizationEnabled 
+                  ? "bg-green-500 shadow-lg shadow-green-500/50" 
+                  : "bg-gray-400"
+              )}
+              title={themeCustomizationEnabled ? "Disable theme" : "Enable theme"}
+            >
+              <div
+                className={cn(
+                  "absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-all duration-300 shadow-md",
+                  themeCustomizationEnabled && "translate-x-5"
+                )}
+              />
             </button>
-            
-            {/* Color Picker Dropdown */}
-            {colorPickerOpen && (
-              <div className="absolute bottom-full mb-2 left-0 right-0 rounded-lg p-2 shadow-lg border z-50 backdrop-blur"
-                style={{
-                  backgroundColor: SIDEBAR_THEMES[sidebarTheme].bg,
-                  borderColor: SIDEBAR_THEMES[sidebarTheme].border,
-                }}>
-                <div className="grid grid-cols-4 gap-2">
-                  {Object.entries(SIDEBAR_THEMES).map(([key, theme]) => (
-                    <button
-                      key={key}
-                      onClick={() => {
-                        setSidebarTheme(key as keyof typeof SIDEBAR_THEMES);
-                        setColorPickerOpen(false);
-                      }}
-                      className="w-full h-12 rounded-lg border-2 transition-all hover:scale-110"
-                      style={{
-                        backgroundColor: theme.bg,
-                        borderColor: sidebarTheme === key ? theme.accent : theme.border,
-                        borderWidth: sidebarTheme === key ? '3px' : '2px',
-                      }}
-                      title={key.charAt(0).toUpperCase() + key.slice(1)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
+          
+          {/* Color Picker Button - Only visible when enabled */}
+          {themeCustomizationEnabled && (
+            <div className="relative">
+              <button
+                onClick={() => setColorPickerOpen(!colorPickerOpen)}
+                className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border transition-all duration-200 font-medium text-sm"
+                style={{
+                  backgroundColor: `${SIDEBAR_THEMES[activeTheme].accent}10`,
+                  borderColor: SIDEBAR_THEMES[activeTheme].accent,
+                  color: SIDEBAR_THEMES[activeTheme].accent,
+                }}
+              >
+                <Palette className="w-4 h-4" />
+                {t("sidebar.selectTheme") || "Select Theme"}
+              </button>
+              
+              {/* Color Picker Dropdown */}
+              {colorPickerOpen && (
+                <div className="absolute bottom-full mb-2 left-0 right-0 rounded-lg p-2 shadow-lg border z-50 backdrop-blur"
+                  style={{
+                    backgroundColor: SIDEBAR_THEMES[activeTheme].bg,
+                    borderColor: SIDEBAR_THEMES[activeTheme].border,
+                  }}>
+                  <div className="grid grid-cols-4 gap-2">
+                    {Object.entries(SIDEBAR_THEMES).map(([key, theme]) => (
+                      <button
+                        key={key}
+                        onClick={() => {
+                          setSidebarTheme(key as keyof typeof SIDEBAR_THEMES);
+                          setColorPickerOpen(false);
+                        }}
+                        className="w-full h-12 rounded-lg border-2 transition-all hover:scale-110"
+                        style={{
+                          backgroundColor: theme.bg,
+                          borderColor: sidebarTheme === key ? theme.accent : theme.border,
+                          borderWidth: sidebarTheme === key ? '3px' : '2px',
+                        }}
+                        title={key.charAt(0).toUpperCase() + key.slice(1)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* User Section with unique card design */}
           <div className="rounded-lg p-3 border transition-all duration-200"
             style={{
-              backgroundColor: `${SIDEBAR_THEMES[sidebarTheme].accent}10`,
-              borderColor: SIDEBAR_THEMES[sidebarTheme].border,
+              backgroundColor: `${SIDEBAR_THEMES[activeTheme].accent}10`,
+              borderColor: SIDEBAR_THEMES[activeTheme].border,
             }}>
             <div className="relative flex items-center gap-3">
               <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-200" 
                 style={{
-                  backgroundColor: SIDEBAR_THEMES[sidebarTheme].accent,
-                  color: SIDEBAR_THEMES[sidebarTheme].bg,
+                  backgroundColor: SIDEBAR_THEMES[activeTheme].accent,
+                  color: SIDEBAR_THEMES[activeTheme].bg,
                 }}>
                 WW
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-semibold text-sm truncate transition-colors duration-200" 
-                  style={{ color: SIDEBAR_THEMES[sidebarTheme].accent }}>
+                  style={{ color: SIDEBAR_THEMES[activeTheme].accent }}>
                   SAHL
                 </div>
                 <div className="text-xs truncate transition-colors duration-200" 
-                  style={{ color: SIDEBAR_THEMES[sidebarTheme].text, opacity: 0.7 }}>
+                  style={{ color: SIDEBAR_THEMES[activeTheme].text, opacity: 0.7 }}>
                   sahlsupport@gmail.com
                 </div>
               </div>
@@ -328,8 +368,8 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
         collapsed ? "w-20" : "w-72"
       )}
       style={{
-        backgroundColor: SIDEBAR_THEMES[sidebarTheme].bg,
-        borderColor: SIDEBAR_THEMES[sidebarTheme].border,
+        backgroundColor: SIDEBAR_THEMES[activeTheme].bg,
+        borderColor: SIDEBAR_THEMES[activeTheme].border,
         boxShadow: isRTL 
           ? '-8px 0 32px rgba(0, 0, 0, 0.15)' 
           : '8px 0 32px rgba(0, 0, 0, 0.15)',
@@ -349,8 +389,8 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
             isRTL ? "right-0" : "left-0"
           )}
           style={{
-            backgroundColor: SIDEBAR_THEMES[sidebarTheme].bg,
-            borderColor: SIDEBAR_THEMES[sidebarTheme].border,
+            backgroundColor: SIDEBAR_THEMES[activeTheme].bg,
+            borderColor: SIDEBAR_THEMES[activeTheme].border,
             boxShadow: isRTL 
               ? '-8px 0 32px rgba(0, 0, 0, 0.2)' 
               : '8px 0 32px rgba(0, 0, 0, 0.2)',
@@ -368,7 +408,7 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
           isRTL ? "left-6" : "right-6"
         )}
         style={{
-          backgroundColor: SIDEBAR_THEMES[sidebarTheme].accent,
+          backgroundColor: SIDEBAR_THEMES[activeTheme].accent,
         }}
       >
         <Menu className="w-6 h-6" />
