@@ -115,12 +115,11 @@ export const getClientOrders: RequestHandler = async (req, res) => {
     const result = await pool.query(
       `SELECT 
         o.*,
-        COALESCE(p.title, cp.title) as product_title,
-        COALESCE(p.price, cp.price) as product_price,
-        COALESCE(p.images, cp.images) as product_images
+        COALESCE(cp.title) as product_title,
+        COALESCE(cp.price) as product_price,
+        COALESCE(cp.images) as product_images
       FROM store_orders o
-      LEFT JOIN store_products p ON o.product_id = p.id
-      LEFT JOIN client_store_products cp ON o.product_id = cp.id
+      INNER JOIN client_store_products cp ON o.product_id = cp.id
       WHERE 
         -- Show orders for products owned by this client (for both auth and public orders)
         cp.client_id = $1
