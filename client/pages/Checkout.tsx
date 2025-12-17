@@ -115,7 +115,7 @@ export default function Checkout() {
 
   // Only render the content below the header (header is now in StoreLayout)
   return (
-    <div className="min-h-screen bg-[#0a0c15] flex flex-col items-center justify-center py-10 px-2">
+    <div className="min-h-screen flex flex-col items-center justify-center py-10 px-2" style={{ background: 'radial-gradient(circle at top, #0f172a 0, #020617 45%, #000 100%)' }}>
       {!product ? (
         <div className="flex items-center justify-center w-full h-full">
           <div className="p-6 text-center">
@@ -134,7 +134,7 @@ export default function Checkout() {
                 <img src={product.imageUrl} alt={product.title} className="w-20 h-20 object-cover rounded-xl border border-[#23264a]" />
                 <div>
                   <div className="font-semibold text-white text-lg mb-1">{product.title}</div>
-                  <div className="text-[#4fd1c5] text-3xl font-extrabold">${(product.price / 100).toFixed(2)}</div>
+                  <div className="text-cyan-400 text-3xl font-extrabold">${(product.price / 100).toFixed(2)}</div>
                   <div className="text-gray-400 text-sm mt-1">{product.description}</div>
                 </div>
               </div>
@@ -153,13 +153,13 @@ export default function Checkout() {
                 <div className="border-t border-[#23264a] my-2"></div>
                 <div className="flex justify-between text-lg">
                   <span className="font-bold text-white">Total</span>
-                  <span className="font-extrabold text-[#4fd1c5]">${(product.price / 100).toFixed(2)}</span>
+                  <span className="font-extrabold text-cyan-400">${(product.price / 100).toFixed(2)}</span>
                 </div>
               </div>
             </div>
             <div className="bg-[#13162a] rounded-2xl shadow-lg border border-[#23264a] p-5">
               <div className="flex gap-3 items-start">
-                <svg className="w-5 h-5 text-[#4fd1c5] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-cyan-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <div className="text-sm">
@@ -176,43 +176,43 @@ export default function Checkout() {
               {/* Restore previous input field styles for clarity */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Full Name <span className="text-red-500">*</span></label>
-                <input type="text" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-[#4fd1c5] focus:border-transparent transition-all" value={addr.name || ''} onChange={e => setAddr({ ...addr, name: e.target.value })} required />
+                <input type="text" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all" value={addr.name || ''} onChange={e => setAddr({ ...addr, name: e.target.value })} required />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
-                <input type="email" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-[#4fd1c5] focus:border-transparent transition-all" value={addr.email || ''} onChange={e => setAddr({ ...addr, email: e.target.value })} />
+                <input type="email" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all" value={addr.email || ''} onChange={e => setAddr({ ...addr, email: e.target.value })} />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Address Line 1 <span className="text-red-500">*</span></label>
-                <input type="text" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-[#4fd1c5] focus:border-transparent transition-all" value={addr.line1 || ''} onChange={e => setAddr({ ...addr, line1: e.target.value })} required />
+                <input type="text" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all" value={addr.line1 || ''} onChange={e => setAddr({ ...addr, line1: e.target.value })} required />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Address Line 2</label>
-                <input type="text" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-[#4fd1c5] focus:border-transparent transition-all" value={addr.line2 || ''} onChange={e => setAddr({ ...addr, line2: e.target.value })} placeholder="Apartment, suite, etc. (optional)" />
+                <input type="text" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all" value={addr.line2 || ''} onChange={e => setAddr({ ...addr, line2: e.target.value })} placeholder="Apartment, suite, etc. (optional)" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">City <span className="text-red-500">*</span></label>
-                  <input type="text" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-[#4fd1c5] focus:border-transparent transition-all" value={addr.city || ''} onChange={e => setAddr({ ...addr, city: e.target.value })} required />
+                  <input type="text" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all" value={addr.city || ''} onChange={e => setAddr({ ...addr, city: e.target.value })} required />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">State/Region</label>
-                  <input type="text" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-[#4fd1c5] focus:border-transparent transition-all" value={addr.state || ''} onChange={e => setAddr({ ...addr, state: e.target.value })} />
+                  <input type="text" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all" value={addr.state || ''} onChange={e => setAddr({ ...addr, state: e.target.value })} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Postal Code <span className="text-red-500">*</span></label>
-                  <input type="text" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-[#4fd1c5] focus:border-transparent transition-all" value={addr.postalCode || ''} onChange={e => setAddr({ ...addr, postalCode: e.target.value })} required />
+                  <input type="text" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all" value={addr.postalCode || ''} onChange={e => setAddr({ ...addr, postalCode: e.target.value })} required />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Country <span className="text-red-500">*</span></label>
-                  <input type="text" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-[#4fd1c5] focus:border-transparent transition-all" value={addr.country || ''} onChange={e => setAddr({ ...addr, country: e.target.value })} required />
+                  <input type="text" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all" value={addr.country || ''} onChange={e => setAddr({ ...addr, country: e.target.value })} required />
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Phone Number</label>
-                <input type="tel" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-[#4fd1c5] focus:border-transparent transition-all" value={addr.phone || ''} onChange={e => setAddr({ ...addr, phone: e.target.value })} placeholder="+1 (555) 000-0000" />
+                <input type="tel" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all" value={addr.phone || ''} onChange={e => setAddr({ ...addr, phone: e.target.value })} placeholder="+1 (555) 000-0000" />
               </div>
               <button type="submit" className="w-full py-3 mt-2 rounded-lg bg-gradient-to-r from-green-400 to-green-500 text-white font-bold text-lg shadow-lg hover:from-green-500 hover:to-green-600 focus:ring-2 focus:ring-green-400 focus:outline-none transition-all disabled:opacity-60" disabled={submitting || !product}>
                 {submitting ? "Placing..." : "Place Order"}

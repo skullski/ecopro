@@ -97,123 +97,124 @@ export default function ProductDetail() {
   const currentImage = allImages[selectedImage] || product.imageUrl;
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-8">
-      {/* Product Details Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Image Gallery */}
-        <div className="space-y-4">
-          {/* Main Image */}
-          <div className="relative w-full bg-gray-100 rounded-lg overflow-hidden">
-            <img 
-              src={currentImage} 
-              alt={product.title} 
-              className="w-full h-full object-cover min-h-80" 
-            />
-          </div>
-          
-          {/* Thumbnail Gallery */}
-          {allImages.length > 1 && (
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {allImages.map((img, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setSelectedImage(idx)}
-                  className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
-                    selectedImage === idx 
-                      ? 'border-blue-500 ring-2 ring-blue-300' 
-                      : 'border-gray-300 hover:border-gray-400'
-                  }`}
-                >
-                  <img src={img} alt={`view ${idx + 1}`} className="w-full h-full object-cover" />
-                </button>
-              ))}
+    <div className="min-h-screen" style={{ background: 'radial-gradient(circle at top, #0f172a 0, #020617 45%, #000 100%)' }}>
+      <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-8">
+        {/* Product Details Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Image Gallery */}
+          <div className="space-y-4">
+            {/* Main Image */}
+            <div className="relative w-full bg-slate-900 rounded-lg overflow-hidden border border-slate-700">
+              <img 
+                src={currentImage} 
+                alt={product.title} 
+                className="w-full h-full object-cover min-h-80" 
+              />
             </div>
-          )}
-        </div>
-
-        {/* Product Info */}
-        <div className="space-y-6">
-          {/* Title & Category */}
-          <div>
-            {product.category && (
-              <p className="text-sm text-gray-500 uppercase tracking-wide mb-2">{product.category}</p>
-            )}
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">{product.title}</h1>
             
-            {/* Stock Status */}
-            {product.stock !== undefined && (
-              <p className={`text-sm font-medium ${product.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
-              </p>
+            {/* Thumbnail Gallery */}
+            {allImages.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {allImages.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setSelectedImage(idx)}
+                    className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
+                      selectedImage === idx 
+                        ? 'border-cyan-400 ring-2 ring-cyan-400/30' 
+                        : 'border-slate-700 hover:border-slate-600'
+                    }`}
+                  >
+                    <img src={img} alt={`view ${idx + 1}`} className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
             )}
           </div>
 
-          {/* Rating & Likes */}
-          <div className="flex items-center gap-4 pb-4 border-b">
-            <div className="flex items-center gap-1">
-              <span className="text-2xl">⭐</span>
-              <span className="text-sm text-gray-600">{reviews.length} reviews</span>
+          {/* Product Info */}
+          <div className="space-y-6">
+            {/* Title & Category */}
+            <div>
+              {product.category && (
+                <p className="text-xs uppercase tracking-widest text-slate-400 mb-2">{product.category}</p>
+              )}
+              <h1 className="text-3xl md:text-4xl font-bold text-gray-100 mb-2">{product.title}</h1>
+              
+              {/* Stock Status */}
+              {product.stock !== undefined && (
+                <p className={`text-sm font-medium ${product.stock > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
+                </p>
+              )}
             </div>
-            <div className="text-sm text-gray-600">
-              ❤️ {product.likes?.length || 0} people liked this
+
+            {/* Rating & Likes */}
+            <div className="flex items-center gap-4 pb-4 border-b border-slate-700">
+              <div className="flex items-center gap-1">
+                <span className="text-2xl">⭐</span>
+                <span className="text-sm text-slate-400">{reviews.length} reviews</span>
+              </div>
+              <div className="text-sm text-slate-400">
+                ❤️ {product.likes?.length || 0} people liked this
+              </div>
             </div>
-          </div>
 
-          {/* Price */}
-          <div className="space-y-2">
-            <p className="text-sm text-gray-600">Price</p>
-            <p className="text-4xl font-bold text-blue-600">{priceText}</p>
-          </div>
+            {/* Price */}
+            <div className="space-y-2">
+              <p className="text-sm text-slate-400">Price</p>
+              <p className="text-4xl font-bold text-cyan-400">{priceText}</p>
+            </div>
 
-          {/* Description */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h3 className="font-semibold text-gray-900 mb-2">Description</h3>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{product.description}</p>
-          </div>
+            {/* Description */}
+            <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+              <h3 className="font-semibold text-gray-100 mb-2">Description</h3>
+              <p className="text-slate-300 leading-relaxed whitespace-pre-wrap">{product.description}</p>
+            </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-col gap-3">
-            <button 
-              onClick={goToCheckout}
-              className="w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Buy Now
-            </button>
-            <button 
-              onClick={addToCart}
-              className="w-full py-3 bg-gray-200 text-gray-900 font-bold rounded-lg hover:bg-gray-300 transition-colors"
-            >
-              Add to Cart
-            </button>
-            <div className="grid grid-cols-2 gap-3">
+            {/* Action Buttons */}
+            <div className="flex flex-col gap-3">
               <button 
-                onClick={toggleLike}
-                className="py-2 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:border-red-500 hover:text-red-500 transition-colors"
+                onClick={goToCheckout}
+                className="w-full py-3 bg-cyan-500 text-slate-950 font-bold rounded-lg hover:bg-cyan-400 transition-colors"
               >
-                ❤️ Like
+                Buy Now
               </button>
               <button 
-                onClick={startChat}
-                className="py-2 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:border-blue-500 hover:text-blue-500 transition-colors"
+                onClick={addToCart}
+                className="w-full py-3 bg-slate-800 text-cyan-400 font-bold rounded-lg hover:bg-slate-700 transition-colors border border-slate-700"
               >
-                💬 Chat
+                Add to Cart
               </button>
+              <div className="grid grid-cols-2 gap-3">
+                <button 
+                  onClick={toggleLike}
+                  className="py-2 border-2 border-slate-700 text-slate-300 font-semibold rounded-lg hover:border-red-500 hover:text-red-400 transition-colors"
+                >
+                  ❤️ Like
+                </button>
+                <button 
+                  onClick={startChat}
+                  className="py-2 border-2 border-slate-700 text-slate-300 font-semibold rounded-lg hover:border-cyan-500 hover:text-cyan-400 transition-colors"
+                >
+                  💬 Chat
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
       {/* Reviews Section */}
-      <section className="space-y-6 border-t pt-8">
-        <h2 className="text-2xl font-bold">Customer Reviews ({reviews.length})</h2>
+      <section className="border-t border-slate-700 pt-8">
+        <h2 className="text-2xl font-bold text-gray-100 mb-6">Customer Reviews ({reviews.length})</h2>
         {/* Review Form */}
-        <form onSubmit={submitReview} className="bg-gray-50 rounded-lg p-6 space-y-4">
-          <h3 className="font-semibold text-gray-900">Share Your Experience</h3>
+        <form onSubmit={submitReview} className="bg-slate-900/50 rounded-lg p-6 space-y-4 border border-slate-700 mb-8">
+          <h3 className="font-semibold text-gray-100">Share Your Experience</h3>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Your Rating</label>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Your Rating</label>
             <select
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border border-slate-700 rounded-lg bg-slate-800 text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500"
               value={newReview.rating}
               onChange={(e) => setNewReview((v) => ({ ...v, rating: Number(e.target.value) }))}
             >
@@ -224,9 +225,9 @@ export default function ProductDetail() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Your Review</label>
+            <label className="block text-sm font-medium text-slate-300 mb-2">Your Review</label>
             <textarea
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className="w-full px-4 py-3 border border-slate-700 rounded-lg bg-slate-800 text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 resize-none"
               rows={4}
               placeholder="Share your experience with this product..."
               value={newReview.comment}
@@ -235,7 +236,7 @@ export default function ProductDetail() {
           </div>
 
           <button 
-            className="w-full py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-2 bg-cyan-500 text-slate-950 font-semibold rounded-lg hover:bg-cyan-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={submitting || !newReview.comment.trim()}
           >
             {submitting ? "Submitting..." : "Submit Review"}
@@ -245,26 +246,27 @@ export default function ProductDetail() {
         {/* Reviews List */}
         <div className="space-y-4">
           {reviews.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-slate-400">
               <p>No reviews yet. Be the first to review this product!</p>
             </div>
           ) : (
             reviews.map((r) => (
-              <div key={r.id} className="border border-gray-200 rounded-lg p-4">
+              <div key={r.id} className="border border-slate-700 rounded-lg p-4 bg-slate-900/30">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex gap-1">
                     {Array(5).fill(0).map((_, i) => (
-                      <span key={i} className={i < r.rating ? 'text-yellow-400' : 'text-gray-300'}>⭐</span>
+                      <span key={i} className={i < r.rating ? 'text-cyan-400' : 'text-slate-600'}>⭐</span>
                     ))}
                   </div>
-                  <p className="text-sm text-gray-500">{new Date(r.createdAt).toLocaleDateString()}</p>
+                  <p className="text-sm text-slate-500">{new Date(r.createdAt).toLocaleDateString()}</p>
                 </div>
-                <p className="text-gray-700">{r.comment}</p>
+                <p className="text-slate-300">{r.comment}</p>
               </div>
             ))
           )}
         </div>
       </section>
+      </div>
     </div>
   );
 }
