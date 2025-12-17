@@ -54,6 +54,7 @@ import Storefront from "./pages/Storefront";
 import Checkout from "./pages/Checkout";
 import MyStore from "./pages/MyStore";
 import StoreLayout from "./pages/StoreLayout";
+import TemplateSettings from "./pages/TemplateSettings";
 
 // Orders submenu pages
 import AddOrder from "./pages/admin/orders/AddOrder";
@@ -596,6 +597,8 @@ const App = () => (
                   <Route path="/guest-checkout/:productId" element={<GuestCheckout />} />
                   {/* My Store - logged in client viewing their own store */}
                   <Route path="/my-store" element={<MyStore />} />
+                  {/* Template Settings - for clients to customize their store templates */}
+                  <Route path="/template-settings" element={<RequirePaidClient><TemplateSettings /></RequirePaidClient>} />
                   {/* Public storefront routes (client's store by store_slug) with persistent header */}
                   <Route path="/store/:storeSlug" element={<StoreLayout />}>
                     <Route index element={<Storefront />} />

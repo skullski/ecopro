@@ -121,7 +121,9 @@ export const getClientOrders: RequestHandler = async (req, res) => {
       FROM store_orders o
       LEFT JOIN store_products p ON o.product_id = p.id
       LEFT JOIN client_store_products cp ON o.product_id = cp.id
-      WHERE o.client_id = $1
+      WHERE 
+        -- Show orders for products owned by this client (for both auth and public orders)
+        cp.client_id = $1
       ORDER BY o.created_at DESC`,
       [req.user.id]
     );

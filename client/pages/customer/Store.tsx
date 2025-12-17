@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Plus, Search, Eye, Copy, ExternalLink, Edit, Trash2, 
   Star, Package, DollarSign, Image as ImageIcon, Settings,
@@ -9,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { TemplatesTab } from '@/components/TemplatesTab';
 import {
   Dialog,
   DialogContent,
@@ -53,6 +55,7 @@ interface StoreProduct {
 }
 
 export default function Store() {
+  const navigate = useNavigate();
   // Copy store link to clipboard
   // This must be above all JSX usage
   let storeSettingsRef: any = null;
@@ -228,12 +231,18 @@ export default function Store() {
                   hero_tile1_url: storeSettings.hero_tile1_url || null,
                   hero_tile2_url: storeSettings.hero_tile2_url || null,
                   currency_code: storeSettings.currency_code || 'DZD',
+                  // Template customization settings
+                  template_hero_heading: storeSettings.template_hero_heading || null,
+                  template_hero_subtitle: storeSettings.template_hero_subtitle || null,
+                  template_button_text: storeSettings.template_button_text || null,
+                  template_accent_color: storeSettings.template_accent_color || null,
                 }),
             });
             if (!res.ok) {
               // try to surface server error message
               const err = await res.json().catch(() => ({}));
-              throw new Error(err.error || 'Save failed');
+              const errorMsg = err.details ? `${err.error}: ${err.details}` : (err.error || 'Save failed');
+              throw new Error(errorMsg);
             }
             // Server may return the updated row; still re-fetch to ensure canonical persisted state
             const saved = await res.json().catch(() => null);
@@ -492,235 +501,6 @@ export default function Store() {
       }
     };
     // store images handlers removed (not used)
-  // Remove duplicate state declarations (already declared above)
-      {/* Store Settings Modal with Tabs */}
-      <Dialog open={showStoreSettingsModal} onOpenChange={setShowStoreSettingsModal}>
-        <DialogContent className="max-w-[400px] w-full p-2 max-h-[60vh] overflow-auto">
-          <DialogHeader>
-            <DialogTitle>Store Settings</DialogTitle>
-            <DialogDescription>
-              Your private store URL and customization options
-            </DialogDescription>
-          </DialogHeader>
-
-          {/* Tabs Navigation */}
-          <div className="flex gap-2 mb-3 border-b pb-2">
-            {['Branding', 'Customization', 'Store URL', 'Stats & Help'].map((tab, idx) => (
-              <button
-                key={tab}
-                className={`px-4 py-2 rounded-t font-medium transition-colors focus:outline-none ${selectedTab === idx ? 'bg-primary text-white dark:bg-primary dark:text-white' : 'bg-muted text-muted-foreground dark:bg-slate-800 dark:text-slate-300'}`}
-                onClick={() => setSelectedTab(idx)}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-
-          {/* Tab Panels */}
-          <div className="py-2">
-            {selectedTab === 0 && (
-              <div className="space-y-3 rounded-xl bg-gradient-to-br from-white via-slate-50 to-slate-100 dark:from-transparent dark:via-transparent dark:to-transparent p-3 shadow-sm dark:bg-slate-800 dark:text-slate-100">
-                <h3 className="text-base font-semibold">Store Branding</h3>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Store Name *</Label>
-                  <Input
-                    placeholder="My Awesome Store"
-                    value={storeSettings.store_name || ''}
-                    onChange={(e) => setStoreSettings((s: any) => ({ ...s, store_name: e.target.value }))}
-                  />
-                  <p className="text-xs text-muted-foreground">This will be the main title of your store</p>
-                  <p className="text-xs text-muted-foreground mt-1">Store slug: <code className="px-1 py-0.5 bg-gray-100 rounded">{storeSettings.store_slug || '—'}</code></p>
-                  <p className="text-xs mt-1 text-amber-600">These settings apply only to this store (slug shown above).</p>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Seller Name *</Label>
-                  <Input
-                    placeholder="John Doe"
-                    value={storeSettings.seller_name || ''}
-                    onChange={(e) => setStoreSettings((s: any) => ({ ...s, seller_name: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Seller Email (Gmail)</Label>
-                  <Input
-                    placeholder="you@gmail.com"
-                    value={storeSettings.seller_email || ''}
-                    onChange={(e) => setStoreSettings((s: any) => ({ ...s, seller_email: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Store Description</Label>
-                  <Textarea
-                    placeholder="Tell customers what makes your store special..."
-                    value={storeSettings.store_description || ''}
-                    onChange={(e) => setStoreSettings((s: any) => ({ ...s, store_description: e.target.value }))}
-                    rows={3}
-                  />
-                </div>
-              </div>
-            )}
-            {selectedTab === 1 && (
-              <div className="space-y-3 rounded-xl bg-gradient-to-br from-white via-slate-50 to-slate-100 dark:from-transparent dark:via-transparent dark:to-transparent p-3 shadow-sm dark:bg-slate-900 dark:text-slate-100 overflow-hidden max-w-full">
-                <h3 className="text-base font-semibold">Customization</h3>
-                {/* Store Logo */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Store Logo</Label>
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="flex-1">
-                      <Input
-                        placeholder="https://example.com/logo.png"
-                        value={storeSettings.store_logo || ''}
-                        onChange={(e) => setStoreSettings((s: any) => ({ ...s, store_logo: e.target.value }))}
-                        className="max-w-0"
-                      />
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={uploadingLogo}
-                      onClick={() => document.getElementById('logo-upload')?.click()}
-                    >
-                      {uploadingLogo ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-                          Uploading...
-                        </>
-                      ) : (
-                        <>
-                          <ImageIcon className="w-4 h-4 mr-2" />
-                          Upload
-                        </>
-                      )}
-                    </Button>
-                    <input
-                      id="logo-upload"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleLogoUpload}
-                      className="hidden"
-                    />
-                  </div>
-                  {storeSettings.store_logo ? (
-                    <div className="mt-2">
-                      <div className="relative w-40 h-40 rounded overflow-hidden border bg-white dark:bg-black">
-                        <img src={storeSettings.store_logo} alt="logo" className="w-full h-full object-contain" />
-                        <button type="button" onClick={removeLogo} className="absolute top-1 right-1 bg-white/80 dark:bg-black/60 text-red-600 rounded-full p-1 text-xs">
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                  ) : null}
-                  <p className="text-xs text-muted-foreground">Upload or paste a direct link to your logo</p>
-                </div>
-                {/* Banner, Hero Images, Store Images */}
-                <div className="grid grid-cols-1 gap-3">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Banner Image URL</Label>
-                    <div className="flex gap-2 min-w-0">
-                      <Input
-                        placeholder="https://example.com/banner.jpg"
-                        value={storeSettings.banner_url || ''}
-                        onChange={(e) => setStoreSettings((s: any) => ({ ...s, banner_url: e.target.value }))}
-                        className="flex-1"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        disabled={uploadingBanner}
-                        onClick={() => document.getElementById('banner-upload')?.click()}
-                      >
-                        {uploadingBanner ? (
-                          <>
-                            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-                            Uploading...
-                          </>
-                        ) : (
-                          <>
-                            <ImageIcon className="w-4 h-4 mr-2" />
-                            Upload
-                          </>
-                        )}
-                      </Button>
-                      <input
-                        id="banner-upload"
-                        type="file"
-                        accept="image/*"
-                        onChange={handleBannerUpload}
-                        className="hidden"
-                      />
-                    </div>
-                    {storeSettings.banner_url ? (
-                        <div className="mt-2">
-                        <div className="relative w-full h-28 overflow-hidden rounded bg-muted">
-                          <img src={storeSettings.banner_url} alt="banner" className="w-full h-full object-cover" />
-                          <button type="button" onClick={removeBanner} className="absolute top-2 right-2 bg-white/80 dark:bg-black/60 rounded-full p-1 text-xs">
-                            <Trash2 className="w-4 h-4 text-red-600" />
-                          </button>
-                        </div>
-                      </div>
-                    ) : null}
-                    <p className="text-xs text-muted-foreground">Hero section background image</p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">Hero Images (main + tiles)</Label>
-                    <div className="grid grid-cols-1 gap-3 items-start max-w-full overflow-hidden">
-                      {/* Main hero image upload removed */}
-                      {/* Store Images upload removed */}
-                      <div className="md:col-span-1 grid grid-cols-2 gap-2">
-                        <div>
-                          <div className="text-xs mb-2">Tile 1</div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <input id="hero-tile1-upload" type="file" accept="image/*" onChange={(e) => handleFieldUpload('hero_tile1_url', e)} className="hidden" />
-                            <Button type="button" variant="outline" onClick={() => document.getElementById('hero-tile1-upload')?.click()}>Upload Tile 1</Button>
-                            {storeSettings.hero_tile1_url ? (
-                              <div className="ml-3 mt-2">
-                                <div className="relative w-20 h-12 rounded overflow-hidden">
-                                  <img src={storeSettings.hero_tile1_url} alt="hero-t1" className="w-full h-full object-cover" />
-                                  <button type="button" onClick={() => removeField('hero_tile1_url')} className="absolute top-1 right-1 bg-white/80 dark:bg-black/60 rounded-full p-1 text-xs">
-                                    <Trash2 className="w-3 h-3 text-red-600" />
-                                  </button>
-                                </div>
-                              </div>
-                            ) : null}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-xs mb-2">Tile 2</div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <input id="hero-tile2-upload" type="file" accept="image/*" onChange={(e) => handleFieldUpload('hero_tile2_url', e)} className="hidden" />
-                            <Button type="button" variant="outline" onClick={() => document.getElementById('hero-tile2-upload')?.click()}>Upload Tile 2</Button>
-                            {storeSettings.hero_tile2_url ? (
-                              <div className="ml-3 mt-2">
-                                <div className="relative w-20 h-12 rounded overflow-hidden">
-                                  <img src={storeSettings.hero_tile2_url} alt="hero-t2" className="w-full h-full object-cover" />
-                                  <button type="button" onClick={() => removeField('hero_tile2_url')} className="absolute top-1 right-1 bg-white/80 dark:bg-black/60 rounded-full p-1 text-xs">
-                                    <Trash2 className="w-3 h-3 text-red-600" />
-                                  </button>
-                                </div>
-                              </div>
-                            ) : null}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-2">Main hero and two tiles used on storefront hero sections</p>
-                  </div>
-                </div>
-              </div>
-            )}
-            {/* Store URL, product summary badges and 'How to Use Your Store' moved to Store Dashboard */}
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowStoreSettingsModal(false)}>
-              Close
-            </Button>
-            <Button onClick={saveStoreSettings} disabled={savingSettings}>
-              {savingSettings ? 'Saving...' : 'Save Settings'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(shareLink);
@@ -834,10 +614,10 @@ export default function Store() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => setShowStoreSettingsModal(true)}
+              onClick={() => navigate('/template-settings')}
             >
               <Settings className="w-4 h-4 mr-2" />
-              Store Settings
+              Template Settings
             </Button>
             <Button 
               onClick={() => {
@@ -1437,226 +1217,7 @@ export default function Store() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Store Settings Modal */}
-      <Dialog open={showStoreSettingsModal} onOpenChange={setShowStoreSettingsModal}>
-        <DialogContent className="max-w-[800px] w-full p-6 max-h-[80vh] overflow-auto">
-          <DialogHeader>
-            <DialogTitle>Store Settings</DialogTitle>
-            <DialogDescription>
-              Your private store URL and customization options
-            </DialogDescription>
-          </DialogHeader>
 
-          <div className="grid grid-cols-1 gap-4 py-2">
-            {/* Store Branding */}
-            <div className="space-y-3 rounded-xl bg-gradient-to-br from-white via-slate-50 to-slate-100 dark:from-transparent dark:via-transparent dark:to-transparent p-4 shadow-sm dark:bg-slate-800 dark:text-slate-100">
-              <h3 className="text-base font-semibold">Store Branding</h3>
-              
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Store Name *</Label>
-                <Input
-                  placeholder="My Awesome Store"
-                  value={storeSettings.store_name || ''}
-                  onChange={(e) => setStoreSettings((s: any) => ({ ...s, store_name: e.target.value }))}
-                />
-                <p className="text-xs text-muted-foreground">This will be the main title of your store</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Seller Name *</Label>
-                <Input
-                  placeholder="John Doe"
-                  value={storeSettings.seller_name || ''}
-                  onChange={(e) => setStoreSettings((s: any) => ({ ...s, seller_name: e.target.value }))}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Seller Email (Gmail)</Label>
-                <Input
-                  placeholder="you@gmail.com"
-                  value={storeSettings.seller_email || ''}
-                  onChange={(e) => setStoreSettings((s: any) => ({ ...s, seller_email: e.target.value }))}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Store Description</Label>
-                <Textarea
-                  placeholder="Tell customers what makes your store special..."
-                  value={storeSettings.store_description || ''}
-                  onChange={(e) => setStoreSettings((s: any) => ({ ...s, store_description: e.target.value }))}
-                  rows={3}
-                />
-              </div>
-            </div>
-
-            {/* Customization */}
-              <div className="space-y-3 rounded-xl bg-gradient-to-br from-white via-slate-50 to-slate-100 dark:from-transparent dark:via-transparent dark:to-transparent p-4 shadow-sm dark:bg-slate-900 dark:text-slate-100 overflow-hidden max-w-full">
-              <h3 className="text-base font-semibold">Customization</h3>
-              {/* Store Logo (moved from Branding) */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Store Logo</Label>
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="flex-1">
-                    <Input
-                      placeholder="https://example.com/logo.png"
-                      value={storeSettings.store_logo || ''}
-                      onChange={(e) => setStoreSettings((s: any) => ({ ...s, store_logo: e.target.value }))}
-                      className="min-w-0"
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={uploadingLogo}
-                    onClick={() => document.getElementById('logo-upload')?.click()}
-                  >
-                    {uploadingLogo ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-                        Uploading...
-                      </>
-                    ) : (
-                      <>
-                        <ImageIcon className="w-4 h-4 mr-2" />
-                        Upload
-                      </>
-                    )}
-                  </Button>
-                  <input
-                    id="logo-upload"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleLogoUpload}
-                    className="hidden"
-                  />
-                </div>
-                {storeSettings.store_logo ? (
-                  <div className="mt-2">
-                    <div className="relative w-40 h-30 rounded overflow-hidden border bg-white dark:bg-black">
-                      <img src={storeSettings.store_logo} alt="logo" className="w-full h-full object-contain" />
-                      <button type="button" onClick={removeLogo} className="absolute top-1 right-1 bg-white/80 dark:bg-black/60 text-red-600 rounded-full p-1 text-xs">
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
-                <p className="text-xs text-muted-foreground">Upload or paste a direct link to your logo</p>
-              </div>
-              
-              <div className="grid grid-cols-1 gap-4">
-                <div className="space-y-1">
-                  <Label className="text-sm font-medium">Banner Image URL</Label>
-                  <div className="flex gap-2 min-w-0">
-                    <Input
-                      placeholder="https://example.com/banner.jpg"
-                      value={storeSettings.banner_url || ''}
-                      onChange={(e) => setStoreSettings((s: any) => ({ ...s, banner_url: e.target.value }))}
-                      className="flex-1"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={uploadingBanner}
-                      onClick={() => document.getElementById('banner-upload')?.click()}
-                    >
-                      {uploadingBanner ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
-                          Uploading...
-                        </>
-                      ) : (
-                        <>
-                          <ImageIcon className="w-4 h-4 mr-2" />
-                          Upload
-                        </>
-                      )}
-                    </Button>
-                    <input
-                      id="banner-upload"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleBannerUpload}
-                      className="hidden"
-                    />
-                  </div>
-                  {storeSettings.banner_url ? (
-                      <div className="mt-2">
-                      <div className="relative w-40 h-40 overflow-hidden rounded bg-muted">
-                        <img src={storeSettings.banner_url} alt="banner" className="w-full h-full object-cover" />
-                        <button type="button" onClick={removeBanner} className="absolute top-2 right-2 bg-white/80 dark:bg-black/60 rounded-full p-1 text-xs">
-                          <Trash2 className="w-6 h-6 text-red-600" />
-                        </button>
-                      </div>
-                    </div>
-                  ) : null}
-
-                  <p className="text-xs text-muted-foreground">Hero section background image</p>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-bold">Hero Images (main + tiles)</Label>
-                  <div className="grid grid-cols-1 gap-6 items-start max-w-full overflow-hidden">
-                    {/* Main hero image upload removed */}
-
-                    {/* Store Images upload removed */}
-
-                    <div className="md:col-span-1 grid grid-cols-2 gap-2">
-                      <div>
-                        <div className="text-xs mb-2">Tile 1</div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <input id="hero-tile1-upload" type="file" accept="image/*" onChange={(e) => handleFieldUpload('hero_tile1_url', e)} className="hidden" />
-                          <Button type="button" variant="outline" onClick={() => document.getElementById('hero-tile1-upload')?.click()}>Upload Tile 1</Button>
-                          {storeSettings.hero_tile1_url ? (
-                            <div className="ml-3 mt-2">
-                              <div className="relative w-40 h-30 rounded overflow-hidden">
-                                <img src={storeSettings.hero_tile1_url} alt="hero-t1" className="w-full h-full object-cover" />
-                                <button type="button" onClick={() => removeField('hero_tile1_url')} className="absolute top-1 right-1 bg-white/80 dark:bg-black/60 rounded-full p-1 text-xs">
-                                  <Trash2 className="w-4 h-4 text-red-600" />
-                                </button>
-                              </div>
-                            </div>
-                          ) : null}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs mb-2">Tile 2</div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <input id="hero-tile2-upload" type="file" accept="image/*" onChange={(e) => handleFieldUpload('hero_tile2_url', e)} className="hidden" />
-                          <Button type="button" variant="outline" onClick={() => document.getElementById('hero-tile2-upload')?.click()}>Upload Tile 2</Button>
-                          {storeSettings.hero_tile2_url ? (
-                            <div className="ml-3 mt-2">
-                              <div className="relative w-40 h-30 rounded overflow-hidden">
-                                <img src={storeSettings.hero_tile2_url} alt="hero-t2" className="w-full h-full object-cover" />
-                                <button type="button" onClick={() => removeField('hero_tile2_url')} className="absolute top-1 right-1 bg-white/80 dark:bg-black/60 rounded-full p-1 text-xs">
-                                  <Trash2 className="w-4 h-4 text-red-600" />
-                                </button>
-                              </div>
-                            </div>
-                          ) : null}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">Main hero and two tiles used on storefront hero sections</p>
-                </div>
-                {/* Currency code removed per design request */}
-              </div>
-            </div>
-
-            {/* Store URL, product summary badges and 'How to Use Your Store' moved to Store Dashboard */}
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowStoreSettingsModal(false)}>
-              Close
-            </Button>
-            <Button onClick={saveStoreSettings} disabled={savingSettings}>
-              {savingSettings ? 'Saving...' : 'Save Settings'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Store Summary (moved here) */}
       <div className="max-w-7xl mx-auto mt-8">
@@ -1678,7 +1239,244 @@ export default function Store() {
         </div>
       </div>
 
-      {/* Template gallery removed */}
+      {/* Store Settings Modal with Tabs */}
+      <Dialog open={showStoreSettingsModal} onOpenChange={setShowStoreSettingsModal}>
+        <DialogContent className="max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+          <DialogHeader className="pb-4 border-b border-slate-200 dark:border-slate-700">
+            <DialogTitle className="text-2xl font-bold">Store Settings</DialogTitle>
+            <DialogDescription className="text-base">
+              Your private store URL and customization options
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Tabs Navigation */}
+          <div className="flex gap-1 mb-6 border-b-2 border-slate-200 dark:border-slate-700 overflow-x-auto bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+            {['Branding', 'Customization', 'Templates', 'Store URL', 'Stats & Help'].map((tab, idx) => (
+              <button
+                key={tab}
+                className={`px-4 py-2.5 rounded-md font-semibold transition-all focus:outline-none whitespace-nowrap text-sm ${
+                  selectedTab === idx 
+                    ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-md ring-2 ring-blue-300 dark:ring-blue-600' 
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700'
+                }`}
+                onClick={() => setSelectedTab(idx)}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+
+          {/* Tab Panels */}
+          <div className="py-4">
+            {selectedTab === 0 && (
+              <div className="space-y-4 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-800 p-6 border border-blue-200 dark:border-slate-700 shadow-sm dark:text-slate-100">
+                <h3 className="text-base font-semibold">Store Branding</h3>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Store Name *</Label>
+                  <Input
+                    placeholder="My Awesome Store"
+                    value={storeSettings.store_name || ''}
+                    onChange={(e) => setStoreSettings((s: any) => ({ ...s, store_name: e.target.value }))}
+                  />
+                  <p className="text-xs text-muted-foreground">This will be the main title of your store</p>
+                  <p className="text-xs text-muted-foreground mt-1">Store slug: <code className="px-1 py-0.5 bg-gray-100 rounded">{storeSettings.store_slug || '—'}</code></p>
+                  <p className="text-xs mt-1 text-amber-600">These settings apply only to this store (slug shown above).</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Seller Name *</Label>
+                  <Input
+                    placeholder="John Doe"
+                    value={storeSettings.seller_name || ''}
+                    onChange={(e) => setStoreSettings((s: any) => ({ ...s, seller_name: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Seller Email (Gmail)</Label>
+                  <Input
+                    placeholder="you@gmail.com"
+                    value={storeSettings.seller_email || ''}
+                    onChange={(e) => setStoreSettings((s: any) => ({ ...s, seller_email: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Store Description</Label>
+                  <Textarea
+                    placeholder="Tell customers what makes your store special..."
+                    value={storeSettings.store_description || ''}
+                    onChange={(e) => setStoreSettings((s: any) => ({ ...s, store_description: e.target.value }))}
+                    rows={3}
+                  />
+                </div>
+              </div>
+            )}
+            {selectedTab === 1 && (
+              <div className="space-y-3 rounded-xl bg-gradient-to-br from-white via-slate-50 to-slate-100 dark:from-transparent dark:via-transparent dark:to-transparent p-3 shadow-sm dark:bg-slate-900 dark:text-slate-100 overflow-hidden max-w-full">
+                <h3 className="text-base font-semibold">Customization</h3>
+                {/* Store Logo */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Store Logo</Label>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex-1">
+                      <Input
+                        placeholder="https://example.com/logo.png"
+                        value={storeSettings.store_logo || ''}
+                        onChange={(e) => setStoreSettings((s: any) => ({ ...s, store_logo: e.target.value }))}
+                        className="max-w-0"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={uploadingLogo}
+                      onClick={() => document.getElementById('logo-upload')?.click()}
+                    >
+                      {uploadingLogo ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <ImageIcon className="w-4 h-4 mr-2" />
+                          Upload
+                        </>
+                      )}
+                    </Button>
+                    <input
+                      id="logo-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoUpload}
+                      className="hidden"
+                    />
+                  </div>
+                  {storeSettings.store_logo ? (
+                    <div className="mt-2">
+                      <div className="relative w-40 h-40 rounded overflow-hidden border bg-white dark:bg-black">
+                        <img src={storeSettings.store_logo} alt="logo" className="w-full h-full object-contain" />
+                        <button type="button" onClick={removeLogo} className="absolute top-1 right-1 bg-white/80 dark:bg-black/60 text-red-600 rounded-full p-1 text-xs">
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+                  <p className="text-xs text-muted-foreground">Upload or paste a direct link to your logo</p>
+                </div>
+                {/* Banner, Hero Images, Store Images */}
+                <div className="grid grid-cols-1 gap-3">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Banner Image URL</Label>
+                    <div className="flex gap-2 min-w-0">
+                      <Input
+                        placeholder="https://example.com/banner.jpg"
+                        value={storeSettings.banner_url || ''}
+                        onChange={(e) => setStoreSettings((s: any) => ({ ...s, banner_url: e.target.value }))}
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={uploadingBanner}
+                        onClick={() => document.getElementById('banner-upload')?.click()}
+                      >
+                        {uploadingBanner ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <ImageIcon className="w-4 h-4 mr-2" />
+                            Upload
+                          </>
+                        )}
+                      </Button>
+                      <input
+                        id="banner-upload"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleBannerUpload}
+                        className="hidden"
+                      />
+                    </div>
+                    {storeSettings.banner_url ? (
+                        <div className="mt-2">
+                        <div className="relative w-full h-28 overflow-hidden rounded bg-muted">
+                          <img src={storeSettings.banner_url} alt="banner" className="w-full h-full object-cover" />
+                          <button type="button" onClick={removeBanner} className="absolute top-2 right-2 bg-white/80 dark:bg-black/60 rounded-full p-1 text-xs">
+                            <Trash2 className="w-4 h-4 text-red-600" />
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+                    <p className="text-xs text-muted-foreground">Hero section background image</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Hero Images (main + tiles)</Label>
+                    <div className="grid grid-cols-1 gap-3 items-start max-w-full overflow-hidden">
+                      {/* Main hero image upload removed */}
+                      {/* Store Images upload removed */}
+                      <div className="md:col-span-1 grid grid-cols-2 gap-2">
+                        <div>
+                          <div className="text-xs mb-2">Tile 1</div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <input id="hero-tile1-upload" type="file" accept="image/*" onChange={(e) => handleFieldUpload('hero_tile1_url', e)} className="hidden" />
+                            <Button type="button" variant="outline" onClick={() => document.getElementById('hero-tile1-upload')?.click()}>Upload Tile 1</Button>
+                            {storeSettings.hero_tile1_url ? (
+                              <div className="ml-3 mt-2">
+                                <div className="relative w-20 h-12 rounded overflow-hidden">
+                                  <img src={storeSettings.hero_tile1_url} alt="hero-t1" className="w-full h-full object-cover" />
+                                  <button type="button" onClick={() => removeField('hero_tile1_url')} className="absolute top-1 right-1 bg-white/80 dark:bg-black/60 rounded-full p-1 text-xs">
+                                    <Trash2 className="w-3 h-3 text-red-600" />
+                                  </button>
+                                </div>
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-xs mb-2">Tile 2</div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <input id="hero-tile2-upload" type="file" accept="image/*" onChange={(e) => handleFieldUpload('hero_tile2_url', e)} className="hidden" />
+                            <Button type="button" variant="outline" onClick={() => document.getElementById('hero-tile2-upload')?.click()}>Upload Tile 2</Button>
+                            {storeSettings.hero_tile2_url ? (
+                              <div className="ml-3 mt-2">
+                                <div className="relative w-20 h-12 rounded overflow-hidden">
+                                  <img src={storeSettings.hero_tile2_url} alt="hero-t2" className="w-full h-full object-cover" />
+                                  <button type="button" onClick={() => removeField('hero_tile2_url')} className="absolute top-1 right-1 bg-white/80 dark:bg-black/60 rounded-full p-1 text-xs">
+                                    <Trash2 className="w-3 h-3 text-red-600" />
+                                  </button>
+                                </div>
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">Main hero and two tiles used on storefront hero sections</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            {selectedTab === 2 && (
+              <TemplatesTab 
+                storeSettings={storeSettings}
+                setStoreSettings={setStoreSettings}
+              />
+            )}
+            {/* Store URL, product summary badges and 'How to Use Your Store' moved to Store Dashboard */}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowStoreSettingsModal(false)}>
+              Close
+            </Button>
+            <Button onClick={saveStoreSettings} disabled={savingSettings}>
+              {savingSettings ? 'Saving...' : 'Save Settings'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

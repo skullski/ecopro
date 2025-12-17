@@ -59,7 +59,7 @@ export const register: RequestHandler = async (req, res) => {
     const normalizedRole = (role === 'admin' || role === 'seller') ? role : 'user';
     const user = await createUser({
       email,
-      password: hashedPassword,
+      password_hash: hashedPassword,
       name,
       role: normalizedRole,
       user_type: normalizedRole === 'admin' ? 'admin' : (normalizedRole === 'seller' ? 'seller' : 'client'),
@@ -110,7 +110,7 @@ export const login: RequestHandler = async (req, res) => {
     }
 
     // Verify password
-    const isValidPassword = await comparePassword(password, user.password);
+    const isValidPassword = await comparePassword(password, user.password_hash);
     if (!isValidPassword) {
       console.log("[LOGIN] Invalid password");
       return jsonError(res, 401, "Invalid email or password");
@@ -188,14 +188,14 @@ export const changePassword: RequestHandler = async (req, res) => {
     }
 
     // Verify current password
-    const isValidPassword = await comparePassword(currentPassword, user.password);
+    const isValidPassword = await comparePassword(currentPassword, user.password_hash);
     if (!isValidPassword) {
       return jsonError(res, 401, "Current password is incorrect");
     }
 
     // Hash new password
     const hashedPassword = await hashPassword(newPassword);
-    await updateUser(user.id, { password: hashedPassword });
+    await updateUser(user.id, { password_hash: hashedPassword });
 
     res.json({ message: "Password changed successfully" });
   } catch (error) {

@@ -13,6 +13,7 @@ import * as productRoutes from "./routes/products";
 import * as stockRoutes from "./routes/stock";
 import * as clientStoreRoutes from "./routes/client-store";
 import * as publicStoreRoutes from "./routes/public-store";
+import * as templateRoutes from "./routes/templates";
 import { createProduct as createStorefrontProduct, updateProduct as updateStorefrontProduct, deleteProduct as deleteStorefrontProduct, handleUploadImages as uploadStorefrontImages } from "./routes/storefront";
 import * as orderRoutes from "./routes/orders";
 import { upload, uploadImage } from "./routes/uploads";
@@ -222,6 +223,11 @@ export function createServer() {
   );
   app.get("/api/products", apiLimiter, productRoutes.getAllProducts);
   app.get("/api/products/:id", apiLimiter, productRoutes.getProductById);
+
+  // Templates API (public)
+  app.get("/api/templates", apiLimiter, templateRoutes.getTemplates);
+  app.get("/api/templates/:id", apiLimiter, templateRoutes.getTemplateById);
+  app.get("/api/templates/category/:category", apiLimiter, templateRoutes.getTemplatesByCategory);
 
   // Guest checkout (no auth)
   app.post("/api/guest/orders", apiLimiter, productRoutes.createGuestOrder);

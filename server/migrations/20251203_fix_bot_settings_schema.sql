@@ -1,8 +1,6 @@
 -- Align bot_settings schema with server/routes/bot.ts expectations
 -- Rename user_id -> client_id and add required columns
 
-BEGIN;
-
 -- If column user_id exists, rename to client_id
 DO $$
 BEGIN
@@ -12,57 +10,28 @@ BEGIN
   ) THEN
     ALTER TABLE bot_settings RENAME COLUMN user_id TO client_id;
   END IF;
-END$$;
+END $$;
 
--- Ensure client_id has proper FK to users(id)
-ALTER TABLE bot_settings
-  ADD CONSTRAINT IF NOT EXISTS fk_bot_settings_client
-  FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE;
-
--- Add columns used by bot.ts if missing
+-- Ensure client_id exists with proper defaults
 DO $$
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'bot_settings' AND column_name = 'provider'
+    WHERE table_name = 'bot_settings' AND column_name = 'client_id'
   ) THEN
-    ALTER TABLE bot_settings ADD COLUMN provider VARCHAR(50) DEFAULT 'whatsapp_cloud';
+    ALTER TABLE bot_settings ADD COLUMN client_id INTEGER;
   END IF;
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'bot_settings' AND column_name = 'whatsapp_phone_id'
-  ) THEN
-    ALTER TABLE bot_settings ADD COLUMN whatsapp_phone_id VARCHAR(100);
-  END IF;
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'bot_settings' AND column_name = 'whatsapp_token'
-  ) THEN
-    ALTER TABLE bot_settings ADD COLUMN whatsapp_token TEXT;
-  END IF;
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'bot_settings' AND column_name = 'template_order_confirmation'
-  ) THEN
-    ALTER TABLE bot_settings ADD COLUMN template_order_confirmation TEXT;
-  END IF;
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'bot_settings' AND column_name = 'template_payment'
-  ) THEN
-    ALTER TABLE bot_settings ADD COLUMN template_payment TEXT;
-  END IF;
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'bot_settings' AND column_name = 'template_shipping'
-  ) THEN
-    ALTER TABLE bot_settings ADD COLUMN template_shipping TEXT;
-  END IF;
-END$$;
+END $$;
+
+-- Add columns used by bot.ts if missing
+ALTER TABLE bot_settings ADD COLUMN IF NOT EXISTS provider VARCHAR(50) DEFAULT 'whatsapp_cloud';
+ALTER TABLE bot_settings ADD COLUMN IF NOT EXISTS whatsapp_phone_id VARCHAR(100);
+ALTER TABLE bot_settings ADD COLUMN IF NOT EXISTS whatsapp_token TEXT;
+ALTER TABLE bot_settings ADD COLUMN IF NOT EXISTS template_order_confirmation TEXT;
+ALTER TABLE bot_settings ADD COLUMN IF NOT EXISTS template_payment TEXT;
+ALTER TABLE bot_settings ADD COLUMN IF NOT EXISTS template_shipping TEXT;
 
 -- Maintain created_at/updated_at defaults
 ALTER TABLE bot_settings
   ALTER COLUMN created_at SET DEFAULT CURRENT_TIMESTAMP,
   ALTER COLUMN updated_at SET DEFAULT CURRENT_TIMESTAMP;
-
-COMMIT;

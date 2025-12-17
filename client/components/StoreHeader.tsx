@@ -19,7 +19,7 @@ export function StoreHeader({ settings, searchQuery, setSearchQuery, onCart }) {
     else setLocalQuery(value);
   };
   const getDisplayName = (name?: string) => {
-    if (!name || typeof name !== 'string' || name.trim().length === 0) return 'Mercury';
+    if (!name || typeof name !== 'string' || name.trim().length === 0) return 'My Store';
     const trimmed = name.trim();
     return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
   };

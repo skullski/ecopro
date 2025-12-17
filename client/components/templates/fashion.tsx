@@ -1,120 +1,87 @@
-import React, { useState, useMemo } from 'react';
-import { useTemplateData, useTemplateSettings } from '../../hooks/useTemplateData';
+import React, { useState } from 'react';
+import { TemplateProps } from '@/pages/storefront/templates/types';
 
-interface Product {
-  id: number;
-  name: string;
-  gender: string;
-  category: string;
-  fit: string;
-  color: string;
-  price: number;
-  image?: string;
-}
-
-interface Look {
-  id: string;
-  title: string;
-  caption: string;
-  image?: string;
-}
-
-interface TemplateDataFashion {
-  storeImage: string;
-  storeName: string;
-  products: Product[];
-  looks: Look[];
-  genders?: string[];
-  categories?: string[];
-  fits?: string[];
-}
-
-interface TemplateSettingsFashion {
-  heroHeading: string;
-  heroSubtitle: string;
-  ctaButtonText: string;
-  brandName: string;
-  currencySymbol: string;
-  accentColor: string;
-}
-
-function ProductCard({ p, accentColor, currencySymbol }: { p: Product; accentColor: string; currencySymbol: string }) {
-  const productImage = p.image || (window as any).TEMPLATE_DATA?.storeImage || 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=1600&q=80';
-  
-  return (
-    <div className="bg-zinc-950 rounded-lg border border-zinc-800 overflow-hidden transition-all duration-200 hover:translate-y-[-4px] hover:border-opacity-50" style={{ '--hover-color': accentColor } as any}>
-      <div className="relative h-64 overflow-hidden">
-        <img
-          src={productImage}
-          alt={p.name}
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
-        <div className="absolute top-3 left-3 text-[10px] uppercase tracking-widest px-3 py-1 rounded-full border border-zinc-700 bg-black/50 text-zinc-200">
-          {p.category}
-        </div>
-      </div>
-      <div className="p-4">
-        <div className="flex items-center justify-between mb-1">
-          <h3 className="text-sm font-semibold text-zinc-50">
-            {p.name}
-          </h3>
-          <span className="text-xs text-zinc-400">{p.gender}</span>
-        </div>
-        <p className="text-[11px] text-zinc-400 mb-2">
-          {p.fit} · {p.color}
-        </p>
-        <div className="flex items-center justify-between mt-2">
-          <span className="font-semibold text-sm" style={{ color: accentColor }}>
-            {p.price} {currencySymbol}
-          </span>
-          <button className="text-[11px] uppercase tracking-wider px-3 py-1.5 rounded-full border border-zinc-600 text-zinc-200 hover:border-opacity-70 transition">
-            View
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default function FashionTemplate() {
-  const data = useTemplateData<TemplateDataFashion>();
-  const settings = useTemplateSettings<TemplateSettingsFashion>();
-
-  // Default values
-  const storeImage = data?.storeImage || 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=1600&q=80';
-  const storeName = data?.storeName || 'WardrobeOS';
-  const products = data?.products || [];
-  const looks = data?.looks || [];
-  const genders = data?.genders || ['Women', 'Men', 'Essentials'];
-  const categories = data?.categories || ['All', 'Outerwear', 'Tops', 'Bottoms', 'Footwear'];
-  const fits = data?.fits || ['All', 'Oversized', 'Relaxed', 'Regular', 'Boxy'];
-
-  const heroHeading = settings?.heroHeading || 'Build a wardrobe that behaves like software.';
-  const heroSubtitle = settings?.heroSubtitle || 'Fewer pieces, more combinations. Coats, trousers, and layers designed to work in any city, any season.';
-  const ctaButtonText = settings?.ctaButtonText || 'Browse collection';
-  const accentColor = settings?.accentColor || '#f97316';
-  const currencySymbol = settings?.currencySymbol || 'DZD';
-
+export default function FashionTemplate(props: TemplateProps) {
+  const { navigate, storeSlug } = props;
   const [activeGender, setActiveGender] = useState('Women');
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [fitFilter, setFitFilter] = useState('All');
 
-  const filteredProducts = useMemo(() => {
-    return products.filter((p) => {
-      if (activeGender !== 'All' && p.gender !== activeGender) return false;
-      if (categoryFilter !== 'All' && p.category !== categoryFilter) return false;
-      if (fitFilter !== 'All' && p.fit !== fitFilter) return false;
-      return true;
-    });
-  }, [products, activeGender, categoryFilter, fitFilter]);
+  const products = props.products || [];
+  const storeName = props.settings?.store_name || 'WardrobeOS';
+  const bannerUrl = props.settings?.banner_url || 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=1600&q=80';
+
+  const genders = ['Women', 'Men', 'Essentials'];
+  const categories = ['All', 'Outerwear', 'Tops', 'Bottoms', 'Footwear'];
+  const fits = ['All', 'Oversized', 'Relaxed', 'Regular', 'Boxy'];
+
+  const looks = [
+    { id: 'look1', title: 'Late‑night city layers', caption: 'Wool coat · relaxed trouser · canvas sneaker' },
+    { id: 'look2', title: 'Studio uniform', caption: 'Boxy tee · tapered trouser · minimal sneaker' },
+    { id: 'look3', title: 'Transit‑ready shell', caption: 'Technical shell · hoodie · soft layers' },
+  ];
+
+  const filteredProducts = products.filter((p: any) => {
+    if (activeGender !== 'All' && p.gender !== activeGender) return false;
+    if (categoryFilter !== 'All' && p.category !== categoryFilter) return false;
+    if (fitFilter !== 'All' && p.fit !== fitFilter) return false;
+    return true;
+  });
 
   return (
     <div className="min-h-screen bg-black text-zinc-50">
+      <style>{`
+        .hero {
+          min-height: 70vh;
+          position: relative;
+          background-size: cover;
+          background-position: center;
+        }
+        .hero-overlay {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(to right, rgba(5,5,9,0.9), rgba(5,5,9,0.4));
+        }
+        .carousel::-webkit-scrollbar {
+          display: none;
+        }
+        .carousel {
+          scroll-snap-type: x mandatory;
+        }
+        .carousel-item {
+          scroll-snap-align: start;
+        }
+        .filter-pill {
+          border-radius: 999px;
+          border: 1px solid #3f3f46;
+          padding: 6px 12px;
+          font-size: 11px;
+          cursor: pointer;
+          background: #09090f;
+        }
+        .filter-pill.active {
+          border-color: #f97316;
+          background: rgba(248,148,66,0.16);
+          color: #fed7aa;
+        }
+        .product-card {
+          background: #050509;
+          border-radius: 18px;
+          border: 1px solid #1f2933;
+          overflow: hidden;
+          transition: 0.22s;
+        }
+        .product-card:hover {
+          transform: translateY(-4px);
+          border-color: #f97316;
+          box-shadow: 0 18px 40px rgba(0,0,0,0.7);
+        }
+      `}</style>
+
       {/* HEADER */}
       <header className="sticky top-0 z-20 border-b border-zinc-800 bg-black/85 backdrop-blur">
         <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
-          <div className="text-xs tracking-widest uppercase">
+          <div className="text-xs tracking-[0.2em] uppercase">
             {storeName}
           </div>
           <nav className="hidden md:flex gap-5 text-[11px] text-zinc-400">
@@ -131,52 +98,35 @@ export default function FashionTemplate() {
 
       {/* HERO */}
       <section
-        className="hero relative min-h-[70vh] bg-cover bg-center"
-        style={{ backgroundImage: `url(${storeImage})` }}
+        className="hero"
+        style={{ backgroundImage: `url(${bannerUrl})` }}
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-black/40"></div>
-        <div className="relative max-w-6xl mx-auto px-6 h-full flex items-end pb-14 min-h-[70vh]">
+        <div className="hero-overlay"></div>
+        <div className="max-w-6xl mx-auto px-6 h-full flex items-end pb-14">
           <div className="max-w-lg">
-            <div className="text-[11px] tracking-widest uppercase text-zinc-300 mb-2">
+            <div className="text-[11px] tracking-[0.25em] uppercase text-zinc-300 mb-2">
               System wardrobes / 2025
             </div>
             <h1 className="text-3xl md:text-4xl font-serif font-semibold text-zinc-50 mb-3">
-              {heroHeading}
+              Build a wardrobe that behaves like software.
             </h1>
             <p className="text-sm text-zinc-300 max-w-md mb-4">
-              {heroSubtitle}
+              Fewer pieces, more combinations. Coats, trousers, and layers designed to work in any city, any season.
             </p>
-            <button 
-              className="text-[11px] uppercase tracking-wide px-5 py-2 rounded-full border transition"
-              style={{
-                borderColor: accentColor,
-                color: accentColor,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = `${accentColor}20`;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-              }}
-            >
-              {ctaButtonText}
+            <button className="text-[11px] uppercase tracking-[0.18em] px-5 py-2 rounded-full border border-zinc-500 text-zinc-100 hover:border-amber-400 hover:text-amber-200 transition">
+              Browse collection
             </button>
           </div>
         </div>
       </section>
 
-      {/* GENDER TABS */}
+      {/* CATEGORY TABS */}
       <section className="max-w-6xl mx-auto px-6 py-8 border-b border-zinc-900">
         <div className="flex flex-wrap gap-3 text-[11px]">
           {genders.map((g) => (
             <button
               key={g}
-              className="px-3 py-1.5 rounded-full border transition-all"
-              style={{
-                borderColor: activeGender === g ? accentColor : '#3f3f46',
-                backgroundColor: activeGender === g ? `${accentColor}26` : '#09090f',
-                color: activeGender === g ? accentColor : '#e5e5e5',
-              }}
+              className={`filter-pill ${activeGender === g ? 'active' : ''}`}
               onClick={() => setActiveGender(g)}
             >
               {g}
@@ -193,22 +143,22 @@ export default function FashionTemplate() {
             Scroll horizontally to browse outfits
           </p>
         </div>
-        <div className="carousel flex gap-5 overflow-x-auto pb-2 scrollbar-hide">
+        <div className="carousel flex gap-5 overflow-x-auto pb-2">
           {looks.map((look) => (
             <div
               key={look.id}
-              className="carousel-item min-w-[260px] max-w-xs bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden flex-shrink-0"
+              className="carousel-item min-w-[260px] max-w-xs bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden"
             >
               <div className="h-40 relative overflow-hidden">
                 <img
-                  src={look.image || storeImage}
+                  src={bannerUrl}
                   className="w-full h-full object-cover"
                   alt={look.title}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
               </div>
               <div className="p-4">
-                <div className="text-[11px] uppercase tracking-widest text-zinc-400 mb-1">
+                <div className="text-[11px] uppercase tracking-[0.18em] text-zinc-400 mb-1">
                   Lookbook
                 </div>
                 <div className="text-sm font-semibold text-zinc-50">
@@ -229,12 +179,7 @@ export default function FashionTemplate() {
           {categories.map((c) => (
             <button
               key={c}
-              className="px-3 py-1.5 rounded-full border transition-all"
-              style={{
-                borderColor: categoryFilter === c ? accentColor : '#3f3f46',
-                backgroundColor: categoryFilter === c ? `${accentColor}26` : '#09090f',
-                color: categoryFilter === c ? accentColor : '#e5e5e5',
-              }}
+              className={`filter-pill ${categoryFilter === c ? 'active' : ''}`}
               onClick={() => setCategoryFilter(c)}
             >
               {c}
@@ -245,12 +190,7 @@ export default function FashionTemplate() {
           {fits.map((f) => (
             <button
               key={f}
-              className="px-3 py-1.5 rounded-full border transition-all"
-              style={{
-                borderColor: fitFilter === f ? accentColor : '#3f3f46',
-                backgroundColor: fitFilter === f ? `${accentColor}26` : '#09090f',
-                color: fitFilter === f ? accentColor : '#e5e5e5',
-              }}
+              className={`filter-pill ${fitFilter === f ? 'active' : ''}`}
               onClick={() => setFitFilter(f)}
             >
               {f} fit
@@ -270,21 +210,53 @@ export default function FashionTemplate() {
           </span>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-          {filteredProducts.map((p) => (
-            <ProductCard key={p.id} p={p} accentColor={accentColor} currencySymbol={currencySymbol} />
+          {filteredProducts.map((p: any) => (
+            <div key={p.id} className="product-card">
+              <div className="relative h-64 overflow-hidden">
+                <img
+                  src={p.images?.[0] || bannerUrl}
+                  alt={p.title}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+                <div className="absolute top-3 left-3 text-[10px] uppercase tracking-[0.18em] px-3 py-1 rounded-full border border-zinc-700 bg-black/50 text-zinc-200">
+                  {p.category || 'Category'}
+                </div>
+              </div>
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="text-sm font-semibold text-zinc-50">
+                    {p.title}
+                  </h3>
+                  <span className="text-xs text-zinc-400">{p.gender || 'All'}</span>
+                </div>
+                <p className="text-[11px] text-zinc-400 mb-2">
+                  {p.fit || 'Regular'} · {p.color || 'Color'}
+                </p>
+                <div className="flex items-center justify-between mt-2">
+                  <span className="text-amber-300 text-sm font-semibold">
+                    {props.formatPrice(p.price)}
+                  </span>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/${p.slug}` : `/product/${p.id}`)}
+                      className="text-[11px] uppercase tracking-[0.16em] px-3 py-1.5 rounded-full border border-zinc-600 text-zinc-200 hover:border-amber-400 hover:text-amber-200 transition"
+                    >
+                      View
+                    </button>
+                    <button 
+                      onClick={() => navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/checkout/${p.slug}` : `/checkout/${p.id}`)}
+                      className="text-[11px] uppercase tracking-[0.16em] px-3 py-1.5 rounded-full bg-amber-500 border border-amber-500 text-zinc-950 hover:bg-amber-400 hover:border-amber-400 transition font-semibold"
+                    >
+                      Buy
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       </section>
-
-      <style>{`
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
     </div>
   );
 }

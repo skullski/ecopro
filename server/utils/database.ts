@@ -8,10 +8,11 @@ let pool: Pool | null = null;
 export interface User {
   id: string;
   email: string;
-  password: string;
+  password_hash: string;
   name: string;
   role: string;
   user_type?: string;
+  is_verified?: boolean;
 }
 
 export async function ensureConnection(retries = 5): Promise<Pool> {
@@ -131,16 +132,16 @@ export async function findUserById(id: string): Promise<User | null> {
  */
 export async function createUser(user: {
   email: string;
-  password: string;
+  password_hash: string;
   name: string;
   role?: string;
   user_type?: string;
 }): Promise<User> {
   const result = await pool.query(
-    `INSERT INTO users (email, password, name, role, user_type) 
+    `INSERT INTO users (email, password_hash, name, role, user_type) 
      VALUES ($1, $2, $3, $4, $5) 
      RETURNING *`,
-    [user.email, user.password, user.name, user.role || 'user', user.user_type || 'client']
+    [user.email, user.password_hash, user.name, user.role || 'user', user.user_type || 'client']
   );
   return result.rows[0];
 }
@@ -199,7 +200,7 @@ export async function createDefaultAdmin(
   if (!existingAdmin) {
     await createUser({
       email,
-      password: hashedPassword,
+      password_hash: hashedPassword,
       name: "Admin User",
       role: 'admin',
       user_type: 'admin'

@@ -358,12 +358,21 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
       }
     }
 
-    // Ensure DB has a column for store_images (safe to run on each update)
+    // Ensure DB has necessary columns (safe to run on each update)
     try {
       await pool.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS store_images TEXT[]`);
+      await pool.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS template_hero_heading TEXT`);
+      await pool.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS template_hero_subtitle TEXT`);
+      await pool.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS template_button_text TEXT`);
+      await pool.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS template_accent_color TEXT`);
+      await pool.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS hero_main_url TEXT`);
+      await pool.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS hero_tile1_url TEXT`);
+      await pool.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS hero_tile2_url TEXT`);
+      await pool.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS seller_name TEXT`);
+      await pool.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS seller_email TEXT`);
     } catch (e) {
       // Non-fatal if DB doesn't allow alter; we'll attempt update and let it fail loudly
-      console.error('Could not ensure store_images column exists:', (e as any).message);
+      console.error('Could not ensure store columns exist:', (e as any).message);
     }
 
     const fields: string[] = [];
@@ -375,6 +384,8 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
       'store_name', 'store_description', 'store_logo', 'primary_color', 'secondary_color',
       'custom_domain', 'is_public', 'store_slug', 'template', 'banner_url', 'currency_code',
       'hero_main_url', 'hero_tile1_url', 'hero_tile2_url', 'owner_name', 'owner_email', 'store_images',
+      // Template customization fields
+      'template_hero_heading', 'template_hero_subtitle', 'template_button_text', 'template_accent_color',
       // allow older/client payloads to include seller fields without failing
       'seller_name', 'seller_email'
     ]);
@@ -386,13 +397,19 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
         console.warn('[updateStoreSettings] skipping unknown key:', key);
         return;
       }
+      // Always add the field to update, even if null
       fields.push(`${key} = $${paramCount}`);
       values.push(value);
       paramCount++;
     });
 
     if (fields.length === 0) {
-      return res.status(400).json({ error: "No fields to update" });
+      // No fields to update - still return success with current settings
+      const result = await pool.query(
+        'SELECT * FROM client_store_settings WHERE client_id = $1',
+        [clientId]
+      );
+      return res.json(result.rows[0]);
     }
 
     fields.push(`updated_at = CURRENT_TIMESTAMP`);
@@ -426,9 +443,9 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
     console.error("Update store settings error:", error);
     logStoreSettings('updateStoreSettings:error', { error: (error as any)?.message });
     const payload: any = { error: "Failed to update store settings" };
-    if (process.env.NODE_ENV !== 'production') {
-      payload.details = (error as any)?.message || String(error);
-    }
+    // Always include details in development
+    payload.details = (error as any)?.message || String(error);
+    console.log('[updateStoreSettings] Error response:', JSON.stringify(payload));
     res.status(500).json(payload);
   }
 };

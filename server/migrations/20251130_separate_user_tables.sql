@@ -5,7 +5,7 @@
 CREATE TABLE IF NOT EXISTS sellers (
   id SERIAL PRIMARY KEY,
   email VARCHAR(255) UNIQUE NOT NULL,
-  password VARCHAR(255) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
   name VARCHAR(255),
   business_name VARCHAR(255),
   phone VARCHAR(50),
@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS sellers (
 CREATE TABLE IF NOT EXISTS clients (
   id SERIAL PRIMARY KEY,
   email VARCHAR(255) UNIQUE NOT NULL,
-  password VARCHAR(255) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
   name VARCHAR(255),
   company_name VARCHAR(255),
   phone VARCHAR(50),
@@ -67,29 +67,29 @@ BEGIN
 
   -- Build and execute dynamic SQL based on available columns
   IF has_phone AND has_address AND has_role THEN
-    INSERT INTO sellers (email, password, name, phone, address, role, created_at, updated_at)
+    INSERT INTO sellers (email, password_hash, name, phone, address, role, created_at, updated_at)
     SELECT 
-      email, password, name, phone, address,
+      email, password_hash, name, phone, address,
       CASE WHEN role = 'admin' THEN 'admin' ELSE 'seller' END,
       created_at, updated_at
     FROM users WHERE user_type = 'seller'
     ON CONFLICT (email) DO NOTHING;
   ELSIF has_phone AND has_address THEN
-    INSERT INTO sellers (email, password, name, phone, address, created_at, updated_at)
-    SELECT email, password, name, phone, address, created_at, updated_at
+    INSERT INTO sellers (email, password_hash, name, phone, address, created_at, updated_at)
+    SELECT email, password_hash, name, phone, address, created_at, updated_at
     FROM users WHERE user_type = 'seller'
     ON CONFLICT (email) DO NOTHING;
   ELSIF has_role THEN
-    INSERT INTO sellers (email, password, name, role, created_at, updated_at)
+    INSERT INTO sellers (email, password_hash, name, role, created_at, updated_at)
     SELECT 
-      email, password, name,
+      email, password_hash, name,
       CASE WHEN role = 'admin' THEN 'admin' ELSE 'seller' END,
       created_at, updated_at
     FROM users WHERE user_type = 'seller'
     ON CONFLICT (email) DO NOTHING;
   ELSE
-    INSERT INTO sellers (email, password, name, created_at, updated_at)
-    SELECT email, password, name, created_at, updated_at
+    INSERT INTO sellers (email, password_hash, name, created_at, updated_at)
+    SELECT email, password_hash, name, created_at, updated_at
     FROM users WHERE user_type = 'seller'
     ON CONFLICT (email) DO NOTHING;
   END IF;
@@ -123,29 +123,29 @@ BEGIN
 
   -- Build and execute based on available columns
   IF has_phone AND has_address AND has_role THEN
-    INSERT INTO clients (email, password, name, phone, address, role, created_at, updated_at)
+    INSERT INTO clients (email, password_hash, name, phone, address, role, created_at, updated_at)
     SELECT 
-      email, password, name, phone, address,
+      email, password_hash, name, phone, address,
       CASE WHEN role = 'admin' THEN 'admin' ELSE 'client' END,
       created_at, updated_at
     FROM users WHERE user_type = 'client'
     ON CONFLICT (email) DO NOTHING;
   ELSIF has_phone AND has_address THEN
-    INSERT INTO clients (email, password, name, phone, address, created_at, updated_at)
-    SELECT email, password, name, phone, address, created_at, updated_at
+    INSERT INTO clients (email, password_hash, name, phone, address, created_at, updated_at)
+    SELECT email, password_hash, name, phone, address, created_at, updated_at
     FROM users WHERE user_type = 'client'
     ON CONFLICT (email) DO NOTHING;
   ELSIF has_role THEN
-    INSERT INTO clients (email, password, name, role, created_at, updated_at)
+    INSERT INTO clients (email, password_hash, name, role, created_at, updated_at)
     SELECT 
-      email, password, name,
+      email, password_hash, name,
       CASE WHEN role = 'admin' THEN 'admin' ELSE 'client' END,
       created_at, updated_at
     FROM users WHERE user_type = 'client'
     ON CONFLICT (email) DO NOTHING;
   ELSE
-    INSERT INTO clients (email, password, name, created_at, updated_at)
-    SELECT email, password, name, created_at, updated_at
+    INSERT INTO clients (email, password_hash, name, created_at, updated_at)
+    SELECT email, password_hash, name, created_at, updated_at
     FROM users WHERE user_type = 'client'
     ON CONFLICT (email) DO NOTHING;
   END IF;

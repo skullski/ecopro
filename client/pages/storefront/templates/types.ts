@@ -28,6 +28,11 @@ export interface StoreSettings {
   hero_tile2_url?: string | null;
   owner_name?: string; // Store owner display name
   owner_email?: string; // Store owner email
+  // Template customization fields
+  template_hero_heading?: string;
+  template_hero_subtitle?: string;
+  template_button_text?: string;
+  template_accent_color?: string;
 }
 
 export interface TemplateProps {
