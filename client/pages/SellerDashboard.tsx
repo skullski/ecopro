@@ -909,6 +909,7 @@ export default function SellerDashboard() {
             </div>
           )}
         </div>
+        </div>
       </div>
     </div>
   );
