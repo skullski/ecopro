@@ -374,7 +374,7 @@ export default function SellerDashboard() {
 
         {/* Add/Edit Product Form */}
         {showAddProduct && (
-          <div className="bg-card rounded-xl border p-6 shadow-sm mb-8">
+          <div className="bg-card rounded-xl border p-6 shadow-lg mb-8" style={{ boxShadow: '0 10px 40px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08)' }}>
             <h2 className="text-xl font-bold mb-4">
               {editingProduct ? 'Edit Product' : 'Add New Product'}
             </h2>
@@ -566,7 +566,7 @@ export default function SellerDashboard() {
         )}
 
         {/* Products Grid */}
-        <div className="bg-card rounded-xl border shadow-sm">
+        <div className="bg-card rounded-xl border" style={{ boxShadow: '0 10px 40px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08)' }}>
           <div className="p-6 border-b">
             <h2 className="text-xl font-bold">Your Products</h2>
           </div>
@@ -579,7 +579,7 @@ export default function SellerDashboard() {
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-3 p-4">
               {products.map((product) => (
-                <div key={product.id} className="bg-card border rounded-lg overflow-hidden hover:shadow-lg transition-shadow group">
+                <div key={product.id} className="bg-card border rounded-lg overflow-hidden transition-all group" style={{ boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)' }} onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 12px 32px rgba(0, 0, 0, 0.15)'} onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.08)'}>
                   {/* Product Image */}
                   <div className="relative aspect-square bg-muted">
                     {product.images?.[0] ? (
@@ -653,7 +653,7 @@ export default function SellerDashboard() {
         </div>
 
         {/* Orders Section */}
-        <div className="bg-card rounded-xl border shadow-sm mt-8">
+        <div className="bg-card rounded-xl border mt-8" style={{ boxShadow: '0 10px 40px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08)' }}>
           <div className="p-6 border-b">
             <h2 className="text-xl font-bold">Incoming Orders</h2>
           </div>
