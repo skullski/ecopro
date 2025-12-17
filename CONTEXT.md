@@ -16,7 +16,7 @@
 - Express.js + Node.js
 - PostgreSQL database (Render)
 - Authentication: JWT + bcrypt
-- Database URL: `postgresql://eco_db_drrv_user:teCMT25hytwYFgWqpmg2Q0x97TJymRhs@dpg-d4cl4ubipnbc739hbcmg-a.oregon-postgres.render.com/eco_db_drrv`
+- Database URL: `postgresql://ecoprodata_user:SibI6VXuUdXFDh7gXfnHroSEgmAei1mL@dpg-d510j0vfte5s739cdai0-a.oregon-postgres.render.com/ecoprodata`
 
 **Deployment:**
 - Render (auto-deploys on git push to main)
