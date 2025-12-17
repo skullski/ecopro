@@ -17,7 +17,16 @@ export default function PerfumeTemplate(props: any) {
   const [cartCount, setCartCount] = useState(0);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
 
-  const filtered = realmFilter === 'All' ? products : products.filter(p => p.realm === realmFilter);
+  // Normalize products to ensure all have required fields
+  const normalizedProducts = Array.isArray(products) ? products.map(p => ({
+    ...p,
+    images: Array.isArray(p.images) && p.images.length > 0 ? p.images : ['https://via.placeholder.com/400x300?text=No+Image'],
+    rating: typeof p.rating === 'number' ? p.rating : 4.5,
+    notes: Array.isArray(p.notes) ? p.notes : ['Notes unavailable'],
+    realm: p.realm || 'Noir',
+  })) : PRODUCTS;
+
+  const filtered = realmFilter === 'All' ? normalizedProducts : normalizedProducts.filter(p => p.realm === realmFilter);
 
   return (
     <div style={{ backgroundColor: '#0a0a0a' }} className="min-h-screen text-white">
@@ -134,8 +143,8 @@ export default function PerfumeTemplate(props: any) {
             <div className="flex gap-2">
               <button
                 onClick={() => {
-                  const slug = quickViewProduct.slug;
-                  if (slug && slug.length > 0)
+                  const slug = (quickViewProduct as any).slug;
+                  if (slug && typeof slug === 'string' && slug.length > 0)
                     navigate(`/store/${storeSlug}/${slug}`);
                   else
                     navigate(`/product/${quickViewProduct.id}`);
@@ -146,8 +155,8 @@ export default function PerfumeTemplate(props: any) {
               </button>
               <button
                 onClick={() => {
-                  const slug = quickViewProduct.slug;
-                  if (slug && slug.length > 0)
+                  const slug = (quickViewProduct as any).slug;
+                  if (slug && typeof slug === 'string' && slug.length > 0)
                     navigate(`/store/${storeSlug}/checkout/${slug}`);
                   else
                     navigate(`/checkout/${quickViewProduct.id}`);
