@@ -55,6 +55,8 @@ import Checkout from "./pages/Checkout";
 import MyStore from "./pages/MyStore";
 import StoreLayout from "./pages/StoreLayout";
 import TemplateSettings from "./pages/TemplateSettings";
+import ProductDetail from "./pages/storefront/ProductDetail";
+import StorefrontCheckout from "./pages/storefront/Checkout";
 
 // Orders submenu pages
 import AddOrder from "./pages/admin/orders/AddOrder";
@@ -608,7 +610,8 @@ const App = () => (
                   {/* REMOVE duplicate/non-existent custom routes */}
                   {/* <Route path="/product/:id" element={<ProductDetail />} /> */}
                   {/* <Route path="/cart" element={<Cart />} /> */}
-                  <Route path="/checkout/:productId" element={<Checkout />} />
+                  <Route path="/product/:id" element={<ProductDetail />} />
+                  <Route path="/checkout/:productId" element={<StorefrontCheckout />} />
                   {/* <Route path="/chat/:conversationId" element={<Chat />} /> */}
                   {/* <Route path="/seller" element={<SellerDashboard />} /> */}
                   {/* <Route path="/buyer-info" element={<BuyerInfo />} /> */}
