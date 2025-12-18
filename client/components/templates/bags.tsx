@@ -145,20 +145,12 @@ export default function BagsTemplate(props: TemplateProps) {
                       <div className="text-[13px] text-gray-900 mb-1">
                         {formatPrice(bag.price)} <span className="text-gray-500">DZD</span>
                       </div>
-                      <div className="flex gap-1">
-                        <button 
-                          onClick={() => navigate(bag.slug && bag.slug.length > 0 ? `/store/${storeSlug}/${bag.slug}` : `/product/${bag.id}`)}
-                          className="text-[10px] px-2 py-0.5 rounded border border-gray-400 text-gray-600 hover:border-gray-700 transition"
-                        >
-                          View
-                        </button>
-                        <button 
-                          onClick={() => navigate(bag.slug && bag.slug.length > 0 ? `/store/${storeSlug}/checkout/${bag.slug}` : `/checkout/${bag.id}`)}
-                          className="text-[10px] px-2 py-0.5 rounded bg-gray-900 text-white hover:bg-gray-800 transition"
-                        >
-                          Buy
-                        </button>
-                      </div>
+                      <button 
+                        onClick={() => navigate(bag.slug && bag.slug.length > 0 ? `/store/${storeSlug}/checkout/${bag.slug}` : `/checkout/${bag.id}`)}
+                        className="text-[10px] px-3 py-1 rounded bg-gray-900 text-white hover:bg-gray-800 transition font-medium"
+                      >
+                        Buy Now
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -185,7 +177,11 @@ export default function BagsTemplate(props: TemplateProps) {
 
           <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
             {filteredProducts.map((bag: any, index: number) => (
-              <div key={bag.id} className="space-y-2">
+              <div 
+                key={bag.id} 
+                className="space-y-2 cursor-pointer"
+                onClick={() => navigate(bag.slug && bag.slug.length > 0 ? `/store/${storeSlug}/${bag.slug}` : `/product/${bag.id}`)}
+              >
                 <div className="bg-white" style={{ boxShadow: '0 32px 60px rgba(80, 60, 40, 0.36), 0 6px 16px rgba(55, 41, 30, 0.8)' }}>
                   <img
                     src={bag.images?.[0] || 'https://via.placeholder.com/400'}
@@ -207,20 +203,15 @@ export default function BagsTemplate(props: TemplateProps) {
                     <div className="text-[13px] text-gray-900 mb-1">
                       {formatPrice(bag.price)} <span className="text-gray-500">DZD</span>
                     </div>
-                    <div className="flex gap-1">
-                      <button 
-                        onClick={() => navigate(bag.slug && bag.slug.length > 0 ? `/store/${storeSlug}/${bag.slug}` : `/product/${bag.id}`)}
-                        className="text-[10px] px-2 py-0.5 rounded border border-gray-400 text-gray-600 hover:border-gray-700 transition"
-                      >
-                        View
-                      </button>
-                      <button 
-                        onClick={() => navigate(bag.slug && bag.slug.length > 0 ? `/store/${storeSlug}/checkout/${bag.slug}` : `/checkout/${bag.id}`)}
-                        className="text-[10px] px-2 py-0.5 rounded bg-gray-900 text-white hover:bg-gray-800 transition"
-                      >
-                        Buy
-                      </button>
-                    </div>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(bag.slug && bag.slug.length > 0 ? `/store/${storeSlug}/checkout/${bag.slug}` : `/checkout/${bag.id}`);
+                      }}
+                      className="text-[10px] px-3 py-1 rounded bg-gray-900 text-white hover:bg-gray-800 transition font-medium"
+                    >
+                      Buy Now
+                    </button>
                   </div>
                 </div>
               </div>

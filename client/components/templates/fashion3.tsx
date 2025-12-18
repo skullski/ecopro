@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { TemplateProps } from '@/pages/storefront/templates/types';
 
 export default function Fashion3Template(props: TemplateProps) {
+  const { navigate, storeSlug } = props;
   const [bagCount, setBagCount] = useState(0);
   const [wishlist, setWishlist] = useState<number[]>([]);
   const [search, setSearch] = useState('');
@@ -204,20 +205,38 @@ export default function Fashion3Template(props: TemplateProps) {
 
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {filteredProducts.map((p: any) => (
-                <div key={p.id} className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden hover:border-yellow-400 transition group">
+                <div 
+                  key={p.id} 
+                  className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden hover:border-yellow-400 transition group cursor-pointer flex flex-col"
+                  onClick={() => navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/${p.slug}` : `/product/${p.id}`)}
+                >
                   <div className="relative h-56 bg-gray-900 overflow-hidden">
                     <img src={p.images?.[0] || 'https://via.placeholder.com/400'} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition" />
                     <div className="absolute top-2 right-2 flex gap-2">
-                      <button onClick={() => toggleWishlist(p.id)} className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${wishlist.includes(p.id) ? 'bg-yellow-400 text-gray-900' : 'bg-gray-900/50 border border-yellow-400 text-yellow-400'}`}>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleWishlist(p.id);
+                        }} 
+                        className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${wishlist.includes(p.id) ? 'bg-yellow-400 text-gray-900' : 'bg-gray-900/50 border border-yellow-400 text-yellow-400'}`}
+                      >
                         ♥
                       </button>
                     </div>
                   </div>
-                  <div className="p-3">
+                  <div className="p-3 flex flex-col flex-grow">
                     <p className="font-semibold text-sm text-white line-clamp-2">{p.title}</p>
                     <p className="text-xs text-gray-400 mt-1">{p.category}</p>
                     <p className="font-bold text-yellow-400 mt-2">{p.price} DZD</p>
-                    <button onClick={() => setBagCount(c => c + 1)} className="w-full mt-3 py-2 bg-yellow-400 text-gray-900 rounded font-semibold text-xs hover:bg-yellow-500">Add to Bag</button>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/checkout/${p.slug}` : `/checkout/${p.id}`);
+                      }} 
+                      className="w-full mt-3 py-2 bg-yellow-400 text-gray-900 rounded font-semibold text-xs hover:bg-yellow-500"
+                    >
+                      Buy Now
+                    </button>
                   </div>
                 </div>
               ))}

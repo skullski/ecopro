@@ -88,8 +88,8 @@ export default function PerfumeTemplate(props: TemplateProps) {
             {filtered.map((p) => (
               <div
                 key={p.id}
-                onClick={() => setQuickViewProduct(p)}
-                className="rounded-lg overflow-hidden hover:border-amber-600 transition group cursor-pointer border"
+                onClick={() => navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/${p.slug}` : `/product/${p.id}`)}
+                className="rounded-lg overflow-hidden hover:border-amber-600 transition group cursor-pointer border flex flex-col"
                 style={{ backgroundColor: '#1a1a1a', borderColor: `${accentColor}30` }}
               >
                 <div className="relative h-56 bg-black overflow-hidden">
@@ -98,7 +98,7 @@ export default function PerfumeTemplate(props: TemplateProps) {
                     {p.realm}
                   </div>
                 </div>
-                <div className="p-4">
+                <div className="p-4 flex flex-col flex-grow">
                   <p className="font-semibold text-sm text-white line-clamp-1">{p.name}</p>
                   <p className="text-xs text-gray-500 mt-1">Fragrance</p>
                   <div className="flex gap-1 mt-2">
@@ -107,7 +107,7 @@ export default function PerfumeTemplate(props: TemplateProps) {
                   </div>
                   <p className="font-semibold text-sm mt-3" style={{ color: accentColor }}>{p.price} DZD</p>
                   <button
-                    className="w-full mt-3 py-2 text-black rounded font-semibold text-xs hover:opacity-90 transition"
+                    className="w-full mt-auto py-2 text-black rounded font-semibold text-xs hover:opacity-90 transition"
                     style={{ backgroundColor: accentColor }}
                     onClick={(e) => {
                       e.stopPropagation();

@@ -128,22 +128,46 @@ export default function FurnitureTemplate(props: TemplateProps) {
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {filteredProducts.map((p: any) => (
-                <div key={p.id} className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition group">
+                <div 
+                  key={p.id} 
+                  className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition group cursor-pointer flex flex-col"
+                  onClick={() => navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/${p.slug}` : `/product/${p.id}`)}
+                >
                   <div className="relative h-56 bg-gray-100 overflow-hidden">
                     <img src={p.images?.[0] || 'https://via.placeholder.com/400'} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition" />
                   </div>
-                  <div className="p-4">
+                  <div className="p-4 flex flex-col flex-grow">
                     <p className="font-semibold text-sm text-gray-900 line-clamp-2">{p.title}</p>
                     <p className="text-xs text-gray-600 mt-1">{p.category}</p>
                     <p className="font-bold text-lg text-gray-900 mt-2">{p.price} DZD</p>
                     <div className="flex gap-2 mt-3">
-                      <button onClick={() => toggleWishlist(p.id)} className={`flex-1 py-2 text-xs rounded ${wishlist.includes(p.id) ? 'bg-gray-900 text-white' : 'border border-gray-300'}`}>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleWishlist(p.id);
+                        }} 
+                        className={`flex-1 py-2 text-xs rounded ${wishlist.includes(p.id) ? 'bg-gray-900 text-white' : 'border border-gray-300'}`}
+                      >
                         ♥
                       </button>
-                      <button onClick={() => toggleCompare(p.id)} className={`flex-1 py-2 text-xs rounded ${compareList.includes(p.id) ? 'bg-gray-900 text-white' : 'border border-gray-300'}`}>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleCompare(p.id);
+                        }} 
+                        className={`flex-1 py-2 text-xs rounded ${compareList.includes(p.id) ? 'bg-gray-900 text-white' : 'border border-gray-300'}`}
+                      >
                         ⚖
                       </button>
-                      <button onClick={() => setCartCount(c => c + 1)} className="flex-1 py-2 bg-gray-900 text-white text-xs rounded font-semibold">Add</button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/checkout/${p.slug}` : `/checkout/${p.id}`);
+                        }} 
+                        className="flex-1 py-2 bg-gray-900 text-white text-xs rounded font-semibold hover:bg-gray-800"
+                      >
+                        Buy Now
+                      </button>
                     </div>
                   </div>
                 </div>

@@ -94,27 +94,22 @@ export default function CafeTemplate(props: TemplateProps) {
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {filtered.map(p => (
-              <div key={p.id} className="bg-white border border-amber-100 rounded-lg p-4 hover:shadow-lg transition group">
+              <div 
+                key={p.id} 
+                onClick={() => navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/${p.slug}` : `/product/${p.id}`)}
+                className="bg-white border border-amber-100 rounded-lg p-4 hover:shadow-lg transition group cursor-pointer flex flex-col"
+              >
                 <img src={p.images?.[0]} alt={p.name} className="w-full h-40 object-cover rounded mb-3 group-hover:scale-105 transition" />
-                <p className="text-sm font-medium text-gray-900 line-clamp-2">{p.name}</p>
+                <p className="text-sm font-medium text-gray-900 line-clamp-2 flex-grow">{p.name}</p>
                 <p className="text-xs text-gray-600 mt-1">{p.short_spec || p.category}</p>
                 <p className="font-semibold mt-2" style={{ color: accentColor }}>{p.price} DZD</p>
-                <div className="flex gap-1 mt-3">
-                  <button 
-                    className="flex-1 px-2 py-2 rounded text-xs font-medium border transition"
-                    style={{ borderColor: accentColor, color: accentColor }}
-                    onClick={() => navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/${p.slug}` : `/product/${p.id}`)}
-                  >
-                    View
-                  </button>
-                  <button 
-                    className="flex-1 px-2 py-2 rounded text-xs font-medium text-white transition"
-                    style={{ backgroundColor: accentColor }}
-                    onClick={() => navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/checkout/${p.slug}` : `/checkout/${p.id}`)}
-                  >
-                    Order
-                  </button>
-                </div>
+                <button 
+                  className="w-full px-2 py-2 rounded text-sm font-medium text-white transition mt-3"
+                  style={{ backgroundColor: accentColor }}
+                  onClick={(e) => { e.stopPropagation(); navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/checkout/${p.slug}` : `/checkout/${p.id}`); }}
+                >
+                  Order Now
+                </button>
               </div>
             ))}
           </div>

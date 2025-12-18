@@ -211,7 +211,11 @@ export default function FashionTemplate(props: TemplateProps) {
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
           {filteredProducts.map((p: any) => (
-            <div key={p.id} className="product-card">
+            <div 
+              key={p.id} 
+              className="product-card cursor-pointer flex flex-col"
+              onClick={() => navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/${p.slug}` : `/product/${p.id}`)}
+            >
               <div className="relative h-64 overflow-hidden">
                 <img
                   src={p.images?.[0] || bannerUrl}
@@ -223,7 +227,7 @@ export default function FashionTemplate(props: TemplateProps) {
                   {p.category || 'Category'}
                 </div>
               </div>
-              <div className="p-4">
+              <div className="p-4 flex flex-col flex-grow">
                 <div className="flex items-center justify-between mb-1">
                   <h3 className="text-sm font-semibold text-zinc-50">
                     {p.title}
@@ -233,24 +237,19 @@ export default function FashionTemplate(props: TemplateProps) {
                 <p className="text-[11px] text-zinc-400 mb-2">
                   {p.fit || 'Regular'} · {p.color || 'Color'}
                 </p>
-                <div className="flex items-center justify-between mt-2">
+                <div className="flex items-center justify-between mt-auto">
                   <span className="text-amber-300 text-sm font-semibold">
                     {props.formatPrice(p.price)}
                   </span>
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={() => navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/${p.slug}` : `/product/${p.id}`)}
-                      className="text-[11px] uppercase tracking-[0.16em] px-3 py-1.5 rounded-full border border-zinc-600 text-zinc-200 hover:border-amber-400 hover:text-amber-200 transition"
-                    >
-                      View
-                    </button>
-                    <button 
-                      onClick={() => navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/checkout/${p.slug}` : `/checkout/${p.id}`)}
-                      className="text-[11px] uppercase tracking-[0.16em] px-3 py-1.5 rounded-full bg-amber-500 border border-amber-500 text-zinc-950 hover:bg-amber-400 hover:border-amber-400 transition font-semibold"
-                    >
-                      Buy
-                    </button>
-                  </div>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/checkout/${p.slug}` : `/checkout/${p.id}`);
+                    }}
+                    className="text-[11px] uppercase tracking-[0.16em] px-4 py-2 rounded-full bg-amber-500 border border-amber-500 text-zinc-950 hover:bg-amber-400 hover:border-amber-400 transition font-semibold"
+                  >
+                    Buy Now
+                  </button>
                 </div>
               </div>
             </div>

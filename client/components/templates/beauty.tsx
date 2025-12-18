@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { TemplateProps } from '@/pages/storefront/templates/types';
 
 export default function BeautyTemplate(props: TemplateProps) {
+  const { navigate, storeSlug } = props;
   const [bagCount, setBagCount] = useState(0);
   const [wishlist, setWishlist] = useState<number[]>([]);
   const [search, setSearch] = useState('');
@@ -297,7 +298,7 @@ export default function BeautyTemplate(props: TemplateProps) {
               {filteredProducts.map((p: any) => (
                 <div
                   key={p.id}
-                  className="rounded-2xl border overflow-hidden flex flex-col transition hover:-translate-y-1"
+                  className="rounded-2xl border overflow-hidden flex flex-col transition hover:-translate-y-1 cursor-pointer"
                   style={{
                     backgroundColor: '#ffffff',
                     borderColor: '#f3d5dd',
@@ -305,6 +306,7 @@ export default function BeautyTemplate(props: TemplateProps) {
                   }}
                   onMouseEnter={e => e.currentTarget.style.boxShadow = '0 18px 40px rgba(185, 28, 28, 0.18)'}
                   onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
+                  onClick={() => navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/${p.slug}` : `/product/${p.id}`)}
                 >
                   <div className="relative">
                     <img
@@ -321,16 +323,12 @@ export default function BeautyTemplate(props: TemplateProps) {
                           color: wishlist.includes(p.id) ? '#fef2f2' : '#111827',
                           borderColor: wishlist.includes(p.id) ? '#111827' : '#f3d5dd'
                         }}
-                        onClick={() => toggleWishlist(p.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleWishlist(p.id);
+                        }}
                       >
                         ♥
-                      </button>
-                      <button
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-sm border"
-                        style={{ backgroundColor: '#ffffff', borderColor: '#f3d5dd', color: '#111827' }}
-                        onClick={() => setQuickViewProduct(p)}
-                      >
-                        👁
                       </button>
                     </div>
                   </div>
@@ -341,25 +339,19 @@ export default function BeautyTemplate(props: TemplateProps) {
                     <div className="text-[11px] mt-1" style={{ color: '#9f7a85' }}>
                       {p.category || 'Product'} · {p.price}
                     </div>
-                    <div className="flex items-center justify-between mt-2">
+                    <div className="flex items-center justify-between mt-auto pt-2">
                       <div className="text-xs" style={{ color: '#7b4351' }}>
                         {formatPrice(p.price)} DZD
                       </div>
-                      <div className="text-[12px]" style={{ color: '#f59e0b' }}>
-                        ★★★★★
-                      </div>
-                    </div>
-                    <div className="mt-3 flex gap-1">
                       <button
-                        className="flex-1 text-[11px] py-1.5 rounded-full border font-medium"
-                        style={{
-                          borderColor: '#fecaca',
-                          backgroundColor: '#fef2f2',
-                          color: '#b91c1c'
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/checkout/${p.slug}` : `/checkout/${p.id}`);
                         }}
-                        onClick={addToBag}
+                        className="text-[11px] px-3 py-1 rounded-full font-semibold text-white"
+                        style={{ backgroundColor: '#111827' }}
                       >
-                        Add to bag
+                        Buy Now
                       </button>
                     </div>
                   </div>

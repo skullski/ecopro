@@ -29,13 +29,16 @@ export default function BabyTemplate(props: TemplateProps) {
 
   const ProductCard = ({ product }: { product: any }) => {
     return (
-      <div className="bg-white rounded-[22px] p-2.5 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all">
+      <div 
+        className="bg-white rounded-[22px] p-2.5 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer flex flex-col"
+        onClick={() => navigate(product.slug && product.slug.length > 0 ? `/store/${storeSlug}/${product.slug}` : `/product/${product.id}`)}
+      >
         <img 
           src={product.images?.[0] || 'https://via.placeholder.com/300x210'} 
           alt={product.title} 
           className="w-full h-[210px] object-cover rounded-[18px]"
         />
-        <div className="mt-3 space-y-2">
+        <div className="mt-3 space-y-2 flex flex-col flex-grow">
           <div className="flex items-center justify-between">
             <span className="bg-red-100 text-red-700 text-[10px] font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider">
               Soft
@@ -52,18 +55,19 @@ export default function BabyTemplate(props: TemplateProps) {
               {product.title}
             </h3>
           </div>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mt-auto">
             <span className="bg-yellow-100 text-yellow-900 text-xs font-bold px-3 py-1.5 rounded-full">
               {props.formatPrice(product.price)}
             </span>
-            <div className="flex gap-1">
-              <button onClick={() => navigate(product.slug && product.slug.length > 0 ? `/store/${storeSlug}/${product.slug}` : `/product/${product.id}`)} className="text-[11px] uppercase tracking-wider text-blue-500 font-semibold flex-1 hover:underline">
-                View
-              </button>
-              <button onClick={() => navigate(product.slug && product.slug.length > 0 ? `/store/${storeSlug}/checkout/${product.slug}` : `/checkout/${product.id}`)} className="text-[11px] uppercase tracking-wider text-green-600 font-semibold flex-1 hover:underline">
-                Buy
-              </button>
-            </div>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(product.slug && product.slug.length > 0 ? `/store/${storeSlug}/checkout/${product.slug}` : `/checkout/${product.id}`);
+              }} 
+              className="text-[11px] uppercase tracking-wider text-white font-semibold px-4 py-2 rounded-full bg-green-600 hover:bg-green-700"
+            >
+              Buy Now
+            </button>
           </div>
         </div>
       </div>

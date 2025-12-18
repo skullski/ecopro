@@ -176,7 +176,11 @@ export default function ElectronicsTemplate(props: TemplateProps) {
             </div>
             <div className="flex gap-3 overflow-x-auto pb-2">
               {products.slice(2, 5).map(p => (
-                <div key={p.id} className="p-3 rounded-xl min-w-[220px] flex-shrink-0 bg-slate-900/80 border border-slate-700 group cursor-pointer hover:border-cyan-400 transition">
+                <div 
+                  key={p.id} 
+                  onClick={() => navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/${p.slug}` : `/product/${p.id}`)}
+                  className="p-3 rounded-xl min-w-[220px] flex-shrink-0 bg-slate-900/80 border border-slate-700 group cursor-pointer hover:border-cyan-400 transition flex flex-col"
+                >
                   <div className="overflow-hidden rounded-md mb-2">
                     <img src={p.images[0]} alt={p.name} className="w-full h-[110px] object-cover group-hover:scale-105 transition" />
                   </div>
@@ -185,14 +189,13 @@ export default function ElectronicsTemplate(props: TemplateProps) {
                     <span style={{ color: accentColor }}>{p.price} DZD</span>
                   </div>
                   <div className="text-[11px] text-slate-400 line-clamp-1 mb-2">{p.short_spec}</div>
-                  <div className="flex gap-1">
-                    <button className="flex-1 px-2 py-1 rounded-full bg-slate-900 text-[10px] border border-slate-600 text-slate-300 hover:border-cyan-400 hover:text-cyan-400 transition" onClick={() => navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/${p.slug}` : `/product/${p.id}`)}>
-                      View
-                    </button>
-                    <button style={{ backgroundColor: accentColor, borderColor: accentColor, color: '#0f172a' }} className="flex-1 px-2 py-1 rounded-full text-[10px] border transition" onClick={() => navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/checkout/${p.slug}` : `/checkout/${p.id}`)}>
-                      Buy
-                    </button>
-                  </div>
+                  <button 
+                    style={{ backgroundColor: accentColor, borderColor: accentColor, color: '#0f172a' }} 
+                    className="w-full px-2 py-2 rounded-full bg-slate-900 text-[11px] border font-semibold transition hover:opacity-90" 
+                    onClick={(e) => { e.stopPropagation(); navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/checkout/${p.slug}` : `/checkout/${p.id}`); }}
+                  >
+                    Buy Now
+                  </button>
                 </div>
               ))}
             </div>
@@ -277,7 +280,8 @@ export default function ElectronicsTemplate(props: TemplateProps) {
           {filteredProducts.map((p, idx) => (
             <div
               key={p.id}
-              className={`rounded-xl p-3 bg-slate-900/80 border border-slate-700 group hover:border-cyan-400 transition flex flex-col ${
+              onClick={() => navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/${p.slug}` : `/product/${p.id}`)}
+              className={`rounded-xl p-3 bg-slate-900/80 border border-slate-700 group hover:border-cyan-400 transition flex flex-col cursor-pointer ${
                 idx % 7 === 0 ? 'lg:col-span-2' : ''
               }`}
             >
@@ -294,11 +298,8 @@ export default function ElectronicsTemplate(props: TemplateProps) {
               <p className="text-xs text-slate-400 mt-1">{p.price} DZD</p>
               <p className="text-[11px] text-slate-500 mt-1 line-clamp-1">{p.short_spec}</p>
               <div className="flex gap-1 mt-2">
-                <button className="flex-1 px-2 py-1 rounded-full bg-slate-900 text-[10px] border border-slate-600 text-slate-300 hover:border-cyan-400 transition" onClick={() => navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/${p.slug}` : `/product/${p.id}`)}>
-                  View
-                </button>
-                <button style={{ backgroundColor: accentColor, borderColor: accentColor, color: '#0f172a' }} className="flex-1 px-2 py-1 rounded-full text-[10px] border transition" onClick={() => navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/checkout/${p.slug}` : `/checkout/${p.id}`)}>
-                  Buy
+                <button style={{ backgroundColor: accentColor, borderColor: accentColor, color: '#0f172a' }} className="w-full px-2 py-2 rounded-full text-xs font-semibold border transition hover:opacity-90" onClick={(e) => { e.stopPropagation(); navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/checkout/${p.slug}` : `/checkout/${p.id}`); }}>
+                  Buy Now
                 </button>
               </div>
             </div>

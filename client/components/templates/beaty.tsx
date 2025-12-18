@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { TemplateProps } from '@/pages/storefront/templates/types';
 
 export default function BeautyTemplate(props: TemplateProps) {
+  const { navigate, storeSlug } = props;
   const [cartCount, setCartCount] = useState(0);
   const [wishlist, setWishlist] = useState<number[]>([]);
   const { products = [], settings = {}, categories = [] } = props;
@@ -44,20 +45,36 @@ export default function BeautyTemplate(props: TemplateProps) {
       <main className="max-w-7xl mx-auto px-6 py-12">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {filteredProducts.map((p: any) => (
-            <div key={p.id} className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition">
+            <div 
+              key={p.id} 
+              className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition cursor-pointer flex flex-col"
+              onClick={() => navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/${p.slug}` : `/product/${p.id}`)}
+            >
               <div className="relative h-56 bg-gray-100">
                 <img src={p.images?.[0] || 'https://via.placeholder.com/400'} alt={p.title} className="w-full h-full object-cover" />
               </div>
-              <div className="p-3">
+              <div className="p-3 flex flex-col flex-grow">
                 <p className="font-semibold text-sm line-clamp-2">{p.title}</p>
                 <p className="text-xs text-gray-600 mt-1">{p.category}</p>
                 <p className="text-pink-600 font-bold mt-2">{p.price} DZD</p>
-                <div className="flex gap-2 mt-2">
-                  <button onClick={() => setWishlist(w => w.includes(p.id) ? w.filter(x => x !== p.id) : [...w, p.id])} className={`flex-1 py-1 text-xs rounded ${wishlist.includes(p.id) ? 'bg-pink-400 text-white' : 'bg-gray-100'}`}>
+                <div className="flex gap-2 mt-2 pt-2">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setWishlist(w => w.includes(p.id) ? w.filter(x => x !== p.id) : [...w, p.id]);
+                    }} 
+                    className={`flex-1 py-1 text-xs rounded ${wishlist.includes(p.id) ? 'bg-pink-400 text-white' : 'bg-gray-100'}`}
+                  >
                     ♥
                   </button>
-                  <button onClick={() => setCartCount(c => c + 1)} className="flex-1 py-1 bg-pink-400 text-white text-xs rounded font-semibold">
-                    Add
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/checkout/${p.slug}` : `/checkout/${p.id}`);
+                    }} 
+                    className="flex-1 py-1 bg-pink-400 text-white text-xs rounded font-semibold hover:bg-pink-500"
+                  >
+                    Buy Now
                   </button>
                 </div>
               </div>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { TemplateProps } from '@/pages/storefront/templates/types';
 
 export default function Fashion2Template(props: TemplateProps) {
+  const { navigate, storeSlug } = props;
   const [bagCount, setBagCount] = useState(0);
   const [wishlist, setWishlist] = useState<number[]>([]);
   const [quickViewProduct, setQuickViewProduct] = useState<any>(null);
@@ -152,8 +153,12 @@ export default function Fashion2Template(props: TemplateProps) {
 
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {filteredProducts.map((p: any) => (
-                <div key={p.id} className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition cursor-pointer group" onClick={() => setQuickViewProduct(p)}>
-                  <div className="relative h-64 bg-gray-100 overflow-hidden">
+                <div 
+                  key={p.id} 
+                  className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition cursor-pointer group flex flex-col"
+                  onClick={() => navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/${p.slug}` : `/product/${p.id}`)}
+                >
+                  <div className="relative h-64 bg-gray-100 overflow-hidden flex-grow">
                     <img src={p.images?.[0] || 'https://via.placeholder.com/400'} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition" />
                     <div className="absolute top-2 right-2 flex gap-2">
                       <button onClick={(e) => { e.stopPropagation(); toggleWishlist(p.id); }} className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${wishlist.includes(p.id) ? 'bg-black text-white' : 'bg-white text-black border border-gray-200'}`}>
@@ -161,12 +166,18 @@ export default function Fashion2Template(props: TemplateProps) {
                       </button>
                     </div>
                   </div>
-                  <div className="p-3">
+                  <div className="p-3 flex flex-col">
                     <p className="font-semibold text-sm line-clamp-2">{p.title}</p>
                     <p className="text-xs text-gray-600 mt-1">{p.category}</p>
                     <p className="font-bold text-sm mt-2">{p.price} DZD</p>
-                    <button onClick={(e) => { e.stopPropagation(); setBagCount(c => c + 1); }} className="w-full mt-3 py-2 bg-black text-white text-xs font-semibold rounded hover:bg-gray-900">
-                      Add to bag
+                    <button 
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/checkout/${p.slug}` : `/checkout/${p.id}`);
+                      }} 
+                      className="w-full mt-3 py-2 bg-black text-white text-xs font-semibold rounded hover:bg-gray-900"
+                    >
+                      Buy Now
                     </button>
                   </div>
                 </div>

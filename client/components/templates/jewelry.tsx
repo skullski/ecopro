@@ -88,36 +88,28 @@ export default function JewelryTemplate(props: TemplateProps) {
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {filtered.map(p => (
-              <div key={p.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition group" onClick={() => setQuickViewProduct(p)}>
-                <div className="relative h-48 bg-gray-100 overflow-hidden cursor-pointer">
+              <div 
+                key={p.id} 
+                onClick={() => navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/${p.slug}` : `/product/${p.id}`)}
+                className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition group cursor-pointer flex flex-col"
+              >
+                <div className="relative h-48 bg-gray-100 overflow-hidden">
                   <img src={p.images?.[0]} alt={p.name} className="w-full h-full object-cover group-hover:scale-110 transition" />
                 </div>
-                <div className="p-4">
+                <div className="p-4 flex flex-col flex-grow">
                   <p className="text-sm font-medium text-gray-900">{p.name}</p>
                   <p className="text-xs text-gray-600 mt-1">{p.material || p.category || 'Premium'}</p>
                   <p className="font-semibold text-lg mt-3" style={{ color: accentColor }}>{p.price} DZD</p>
-                  <div className="flex gap-2 mt-4">
-                    <button 
-                      className="flex-1 py-2 rounded text-xs font-medium border transition"
-                      style={{ borderColor: accentColor, color: accentColor }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/${p.slug}` : `/product/${p.id}`);
-                      }}
-                    >
-                      View
-                    </button>
-                    <button 
-                      className="flex-1 py-2 rounded text-xs font-medium text-white transition"
-                      style={{ backgroundColor: accentColor }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/checkout/${p.slug}` : `/checkout/${p.id}`);
-                      }}
-                    >
-                      Buy
-                    </button>
-                  </div>
+                  <button 
+                    className="w-full py-2 rounded text-sm font-medium text-white transition mt-auto"
+                    style={{ backgroundColor: accentColor }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/checkout/${p.slug}` : `/checkout/${p.id}`);
+                    }}
+                  >
+                    Buy Now
+                  </button>
                 </div>
               </div>
             ))}
