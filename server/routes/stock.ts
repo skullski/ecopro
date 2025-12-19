@@ -20,6 +20,12 @@ import { pool } from "../utils/database";
 export const getClientStock: RequestHandler = async (req, res) => {
   try {
     const clientId = (req as any).user?.id;
+    
+    if (!clientId) {
+      console.error('[getClientStock] No clientId in request');
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
     const { category, status, search, low_stock } = req.query;
 
     let query = `
@@ -60,7 +66,9 @@ export const getClientStock: RequestHandler = async (req, res) => {
 
     query += ` ORDER BY name ASC`;
 
+    console.log('[getClientStock] Fetching stock for clientId:', clientId);
     const result = await pool.query(query, params);
+    console.log('[getClientStock] Found', result.rows.length, 'items');
     res.json(result.rows);
   } catch (error) {
     console.error('[getClientStock] error:', error);
@@ -75,6 +83,12 @@ export const getClientStock: RequestHandler = async (req, res) => {
 export const getStockById: RequestHandler = async (req, res) => {
   try {
     const clientId = (req as any).user?.id;
+    
+    if (!clientId) {
+      console.error('[getStockById] No clientId in request');
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
     const { id } = req.params;
 
     const result = await pool.query(
@@ -236,6 +250,12 @@ export const createStock: RequestHandler = async (req, res) => {
 export const updateStock: RequestHandler = async (req, res) => {
   try {
     const clientId = (req as any).user?.id;
+    
+    if (!clientId) {
+      console.error('[updateStock] No clientId in request');
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
     const { id } = req.params;
 
     // Verify ownership
@@ -435,6 +455,12 @@ export const getStockHistory: RequestHandler = async (req, res) => {
 export const deleteStock: RequestHandler = async (req, res) => {
   try {
     const clientId = (req as any).user?.id;
+    
+    if (!clientId) {
+      console.error('[deleteStock] No clientId in request');
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
     const { id } = req.params;
 
     const result = await pool.query(
