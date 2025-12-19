@@ -212,7 +212,7 @@ export const createStock: RequestHandler = async (req, res) => {
     }
 
     // Log initial stock creation in history
-    if (quantity && quantity > 0) {
+    if (quantity && quantity > 0 && result.rows.length > 0) {
       try {
         await pool.query(
           `INSERT INTO client_stock_history (
@@ -224,6 +224,11 @@ export const createStock: RequestHandler = async (req, res) => {
         console.warn('[createStock] Failed to log stock history:', historyError);
         // Don't fail the entire request if history logging fails
       }
+    }
+
+    if (!result.rows || result.rows.length === 0) {
+      console.error('[createStock] No rows returned from insert');
+      return res.status(500).json({ error: 'Failed to create stock item - no result' });
     }
 
     console.log('[createStock] Stock item created successfully, ID:', result.rows[0].id);
@@ -239,7 +244,9 @@ export const createStock: RequestHandler = async (req, res) => {
     if (error.code === '23503') { // Foreign key constraint violation
       return res.status(400).json({ error: 'Invalid reference in data' });
     }
-    res.status(500).json({ error: error.message || 'Failed to create stock item' });
+    const errorMsg = error.message || 'Failed to create stock item';
+    console.error('[createStock] Sending error response:', errorMsg);
+    res.status(500).json({ error: errorMsg });
   }
 };
 

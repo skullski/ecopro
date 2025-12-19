@@ -348,9 +348,14 @@ export default function StockManagement() {
         setFormData({});
         alert('Stock item created successfully!');
       } else {
-        const error = await res.json();
-        console.error('[handleCreateStock] Error response:', error);
-        alert(error.error || 'Failed to create stock item');
+        try {
+          const error = await res.json();
+          console.error('[handleCreateStock] Error response:', error);
+          alert(error.error || `Failed to create stock item: ${res.status}`);
+        } catch (parseErr) {
+          console.error('[handleCreateStock] Failed to parse error response');
+          alert(`Failed to create stock item: ${res.status} ${res.statusText}`);
+        }
       }
     } catch (error) {
       console.error('Create stock error:', error);
