@@ -268,6 +268,33 @@ export default function StockManagement() {
             console.log('FormData after image upload:', updated);
             return updated;
           });
+          
+          // If editing an existing item, auto-save the image immediately
+          if (selectedItem?.id) {
+            console.log('[handleImageUpload] Auto-saving image for existing item:', selectedItem.id);
+            try {
+              const updateRes = await fetch(`/api/client/stock/${selectedItem.id}`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                  images: [imageUrl]
+                })
+              });
+
+              if (updateRes.ok) {
+                console.log('[handleImageUpload] Image auto-saved successfully');
+                await loadStock();
+              } else {
+                console.warn('[handleImageUpload] Failed to auto-save image');
+              }
+            } catch (autoSaveErr) {
+              console.warn('[handleImageUpload] Auto-save error:', autoSaveErr);
+            }
+          }
+          
           e.target.value = '';
           alert('Image uploaded successfully!');
         } catch (parseErr) {

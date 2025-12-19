@@ -299,7 +299,10 @@ export const updateStock: RequestHandler = async (req, res) => {
           supplier_contact = COALESCE($9, supplier_contact),
           status = COALESCE($10, status),
           notes = COALESCE($11, notes),
-          images = CASE WHEN $14 IS NOT NULL THEN $14 ELSE images END,
+          images = CASE 
+            WHEN $14::text[] IS NOT NULL AND array_length($14::text[], 1) > 0 THEN $14::text[]
+            ELSE images 
+          END,
           updated_at = CURRENT_TIMESTAMP
         WHERE id = $12 AND client_id = $13
         RETURNING *`,
@@ -309,30 +312,39 @@ export const updateStock: RequestHandler = async (req, res) => {
           status, notes, id, clientId, Array.isArray(images) ? images : null
         ]
       );
-    } catch (e) {
+    } catch (e: any) {
+      const error = e as any;
+      console.warn('[updateStock] Insert with images failed:', error.message);
+      
       // If images column doesn't exist, retry without it
-      result = await pool.query(
-        `UPDATE client_stock_products SET
-          name = COALESCE($1, name),
-          sku = COALESCE($2, sku),
-          description = COALESCE($3, description),
-          category = COALESCE($4, category),
-          unit_price = COALESCE($5, unit_price),
-          reorder_level = COALESCE($6, reorder_level),
-          location = COALESCE($7, location),
-          supplier_name = COALESCE($8, supplier_name),
-          supplier_contact = COALESCE($9, supplier_contact),
-          status = COALESCE($10, status),
-          notes = COALESCE($11, notes),
-          updated_at = CURRENT_TIMESTAMP
-        WHERE id = $12 AND client_id = $13
-        RETURNING *`,
-        [
-          name, sku, description, category, unit_price,
-          reorder_level, location, supplier_name, supplier_contact,
-          status, notes, id, clientId
-        ]
-      );
+      if (error.message && error.message.includes('column "images" of relation "client_stock_products" does not exist')) {
+        console.log('[updateStock] Images column missing, retrying without images');
+        result = await pool.query(
+          `UPDATE client_stock_products SET
+            name = COALESCE($1, name),
+            sku = COALESCE($2, sku),
+            description = COALESCE($3, description),
+            category = COALESCE($4, category),
+            unit_price = COALESCE($5, unit_price),
+            reorder_level = COALESCE($6, reorder_level),
+            location = COALESCE($7, location),
+            supplier_name = COALESCE($8, supplier_name),
+            supplier_contact = COALESCE($9, supplier_contact),
+            status = COALESCE($10, status),
+            notes = COALESCE($11, notes),
+            updated_at = CURRENT_TIMESTAMP
+          WHERE id = $12 AND client_id = $13
+          RETURNING *`,
+          [
+            name, sku, description, category, unit_price,
+            reorder_level, location, supplier_name, supplier_contact,
+            status, notes, id, clientId
+          ]
+        );
+        console.log('[updateStock] Update without images succeeded');
+      } else {
+        throw error;
+      }
     }
 
     res.json(result.rows[0]);
