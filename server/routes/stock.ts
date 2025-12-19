@@ -100,6 +100,12 @@ export const getStockById: RequestHandler = async (req, res) => {
 export const createStock: RequestHandler = async (req, res) => {
   try {
     const clientId = (req as any).user?.id;
+    
+    if (!clientId) {
+      console.error('[createStock] No clientId in request');
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
     const {
       name,
       sku,
@@ -120,9 +126,15 @@ export const createStock: RequestHandler = async (req, res) => {
       return res.status(400).json({ error: 'Product name is required' });
     }
 
+    console.log('[createStock] Creating stock item:', { name, sku, clientId, hasImages: !!images });
+
     let result;
+    let triedWithImages = false;
+    
     try {
       // Try with images column
+      triedWithImages = true;
+      console.log('[createStock] Attempting insert with images column');
       result = await pool.query(
         `INSERT INTO client_stock_products (
           client_id, name, sku, description, category,
@@ -147,50 +159,73 @@ export const createStock: RequestHandler = async (req, res) => {
           Array.isArray(images) ? images : [],
         ]
       );
-    } catch (e) {
-      // If images column doesn't exist, retry without it
-      result = await pool.query(
-        `INSERT INTO client_stock_products (
-          client_id, name, sku, description, category,
-          quantity, unit_price, reorder_level, location,
-          supplier_name, supplier_contact, status, notes
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-        RETURNING *`,
-        [
-          clientId,
-          name,
-          sku || null,
-          description || null,
-          category || null,
-          quantity || 0,
-          unit_price || null,
-          reorder_level || 10,
-          location || null,
-          supplier_name || null,
-          supplier_contact || null,
-          status || 'active',
-          notes || null,
-        ]
-      );
+      console.log('[createStock] Insert with images succeeded');
+    } catch (e: any) {
+      const error = e as any;
+      console.warn('[createStock] Insert with images failed:', error.message);
+      
+      // Only retry without images if the column doesn't exist
+      if (error.message && error.message.includes('column "images" of relation "client_stock_products" does not exist')) {
+        console.log('[createStock] Images column missing, retrying without images');
+        result = await pool.query(
+          `INSERT INTO client_stock_products (
+            client_id, name, sku, description, category,
+            quantity, unit_price, reorder_level, location,
+            supplier_name, supplier_contact, status, notes
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+          RETURNING *`,
+          [
+            clientId,
+            name,
+            sku || null,
+            description || null,
+            category || null,
+            quantity || 0,
+            unit_price || null,
+            reorder_level || 10,
+            location || null,
+            supplier_name || null,
+            supplier_contact || null,
+            status || 'active',
+            notes || null,
+          ]
+        );
+        console.log('[createStock] Insert without images succeeded');
+      } else {
+        // Re-throw if it's not the "missing column" error
+        throw error;
+      }
     }
 
     // Log initial stock creation in history
     if (quantity && quantity > 0) {
-      await pool.query(
-        `INSERT INTO client_stock_history (
-          stock_id, client_id, quantity_before, quantity_after, adjustment, reason, created_by
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [result.rows[0].id, clientId, 0, quantity, quantity, 'initial_stock', clientId]
-      );
+      try {
+        await pool.query(
+          `INSERT INTO client_stock_history (
+            stock_id, client_id, quantity_before, quantity_after, adjustment, reason, created_by
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+          [result.rows[0].id, clientId, 0, quantity, quantity, 'initial_stock', clientId]
+        );
+      } catch (historyError) {
+        console.warn('[createStock] Failed to log stock history:', historyError);
+        // Don't fail the entire request if history logging fails
+      }
     }
 
+    console.log('[createStock] Stock item created successfully, ID:', result.rows[0].id);
     res.status(201).json(result.rows[0]);
   } catch (error: any) {
-    console.error('[createStock] error:', error);
+    console.error('[createStock] Unexpected error:', error);
     if (error.code === '23505') { // Unique constraint violation
       return res.status(400).json({ error: 'SKU already exists' });
     }
-    res.status(500).json({ error: 'Failed to create stock item' });
+    if (error.code === '23502') { // NOT NULL constraint violation
+      return res.status(400).json({ error: 'Required field is missing' });
+    }
+    if (error.code === '23503') { // Foreign key constraint violation
+      return res.status(400).json({ error: 'Invalid reference in data' });
+    }
+    res.status(500).json({ error: error.message || 'Failed to create stock item' });
   }
 };
 

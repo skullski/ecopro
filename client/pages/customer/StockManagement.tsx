@@ -286,6 +286,8 @@ export default function StockManagement() {
         return;
       }
       
+      console.log('[handleCreateStock] Submitting form data:', formData);
+      
       const res = await fetch('/api/client/stock', {
         method: 'POST',
         headers: {
@@ -295,17 +297,21 @@ export default function StockManagement() {
         body: JSON.stringify(formData)
       });
 
+      console.log('[handleCreateStock] Response status:', res.status);
+      
       if (res.ok) {
         await loadStock();
         setShowAddModal(false);
         setFormData({});
+        alert('Stock item created successfully!');
       } else {
         const error = await res.json();
+        console.error('[handleCreateStock] Error response:', error);
         alert(error.error || 'Failed to create stock item');
       }
     } catch (error) {
       console.error('Create stock error:', error);
-      alert('Failed to create stock item');
+      alert(`Failed to create stock item: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
