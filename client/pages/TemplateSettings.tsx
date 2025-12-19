@@ -163,11 +163,12 @@ const templateConfigs: Record<string, any> = {
       ...universalSections,
       {
         title: 'Fashion-Specific: Hero Section',
+        description: 'Upload hero image for your fashion store',
         fields: [
           { key: 'template_hero_heading', label: 'Heading', type: 'text', placeholder: 'Fashion Store' },
           { key: 'template_hero_subtitle', label: 'Subtitle', type: 'text', placeholder: 'Discover our collection' },
           { key: 'template_button_text', label: 'Button Text', type: 'text', placeholder: 'Shop Now' },
-          { key: 'banner_url', label: 'Banner Image', type: 'image', placeholder: 'Choose image' },
+          { key: 'banner_url', label: 'Hero Banner Image', type: 'image', placeholder: 'Choose image' },
         ]
       },
       {
@@ -184,11 +185,12 @@ const templateConfigs: Record<string, any> = {
       ...universalSections,
       {
         title: 'Fashion 2-Specific: Campaign Hero',
+        description: 'Main hero section with campaign-style layout',
         fields: [
           { key: 'template_hero_heading', label: 'Main Heading', type: 'text', placeholder: 'Build a fashion store that feels like a campaign' },
           { key: 'template_hero_subtitle', label: 'Subtitle', type: 'text', placeholder: 'Push your key pieces first' },
           { key: 'template_button_text', label: 'Button Text', type: 'text', placeholder: 'Shop Now' },
-          { key: 'banner_url', label: 'Hero Banner Image', type: 'image', placeholder: 'Choose image' },
+          { key: 'banner_url', label: 'Hero Banner Image', type: 'image', placeholder: 'Choose featured product image' },
         ]
       }
     ]
@@ -199,24 +201,26 @@ const templateConfigs: Record<string, any> = {
       ...universalSections,
       {
         title: 'Fashion 3-Specific: Video Hero',
-        description: 'Fashion3 features a video hero with yellow/dark theme. Add product data to showcase hotspots.',
+        description: 'Fashion3 features a video hero with yellow/dark theme (video optional)',
         fields: [
-          { key: 'template_video_url', label: 'Hero Video URL', type: 'url', placeholder: 'https://video.mp4' },
+          { key: 'template_video_url', label: 'Hero Video URL (optional)', type: 'url', placeholder: 'https://video.mp4' },
         ]
       },
       {
-        title: 'Fashion 3-Specific: Hotspot Configuration',
-        description: 'Hotspots overlay products on images. Configure as JSON.',
+        title: 'Fashion 3-Specific: Featured Outfit Image',
+        description: 'Image displayed with interactive hotspots for products',
         fields: [
-          { key: 'template_hotspot_image', label: 'Hotspot Image URL', type: 'url', placeholder: 'https://...' },
-          { key: 'template_hotspot_config', label: 'Hotspot Points (JSON)', type: 'textarea', placeholder: '[{"id":1,"x":"30%","y":"40%","label":"Product Name","price":0}]' },
+          { key: 'template_hotspot_image', label: 'Outfit Hotspot Image', type: 'image', placeholder: 'Upload featured outfit image' },
+          { key: 'template_hotspot_config', label: 'Hotspot Points (JSON, advanced)', type: 'textarea', placeholder: '[{"id":1,"x":"30%","y":"40%","label":"Product Name","price":0}]' },
         ]
       },
       {
-        title: 'Fashion 3-Specific: Lookbook',
-        description: 'Showcase outfit looks with images and descriptions.',
+        title: 'Fashion 3-Specific: Lookbook Images',
+        description: 'Upload images that showcase different looks/styles',
         fields: [
-          { key: 'template_lookbook_images', label: 'Lookbook Images (one per line)', type: 'textarea', placeholder: 'https://image1.jpg\nhttps://image2.jpg' },
+          { key: 'template_lookbook_1', label: 'Lookbook Image 1', type: 'image', placeholder: 'Upload first lookbook image' },
+          { key: 'template_lookbook_2', label: 'Lookbook Image 2', type: 'image', placeholder: 'Upload second lookbook image' },
+          { key: 'template_lookbook_3', label: 'Lookbook Image 3 (optional)', type: 'image', placeholder: 'Upload third lookbook image' },
         ]
       },
       {
@@ -234,10 +238,12 @@ const templateConfigs: Record<string, any> = {
       ...universalSections,
       {
         title: 'Electronics-Specific: Hero Section',
+        description: 'Customize your tech store hero section',
         fields: [
           { key: 'template_hero_heading', label: 'Main Heading', type: 'text', placeholder: 'Flagship performance for your entire tech store' },
           { key: 'template_hero_subtitle', label: 'Subtitle', type: 'text', placeholder: 'Showcase phones, headphones, gaming gear and accessories' },
           { key: 'hero_badge', label: 'Hero Badge (e.g. "2024 Latest")', type: 'text', placeholder: '2024 Latest' },
+          { key: 'banner_url', label: 'Hero Banner Image', type: 'image', placeholder: 'Upload hero background' },
         ]
       },
       {
@@ -258,10 +264,11 @@ const templateConfigs: Record<string, any> = {
       ...universalSections,
       {
         title: 'Food-Specific: Hero Section',
+        description: 'Upload a mouth-watering hero image for your food business',
         fields: [
           { key: 'template_hero_heading', label: 'Main Heading', type: 'text', placeholder: 'Premium Food Selection' },
           { key: 'template_hero_subtitle', label: 'Subtitle', type: 'text', placeholder: 'Authentic flavors from our kitchen' },
-          { key: 'banner_url', label: 'Banner Image', type: 'image', placeholder: 'Choose image' },
+          { key: 'banner_url', label: 'Hero Banner Image', type: 'image', placeholder: 'Choose food/cafe image' },
         ]
       }
     ]
@@ -272,9 +279,10 @@ const templateConfigs: Record<string, any> = {
       ...universalSections,
       {
         title: 'Furniture-Specific: Hero Section',
+        description: 'Upload a beautiful furniture showroom hero image',
         fields: [
           { key: 'template_hero_heading', label: 'Main Heading', type: 'text', placeholder: 'Furniture Collection' },
-          { key: 'banner_url', label: 'Banner Image', type: 'image', placeholder: 'Choose image' },
+          { key: 'banner_url', label: 'Hero Banner Image', type: 'image', placeholder: 'Choose furniture image' },
         ]
       },
       {
@@ -299,9 +307,10 @@ const templateConfigs: Record<string, any> = {
       ...universalSections,
       {
         title: 'Jewelry-Specific: Hero Section',
+        description: 'Upload your luxury jewelry collection hero image',
         fields: [
           { key: 'template_hero_heading', label: 'Main Heading', type: 'text', placeholder: 'Luxury Jewelry Collection' },
-          { key: 'banner_url', label: 'Banner Image', type: 'image', placeholder: 'Choose image' },
+          { key: 'banner_url', label: 'Hero Banner Image', type: 'image', placeholder: 'Upload jewelry collection image' },
         ]
       },
       {
@@ -346,9 +355,10 @@ const templateConfigs: Record<string, any> = {
       ...universalSections,
       {
         title: 'Baby-Specific: Hero Section',
+        description: 'Upload a warm, welcoming hero image for your baby store',
         fields: [
           { key: 'template_hero_heading', label: 'Main Heading', type: 'text', placeholder: 'Baby Products' },
-          { key: 'banner_url', label: 'Banner Image', type: 'image', placeholder: 'Choose image' },
+          { key: 'banner_url', label: 'Hero Banner Image', type: 'image', placeholder: 'Choose baby products image' },
         ]
       }
     ]
@@ -359,14 +369,16 @@ const templateConfigs: Record<string, any> = {
       ...universalSections,
       {
         title: 'Bags-Specific: Hero Section',
+        description: 'Upload beautiful bag collection images',
         fields: [
           { key: 'template_hero_heading', label: 'Main Heading', type: 'text', placeholder: 'Cold silhouettes, cut in leather and light.' },
           { key: 'template_hero_subtitle', label: 'Subtitle', type: 'text', placeholder: 'A focused edit of structured totes, city crossbody bags and evening silhouettes.' },
-          { key: 'banner_url', label: 'Hero Featured Image', type: 'image', placeholder: 'Choose image' },
+          { key: 'banner_url', label: 'Hero Featured Image', type: 'image', placeholder: 'Choose bag image' },
         ]
       },
       {
         title: 'Bags-Specific: Background Settings',
+        description: 'Upload a background image that will appear behind your content',
         fields: [
           { key: 'template_bg_image', label: 'Page Background Image', type: 'image', placeholder: 'Choose background image' },
           { key: 'template_hero_bg_blur', label: 'Background Blur Amount (0-20px)', type: 'number', placeholder: '12', min: 0, max: 20 },
@@ -387,9 +399,10 @@ const templateConfigs: Record<string, any> = {
       ...universalSections,
       {
         title: 'Beauty-Specific: Hero Section',
+        description: 'Upload a glamorous beauty product hero image',
         fields: [
           { key: 'template_hero_heading', label: 'Main Heading', type: 'text', placeholder: 'Find Your Perfect Shade' },
-          { key: 'banner_url', label: 'Banner Image', type: 'image', placeholder: 'Choose image' },
+          { key: 'banner_url', label: 'Hero Banner Image', type: 'image', placeholder: 'Choose beauty products image' },
         ]
       },
       {
@@ -407,9 +420,10 @@ const templateConfigs: Record<string, any> = {
       ...universalSections,
       {
         title: 'Cafe-Specific: Hero Section',
+        description: 'Upload a delicious cafe/bakery hero image',
         fields: [
           { key: 'template_hero_heading', label: 'Main Heading', type: 'text', placeholder: 'Artisan Bakery & Cafe' },
-          { key: 'banner_url', label: 'Banner Image', type: 'image', placeholder: 'Choose image' },
+          { key: 'banner_url', label: 'Hero Banner Image', type: 'image', placeholder: 'Choose cafe/bakery image' },
         ]
       },
       {
