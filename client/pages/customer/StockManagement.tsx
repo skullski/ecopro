@@ -129,7 +129,12 @@ export default function StockManagement() {
       });
       if (res.ok) {
         const data = await res.json();
+        console.log('[loadStock] Fetched stock items:', data);
+        console.log('[loadStock] First item:', data[0]);
+        console.log('[loadStock] First item images:', data[0]?.images);
         setStock(data);
+      } else {
+        console.error('[loadStock] Failed with status:', res.status);
       }
     } catch (error) {
       console.error('Failed to load stock:', error);
@@ -293,6 +298,8 @@ export default function StockManagement() {
       }
       
       console.log('[handleCreateStock] Submitting form data:', formData);
+      console.log('[handleCreateStock] Images in formData:', formData.images);
+      console.log('[handleCreateStock] Images count:', formData.images?.length);
       
       const res = await fetch('/api/client/stock', {
         method: 'POST',
@@ -306,6 +313,9 @@ export default function StockManagement() {
       console.log('[handleCreateStock] Response status:', res.status);
       
       if (res.ok) {
+        const createdItem = await res.json();
+        console.log('[handleCreateStock] Created item:', createdItem);
+        console.log('[handleCreateStock] Created item images:', createdItem.images);
         await loadStock();
         setShowAddModal(false);
         setFormData({});
