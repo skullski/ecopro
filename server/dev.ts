@@ -1,5 +1,5 @@
 import { createServer } from "./index";
-import { initializeDatabase, createDefaultAdmin } from "./utils/database";
+import { initializeDatabase, createDefaultAdmin, runPendingMigrations } from "./utils/database";
 import { processPendingMessages, cleanupOldOrders } from "./utils/bot-messaging";
 import bcrypt from "bcrypt";
 
@@ -13,6 +13,9 @@ async function startServer() {
       const masked = url.replace(/:(.*?)@/, ':****@');
       console.log("🔄 Initializing database... using DATABASE_URL=", masked);
       await initializeDatabase();
+
+      // Run pending migrations
+      await runPendingMigrations();
 
       // Create default admin user
       const adminEmail = "admin@ecopro.com";
