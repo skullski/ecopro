@@ -62,7 +62,7 @@ export default function SellerLogin() {
           Back to Marketplace
         </Link>
 
-        <div className="bg-card rounded-xl border shadow-lg p-8">
+        <div className="bg-card rounded-xl border shadow-lg p-4 md:p-6">
           <div className="flex items-center justify-center mb-6">
             <div className="w-16 h-16 rounded-full bg-gradient-to-r from-primary to-accent flex items-center justify-center">
               <Store className="w-8 h-8 text-white" />

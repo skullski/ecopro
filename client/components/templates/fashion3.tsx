@@ -8,6 +8,18 @@ export default function Fashion3Template(props: TemplateProps) {
   const [search, setSearch] = useState('');
   const [gender, setGender] = useState('All');
   const [category, setCategory] = useState('All');
+
+  // Helper functions to save product data and navigate
+  const handleProductClick = (product: any) => {
+    localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
+    navigate(`/product/${product.id}`);
+  };
+
+  const handleBuyClick = (product: any, e?: any) => {
+    if (e) e.stopPropagation();
+    localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
+    navigate(`/checkout/${product.id}`);
+  };
   const [size, setSize] = useState('All');
   const [maxPrice, setMaxPrice] = useState(999999);
   const [sortBy, setSortBy] = useState('featured');
@@ -90,9 +102,9 @@ export default function Fashion3Template(props: TemplateProps) {
 
       {/* Hero + Hotspot + Lookbook Section */}
       <section className="border-b border-gray-700 bg-gray-900">
-        <div className="max-w-6xl mx-auto px-6 py-8 space-y-6">
+        <div className="max-w-6xl mx-auto px-6 py-4 md:py-6 space-y-3 md:space-y-4">
           {/* Video Hero + Hotspot Split */}
-          <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.95fr] gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.95fr] gap-3 md:gap-4">
             {/* Video Hero */}
             <div className="relative rounded-2xl overflow-hidden border border-gray-700 bg-black h-80">
               <video autoPlay muted loop className="w-full h-full object-cover opacity-60" />
@@ -169,8 +181,8 @@ export default function Fashion3Template(props: TemplateProps) {
       </section>
 
       {/* Main Catalog */}
-      <main className="max-w-6xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-8">
+      <main className="max-w-6xl mx-auto px-6 py-4 md:py-6">
+        <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4 md:gap-3 md:gap-4">
           {/* Filters */}
           <aside className="bg-gray-800 rounded-2xl border border-gray-700 p-4 h-fit">
             <div className="text-sm font-semibold mb-4 text-white">Filters</div>
@@ -231,7 +243,7 @@ export default function Fashion3Template(props: TemplateProps) {
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/checkout/${p.slug}` : `/checkout/${p.id}`);
+                        navigate(`/checkout/${p.id}`);
                       }} 
                       className="w-full mt-3 py-2 bg-yellow-400 text-gray-900 rounded font-semibold text-xs hover:bg-yellow-500"
                     >
@@ -246,9 +258,9 @@ export default function Fashion3Template(props: TemplateProps) {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-gray-700 mt-12 py-8 bg-gray-900">
+      <footer className="border-t border-gray-700 mt-6 md:mt-4 md:mt-6 py-4 md:py-6 bg-gray-900">
         <div className="max-w-6xl mx-auto px-6">
-          <div className="grid md:grid-cols-3 gap-8 mb-8">
+          <div className="grid md:grid-cols-3 gap-4 md:gap-3 md:gap-4 mb-4 md:mb-6">
             {['About', 'Support', 'Legal'].map((section) => (
               <div key={section}>
                 <h4 className="font-semibold text-white mb-3">{section}</h4>

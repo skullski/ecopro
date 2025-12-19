@@ -9,9 +9,9 @@ export default function MaximizeTemplate(props: TemplateProps) {
   const { storeSlug, filtered, products, categories, searchQuery, setSearchQuery, categoryFilter, setCategoryFilter, sortOption, setSortOption, formatPrice } = props;
 
   return (
-    <div className="container max-w-7xl mx-auto px-4 py-8">
+    <div className="container max-w-7xl mx-auto px-4 py-4 md:py-6">
       {products.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-3 md:gap-4 mb-6">
           <div className="bg-card rounded-xl border p-4 h-max sticky top-20">
             <div className="space-y-4">
               <div>
@@ -50,7 +50,7 @@ export default function MaximizeTemplate(props: TemplateProps) {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm text-muted-foreground">{filtered.length} results</h3>
             </div>
-            <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6`}>
+            <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4`}>
               {filtered.map((product) => {
                 const discount = product.original_price 
                   ? Math.round(((Number(product.original_price) - Number(product.price)) / Number(product.original_price)) * 100)

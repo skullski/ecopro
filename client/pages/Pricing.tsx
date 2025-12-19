@@ -21,37 +21,37 @@ export default function Pricing() {
               <span className="text-sm font-medium">{t('pricing.badge') || '100% Free Forever'}</span>
             </div>
             
-            <h1 className="text-5xl md:text-7xl font-black mb-6">
+            <h1 className="text-xl md:text-2xl md:text-2xl md:text-xl md:text-2xl lg:text-xl md:text-2xl md:text-2xl md:text-xl md:text-2xl xl:text-6xl font-black mb-4">
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-600">
                 {t('pricing.title') || 'Simple Pricing'}
               </span>
             </h1>
-            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            <p className="text-base md:text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
               {t('pricing.subtitle') || 'No hidden fees. No subscriptions. No premium barriers.'}
             </p>
           </div>
 
           {/* Pricing Card */}
           <div className="max-w-4xl mx-auto">
-            <div className="relative bg-white dark:bg-gray-800 rounded-3xl shadow-2xl border-2 border-indigo-100 dark:border-indigo-900 overflow-hidden">
+            <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border-2 border-indigo-100 dark:border-indigo-900 overflow-hidden">
               {/* Gradient Accent */}
               <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-indigo-600 via-cyan-600 to-purple-600"></div>
               
-              <div className="p-8 md:p-12">
-                <div className="flex items-center justify-between mb-8">
+              <div className="p-3 md:p-4">
+                <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h2 className="text-3xl font-bold mb-2">{t('pricing.plan.free') || 'Free Plan'}</h2>
-                    <p className="text-gray-600 dark:text-gray-400">{t('pricing.plan.desc') || 'Everything you need to succeed'}</p>
+                    <h2 className="text-2xl md:text-xl md:text-2xl font-bold mb-1">{t('pricing.plan.free') || 'Free Plan'}</h2>
+                    <p className="text-sm md:text-base text-gray-600 dark:text-gray-400">{t('pricing.plan.desc') || 'Everything you need to succeed'}</p>
                   </div>
                   <div className="text-right">
-                    <div className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-600">
+                    <div className="text-xl md:text-2xl md:text-2xl md:text-xl md:text-2xl lg:text-xl md:text-2xl md:text-2xl md:text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-600">
                       {t('pricing.plan.price') || '$0'}
                     </div>
                     <p className="text-sm text-gray-500">{t('pricing.plan.forever') || 'Forever'}</p>
                   </div>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-4 mb-8">
+                <div className="grid md:grid-cols-2 gap-4 mb-4 md:mb-6">
                   {[
                     t('pricing.feature.unlimited') || 'Unlimited product listings',
                     t('pricing.feature.custom') || 'Custom storefront',
@@ -83,7 +83,7 @@ export default function Pricing() {
 
           {/* Future Plans Section */}
           <div className="mt-16 max-w-3xl mx-auto">
-            <div className="bg-gradient-to-br from-indigo-50 to-cyan-50 dark:from-indigo-900/20 dark:to-cyan-900/20 rounded-2xl p-8 border border-indigo-100 dark:border-indigo-800">
+            <div className="bg-gradient-to-br from-indigo-50 to-cyan-50 dark:from-indigo-900/20 dark:to-cyan-900/20 rounded-lg p-4 md:p-6 border border-indigo-100 dark:border-indigo-800">
               <div className="flex items-start gap-4">
                 <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-600 to-cyan-600 flex items-center justify-center">
                   <Zap className="w-6 h-6 text-white" />

@@ -98,23 +98,23 @@ export default function ProductDetail() {
 
   return (
     <div className="min-h-screen" style={{ background: 'radial-gradient(circle at top, #0f172a 0, #020617 45%, #000 100%)' }}>
-      <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-8">
+      <div className="max-w-6xl mx-auto p-3 md:p-4 space-y-4 md:space-y-3 md:space-y-4">
         {/* Product Details Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-3 md:gap-4">
           {/* Image Gallery */}
-          <div className="space-y-4">
+          <div className="space-y-2">
             {/* Main Image */}
             <div className="relative w-full bg-slate-900 rounded-lg overflow-hidden border border-slate-700">
               <img 
                 src={currentImage} 
                 alt={product.title} 
-                className="w-full h-full object-cover min-h-80" 
+                className="w-full h-full object-cover min-h-48 md:min-h-56 lg:min-h-80" 
               />
             </div>
             
             {/* Thumbnail Gallery */}
             {allImages.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto pb-2">
+              <div className="flex gap-1 overflow-x-auto pb-1">
                 {allImages.map((img, idx) => (
                   <button
                     key={idx}
@@ -133,43 +133,43 @@ export default function ProductDetail() {
           </div>
 
           {/* Product Info */}
-          <div className="space-y-6">
+          <div className="space-y-3 md:space-y-4">
             {/* Title & Category */}
             <div>
               {product.category && (
-                <p className="text-xs uppercase tracking-widest text-slate-400 mb-2">{product.category}</p>
+                <p className="text-xs uppercase tracking-widest text-slate-400 mb-1">{product.category}</p>
               )}
-              <h1 className="text-3xl md:text-4xl font-bold text-gray-100 mb-2">{product.title}</h1>
+              <h1 className="text-2xl md:text-xl md:text-2xl lg:text-lg md:text-xl md:text-2xl font-bold text-gray-100 mb-2">{product.title}</h1>
               
               {/* Stock Status */}
               {product.stock !== undefined && (
-                <p className={`text-sm font-medium ${product.stock > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                <p className={`text-xs md:text-sm font-medium ${product.stock > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                   {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
                 </p>
               )}
             </div>
 
             {/* Rating & Likes */}
-            <div className="flex items-center gap-4 pb-4 border-b border-slate-700">
+            <div className="flex flex-wrap items-center gap-3 pb-4 border-b border-slate-700">
               <div className="flex items-center gap-1">
-                <span className="text-2xl">⭐</span>
-                <span className="text-sm text-slate-400">{reviews.length} reviews</span>
+                <span className="text-xl">⭐</span>
+                <span className="text-xs md:text-sm text-slate-400">{reviews.length} reviews</span>
               </div>
-              <div className="text-sm text-slate-400">
+              <div className="text-xs md:text-sm text-slate-400">
                 ❤️ {product.likes?.length || 0} people liked this
               </div>
             </div>
 
             {/* Price */}
-            <div className="space-y-2">
-              <p className="text-sm text-slate-400">Price</p>
-              <p className="text-4xl font-bold text-cyan-400">{priceText}</p>
+            <div className="space-y-1">
+              <p className="text-xs md:text-sm text-slate-400">Price</p>
+              <p className="text-2xl md:text-xl md:text-2xl lg:text-lg md:text-xl md:text-2xl font-bold text-cyan-400">{priceText}</p>
             </div>
 
             {/* Description */}
-            <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
-              <h3 className="font-semibold text-gray-100 mb-2">Description</h3>
-              <p className="text-slate-300 leading-relaxed whitespace-pre-wrap">{product.description}</p>
+            <div className="bg-slate-900/50 rounded-lg p-3 border border-slate-700">
+              <h3 className="font-semibold text-gray-100 mb-2 text-sm">Description</h3>
+              <p className="text-slate-300 leading-relaxed whitespace-pre-wrap text-sm">{product.description}</p>
             </div>
 
             {/* Action Buttons */}
@@ -179,12 +179,6 @@ export default function ProductDetail() {
                 className="w-full py-3 bg-cyan-500 text-slate-950 font-bold rounded-lg hover:bg-cyan-400 transition-colors"
               >
                 Buy Now
-              </button>
-              <button 
-                onClick={addToCart}
-                className="w-full py-3 bg-slate-800 text-cyan-400 font-bold rounded-lg hover:bg-slate-700 transition-colors border border-slate-700"
-              >
-                Add to Cart
               </button>
               <div className="grid grid-cols-2 gap-3">
                 <button 
@@ -205,11 +199,11 @@ export default function ProductDetail() {
         </div>
 
       {/* Reviews Section */}
-      <section className="border-t border-slate-700 pt-8">
-        <h2 className="text-2xl font-bold text-gray-100 mb-6">Customer Reviews ({reviews.length})</h2>
+      <section className="border-t border-slate-700 pt-6">
+        <h2 className="text-lg md:text-xl font-bold text-gray-100 mb-4">Customer Reviews ({reviews.length})</h2>
         {/* Review Form */}
-        <form onSubmit={submitReview} className="bg-slate-900/50 rounded-lg p-6 space-y-4 border border-slate-700 mb-8">
-          <h3 className="font-semibold text-gray-100">Share Your Experience</h3>
+        <form onSubmit={submitReview} className="bg-slate-900/50 rounded-lg p-4 space-y-3 border border-slate-700 mb-6">
+          <h3 className="font-semibold text-gray-100 text-sm">Share Your Experience</h3>
           
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">Your Rating</label>
@@ -246,7 +240,7 @@ export default function ProductDetail() {
         {/* Reviews List */}
         <div className="space-y-4">
           {reviews.length === 0 ? (
-            <div className="text-center py-8 text-slate-400">
+            <div className="text-center py-4 md:py-6 text-slate-400">
               <p>No reviews yet. Be the first to review this product!</p>
             </div>
           ) : (

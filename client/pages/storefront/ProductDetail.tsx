@@ -128,10 +128,33 @@ export default function ProductDetail() {
   const style = TEMPLATE_STYLES[template] || TEMPLATE_STYLES.fashion;
   const accentColor = settings.template_accent_color || style.accent;
 
-  // Fetch product
+  // Fetch product - first check database checkout session, then localStorage, then API
   const { data: product, isLoading, error } = useQuery({
     queryKey: ['product', id || slug],
     queryFn: async () => {
+      // Get session ID from URL if available
+      const sessionId = new URLSearchParams(window.location.search).get('session');
+      
+      // Try database checkout session first
+      if (sessionId) {
+        try {
+          const response = await fetch(`/api/checkout/get-product/${encodeURIComponent(sessionId)}`);
+          if (response.ok) {
+            const data = await response.json();
+            return data.product;
+          }
+        } catch (error) {
+          console.error('Failed to retrieve from checkout session:', error);
+        }
+      }
+      
+      // Fallback to localStorage (for backward compatibility)
+      const cachedProduct = localStorage.getItem(`product_${id || slug}`);
+      if (cachedProduct) {
+        return JSON.parse(cachedProduct);
+      }
+      
+      // Final fallback to API
       const response = await fetch(`/api/product/${id || slug}`);
       if (!response.ok) throw new Error('Failed to fetch product');
       return response.json();
@@ -176,8 +199,8 @@ export default function ProductDetail() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+      <div className="max-w-6xl mx-auto px-4 py-4 md:py-6 md:py-6 md:py-4 md:py-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-3 md:gap-4 md:gap-10">
           {/* Image Section */}
           <div className="flex items-center justify-center">
             <div
@@ -201,7 +224,7 @@ export default function ProductDetail() {
           </div>
 
           {/* Details Section */}
-          <div className="space-y-6">
+          <div className="space-y-3 md:space-y-4">
             {/* Product Info */}
             <div>
               <div
@@ -210,7 +233,7 @@ export default function ProductDetail() {
               >
                 {product.category || 'Product'}
               </div>
-              <h1 className="text-4xl font-bold mb-2">{productName}</h1>
+              <h1 className="text-2xl md:text-xl md:text-2xl font-bold mb-2">{productName}</h1>
               <p className="text-gray-500 text-lg mb-4">{product.material || product.realm || product.category || 'Premium'}</p>
 
               {/* Rating */}
@@ -228,7 +251,7 @@ export default function ProductDetail() {
 
             {/* Price Section */}
             <div className="border-t border-b border-gray-300 py-6" style={{ borderColor: accentColor, borderWidth: '1px' }}>
-              <div className="text-3xl font-bold" style={{ color: accentColor }}>
+              <div className="text-xl md:text-2xl font-bold" style={{ color: accentColor }}>
                 {productPrice} DZD
               </div>
               <p className="text-sm text-gray-500 mt-2">Inclusive of all taxes</p>
@@ -240,42 +263,51 @@ export default function ProductDetail() {
               <p className="text-gray-600 leading-relaxed">{productDesc}</p>
             </div>
 
-            {/* Quantity Selector */}
-            <div className="space-y-3">
-              <label className="block font-semibold">Quantity</label>
-              <div className="flex items-center gap-4 w-max">
-                <button
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className={`p-2 rounded border ${style.border}`}
-                >
-                  <Minus className="w-4 h-4" />
-                </button>
-                <span className="text-xl font-semibold w-8 text-center">{quantity}</span>
-                <button
-                  onClick={() => setQuantity(quantity + 1)}
-                  className={`p-2 rounded border ${style.border}`}
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
+            {/* Stock Status */}
+            {product && (
+              <div className="space-y-2">
+                {product.stock_quantity > 0 ? (
+                  <p className="text-green-600 font-semibold">✓ In Stock ({product.stock_quantity} available)</p>
+                ) : (
+                  <p className="text-red-600 font-semibold">✗ Out of Stock</p>
+                )}
               </div>
-            </div>
+            )}
+
+            {/* Quantity Selector */}
+            {product && product.stock_quantity > 0 && (
+              <div className="space-y-3">
+                <label className="block font-semibold">Quantity</label>
+                <div className="flex items-center gap-4 w-max">
+                  <button
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className={`p-2 rounded border ${style.border}`}
+                  >
+                    <Minus className="w-4 h-4" />
+                  </button>
+                  <span className="text-xl font-semibold w-8 text-center">{quantity}</span>
+                  <button
+                    onClick={() => setQuantity(Math.min(product.stock_quantity, quantity + 1))}
+                    className={`p-2 rounded border ${style.border}`}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Action Buttons */}
             <div className="space-y-3 pt-4">
               <button
                 onClick={() => navigate(`/checkout/${id || slug}?quantity=${quantity}`)}
-                className={`w-full py-4 rounded-lg font-bold text-lg ${style.button} transition-colors`}
+                disabled={!product || product.stock_quantity === 0}
+                className={`w-full py-4 rounded-lg font-bold text-lg ${
+                  product && product.stock_quantity > 0
+                    ? style.button
+                    : 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                } transition-colors`}
               >
-                Buy Now
-              </button>
-              <button
-                className={`w-full py-3 rounded-lg border ${style.border} font-semibold transition-colors`}
-                style={{
-                  borderColor: accentColor,
-                  color: accentColor,
-                }}
-              >
-                Add to Bag
+                {product && product.stock_quantity === 0 ? 'Out of Stock' : 'Buy Now'}
               </button>
             </div>
 

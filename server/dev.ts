@@ -1,5 +1,6 @@
 import { createServer } from "./index";
 import { initializeDatabase, createDefaultAdmin } from "./utils/database";
+import { processPendingMessages, cleanupOldOrders } from "./utils/bot-messaging";
 import bcrypt from "bcrypt";
 
 const PORT = process.env.PORT || 8080;
@@ -32,6 +33,18 @@ async function startServer() {
       console.log(`📡 API endpoints available at http://localhost:${PORT}/api`);
       console.log(`📊 Dashboard available at http://localhost:${PORT}/dashboard\n`);
     });
+
+    // Start background job to process pending bot messages (every 5 minutes)
+    setInterval(() => {
+      processPendingMessages().catch(err => console.error("Bot message processor error:", err));
+    }, 5 * 60 * 1000);
+    console.log("🤖 Bot message processor started (runs every 5 minutes)");
+
+    // Start background job to cleanup old orders (every 1 hour)
+    setInterval(() => {
+      cleanupOldOrders().catch(err => console.error("Order cleanup error:", err));
+    }, 60 * 60 * 1000);
+    console.log("🧹 Order cleanup started (runs every 1 hour)");
   } catch (error) {
     console.error("❌ Failed to start server:", error);
     console.log("💡 Starting server anyway for frontend development...");

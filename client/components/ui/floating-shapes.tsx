@@ -79,17 +79,17 @@ export function FloatingIcons() {
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
       {/* Shopping cart */}
       <div className="absolute top-20 left-[10%] animate-bounce" style={{ animationDuration: '3s' }}>
-        <div className="text-4xl opacity-20">🛒</div>
+        <div className="text-2xl md:text-xl md:text-2xl opacity-20">🛒</div>
       </div>
       
       {/* Package */}
       <div className="absolute top-40 right-[15%] animate-bounce" style={{ animationDuration: '4s', animationDelay: '1s' }}>
-        <div className="text-5xl opacity-20">📦</div>
+        <div className="text-xl md:text-2xl md:text-2xl md:text-xl md:text-2xl opacity-20">📦</div>
       </div>
       
       {/* Money */}
       <div className="absolute bottom-32 left-[20%] animate-bounce" style={{ animationDuration: '5s', animationDelay: '2s' }}>
-        <div className="text-4xl opacity-20">💰</div>
+        <div className="text-2xl md:text-xl md:text-2xl opacity-20">💰</div>
       </div>
       
       {/* Rocket */}
@@ -99,12 +99,12 @@ export function FloatingIcons() {
       
       {/* Star */}
       <div className="absolute bottom-40 right-[30%] animate-bounce" style={{ animationDuration: '4.5s', animationDelay: '1.5s' }}>
-        <div className="text-3xl opacity-20">⭐</div>
+        <div className="text-xl md:text-2xl opacity-20">⭐</div>
       </div>
       
       {/* Lightning */}
       <div className="absolute top-1/2 left-[15%] animate-bounce" style={{ animationDuration: '3.2s', animationDelay: '0.8s' }}>
-        <div className="text-4xl opacity-20">⚡</div>
+        <div className="text-2xl md:text-xl md:text-2xl opacity-20">⚡</div>
       </div>
     </div>
   );

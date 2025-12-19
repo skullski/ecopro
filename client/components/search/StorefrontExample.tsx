@@ -69,11 +69,11 @@ export function StorefrontWithFiltering({ products }: StorefrontDemoProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 py-4 md:py-6">
       <div className="max-w-7xl mx-auto px-4">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Store Products</h1>
+        <div className="mb-4 md:mb-6">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900">Store Products</h1>
           <p className="text-gray-600 mt-2">
             {filteredProducts.length} products {filterSummary.hasFilters ? 'found' : 'available'}
           </p>
@@ -81,7 +81,7 @@ export function StorefrontWithFiltering({ products }: StorefrontDemoProps) {
 
         {/* Inventory Stats Section */}
         {showStats && (
-          <div className="mb-8">
+          <div className="mb-4 md:mb-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Inventory Overview</h2>
               <button
@@ -101,7 +101,7 @@ export function StorefrontWithFiltering({ products }: StorefrontDemoProps) {
         )}
 
         {/* Filters Section */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div className="bg-white rounded-lg shadow-md p-6 mb-4 md:mb-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-6">Search & Filter</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -151,7 +151,7 @@ export function StorefrontWithFiltering({ products }: StorefrontDemoProps) {
             summary={filterSummary.summary}
             filterCount={filterSummary.filterCount}
             onClearAll={handleClearAllFilters}
-            className="mb-8"
+            className="mb-4 md:mb-6"
           />
         )}
 
@@ -162,7 +162,7 @@ export function StorefrontWithFiltering({ products }: StorefrontDemoProps) {
               Showing {filteredProducts.length} of {products.length} products
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
               {filteredProducts.map((product: Product) => {
                 const stockStatus = useStockStatus(product.stock_quantity);
                 const productImages = ((product as any).images ?? []) as string[];
@@ -241,7 +241,7 @@ export function StorefrontWithFiltering({ products }: StorefrontDemoProps) {
             </div>
           </div>
         ) : (
-          <div className="text-center py-12 bg-white rounded-lg">
+          <div className="text-center py-6 md:py-4 md:py-6 bg-white rounded-lg">
             <p className="text-gray-600 text-lg">No products found matching your filters.</p>
             <button
               onClick={handleClearAllFilters}

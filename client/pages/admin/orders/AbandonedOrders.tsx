@@ -10,9 +10,9 @@ export default function AbandonedOrders() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 md:space-y-4">
       <div>
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+        <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
           الطلبات المتروكة
         </h1>
         <p className="text-muted-foreground mt-2">الطلبات التي لم تكتمل من قبل العملاء</p>
@@ -22,7 +22,7 @@ export default function AbandonedOrders() {
         <Card className="border-2 border-orange-500/20">
           <CardHeader className="pb-3">
             <CardDescription>طلبات متروكة اليوم</CardDescription>
-            <CardTitle className="text-3xl text-orange-600">8</CardTitle>
+            <CardTitle className="text-xl md:text-2xl text-orange-600">8</CardTitle>
           </CardHeader>
           <CardContent>
             <XCircle className="w-8 h-8 text-orange-500/30" />
@@ -42,7 +42,7 @@ export default function AbandonedOrders() {
         <Card className="border-2 border-yellow-500/20">
           <CardHeader className="pb-3">
             <CardDescription>معدل الاسترجاع</CardDescription>
-            <CardTitle className="text-3xl text-yellow-600">23%</CardTitle>
+            <CardTitle className="text-xl md:text-2xl text-yellow-600">23%</CardTitle>
           </CardHeader>
           <CardContent>
             <Clock className="w-8 h-8 text-yellow-500/30" />

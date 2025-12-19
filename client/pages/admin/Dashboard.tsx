@@ -67,9 +67,9 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-6 dark:bg-black">
+    <div className="space-y-3 dark:bg-black">
       {/* Top Stats Bar */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4">
         <GradientCard
           title={t("dashboard.totalOrders")}
           value={loading ? "..." : stats.orders}
@@ -113,10 +113,10 @@ export default function Dashboard() {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
         {/* Sales Chart */}
-        <Card className="lg:col-span-2 bg-panel dark:bg-gray-900 dark:border-gray-700">
-          <div className="p-6 border-b border-subtle dark:border-gray-800">
+        <Card className="md:col-span-2 lg:col-span-1 xl:col-span-2 bg-panel dark:bg-gray-900 dark:border-gray-700">
+          <div className="p-4 border-b border-subtle dark:border-gray-800">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-bold">Store Sales Overview</h3>
@@ -128,10 +128,10 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-          <div className="p-6">
+          <div className="p-4">
             {/* Chart Placeholder with softer bars */}
             <div 
-              className="h-64 flex items-end justify-between gap-2"
+              className="h-40 flex items-end justify-between gap-1"
               role="img"
               aria-label="Bar chart showing monthly sales trends with values ranging from 45% to 95%"
             >
@@ -148,14 +148,14 @@ export default function Dashboard() {
                 </div>
               ))}
             </div>
-            <div className="flex items-center justify-center gap-6 mt-6">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-blue-400/70"></div>
-                <span className="text-sm text-muted-soft">Store sales</span>
+            <div className="flex items-center justify-center gap-3 mt-3">
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-blue-400/70"></div>
+                <span className="text-xs text-muted-soft">Sales</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-green-400/70"></div>
-                <span className="text-sm text-muted-soft">Store profits</span>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-green-400/70"></div>
+                <span className="text-xs text-muted-soft">Profits</span>
               </div>
             </div>
           </div>
@@ -163,13 +163,13 @@ export default function Dashboard() {
 
         {/* Order Status Distribution */}
         <Card className="bg-panel dark:bg-gray-900 dark:border-gray-700">
-          <div className="p-6 border-b border-subtle dark:border-gray-800">
-            <h3 className="text-lg font-bold">{t("dashboard.orderStatus")}</h3>
-            <p className="text-sm text-muted-soft mt-1">{t("dashboard.orderDistribution")}</p>
+          <div className="p-4 border-b border-subtle dark:border-gray-800">
+            <h3 className="text-base font-bold">{t("dashboard.orderStatus")}</h3>
+            <p className="text-xs text-muted-soft mt-0.5">{t("dashboard.orderDistribution")}</p>
           </div>
-          <div className="p-6">
+          <div className="p-4">
             {/* Donut Chart Placeholder */}
-            <div className="relative w-48 h-48 mx-auto mb-6">
+            <div className="relative w-36 h-36 mx-auto mb-4">
               <svg 
                 className="w-full h-full" 
                 viewBox="0 0 100 100"
@@ -263,14 +263,14 @@ export default function Dashboard() {
       </div>
 
       {/* Recent Orders & Quick Actions */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
         {/* Recent Orders */}
-        <Card className="lg:col-span-2 bg-panel dark:bg-gray-900 dark:border-gray-700">
-          <div className="p-6 border-b border-subtle dark:border-gray-800">
+        <Card className="md:col-span-2 lg:col-span-1 xl:col-span-2 bg-panel dark:bg-gray-900 dark:border-gray-700">
+          <div className="p-4 border-b border-subtle dark:border-gray-800">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-bold">{t("dashboard.recentOrders")}</h3>
-                <p className="text-sm text-muted-soft mt-1">{t("dashboard.recentPurchases")}</p>
+                <h3 className="text-base font-bold">{t("dashboard.recentOrders")}</h3>
+                <p className="text-xs text-muted-soft mt-0.5">{t("dashboard.recentPurchases")}</p>
               </div>
               <Link to="/dashboard/orders">
                 <Button variant="ghost" size="sm">
@@ -281,17 +281,17 @@ export default function Dashboard() {
             </div>
           </div>
           
-          <div className="p-6">
+          <div className="p-4">
             {loading ? (
-              <div className="text-center py-12 text-muted-soft">
-                <div className="animate-pulse space-y-3">
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mx-auto"></div>
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mx-auto"></div>
+              <div className="text-center py-6 text-muted-soft">
+                <div className="animate-pulse space-y-2">
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mx-auto"></div>
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mx-auto"></div>
                 </div>
               </div>
             ) : recentOrders.length === 0 ? (
-              <div className="text-center py-12">
-                <ShoppingCart className="w-16 h-16 text-gray-300 dark:text-gray-500 mx-auto mb-4" />
+              <div className="text-center py-6">
+                <ShoppingCart className="w-12 h-12 text-gray-300 dark:text-gray-500 mx-auto mb-2" />
                 <p className="text-muted-soft mb-4">{t("dashboard.noOrders")}</p>
                 <Link to="/dashboard/preview">
                   <Button>

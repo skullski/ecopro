@@ -48,7 +48,7 @@ export function StoreHeader({ settings, searchQuery, setSearchQuery, onCart }) {
               style={{ boxShadow: '0 0 0 1px hsl(var(--border))' }}
             />
           )}
-          <div className="text-3xl md:text-5xl font-calligraphic tracking-normal">
+          <div className="text-xl md:text-2xl md:text-xl md:text-2xl md:text-2xl md:text-xl md:text-2xl font-calligraphic tracking-normal">
             <span className={`header-gradient-text font-calligraphic ${fontOptions[fontIdx]}`} style={{
               background: 'linear-gradient(90deg, #06b6d4 0%, #a78bfa 50%, #f472b6 100%)',
               WebkitBackgroundClip: 'text',

@@ -102,20 +102,20 @@ export default function EnhancedDashboard() {
   const totalSteps = setupSteps.length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 md:space-y-4">
       {/* Welcome Banner - Unique diagonal split design */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-100 via-blue-100 to-cyan-100 dark:from-black dark:via-black dark:to-black border-2 border-violet-300 dark:border-gray-800 shadow-xl">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-100 via-blue-100 to-cyan-100 dark:from-black dark:via-black dark:to-black border-2 border-violet-300 dark:border-gray-800 shadow-xl">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(139,92,246,0.2),transparent_50%)] dark:bg-[radial-gradient(circle_at_30%_50%,rgba(139,92,246,0.1),transparent_50%)]"></div>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_50%,rgba(6,182,212,0.2),transparent_50%)] dark:bg-[radial-gradient(circle_at_70%_50%,rgba(6,182,212,0.1),transparent_50%)]"></div>
         
-        <div className="relative z-10 p-8 md:p-12">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="relative z-10 p-4 md:p-6 md:p-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-3 md:gap-4">
             <div className="text-center md:text-right">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/20 to-accent/20 border border-primary/30 mb-4">
                 <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
                 <span className="text-sm font-medium">متصل الآن</span>
               </div>
-              <h1 className="text-3xl md:text-4xl font-bold mb-2">
+              <h1 className="text-xl md:text-2xl md:text-2xl md:text-xl md:text-2xl font-bold mb-2">
                 <span className="bg-gradient-to-l from-primary via-accent to-purple-600 bg-clip-text text-transparent">
                   أهلاً وسهلاً، Walid
                 </span>
@@ -159,11 +159,11 @@ export default function EnhancedDashboard() {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid lg:grid-cols-3 gap-3 md:gap-4">
         {/* Left Column - Subscription & Stats */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-3 md:space-y-4">
           {/* Subscription Card */}
-          <div className="relative rounded-2xl border-2 border-rose-300 dark:border-gray-800 bg-gradient-to-br from-rose-100 via-amber-100 to-orange-100 dark:from-black dark:via-black dark:to-black p-8 text-center overflow-hidden shadow-2xl">
+          <div className="relative rounded-lg border-2 border-rose-300 dark:border-gray-800 bg-gradient-to-br from-rose-100 via-amber-100 to-orange-100 dark:from-black dark:via-black dark:to-black p-4 md:p-6 text-center overflow-hidden shadow-lg">
             {/* Decorative elements */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-pink-400/30 to-rose-500/30 rounded-full blur-2xl"></div>
             <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-amber-400/30 to-orange-500/30 rounded-full blur-2xl"></div>
@@ -179,36 +179,36 @@ export default function EnhancedDashboard() {
             </p>
 
             {/* Countdown */}
-            <div className="flex items-center justify-center gap-4 mb-8">
+            <div className="flex items-center justify-center gap-4 mb-4 md:mb-6">
               <div className="flex items-center gap-3">
                 <div className="relative">
                   <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-orange-500 rounded-xl blur opacity-50"></div>
                   <div className="relative bg-gradient-to-br from-red-500 to-orange-500 text-white rounded-xl p-4 min-w-[80px]">
-                    <div className="text-3xl font-bold">{String(timeLeft.days).padStart(2, '0')}</div>
+                    <div className="text-xl md:text-2xl font-bold">{String(timeLeft.days).padStart(2, '0')}</div>
                     <div className="text-xs font-medium mt-1">يوم</div>
                   </div>
                 </div>
-                <span className="text-3xl font-bold text-muted-foreground">:</span>
+                <span className="text-xl md:text-2xl font-bold text-muted-foreground">:</span>
                 <div className="relative">
                   <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl blur opacity-50"></div>
                   <div className="relative bg-gradient-to-br from-blue-500 to-cyan-500 text-white rounded-xl p-4 min-w-[80px]">
-                    <div className="text-3xl font-bold">{String(timeLeft.hours).padStart(2, '0')}</div>
+                    <div className="text-xl md:text-2xl font-bold">{String(timeLeft.hours).padStart(2, '0')}</div>
                     <div className="text-xs font-medium mt-1">ساعة</div>
                   </div>
                 </div>
-                <span className="text-3xl font-bold text-muted-foreground">:</span>
+                <span className="text-xl md:text-2xl font-bold text-muted-foreground">:</span>
                 <div className="relative">
                   <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl blur opacity-50"></div>
                   <div className="relative bg-gradient-to-br from-purple-500 to-pink-500 text-white rounded-xl p-4 min-w-[80px]">
-                    <div className="text-3xl font-bold">{String(timeLeft.minutes).padStart(2, '0')}</div>
+                    <div className="text-xl md:text-2xl font-bold">{String(timeLeft.minutes).padStart(2, '0')}</div>
                     <div className="text-xs font-medium mt-1">دقيقة</div>
                   </div>
                 </div>
-                <span className="text-3xl font-bold text-muted-foreground">:</span>
+                <span className="text-xl md:text-2xl font-bold text-muted-foreground">:</span>
                 <div className="relative">
                   <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl blur opacity-50"></div>
                   <div className="relative bg-gradient-to-br from-green-500 to-emerald-500 text-white rounded-xl p-4 min-w-[80px]">
-                    <div className="text-3xl font-bold">{String(timeLeft.seconds).padStart(2, '0')}</div>
+                    <div className="text-xl md:text-2xl font-bold">{String(timeLeft.seconds).padStart(2, '0')}</div>
                     <div className="text-xs font-medium mt-1">ثانية</div>
                   </div>
                 </div>
@@ -294,7 +294,7 @@ export default function EnhancedDashboard() {
         </div>
 
         {/* Right Column - Setup & App */}
-        <div className="space-y-6">
+        <div className="space-y-3 md:space-y-4">
           {/* Setup Checklist */}
           <div className="rounded-2xl border-2 border-lime-300 dark:border-gray-800 bg-gradient-to-br from-lime-50 via-emerald-50 to-teal-50 dark:from-black dark:via-black dark:to-black p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
@@ -343,7 +343,7 @@ export default function EnhancedDashboard() {
           </div>
 
           {/* App Promotion */}
-          <div className="relative rounded-2xl border-2 border-fuchsia-400 dark:border-gray-800 bg-gradient-to-br from-fuchsia-100 via-purple-100 to-indigo-100 dark:from-black dark:via-black dark:to-black p-8 text-center overflow-hidden shadow-2xl">
+          <div className="relative rounded-2xl border-2 border-fuchsia-400 dark:border-gray-800 bg-gradient-to-br from-fuchsia-100 via-purple-100 to-indigo-100 dark:from-black dark:via-black dark:to-black p-4 md:p-6 text-center overflow-hidden shadow-2xl">
             {/* Animated background */}
             <div className="absolute inset-0">
               <div className="absolute top-0 left-0 w-32 h-32 bg-fuchsia-400/30 rounded-full blur-3xl animate-pulse"></div>
@@ -352,12 +352,12 @@ export default function EnhancedDashboard() {
             </div>
             
             <div className="relative z-10">
-              <div className="text-4xl mb-3 animate-bounce">📱</div>
+              <div className="text-2xl md:text-xl md:text-2xl mb-3 animate-bounce">📱</div>
               <h3 className="font-bold text-lg mb-3 flex items-center justify-center gap-2">
                 <span className="text-xl">🚀</span>
                 تطبيقاتنا
               </h3>
-              <div className="text-5xl font-bold mb-4 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
+              <div className="text-xl md:text-2xl md:text-2xl md:text-xl md:text-2xl font-bold mb-4 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
                 CALL VERIFICATION
               </div>
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 mb-4">

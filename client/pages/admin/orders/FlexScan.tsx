@@ -3,9 +3,9 @@ import { BarChart3, TrendingUp, Package } from "lucide-react";
 
 export default function FlexScan() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 md:space-y-4">
       <div>
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+        <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
           Flex Scan
         </h1>
         <p className="text-muted-foreground mt-2">تحليل ذكي للطلبات والمبيعات</p>
@@ -15,7 +15,7 @@ export default function FlexScan() {
         <Card className="border-2 border-blue-500/20">
           <CardHeader className="pb-3">
             <CardDescription>معدل نجاح الطلبات</CardDescription>
-            <CardTitle className="text-3xl text-blue-600">87%</CardTitle>
+            <CardTitle className="text-xl md:text-2xl text-blue-600">87%</CardTitle>
           </CardHeader>
           <CardContent>
             <TrendingUp className="w-8 h-8 text-blue-500/30" />

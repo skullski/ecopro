@@ -71,8 +71,8 @@ const PublicProduct: React.FC = () => {
 
       {/* End Mercury Store Header */}
 
-      <div className="min-h-screen bg-[#f6f8fb] dark:bg-[#181a20] py-8 px-2 text-gray-900 dark:text-gray-100">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-8">
+      <div className="min-h-screen bg-[#f6f8fb] dark:bg-[#181a20] py-4 md:py-6 px-2 text-gray-900 dark:text-gray-100">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-4 md:gap-3 md:gap-4">
         {/* Left: Image Gallery */}
         <div className="md:w-1/2 w-full flex flex-col items-center">
           <div className="w-full aspect-square bg-white dark:bg-[#23272f] rounded-2xl overflow-hidden flex items-center justify-center mb-4 shadow-lg border border-gray-100 dark:border-gray-700 relative">
@@ -84,7 +84,7 @@ const PublicProduct: React.FC = () => {
                 style={{ aspectRatio: '1/1', display: 'block' }}
               />
             ) : (
-              <div className="text-6xl text-gray-300">📦</div>
+              <div className="text-2xl md:text-xl md:text-2xl md:text-xl md:text-2xl md:text-2xl md:text-xl md:text-2xl text-gray-300">📦</div>
             )}
             {hasDiscount && (
               <span className="absolute top-4 left-4 bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-bold">
@@ -109,15 +109,15 @@ const PublicProduct: React.FC = () => {
         {/* Right: Product Info */}
         <div className="md:w-1/2 w-full flex flex-col gap-4">
           <div className="flex flex-col gap-2">
-            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-1">{product.title}</h1>
-            <div className="flex items-center gap-2 text-yellow-500 text-lg">
+            <h1 className="text-xl md:text-2xl lg:text-xl md:text-2xl font-extrabold text-gray-900 dark:text-white mb-1">{product.title}</h1>
+            <div className="flex items-center gap-2 text-yellow-500 text-xs md:text-sm">
               <span>★</span>
               <span className="font-semibold text-gray-700">3.2</span>
               <span className="text-gray-400">(206 reviews)</span>
               <span className="text-green-600 ml-2">· 135 views</span>
             </div>
             <div className="flex items-end gap-3 mt-2">
-              <span className="text-4xl font-bold text-green-600">${product.price}</span>
+              <span className="text-2xl md:text-xl md:text-2xl lg:text-lg md:text-xl md:text-2xl font-bold text-green-600">${product.price}</span>
               {hasDiscount && (
                 <span className="text-2xl text-gray-400 dark:text-gray-500 line-through">${product.original_price}</span>
               )}
@@ -169,14 +169,11 @@ const PublicProduct: React.FC = () => {
             </div>
             <div className="flex gap-2 mt-4">
               <Button
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg text-lg flex items-center justify-center gap-2 shadow-md dark:bg-green-700 dark:hover:bg-green-800"
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg text-lg flex items-center justify-center gap-2 shadow-md dark:bg-green-700 dark:hover:bg-green-800"
                 size="lg"
                 onClick={() => navigate(`/store/${storeSlug}/checkout/${productSlug}`)}
               >
                 <ShoppingCart className="w-5 h-5" /> Buy Now
-              </Button>
-              <Button variant="outline" className="flex-1 border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-900 dark:text-white font-bold py-3 px-4 rounded-lg text-lg flex items-center justify-center gap-2 shadow-md" size="lg">
-                <PlusCircle className="w-5 h-5" /> Add to Cart
               </Button>
             </div>
             <div className="flex gap-2 mt-2">
@@ -192,19 +189,19 @@ const PublicProduct: React.FC = () => {
       </div>
       {/* Bottom Feature Cards */}
 
-      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 mt-6 md:mt-4 md:mt-6">
         <div className="bg-white dark:bg-[#23272f] rounded-xl shadow p-6 flex flex-col items-center text-center">
-          <span className="material-icons text-4xl text-blue-500 dark:text-blue-400 mb-2">local_shipping</span>
+          <span className="material-icons text-2xl md:text-xl md:text-2xl text-blue-500 dark:text-blue-400 mb-2">local_shipping</span>
           <div className="font-bold mb-1 dark:text-white">Fast Delivery</div>
           <div className="text-gray-500 dark:text-gray-300 text-sm">Get your products delivered quickly and safely</div>
         </div>
         <div className="bg-white dark:bg-[#23272f] rounded-xl shadow p-6 flex flex-col items-center text-center">
-          <span className="material-icons text-4xl text-blue-500 dark:text-blue-400 mb-2">verified_user</span>
+          <span className="material-icons text-2xl md:text-xl md:text-2xl text-blue-500 dark:text-blue-400 mb-2">verified_user</span>
           <div className="font-bold mb-1 dark:text-white">Buyer Protection</div>
           <div className="text-gray-500 dark:text-gray-300 text-sm">Your purchase is protected with our guarantee</div>
         </div>
         <div className="bg-white dark:bg-[#23272f] rounded-xl shadow p-6 flex flex-col items-center text-center">
-          <span className="material-icons text-4xl text-blue-500 dark:text-blue-400 mb-2">star</span>
+          <span className="material-icons text-2xl md:text-xl md:text-2xl text-blue-500 dark:text-blue-400 mb-2">star</span>
           <div className="font-bold mb-1 dark:text-white">Quality Verified</div>
           <div className="text-gray-500 dark:text-gray-300 text-sm">All products are verified by our team</div>
         </div>

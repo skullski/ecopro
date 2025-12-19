@@ -30,12 +30,41 @@ export const upload = multer({
 // POST /api/products/upload (multipart/form-data)
 export const uploadImage: RequestHandler = async (req, res) => {
   try {
-    if (!req.file) return jsonError(res, 400, 'No file uploaded');
-    // Build public url
+    console.log('[uploadImage] Upload request received');
+    console.log('[uploadImage] Request user:', req.user?.id);
+    console.log('[uploadImage] Has file:', !!req.file);
+
+    if (!req.file) {
+      console.error('[uploadImage] No file in request');
+      res.set('Content-Type', 'application/json');
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    if (!req.user?.id) {
+      console.error('[uploadImage] No user in request');
+      res.set('Content-Type', 'application/json');
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
     const urlPath = `/uploads/${req.file.filename}`;
-    res.json({ url: urlPath });
+    console.log('[uploadImage] Upload successful:', urlPath);
+    console.log('[uploadImage] File size:', req.file.size);
+    console.log('[uploadImage] MIME type:', req.file.mimetype);
+
+    res.set('Content-Type', 'application/json');
+    const response = { url: urlPath };
+    console.log('[uploadImage] Sending response:', JSON.stringify(response));
+    
+    return res.status(200).json(response);
   } catch (err) {
-    console.error('Upload error', err);
-    return jsonError(res, 500, 'Upload failed');
+    console.error('[uploadImage] Caught error:', err);
+    const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+    
+    res.set('Content-Type', 'application/json');
+    return res.status(500).json({ 
+      error: 'Upload failed',
+      message: errorMsg 
+    });
   }
 };
+

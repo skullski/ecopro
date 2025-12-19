@@ -39,12 +39,130 @@ interface TemplateSettings {
   show_categories?: boolean;
 }
 
+// Universal template settings applied to ALL templates
+const universalSections = [
+  {
+    title: '🎨 Branding',
+    description: 'Logo, colors, and brand identity settings',
+    fields: [
+      { key: 'logo_url', label: 'Store Logo', type: 'image', placeholder: 'Upload your store logo' },
+      { key: 'logo_width', label: 'Logo Width (px)', type: 'number', placeholder: '150', min: 50, max: 300 },
+      { key: 'primary_color', label: 'Primary Color', type: 'color', placeholder: '#000000' },
+      { key: 'secondary_color', label: 'Secondary Color', type: 'color', placeholder: '#F5F5F5' },
+      { key: 'accent_color', label: 'Accent/Highlight Color', type: 'color', placeholder: '#FF6B35' },
+      { key: 'text_color', label: 'Primary Text Color', type: 'color', placeholder: '#1A1A1A' },
+      { key: 'secondary_text_color', label: 'Secondary Text Color', type: 'color', placeholder: '#666666' },
+    ]
+  },
+  {
+    title: '🔤 Typography',
+    description: 'Font settings for headings and body text',
+    fields: [
+      { key: 'font_family', label: 'Font Family', type: 'select', options: ['Inter', 'Poppins', 'Montserrat', 'Playfair Display', 'Georgia', 'Roboto', 'Open Sans'], placeholder: 'Inter' },
+      { key: 'heading_size_multiplier', label: 'Heading Size', type: 'select', options: ['Small', 'Medium', 'Large', 'Extra Large'], placeholder: 'Large' },
+      { key: 'body_font_size', label: 'Body Font Size (px)', type: 'number', placeholder: '16', min: 12, max: 20 },
+    ]
+  },
+  {
+    title: '📐 Layout & Spacing',
+    description: 'Grid, spacing, and section layout settings',
+    fields: [
+      { key: 'grid_columns', label: 'Product Grid Columns', type: 'number', placeholder: '4', min: 1, max: 6 },
+      { key: 'section_padding', label: 'Section Padding (px)', type: 'number', placeholder: '40', min: 10, max: 100 },
+      { key: 'border_radius', label: 'Card Corner Radius (px)', type: 'number', placeholder: '8', min: 0, max: 30 },
+      { key: 'enable_sidebar', label: 'Show Filters Sidebar', type: 'checkbox' },
+    ]
+  },
+  {
+    title: '🌙 Theme & Appearance',
+    description: 'Dark mode and visual theme settings',
+    fields: [
+      { key: 'enable_dark_mode', label: 'Allow Dark Mode Toggle', type: 'checkbox' },
+      { key: 'default_theme', label: 'Default Theme', type: 'select', options: ['Light', 'Dark', 'Auto (System)'], placeholder: 'Light' },
+      { key: 'show_product_shadows', label: 'Show Product Card Shadows', type: 'checkbox' },
+      { key: 'enable_animations', label: 'Enable Smooth Animations', type: 'checkbox' },
+    ]
+  },
+  {
+    title: '🔍 SEO & Meta Information',
+    description: 'Search engine optimization and page metadata',
+    fields: [
+      { key: 'meta_title', label: 'Page Title (for browser tab)', type: 'text', placeholder: 'My Beautiful Store' },
+      { key: 'meta_description', label: 'Meta Description (shown in search results)', type: 'textarea', placeholder: 'Discover amazing products...', maxLength: 160 },
+      { key: 'meta_keywords', label: 'Keywords (comma-separated)', type: 'text', placeholder: 'fashion, style, products' },
+    ]
+  },
+  {
+    title: '⚡ Featured Section',
+    description: 'Highlight best products on homepage',
+    fields: [
+      { key: 'show_featured_section', label: 'Show Featured Products', type: 'checkbox' },
+      { key: 'featured_section_title', label: 'Featured Section Title', type: 'text', placeholder: 'Featured Products' },
+      { key: 'featured_product_ids', label: 'Featured Product IDs (comma-separated)', type: 'text', placeholder: '1,2,3,4,5' },
+    ]
+  },
+  {
+    title: '⭐ Testimonials Section',
+    description: 'Customer testimonials and reviews showcase',
+    fields: [
+      { key: 'show_testimonials', label: 'Show Testimonials', type: 'checkbox' },
+      { key: 'testimonials', label: 'Testimonials (JSON format)', type: 'textarea', placeholder: '[{"name":"John","text":"Great products!","rating":5}]' },
+    ]
+  },
+  {
+    title: '📧 Newsletter Signup',
+    description: 'Email subscription section',
+    fields: [
+      { key: 'show_newsletter', label: 'Show Newsletter Signup', type: 'checkbox' },
+      { key: 'newsletter_title', label: 'Newsletter Title', type: 'text', placeholder: 'Subscribe to our newsletter' },
+      { key: 'newsletter_subtitle', label: 'Newsletter Description', type: 'text', placeholder: 'Get exclusive offers and updates' },
+    ]
+  },
+  {
+    title: '🛡️ Trust Badges & Security',
+    description: 'Trust indicators and security badges',
+    fields: [
+      { key: 'show_trust_badges', label: 'Show Trust Badges', type: 'checkbox' },
+      { key: 'trust_badges', label: 'Trust Badges (JSON)', type: 'textarea', placeholder: '[{"icon":"shield","text":"Secure Payment"},{"icon":"truck","text":"Fast Shipping"}]' },
+    ]
+  },
+  {
+    title: '❓ FAQ Section',
+    description: 'Frequently asked questions section',
+    fields: [
+      { key: 'show_faq', label: 'Show FAQ Section', type: 'checkbox' },
+      { key: 'faq_items', label: 'FAQ Items (JSON format)', type: 'textarea', placeholder: '[{"question":"Do you ship internationally?","answer":"Yes, we ship worldwide."}]' },
+    ]
+  },
+  {
+    title: '🔗 Footer Links',
+    description: 'Custom footer navigation and information',
+    fields: [
+      { key: 'footer_about', label: 'About Us (short text)', type: 'textarea', placeholder: 'We are dedicated to quality...', maxLength: 200 },
+      { key: 'footer_links', label: 'Footer Links (JSON)', type: 'textarea', placeholder: '[{"label":"Privacy","url":"/privacy"},{"label":"Terms","url":"/terms"}]' },
+      { key: 'social_links', label: 'Social Media Links (JSON)', type: 'textarea', placeholder: '[{"platform":"instagram","url":"https://instagram.com/yourstore"},{"platform":"whatsapp","url":"https://wa.me/..."}]' },
+      { key: 'footer_contact', label: 'Contact Info (email/phone)', type: 'text', placeholder: 'contact@store.com' },
+    ]
+  },
+  {
+    title: '📱 Header & Navigation',
+    description: 'Header menu and navigation settings',
+    fields: [
+      { key: 'header_sticky', label: 'Sticky Header (stays on scroll)', type: 'checkbox' },
+      { key: 'show_search_bar', label: 'Show Product Search Bar', type: 'checkbox' },
+      { key: 'show_cart_icon', label: 'Show Shopping Cart Icon', type: 'checkbox' },
+      { key: 'custom_menu_items', label: 'Custom Menu Items (JSON)', type: 'textarea', placeholder: '[{"label":"About","url":"/about"},{"label":"Contact","url":"/contact"}]' },
+    ]
+  },
+];
+
 const templateConfigs: Record<string, any> = {
   fashion: {
     label: 'Fashion',
     sections: [
+      ...universalSections,
       {
-        title: 'Hero Section',
+        title: 'Fashion-Specific: Hero Section',
         fields: [
           { key: 'template_hero_heading', label: 'Heading', type: 'text', placeholder: 'Fashion Store' },
           { key: 'template_hero_subtitle', label: 'Subtitle', type: 'text', placeholder: 'Discover our collection' },
@@ -53,9 +171,9 @@ const templateConfigs: Record<string, any> = {
         ]
       },
       {
-        title: 'Colors & Style',
+        title: 'Fashion-Specific: Gender Filters',
         fields: [
-          { key: 'template_accent_color', label: 'Accent Color', type: 'color' },
+          { key: 'template_genders', label: 'Gender Categories (comma-separated)', type: 'text', placeholder: 'Men,Women,Kids,Unisex' },
         ]
       }
     ]
@@ -63,8 +181,9 @@ const templateConfigs: Record<string, any> = {
   fashion2: {
     label: 'Fashion 2',
     sections: [
+      ...universalSections,
       {
-        title: 'Hero Section',
+        title: 'Fashion 2-Specific: Campaign Hero',
         fields: [
           { key: 'template_hero_heading', label: 'Main Heading', type: 'text', placeholder: 'Build a fashion store that feels like a campaign' },
           { key: 'template_hero_subtitle', label: 'Subtitle', type: 'text', placeholder: 'Push your key pieces first' },
@@ -77,15 +196,16 @@ const templateConfigs: Record<string, any> = {
   fashion3: {
     label: 'Fashion 3 (Dark)',
     sections: [
+      ...universalSections,
       {
-        title: 'Video Hero',
+        title: 'Fashion 3-Specific: Video Hero',
         description: 'Fashion3 features a video hero with yellow/dark theme. Add product data to showcase hotspots.',
         fields: [
           { key: 'template_video_url', label: 'Hero Video URL', type: 'url', placeholder: 'https://video.mp4' },
         ]
       },
       {
-        title: 'Hotspot Configuration',
+        title: 'Fashion 3-Specific: Hotspot Configuration',
         description: 'Hotspots overlay products on images. Configure as JSON.',
         fields: [
           { key: 'template_hotspot_image', label: 'Hotspot Image URL', type: 'url', placeholder: 'https://...' },
@@ -93,14 +213,14 @@ const templateConfigs: Record<string, any> = {
         ]
       },
       {
-        title: 'Lookbook',
+        title: 'Fashion 3-Specific: Lookbook',
         description: 'Showcase outfit looks with images and descriptions.',
         fields: [
           { key: 'template_lookbook_images', label: 'Lookbook Images (one per line)', type: 'textarea', placeholder: 'https://image1.jpg\nhttps://image2.jpg' },
         ]
       },
       {
-        title: 'Seasonal Banner',
+        title: 'Fashion 3-Specific: Seasonal Banner',
         fields: [
           { key: 'template_seasonal_title', label: 'Seasonal Drop Title', type: 'text', placeholder: 'Drop 01 · Night Shift' },
           { key: 'template_seasonal_subtitle', label: 'Drop Description', type: 'text', placeholder: 'Oversized coat, cargos and sneakers — limited run.' },
@@ -111,8 +231,9 @@ const templateConfigs: Record<string, any> = {
   electronics: {
     label: 'Electronics',
     sections: [
+      ...universalSections,
       {
-        title: 'Hero Section',
+        title: 'Electronics-Specific: Hero Section',
         fields: [
           { key: 'template_hero_heading', label: 'Main Heading', type: 'text', placeholder: 'Flagship performance for your entire tech store' },
           { key: 'template_hero_subtitle', label: 'Subtitle', type: 'text', placeholder: 'Showcase phones, headphones, gaming gear and accessories' },
@@ -120,7 +241,7 @@ const templateConfigs: Record<string, any> = {
         ]
       },
       {
-        title: 'Featured Products',
+        title: 'Electronics-Specific: Featured Products',
         description: 'Reference products by their ID to highlight them',
         fields: [
           { key: 'hero_product_id', label: 'Main Hero Product ID', type: 'number', placeholder: '1' },
@@ -134,18 +255,13 @@ const templateConfigs: Record<string, any> = {
   food: {
     label: 'Food/Cafe',
     sections: [
+      ...universalSections,
       {
-        title: 'Hero Section',
+        title: 'Food-Specific: Hero Section',
         fields: [
           { key: 'template_hero_heading', label: 'Main Heading', type: 'text', placeholder: 'Premium Food Selection' },
           { key: 'template_hero_subtitle', label: 'Subtitle', type: 'text', placeholder: 'Authentic flavors from our kitchen' },
           { key: 'banner_url', label: 'Banner Image', type: 'image', placeholder: 'Choose image' },
-        ]
-      },
-      {
-        title: 'Layout Settings',
-        fields: [
-          { key: 'gallery_count', label: 'Products per Row', type: 'number', min: 1, max: 6, placeholder: '3' },
         ]
       }
     ]
@@ -153,22 +269,23 @@ const templateConfigs: Record<string, any> = {
   furniture: {
     label: 'Furniture',
     sections: [
+      ...universalSections,
       {
-        title: 'Hero Section',
+        title: 'Furniture-Specific: Hero Section',
         fields: [
           { key: 'template_hero_heading', label: 'Main Heading', type: 'text', placeholder: 'Furniture Collection' },
           { key: 'banner_url', label: 'Banner Image', type: 'image', placeholder: 'Choose image' },
         ]
       },
       {
-        title: 'Mega Menu Categories',
+        title: 'Furniture-Specific: Mega Menu Categories',
         description: 'Configure room categories for the mega menu dropdown',
         fields: [
           { key: 'template_mega_menu_categories', label: 'Categories (JSON)', type: 'textarea', placeholder: '["Living Room","Bedroom","Office","Dining"]' },
         ]
       },
       {
-        title: 'Price Range',
+        title: 'Furniture-Specific: Price Range',
         fields: [
           { key: 'template_price_min', label: 'Minimum Price', type: 'number', placeholder: '0' },
           { key: 'template_price_max', label: 'Maximum Price', type: 'number', placeholder: '100000' },
@@ -179,22 +296,23 @@ const templateConfigs: Record<string, any> = {
   jewelry: {
     label: 'Jewelry',
     sections: [
+      ...universalSections,
       {
-        title: 'Hero Section',
+        title: 'Jewelry-Specific: Hero Section',
         fields: [
           { key: 'template_hero_heading', label: 'Main Heading', type: 'text', placeholder: 'Luxury Jewelry Collection' },
           { key: 'banner_url', label: 'Banner Image', type: 'image', placeholder: 'Choose image' },
         ]
       },
       {
-        title: 'Material Types',
+        title: 'Jewelry-Specific: Material Types',
         description: 'Configure which materials are available for filtering',
         fields: [
           { key: 'template_materials', label: 'Materials (comma-separated)', type: 'text', placeholder: 'Gold,Silver,Platinum,Rose Gold' },
         ]
       },
       {
-        title: 'Gold Edit Section',
+        title: 'Jewelry-Specific: Gold Edit Section',
         description: 'Showcase featured collection items',
         fields: [
           { key: 'template_featured_ids', label: 'Featured Product IDs (comma-separated)', type: 'text', placeholder: '1,2,3,4' },
@@ -205,15 +323,16 @@ const templateConfigs: Record<string, any> = {
   perfume: {
     label: 'Perfume',
     sections: [
+      ...universalSections,
       {
-        title: 'Hero Section',
+        title: 'Perfume-Specific: Hero Section',
         fields: [
           { key: 'template_hero_heading', label: 'Main Heading', type: 'text', placeholder: 'The Realms of Scent' },
           { key: 'template_hero_subtitle', label: 'Subtitle', type: 'text', placeholder: 'Discover scents that tell your story' },
         ]
       },
       {
-        title: 'Realm Filters',
+        title: 'Perfume-Specific: Realm Filters',
         description: 'Configure scent realms for filtering',
         fields: [
           { key: 'template_realms', label: 'Realms (comma-separated)', type: 'text', placeholder: 'All,Noir,Gold,Dream' },
@@ -224,17 +343,12 @@ const templateConfigs: Record<string, any> = {
   baby: {
     label: 'Baby',
     sections: [
+      ...universalSections,
       {
-        title: 'Hero Section',
+        title: 'Baby-Specific: Hero Section',
         fields: [
           { key: 'template_hero_heading', label: 'Main Heading', type: 'text', placeholder: 'Baby Products' },
           { key: 'banner_url', label: 'Banner Image', type: 'image', placeholder: 'Choose image' },
-        ]
-      },
-      {
-        title: 'Layout Settings',
-        fields: [
-          { key: 'grid_columns', label: 'Grid Columns', type: 'number', min: 1, max: 6, placeholder: '4' },
         ]
       }
     ]
@@ -242,8 +356,9 @@ const templateConfigs: Record<string, any> = {
   bags: {
     label: 'Bags',
     sections: [
+      ...universalSections,
       {
-        title: 'Hero Section',
+        title: 'Bags-Specific: Hero Section',
         fields: [
           { key: 'template_hero_heading', label: 'Main Heading', type: 'text', placeholder: 'Cold silhouettes, cut in leather and light.' },
           { key: 'template_hero_subtitle', label: 'Subtitle', type: 'text', placeholder: 'A focused edit of structured totes, city crossbody bags and evening silhouettes.' },
@@ -251,14 +366,14 @@ const templateConfigs: Record<string, any> = {
         ]
       },
       {
-        title: 'Background Settings',
+        title: 'Bags-Specific: Background Settings',
         fields: [
           { key: 'template_bg_image', label: 'Page Background Image', type: 'image', placeholder: 'Choose background image' },
           { key: 'template_hero_bg_blur', label: 'Background Blur Amount (0-20px)', type: 'number', placeholder: '12', min: 0, max: 20 },
         ]
       },
       {
-        title: 'Filter Configuration',
+        title: 'Bags-Specific: Filter Configuration',
         fields: [
           { key: 'template_materials', label: 'Materials (comma-separated)', type: 'text', placeholder: 'Leather,Canvas,Nylon,Suede,Velvet' },
           { key: 'template_types', label: 'Bag Types (comma-separated)', type: 'text', placeholder: 'Tote,Crossbody,Clutch,Backpack' },
@@ -269,24 +384,19 @@ const templateConfigs: Record<string, any> = {
   beauty: {
     label: 'Beauty',
     sections: [
+      ...universalSections,
       {
-        title: 'Hero Section',
+        title: 'Beauty-Specific: Hero Section',
         fields: [
           { key: 'template_hero_heading', label: 'Main Heading', type: 'text', placeholder: 'Find Your Perfect Shade' },
           { key: 'banner_url', label: 'Banner Image', type: 'image', placeholder: 'Choose image' },
         ]
       },
       {
-        title: 'Shade Colors',
+        title: 'Beauty-Specific: Shade Colors',
         description: 'Configure color swatches for shade finder',
         fields: [
           { key: 'template_shade_colors', label: 'Shade Colors (JSON)', type: 'textarea', placeholder: '["#F5D5B8","#E8C4A0","#D4A574","#C9915C","#B8713F"]' },
-        ]
-      },
-      {
-        title: 'Layout Settings',
-        fields: [
-          { key: 'gallery_count', label: 'Products per Row', type: 'number', min: 1, max: 6, placeholder: '4' },
         ]
       }
     ]
@@ -294,15 +404,16 @@ const templateConfigs: Record<string, any> = {
   cafe: {
     label: 'Cafe/Bakery',
     sections: [
+      ...universalSections,
       {
-        title: 'Hero Section',
+        title: 'Cafe-Specific: Hero Section',
         fields: [
           { key: 'template_hero_heading', label: 'Main Heading', type: 'text', placeholder: 'Artisan Bakery & Cafe' },
           { key: 'banner_url', label: 'Banner Image', type: 'image', placeholder: 'Choose image' },
         ]
       },
       {
-        title: 'Store Information',
+        title: 'Cafe-Specific: Store Information',
         fields: [
           { key: 'template_since_year', label: 'Since Year', type: 'number', placeholder: '2021' },
           { key: 'template_store_city', label: 'City/Location', type: 'text', placeholder: 'Algiers' },
@@ -451,7 +562,7 @@ export default function TemplateSettingsPage() {
   };
 
   if (loading) {
-    return <div className="p-8 text-center"><Loader2 className="animate-spin mx-auto" /></div>;
+    return <div className="p-3 md:p-4 text-center"><Loader2 className="animate-spin mx-auto" /></div>;
   }
 
   const config = templateConfigs[template] || templateConfigs.fashion;
@@ -460,13 +571,13 @@ export default function TemplateSettingsPage() {
     <div className={`min-h-screen transition-colors duration-200 ${isDarkMode ? 'bg-gradient-to-br from-gray-900 to-black' : 'bg-gradient-to-br from-gray-50 to-gray-100'}`}>
       {/* Full-width Template Selector Section */}
       <div className={`w-full border-b transition-colors duration-200 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-        <div className="max-w-7xl mx-auto px-8 py-12">
-          <div className="mb-8">
-            <h2 className={`text-4xl font-bold mb-2 transition-colors ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Select Your Template</h2>
-            <p className={`transition-colors ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Choose a design that matches your brand</p>
+        <div className="max-w-7xl mx-auto px-3 md:px-4 py-2 md:py-3">
+          <div className="mb-2 md:mb-3">
+            <h2 className={`text-base md:text-lg font-bold mb-1 transition-colors ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Select Your Template</h2>
+            <p className={`text-xs md:text-sm transition-colors ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Choose a design that matches your brand</p>
           </div>
           
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 md:gap-3">
             {templateList.map((tpl) => (
               <button
                 key={tpl.id}
@@ -516,18 +627,18 @@ export default function TemplateSettingsPage() {
       </div>
 
       {/* Settings and Preview Content */}
-      <div className="max-w-7xl mx-auto px-8 py-12">
+      <div className="max-w-7xl mx-auto px-3 md:px-4 py-3 md:py-4">
         {/* Settings Form and Preview */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-2">
         {/* Left Column - Settings (Now smaller) */}
-        <div className="lg:col-span-1 space-y-6">
+        <div className="lg:col-span-1 space-y-2">
           {/* Store Name */}
 
         {/* Basic Settings Section */}
         <div className={`border rounded-lg overflow-hidden transition-colors ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
           <button
             onClick={() => setExpandedSections(prev => ({ ...prev, basic: !prev.basic }))}
-            className={`w-full px-4 py-3 font-semibold text-left flex items-center justify-between transition-colors ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-50 hover:bg-gray-100 text-gray-900'}`}
+            className={`w-full px-2 md:px-3 py-2 font-semibold text-left flex items-center justify-between transition-colors ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-50 hover:bg-gray-100 text-gray-900'}`}
           >
             <h3 className="text-base">Store Information</h3>
             <span className={`transform transition-transform ${expandedSections.basic ? 'rotate-180' : ''}`}>
@@ -535,10 +646,10 @@ export default function TemplateSettingsPage() {
             </span>
           </button>
           {expandedSections.basic && (
-            <div className={`p-4 space-y-4 transition-colors ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+            <div className={`p-2 md:p-3 space-y-2 md:space-y-3 transition-colors ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
               {/* Store Name */}
               <div>
-                <label className={`block text-sm font-medium mb-2 transition-colors ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Store Name</label>
+                <label className={`block text-sm font-medium mb-1 transition-colors ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Store Name</label>
                 <Input
                   value={settings.store_name || ''}
                   onChange={(e) => handleChange('store_name', e.target.value)}
@@ -548,7 +659,7 @@ export default function TemplateSettingsPage() {
 
               {/* Currency */}
               <div>
-                <label className={`block text-sm font-medium mb-2 transition-colors ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Currency Code</label>
+                <label className={`block text-sm font-medium mb-1 transition-colors ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Currency Code</label>
                 <Input
                   value={settings.currency_code || 'USD'}
                   onChange={(e) => handleChange('currency_code', e.target.value)}
@@ -564,21 +675,21 @@ export default function TemplateSettingsPage() {
           <div key={idx} className={`border rounded-lg overflow-hidden transition-colors ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
             <button
               onClick={() => setExpandedSections(prev => ({ ...prev, [idx]: !prev[idx] }))}
-              className={`w-full px-4 py-3 font-semibold text-left flex items-center justify-between transition-colors ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-50 hover:bg-gray-100 text-gray-900'}`}
+              className={`w-full px-2 md:px-3 py-2 font-semibold text-left flex items-center justify-between transition-colors ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-50 hover:bg-gray-100 text-gray-900'}`}
             >
               <div className="text-left">
                 <h3 className="text-base">{section.title}</h3>
                 {section.description && (
-                  <p className={`text-xs font-normal mt-1 transition-colors ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{section.description}</p>
+                  <p className={`text-xs font-normal mt-0 transition-colors ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{section.description}</p>
                 )}
               </div>
               <ChevronDown className={`w-5 h-5 transform transition-transform ${expandedSections[idx] ? 'rotate-180' : ''}`} />
             </button>
             {expandedSections[idx] && (
-              <div className={`p-4 space-y-4 transition-colors ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+              <div className={`p-2 md:p-3 space-y-2 md:space-y-3 transition-colors ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
                 {section.fields?.map((field: any) => (
                   <div key={field.key}>
-                    <label className={`block text-sm font-medium mb-2 transition-colors ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>{field.label}</label>
+                    <label className={`block text-sm font-medium mb-1 transition-colors ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>{field.label}</label>
                     {field.type === 'color' && (
                       <div className="flex gap-2">
                         <input
@@ -667,7 +778,7 @@ export default function TemplateSettingsPage() {
         ))}
 
         {/* Action Buttons */}
-        <div className="flex gap-2 pt-4">
+        <div className="flex gap-2 pt-2 md:pt-3">
           <Button
             onClick={handleSave}
             disabled={saving}
@@ -687,17 +798,17 @@ export default function TemplateSettingsPage() {
         </div>
 
         {message && (
-          <div className={`p-4 rounded-lg transition-colors ${message.type === 'success' ? isDarkMode ? 'bg-green-900/30 text-green-300' : 'bg-green-50 text-green-900' : isDarkMode ? 'bg-red-900/30 text-red-300' : 'bg-red-50 text-red-900'}`}>
+          <div className={`p-2 md:p-3 rounded-lg transition-colors ${message.type === 'success' ? isDarkMode ? 'bg-green-900/30 text-green-300' : 'bg-green-50 text-green-900' : isDarkMode ? 'bg-red-900/30 text-red-300' : 'bg-red-50 text-red-900'}`}>
             {message.text}
           </div>
         )}
         </div>
 
         {/* Right Column - Preview (Now larger) */}
-        <div className="lg:col-span-2">
-          <div className="sticky top-4 space-y-4">
-            <h3 className={`font-bold text-lg transition-colors ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Template Preview</h3>
-            <div className={`border rounded-lg overflow-hidden min-h-screen transition-colors ${isDarkMode ? 'bg-black border-gray-700' : 'bg-white border-gray-200'}`}>
+        <div className="lg:col-span-3">
+          <div className="sticky top-2 space-y-2">
+            <h3 className={`font-bold text-base md:text-lg transition-colors ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Template Preview</h3>
+            <div className={`border rounded-lg overflow-hidden transition-colors ${isDarkMode ? 'bg-black border-gray-700' : 'bg-white border-gray-200'}`}>
               {templateComponents[template] ? (
                 React.createElement(templateComponents[template], {
                   products: products.length > 0 ? products : [],
@@ -707,7 +818,7 @@ export default function TemplateSettingsPage() {
                   filters: {}
                 })
               ) : (
-                <div className={`p-8 text-center transition-colors ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Template not found</div>
+                <div className={`p-3 md:p-4 text-center transition-colors ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Template not found</div>
               )}
             </div>
           </div>

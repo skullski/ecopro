@@ -16,6 +16,7 @@ import * as publicStoreRoutes from "./routes/public-store";
 import * as templateRoutes from "./routes/templates";
 import { createProduct as createStorefrontProduct, updateProduct as updateStorefrontProduct, deleteProduct as deleteStorefrontProduct, handleUploadImages as uploadStorefrontImages } from "./routes/storefront";
 import * as orderRoutes from "./routes/orders";
+import * as orderConfirmationRoutes from "./routes/order-confirmation";
 import { upload, uploadImage } from "./routes/uploads";
 import { authenticate, requireAdmin, requireSeller, requireClient } from "./middleware/auth";
 import * as adminRoutes from "./routes/admin";
@@ -497,10 +498,27 @@ export function createServer() {
   // Order routes
   app.post("/api/orders/create", orderRoutes.createOrder); // Public - buyers can create orders
   app.get("/api/client/orders", authenticate, requireClient, orderRoutes.getClientOrders);
+
+  // Order confirmation routes (public - no auth required)
+  app.get("/api/storefront/:storeSlug/order/:orderId", orderConfirmationRoutes.getOrderForConfirmation);
+  app.post("/api/storefront/:storeSlug/order/:orderId/confirm", orderConfirmationRoutes.confirmOrder);
+  app.patch("/api/storefront/:storeSlug/order/:orderId/update", orderConfirmationRoutes.updateOrderDetails);
   app.patch("/api/client/orders/:id/status", authenticate, requireClient, orderRoutes.updateOrderStatus);
 
-  // Image upload route (authenticated users)
-  app.post("/api/upload", authenticate, upload.single('image'), uploadImage);
+  // Checkout session routes (database-backed, not localStorage)
+  app.post("/api/checkout/save-product", orderRoutes.saveProductForCheckout); // Public - save product for checkout
+  app.get("/api/checkout/get-product/:sessionId", orderRoutes.getProductForCheckout); // Public - retrieve product from checkout session
+
+  // Image upload route (authenticated users) - with error handling for multer
+  app.post("/api/upload", authenticate, (req, res, next) => {
+    upload.single('image')(req, res, (err: any) => {
+      if (err) {
+        console.error('[upload middleware] multer error:', err);
+        return res.status(400).json({ error: `Upload failed: ${err.message}` });
+      }
+      uploadImage(req, res, next);
+    });
+  });
 
   // Register the delete store image route
   app.delete("/api/store/image", deleteStoreImage);

@@ -80,7 +80,7 @@ export default function Product() {
 
   return (
     <div className="min-h-screen bg-background text-foreground dark:bg-black">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-4 md:py-6">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
           <Link to="/marketplace" className="hover:text-foreground transition-colors">
@@ -90,7 +90,7 @@ export default function Product() {
           <span className="text-foreground">{product.title}</span>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8">
+        <div className="grid lg:grid-cols-2 gap-4 md:gap-3 md:gap-4">
           {/* Left Column - Images */}
           <div className="space-y-4">
             {/* Main Image */}
@@ -157,10 +157,10 @@ export default function Product() {
           </div>
 
           {/* Right Column - Product Info */}
-          <div className="space-y-6">
+          <div className="space-y-3 md:space-y-4">
             {/* Title & Price */}
             <div>
-              <h1 className="text-3xl font-bold mb-2">{product.title}</h1>
+              <h1 className="text-xl md:text-2xl font-bold mb-2">{product.title}</h1>
               
               {/* Rating */}
               <div className="flex items-center gap-2 mb-4">
@@ -183,7 +183,7 @@ export default function Product() {
 
               {/* Price */}
               <div className="flex items-baseline gap-3 mb-4">
-                <span className="text-4xl font-bold text-primary">${product.price}</span>
+                <span className="text-2xl md:text-xl md:text-2xl font-bold text-primary">${product.price}</span>
                 {product.original_price && (
                   <span className="text-xl text-muted-foreground line-through">
                     ${product.original_price}
@@ -283,15 +283,6 @@ export default function Product() {
                 </Button>
                 
                 <div className="flex gap-3">
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="flex-1 border-2"
-                    disabled={product.stock === 0}
-                  >
-                    <ShoppingCart className="w-5 h-5 mr-2" />
-                    Add to Cart
-                  </Button>
                   <Button size="lg" variant="outline" className="border-2">
                     <Heart className="w-5 h-5" />
                   </Button>
@@ -313,7 +304,7 @@ export default function Product() {
         </div>
 
         {/* Additional Info Section */}
-        <div className="mt-12 grid md:grid-cols-3 gap-6">
+        <div className="mt-6 md:mt-4 md:mt-6 grid md:grid-cols-3 gap-3 md:gap-4">
           <div className="bg-card border rounded-xl p-6 shadow-elevated text-center dark:bg-gray-900 dark:border-gray-700">
             <Truck className="w-8 h-8 mx-auto mb-3 text-primary" />
             <h4 className="font-semibold mb-2">Fast Delivery</h4>

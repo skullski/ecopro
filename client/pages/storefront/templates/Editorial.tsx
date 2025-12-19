@@ -23,16 +23,16 @@ export default function EditorialTemplate(props: TemplateProps & { mode: 'suprem
             <ArrowLeft className="w-4 h-4 mr-2" /> Back
           </Button>
           <div className={bigTitle ? 'max-w-5xl' : 'max-w-3xl'}>
-            <h1 className={`${bigTitle ? 'text-6xl md:text-7xl' : 'text-4xl md:text-6xl'} font-bold tracking-tight text-white`}>{settings.store_name || 'Store'}</h1>
+            <h1 className={`${bigTitle ? 'text-xl md:text-2xl md:text-2xl md:text-xl md:text-2xl lg:text-xl md:text-2xl md:text-2xl md:text-xl md:text-2xl xl:text-6xl' : 'text-2xl md:text-xl md:text-2xl lg:text-lg md:text-xl md:text-2xl xl:text-xl md:text-2xl md:text-2xl md:text-xl md:text-2xl'} font-bold tracking-tight text-white`}>{settings.store_name || 'Store'}</h1>
             {settings.store_description && (
-              <p className={`${bigTitle ? 'text-2xl md:text-3xl' : 'text-lg md:text-xl'} text-white/90 mt-3`}>{settings.store_description}</p>
+              <p className={`${bigTitle ? 'text-lg md:text-xl lg:text-lg' : 'text-base md:text-lg'} text-white/90 mt-3`}>{settings.store_description}</p>
             )}
             <div className="flex gap-2 mt-5 text-white/90">
               <Badge variant="secondary" className="bg-white/20 text-white border-0"><Package className="w-3 h-3 mr-1" /> {products.length} Products</Badge>
               <Badge variant="secondary" className="bg-white/20 text-white border-0"><Eye className="w-3 h-3 mr-1" /> {products.reduce((s, p) => s + p.views, 0)} Views</Badge>
             </div>
           </div>
-          <div className="mt-8 max-w-3xl">
+          <div className="mt-4 md:mt-6 max-w-3xl">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/80" />
               <Input value={searchQuery} onChange={(e) => props.setSearchQuery(e.target.value)} placeholder="Search products..." className="pl-10 bg-white/15 border-white/20 text-white placeholder:text-white/70" />
@@ -47,7 +47,7 @@ export default function EditorialTemplate(props: TemplateProps & { mode: 'suprem
             <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
             <h2 className="text-2xl font-bold">Highlights</h2>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
             {featured.map(p => (
               <div
                 key={p.id}
@@ -91,7 +91,7 @@ export default function EditorialTemplate(props: TemplateProps & { mode: 'suprem
         {filtered.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground">No products found</div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
             {filtered.map(p => (
               <button key={p.id} onClick={() => { const slug = p.slug; if (slug && slug.length > 0) navigate(`/store/${storeSlug}/${slug}`); else navigate(`/product/${p.id}`); }} className="group rounded-xl overflow-hidden border bg-card hover:shadow-lg transition">
                 <div className="relative aspect-square bg-muted">
@@ -109,7 +109,7 @@ export default function EditorialTemplate(props: TemplateProps & { mode: 'suprem
       </div>
 
       <div className="border-t bg-muted/30">
-        <div className="container mx-auto px-4 py-8 text-center">
+        <div className="container mx-auto px-4 py-4 md:py-6 text-center">
           <p className="text-sm text-muted-foreground mb-2">Powered by {settings.store_name || 'EcoPro'}</p>
           <Button variant="outline" size="sm" onClick={() => navigate('/marketplace')}><ExternalLink className="w-4 h-4 mr-2"/>Explore More Stores</Button>
         </div>

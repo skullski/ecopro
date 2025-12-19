@@ -127,14 +127,14 @@ export default function Checkout() {
       ) : (
         <div className="w-full max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10">
           {/* Left: Order Summary */}
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-3 md:gap-4">
             <div className="bg-[#13162a] rounded-2xl shadow-lg border border-[#23264a] p-6">
               <h2 className="text-xl font-bold text-white mb-4">Order Summary</h2>
               <div className="flex items-center gap-4">
                 <img src={product.imageUrl} alt={product.title} className="w-20 h-20 object-cover rounded-xl border border-[#23264a]" />
                 <div>
                   <div className="font-semibold text-white text-lg mb-1">{product.title}</div>
-                  <div className="text-cyan-400 text-3xl font-extrabold">${(product.price / 100).toFixed(2)}</div>
+                  <div className="text-cyan-400 text-xl md:text-2xl font-extrabold">${(product.price / 100).toFixed(2)}</div>
                   <div className="text-gray-400 text-sm mt-1">{product.description}</div>
                 </div>
               </div>
@@ -170,7 +170,7 @@ export default function Checkout() {
             </div>
           </div>
           {/* Right: Shipping Form */}
-          <div className="bg-[#13162a] rounded-2xl shadow-lg border border-[#23264a] p-8 flex flex-col justify-center">
+          <div className="bg-[#13162a] rounded-2xl shadow-lg border border-[#23264a] p-4 md:p-6 flex flex-col justify-center">
             <h2 className="text-xl font-bold text-white mb-4">Shipping Information</h2>
             <form className="flex flex-col gap-4" onSubmit={e => { e.preventDefault(); console.log('Form submitted, placing order...'); placeOrder(); }}>
               {/* Restore previous input field styles for clarity */}

@@ -183,7 +183,7 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-8">
+      <div className="flex items-center justify-center py-4 md:py-6">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
@@ -191,14 +191,14 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
 
   if (templates.length === 0) {
     return (
-      <div className="flex items-center justify-center py-8 text-muted-foreground">
+      <div className="flex items-center justify-center py-4 md:py-6 text-muted-foreground">
         <p>No templates available. Please try again later.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 md:space-y-4">
       <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-slate-700 dark:to-slate-700 p-4 rounded-lg border border-purple-200 dark:border-slate-600">
         <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Choose Store Template</h3>
         <p className="text-sm text-slate-700 dark:text-slate-300">Select how your store should appear to customers. Each template is fully customizable.</p>
@@ -229,7 +229,7 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
                   if (parent) {
                     parent.innerHTML = `
                       <div class="flex items-center justify-center h-full w-full flex-col gap-2">
-                        <div class="text-4xl">${template.icon}</div>
+                        <div class="text-2xl md:text-xl md:text-2xl">${template.icon}</div>
                         <div class="text-sm font-medium text-center px-2">${template.name}</div>
                       </div>
                     `;

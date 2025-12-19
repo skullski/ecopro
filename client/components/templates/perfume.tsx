@@ -6,6 +6,18 @@ export default function PerfumeTemplate(props: TemplateProps) {
   const [realmFilter, setRealmFilter] = useState('All');
   const [quickViewProduct, setQuickViewProduct] = useState<any>(null);
 
+  // Helper functions to save product data and navigate
+  const handleProductClick = (product: any) => {
+    localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
+    navigate(`/product/${product.id}`);
+  };
+
+  const handleBuyClick = (product: any, e?: any) => {
+    if (e) e.stopPropagation();
+    localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
+    navigate(`/checkout/${product.id}`);
+  };
+
   const products = props.products || [];
   const settings = props.settings || {};
 
@@ -17,9 +29,9 @@ export default function PerfumeTemplate(props: TemplateProps) {
   if (!products || products.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0a0a0a' }}>
-        <div className="text-center max-w-md mx-auto p-8">
+        <div className="text-center max-w-md mx-auto p-4 md:p-6">
           <div className="text-6xl mb-4">🧴</div>
-          <h1 className="text-3xl font-serif font-bold mb-4 text-gray-200">No Products Yet</h1>
+          <h1 className="text-xl md:text-2xl font-serif font-bold mb-4 text-gray-200">No Products Yet</h1>
           <p className="text-gray-400 mb-6">Add fragrances to your store to see them displayed here.</p>
           <p className="text-sm text-gray-500">Products will appear automatically once you add them to your store.</p>
         </div>
@@ -44,7 +56,7 @@ export default function PerfumeTemplate(props: TemplateProps) {
     <div style={{ backgroundColor: '#0a0a0a' }} className="min-h-screen text-white">
       <header className="border-b sticky top-0 z-40 backdrop-blur" style={{ borderColor: `${accentColor}33`, backgroundColor: 'rgba(0,0,0,0.5)' }}>
         <div className="max-w-7xl mx-auto px-6 py-4">
-          <h1 className="font-serif text-3xl font-semibold" style={{ color: accentColor }}>{storeName}</h1>
+          <h1 className="font-serif text-xl md:text-2xl font-semibold" style={{ color: accentColor }}>{storeName}</h1>
           <p className="text-xs text-gray-400 mt-1">Premium fragrance collections</p>
         </div>
       </header>
@@ -53,15 +65,15 @@ export default function PerfumeTemplate(props: TemplateProps) {
         <img src={settings.banner_url || 'https://images.unsplash.com/photo-1594736797933-d0501ba2fe65?w=1600&q=80'} alt="Hero" className="w-full h-full object-cover opacity-40" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/40 to-black flex items-end justify-center pb-12">
           <div className="text-center">
-            <p className="font-serif text-4xl font-semibold mb-2" style={{ color: accentColor }}>The Realms of Scent</p>
+            <p className="font-serif text-2xl md:text-xl md:text-2xl font-semibold mb-2" style={{ color: accentColor }}>The Realms of Scent</p>
             <p className="text-sm text-gray-400">Discover scents that tell your story</p>
           </div>
         </div>
       </section>
 
-      <section className="max-w-7xl mx-auto px-6 py-12">
+      <section className="max-w-7xl mx-auto px-6 py-6 md:py-4 md:py-6">
         {/* Filter Section */}
-        <div className="mb-8">
+        <div className="mb-4 md:mb-6">
           <label className="text-xs text-gray-500 uppercase tracking-widest font-semibold block mb-4">Filter by Category</label>
           <div className="flex gap-3 flex-wrap">
             {realms.map((realm) => (
@@ -82,7 +94,7 @@ export default function PerfumeTemplate(props: TemplateProps) {
         </div>
 
         {/* Products Grid */}
-        <div className="mb-8">
+        <div className="mb-4 md:mb-6">
           <h2 className="font-serif text-2xl font-semibold mb-6" style={{ color: accentColor }}>Featured Fragrances</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {filtered.map((p) => (
@@ -111,10 +123,10 @@ export default function PerfumeTemplate(props: TemplateProps) {
                     style={{ backgroundColor: accentColor }}
                     onClick={(e) => {
                       e.stopPropagation();
-                      navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/checkout/${p.slug}` : `/checkout/${p.id}`);
+                      navigate(`/checkout/${p.id}`);
                     }}
                   >
-                    Add to Bag
+                    Buy Now
                   </button>
                 </div>
               </div>
@@ -167,7 +179,7 @@ export default function PerfumeTemplate(props: TemplateProps) {
               </button>
               <button
                 onClick={() => {
-                  navigate(quickViewProduct.slug && quickViewProduct.slug.length > 0 ? `/store/${storeSlug}/checkout/${quickViewProduct.slug}` : `/checkout/${quickViewProduct.id}`);
+                  navigate(`/checkout/${quickViewProduct.id}`);
                   setQuickViewProduct(null);
                 }}
                 className="flex-1 py-3 text-black rounded font-semibold hover:opacity-90 transition"
@@ -180,7 +192,7 @@ export default function PerfumeTemplate(props: TemplateProps) {
         </div>
       )}
 
-      <footer className="border-t mt-12 py-8 bg-black/50" style={{ borderColor: `${accentColor}30` }}>
+      <footer className="border-t mt-6 md:mt-4 md:mt-6 py-4 md:py-6 bg-black/50" style={{ borderColor: `${accentColor}30` }}>
         <div className="max-w-7xl mx-auto px-6 text-center text-sm text-gray-500">
           <p>&copy; {new Date().getFullYear()} {storeName}. All rights reserved.</p>
         </div>

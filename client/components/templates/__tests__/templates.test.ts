@@ -142,7 +142,7 @@ describe('Template Settings Customization', () => {
   });
 
   it('should provide defaults if settings missing', () => {
-    const minimalSettings = {};
+    const minimalSettings: any = {};
     const storeNameWithDefault = minimalSettings.store_name || 'Default Store';
     expect(storeNameWithDefault).toBe('Default Store');
   });

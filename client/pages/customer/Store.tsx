@@ -41,8 +41,10 @@ import {
 interface StoreProduct {
   id: number;
   title: string;
+  name?: string; // From inventory API
   description?: string;
   price: number;
+  unit_price?: number; // From inventory API
   original_price?: number;
   images?: string[];
   category?: string;
@@ -72,7 +74,12 @@ export default function Store() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem('authToken');
+        const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+        if (!token) {
+          console.error('No authentication token found');
+          setLoading(false);
+          return;
+        }
         // Fetch store settings
         const settingsRes = await fetch('/api/client/store/settings', {
           headers: { Authorization: `Bearer ${token}` }
@@ -89,6 +96,14 @@ export default function Store() {
           const productsData = await productsRes.json();
           setProducts(productsData);
           setFilteredProducts(productsData);
+        }
+        // Fetch all available products from inventory (stock) for selection
+        const inventoryRes = await fetch('/api/client/stock', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (inventoryRes.ok) {
+          const inventoryData = await inventoryRes.json();
+          setInventoryProducts(inventoryData);
         }
       } catch (err) {
         console.error('Failed to fetch store data', err);
@@ -276,8 +291,13 @@ export default function Store() {
   // Product modals
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showSelectInventory, setShowSelectInventory] = useState(false);
   // Selected product
   const [selectedProduct, setSelectedProduct] = useState<StoreProduct | null>(null);
+  // Available products from shared inventory for private store
+  const [inventoryProducts, setInventoryProducts] = useState<StoreProduct[]>([]);
+  const [selectedInventoryProduct, setSelectedInventoryProduct] = useState<StoreProduct | null>(null);
+  const [inventoryStockQuantity, setInventoryStockQuantity] = useState<number>(1);
   // Modal and tab states
   const [showStoreSettingsModal, setShowStoreSettingsModal] = useState(false);
   const [selectedTab, setSelectedTab] = useState(0);
@@ -513,43 +533,58 @@ export default function Store() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    console.log('Starting image upload:', file.name, file.size, file.type);
+
     // Validate file size (2MB max)
     if (file.size > 2 * 1024 * 1024) {
       alert('Image must be less than 2MB');
+      e.target.value = '';
       return;
     }
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
       alert('Please select an image file');
+      e.target.value = '';
       return;
     }
 
     setUploading(true);
     try {
-      const token = localStorage.getItem('authToken');
-      const formData = new FormData();
-      formData.append('image', file);
+      const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+      console.log('Token present:', !!token);
+      
+      const uploadFormData = new FormData();
+      uploadFormData.append('image', file);
 
+      console.log('Uploading to /api/upload...');
       const res = await fetch('/api/upload', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`
         },
-        body: formData
+        body: uploadFormData
       });
+
+      console.log('Upload response status:', res.status, res.statusText);
 
       if (res.ok) {
         const data = await res.json();
+        console.log('Upload successful, URL:', data.url);
         const fullUrl = `${window.location.origin}${data.url}`;
         setFormData(prev => ({ ...prev, images: [fullUrl] }));
+        e.target.value = '';
+        alert('Image uploaded successfully!');
       } else {
         const error = await res.json();
-        alert(error.error || 'Failed to upload image');
+        console.error('Upload failed:', error);
+        alert(`Upload failed: ${error.error || 'Unknown error'}`);
+        e.target.value = '';
       }
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Failed to upload image');
+      alert(`Upload error: ${error instanceof Error ? error.message : 'Failed to upload image'}`);
+      e.target.value = '';
     } finally {
       setUploading(false);
     }
@@ -588,11 +623,11 @@ export default function Store() {
 
   return (
     <div className="min-h-screen bg-background p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto space-y-3 md:space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+            <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
               Private Store
             </h1>
             <p className="text-muted-foreground mt-1">
@@ -621,8 +656,9 @@ export default function Store() {
             </Button>
             <Button 
               onClick={() => {
-                setFormData({ status: 'active', is_featured: false, stock_quantity: 0 });
-                setShowAddModal(true);
+                setShowSelectInventory(true);
+                setSelectedInventoryProduct(null);
+                setInventoryStockQuantity(1);
               }}
               className="bg-gradient-to-r from-primary to-purple-600"
             >
@@ -638,7 +674,7 @@ export default function Store() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm opacity-90">Total Products</p>
-                <p className="text-3xl font-bold mt-1">{stats.total}</p>
+                <p className="text-xl md:text-2xl font-bold mt-1">{stats.total}</p>
               </div>
               <Package className="w-10 h-10 opacity-80" />
             </div>
@@ -648,7 +684,7 @@ export default function Store() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm opacity-90">Active</p>
-                <p className="text-3xl font-bold mt-1">{stats.active}</p>
+                <p className="text-xl md:text-2xl font-bold mt-1">{stats.active}</p>
               </div>
               <Check className="w-10 h-10 opacity-80" />
             </div>
@@ -658,7 +694,7 @@ export default function Store() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm opacity-90">Drafts</p>
-                <p className="text-3xl font-bold mt-1">{stats.draft}</p>
+                <p className="text-xl md:text-2xl font-bold mt-1">{stats.draft}</p>
               </div>
               <Edit className="w-10 h-10 opacity-80" />
             </div>
@@ -668,7 +704,7 @@ export default function Store() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm opacity-90">Total Views</p>
-                <p className="text-3xl font-bold mt-1">{stats.totalViews}</p>
+                <p className="text-xl md:text-2xl font-bold mt-1">{stats.totalViews}</p>
               </div>
               <Eye className="w-10 h-10 opacity-80" />
             </div>
@@ -778,9 +814,9 @@ export default function Store() {
         {/* Products Grid/List */}
         {/* Store Summary will render at bottom of page */}
         {filteredProducts.length === 0 ? (
-          <div className="bg-card rounded-xl border p-12 text-center">
-            <Package className="w-16 h-16 mx-auto text-muted-foreground opacity-20 mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No products yet</h3>
+          <div className="bg-card rounded-xl border p-6 md:p-6 text-center">
+            <Package className="w-12 md:w-16 h-12 md:h-16 mx-auto text-muted-foreground opacity-20 mb-3" />
+            <h3 className="text-base md:text-lg font-semibold mb-2">No products yet</h3>
             <p className="text-muted-foreground mb-4">
               Create your first product to start building your private store
             </p>
@@ -790,7 +826,7 @@ export default function Store() {
             </Button>
           </div>
         ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
             {filteredProducts.map((product) => (
               <div
                 key={product.id}
@@ -953,6 +989,174 @@ export default function Store() {
           </div>
         )}
       </div>
+
+      {/* Select Product from Inventory Modal */}
+      <Dialog open={showSelectInventory} onOpenChange={(open) => {
+        if (!open) {
+          setShowSelectInventory(false);
+          setSelectedInventoryProduct(null);
+          setInventoryStockQuantity(1);
+        }
+      }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add Product from Stock</DialogTitle>
+            <DialogDescription>
+              Select an existing product from your inventory to add to your store
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {inventoryProducts.length === 0 ? (
+              <div className="text-center py-8">
+                <Package className="w-12 h-12 mx-auto text-muted-foreground opacity-50 mb-3" />
+                <p className="text-muted-foreground">No products in your inventory yet</p>
+                <Button variant="outline" className="mt-4" onClick={() => navigate('/dashboard/stock')}>
+                  Go to Stock Management
+                </Button>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-2 max-h-96 overflow-y-auto border rounded-lg p-3">
+                  {inventoryProducts.map((product) => (
+                    <div
+                      key={product.id}
+                      onClick={() => setSelectedInventoryProduct(product)}
+                      className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                        selectedInventoryProduct?.id === product.id
+                          ? 'border-primary bg-primary/5'
+                          : 'border-transparent hover:border-muted'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        {product.images?.[0] ? (
+                          <div className="w-16 h-16 rounded overflow-hidden flex-shrink-0">
+                            <img
+                              src={product.images[0]}
+                              alt={product.title || product.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-16 h-16 rounded overflow-hidden flex-shrink-0 bg-muted flex items-center justify-center text-muted-foreground">
+                            🖼️
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{product.title || product.name}</p>
+                          <p className="text-sm text-muted-foreground truncate">{product.description}</p>
+                          <div className="flex items-center gap-3 mt-1">
+                            <span className="font-semibold text-primary">${product.price ? Number(product.price).toFixed(2) : '0.00'}</span>
+                            <Badge variant="outline" className="text-xs">
+                              Stock: {product.stock_quantity}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {selectedInventoryProduct && (
+                  <div className="space-y-3 border-t pt-4">
+                    <div className="space-y-2">
+                      <Label>Quantity to Add</Label>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setInventoryStockQuantity(Math.max(1, inventoryStockQuantity - 1))}
+                        >
+                          -
+                        </Button>
+                        <Input
+                          type="number"
+                          min="1"
+                          max={selectedInventoryProduct.stock_quantity}
+                          value={inventoryStockQuantity}
+                          onChange={(e) => setInventoryStockQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                          className="w-16 text-center"
+                        />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            setInventoryStockQuantity(Math.min(selectedInventoryProduct.stock_quantity, inventoryStockQuantity + 1))
+                          }
+                        >
+                          +
+                        </Button>
+                        <span className="text-sm text-muted-foreground ml-2">
+                          of {selectedInventoryProduct.stock_quantity} available
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSelectInventory(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={async () => {
+                if (!selectedInventoryProduct) return;
+                try {
+                  const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+                  if (!token) {
+                    alert('Authentication required');
+                    return;
+                  }
+                  const res = await fetch('/api/client/store/products', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                      title: selectedInventoryProduct.name || selectedInventoryProduct.title,
+                      description: selectedInventoryProduct.description,
+                      price: selectedInventoryProduct.unit_price || selectedInventoryProduct.price,
+                      original_price: selectedInventoryProduct.original_price,
+                      images: selectedInventoryProduct.images,
+                      category: selectedInventoryProduct.category,
+                      stock_quantity: inventoryStockQuantity,
+                      status: 'active',
+                      is_featured: false
+                    })
+                  });
+                  if (res.ok) {
+                    setShowSelectInventory(false);
+                    setSelectedInventoryProduct(null);
+                    setInventoryStockQuantity(1);
+                    // Reload products
+                    const productsRes = await fetch('/api/client/store/products', {
+                      headers: { Authorization: `Bearer ${token}` }
+                    });
+                    if (productsRes.ok) {
+                      const productsData = await productsRes.json();
+                      setProducts(productsData);
+                      setFilteredProducts(productsData);
+                    }
+                  } else {
+                    const error = await res.json();
+                    alert(error.error || 'Failed to add product');
+                  }
+                } catch (error) {
+                  console.error('Add product error:', error);
+                  alert('Failed to add product');
+                }
+              }}
+              disabled={!selectedInventoryProduct}
+            >
+              Add Product
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Add/Edit Product Modal */}
       <Dialog open={showAddModal || showEditModal} onOpenChange={(open) => {
@@ -1220,7 +1424,7 @@ export default function Store() {
 
 
       {/* Store Summary (moved here) */}
-      <div className="max-w-7xl mx-auto mt-8">
+      <div className="max-w-7xl mx-auto mt-4 md:mt-6">
         <div className="bg-card rounded-xl border p-4">
           <div className="flex items-center justify-between mb-3">
             <Label className="text-sm font-semibold">Store Summary</Label>

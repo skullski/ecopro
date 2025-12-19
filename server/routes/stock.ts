@@ -1,6 +1,18 @@
 import { RequestHandler } from "express";
 import { pool } from "../utils/database";
 
+// Ensure images column exists on module load
+(async () => {
+  try {
+    await pool.query(
+      `ALTER TABLE IF EXISTS client_stock_products 
+       ADD COLUMN IF NOT EXISTS images TEXT[] DEFAULT ARRAY[]::TEXT[]`
+    );
+  } catch (error) {
+    console.warn('[stock.ts] Warning: Could not ensure images column exists:', error);
+  }
+})();
+
 /**
  * Get all stock products for authenticated client
  * GET /api/client/stock
@@ -14,7 +26,7 @@ export const getClientStock: RequestHandler = async (req, res) => {
       SELECT 
         id, client_id, name, sku, description, category,
         quantity, unit_price, reorder_level, location,
-        supplier_name, supplier_contact, status, notes,
+        supplier_name, supplier_contact, status, notes, images,
         created_at, updated_at,
         CASE WHEN quantity <= reorder_level THEN true ELSE false END as is_low_stock
       FROM client_stock_products
@@ -101,35 +113,66 @@ export const createStock: RequestHandler = async (req, res) => {
       supplier_contact,
       status,
       notes,
+      images,
     } = req.body;
 
     if (!name) {
       return res.status(400).json({ error: 'Product name is required' });
     }
 
-    const result = await pool.query(
-      `INSERT INTO client_stock_products (
-        client_id, name, sku, description, category,
-        quantity, unit_price, reorder_level, location,
-        supplier_name, supplier_contact, status, notes
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-      RETURNING *`,
-      [
-        clientId,
-        name,
-        sku || null,
-        description || null,
-        category || null,
-        quantity || 0,
-        unit_price || null,
-        reorder_level || 10,
-        location || null,
-        supplier_name || null,
-        supplier_contact || null,
-        status || 'active',
-        notes || null,
-      ]
-    );
+    let result;
+    try {
+      // Try with images column
+      result = await pool.query(
+        `INSERT INTO client_stock_products (
+          client_id, name, sku, description, category,
+          quantity, unit_price, reorder_level, location,
+          supplier_name, supplier_contact, status, notes, images
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        RETURNING *`,
+        [
+          clientId,
+          name,
+          sku || null,
+          description || null,
+          category || null,
+          quantity || 0,
+          unit_price || null,
+          reorder_level || 10,
+          location || null,
+          supplier_name || null,
+          supplier_contact || null,
+          status || 'active',
+          notes || null,
+          Array.isArray(images) ? images : [],
+        ]
+      );
+    } catch (e) {
+      // If images column doesn't exist, retry without it
+      result = await pool.query(
+        `INSERT INTO client_stock_products (
+          client_id, name, sku, description, category,
+          quantity, unit_price, reorder_level, location,
+          supplier_name, supplier_contact, status, notes
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        RETURNING *`,
+        [
+          clientId,
+          name,
+          sku || null,
+          description || null,
+          category || null,
+          quantity || 0,
+          unit_price || null,
+          reorder_level || 10,
+          location || null,
+          supplier_name || null,
+          supplier_contact || null,
+          status || 'active',
+          notes || null,
+        ]
+      );
+    }
 
     // Log initial stock creation in history
     if (quantity && quantity > 0) {
@@ -182,30 +225,60 @@ export const updateStock: RequestHandler = async (req, res) => {
       supplier_contact,
       status,
       notes,
+      images,
     } = req.body;
 
-    const result = await pool.query(
-      `UPDATE client_stock_products SET
-        name = COALESCE($1, name),
-        sku = COALESCE($2, sku),
-        description = COALESCE($3, description),
-        category = COALESCE($4, category),
-        unit_price = COALESCE($5, unit_price),
-        reorder_level = COALESCE($6, reorder_level),
-        location = COALESCE($7, location),
-        supplier_name = COALESCE($8, supplier_name),
-        supplier_contact = COALESCE($9, supplier_contact),
-        status = COALESCE($10, status),
-        notes = COALESCE($11, notes),
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = $12 AND client_id = $13
-      RETURNING *`,
-      [
-        name, sku, description, category, unit_price,
-        reorder_level, location, supplier_name, supplier_contact,
-        status, notes, id, clientId
-      ]
-    );
+    let result;
+    try {
+      // Try with images column
+      result = await pool.query(
+        `UPDATE client_stock_products SET
+          name = COALESCE($1, name),
+          sku = COALESCE($2, sku),
+          description = COALESCE($3, description),
+          category = COALESCE($4, category),
+          unit_price = COALESCE($5, unit_price),
+          reorder_level = COALESCE($6, reorder_level),
+          location = COALESCE($7, location),
+          supplier_name = COALESCE($8, supplier_name),
+          supplier_contact = COALESCE($9, supplier_contact),
+          status = COALESCE($10, status),
+          notes = COALESCE($11, notes),
+          images = CASE WHEN $14 IS NOT NULL THEN $14 ELSE images END,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = $12 AND client_id = $13
+        RETURNING *`,
+        [
+          name, sku, description, category, unit_price,
+          reorder_level, location, supplier_name, supplier_contact,
+          status, notes, id, clientId, Array.isArray(images) ? images : null
+        ]
+      );
+    } catch (e) {
+      // If images column doesn't exist, retry without it
+      result = await pool.query(
+        `UPDATE client_stock_products SET
+          name = COALESCE($1, name),
+          sku = COALESCE($2, sku),
+          description = COALESCE($3, description),
+          category = COALESCE($4, category),
+          unit_price = COALESCE($5, unit_price),
+          reorder_level = COALESCE($6, reorder_level),
+          location = COALESCE($7, location),
+          supplier_name = COALESCE($8, supplier_name),
+          supplier_contact = COALESCE($9, supplier_contact),
+          status = COALESCE($10, status),
+          notes = COALESCE($11, notes),
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = $12 AND client_id = $13
+        RETURNING *`,
+        [
+          name, sku, description, category, unit_price,
+          reorder_level, location, supplier_name, supplier_contact,
+          status, notes, id, clientId
+        ]
+      );
+    }
 
     res.json(result.rows[0]);
   } catch (error: any) {

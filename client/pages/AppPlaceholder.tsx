@@ -84,11 +84,11 @@ export default function AppPlaceholder() {
       <div className="absolute inset-0 bg-black/40 z-0" />
       <div className="relative z-10 w-full max-w-4xl mx-auto p-10 rounded-2xl shadow-2xl border border-purple-900 bg-black/40 backdrop-blur-lg" style={{boxShadow:'0 8px 32px 0 rgba(31, 38, 135, 0.37)'}}>
           {/* Header */}
-          <div className="flex items-start justify-between mb-8">
+          <div className="flex items-start justify-between mb-4 md:mb-6">
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <ShieldCheck className="w-10 h-10 text-purple-400 drop-shadow-glow" />
-                <h1 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-purple-400 via-fuchsia-600 to-indigo-500 bg-clip-text text-transparent drop-shadow-glow">
+                <h1 className="text-2xl md:text-xl md:text-2xl font-extrabold tracking-tight bg-gradient-to-r from-purple-400 via-fuchsia-600 to-indigo-500 bg-clip-text text-transparent drop-shadow-glow">
                   Platform Admin Control
                 </h1>
               </div>
@@ -117,7 +117,7 @@ export default function AppPlaceholder() {
           </Card>
 
           {/* Platform Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-4 mb-6">
             <Card className="bg-black/60 border-purple-900/30">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-purple-200">Total Vendors</CardTitle>
@@ -164,7 +164,7 @@ export default function AppPlaceholder() {
           </div>
 
           {/* Admin Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
             <Card className="bg-black/60 border-purple-900/30">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-purple-200">

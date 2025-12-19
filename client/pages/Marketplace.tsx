@@ -313,7 +313,7 @@ export default function Marketplace() {
         </div>
       </div>
       <div className="flex-1 flex overflow-hidden w-full">
-        <div className={`container mx-auto px-4 py-4 flex ${sidebarOpen ? 'gap-6' : 'gap-0'}`}>
+        <div className={`container mx-auto px-4 py-4 flex ${sidebarOpen ? 'gap-3 md:gap-4' : 'gap-0'}`}>
           {/* Sidebar - Always in DOM, slides in/out */}
           <aside className={`
               flex-shrink-0 transition-all duration-300 ease-in-out overflow-y-auto
@@ -433,7 +433,7 @@ export default function Marketplace() {
               sidebarOpen ? 'lg:grid-cols-4' : 'lg:grid-cols-5'
             }`}>
               {error && (
-                <div className="col-span-full text-center py-8 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                <div className="col-span-full text-center py-4 md:py-6 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
                   <p className="text-red-800 dark:text-red-200 font-medium">❌ {error}</p>
                   <button 
                     onClick={() => loadProducts(1)}
@@ -444,11 +444,11 @@ export default function Marketplace() {
                 </div>
               )}
               {loading && products.length === 0 ? (
-                <div className="col-span-full text-center py-12">
+                <div className="col-span-full text-center py-6 md:py-4 md:py-6">
                   <div className="inline-block w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
                 </div>
               ) : products.length === 0 ? (
-                <div className="col-span-full text-center py-12 text-muted-foreground">
+                <div className="col-span-full text-center py-6 md:py-4 md:py-6 text-muted-foreground">
                   No products found. Be the first to{' '}
                   <Link to="/seller/signup" className="text-primary hover:underline">
                     sell on our marketplace
@@ -553,11 +553,11 @@ export default function Marketplace() {
 
             {/* Load More Button */}
             {hasMore && (
-              <div className="mt-8 flex justify-center">
+              <div className="mt-4 md:mt-6 flex justify-center">
                 <Button
                   onClick={loadMore}
                   size="lg"
-                  className="bg-gradient-to-r from-primary via-accent to-neon-blue hover:from-primary/90 hover:via-accent/90 hover:to-neon-blue/90 text-white border-0 futuristic-glow px-8"
+                  className="bg-gradient-to-r from-primary via-accent to-neon-blue hover:from-primary/90 hover:via-accent/90 hover:to-neon-blue/90 text-white border-0 futuristic-glow px-4 md:px-6"
                 >
                   Load More Products
                 </Button>

@@ -8,6 +8,18 @@ export default function BeautyTemplate(props: TemplateProps) {
   const [search, setSearch] = useState('');
   const [routine, setRoutine] = useState('All');
   const [concern, setConcern] = useState('All');
+
+  // Helper functions to save product data and navigate
+  const handleProductClick = (product: any) => {
+    localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
+    navigate(`/product/${product.id}`);
+  };
+
+  const handleBuyClick = (product: any, e?: any) => {
+    if (e) e.stopPropagation();
+    localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
+    navigate(`/checkout/${product.id}`);
+  };
   const [typeFilter, setTypeFilter] = useState('All');
   const [maxPrice, setMaxPrice] = useState(999999);
   const [selectedShadeId, setSelectedShadeId] = useState('s1');
@@ -121,7 +133,7 @@ export default function BeautyTemplate(props: TemplateProps) {
             >
               Beauty store · Full options
             </span>
-            <h2 className="font-serif text-3xl sm:text-4xl font-semibold mt-4 leading-tight">
+            <h2 className="font-serif text-xl md:text-2xl sm:text-2xl md:text-xl md:text-2xl font-semibold mt-4 leading-tight">
               {settings.template_hero_heading || 'A clean, modern beauty store built around routines, concerns and shades'}
             </h2>
             <p className="text-sm mt-3" style={{ color: '#6b7280' }}>
@@ -144,7 +156,7 @@ export default function BeautyTemplate(props: TemplateProps) {
           </div>
 
           {/* Shade finder */}
-          <div className="rounded-3xl p-4 sm:p-5 flex flex-col sm:flex-row gap-4 items-start sm:items-center border" style={{ backgroundColor: '#ffffff', borderColor: '#f3d5dd' }}>
+          <div className="rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row gap-4 items-start sm:items-center border" style={{ backgroundColor: '#ffffff', borderColor: '#f3d5dd' }}>
             <div className="flex-1">
               <div className="text-[11px] tracking-[0.16em] uppercase mb-1" style={{ color: '#9f7a85' }}>
                 Shade finder
@@ -185,7 +197,7 @@ export default function BeautyTemplate(props: TemplateProps) {
 
       {/* MAIN LAYOUT */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-7">
-        <div className="grid grid-cols-1 md:grid-cols-[240px_minmax(0,1fr)] gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-[240px_minmax(0,1fr)] gap-3 md:gap-4">
           {/* FILTERS */}
           <aside className="rounded-2xl border p-4 h-fit" style={{ backgroundColor: '#ffffff', borderColor: '#fce7f3' }}>
             <div className="text-sm font-semibold mb-3">Filters</div>
@@ -294,7 +306,7 @@ export default function BeautyTemplate(props: TemplateProps) {
             </div>
 
             {/* Products grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-4 md:mb-6">
               {filteredProducts.map((p: any) => (
                 <div
                   key={p.id}
@@ -346,7 +358,7 @@ export default function BeautyTemplate(props: TemplateProps) {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/checkout/${p.slug}` : `/checkout/${p.id}`);
+                          navigate(`/checkout/${p.id}`);
                         }}
                         className="text-[11px] px-3 py-1 rounded-full font-semibold text-white"
                         style={{ backgroundColor: '#111827' }}
@@ -470,7 +482,7 @@ export default function BeautyTemplate(props: TemplateProps) {
                 style={{ backgroundColor: '#111827', color: '#f9fafb' }}
                 onClick={() => {
                   setQuickViewProduct(null);
-                  navigate(quickViewProduct.slug && quickViewProduct.slug.length > 0 ? `/store/${storeSlug}/checkout/${quickViewProduct.slug}` : `/checkout/${quickViewProduct.id}`);
+                  navigate(`/checkout/${quickViewProduct.id}`);
                 }}
               >
                 Buy Now

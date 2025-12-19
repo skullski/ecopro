@@ -28,10 +28,21 @@ export default function BabyTemplate(props: TemplateProps) {
   const heroHighlight = products[0];
 
   const ProductCard = ({ product }: { product: any }) => {
+    const handleProductClick = () => {
+      localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
+      navigate(`/product/${product.id}`);
+    };
+
+    const handleBuyClick = (e: any) => {
+      e.stopPropagation();
+      localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
+      navigate(`/checkout/${product.id}`);
+    };
+
     return (
       <div 
         className="bg-white rounded-[22px] p-2.5 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer flex flex-col"
-        onClick={() => navigate(product.slug && product.slug.length > 0 ? `/store/${storeSlug}/${product.slug}` : `/product/${product.id}`)}
+        onClick={handleProductClick}
       >
         <img 
           src={product.images?.[0] || 'https://via.placeholder.com/300x210'} 
@@ -60,10 +71,7 @@ export default function BabyTemplate(props: TemplateProps) {
               {props.formatPrice(product.price)}
             </span>
             <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(product.slug && product.slug.length > 0 ? `/store/${storeSlug}/checkout/${product.slug}` : `/checkout/${product.id}`);
-              }} 
+              onClick={handleBuyClick}
               className="text-[11px] uppercase tracking-wider text-white font-semibold px-4 py-2 rounded-full bg-green-600 hover:bg-green-700"
             >
               Buy Now
@@ -111,7 +119,7 @@ export default function BabyTemplate(props: TemplateProps) {
       <div className="page-shell">
         {/* HEADER */}
         <header className="flex items-center justify-between mb-6">
-          <div className="text-5xl font-black tracking-[0.2em] text-amber-500">
+          <div className="text-xl md:text-2xl md:text-2xl md:text-xl md:text-2xl font-black tracking-[0.2em] text-amber-500">
             {storeName}
           </div>
           <div className="flex items-center gap-4 text-xs text-gray-500">
@@ -138,7 +146,7 @@ export default function BabyTemplate(props: TemplateProps) {
               <span>•</span>
               <span>Soft & Playful</span>
             </div>
-            <h1 className="text-4xl leading-tight font-bold text-gray-900">
+            <h1 className="text-2xl md:text-xl md:text-2xl leading-tight font-bold text-gray-900">
               A soft, modern universe<br />for every little moment.
             </h1>
             <p className="text-sm text-gray-600 max-w-md">
@@ -182,7 +190,7 @@ export default function BabyTemplate(props: TemplateProps) {
         </section>
 
         {/* CATEGORY FILTERS */}
-        <section className="mb-8">
+        <section className="mb-4 md:mb-6">
           <div className="text-xs uppercase tracking-widest text-gray-400 font-semibold mb-2">
             Browse by category
           </div>
@@ -205,8 +213,8 @@ export default function BabyTemplate(props: TemplateProps) {
         </section>
 
         {/* FEATURED SECTION */}
-        <section className="bg-gradient-to-br from-blue-100/75 to-yellow-50/85 rounded-3xl p-5 mb-10">
-          <div className="grid md:grid-cols-[0.9fr,1.1fr] gap-6 items-center">
+        <section className="bg-gradient-to-br from-blue-100/75 to-yellow-50/85 rounded-2xl p-5 mb-10">
+          <div className="grid md:grid-cols-[0.9fr,1.1fr] gap-3 md:gap-4 items-center">
             <div className="space-y-3">
               <div className="text-xs uppercase tracking-widest text-gray-400 font-semibold">
                 Soft & snuggly picks
@@ -243,11 +251,11 @@ export default function BabyTemplate(props: TemplateProps) {
           </div>
 
           {filteredProducts.length === 0 ? (
-            <div className="text-center py-12">
+            <div className="text-center py-6 md:py-4 md:py-6">
               <p className="text-gray-500">No items in this category</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
               {filteredProducts.map((product: any) => (
                 <ProductCard key={product.id} product={product} />
               ))}
@@ -256,7 +264,7 @@ export default function BabyTemplate(props: TemplateProps) {
         </section>
 
         {/* FOOTER */}
-        <footer className="text-xs text-gray-500 mt-8 border-t border-gray-200 pt-4">
+        <footer className="text-xs text-gray-500 mt-4 md:mt-6 border-t border-gray-200 pt-4">
           <div className="flex flex-col sm:flex-row justify-between gap-3">
             <span>
               © {new Date().getFullYear()} {storeName} · Modern Baby Store

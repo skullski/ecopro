@@ -60,9 +60,9 @@ export default function BaseTemplateSettings({
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6 space-y-6">
+    <div className="max-w-2xl mx-auto p-6 space-y-3 md:space-y-4">
       <div>
-        <h1 className="text-3xl font-bold mb-2">{templateName} Settings</h1>
+        <h1 className="text-xl md:text-2xl font-bold mb-2">{templateName} Settings</h1>
         <p className="text-gray-600">Customize the appearance and text of your storefront.</p>
       </div>
 

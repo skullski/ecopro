@@ -65,7 +65,7 @@ export function GradientCard({
   return (
     <div
       className={cn(
-        "relative rounded-xl bg-gradient-to-br border-2 p-4 shadow-xl overflow-hidden transition-all",
+        "relative rounded-lg bg-gradient-to-br border-2 p-3 shadow-lg overflow-hidden transition-all",
         theme?.from || from,
         theme?.to || to,
         theme?.border || border,
@@ -76,19 +76,19 @@ export function GradientCard({
     >
       {/* subtle glossy shine */}
       <div className="pointer-events-none absolute inset-0 opacity-10 dark:opacity-7">
-        <div className="absolute -top-10 left-0 right-0 h-20 bg-gradient-to-b from-white to-transparent dark:from-white/6 blur-md"></div>
-        <div className="absolute -bottom-10 left-0 right-0 h-20 bg-gradient-to-t from-white to-transparent dark:from-white/4 blur-md"></div>
+        <div className="absolute -top-8 left-0 right-0 h-16 bg-gradient-to-b from-white to-transparent dark:from-white/6 blur-md"></div>
+        <div className="absolute -bottom-8 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent dark:from-white/4 blur-md"></div>
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         {icon && (
-          <div className={cn("p-3 rounded-lg", theme?.iconBg || iconBg)}>
+          <div className={cn("p-2 rounded-lg", theme?.iconBg || iconBg)}>
             {icon}
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <div className={cn("text-sm text-muted-foreground truncate", titleClassName)}>{title}</div>
+          <div className={cn("text-xs text-muted-foreground truncate", titleClassName)}>{title}</div>
           {value !== undefined && (
-            <div className={cn("text-2xl font-bold", theme?.value || valueClassName, "dark:text-white")}>{value}</div>
+            <div className={cn("text-lg md:text-xl font-bold", theme?.value || valueClassName, "dark:text-white")}>{value}</div>
           )}
         </div>
       </div>

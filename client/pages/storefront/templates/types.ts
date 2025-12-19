@@ -3,6 +3,7 @@ import { Dispatch, SetStateAction } from 'react';
 export interface StoreProduct {
   id: number;
   title: string;
+  name?: string; // Alias for title
   description?: string;
   price: number;
   original_price?: number;
@@ -12,12 +13,15 @@ export interface StoreProduct {
   is_featured: boolean;
   slug: string;
   views: number;
+  seller_name?: string;
+  short_spec?: string;
 }
 
 export interface StoreSettings {
   store_name?: string;
   store_description?: string;
   store_logo?: string;
+  store_city?: string;
   primary_color?: string;
   secondary_color?: string;
   template?: string;

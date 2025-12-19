@@ -311,15 +311,15 @@ export default function SellerDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-4 md:py-6">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">My Products</h1>
-          <p className="text-muted-foreground">Manage your marketplace listings and track sales</p>
+        <div className="mb-4">
+          <h1 className="text-2xl font-bold mb-1">My Products</h1>
+          <p className="text-xs md:text-sm text-muted-foreground">Manage your marketplace listings and track sales</p>
         </div>
 
         {/* Stats with standardized vibrant presets */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 mb-4">
           <GradientCard
             title="Total Products"
             value={products.length}
@@ -374,12 +374,12 @@ export default function SellerDashboard() {
 
         {/* Add/Edit Product Form */}
         {showAddProduct && (
-          <div className="bg-card rounded-xl border p-6 shadow-lg mb-8" style={{ boxShadow: '0 10px 40px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08)' }}>
+          <div className="bg-card rounded-xl border p-6 shadow-lg mb-4 md:mb-6" style={{ boxShadow: '0 10px 40px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08)' }}>
             <h2 className="text-xl font-bold mb-4">
               {editingProduct ? 'Edit Product' : 'Add New Product'}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div>
                   <label className="text-sm font-medium mb-2 block">Product Title*</label>
                   <Input
@@ -490,7 +490,7 @@ export default function SellerDashboard() {
                 
                 {/* Image Preview Grid */}
                 {formData.images.length > 0 && (
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-3">
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 mb-2">
                     {formData.images.map((image, index) => (
                       <div key={index} className="relative group aspect-square">
                         <img
@@ -572,12 +572,12 @@ export default function SellerDashboard() {
           </div>
 
           {products.length === 0 ? (
-            <div className="p-12 text-center text-muted-foreground">
-              <Package className="w-16 h-16 mx-auto mb-4 opacity-20" />
-              <p>No products yet. Add your first product to get started!</p>
+            <div className="p-6 md:p-6 text-center text-muted-foreground">
+              <Package className="w-12 md:w-16 h-12 md:h-16 mx-auto mb-3 opacity-20" />
+              <p className="text-sm md:text-base">No products yet. Add your first product to get started!</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-3 p-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 p-3">
               {products.map((product) => (
                 <div key={product.id} className="bg-card border rounded-lg overflow-hidden transition-all group" style={{ boxShadow: '0 4px 16px rgba(0, 0, 0, 0.08)' }} onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 12px 32px rgba(0, 0, 0, 0.15)'} onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.08)'}>
                   {/* Product Image */}
@@ -653,15 +653,15 @@ export default function SellerDashboard() {
         </div>
 
         {/* Orders Section */}
-        <div className="bg-card rounded-xl border mt-8" style={{ boxShadow: '0 10px 40px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08)' }}>
+        <div className="bg-card rounded-xl border mt-4 md:mt-6" style={{ boxShadow: '0 10px 40px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08)' }}>
           <div className="p-6 border-b">
             <h2 className="text-xl font-bold">Incoming Orders</h2>
           </div>
 
           {orders.length === 0 ? (
-            <div className="p-12 text-center text-muted-foreground">
-              <Package className="w-16 h-16 mx-auto mb-4 opacity-20" />
-              <p>No orders yet.</p>
+            <div className="p-6 md:p-6 text-center text-muted-foreground">
+              <Package className="w-12 md:w-16 h-12 md:h-16 mx-auto mb-3 opacity-20" />
+              <p className="text-sm md:text-base">No orders yet.</p>
             </div>
           ) : (
             <div className="divide-y">

@@ -7,10 +7,10 @@ export default function Footer() {
 
   return (
     <footer className="border-t bg-background">
-      <div className="container mx-auto py-8">
+      <div className="container mx-auto py-4 md:py-6">
         <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
           <p className="text-sm text-muted-foreground">{text}</p>
-          <nav className="flex items-center gap-6 text-sm">
+          <nav className="flex items-center gap-3 md:gap-4 text-sm">
             <a href="/#مزايا" className="text-foreground/70 hover:text-foreground">المزايا</a>
             <a href="/#البنية" className="text-foreground/70 hover:text-foreground">البنية</a>
             <a href="/#الأسعار" className="text-foreground/70 hover:text-foreground">الأسعار</a>

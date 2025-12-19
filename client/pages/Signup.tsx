@@ -35,13 +35,13 @@ export default function Signup() {
       <FloatingShapes variant="section" colors="warm" />
       
       <div className="relative z-10 mx-auto max-w-md w-full">
-        <div className="rounded-3xl border-2 border-accent/20 bg-gradient-to-br from-card via-card to-accent/5 p-10 shadow-2xl backdrop-blur-sm">
+        <div className="rounded-2xl border-2 border-accent/20 bg-gradient-to-br from-card via-card to-accent/5 p-10 shadow-2xl backdrop-blur-sm">
           {/* Header */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-4 md:mb-6">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-accent to-orange-500 mb-4 shadow-lg">
               <UserPlus className="w-8 h-8 text-white" />
             </div>
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-accent to-orange-600 bg-clip-text text-transparent">
+            <h2 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-accent to-orange-600 bg-clip-text text-transparent">
               {t("signup") || "Sign up"}
             </h2>
             <p className="text-sm text-muted-foreground mt-2 flex items-center justify-center gap-1">
@@ -56,7 +56,7 @@ export default function Signup() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4">
             <div>
               <label className="block text-sm font-medium mb-2 flex items-center gap-2">
                 <User className="w-4 h-4 text-accent" />

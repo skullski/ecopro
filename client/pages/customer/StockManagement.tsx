@@ -50,6 +50,7 @@ interface StockItem {
   status: 'active' | 'discontinued' | 'out_of_stock';
   notes?: string;
   is_low_stock?: boolean;
+  images?: string[];
   created_at: string;
   updated_at: string;
 }
@@ -88,6 +89,7 @@ export default function StockManagement() {
   
   // Form state
   const [formData, setFormData] = useState<Partial<StockItem>>({});
+  const [uploading, setUploading] = useState(false);
   const [adjustData, setAdjustData] = useState({
     adjustment: 0,
     reason: 'adjustment',
@@ -116,7 +118,12 @@ export default function StockManagement() {
 
   const loadStock = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      if (!token) {
+        console.error('No auth token found');
+        setLoading(false);
+        return;
+      }
       const res = await fetch('/api/client/stock', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -133,7 +140,11 @@ export default function StockManagement() {
 
   const loadCategories = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      if (!token) {
+        console.error('No auth token found');
+        return;
+      }
       const res = await fetch('/api/client/stock/categories', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -177,9 +188,104 @@ export default function StockManagement() {
     setFilteredStock(filtered);
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    console.log('Starting image upload:', file.name, file.size, file.type);
+
+    // Validate file size (2MB max)
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Image must be less than 2MB');
+      e.target.value = '';
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      e.target.value = '';
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+      console.log('Token present:', !!token);
+      
+      if (!token) {
+        alert('Not authenticated. Please log in again.');
+        setUploading(false);
+        return;
+      }
+      
+      const uploadFormData = new FormData();
+      uploadFormData.append('image', file);
+
+      console.log('Uploading to /api/upload...');
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: uploadFormData
+      });
+
+      console.log('Upload response status:', res.status, res.statusText);
+      console.log('Response headers:', Object.fromEntries(res.headers.entries()));
+
+      // Get response text first
+      const responseText = await res.text();
+      console.log('Response text:', responseText);
+
+      if (!res.ok) {
+        console.error('Upload failed with status:', res.status);
+        try {
+          const error = JSON.parse(responseText);
+          alert(`Upload failed: ${error.error || 'Unknown error'}`);
+        } catch {
+          alert(`Upload failed: ${res.statusText} - ${responseText}`);
+        }
+        e.target.value = '';
+        return;
+      }
+
+      // Parse JSON only if we have content
+      if (responseText) {
+        try {
+          const data = JSON.parse(responseText);
+          console.log('Upload successful, URL:', data.url);
+          const fullUrl = `${window.location.origin}${data.url}`;
+          setFormData(prev => ({ ...prev, images: [fullUrl] }));
+          e.target.value = '';
+          alert('Image uploaded successfully!');
+        } catch (parseErr) {
+          console.error('Failed to parse response:', parseErr);
+          alert('Upload succeeded but failed to parse response');
+          e.target.value = '';
+        }
+      } else {
+        console.error('Empty response from server');
+        alert('Upload succeeded but server returned empty response');
+        e.target.value = '';
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert(`Upload error: ${error instanceof Error ? error.message : 'Failed to upload image'}`);
+      e.target.value = '';
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleCreateStock = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      if (!token) {
+        alert('Not authenticated. Please log in again.');
+        return;
+      }
+      
       const res = await fetch('/api/client/stock', {
         method: 'POST',
         headers: {
@@ -207,7 +313,7 @@ export default function StockManagement() {
     if (!selectedItem) return;
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
       const res = await fetch(`/api/client/stock/${selectedItem.id}`, {
         method: 'PUT',
         headers: {
@@ -236,7 +342,7 @@ export default function StockManagement() {
     if (!selectedItem) return;
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
       const res = await fetch(`/api/client/stock/${selectedItem.id}/adjust`, {
         method: 'POST',
         headers: {
@@ -265,7 +371,7 @@ export default function StockManagement() {
     if (!selectedItem) return;
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
       const res = await fetch(`/api/client/stock/${selectedItem.id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
@@ -357,91 +463,108 @@ export default function StockManagement() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900/30 p-3 md:p-4">
+      <div className="max-w-7xl mx-auto space-y-2 md:space-y-3">
+        {/* Header with Gradient */}
+        <div className="flex items-center justify-between gap-2 bg-gradient-to-r from-primary/10 to-purple-600/10 dark:from-primary/5 dark:to-purple-600/5 rounded-lg border border-primary/20 p-3">
           <div>
-            <h1 className="text-3xl font-bold">Stock Management</h1>
-            <p className="text-muted-foreground">Manage your inventory and track stock levels</p>
+            <h1 className="text-lg md:text-xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+              📦 Stock Management
+            </h1>
+            <p className="text-muted-foreground text-base font-semibold">Track and optimize your inventory</p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={exportToCSV}>
-              <Download className="w-4 h-4 mr-2" />
-              Export CSV
+          <div className="flex gap-1 md:gap-2">
+            <Button 
+              variant="outline" 
+              onClick={exportToCSV}
+              className="border-primary/30 hover:bg-primary/10 transition-all gap-1 text-sm font-bold py-2 px-3 h-9"
+            >
+              <Download className="w-3 h-3 md:w-4 md:h-4" />
+              <span className="hidden sm:inline">Export</span>
             </Button>
-            <Button onClick={() => {
-              setFormData({});
-              setShowAddModal(true);
-            }}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Product
+            <Button 
+              onClick={() => {
+                setFormData({});
+                setShowAddModal(true);
+              }}
+              className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all gap-1 text-base font-bold py-2 px-4 h-10"
+            >
+              <Plus className="w-3 h-3 md:w-4 md:h-4" />
+              <span className="hidden sm:inline">Add</span>
             </Button>
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-card rounded-lg border p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Items</p>
-                <p className="text-2xl font-bold">{stock.length}</p>
+        {/* Stats Cards with Gradients - Compact */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
+          <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 dark:from-blue-900/20 dark:to-blue-900/5 rounded border border-blue-500/30 p-2 md:p-3 hover:border-blue-500/50 transition-all hover:shadow-md">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground font-medium truncate">📦 Items</p>
+                <p className="text-lg md:text-xl font-bold text-blue-600 dark:text-blue-400">{stock.length}</p>
               </div>
-              <Package className="w-8 h-8 text-blue-500" />
+              <div className="bg-blue-500/20 dark:bg-blue-500/10 p-2 rounded flex-shrink-0">
+                <Package className="w-4 h-4 md:w-5 md:h-5 text-blue-500" />
+              </div>
             </div>
           </div>
 
-          <div className="bg-card rounded-lg border p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Low Stock Alerts</p>
-                <p className="text-2xl font-bold text-orange-600">{lowStockCount}</p>
+          <div className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 dark:from-orange-900/20 dark:to-orange-900/5 rounded border border-orange-500/30 p-2 md:p-3 hover:border-orange-500/50 transition-all hover:shadow-md">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground font-medium truncate">⚠️ Low Stock</p>
+                <p className="text-lg md:text-xl font-bold text-orange-600 dark:text-orange-400">{lowStockCount}</p>
               </div>
-              <AlertTriangle className="w-8 h-8 text-orange-500" />
+              <div className="bg-orange-500/20 dark:bg-orange-500/10 p-2 rounded flex-shrink-0">
+                <AlertTriangle className="w-4 h-4 md:w-5 md:h-5 text-orange-500" />
+              </div>
             </div>
           </div>
 
-          <div className="bg-card rounded-lg border p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Value</p>
-                <p className="text-2xl font-bold">${totalValue.toFixed(2)}</p>
+          <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 dark:from-emerald-900/20 dark:to-emerald-900/5 rounded border border-emerald-500/30 p-2 md:p-3 hover:border-emerald-500/50 transition-all hover:shadow-md">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground font-medium truncate">💰 Value</p>
+                <p className="text-lg md:text-xl font-bold text-emerald-600 dark:text-emerald-400">${totalValue.toFixed(0)}</p>
               </div>
-              <BarChart3 className="w-8 h-8 text-green-500" />
+              <div className="bg-emerald-500/20 dark:bg-emerald-500/10 p-2 rounded flex-shrink-0">
+                <BarChart3 className="w-4 h-4 md:w-5 md:h-5 text-emerald-500" />
+              </div>
             </div>
           </div>
 
-          <div className="bg-card rounded-lg border p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Out of Stock</p>
-                <p className="text-2xl font-bold text-red-600">
+          <div className="bg-gradient-to-br from-red-500/10 to-red-600/5 dark:from-red-900/20 dark:to-red-900/5 rounded border border-red-500/30 p-2 md:p-3 hover:border-red-500/50 transition-all hover:shadow-md">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground font-medium truncate">❌ Out Stock</p>
+                <p className="text-lg md:text-xl font-bold text-red-600 dark:text-red-400">
                   {stock.filter(i => i.status === 'out_of_stock').length}
                 </p>
               </div>
-              <PackageX className="w-8 h-8 text-red-500" />
+              <div className="bg-red-500/20 dark:bg-red-500/10 p-2 rounded flex-shrink-0">
+                <PackageX className="w-4 h-4 md:w-5 md:h-5 text-red-500" />
+              </div>
             </div>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="bg-card rounded-lg border p-4">
-          <div className="flex flex-wrap gap-4">
-            <div className="flex-1 min-w-[200px]">
+        <div className="bg-gradient-to-r from-primary/5 to-purple-600/5 dark:from-slate-800/50 dark:to-slate-800/30 rounded border border-primary/20 p-2 md:p-3 backdrop-blur-sm">
+          <div className="flex flex-col md:flex-row gap-2">
+            <div className="flex-1 min-w-[150px]">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 md:w-4 md:h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by name, SKU, or description..."
+                  placeholder="Search..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
+                  className="pl-8 border-primary/30 focus:border-primary/60 transition-colors h-9 text-base"
                 />
               </div>
             </div>
 
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full md:w-[140px] border-primary/30 focus:border-primary/60 h-8 text-sm">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
@@ -453,13 +576,13 @@ export default function StockManagement() {
             </Select>
 
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full md:w-[140px] border-primary/30 focus:border-primary/60 h-9 text-base font-semibold">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="all">All</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="out_of_stock">Out of Stock</SelectItem>
+                <SelectItem value="out_of_stock">Out Stock</SelectItem>
                 <SelectItem value="discontinued">Discontinued</SelectItem>
               </SelectContent>
             </Select>
@@ -467,83 +590,108 @@ export default function StockManagement() {
             <Button
               variant={showLowStock ? 'default' : 'outline'}
               onClick={() => setShowLowStock(!showLowStock)}
+              className={showLowStock ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg' : 'border-primary/30 hover:bg-primary/10'}
+              size="sm"
             >
-              <Filter className="w-4 h-4 mr-2" />
-              Low Stock Only
+              <Filter className="w-3 h-3 md:w-4 md:h-4" />
+              <span className="hidden md:inline ml-1 text-xs">Low</span>
             </Button>
 
-            <Button variant="outline" onClick={loadStock}>
-              <RefreshCw className="w-4 h-4" />
+            <Button 
+              variant="outline" 
+              onClick={loadStock}
+              className="border-primary/30 hover:bg-primary/10"
+              size="sm"
+            >
+              <RefreshCw className="w-3 h-3 md:w-4 md:h-4" />
             </Button>
           </div>
         </div>
 
         {/* Stock Table */}
-        <div className="bg-card rounded-lg border">
+        <div className="bg-gradient-to-br from-background to-primary/5 dark:from-slate-900/50 dark:to-slate-800/30 rounded border border-primary/20 overflow-hidden shadow">
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="border-b bg-muted/50">
+            <table className="w-full text-base font-semibold">
+              <thead className="bg-gradient-to-r from-primary/15 to-purple-600/15 dark:from-primary/10 dark:to-purple-600/10 border-b border-primary/20">
                 <tr>
-                  <th className="text-left p-4 font-medium">Product</th>
-                  <th className="text-left p-4 font-medium">SKU</th>
-                  <th className="text-left p-4 font-medium">Category</th>
-                  <th className="text-right p-4 font-medium">Quantity</th>
-                  <th className="text-right p-4 font-medium">Unit Price</th>
-                  <th className="text-left p-4 font-medium">Location</th>
-                  <th className="text-left p-4 font-medium">Status</th>
-                  <th className="text-right p-4 font-medium">Actions</th>
+                <th className="text-left p-2 md:p-3 font-bold text-primary dark:text-primary/90 text-base">Product</th>
+                <th className="text-left p-2 md:p-3 font-bold text-primary dark:text-primary/90 text-base">SKU</th>
+                <th className="text-left p-2 md:p-3 font-bold text-primary dark:text-primary/90 text-base">Category</th>
+                <th className="text-right p-2 md:p-3 font-bold text-primary dark:text-primary/90 text-base">Qty</th>
+                <th className="text-right p-2 md:p-3 font-bold text-primary dark:text-primary/90 text-base">Price</th>
+                <th className="text-right p-2 md:p-3 font-bold text-primary dark:text-primary/90 text-base">Location</th>
+                <th className="text-right p-2 md:p-3 font-bold text-primary dark:text-primary/90 text-base">Actions</th>
+                  <th className="text-right p-2 md:p-3 font-semibold text-primary dark:text-primary/90">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredStock.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="text-center py-12 text-muted-foreground">
-                      {searchQuery || categoryFilter !== 'all' || statusFilter !== 'all'
-                        ? 'No products match your filters'
-                        : 'No stock items yet. Add your first product!'}
+                    <td colSpan={8} className="text-center py-4 md:py-6 text-muted-foreground">
+                      <Package className="w-6 h-6 mx-auto opacity-50 mb-2" />
+                      <p className="text-base font-semibold">
+                        {searchQuery || categoryFilter !== 'all' || statusFilter !== 'all'
+                          ? 'No products match your filters'
+                          : 'No stock items yet'}
+                      </p>
                     </td>
                   </tr>
                 ) : (
                   filteredStock.map(item => (
-                    <tr key={item.id} className="border-b hover:bg-muted/50">
-                      <td className="p-4">
-                        <div>
-                          <p className="font-medium">{item.name}</p>
-                          {item.is_low_stock && (
-                            <Badge variant="destructive" className="mt-1">
-                              <AlertTriangle className="w-3 h-3 mr-1" />
-                              Low Stock
-                            </Badge>
+                    <tr key={item.id} className="border-b border-primary/10 hover:bg-primary/10 dark:hover:bg-primary/5 transition-colors">
+                      <td className="p-2 md:p-3">
+                        <div className="flex items-center gap-2">
+                          {item.images?.[0] ? (
+                            <div className="w-12 h-12 rounded-md overflow-hidden flex-shrink-0">
+                              <img
+                                src={item.images[0]}
+                                alt={item.name}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-12 h-12 rounded-md bg-muted/40 flex items-center justify-center flex-shrink-0 text-xs text-muted-foreground">
+                              📦
+                            </div>
                           )}
+                          <div>
+                            <p className="font-bold text-base truncate">{item.name}</p>
+                            {item.is_low_stock && (
+                              <Badge className="mt-0.5 bg-orange-500/20 text-orange-600 dark:text-orange-400 border-orange-500/30 text-xs py-0">
+                                <AlertTriangle className="w-2 h-2 md:w-3 md:h-3 mr-1" />
+                                Low
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </td>
-                      <td className="p-4 text-muted-foreground">{item.sku || '-'}</td>
-                      <td className="p-4">
+                      <td className="p-2 md:p-3 text-muted-foreground text-sm font-mono">{item.sku || '-'}</td>
+                      <td className="p-2 md:p-3">
                         {item.category && (
-                          <Badge variant="outline">{item.category}</Badge>
+                          <Badge variant="outline" className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30 text-xs py-0">{item.category}</Badge>
                         )}
                       </td>
-                      <td className="p-4 text-right">
-                        <span className={item.is_low_stock ? 'text-orange-600 font-bold' : ''}>
+                      <td className="p-2 md:p-3 text-right font-semibold">
+                        <span className={item.is_low_stock ? 'text-orange-600 dark:text-orange-400' : 'text-emerald-600 dark:text-emerald-400'}>
                           {item.quantity}
                         </span>
-                        <span className="text-xs text-muted-foreground ml-1">
-                          / {item.reorder_level}
+                        <span className="text-xs text-muted-foreground ml-1 block md:inline">
+                          /{item.reorder_level}
                         </span>
                       </td>
-                      <td className="p-4 text-right">
-                        {item.unit_price ? `$${item.unit_price.toFixed(2)}` : '-'}
+                      <td className="p-2 md:p-3 text-right font-medium text-sm">
+                        {item.unit_price ? `$${Number(item.unit_price).toFixed(2)}` : '-'}
                       </td>
-                      <td className="p-4 text-muted-foreground">{item.location || '-'}</td>
-                      <td className="p-4">
+                      <td className="p-2 md:p-3 text-muted-foreground text-sm truncate">{item.location || '-'}</td>
+                      <td className="p-2 md:p-3">
                         <Badge 
-                          variant={
-                            item.status === 'active' ? 'default' :
-                            item.status === 'out_of_stock' ? 'destructive' :
-                            'secondary'
-                          }
+                          className={`text-xs py-0 ${
+                            item.status === 'active' ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' :
+                            item.status === 'out_of_stock' ? 'bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/30' :
+                            'bg-gray-500/20 text-gray-600 dark:text-gray-400 border-gray-500/30'
+                          }`}
                         >
-                          {item.status}
+                          {item.status === 'active' ? '✅' : item.status === 'out_of_stock' ? '❌' : '⏸️'}
                         </Badge>
                       </td>
                       <td className="p-4">
@@ -600,166 +748,252 @@ export default function StockManagement() {
           setSelectedItem(null);
         }
       }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{showAddModal ? 'Add New Product' : 'Edit Product'}</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-background via-background to-primary/5 dark:from-slate-950 dark:to-slate-900/30 p-3 md:p-4">
+          <DialogHeader className="space-y-1 pb-2 md:pb-3 border-b border-border/50">
+            <DialogTitle className="text-lg md:text-xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+              {showAddModal ? '➕ Add New Product' : '✏️ Edit Product'}
+            </DialogTitle>
+            <DialogDescription className="text-base font-semibold">
               {showAddModal ? 'Add a new item to your stock inventory' : 'Update product information'}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Product Name *</Label>
-                <Input
-                  id="name"
-                  value={formData.name || ''}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Enter product name"
-                />
-              </div>
+          <div className="grid gap-2 md:gap-3 py-2 md:py-3">
+            <div className="space-y-2 bg-primary/5 dark:bg-slate-800/30 p-2 md:p-3 rounded border border-primary/20">
+              <h3 className="text-lg font-bold text-primary flex items-center gap-2">
+                📋 Basic Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="name" className="text-base font-bold">Product Name</Label>
+                  <Input
+                    id="name"
+                    value={formData.name || ''}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Product name"
+                    className="border-primary/30 focus:border-primary/60 transition-colors h-9 text-base"
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="sku">SKU</Label>
-                <Input
-                  id="sku"
-                  value={formData.sku || ''}
-                  onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                  placeholder="Product SKU"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description || ''}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Product description"
-                rows={3}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <Input
-                  id="category"
-                  value={formData.category || ''}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  placeholder="e.g., Electronics"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="location">Location</Label>
-                <Input
-                  id="location"
-                  value={formData.location || ''}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  placeholder="Storage location"
-                />
+                <div className="space-y-1">
+                  <Label htmlFor="sku" className="text-base font-bold">SKU</Label>
+                  <Input
+                    id="sku"
+                    value={formData.sku || ''}
+                    onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                    placeholder="Product SKU"
+                    className="border-primary/30 focus:border-primary/60 transition-colors h-9 text-base"
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-2 bg-blue-500/5 dark:bg-blue-900/10 p-2 md:p-3 rounded border border-blue-500/20">
+              <h3 className="text-lg font-bold text-blue-600 dark:text-blue-400 flex items-center gap-2">
+                📝 Description & Details
+              </h3>
               <div className="space-y-2">
-                <Label htmlFor="quantity">Quantity</Label>
-                <Input
-                  id="quantity"
-                  type="number"
-                  value={formData.quantity || 0}
-                  onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 0 })}
-                  min="0"
-                />
-              </div>
+                <div className="space-y-1">
+                  <Label htmlFor="description" className="text-base font-bold">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description || ''}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Product description"
+                    rows={3}
+                    className="border-blue-500/30 focus:border-blue-500/60 transition-colors resize-none text-base"
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="unit_price">Unit Price</Label>
-                <Input
-                  id="unit_price"
-                  type="number"
-                  step="0.01"
-                  value={formData.unit_price || ''}
-                  onChange={(e) => setFormData({ ...formData, unit_price: parseFloat(e.target.value) || undefined })}
-                  min="0"
-                />
-              </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="category" className="text-base font-bold">Category</Label>
+                    <Input
+                      id="category"
+                      value={formData.category || ''}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      placeholder="e.g., Electronics"
+                      className="border-blue-500/30 focus:border-blue-500/60 transition-colors h-9 text-base"
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="reorder_level">Reorder Level</Label>
-                <Input
-                  id="reorder_level"
-                  type="number"
-                  value={formData.reorder_level || 10}
-                  onChange={(e) => setFormData({ ...formData, reorder_level: parseInt(e.target.value) || 10 })}
-                  min="0"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="supplier_name">Supplier Name</Label>
-                <Input
-                  id="supplier_name"
-                  value={formData.supplier_name || ''}
-                  onChange={(e) => setFormData({ ...formData, supplier_name: e.target.value })}
-                  placeholder="Supplier name"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="supplier_contact">Supplier Contact</Label>
-                <Input
-                  id="supplier_contact"
-                  value={formData.supplier_contact || ''}
-                  onChange={(e) => setFormData({ ...formData, supplier_contact: e.target.value })}
-                  placeholder="Email or phone"
-                />
+                  <div className="space-y-1">
+                    <Label htmlFor="location" className="text-base font-bold">📍 Location</Label>
+                    <Input
+                      id="location"
+                      value={formData.location || ''}
+                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                      placeholder="e.g., Warehouse A"
+                      className="border-blue-500/30 focus:border-blue-500/60 transition-colors h-9 text-base"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={formData.status || 'active'}
-                onValueChange={(value: any) => setFormData({ ...formData, status: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="discontinued">Discontinued</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="space-y-2 bg-emerald-500/5 dark:bg-emerald-900/10 p-2 md:p-3 rounded border border-emerald-500/20">
+              <h3 className="text-lg font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+                📦 Inventory & Pricing
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="quantity" className="text-base font-bold">📊 Quantity</Label>
+                  <Input
+                    id="quantity"
+                    type="number"
+                    value={formData.quantity || 0}
+                    onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 0 })}
+                    min="0"
+                    className="border-emerald-500/30 focus:border-emerald-500/60 transition-colors h-9 text-base"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="unit_price" className="text-base font-bold">💰 Unit Price</Label>
+                  <Input
+                    id="unit_price"
+                    type="number"
+                    step="0.01"
+                    value={formData.unit_price || ''}
+                    onChange={(e) => setFormData({ ...formData, unit_price: parseFloat(e.target.value) || undefined })}
+                    min="0"
+                    className="border-emerald-500/30 focus:border-emerald-500/60 transition-colors h-9 text-base"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="reorder_level" className="text-base font-bold">⚠️ Reorder Level</Label>
+                  <Input
+                    id="reorder_level"
+                    type="number"
+                    value={formData.reorder_level || 10}
+                    onChange={(e) => setFormData({ ...formData, reorder_level: parseInt(e.target.value) || 10 })}
+                    min="0"
+                    className="border-emerald-500/30 focus:border-emerald-500/60 transition-colors h-9 text-base"
+                  />
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                value={formData.notes || ''}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder="Additional notes"
-                rows={2}
-              />
+            <div className="space-y-2 bg-amber-500/5 dark:bg-amber-900/10 p-2 md:p-3 rounded border border-amber-500/20">
+              <h3 className="text-lg font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">
+                🤝 Supplier Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="supplier_name" className="text-base font-bold">Supplier Name</Label>
+                  <Input
+                    id="supplier_name"
+                    value={formData.supplier_name || ''}
+                    onChange={(e) => setFormData({ ...formData, supplier_name: e.target.value })}
+                    placeholder="Supplier name"
+                    className="border-amber-500/30 focus:border-amber-500/60 transition-colors h-9 text-base"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="supplier_contact" className="text-base font-bold">Contact Info</Label>
+                  <Input
+                    id="supplier_contact"
+                    value={formData.supplier_contact || ''}
+                    onChange={(e) => setFormData({ ...formData, supplier_contact: e.target.value })}
+                    placeholder="Email or phone"
+                    className="border-amber-500/30 focus:border-amber-500/60 transition-colors h-9 text-base"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2 bg-indigo-500/5 dark:bg-indigo-900/10 p-2 md:p-3 rounded border border-indigo-500/20">
+              <Label htmlFor="images" className="text-lg font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
+                🖼️ Product Image
+              </Label>
+              <div className="space-y-3">
+                {formData.images?.[0] && (
+                  <div className="relative w-full h-48 border rounded-lg overflow-hidden">
+                    <img
+                      src={formData.images[0]}
+                      alt="Product preview"
+                      className="w-full h-full object-cover"
+                    />
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="absolute top-2 right-2"
+                      onClick={() => setFormData({ ...formData, images: [] })}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                )}
+                <div className="flex flex-col gap-2">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    disabled={uploading}
+                    className="cursor-pointer"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Upload product image (2MB max). Images will appear when you add this stock item to your store.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2 bg-purple-500/5 dark:bg-purple-900/10 p-2 md:p-3 rounded border border-purple-500/20">
+              <h3 className="text-lg font-bold text-purple-600 dark:text-purple-400 flex items-center gap-2">
+                ⚙️ Status & Notes
+              </h3>
+              <div className="space-y-2">
+                <div className="space-y-1">
+                  <Label htmlFor="status" className="text-base font-bold">Status</Label>
+                  <Select
+                    value={formData.status || 'active'}
+                    onValueChange={(value: any) => setFormData({ ...formData, status: value })}
+                  >
+                    <SelectTrigger className="border-purple-500/30 focus:border-purple-500/60 h-9 text-base font-semibold">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">✅ Active</SelectItem>
+                      <SelectItem value="discontinued">❌ Discontinued</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="notes" className="text-base font-bold">📌 Additional Notes</Label>
+                  <Textarea
+                    id="notes"
+                    value={formData.notes || ''}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    placeholder="Add any additional notes or observations..."
+                    rows={3}
+                    className="border-purple-500/30 focus:border-purple-500/60 transition-colors resize-none text-base"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setShowAddModal(false);
-              setShowEditModal(false);
-              setFormData({});
-            }}>
-              Cancel
+          <DialogFooter className="border-t border-border/50 pt-2 md:pt-3 mt-2 gap-2 flex flex-row-reverse">
+            <Button 
+              onClick={showAddModal ? handleCreateStock : handleUpdateStock}
+              className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-700 text-white shadow hover:shadow-md transition-all text-base font-bold h-10"
+            >
+              {showAddModal ? '➕ Add Product' : '💾 Save Changes'}
             </Button>
-            <Button onClick={showAddModal ? handleCreateStock : handleUpdateStock}>
-              {showAddModal ? 'Add Product' : 'Save Changes'}
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowAddModal(false);
+                setShowEditModal(false);
+                setFormData({});
+              }}
+              className="border-muted-foreground/30 hover:bg-muted/50 text-base font-bold h-10"
+            >
+              ❌ Cancel
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -859,7 +1093,7 @@ export default function StockManagement() {
 
           <div className="overflow-y-auto max-h-96">
             {stockHistory.length === 0 ? (
-              <p className="text-center py-8 text-muted-foreground">No history records</p>
+              <p className="text-center py-4 md:py-6 text-muted-foreground">No history records</p>
             ) : (
               <div className="space-y-4">
                 {stockHistory.map((record) => (

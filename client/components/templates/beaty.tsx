@@ -7,6 +7,18 @@ export default function BeautyTemplate(props: TemplateProps) {
   const [wishlist, setWishlist] = useState<number[]>([]);
   const { products = [], settings = {}, categories = [] } = props;
 
+  // Helper functions to save product data and navigate
+  const handleProductClick = (product: any) => {
+    localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
+    navigate(`/product/${product.id}`);
+  };
+
+  const handleBuyClick = (product: any, e?: any) => {
+    if (e) e.stopPropagation();
+    localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
+    navigate(`/checkout/${product.id}`);
+  };
+
   const filteredProducts = products.filter((p: any) => {
     const search = props.searchQuery?.toLowerCase() || '';
     const matchesSearch = !search || p.title?.toLowerCase().includes(search);
@@ -31,9 +43,9 @@ export default function BeautyTemplate(props: TemplateProps) {
         </div>
       </header>
 
-      <section className="bg-gradient-to-br from-pink-100 to-rose-50 py-12">
+      <section className="bg-gradient-to-br from-pink-100 to-rose-50 py-6 md:py-4 md:py-6">
         <div className="max-w-7xl mx-auto px-6">
-          <h2 className="font-serif text-3xl font-semibold mb-6">Find Your Perfect Shade</h2>
+          <h2 className="font-serif text-xl md:text-2xl font-semibold mb-6">Find Your Perfect Shade</h2>
           <div className="flex gap-4">
             {shades.map((shade, idx) => (
               <button key={idx} className="w-16 h-16 rounded-full shadow-md transition hover:scale-110 border-2 border-gray-900" style={{ backgroundColor: shade }} />
@@ -42,7 +54,7 @@ export default function BeautyTemplate(props: TemplateProps) {
         </div>
       </section>
 
-      <main className="max-w-7xl mx-auto px-6 py-12">
+      <main className="max-w-7xl mx-auto px-6 py-6 md:py-4 md:py-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {filteredProducts.map((p: any) => (
             <div 
@@ -70,7 +82,7 @@ export default function BeautyTemplate(props: TemplateProps) {
                   <button 
                     onClick={(e) => {
                       e.stopPropagation();
-                      navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/checkout/${p.slug}` : `/checkout/${p.id}`);
+                      navigate(`/checkout/${p.id}`);
                     }} 
                     className="flex-1 py-1 bg-pink-400 text-white text-xs rounded font-semibold hover:bg-pink-500"
                   >

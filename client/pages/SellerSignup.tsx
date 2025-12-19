@@ -56,14 +56,14 @@ export default function SellerSignup() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 flex items-center justify-center px-4 py-6 md:py-4 md:py-6">
       <div className="w-full max-w-md">
         <Link to="/marketplace" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary mb-6">
           <ArrowLeft className="w-4 h-4" />
           Back to Marketplace
         </Link>
 
-        <div className="bg-card rounded-xl border shadow-lg p-8">
+        <div className="bg-card rounded-xl border shadow-lg p-4 md:p-6">
           <div className="flex items-center justify-center mb-6">
             <div className="w-16 h-16 rounded-full bg-gradient-to-r from-primary to-accent flex items-center justify-center">
               <Store className="w-8 h-8 text-white" />

@@ -318,9 +318,9 @@ export default function PlatformAdmin() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-4 md:py-6">
         {/* Navigation Tabs */}
-        <div className="flex gap-2 mb-8 bg-card rounded-xl border p-2 shadow-sm">
+        <div className="flex gap-2 mb-4 md:mb-6 bg-card rounded-xl border p-2 shadow-sm">
           <Button
             variant={activeTab === 'overview' ? 'default' : 'ghost'}
             onClick={() => setActiveTab('overview')}
@@ -351,7 +351,7 @@ export default function PlatformAdmin() {
         {activeTab === 'overview' && (
           <>
             {/* Stats Grid (vibrant presets) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4 md:mb-6">
               <GradientCard
                 title={t('admin.stats.totalUsers')}
                 value={stats.totalUsers}
@@ -392,9 +392,9 @@ export default function PlatformAdmin() {
 
         {/* Users Tab */}
         {activeTab === 'users' && (
-          <div className="space-y-6">
+          <div className="space-y-3 md:space-y-4">
             {/* Role Boxes */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4">
               {/* Admins Box */}
               <div className="bg-card rounded-xl border shadow-sm">
                 <div className="p-6 border-b">

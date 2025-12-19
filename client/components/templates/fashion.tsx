@@ -7,6 +7,18 @@ export default function FashionTemplate(props: TemplateProps) {
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [fitFilter, setFitFilter] = useState('All');
 
+  // Helper functions to save product data and navigate
+  const handleProductClick = (product: any) => {
+    localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
+    navigate(`/product/${product.id}`);
+  };
+
+  const handleBuyClick = (product: any, e?: any) => {
+    if (e) e.stopPropagation();
+    localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
+    navigate(`/checkout/${product.id}`);
+  };
+
   const products = props.products || [];
   const storeName = props.settings?.store_name || 'WardrobeOS';
   const bannerUrl = props.settings?.banner_url || 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=1600&q=80';
@@ -107,7 +119,7 @@ export default function FashionTemplate(props: TemplateProps) {
             <div className="text-[11px] tracking-[0.25em] uppercase text-zinc-300 mb-2">
               System wardrobes / 2025
             </div>
-            <h1 className="text-3xl md:text-4xl font-serif font-semibold text-zinc-50 mb-3">
+            <h1 className="text-xl md:text-2xl md:text-2xl md:text-xl md:text-2xl font-serif font-semibold text-zinc-50 mb-3">
               Build a wardrobe that behaves like software.
             </h1>
             <p className="text-sm text-zinc-300 max-w-md mb-4">
@@ -121,7 +133,7 @@ export default function FashionTemplate(props: TemplateProps) {
       </section>
 
       {/* CATEGORY TABS */}
-      <section className="max-w-6xl mx-auto px-6 py-8 border-b border-zinc-900">
+      <section className="max-w-6xl mx-auto px-6 py-4 md:py-6 border-b border-zinc-900">
         <div className="flex flex-wrap gap-3 text-[11px]">
           {genders.map((g) => (
             <button
@@ -209,12 +221,12 @@ export default function FashionTemplate(props: TemplateProps) {
             {filteredProducts.length} items
           </span>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
           {filteredProducts.map((p: any) => (
             <div 
               key={p.id} 
               className="product-card cursor-pointer flex flex-col"
-              onClick={() => navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/${p.slug}` : `/product/${p.id}`)}
+              onClick={() => handleProductClick(p)}
             >
               <div className="relative h-64 overflow-hidden">
                 <img
@@ -242,10 +254,7 @@ export default function FashionTemplate(props: TemplateProps) {
                     {props.formatPrice(p.price)}
                   </span>
                   <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/checkout/${p.slug}` : `/checkout/${p.id}`);
-                    }}
+                    onClick={(e) => handleBuyClick(p, e)}
                     className="text-[11px] uppercase tracking-[0.16em] px-4 py-2 rounded-full bg-amber-500 border border-amber-500 text-zinc-950 hover:bg-amber-400 hover:border-amber-400 transition font-semibold"
                   >
                     Buy Now

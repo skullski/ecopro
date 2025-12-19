@@ -39,23 +39,23 @@ export default function Contact() {
 
         <div className="container relative z-10 mx-auto px-4 max-w-6xl">
           {/* Hero Content */}
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border shadow-lg mb-6">
+          <div className="text-center mb-6 md:mb-4 md:mb-6">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border shadow-lg mb-4">
               <Mail className="w-4 h-4 text-indigo-600" />
               <span className="text-sm font-medium">{t('contact.badge') || "We're here to help"}</span>
             </div>
             
-            <h1 className="text-5xl md:text-7xl font-black mb-6">
+            <h1 className="text-xl md:text-2xl md:text-2xl md:text-xl md:text-2xl lg:text-xl md:text-2xl md:text-2xl md:text-xl md:text-2xl xl:text-6xl font-black mb-4">
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-600">
                 {t('contact.title') || 'Get in Touch'}
               </span>
             </h1>
-            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            <p className="text-base md:text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
               {t('contact.subtitle') || 'Have questions? Need help? Our support team is ready to assist you.'}
             </p>
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-8 mb-12">
+          <div className="grid lg:grid-cols-3 gap-4 mb-4 md:mb-6">
             {/* Contact Info Cards */}
             {[
               {
@@ -77,21 +77,21 @@ export default function Contact() {
                 description: t('contact.card.time.desc') || 'Typical response time'
               }
             ].map((item, i) => (
-              <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-100 dark:border-gray-700 text-center hover:shadow-2xl hover:-translate-y-1 transition-all">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-600 to-cyan-600 flex items-center justify-center mx-auto mb-4">
-                  <item.icon className="w-6 h-6 text-white" />
+              <div key={i} className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-lg border border-gray-100 dark:border-gray-700 text-center hover:shadow-xl hover:-translate-y-0.5 transition-all">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-600 to-cyan-600 flex items-center justify-center mx-auto mb-3">
+                  <item.icon className="w-5 h-5 text-white" />
                 </div>
-                <h3 className="text-lg font-bold mb-2">{item.title}</h3>
-                <p className="text-xl font-semibold text-indigo-600 dark:text-indigo-400 mb-1">{item.content}</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{item.description}</p>
+                <h3 className="text-base font-bold mb-1">{item.title}</h3>
+                <p className="text-base font-semibold text-indigo-600 dark:text-indigo-400 mb-1">{item.content}</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">{item.description}</p>
               </div>
             ))}
           </div>
 
           {/* Contact Form */}
           <div className="max-w-2xl mx-auto">
-            <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 md:p-12 border border-indigo-100 dark:border-indigo-900">
-              <h2 className="text-3xl font-bold mb-6 text-center">{t('contact.form.title') || 'Send us a Message'}</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-3 md:p-4 border border-indigo-100 dark:border-indigo-900">
+              <h2 className="text-2xl md:text-xl md:text-2xl font-bold mb-6 text-center">{t('contact.form.title') || 'Send us a Message'}</h2>
               
               {submitted && (
                 <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border-2 border-green-500 rounded-xl flex items-center gap-3">
@@ -102,7 +102,7 @@ export default function Contact() {
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">{t('contact.form.name') || 'Your Name'}</label>
                   <input
@@ -165,7 +165,7 @@ export default function Contact() {
           </div>
 
           {/* Additional Info */}
-          <div className="mt-12 text-center">
+          <div className="mt-6 md:mt-4 md:mt-6 text-center">
             <div className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-50 to-cyan-50 dark:from-indigo-900/20 dark:to-cyan-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800">
               <MapPin className="w-5 h-5 text-indigo-600" />
               <p className="text-gray-700 dark:text-gray-300">

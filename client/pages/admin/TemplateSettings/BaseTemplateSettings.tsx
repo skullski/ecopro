@@ -25,7 +25,7 @@ export default function BaseTemplateSettings({
   };
 
   return (
-    <div className="space-y-6 dark:bg-black">
+    <div className="space-y-3 md:space-y-4 dark:bg-black">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -42,7 +42,7 @@ export default function BaseTemplateSettings({
       </div>
 
       {/* Settings Content */}
-      <div className="space-y-6">
+      <div className="space-y-3 md:space-y-4">
         {children ? (
           children
         ) : (

@@ -8,13 +8,25 @@ export default function FoodTemplate(props: TemplateProps) {
 
   const { products = [], settings = {}, formatPrice = (p: number) => `${p}` } = props;
 
+  // Helper functions to save product data and navigate
+  const handleProductClick = (product: any) => {
+    localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
+    navigate(`/product/${product.id}`);
+  };
+
+  const handleBuyClick = (product: any, e?: any) => {
+    if (e) e.stopPropagation();
+    localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
+    navigate(`/checkout/${product.id}`);
+  };
+
   // Add safety check for empty products - render placeholder
   if (!products || products.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-transparent" style={{ backgroundImage: 'radial-gradient(circle at top left, #f0eee8 0, #f7f6f4 40%, #f5f4f2 100%)' }}>
-        <div className="text-center max-w-md mx-auto p-8">
+        <div className="text-center max-w-md mx-auto p-4 md:p-6">
           <div className="text-6xl mb-4">🍽️</div>
-          <h1 className="text-3xl font-serif mb-4 text-[#111111]">No Products Yet</h1>
+          <h1 className="text-xl md:text-2xl font-serif mb-4 text-[#111111]">No Products Yet</h1>
           <p className="text-[#7a7a7a] mb-6">Add some menu items to your store to see them displayed here.</p>
           <p className="text-sm text-[#9a9a9a]">Products will appear automatically once you add them to your store.</p>
         </div>
@@ -258,9 +270,9 @@ export default function FoodTemplate(props: TemplateProps) {
         }
       `}</style>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-0 py-8 lg:py-12">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-0 py-4 md:py-6 lg:py-3 md:py-4 md:py-6">
         {/* HEADER */}
-        <header className="flex items-center justify-between mb-10 lg:mb-12">
+        <header className="flex items-center justify-between mb-10 lg:mb-3 md:mb-4 md:mb-6">
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-full border border-black flex items-center justify-center text-[9px] tracking-[0.18em] uppercase">
               {(settings?.store_name || 'SH').slice(0, 2)}
@@ -286,7 +298,7 @@ export default function FoodTemplate(props: TemplateProps) {
         </header>
 
         {/* HERO */}
-        <section className="hero-grid grid grid-cols-1 lg:grid-cols-[1.15fr_1.25fr] gap-10 lg:gap-12 items-center mb-12 lg:mb-16 relative">
+        <section className="hero-grid grid grid-cols-1 lg:grid-cols-[1.15fr_1.25fr] gap-10 lg:gap-3 md:gap-4 md:gap-4 md:gap-6 items-center mb-6 md:mb-4 md:mb-6 lg:mb-16 relative">
           <div className="hero-bg-block hidden lg:block" style={{ transform: `translateY(${parallaxOffset * 0.5}px)` }}></div>
 
           {/* text side */}
@@ -338,7 +350,7 @@ export default function FoodTemplate(props: TemplateProps) {
 
         {/* SOURCING STRIP */}
         <section
-          className="sourcing-strip rounded-2xl px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-center sm:justify-between gap-3 fade-in mb-10"
+          className="sourcing-strip rounded-2xl px-3 sm:px-4 lg:px-3 py-2 sm:py-3 flex flex-wrap items-center justify-center sm:justify-between gap-2 sm:gap-3 fade-in mb-4 md:mb-6 md:mb-10"
           style={{ animationDelay: '160ms' }}
         >
           <div className="flex flex-wrap items-center justify-center gap-3 text-[11px]">
@@ -460,7 +472,7 @@ export default function FoodTemplate(props: TemplateProps) {
         </section>
 
         {/* TASTING JOURNEY */}
-        <section className="mb-12 lg:mb-14">
+        <section className="mb-6 md:mb-4 md:mb-6 lg:mb-14">
           <div className="flex items-end justify-between mb-5">
             <div>
               <p className="text-[10px] uppercase tracking-[0.22em] text-[#7a7a7a] mb-2">
@@ -509,7 +521,7 @@ export default function FoodTemplate(props: TemplateProps) {
         </section>
 
         {/* CHEF NOTES / MICRO STORY */}
-        <section className="mb-12">
+        <section className="mb-6 md:mb-4 md:mb-6">
           <div className="thin-divider mb-5" />
           <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1.1fr] gap-10 items-start">
             <div className="fade-in" style={{ animationDelay: '80ms' }}>
@@ -551,7 +563,7 @@ export default function FoodTemplate(props: TemplateProps) {
         </section>
 
         {/* FILTERS + MENU GRID + IMPRESSIONS */}
-        <section className="mb-12 lg:mb-14">
+        <section className="mb-6 md:mb-4 md:mb-6 lg:mb-14">
           {/* Filters */}
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div>

@@ -57,6 +57,7 @@ import StoreLayout from "./pages/StoreLayout";
 import TemplateSettings from "./pages/TemplateSettings";
 import ProductDetail from "./pages/storefront/ProductDetail";
 import StorefrontCheckout from "./pages/storefront/Checkout";
+import OrderConfirmation from "./pages/storefront/OrderConfirmation";
 
 // Orders submenu pages
 import AddOrder from "./pages/admin/orders/AddOrder";
@@ -257,10 +258,10 @@ function GuestCheckout() {
 
   const p = state.product;
   return (
-    <div className="min-h-screen bg-background text-foreground py-8">
+    <div className="min-h-screen bg-background text-foreground py-4 md:py-6">
       <div className="container mx-auto px-4">
         {/* Header */}
-        <div className="max-w-4xl mx-auto mb-8">
+        <div className="max-w-4xl mx-auto mb-4 md:mb-6">
           <button
             onClick={() => navigate('/marketplace')}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4"
@@ -275,9 +276,9 @@ function GuestCheckout() {
         </div>
 
         {!state.submitted ? (
-          <div className="max-w-4xl mx-auto grid lg:grid-cols-2 gap-8">
+          <div className="max-w-4xl mx-auto grid lg:grid-cols-2 gap-4 md:gap-6">
             {/* Left Column - Order Summary */}
-            <div className="space-y-6">
+            <div className="space-y-3 md:space-y-4">
               <div className="bg-card border rounded-xl p-6 shadow-sm">
                 <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
                 <div className="flex gap-4">
@@ -469,7 +470,7 @@ function GuestCheckout() {
           </div>
         ) : (
           <div className="max-w-2xl mx-auto">
-            <div className="bg-card border rounded-xl p-8 shadow-lg text-center">
+            <div className="bg-card border rounded-xl p-4 md:p-6 shadow-lg text-center">
               <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
                 <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -526,7 +527,7 @@ const App = () => (
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/marketplace" element={<Marketplace />} />
-                  <Route path="/product/:id" element={<Product />} />
+                  <Route path="/product/:id" element={<ProductDetail />} />
                   <Route path="/login" element={<GuardPlatformAuthPages><Login /></GuardPlatformAuthPages>} />
                   <Route path="/signup" element={<GuardPlatformAuthPages><Signup /></GuardPlatformAuthPages>} />
                   {/* Seller routes */}
@@ -606,11 +607,11 @@ const App = () => (
                     <Route index element={<Storefront />} />
                     <Route path=":productSlug" element={<PublicProduct />} />
                     <Route path="checkout/:productSlug" element={<Checkout />} />
+                    <Route path="order/:orderId/confirm" element={<OrderConfirmation />} />
                   </Route>
                   {/* REMOVE duplicate/non-existent custom routes */}
                   {/* <Route path="/product/:id" element={<ProductDetail />} /> */}
                   {/* <Route path="/cart" element={<Cart />} /> */}
-                  <Route path="/product/:id" element={<ProductDetail />} />
                   <Route path="/checkout/:productId" element={<StorefrontCheckout />} />
                   {/* <Route path="/chat/:conversationId" element={<Chat />} /> */}
                   {/* <Route path="/seller" element={<SellerDashboard />} /> */}

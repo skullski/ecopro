@@ -42,13 +42,13 @@ export default function Login() {
       <FloatingShapes variant="section" colors="cool" />
       
       <div className="relative z-10 mx-auto max-w-md w-full">
-        <div className="rounded-3xl border-2 border-primary/20 bg-gradient-to-br from-card via-card to-primary/5 p-10 shadow-2xl backdrop-blur-sm">
+        <div className="rounded-2xl border-2 border-primary/20 bg-gradient-to-br from-card via-card to-primary/5 p-10 shadow-2xl backdrop-blur-sm">
           {/* Header */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-4 md:mb-6">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent mb-4 shadow-lg">
               <LogIn className="w-8 h-8 text-white" />
             </div>
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            <h2 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               {t("login") || "Log in"}
             </h2>
             <p className="text-sm text-muted-foreground mt-2">{t('login.subtitle') || "Welcome back! Sign in to continue"}</p>
@@ -60,7 +60,7 @@ export default function Login() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4">
             <div>
               <label className="block text-sm font-medium mb-2 flex items-center gap-2">
                 <Mail className="w-4 h-4 text-primary" />

@@ -84,7 +84,8 @@ export const getStorefrontSettings: RequestHandler = async (req, res) => {
                 hero_main_url, hero_tile1_url, hero_tile2_url, 
                 store_images,
                 owner_name, owner_email,
-                template_hero_heading, template_hero_subtitle, template_button_text, template_accent_color
+                template_hero_heading, template_hero_subtitle, template_button_text, template_accent_color,
+                store_slug
          FROM client_store_settings
          WHERE store_slug = $1`,
         [storeSlug]
@@ -93,7 +94,7 @@ export const getStorefrontSettings: RequestHandler = async (req, res) => {
       // If query fails (columns don't exist yet), try without new columns
       if (err.code === '42703') {
         clientRes = await pool.query(
-          'SELECT store_name, store_description, store_logo, primary_color, secondary_color, template, banner_url, currency_code, NULL as hero_main_url, NULL as hero_tile1_url, NULL as hero_tile2_url, store_images, owner_name, owner_email, NULL as template_hero_heading, NULL as template_hero_subtitle, NULL as template_button_text, NULL as template_accent_color FROM client_store_settings WHERE store_slug = $1',
+          'SELECT store_name, store_description, store_logo, primary_color, secondary_color, template, banner_url, currency_code, NULL as hero_main_url, NULL as hero_tile1_url, NULL as hero_tile2_url, store_images, owner_name, owner_email, NULL as template_hero_heading, NULL as template_hero_subtitle, NULL as template_button_text, NULL as template_accent_color, store_slug FROM client_store_settings WHERE store_slug = $1',
           [storeSlug]
         );
       } else {
@@ -135,7 +136,8 @@ export const getStorefrontSettings: RequestHandler = async (req, res) => {
           banner_url: null,
           hero_main_url: null,
           hero_tile1_url: null,
-          hero_tile2_url: null
+          hero_tile2_url: null,
+          store_slug: storeSlug
         });
       }
       row = sellerRes.rows[0];
@@ -167,6 +169,7 @@ export const getStorefrontSettings: RequestHandler = async (req, res) => {
 
     res.json({
       ...row,
+      store_slug: storeSlug,
       banner_url: sanitize(row.banner_url),
       hero_main_url: sanitize(row.hero_main_url),
       hero_tile1_url: sanitize(row.hero_tile1_url),
@@ -275,19 +278,54 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
 
     console.log('[createPublicStoreOrder] About to query store settings...');
     const cs = await pool.query('SELECT client_id, store_name FROM client_store_settings WHERE store_slug = $1', [storeSlug]);
-    console.log('[createPublicStoreOrder] Store lookup:', cs.rows);
-    if (!cs.rows.length) {
-      console.log('[createPublicStoreOrder] Store not found for slug:', storeSlug);
-      res.status(404).json({ error: 'Store not found' });
+    console.log('[createPublicStoreOrder] Client store lookup:', cs.rows);
+    
+    let clientId: number | string;
+    let storeName: string;
+    
+    if (cs.rows.length > 0) {
+      clientId = cs.rows[0].client_id;
+      storeName = cs.rows[0].store_name || 'EcoPro Store';
+      console.log('[createPublicStoreOrder] Found client store, client_id:', clientId);
+    } else {
+      // Try seller_store_settings as fallback
+      console.log('[createPublicStoreOrder] Not found in client_store_settings, trying seller_store_settings...');
+      const ss = await pool.query('SELECT seller_id, store_name FROM seller_store_settings WHERE store_slug = $1', [storeSlug]);
+      console.log('[createPublicStoreOrder] Seller store lookup:', ss.rows);
+      
+      if (!ss.rows.length) {
+        console.log('[createPublicStoreOrder] Store not found for slug:', storeSlug);
+        res.status(404).json({ error: 'Store not found' });
+        return;
+      }
+      clientId = ss.rows[0].seller_id;
+      storeName = ss.rows[0].store_name || 'EcoPro Store';
+      console.log('[createPublicStoreOrder] Found seller store, seller_id:', clientId);
+    }
+
+    // For public orders, use the store owner's client_id so they can see the orders in their dashboard
+    // Check stock availability
+    const stockCheckResult = await pool.query(
+      'SELECT stock_quantity FROM client_store_products WHERE id = $1',
+      [product_id]
+    );
+    
+    if (stockCheckResult.rows.length === 0) {
+      console.log('[createPublicStoreOrder] Product not found:', product_id);
+      res.status(404).json({ error: 'Product not found' });
       return;
     }
-    const clientId = cs.rows[0].client_id;
-    const storeName = cs.rows[0].store_name || 'EcoPro Store';
 
-    // For public orders, use NULL for client_id (customers don't need to be registered users)
+    const availableStock = stockCheckResult.rows[0].stock_quantity || 0;
+    if (availableStock < quantity) {
+      console.log(`[createPublicStoreOrder] Insufficient stock: requested ${quantity}, available ${availableStock}`);
+      res.status(400).json({ error: `Insufficient stock. Only ${availableStock} available.` });
+      return;
+    }
+
     console.log('[createPublicStoreOrder] Insert order params:', [
       product_id,
-      null, // Public orders use NULL for client_id
+      clientId, // Store owner's client_id so orders appear in their dashboard
       quantity,
       total_price,
       customer_name,
@@ -305,7 +343,7 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,NOW()) RETURNING *`,
       [
         product_id,
-        null, // Public orders use NULL for client_id
+        clientId, // Store owner's client_id so orders appear in their dashboard
         quantity,
         total_price,
         customer_name,
@@ -317,6 +355,13 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
       ]
     );
     console.log('[createPublicStoreOrder] Inserted order:', result.rows);
+
+    // Decrease stock after successful order creation
+    await pool.query(
+      'UPDATE client_store_products SET stock_quantity = stock_quantity - $1 WHERE id = $2',
+      [quantity, product_id]
+    );
+    console.log(`[createPublicStoreOrder] Stock decreased by ${quantity} for product ${product_id}`);
     // Audit log
     try {
       await pool.query(

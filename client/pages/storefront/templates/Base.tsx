@@ -25,11 +25,11 @@ export default function BaseTemplate(props: TemplateProps & { variant: 'classic'
           <div className="absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-black/10 blur-3xl" />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(255,255,255,0.08),_transparent_60%)]" />
         </div>
-        <div className="relative container max-w-7xl mx-auto px-4 py-12">
+        <div className="relative container max-w-7xl mx-auto px-4 py-6 md:py-4 md:py-6">
           <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="mb-6 text-white/90 hover:text-white hover:bg-white/10">
             <ArrowLeft className="w-4 h-4 mr-2" /> Back
           </Button>
-          <div className="flex items-start gap-6">
+          <div className="flex items-start gap-3 md:gap-4">
             <div className="flex items-center gap-4 p-4 rounded-2xl bg-white/10 backdrop-blur-md ring-1 ring-white/20 text-white shadow-lg">
               <div className="w-16 h-16 bg-white/20 rounded-xl overflow-hidden flex items-center justify-center">
                 {settings.store_logo ? (
@@ -39,7 +39,7 @@ export default function BaseTemplate(props: TemplateProps & { variant: 'classic'
                 )}
               </div>
               <div>
-                <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{settings.store_name || 'Store'}</h1>
+                <h1 className="text-xl md:text-2xl md:text-2xl md:text-xl md:text-2xl font-bold tracking-tight">{settings.store_name || 'Store'}</h1>
                 {settings.store_description && (
                   <p className="text-white/85 text-sm md:text-base max-w-2xl mt-1">{settings.store_description}</p>
                 )}
@@ -64,12 +64,12 @@ export default function BaseTemplate(props: TemplateProps & { variant: 'classic'
 
       {featured.length > 0 && (
         <div className="bg-muted/30 border-b">
-          <div className="container max-w-7xl mx-auto px-4 py-8">
+          <div className="container max-w-7xl mx-auto px-4 py-4 md:py-6">
             <div className="flex items-center gap-2 mb-6">
               <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
               <h2 className="text-2xl font-bold">Featured Products</h2>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
               {featured.map((product) => (
                 <div
                   key={product.id}
@@ -119,7 +119,7 @@ export default function BaseTemplate(props: TemplateProps & { variant: 'classic'
         </div>
       )}
 
-      <div className="container max-w-7xl mx-auto px-4 py-8">
+      <div className="container max-w-7xl mx-auto px-4 py-4 md:py-6">
         <div className="sticky top-16 z-10 mb-6">
           <div className="bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 rounded-xl border p-4 shadow-sm">
             <div className="flex flex-wrap gap-4 items-center">
@@ -155,12 +155,12 @@ export default function BaseTemplate(props: TemplateProps & { variant: 'classic'
           <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-b from-muted/60 to-transparent py-20">
             <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 h-80 w-80 rounded-full bg-primary/10 blur-3xl" />
             <div className="relative text-center">
-              <div className="max-w-2xl mx-auto space-y-6">
+              <div className="max-w-2xl mx-auto space-y-3 md:space-y-4">
                 <div className="w-28 h-28 mx-auto bg-background/70 backdrop-blur rounded-2xl flex items-center justify-center border">
                   <Package className="w-12 h-12 text-muted-foreground" />
                 </div>
                 <div className="space-y-3">
-                  <h3 className="text-3xl font-bold tracking-tight">No Products Yet</h3>
+                  <h3 className="text-xl md:text-2xl font-bold tracking-tight">No Products Yet</h3>
                   <p className="text-muted-foreground text-lg max-w-md mx-auto">This store is being stocked. Check back soon or explore our marketplace!</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center pt-2">
@@ -173,7 +173,7 @@ export default function BaseTemplate(props: TemplateProps & { variant: 'classic'
             </div>
           </div>
         ) : viewMode === 'grid' ? (
-          <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6`}>
+          <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4`}>
             {filtered.map((product) => {
               const discount = product.original_price ? Math.round(((Number(product.original_price) - Number(product.price)) / Number(product.original_price)) * 100) : 0;
               return (
@@ -282,8 +282,8 @@ export default function BaseTemplate(props: TemplateProps & { variant: 'classic'
         )}
       </div>
 
-      <div className="border-t bg-muted/30 mt-12">
-        <div className="container mx-auto px-4 py-8 text-center">
+      <div className="border-t bg-muted/30 mt-6 md:mt-4 md:mt-6">
+        <div className="container mx-auto px-4 py-4 md:py-6 text-center">
           <p className="text-sm text-muted-foreground mb-2">Powered by {settings.store_name || 'EcoPro'}</p>
           <Button variant="outline" size="sm" onClick={() => navigate('/marketplace')}>
             <ExternalLink className="w-4 h-4 mr-2" /> Explore More Stores

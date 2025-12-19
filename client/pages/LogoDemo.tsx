@@ -10,13 +10,13 @@ export default function LogoDemo() {
   return (
     <section className="container mx-auto py-20">
       <div className="mx-auto max-w-2xl">
-        <h1 className="text-3xl font-bold mb-8 text-center">Animated Logo Demo</h1>
+        <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-center">Animated Logo Demo</h1>
         
-        <div className="flex justify-center mb-12">
+        <div className="flex justify-center mb-6 md:mb-4 md:mb-6">
           <AnimatedLogo emotion={emotion} autoAnimate={true} size={120} />
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4 md:mb-6">
           <Button
             variant={emotion === "happy" ? "default" : "outline"}
             onClick={() => setEmotion("happy")}
@@ -61,9 +61,9 @@ export default function LogoDemo() {
           </ul>
         </div>
 
-        <div className="mt-8 rounded-lg border bg-card p-6">
+        <div className="mt-4 md:mt-6 rounded-lg border bg-card p-6">
           <h3 className="font-bold mb-4">Different Sizes:</h3>
-          <div className="flex items-center gap-6 flex-wrap">
+          <div className="flex items-center gap-3 md:gap-4 flex-wrap">
             <div className="text-center">
               <AnimatedLogo emotion={emotion} size={24} />
               <p className="text-xs mt-2">24px</p>

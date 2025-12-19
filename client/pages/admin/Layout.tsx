@@ -47,7 +47,7 @@ export default function AdminLayout() {
           ? (sidebarCollapsed ? 'mr-0 lg:mr-20' : 'mr-0 lg:mr-72')
           : (sidebarCollapsed ? 'ml-0 lg:ml-20' : 'ml-0 lg:ml-72')
       )}>
-        <div className="p-6 md:p-8">
+        <div className="p-6 md:p-6">
           <Outlet />
         </div>
       </main>

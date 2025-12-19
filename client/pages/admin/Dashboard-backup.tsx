@@ -16,19 +16,19 @@ export default function Dashboard() {
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-lg border bg-card p-4">
           <div className="text-sm text-muted-foreground">المنتجات</div>
-          <div className="mt-2 text-3xl font-extrabold">{stats.products}</div>
+          <div className="mt-2 text-xl md:text-2xl font-extrabold">{stats.products}</div>
         </div>
         <div className="rounded-lg border bg-card p-4">
           <div className="text-sm text-muted-foreground">الطلبات</div>
-          <div className="mt-2 text-3xl font-extrabold">{stats.orders}</div>
+          <div className="mt-2 text-xl md:text-2xl font-extrabold">{stats.orders}</div>
         </div>
         <div className="rounded-lg border bg-card p-4">
           <div className="text-sm text-muted-foreground">إجمالي العائد</div>
-          <div className="mt-2 text-3xl font-extrabold">${stats.revenue}</div>
+          <div className="mt-2 text-xl md:text-2xl font-extrabold">${stats.revenue}</div>
         </div>
       </div>
 
-      <div className="mt-8 rounded-lg border bg-card p-4">
+      <div className="mt-4 md:mt-6 rounded-lg border bg-card p-4">
         <h3 className="font-bold">آخر الطلبات</h3>
         <RecentOrders />
       </div>

@@ -7,6 +7,18 @@ export default function Fashion2Template(props: TemplateProps) {
   const [wishlist, setWishlist] = useState<number[]>([]);
   const [quickViewProduct, setQuickViewProduct] = useState<any>(null);
 
+  // Helper functions to save product data and navigate
+  const handleProductClick = (product: any) => {
+    localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
+    navigate(`/product/${product.id}`);
+  };
+
+  const handleBuyClick = (product: any, e?: any) => {
+    if (e) e.stopPropagation();
+    localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
+    navigate(`/checkout/${product.id}`);
+  };
+
   const { products = [], settings = {}, categories = [] } = props;
   const storeName = settings.store_name || 'LineaWear';
   const city = settings.store_description?.split('·')[0] || 'Algiers';
@@ -63,14 +75,14 @@ export default function Fashion2Template(props: TemplateProps) {
       </header>
 
       <section className="border-b border-gray-200 bg-gray-50">
-        <div className="max-w-6xl mx-auto px-6 py-8">
+        <div className="max-w-6xl mx-auto px-6 py-4 md:py-6">
           <div className="mb-6">
             <span className="inline-block text-xs font-bold bg-gray-200 text-gray-900 px-3 py-1 rounded-full mb-3">Season Drop · Fashion Store</span>
-            <h2 className="font-serif text-3xl font-semibold mb-3 max-w-2xl">{settings.template_hero_heading || 'Build a fashion store that feels like a campaign'}</h2>
+            <h2 className="font-serif text-xl md:text-2xl font-semibold mb-3 max-w-2xl">{settings.template_hero_heading || 'Build a fashion store that feels like a campaign'}</h2>
             <p className="text-sm text-gray-600 max-w-xl">{settings.template_hero_subtitle || 'Push your key pieces first'}</p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.9fr] gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.9fr] gap-3 md:gap-4">
             <div className="relative rounded-2xl overflow-hidden border border-gray-200 bg-white">
               <img
                 src={settings.banner_url || 'https://images.unsplash.com/photo-1543087903-1ac2ec7aa8c5?auto=format&fit=crop&w=1200&q=80'}
@@ -101,8 +113,8 @@ export default function Fashion2Template(props: TemplateProps) {
         </div>
       </section>
 
-      <main className="max-w-6xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-8">
+      <main className="max-w-6xl mx-auto px-6 py-4 md:py-6">
+        <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4 md:gap-3 md:gap-4">
           <aside className="bg-white rounded-2xl border border-gray-200 p-4 h-fit">
             <div className="text-sm font-semibold mb-4">Filters</div>
             <div className="mb-5">
@@ -173,7 +185,7 @@ export default function Fashion2Template(props: TemplateProps) {
                     <button 
                       onClick={(e) => { 
                         e.stopPropagation(); 
-                        navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/checkout/${p.slug}` : `/checkout/${p.id}`);
+                        navigate(`/checkout/${p.id}`);
                       }} 
                       className="w-full mt-3 py-2 bg-black text-white text-xs font-semibold rounded hover:bg-gray-900"
                     >
@@ -187,9 +199,9 @@ export default function Fashion2Template(props: TemplateProps) {
         </div>
       </main>
 
-      <footer className="border-t border-gray-200 mt-12 py-8 bg-white">
+      <footer className="border-t border-gray-200 mt-6 md:mt-4 md:mt-6 py-4 md:py-6 bg-white">
         <div className="max-w-6xl mx-auto px-6">
-          <div className="grid md:grid-cols-3 gap-8 mb-8">
+          <div className="grid md:grid-cols-3 gap-3 md:gap-4 md:gap-4 md:gap-3 md:gap-4 mb-6 md:mb-4 md:mb-6">
             <div>
               <h4 className="font-semibold mb-3">About</h4>
               <ul className="text-sm text-gray-600 space-y-2">

@@ -135,9 +135,9 @@ export default function DeliveryCompanies() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 md:space-y-4">
       <div>
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+        <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
           شركات التوصيل
         </h1>
         <p className="text-muted-foreground mt-2">اختر شركة التوصيل وقم بإعداد الربط</p>
@@ -162,16 +162,17 @@ export default function DeliveryCompanies() {
             )}
             <CardContent className="pt-6 pb-4">
               <div className="flex flex-col items-center text-center space-y-3">
-                <div className="w-20 h-20 rounded-lg bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center text-3xl overflow-hidden border border-border/50">
+                <div className="w-20 h-20 rounded-lg bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center text-xl md:text-2xl overflow-hidden border border-border/50">
                   {company.logo.startsWith('http') || company.logo.startsWith('data:') || company.logo.startsWith('/') ? (
                     <img 
                       src={company.logo} 
                       alt={company.name}
                       className="w-full h-full object-contain p-2"
                       onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                        if (e.currentTarget.nextElementSibling) {
-                          e.currentTarget.nextElementSibling.style.display = 'flex';
+                        const target = e.currentTarget as HTMLImageElement;
+                        target.style.display = 'none';
+                        if (target.nextElementSibling) {
+                          (target.nextElementSibling as HTMLElement).style.display = 'flex';
                         }
                       }}
                     />

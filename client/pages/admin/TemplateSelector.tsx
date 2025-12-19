@@ -28,7 +28,7 @@ export default function TemplateSelector({
   };
 
   return (
-    <div className="space-y-6 dark:bg-black">
+    <div className="space-y-3 md:space-y-4 dark:bg-black">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -49,12 +49,12 @@ export default function TemplateSelector({
 
       {/* Templates Grid */}
       {TEMPLATES.length === 0 ? (
-        <div className="text-center py-12 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-700">
+        <div className="text-center py-6 md:py-4 md:py-6 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-700">
           <p className="text-slate-600 dark:text-slate-400">No templates available yet.</p>
           <p className="text-sm text-slate-500 dark:text-slate-500 mt-2">Templates will appear here as they are added.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
           {TEMPLATES.map(template => (
             <button
               key={template.id}

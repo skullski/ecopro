@@ -139,7 +139,7 @@ export default function Storefront() {
         const productsData = await productsRes.json();
         if (!isMounted) return;
         const incomingSettings = settingsData?.settings || settingsData || {};
-        setStoreSettings((prev) => ({
+        const newSettings = {
           primary_color: '#16a34a',
           secondary_color: '#0ea5e9',
           currency_code: 'USD',
@@ -147,11 +147,16 @@ export default function Storefront() {
           store_description: '',
           store_logo: '',
           banner_url: '',
-          ...prev,
           ...incomingSettings,
           // Use the template from store settings, or default to 'classic'
           template: incomingSettings?.template || 'classic',
-        }));
+        };
+        setStoreSettings(newSettings);
+        
+        // Save template and settings to localStorage for product pages
+        localStorage.setItem('template', newSettings.template);
+        localStorage.setItem('storeSettings', JSON.stringify(newSettings));
+        
         const items = productsData?.products || productsData || [];
         setProducts(items);
         const cats = Array.from(new Set(items.map((p: any) => p.category).filter(Boolean))) as string[];
@@ -185,12 +190,16 @@ export default function Storefront() {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="text-center space-y-4 p-6 max-w-md">
-          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
-            <svg className="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M3 12h18M3 17h18"/></svg>
+          <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto border border-red-500/30">
+            <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4v2m0-10a9 9 0 110 18 9 9 0 010-18z"/></svg>
           </div>
           <h2 className="text-2xl font-bold">{t('storefront.notAvailable')}</h2>
-          <p className="text-muted-foreground">{t('storefront.notAvailableDesc')}</p>
-          <a href="/marketplace" className="px-4 py-2 border rounded-md">{t('storefront.browseMarketplace')}</a>
+          <p className="text-muted-foreground text-sm">{error}</p>
+          <p className="text-muted-foreground text-xs">The store link may be incorrect or the store is temporarily unavailable.</p>
+          <div className="flex gap-2 pt-4">
+            <button onClick={() => window.location.reload()} className="flex-1 px-4 py-2 border rounded-md font-semibold hover:bg-muted transition">🔄 Retry</button>
+            <a href="/marketplace" className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-md font-semibold hover:opacity-90 transition">{t('storefront.browseMarketplace')}</a>
+          </div>
         </div>
       </div>
     );

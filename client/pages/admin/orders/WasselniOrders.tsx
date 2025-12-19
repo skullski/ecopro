@@ -18,9 +18,9 @@ export default function WasselniOrders() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 md:space-y-4">
       <div>
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+        <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
           واش نوَجَّد ؟
         </h1>
         <p className="text-muted-foreground mt-2">متابعة طلبات التوصيل مع واصلني</p>
@@ -30,7 +30,7 @@ export default function WasselniOrders() {
         <Card className="border-2 border-blue-500/20">
           <CardHeader className="pb-3">
             <CardDescription>قيد التوصيل</CardDescription>
-            <CardTitle className="text-3xl text-blue-600">12</CardTitle>
+            <CardTitle className="text-xl md:text-2xl text-blue-600">12</CardTitle>
           </CardHeader>
           <CardContent>
             <Truck className="w-8 h-8 text-blue-500/30" />
@@ -40,7 +40,7 @@ export default function WasselniOrders() {
         <Card className="border-2 border-green-500/20">
           <CardHeader className="pb-3">
             <CardDescription>تم التسليم اليوم</CardDescription>
-            <CardTitle className="text-3xl text-green-600">28</CardTitle>
+            <CardTitle className="text-xl md:text-2xl text-green-600">28</CardTitle>
           </CardHeader>
           <CardContent>
             <Package className="w-8 h-8 text-green-500/30" />
@@ -50,7 +50,7 @@ export default function WasselniOrders() {
         <Card className="border-2 border-yellow-500/20">
           <CardHeader className="pb-3">
             <CardDescription>في الانتظار</CardDescription>
-            <CardTitle className="text-3xl text-yellow-600">5</CardTitle>
+            <CardTitle className="text-xl md:text-2xl text-yellow-600">5</CardTitle>
           </CardHeader>
           <CardContent>
             <Clock className="w-8 h-8 text-yellow-500/30" />

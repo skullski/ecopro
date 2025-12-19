@@ -127,13 +127,13 @@ export default function AdminWasselniSettings() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50 dark:from-black dark:via-slate-900 dark:to-black p-4 sm:p-6">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-start justify-between gap-4 mb-2">
+        <div className="mb-6">
+          <div className="flex items-start justify-between gap-3 mb-2">
             <div>
-              <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 dark:text-white mb-2">
+              <h1 className="text-2xl md:text-xl md:text-2xl lg:text-lg md:text-xl md:text-2xl font-bold tracking-tight text-slate-900 dark:text-white mb-1">
                 {t('wasselni.settings')}
               </h1>
-              <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base">
+              <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400">
                 {t('wasselni.desc')}
               </p>
             </div>
@@ -141,15 +141,15 @@ export default function AdminWasselniSettings() {
         </div>
 
         {/* Bot Status Card */}
-        <div className="bg-white dark:bg-slate-800/50 backdrop-blur rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/50 dark:border-slate-700/50 shadow-sm mb-6">
+        <div className="bg-white dark:bg-slate-800/50 backdrop-blur rounded-xl md:rounded-2xl p-4 border border-slate-200/50 dark:border-slate-700/50 shadow-sm mb-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className={`p-3 sm:p-4 rounded-2xl ${settings.enabled ? 'bg-green-50 dark:bg-green-500/10' : 'bg-slate-50 dark:bg-slate-700/50'}`}>
-                <Bot className={`h-6 sm:h-8 w-6 sm:w-8 ${settings.enabled ? 'text-green-600 dark:text-green-400' : 'text-slate-400'}`} />
+            <div className="flex items-center gap-3">
+              <div className={`p-2 md:p-3 rounded-lg md:rounded-xl ${settings.enabled ? 'bg-green-50 dark:bg-green-500/10' : 'bg-slate-50 dark:bg-slate-700/50'}`}>
+                <Bot className={`h-5 md:h-6 w-5 md:w-6 ${settings.enabled ? 'text-green-600 dark:text-green-400' : 'text-slate-400'}`} />
               </div>
               <div>
-                <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 font-medium">Bot Status</p>
-                <p className={`text-lg sm:text-xl font-bold ${settings.enabled ? 'text-green-600 dark:text-green-400' : 'text-slate-500'}`}>
+                <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 font-medium">Bot Status</p>
+                <p className={`text-base md:text-lg font-bold ${settings.enabled ? 'text-green-600 dark:text-green-400' : 'text-slate-500'}`}>
                   {settings.enabled ? 'Active' : 'Inactive'}
                 </p>
               </div>
@@ -165,7 +165,7 @@ export default function AdminWasselniSettings() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex gap-2 sm:gap-4 mb-6 overflow-x-auto">
+        <div className="flex gap-2 mb-6 overflow-x-auto">
           {[
             { id: 'general' as const, label: 'General', icon: Globe },
             { id: 'whatsapp' as const, label: 'WhatsApp', icon: Phone },
@@ -176,7 +176,7 @@ export default function AdminWasselniSettings() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl sm:rounded-2xl font-medium text-sm transition-all whitespace-nowrap ${
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg md:rounded-xl font-medium text-xs md:text-sm transition-all whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'bg-blue-50 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-500/30'
                     : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50'
@@ -190,11 +190,11 @@ export default function AdminWasselniSettings() {
         </div>
 
         {/* Tab Content */}
-        <div className="space-y-6">
+        <div className="space-y-3 md:space-y-4">
           {/* General Tab */}
           {activeTab === 'general' && (
-            <div className="space-y-6">
-              <div className="bg-white dark:bg-slate-800/50 backdrop-blur rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
+            <div className="space-y-3 md:space-y-4">
+              <div className="bg-white dark:bg-slate-800/50 backdrop-blur rounded-lg md:rounded-xl p-3 md:p-4 lg:p-3 border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-500/10">
                     <Globe className="h-5 w-5 text-blue-600 dark:text-blue-400" />
@@ -205,7 +205,7 @@ export default function AdminWasselniSettings() {
                   </div>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-3 md:space-y-4">
                   <div className="space-y-3">
                     <Label className="text-sm sm:text-base font-medium text-slate-900 dark:text-white">Provider</Label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -265,8 +265,8 @@ export default function AdminWasselniSettings() {
 
           {/* WhatsApp Tab */}
           {activeTab === 'whatsapp' && (
-            <div className="space-y-6">
-              <div className="bg-white dark:bg-slate-800/50 backdrop-blur rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
+            <div className="space-y-3 md:space-y-4">
+              <div className="bg-white dark:bg-slate-800/50 backdrop-blur rounded-2xl md:rounded-2xl p-4 md:p-4 lg:p-3 border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="p-2.5 rounded-xl bg-green-50 dark:bg-green-500/10">
                     <Phone className="h-5 w-5 text-green-600 dark:text-green-400" />
@@ -277,7 +277,7 @@ export default function AdminWasselniSettings() {
                   </div>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-3 md:space-y-4">
                   <div className="space-y-3">
                     <Label htmlFor="whatsappTemplate" className="text-sm sm:text-base font-medium text-slate-900 dark:text-white">Message Template</Label>
                     <Textarea
@@ -330,8 +330,8 @@ export default function AdminWasselniSettings() {
 
           {/* Templates Tab */}
           {activeTab === 'templates' && (
-            <div className="space-y-6">
-              <div className="bg-white dark:bg-slate-800/50 backdrop-blur rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
+            <div className="space-y-3 md:space-y-4">
+              <div className="bg-white dark:bg-slate-800/50 backdrop-blur rounded-2xl md:rounded-2xl p-4 md:p-4 lg:p-3 border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-500/10">
                     <MessageSquare className="h-5 w-5 text-purple-600 dark:text-purple-400" />
@@ -342,7 +342,7 @@ export default function AdminWasselniSettings() {
                   </div>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-3 md:space-y-4">
                   <div className="space-y-3">
                     <Label htmlFor="paymentTemplate" className="text-sm sm:text-base font-medium text-slate-900 dark:text-white">Message Template</Label>
                     <Textarea
@@ -374,7 +374,7 @@ export default function AdminWasselniSettings() {
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-slate-800/50 backdrop-blur rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
+              <div className="bg-white dark:bg-slate-800/50 backdrop-blur rounded-2xl md:rounded-2xl p-4 md:p-4 lg:p-3 border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="p-2.5 rounded-xl bg-orange-50 dark:bg-orange-500/10">
                     <Phone className="h-5 w-5 text-orange-600 dark:text-orange-400" />
@@ -385,7 +385,7 @@ export default function AdminWasselniSettings() {
                   </div>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-3 md:space-y-4">
                   <div className="space-y-3">
                     <Label htmlFor="shippingTemplate" className="text-sm sm:text-base font-medium text-slate-900 dark:text-white">Message Template</Label>
                     <Textarea

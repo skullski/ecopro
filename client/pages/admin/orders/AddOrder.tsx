@@ -5,9 +5,9 @@ import { Plus, Package, User, Phone, MapPin } from "lucide-react";
 
 export default function AddOrder() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 md:space-y-4">
       <div>
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+        <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
           إضافة طلب
         </h1>
         <p className="text-muted-foreground mt-2">إنشاء طلب جديد يدوياً</p>

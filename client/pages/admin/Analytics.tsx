@@ -12,7 +12,7 @@ export default function Analytics() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 dark:text-white mb-1">
+          <h1 className="text-xl md:text-2xl sm:text-2xl md:text-xl md:text-2xl font-bold tracking-tight text-slate-900 dark:text-white mb-1">
             Analytics
           </h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base">Track your store performance in real-time</p>
@@ -21,7 +21,7 @@ export default function Analytics() {
         {/* Primary Stats - Apple Style */}
         <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4 mb-6">
           {/* Revenue Card */}
-          <div className="group relative bg-white dark:bg-slate-800/50 backdrop-blur rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/50 dark:border-slate-700/50 hover:shadow-lg hover:border-slate-300/50 dark:hover:border-slate-600 transition-all duration-300">
+          <div className="group relative bg-white dark:bg-slate-800/50 backdrop-blur rounded-2xl md:rounded-2xl p-4 sm:p-6 border border-slate-200/50 dark:border-slate-700/50 hover:shadow-lg hover:border-slate-300/50 dark:hover:border-slate-600 transition-all duration-300">
             <div className="flex items-start justify-between mb-3 sm:mb-4">
               <div className="p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 group-hover:from-emerald-500/30 group-hover:to-emerald-600/20 transition-all">
                 <DollarSign className="h-5 sm:h-6 w-5 sm:w-6 text-emerald-600 dark:text-emerald-400" />
@@ -32,11 +32,11 @@ export default function Analytics() {
               </div>
             </div>
             <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm font-medium mb-0.5">Revenue</p>
-            <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 dark:text-white">${revenue.toFixed(2)}</p>
+            <p className="text-2xl sm:text-xl md:text-2xl lg:text-lg md:text-xl md:text-2xl font-bold text-slate-900 dark:text-white">${revenue.toFixed(2)}</p>
           </div>
 
           {/* Orders Card */}
-          <div className="group relative bg-white dark:bg-slate-800/50 backdrop-blur rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/50 dark:border-slate-700/50 hover:shadow-lg hover:border-slate-300/50 dark:hover:border-slate-600 transition-all duration-300">
+          <div className="group relative bg-white dark:bg-slate-800/50 backdrop-blur rounded-2xl md:rounded-2xl p-4 sm:p-6 border border-slate-200/50 dark:border-slate-700/50 hover:shadow-lg hover:border-slate-300/50 dark:hover:border-slate-600 transition-all duration-300">
             <div className="flex items-start justify-between mb-3 sm:mb-4">
               <div className="p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-gradient-to-br from-blue-500/20 to-blue-600/10 group-hover:from-blue-500/30 group-hover:to-blue-600/20 transition-all">
                 <ShoppingCart className="h-5 sm:h-6 w-5 sm:w-6 text-blue-600 dark:text-blue-400" />
@@ -47,11 +47,11 @@ export default function Analytics() {
               </div>
             </div>
             <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm font-medium mb-0.5">Total Orders</p>
-            <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 dark:text-white">{totalOrders}</p>
+            <p className="text-2xl sm:text-xl md:text-2xl lg:text-lg md:text-xl md:text-2xl font-bold text-slate-900 dark:text-white">{totalOrders}</p>
           </div>
 
           {/* Conversion Card */}
-          <div className="group relative bg-white dark:bg-slate-800/50 backdrop-blur rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/50 dark:border-slate-700/50 hover:shadow-lg hover:border-slate-300/50 dark:hover:border-slate-600 transition-all duration-300">
+          <div className="group relative bg-white dark:bg-slate-800/50 backdrop-blur rounded-2xl md:rounded-2xl p-4 sm:p-6 border border-slate-200/50 dark:border-slate-700/50 hover:shadow-lg hover:border-slate-300/50 dark:hover:border-slate-600 transition-all duration-300">
             <div className="flex items-start justify-between mb-3 sm:mb-4">
               <div className="p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-gradient-to-br from-purple-500/20 to-purple-600/10 group-hover:from-purple-500/30 group-hover:to-purple-600/20 transition-all">
                 <TrendingUp className="h-5 sm:h-6 w-5 sm:w-6 text-purple-600 dark:text-purple-400" />
@@ -62,11 +62,11 @@ export default function Analytics() {
               </div>
             </div>
             <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm font-medium mb-0.5">Conversion</p>
-            <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 dark:text-white">{conversionRate}%</p>
+            <p className="text-2xl sm:text-xl md:text-2xl lg:text-lg md:text-xl md:text-2xl font-bold text-slate-900 dark:text-white">{conversionRate}%</p>
           </div>
 
           {/* Active Users Card */}
-          <div className="group relative bg-white dark:bg-slate-800/50 backdrop-blur rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/50 dark:border-slate-700/50 hover:shadow-lg hover:border-slate-300/50 dark:hover:border-slate-600 transition-all duration-300">
+          <div className="group relative bg-white dark:bg-slate-800/50 backdrop-blur rounded-2xl md:rounded-2xl p-4 sm:p-6 border border-slate-200/50 dark:border-slate-700/50 hover:shadow-lg hover:border-slate-300/50 dark:hover:border-slate-600 transition-all duration-300">
             <div className="flex items-start justify-between mb-3 sm:mb-4">
               <div className="p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-gradient-to-br from-orange-500/20 to-orange-600/10 group-hover:from-orange-500/30 group-hover:to-orange-600/20 transition-all">
                 <Users className="h-5 sm:h-6 w-5 sm:w-6 text-orange-600 dark:text-orange-400" />
@@ -77,14 +77,14 @@ export default function Analytics() {
               </div>
             </div>
             <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm font-medium mb-0.5">Active Users</p>
-            <p className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 dark:text-white">{Math.floor(totalOrders * 0.7)}</p>
+            <p className="text-2xl sm:text-xl md:text-2xl lg:text-lg md:text-xl md:text-2xl font-bold text-slate-900 dark:text-white">{Math.floor(totalOrders * 0.7)}</p>
           </div>
         </div>
 
         {/* Secondary Stats Grid */}
-        <div className="grid gap-4 lg:gap-6 lg:grid-cols-3 mb-6">
+        <div className="grid gap-4 lg:gap-3 md:gap-4 lg:grid-cols-3 mb-6">
           {/* Order Status Summary */}
-          <div className="lg:col-span-2 bg-white dark:bg-slate-800/50 backdrop-blur rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
+          <div className="lg:col-span-2 bg-white dark:bg-slate-800/50 backdrop-blur rounded-lg md:rounded-2xl p-3 md:p-4 lg:p-3 border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
             <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
               <div className="p-2 sm:p-2.5 rounded-xl bg-blue-50 dark:bg-blue-500/10">
                 <Activity className="h-4 sm:h-5 w-4 sm:w-5 text-blue-600 dark:text-blue-400" />
@@ -127,7 +127,7 @@ export default function Analytics() {
           </div>
 
           {/* Key Metrics */}
-          <div className="bg-white dark:bg-slate-800/50 backdrop-blur rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
+          <div className="bg-white dark:bg-slate-800/50 backdrop-blur rounded-2xl md:rounded-2xl p-4 md:p-4 lg:p-3 border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
             <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
               <div className="p-2 sm:p-2.5 rounded-xl bg-purple-50 dark:bg-purple-500/10">
                 <Zap className="h-4 sm:h-5 w-4 sm:w-5 text-purple-600 dark:text-purple-400" />
@@ -157,7 +157,7 @@ export default function Analytics() {
         </div>
 
         {/* Footer Note */}
-        <div className="bg-gradient-to-r from-blue-50 to-blue-50/50 dark:from-blue-500/10 dark:to-blue-500/5 rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-blue-200/50 dark:border-blue-500/20">
+        <div className="bg-gradient-to-r from-blue-50 to-blue-50/50 dark:from-blue-500/10 dark:to-blue-500/5 rounded-2xl md:rounded-2xl p-4 sm:p-6 border border-blue-200/50 dark:border-blue-500/20">
           <p className="text-slate-700 dark:text-slate-300 text-xs sm:text-sm leading-relaxed">
             <span className="font-semibold">💡 Pro Tip:</span> Your dashboard updates in real-time. Check back frequently to monitor your store's performance and identify trends.
           </p>

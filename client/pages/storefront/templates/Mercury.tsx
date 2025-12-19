@@ -133,9 +133,9 @@ export default function MercuryTemplate(props: TemplateProps & { canManage?: boo
           {/* Header is rendered by `StoreLayout` so templates should not duplicate it. */}
 
       {/* Main layout */}
-      <div className="mx-auto max-w-7xl px-4 py-8 space-y-10">
+      <div className="mx-auto max-w-7xl px-4 py-4 md:py-6 space-y-10">
         {/* Content */}
-        <div className="space-y-6">
+        <div className="space-y-3 md:space-y-4">
           {canManage && (
             <div className="flex justify-end">
               <Button onClick={()=>setShowAdd(true)}>Add Product</Button>
@@ -222,7 +222,7 @@ export default function MercuryTemplate(props: TemplateProps & { canManage?: boo
           {/* Featured products */}
           <div>
             <div className="pb-2 mb-4 font-semibold tracking-wide" style={{ borderBottom: '1px solid hsl(var(--border))' }}>FEATURED PRODUCTS</div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-3 md:gap-4">
               {featuredToShow.map((product) => (
                 <div
                   key={product.id}
@@ -276,12 +276,12 @@ export default function MercuryTemplate(props: TemplateProps & { canManage?: boo
           </div>
 
           {/* All Products (no limit) */}
-          <div className="container max-w-7xl mx-auto px-4 py-8">
+          <div className="container max-w-7xl mx-auto px-4 py-4 md:py-6">
             <div className="pb-2 mb-4 font-semibold tracking-wide" style={{ borderBottom: '1px solid hsl(var(--border))' }}>ALL PRODUCTS</div>
             {filtered.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground">No products found</div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-3 md:gap-4">
                 {filtered.map((product) => (
                   <button
                     key={product.id}
@@ -311,7 +311,7 @@ export default function MercuryTemplate(props: TemplateProps & { canManage?: boo
       {/* Footer */}
       <div className="mt-16" style={{ borderTop: '1px solid hsl(var(--border))', backgroundColor: 'hsl(var(--background))' }}>
         <div className="mx-auto max-w-7xl px-4 py-10">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-3 md:gap-4">
             <div>
               <div className="text-xs font-bold uppercase text-neutral-400 mb-2 tracking-widest">MAILING LIST</div>
               <div className="flex gap-2">

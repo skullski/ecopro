@@ -35,7 +35,7 @@ export function StatCard({ title, value, subtitle, icon: Icon, gradient, badge }
           )}
         </div>
         <div className="text-sm text-muted-soft mb-1">{title}</div>
-        <div className="text-3xl font-black">{value}</div>
+        <div className="text-xl md:text-2xl font-black">{value}</div>
         <div className="text-xs text-muted-soft mt-2">{subtitle}</div>
       </div>
     </Card>
