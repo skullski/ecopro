@@ -255,8 +255,14 @@ export default function StockManagement() {
         try {
           const data = JSON.parse(responseText);
           console.log('Upload successful, URL:', data.url);
-          const fullUrl = `${window.location.origin}${data.url}`;
-          setFormData(prev => ({ ...prev, images: [fullUrl] }));
+          // Just use the relative URL - don't add origin
+          const imageUrl = data.url;
+          console.log('Setting image URL:', imageUrl);
+          setFormData(prev => { 
+            const updated = { ...prev, images: [imageUrl] };
+            console.log('FormData after image upload:', updated);
+            return updated;
+          });
           e.target.value = '';
           alert('Image uploaded successfully!');
         } catch (parseErr) {
