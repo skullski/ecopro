@@ -2,37 +2,60 @@
 export function getUserFromRequest(req: any) {
   return req.user;
 }
-import bcrypt from "bcrypt";
+import argon2 from "argon2";
 import jwt from "jsonwebtoken";
 
-const SALT_ROUNDS = 10;
+// Security: Stronger token expiry (15 minutes for access token)
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-in-production";
-const JWT_EXPIRES_IN = "7d"; // Token expires in 7 days
+const JWT_EXPIRES_IN = "15m"; // Access token expires in 15 minutes (was 7d - security risk!)
+const REFRESH_TOKEN_EXPIRES_IN = "7d"; // Refresh token expires in 7 days
 
 import { JWTPayload } from "@shared/api";
 
 /**
- * Hash a password using bcrypt
+ * Hash a password using argon2id (more secure than bcrypt)
+ * Parameters: timeCost=2, memoryCost=65536 (64MB), parallelism=1
  */
 export async function hashPassword(password: string): Promise<string> {
-  return await bcrypt.hash(password, SALT_ROUNDS);
+  try {
+    return await argon2.hash(password, {
+      type: argon2.argon2id,
+      timeCost: 2,
+      memoryCost: 65536,
+      parallelism: 1,
+    });
+  } catch (error) {
+    throw new Error(`Password hashing failed: ${error}`);
+  }
 }
 
 /**
- * Compare plain text password with hashed password
+ * Compare plain text password with argon2id hashed password
  */
 export async function comparePassword(
   password: string,
   hashedPassword: string
 ): Promise<boolean> {
-  return await bcrypt.compare(password, hashedPassword);
+  try {
+    return await argon2.verify(hashedPassword, password);
+  } catch (error) {
+    // Return false on any verification error (invalid hash, etc)
+    return false;
+  }
 }
 
 /**
- * Generate JWT token
+ * Generate JWT access token (short-lived, 15 minutes)
  */
 export function generateToken(payload: JWTPayload): string {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+}
+
+/**
+ * Generate refresh token (long-lived, 7 days)
+ */
+export function generateRefreshToken(payload: JWTPayload): string {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRES_IN });
 }
 
 /**
