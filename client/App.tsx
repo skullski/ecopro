@@ -55,6 +55,9 @@ import Checkout from "./pages/Checkout";
 import MyStore from "./pages/MyStore";
 import StoreLayout from "./pages/StoreLayout";
 import TemplateSettings from "./pages/TemplateSettings";
+import StaffManagement from "./pages/seller/StaffManagement";
+import StaffLogin from "./pages/StaffLogin";
+import StaffDashboard from "./pages/StaffDashboard";
 import ProductDetail from "./pages/storefront/ProductDetail";
 import StorefrontCheckout from "./pages/storefront/Checkout";
 import OrderConfirmation from "./pages/storefront/OrderConfirmation";
@@ -73,6 +76,7 @@ import GoogleSheetsIntegration from "./pages/admin/addons/GoogleSheets";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { I18nProvider } from "@/lib/i18n";
 import { CartProvider } from "@/state/CartContext";
+import { PermissionProvider } from "@/context/PermissionContext";
 // REMOVE non-existent pages to avoid build errors
 // import ProductDetail from "@/pages/ProductDetail";
 // import Cart from "@/pages/Cart";
@@ -95,6 +99,13 @@ function RequirePaidClient({ children }: { children: JSX.Element }) {
   if (!user) {
     return <Navigate to="/login" replace />;
   }
+  
+  // SECURITY: Check if user is staff member (not store owner)
+  const isStaff = localStorage.getItem('isStaff') === 'true';
+  if (isStaff) {
+    return <Navigate to="/staff/dashboard" replace />;
+  }
+  
   // Check user_type, not role
   const userType = (user as any).user_type || user.role || 'client';
   if (userType === "admin" || user.role === "admin") {
@@ -130,6 +141,59 @@ function RequireSeller({ children }: { children: JSX.Element }) {
   if (userType !== "seller") {
     return <Navigate to="/dashboard" replace />;
   }
+  return children;
+}
+
+// Route guard for staff dashboard: only allow staff members
+// CRITICAL: Verifies staff has valid clientId (belongs to a store)
+function RequireStaff({ children }: { children: JSX.Element }) {
+  const isStaff = localStorage.getItem('isStaff');
+  const token = localStorage.getItem('authToken');
+  
+  if (!token || !isStaff) {
+    return <Navigate to="/staff/login" replace />;
+  }
+  
+  // SECURITY: Decode JWT and verify clientId exists
+  // This ensures staff member has been assigned to a store
+  try {
+    const tokenParts = token.split('.');
+    if (tokenParts.length !== 3) {
+      console.warn('[Auth] Invalid JWT format');
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('isStaff');
+      return <Navigate to="/staff/login" replace />;
+    }
+    
+    // Decode JWT payload (second part)
+    const payload = JSON.parse(atob(tokenParts[1]));
+    
+    // Verify token has required staff fields
+    if (!payload.staffId || !payload.clientId || !payload.isStaff) {
+      console.warn('[Auth] JWT missing required staff fields', { 
+        hasStaffId: !!payload.staffId, 
+        hasClientId: !!payload.clientId, 
+        isStaff: payload.isStaff 
+      });
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('isStaff');
+      return <Navigate to="/staff/login" replace />;
+    }
+    
+    // Check if token is expired
+    if (payload.exp && payload.exp * 1000 < Date.now()) {
+      console.warn('[Auth] JWT token expired');
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('isStaff');
+      return <Navigate to="/staff/login" replace />;
+    }
+  } catch (error) {
+    console.error('[Auth] Failed to decode JWT token:', error);
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('isStaff');
+    return <Navigate to="/staff/login" replace />;
+  }
+  
   return children;
 }
 
@@ -521,9 +585,10 @@ const App = () => (
         <Toaster />
         <Sonner />
         <I18nProvider>
-          <BrowserRouter>
-            <Layout>
-              <CartProvider>
+          <PermissionProvider>
+            <BrowserRouter>
+              <Layout>
+                <CartProvider>
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/marketplace" element={<Marketplace />} />
@@ -539,6 +604,16 @@ const App = () => (
                       <RequireSeller>
                         <SellerDashboard />
                       </RequireSeller>
+                    }
+                  />
+                  {/* Staff routes */}
+                  <Route path="/staff/login" element={<StaffLogin />} />
+                  <Route
+                    path="/staff/dashboard"
+                    element={
+                      <RequireStaff>
+                        <StaffDashboard />
+                      </RequireStaff>
                     }
                   />
                   {/* Platform Admin route (guarded) */}
@@ -576,6 +651,7 @@ const App = () => (
                     <Route path="analytics" element={<AdminAnalytics />} />
                     {/* Admin store preview/stores/settings removed */}
                     <Route path="settings" element={<AdminSettings />} />
+                    <Route path="staff" element={<StaffManagement />} />
                     <Route path="billing" element={<AdminBilling />} />
                     <Route path="calls" element={<AdminCalls />} />
                     <Route path="wasselni-settings" element={<AdminWasselniSettings />} />
@@ -584,7 +660,7 @@ const App = () => (
                   {/* Old admin routes: redirect to /dashboard (preserve subpath) */}
                   <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
                   <Route path="/admin/*" element={<RedirectAdmin />} />
-                  <Route path="/app" element={<AdminLayout />} />
+                  <Route path="/app" element={<RequirePaidClient><AdminLayout /></RequirePaidClient>} />
                   {/* Top-level billing page removed */}
                   {/* Storefront route removed */}
                   {/* Shop/store customer routes removed */}
@@ -621,6 +697,7 @@ const App = () => (
               </CartProvider>
             </Layout>
           </BrowserRouter>
+          </PermissionProvider>
         </I18nProvider>
       </TooltipProvider>
     </ThemeProvider>

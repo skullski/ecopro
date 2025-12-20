@@ -27,6 +27,7 @@ import {
   updateUser,
   initializeDatabase,
   createDefaultAdmin,
+  ensureConnection,
 } from "../utils/database";
 
 // Database initialization moved to server startup (dev.ts / index.ts)
@@ -65,6 +66,23 @@ export const register: RequestHandler = async (req, res) => {
       user_type: normalizedRole === 'admin' ? 'admin' : (normalizedRole === 'seller' ? 'seller' : 'client'),
     });
     console.log("[REGISTER] User created:", user.id, user.email);
+
+    // If user_type is 'client', also create a client record (for store owners)
+    if (user.user_type === 'client') {
+      try {
+        const pool = await ensureConnection();
+        await pool.query(
+          `INSERT INTO clients (email, password_hash, name, role, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, NOW(), NOW())
+           ON CONFLICT (email) DO NOTHING`,
+          [user.email, user.password_hash, user.name || 'Store Owner', 'client']
+        );
+        console.log("[REGISTER] Client record created for:", user.email);
+      } catch (clientError) {
+        console.warn("[REGISTER] Could not create client record:", clientError);
+        // Not critical - continue with registration
+      }
+    }
 
     // Generate token
     const token = generateToken({

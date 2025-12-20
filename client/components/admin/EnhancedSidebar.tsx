@@ -6,7 +6,7 @@ import {
   ChevronDown, ChevronRight, Menu, X, Package, Bot,
   Divide, Palette
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { AnimatedLogo } from "@/components/ui/animated-logo";
 import { useTranslation } from "@/lib/i18n";
@@ -74,6 +74,7 @@ const menuItems: MenuItem[] = [
     icon: <Bot className="w-5 h-5" />,
   },
   { titleKey: "sidebar.analytics", path: "/dashboard/analytics", icon: <BarChart3 className="w-5 h-5" /> },
+  { titleKey: "sidebar.staff", path: "/dashboard/staff", icon: <Users className="w-5 h-5" /> },
   { titleKey: "sidebar.billing", path: "/admin/billing", icon: <CreditCard className="w-5 h-5" /> },
   { titleKey: "sidebar.settingsOwner", path: "/admin/settings", icon: <Settings className="w-5 h-5" /> },
 ];
@@ -85,9 +86,28 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
   const [mobileOpen, setMobileOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
-  const [themeCustomizationEnabled, setThemeCustomizationEnabled] = useState(true);
-  const [sidebarTheme, setSidebarTheme] = useState<keyof typeof SIDEBAR_THEMES>('slate');
+  
+  // Load theme state from localStorage
+  const [themeCustomizationEnabled, setThemeCustomizationEnabled] = useState(() => {
+    const saved = localStorage.getItem('sidebarThemeCustomizationEnabled');
+    return saved ? JSON.parse(saved) : true;
+  });
+  
+  const [sidebarTheme, setSidebarTheme] = useState<keyof typeof SIDEBAR_THEMES>(() => {
+    const saved = localStorage.getItem('sidebarTheme');
+    return saved ? JSON.parse(saved) : 'slate';
+  });
+  
   const location = useLocation();
+  
+  // Save theme state to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('sidebarThemeCustomizationEnabled', JSON.stringify(themeCustomizationEnabled));
+  }, [themeCustomizationEnabled]);
+  
+  useEffect(() => {
+    localStorage.setItem('sidebarTheme', JSON.stringify(sidebarTheme));
+  }, [sidebarTheme]);
   
   const isRTL = locale === "ar";
 
@@ -165,7 +185,7 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
           
           {!collapsed && (
             <>
-              <span className="flex-1 text-sm font-medium">{t(item.titleKey)}</span>
+              <span className="flex-1 font-bold" style={{ fontSize: '13px' }}>{t(item.titleKey)}</span>
               
               {item.badgeKey && (
                 <span className="px-2 py-0.5 text-xs font-bold rounded-full text-white shadow-sm"
@@ -204,19 +224,20 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
         borderColor: SIDEBAR_THEMES[activeTheme].border,
       }}>
       {/* Header with unique design */}
-      <div className="p-4 border-b flex items-center justify-between transition-all duration-300"
+      <div className="p-2 border-b flex items-center justify-between transition-all duration-300"
         style={{
           backgroundColor: SIDEBAR_THEMES[activeTheme].bg,
           borderColor: SIDEBAR_THEMES[activeTheme].border,
+          lineHeight: '1.2',
         }}>
         {!collapsed && (
           <div>
-            <span className="font-bold text-lg block transition-colors duration-200" 
-              style={{ color: SIDEBAR_THEMES[activeTheme].accent }}>
+            <span className="font-bold block transition-colors duration-200" 
+              style={{ color: SIDEBAR_THEMES[activeTheme].accent, fontSize: '14px' }}>
               {t('sidebar.brand')}
             </span>
-            <span className="text-base transition-colors duration-200" 
-              style={{ color: SIDEBAR_THEMES[activeTheme].text }}>
+            <span className="transition-colors duration-200" 
+              style={{ color: SIDEBAR_THEMES[activeTheme].text, fontSize: '16px' }}>
               {t("sidebar.controlPanel")}
             </span>
           </div>
@@ -260,7 +281,7 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
           
           {/* Theme Customization Toggle */}
           <div className="flex items-center justify-between px-2">
-            <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: SIDEBAR_THEMES[activeTheme].text }}>
+            <span className="font-semibold uppercase tracking-wide" style={{ color: SIDEBAR_THEMES[activeTheme].text, fontSize: '11px' }}>
               {t("sidebar.customizeColor") || "Theme"}
             </span>
             <button
@@ -329,26 +350,35 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
           )}
 
           {/* User Section with unique card design */}
-          <div className="rounded-lg p-3 border transition-all duration-200"
+          <div className="rounded-lg p-2 border transition-all duration-200"
             style={{
               backgroundColor: `${SIDEBAR_THEMES[activeTheme].accent}10`,
               borderColor: SIDEBAR_THEMES[activeTheme].border,
+              lineHeight: '1.1',
             }}>
-            <div className="relative flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-200" 
+            <div className="relative flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-200" 
                 style={{
                   backgroundColor: SIDEBAR_THEMES[activeTheme].accent,
                   color: SIDEBAR_THEMES[activeTheme].bg,
+                  fontSize: '11px',
                 }}>
                 WW
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-semibold text-sm truncate transition-colors duration-200" 
-                  style={{ color: SIDEBAR_THEMES[activeTheme].accent }}>
+                <div className="font-semibold truncate transition-colors duration-200" 
+                  style={{ 
+                    color: SIDEBAR_THEMES[activeTheme].accent,
+                    fontSize: '13px',
+                  }}>
                   SAHL
                 </div>
-                <div className="text-xs truncate transition-colors duration-200" 
-                  style={{ color: SIDEBAR_THEMES[activeTheme].text, opacity: 0.7 }}>
+                <div className="truncate transition-colors duration-200"
+                  style={{
+                    fontSize: '11px',
+                    color: SIDEBAR_THEMES[activeTheme].text,
+                    opacity: 0.7,
+                  }}>
                   sahlsupport@gmail.com
                 </div>
               </div>

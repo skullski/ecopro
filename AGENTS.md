@@ -632,3 +632,135 @@ const data: MyRouteResponse = await response.json();
   - Store owner responsibility for customer satisfaction
   - Platform focuses on providing stable infrastructure
 
+---
+
+# **Q31: Store Manager/Staff System** ✅ FEATURE SPECIFICATION
+
+## **Requirements (User Approved)**
+
+**Q31A: Access Levels & Permissions**
+- ✅ **Granular Toggle-Based Permissions**
+- Permissions include:
+  - **Control Panel Routes**: Home, Dashboard, Orders, Products, Categories, Templates, Analytics, Settings, Addons, Delivery, Broadcasting, etc.
+  - **Order Management**: View Orders, Edit Orders (status/notes), Delete Orders, Bulk Actions
+  - **Product Management**: View Products, Add/Edit Products, Delete Products, Manage Variants, Manage Stock
+  - **Analytics**: View Analytics/Reports, Export Data
+  - **Settings**: View Store Settings, Edit Store Settings, Edit Store Info
+  - **Staff Management**: Invite/Manage Staff, View Activity Logs
+  - **Smart additions**: View Customer Data, Block Customers, Access Bot Settings, Edit Templates
+
+**Q31B: Account Creation & Permission Setup**
+- ✅ **Store Owner Creates Manager Accounts During Invitation**
+- Flow: Owner invites → sets permissions (toggles ON/OFF) → generates credentials (username/password) → shares with manager
+- **NO default permissions** - owner explicitly toggles what each manager can access
+- Manager receives: email, username, password (one-time use, must change on first login)
+- Permissions applied BEFORE account activation
+
+**Q31C: Activity Logging**
+- ✅ **YES - Track All Staff Actions**
+- Log: who, what, when, resource changed, before/after values
+- Store owner can view activity log in dashboard
+- Critical actions flagged: delete product, delete order, change settings, remove staff
+
+**Q31D: Permission Changes**
+- ✅ **Instant Apply - Real-Time Updates**
+- Owner toggles permission → applies immediately (no "Save" button)
+- Manager loses access instantly if permission revoked
+- Active sessions: manager is logged out if critical permissions revoked
+- Manager can see their own permission status in dashboard
+
+## **Implementation Plan**
+
+### **Database Changes**
+- Create `store_staff` table:
+  - id, store_id, user_id, email, role (manager/staff), status (pending/active/inactive)
+  - permissions JSON (map of permission_name: boolean)
+  - created_at, invited_at, last_login, created_by (owner's user_id)
+- Create `staff_activity_log` table:
+  - id, store_id, staff_id, action, resource_type, resource_id, before_value, after_value, timestamp
+
+### **API Endpoints**
+- `POST /api/seller/staff/invite` - Create manager account with permissions
+- `GET /api/seller/staff` - List all staff with their permissions
+- `PATCH /api/seller/staff/:id/permissions` - Toggle individual permission (instant apply)
+- `PATCH /api/seller/staff/:id/status` - Activate/deactivate/remove staff
+- `GET /api/seller/staff/:id/activity` - View staff's activity log
+- `DELETE /api/seller/staff/:id` - Remove staff
+
+### **Frontend Components**
+- New page: **Staff Management** in settings
+  - Tab 1: List all staff (name, email, status, last login, actions)
+  - Tab 2: Invite new staff (email form)
+  - Permission editor modal (opens when clicking staff name):
+    - Grouped permission toggles (by category: Orders, Products, Analytics, etc)
+    - Live toggle with instant save
+    - Danger zone: Remove staff button
+- Add activity log viewer in Staff Management
+
+### **Permission Categories**
+1. **Dashboard & Views**
+   - View Dashboard
+   - View Orders (list)
+   - View Products (list)
+   - View Analytics
+   - View Settings
+   - View Staff & Activity Logs
+
+2. **Orders Management**
+   - Edit Order Status (pending→confirmed→shipped→delivered)
+   - Edit Order Notes (internal + customer description)
+   - Delete Orders
+   - Bulk Order Actions (status update, export)
+   - Block Customers
+
+3. **Products Management**
+   - Add Products
+   - Edit Products
+   - Delete Products
+   - Manage Variants (sizes, colors)
+   - Manage Stock
+   - View Inventory
+
+4. **Store Management**
+   - View Store Settings
+   - Edit Store Info (name, description, contact)
+   - Edit Store Branding (logo, colors)
+   - Edit Store Templates
+   - Edit Delivery Settings
+
+5. **Advanced**
+   - View Analytics & Reports
+   - Export Data (CSV, PDF)
+   - Manage Bot Settings (WhatsApp/SMS)
+   - Manage Broadcasting
+   - Invite/Manage Staff
+   - View Activity Logs
+
+### **Security Notes**
+- Staff cannot change their own permissions
+- Staff cannot invite other staff (owner only)
+- Staff cannot view other staff's permissions (only owner)
+- Staff cannot view financial/billing info (phase 2)
+- Staff cannot see store owner's personal email/phone
+- Activity log immutable (cannot be deleted by staff)
+- Revoked permission = instant logout of manager's active sessions
+
+### **UI/UX Details**
+- Permission toggles grouped by category (not all in one long list)
+- Search/filter staff by name or email
+- Sort by: last login, created date, status
+- Confirmation dialog when removing staff: "Are you sure? They will lose access immediately"
+- Toast notification when permission changed: "Permission updated for [name]"
+- Staff can see THEIR OWN permissions in their dashboard (read-only view)
+
+### **TODO**
+- ✅ TODO: Create database migration for `store_staff` and `staff_activity_log` tables
+- ✅ TODO: Implement API endpoints for staff management
+- ✅ TODO: Build Staff Management page in settings
+- ✅ TODO: Build permission editor modal with toggle UI
+- ✅ TODO: Add permission check middleware to all routes
+- ✅ TODO: Implement activity logging across the app
+- ✅ TODO: Add staff authentication (different from owner)
+- ✅ TODO: Build activity log viewer
+- ✅ TODO: Add permission status display in staff dashboard
+

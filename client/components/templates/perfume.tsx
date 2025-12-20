@@ -1,199 +1,275 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { TemplateProps } from '@/pages/storefront/templates/types';
+import { useTemplateUniversalSettings } from '@/hooks/useTemplateUniversalSettings';
 
 export default function PerfumeTemplate(props: TemplateProps) {
+  const universalSettings = useTemplateUniversalSettings();
   const { navigate, storeSlug } = props;
-  const [realmFilter, setRealmFilter] = useState('All');
-  const [quickViewProduct, setQuickViewProduct] = useState<any>(null);
-
-  // Helper functions to save product data and navigate
-  const handleProductClick = (product: any) => {
-    localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
-    navigate(`/product/${product.id}`);
-  };
-
-  const handleBuyClick = (product: any, e?: any) => {
-    if (e) e.stopPropagation();
-    localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
-    navigate(`/checkout/${product.id}`);
-  };
+  const [filter, setFilter] = useState('all');
 
   const products = props.products || [];
   const settings = props.settings || {};
 
-  // Extract settings with defaults
-  const storeName = settings.store_name || 'Olfactory';
-  const accentColor = settings.template_accent_color || '#b45309'; // amber-600
+  // Extract universal settings with defaults
+  const {
+    primary_color = '#f59e0b',
+    secondary_color = '#000000',
+    accent_color = '#f59e0b',
+    text_color = '#eeeeee',
+    secondary_text_color = '#a1a1a1',
+    font_family = 'Inter',
+    border_radius = 18,
+    enable_animations = true,
+  } = useMemo(() => universalSettings as any || {}, [universalSettings]);
+
+  const storeName = settings.store_name || 'Premium Scents';
+  const bannerImage = settings.banner_url || 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?auto=format&fit=crop&w=1600&q=80';
+
+  // Parse custom categories from template settings if available
+  const customCategories = useMemo(() => {
+    try {
+      const cats = (settings as any).template_categories;
+      if (typeof cats === 'string') {
+        return JSON.parse(cats);
+      }
+      return Array.isArray(cats) ? cats : null;
+    } catch {
+      return null;
+    }
+  }, [settings]);
+
+  // Normalize products with realm mapping
+  const getRealm = (product: any) => {
+    const realm = product.realm || product.category || 'gold';
+    return realm.toLowerCase();
+  };
+
+  const normalizedProducts = products.map((p: any, idx: number) => {
+    const realm = getRealm(p);
+    return {
+      ...p,
+      images: Array.isArray(p.images) && p.images.length > 0 ? p.images : [bannerImage],
+      realm,
+      realmLabel: realm === 'dark' ? 'Realm I' : realm === 'gold' ? 'Realm II' : 'Realm III',
+      family: p.family || 'Premium',
+      intensity: p.intensity || 'Day',
+      notes: Array.isArray(p.notes) ? p.notes : ['Fragrance', 'Aroma'],
+    };
+  });
+
+  // Get realm badge colors
+  const getRealmColor = (realm: string) => {
+    if (realm === 'dark') return { bg: '#78350f', text: '#fef3c7', label: 'Noir' };
+    if (realm === 'gold') return { bg: '#713f12', text: '#fef08a', label: 'Gold' };
+    return { bg: '#0c4a6e', text: '#bae6fd', label: 'Dream' };
+  };
+
+  // Extract realms from products or use custom categories
+  let realms: any[] = [];
+  if (customCategories && customCategories.length > 0) {
+    realms = ['all', ...customCategories.map((c: any) => c.name || c)];
+  } else {
+    realms = ['all', ...new Set(normalizedProducts.map((p: any) => p.realm))];
+  }
+  
+  const filtered = filter === 'all' ? normalizedProducts : normalizedProducts.filter((p: any) => p.realm === filter);
+
+  // Product Card Component
+  const ProductCard = ({ p }: any) => {
+    const realmColor = getRealmColor(p.realm);
+    return (
+      <div
+        className="rounded-xl overflow-hidden group cursor-pointer transition"
+        style={{
+          backgroundColor: '#0b0b0f',
+          border: '1px solid #1f1f2b',
+        }}
+        onClick={() => navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/${p.slug}` : `/product/${p.id}`)}
+      >
+        <div className="relative h-64 overflow-hidden">
+          <img
+            src={p.images[0]}
+            alt={p.name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+
+          <div
+            className="absolute top-3 left-3 px-3 py-1 text-[10px] uppercase tracking-widest font-semibold rounded-full"
+            style={{ backgroundColor: realmColor.bg, color: realmColor.text }}
+          >
+            {p.realmLabel}
+          </div>
+        </div>
+
+        <div className="p-4">
+          <h3 className="text-sm font-semibold text-zinc-100">{p.name}</h3>
+          <p className="text-xs text-zinc-400 mb-2">
+            {p.family} · {p.intensity}
+          </p>
+
+          <div className="space-y-1 text-[11px] text-zinc-300 opacity-80 group-hover:opacity-100 transition-opacity">
+            {p.notes.slice(0, 3).map((note: string, i: number) => (
+              <div key={i} className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-zinc-600"></span>
+                <span>{note}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4 font-semibold text-sm" style={{ color: primary_color }}>
+            {p.price} DZD
+          </div>
+
+          <button
+            className="w-full mt-3 py-2 rounded-lg font-semibold text-xs hover:opacity-90 transition text-white"
+            style={{ backgroundColor: primary_color }}
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/checkout/${p.id}`);
+            }}
+          >
+            Buy Now
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   // Render empty state
   if (!products || products.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0a0a0a' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: secondary_color }}>
         <div className="text-center max-w-md mx-auto p-4 md:p-6">
           <div className="text-6xl mb-4">🧴</div>
-          <h1 className="text-xl md:text-2xl font-serif font-bold mb-4 text-gray-200">No Products Yet</h1>
-          <p className="text-gray-400 mb-6">Add fragrances to your store to see them displayed here.</p>
-          <p className="text-sm text-gray-500">Products will appear automatically once you add them to your store.</p>
+          <h1 className="text-xl md:text-2xl font-serif font-bold mb-4" style={{ color: text_color }}>No Fragrances Yet</h1>
+          <p className="mb-6" style={{ color: secondary_text_color }}>Add fragrances to your store to see them displayed here.</p>
+          <p className="text-sm" style={{ color: secondary_text_color }}>Products will appear automatically once you add them to your store.</p>
         </div>
       </div>
     );
   }
 
-  // Normalize products
-  const normalizedProducts = products.map((p: any) => ({
-    ...p,
-    images: Array.isArray(p.images) && p.images.length > 0 ? p.images : ['https://via.placeholder.com/400x300?text=No+Image'],
-    rating: typeof p.rating === 'number' ? p.rating : 4.5,
-    notes: Array.isArray(p.notes) ? p.notes : ['Notes unavailable'],
-    realm: p.realm || p.category || 'Premium',
-  }));
-
-  // Extract realms from products
-  const realms = ['All', ...new Set(normalizedProducts.map((p: any) => p.realm))];
-  const filtered = realmFilter === 'All' ? normalizedProducts : normalizedProducts.filter((p: any) => p.realm === realmFilter);
-
   return (
-    <div style={{ backgroundColor: '#0a0a0a' }} className="min-h-screen text-white">
-      <header className="border-b sticky top-0 z-40 backdrop-blur" style={{ borderColor: `${accentColor}33`, backgroundColor: 'rgba(0,0,0,0.5)' }}>
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <h1 className="font-serif text-xl md:text-2xl font-semibold" style={{ color: accentColor }}>{storeName}</h1>
-          <p className="text-xs text-gray-400 mt-1">Premium fragrance collections</p>
-        </div>
-      </header>
+    <div style={{ backgroundColor: secondary_color, color: text_color }} className="min-h-screen">
+      {/* HERO SECTION */}
+      <section
+        className="relative h-screen max-h-[90vh] overflow-hidden bg-cover bg-center"
+        style={{ backgroundImage: `url(${bannerImage})` }}
+      >
+        <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0.9))' }}></div>
 
-      <section className="relative h-80 overflow-hidden bg-gradient-to-b" style={{ backgroundImage: `linear-gradient(to bottom, ${accentColor}20, #000)` }}>
-        <img src={settings.banner_url || 'https://images.unsplash.com/photo-1594736797933-d0501ba2fe65?w=1600&q=80'} alt="Hero" className="w-full h-full object-cover opacity-40" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/40 to-black flex items-end justify-center pb-12">
-          <div className="text-center">
-            <p className="font-serif text-2xl md:text-xl md:text-2xl font-semibold mb-2" style={{ color: accentColor }}>The Realms of Scent</p>
-            <p className="text-sm text-gray-400">Discover scents that tell your story</p>
+        <div className="absolute bottom-16 left-10 max-w-2xl pr-6">
+          <h1 className="text-5xl md:text-6xl font-serif font-semibold mb-3" style={{ color: text_color }}>
+            A New Way to Experience Scent
+          </h1>
+          <p className="text-base md:text-lg" style={{ color: secondary_text_color }}>
+            Three realms. One universe. Discover fragrances crafted for mood, presence, and identity.
+          </p>
+        </div>
+      </section>
+
+      {/* REALM EDITORIAL BLOCKS */}
+      <section className="max-w-6xl mx-auto px-6 py-20 space-y-20">
+        {/* Realm I - Dark */}
+        <div className="grid md:grid-cols-2 gap-10 items-center">
+          <img src={bannerImage} alt="Realm I" className="rounded-xl opacity-80" />
+          <div>
+            <h2 className="text-3xl font-serif mb-3" style={{ color: '#fef3c7' }}>
+              Realm I — Noir Extrait
+            </h2>
+            <p className="text-base leading-relaxed" style={{ color: secondary_text_color }}>
+              Built for night-heavy rooms. Amber, smoke, and vanilla crafted to leave a trail of warmth and mystery.
+            </p>
+          </div>
+        </div>
+
+        {/* Realm II - Gold */}
+        <div className="grid md:grid-cols-2 gap-10 items-center">
+          <div>
+            <h2 className="text-3xl font-serif mb-3" style={{ color: '#fef08a' }}>
+              Realm II — Golden Luxe
+            </h2>
+            <p className="text-base leading-relaxed" style={{ color: secondary_text_color }}>
+              Bright, structured, and modern. Neroli, citrus, and musk for clean daytime presence.
+            </p>
+          </div>
+          <img src={bannerImage} alt="Realm II" className="rounded-xl opacity-80" />
+        </div>
+
+        {/* Realm III - Dream */}
+        <div className="grid md:grid-cols-2 gap-10 items-center">
+          <img src={bannerImage} alt="Realm III" className="rounded-xl opacity-80" />
+          <div>
+            <h2 className="text-3xl font-serif mb-3" style={{ color: '#bae6fd' }}>
+              Realm III — Dreamscape
+            </h2>
+            <p className="text-base leading-relaxed" style={{ color: secondary_text_color }}>
+              Minimal, airy, and skin-like. Soft musks and woods that feel like a second skin.
+            </p>
           </div>
         </div>
       </section>
 
-      <section className="max-w-7xl mx-auto px-6 py-6 md:py-4 md:py-6">
-        {/* Filter Section */}
-        <div className="mb-4 md:mb-6">
-          <label className="text-xs text-gray-500 uppercase tracking-widest font-semibold block mb-4">Filter by Category</label>
-          <div className="flex gap-3 flex-wrap">
-            {realms.map((realm) => (
-              <button
-                key={realm}
-                onClick={() => setRealmFilter(realm)}
-                className="px-5 py-2 rounded-full text-sm font-medium transition border"
-                style={{
-                  backgroundColor: realmFilter === realm ? accentColor : 'transparent',
-                  color: realmFilter === realm ? '#000' : accentColor,
-                  borderColor: realmFilter === realm ? accentColor : `${accentColor}50`,
-                }}
-              >
-                {realm}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Products Grid */}
-        <div className="mb-4 md:mb-6">
-          <h2 className="font-serif text-2xl font-semibold mb-6" style={{ color: accentColor }}>Featured Fragrances</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {filtered.map((p) => (
-              <div
-                key={p.id}
-                onClick={() => navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/${p.slug}` : `/product/${p.id}`)}
-                className="rounded-lg overflow-hidden hover:border-amber-600 transition group cursor-pointer border flex flex-col"
-                style={{ backgroundColor: '#1a1a1a', borderColor: `${accentColor}30` }}
-              >
-                <div className="relative h-56 bg-black overflow-hidden">
-                  <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition opacity-80" />
-                  <div className="absolute top-3 left-3 rounded text-xs font-semibold px-2 py-1" style={{ backgroundColor: 'rgba(0,0,0,0.8)', color: accentColor }}>
-                    {p.realm}
-                  </div>
-                </div>
-                <div className="p-4 flex flex-col flex-grow">
-                  <p className="font-semibold text-sm text-white line-clamp-1">{p.name}</p>
-                  <p className="text-xs text-gray-500 mt-1">Fragrance</p>
-                  <div className="flex gap-1 mt-2">
-                    {'★'.repeat(Math.floor(p.rating))}
-                    <span className="text-xs text-gray-600">({p.rating})</span>
-                  </div>
-                  <p className="font-semibold text-sm mt-3" style={{ color: accentColor }}>{p.price} DZD</p>
-                  <button
-                    className="w-full mt-auto py-2 text-black rounded font-semibold text-xs hover:opacity-90 transition"
-                    style={{ backgroundColor: accentColor }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/checkout/${p.id}`);
-                    }}
-                  >
-                    Buy Now
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+      {/* FILTERS */}
+      <section className="max-w-6xl mx-auto px-6 mb-8">
+        <div className="flex gap-3 flex-wrap">
+          {[
+            ['all', 'All'],
+            ['dark', 'Noir'],
+            ['gold', 'Gold'],
+            ['art', 'Dream'],
+          ].map(([v, label]) => (
+            <button
+              key={v}
+              onClick={() => setFilter(v as any)}
+              className="px-4 py-2 rounded-full border text-[11px] font-semibold uppercase tracking-widest transition"
+              style={{
+                borderColor: filter === v ? primary_color : '#3f3f46',
+                color: filter === v ? primary_color : secondary_text_color,
+              }}
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </section>
 
-      {/* Quick View Modal */}
-      {quickViewProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur">
-          <div className="rounded-lg w-96 p-6 space-y-4 max-h-[90vh] overflow-y-auto border" style={{ backgroundColor: '#000', borderColor: `${accentColor}50` }}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold" style={{ color: accentColor }}>Fragrance Details</h2>
-              <button onClick={() => setQuickViewProduct(null)} className="text-2xl text-gray-600 hover:text-white">✕</button>
-            </div>
-            <img src={quickViewProduct.images[0]} alt={quickViewProduct.name} className="w-full h-64 object-cover rounded" />
-            <div>
-              <p className="font-semibold text-lg text-white">{quickViewProduct.name}</p>
-              <div className="inline-block rounded text-xs font-semibold px-2 py-1 mt-2" style={{ backgroundColor: `${accentColor}30`, color: accentColor }}>
-                {quickViewProduct.realm}
-              </div>
-              <div className="flex gap-1 mt-2">
-                {'★'.repeat(Math.floor(quickViewProduct.rating))}
-                <span className="text-xs text-gray-600">({quickViewProduct.rating})</span>
-              </div>
-              <p className="font-semibold text-2xl mt-3" style={{ color: accentColor }}>{quickViewProduct.price} DZD</p>
-            </div>
-            {quickViewProduct.description && <p className="text-sm text-gray-400">{quickViewProduct.description}</p>}
-            <div>
-              <label className="text-xs text-gray-500 uppercase tracking-widest font-semibold block mb-3">Scent Notes</label>
-              <div className="flex flex-wrap gap-2">
-                {quickViewProduct.notes.map((note: string, i: number) => (
-                  <span key={i} className="text-xs px-3 py-1 rounded-full border" style={{ backgroundColor: `${accentColor}20`, color: accentColor, borderColor: `${accentColor}50` }}>
-                    {note}
-                  </span>
-                ))}
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  navigate(quickViewProduct.slug && quickViewProduct.slug.length > 0 ? `/store/${storeSlug}/${quickViewProduct.slug}` : `/product/${quickViewProduct.id}`);
-                  setQuickViewProduct(null);
-                }}
-                className="flex-1 py-3 rounded font-semibold hover:opacity-80 transition border"
-                style={{ borderColor: accentColor, color: accentColor }}
-              >
-                View Details
-              </button>
-              <button
-                onClick={() => {
-                  navigate(`/checkout/${quickViewProduct.id}`);
-                  setQuickViewProduct(null);
-                }}
-                className="flex-1 py-3 text-black rounded font-semibold hover:opacity-90 transition"
-                style={{ backgroundColor: accentColor }}
-              >
-                Buy Now
-              </button>
-            </div>
-          </div>
+      {/* FEATURED ROW */}
+      <section className="max-w-6xl mx-auto px-6 mb-16">
+        <h2 className="text-2xl font-serif mb-6">Featured</h2>
+        <div className="grid md:grid-cols-2 gap-6">
+          {filtered.slice(0, 2).map((p) => (
+            <ProductCard key={p.id} p={p} />
+          ))}
         </div>
-      )}
+      </section>
 
-      <footer className="border-t mt-6 md:mt-4 md:mt-6 py-4 md:py-6 bg-black/50" style={{ borderColor: `${accentColor}30` }}>
-        <div className="max-w-7xl mx-auto px-6 text-center text-sm text-gray-500">
+      {/* CAROUSEL */}
+      <section className="max-w-6xl mx-auto px-6 mb-16">
+        <h2 className="text-2xl font-serif mb-6">Explore More</h2>
+        <div className="flex gap-6 overflow-x-auto pb-4" style={{ scrollSnapType: 'x mandatory' }}>
+          {filtered.map((p) => (
+            <div key={p.id} style={{ scrollSnapAlign: 'start' }} className="min-w-[280px]">
+              <ProductCard p={p} />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* GRID */}
+      <section className="max-w-6xl mx-auto px-6 pb-20">
+        <h2 className="text-2xl font-serif mb-6">All Scents</h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+          {filtered.map((p) => (
+            <ProductCard key={p.id} p={p} />
+          ))}
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="border-t py-8" style={{ borderColor: `${primary_color}30` }}>
+        <div className="max-w-6xl mx-auto px-6 text-center text-sm" style={{ color: secondary_text_color }}>
           <p>&copy; {new Date().getFullYear()} {storeName}. All rights reserved.</p>
         </div>
       </footer>

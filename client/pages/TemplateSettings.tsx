@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Loader2, Save, Eye, Check, ChevronDown } from 'lucide-react';
+import { Loader2, Save, Eye, Check, ChevronDown, Plus, Trash2 } from 'lucide-react';
 import { getAuthToken } from '@/lib/auth';
 import { uploadImage } from '@/lib/api';
 
@@ -19,6 +19,90 @@ import BabyTemplate from '@/components/templates/baby';
 import BagsTemplate from '@/components/templates/bags';
 import BeautyTemplate from '@/components/templates/beauty';
 import CafeTemplate from '@/components/templates/cafe';
+
+// Category Manager Component
+const CategoryManager = ({ categories, onChange, isDarkMode }: any) => {
+  const [cats, setCats] = useState<any[]>(() => {
+    if (typeof categories === 'string') {
+      try {
+        return JSON.parse(categories) || [];
+      } catch {
+        return [];
+      }
+    }
+    return Array.isArray(categories) ? categories : [];
+  });
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryColor, setNewCategoryColor] = useState('#3B82F6');
+
+  const handleAddCategory = () => {
+    if (newCategoryName.trim()) {
+      const updated = [...cats, { name: newCategoryName, color: newCategoryColor }];
+      setCats(updated);
+      onChange(JSON.stringify(updated));
+      setNewCategoryName('');
+      setNewCategoryColor('#3B82F6');
+    }
+  };
+
+  const handleRemoveCategory = (index: number) => {
+    const updated = cats.filter((_, i) => i !== index);
+    setCats(updated);
+    onChange(JSON.stringify(updated));
+  };
+
+  return (
+    <div className={`space-y-3 p-3 rounded border transition-colors ${isDarkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+      <div className="space-y-2">
+        <label className={`block text-sm font-medium transition-colors ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Current Categories</label>
+        <div className="flex flex-wrap gap-2">
+          {cats.map((cat, idx) => (
+            <div 
+              key={idx}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-colors ${isDarkMode ? 'bg-gray-600' : 'bg-white border border-gray-300'}`}
+              style={{ backgroundColor: cat.color + '20', borderColor: cat.color }}
+            >
+              <span style={{ color: cat.color }} className="font-medium">{cat.name}</span>
+              <button
+                onClick={() => handleRemoveCategory(idx)}
+                className="text-red-500 hover:text-red-700 ml-1"
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="border-t pt-3" style={{ borderColor: isDarkMode ? '#4B5563' : '#E5E7EB' }}>
+        <label className={`block text-sm font-medium mb-2 transition-colors ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Add New Category</label>
+        <div className="flex gap-2 flex-wrap">
+          <Input
+            type="text"
+            placeholder="Category name..."
+            value={newCategoryName}
+            onChange={(e) => setNewCategoryName(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleAddCategory()}
+            className={`flex-1 min-w-48 ${isDarkMode ? 'dark' : ''}`}
+          />
+          <input
+            type="color"
+            value={newCategoryColor}
+            onChange={(e) => setNewCategoryColor(e.target.value)}
+            className={`w-10 h-10 rounded cursor-pointer transition-colors ${isDarkMode ? 'border border-gray-600' : 'border border-gray-300'}`}
+          />
+          <Button
+            onClick={handleAddCategory}
+            className="whitespace-nowrap"
+            size="sm"
+          >
+            <Plus className="w-4 h-4 mr-1" /> Add
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 interface TemplateSettings {
   store_name?: string;
@@ -152,6 +236,13 @@ const universalSections = [
       { key: 'show_search_bar', label: 'Show Product Search Bar', type: 'checkbox' },
       { key: 'show_cart_icon', label: 'Show Shopping Cart Icon', type: 'checkbox' },
       { key: 'custom_menu_items', label: 'Custom Menu Items (JSON)', type: 'textarea', placeholder: '[{"label":"About","url":"/about"},{"label":"Contact","url":"/contact"}]' },
+    ]
+  },
+  {
+    title: '📂 Categories',
+    description: 'Create and manage product categories for your store',
+    fields: [
+      { key: 'template_categories', label: 'Store Categories (JSON format)', type: 'textarea', placeholder: '[{"name":"Electronics","color":"#3B82F6"},{"name":"Clothing","color":"#8B5CF6"},{"name":"Home","color":"#EC4899"}]', help: 'Add category name and optional color. Categories will appear as filters in your store.' },
     ]
   },
 ];
@@ -526,7 +617,7 @@ export default function TemplateSettingsPage() {
   const fetchProducts = async () => {
     try {
       const token = getAuthToken();
-      const res = await fetch('/api/client/products', {
+      const res = await fetch('/api/client/store/products', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -740,12 +831,22 @@ export default function TemplateSettingsPage() {
                       />
                     )}
                     {field.type === 'textarea' && (
-                      <textarea
-                        value={(settings[field.key as keyof TemplateSettings] as string) || ''}
-                        onChange={(e) => handleChange(field.key, e.target.value)}
-                        placeholder={field.placeholder}
-                        className={`w-full p-2 rounded text-sm font-mono resize-vertical min-h-24 transition-colors ${isDarkMode ? 'bg-gray-700 border border-gray-600 text-white' : 'bg-white border border-gray-300 text-gray-900'}`}
-                      />
+                      <>
+                        {field.key === 'template_categories' ? (
+                          <CategoryManager 
+                            categories={settings.template_categories} 
+                            onChange={(cats) => handleChange('template_categories', cats)}
+                            isDarkMode={isDarkMode}
+                          />
+                        ) : (
+                          <textarea
+                            value={(settings[field.key as keyof TemplateSettings] as string) || ''}
+                            onChange={(e) => handleChange(field.key, e.target.value)}
+                            placeholder={field.placeholder}
+                            className={`w-full p-2 rounded text-sm font-mono resize-vertical min-h-24 transition-colors ${isDarkMode ? 'bg-gray-700 border border-gray-600 text-white' : 'bg-white border border-gray-300 text-gray-900'}`}
+                          />
+                        )}
+                      </>
                     )}
                     {field.type === 'image' && (
                       <div className="flex gap-2">
@@ -829,7 +930,9 @@ export default function TemplateSettingsPage() {
                   settings: settings,
                   formatPrice: (price: number) => `${price} ${settings.currency_code || 'DZD'}`,
                   categories: [...new Set(products.map(p => p.category || 'Uncategorized'))],
-                  filters: {}
+                  filters: {},
+                  navigate: () => {},
+                  storeSlug: settings.store_slug || 'preview'
                 })
               ) : (
                 <div className={`p-3 md:p-4 text-center transition-colors ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Template not found</div>

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { TemplateProps } from '@/pages/storefront/templates/types';
+import { useTemplateUniversalSettings } from '@/hooks/useTemplateUniversalSettings';
 
 const CATEGORIES = [
   { label: "All", icon: "✨" },
@@ -14,8 +15,20 @@ const CATEGORIES = [
 ];
 
 export default function BabyTemplate(props: TemplateProps) {
+  const universalSettings = useTemplateUniversalSettings();
   const { navigate = () => {}, storeSlug = '' } = props;
   const [activeCategory, setActiveCategory] = useState("All");
+  
+  // Extract universal settings with defaults
+  const {
+    primary_color = '#ec4899',
+    secondary_color = '#fce7f3',
+    accent_color = '#f472b6',
+    text_color = '#1f2937',
+    secondary_text_color = '#6b7280',
+    font_family = 'Inter',
+    enable_animations = true,
+  } = useMemo(() => universalSettings as any || {}, [universalSettings]);
   
   const products = props.products || [];
   const storeName = props.settings?.store_name || 'BabyOS';
@@ -41,7 +54,8 @@ export default function BabyTemplate(props: TemplateProps) {
 
     return (
       <div 
-        className="bg-white rounded-[22px] p-2.5 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer flex flex-col"
+        className="rounded-[22px] p-2.5 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer flex flex-col"
+        style={{ backgroundColor: secondary_color }}
         onClick={handleProductClick}
       >
         <img 
@@ -51,28 +65,29 @@ export default function BabyTemplate(props: TemplateProps) {
         />
         <div className="mt-3 space-y-2 flex flex-col flex-grow">
           <div className="flex items-center justify-between">
-            <span className="bg-red-100 text-red-700 text-[10px] font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider">
+            <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider" style={{ backgroundColor: `${accent_color}20`, color: accent_color }}>
               Soft
             </span>
-            <span className="bg-blue-100 text-blue-700 text-[10px] font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider">
+            <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider" style={{ backgroundColor: `${primary_color}20`, color: primary_color }}>
               0–6m
             </span>
           </div>
           <div>
-            <div className="text-[11px] uppercase tracking-widest text-gray-400">
+            <div className="text-[11px] uppercase tracking-widest" style={{ color: secondary_text_color }}>
               {product.category || 'Baby'}
             </div>
-            <h3 className="text-sm font-semibold text-gray-900 mt-1">
+            <h3 className="text-sm font-semibold mt-1" style={{ color: text_color }}>
               {product.title}
             </h3>
           </div>
           <div className="flex items-center justify-between mt-auto">
-            <span className="bg-yellow-100 text-yellow-900 text-xs font-bold px-3 py-1.5 rounded-full">
+            <span className="text-xs font-bold px-3 py-1.5 rounded-full" style={{ backgroundColor: `${primary_color}20`, color: primary_color }}>
               {props.formatPrice(product.price)}
             </span>
             <button 
               onClick={handleBuyClick}
-              className="text-[11px] uppercase tracking-wider text-white font-semibold px-4 py-2 rounded-full bg-green-600 hover:bg-green-700"
+              className="text-[11px] uppercase tracking-wider font-semibold px-4 py-2 rounded-full transition"
+              style={{ backgroundColor: primary_color, color: secondary_color }}
             >
               Buy Now
             </button>
@@ -85,7 +100,9 @@ export default function BabyTemplate(props: TemplateProps) {
   return (
     <div
       className="min-h-screen"
-      style={{
+      style={{ 
+        backgroundColor: secondary_color, 
+        fontFamily: font_family,
         backgroundImage: `url('${bannerUrl}')`,
         backgroundAttachment: 'fixed',
         backgroundSize: 'cover',

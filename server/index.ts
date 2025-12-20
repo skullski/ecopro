@@ -18,11 +18,13 @@ import { createProduct as createStorefrontProduct, updateProduct as updateStoref
 import * as orderRoutes from "./routes/orders";
 import * as orderConfirmationRoutes from "./routes/order-confirmation";
 import { upload, uploadImage } from "./routes/uploads";
-import { authenticate, requireAdmin, requireSeller, requireClient } from "./middleware/auth";
+import { authenticate, requireAdmin, requireSeller, requireClient, requireStoreOwner } from "./middleware/auth";
 import * as adminRoutes from "./routes/admin";
 import * as sellerStoreRoutes from "./routes/seller-store";
 import * as dashboardRoutes from "./routes/dashboard";
 import * as botRoutes from "./routes/bot";
+import * as staffRoutes from "./routes/staff";
+import { authenticateStaff, requireStaffPermission, requireStaffClientAccess } from "./utils/staff-middleware";
 import { initializeDatabase, createDefaultAdmin, runPendingMigrations } from "./utils/database";
 import { handleHealth } from "./routes/health";
 import { handleDbCheck } from "./routes/db-check";
@@ -267,6 +269,71 @@ export function createServer() {
     authenticate,
     requireSeller,
     productRoutes.getSellerOrders
+  );
+
+  // Staff orders route (staff members can access their store's orders)
+  app.get(
+    "/api/staff/orders",
+    authenticateStaff,
+    requireStaffPermission('view_orders'),
+    staffRoutes.getStaffOrders
+  );
+
+  // Staff order status update route
+  app.patch(
+    "/api/staff/orders/:orderId/status",
+    authenticateStaff,
+    requireStaffPermission('edit_orders'),
+    staffRoutes.updateStaffOrderStatus
+  );
+
+  // Staff login (unauthenticated)
+  app.post(
+    "/api/staff/login",
+    apiLimiter,
+    staffRoutes.staffLogin
+  );
+
+  // Staff management routes (authenticated store owners only)
+  app.post(
+    "/api/seller/staff/create",
+    authenticate,
+    requireStoreOwner,
+    apiLimiter,
+    staffRoutes.createStaff
+  );
+  app.post(
+    "/api/seller/staff/invite",
+    authenticate,
+    requireStoreOwner,
+    apiLimiter,
+    staffRoutes.inviteStaff
+  );
+  app.get(
+    "/api/seller/staff",
+    authenticate,
+    requireStoreOwner,
+    staffRoutes.getStaffList
+  );
+  app.patch(
+    "/api/seller/staff/:id/permissions",
+    authenticate,
+    requireStoreOwner,
+    apiLimiter,
+    staffRoutes.updateStaffPermissions
+  );
+  app.delete(
+    "/api/seller/staff/:id",
+    authenticate,
+    requireStoreOwner,
+    apiLimiter,
+    staffRoutes.removeStaff
+  );
+  app.get(
+    "/api/seller/staff/:id/activity",
+    authenticate,
+    requireStoreOwner,
+    staffRoutes.getActivityLog
   );
 
   // Dashboard aggregated stats (authenticated users)

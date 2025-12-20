@@ -1,13 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { TemplateProps } from '@/pages/storefront/templates/types';
-import { useTemplateSettings } from '@/hooks/useTemplateData';
+import { useTemplateUniversalSettings } from '@/hooks/useTemplateUniversalSettings';
 
 export default function BagsTemplate(props: TemplateProps) {
   const [activeType, setActiveType] = useState('All');
   const { products = [], settings = {}, formatPrice = (p: number) => `${p}`, navigate, storeSlug } = props;
   
   // Read universal settings from window
-  const universalSettings = useTemplateSettings() || {};
+  const universalSettings = useTemplateUniversalSettings() || {};
 
   // Helper functions to save product data and navigate
   const handleProductClick = (product: any) => {
@@ -32,8 +32,6 @@ export default function BagsTemplate(props: TemplateProps) {
 
   // Extract universal settings with defaults
   const {
-    logo_url = undefined,
-    logo_width = 150,
     primary_color = '#1F2937',
     secondary_color = '#F3F4F6',
     accent_color = '#000000',
@@ -46,9 +44,10 @@ export default function BagsTemplate(props: TemplateProps) {
     section_padding = 40,
     border_radius = 8,
     enable_dark_mode = false,
-    default_theme = 'Light',
     show_product_shadows = true,
     enable_animations = true,
+    logo_url = '',
+    logo_width = 120,
     show_featured_section = false,
     featured_product_ids = '',
     show_testimonials = false,

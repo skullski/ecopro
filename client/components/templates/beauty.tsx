@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { TemplateProps } from '@/pages/storefront/templates/types';
+import { useTemplateUniversalSettings } from '@/hooks/useTemplateUniversalSettings';
 
 export default function BeautyTemplate(props: TemplateProps) {
+  const universalSettings = useTemplateUniversalSettings();
   const { navigate, storeSlug } = props;
   const [bagCount, setBagCount] = useState(0);
   const [wishlist, setWishlist] = useState<number[]>([]);
@@ -27,7 +29,45 @@ export default function BeautyTemplate(props: TemplateProps) {
 
   const { products = [], settings = {}, formatPrice = (p: number) => `${p}` } = props;
 
-  const concerns = ['Hydration', 'Acne', 'Glow', 'Barrier', 'Anti-aging'];
+  // Extract universal settings with defaults
+  const {
+    primary_color = '#111827',
+    secondary_color = '#fff6fb',
+    accent_color = '#111827',
+    text_color = '#111827',
+    secondary_text_color = '#6b7280',
+    font_family = 'Inter',
+    heading_size_multiplier = 'Large',
+    body_font_size = 15,
+    section_padding = 24,
+    border_radius = 8,
+    enable_dark_mode = false,
+    show_product_shadows = true,
+    enable_animations = true,
+  } = useMemo(() => universalSettings as any || {}, [universalSettings]);
+
+  const headingSizeMap: Record<string, { h1: string; h2: string }> = {
+    Small: { h1: '20px', h2: '16px' },
+    Medium: { h1: '28px', h2: '20px' },
+    Large: { h1: '32px', h2: '24px' },
+  };
+  const headingSizes = headingSizeMap[heading_size_multiplier] || headingSizeMap['Large'];
+
+  const dynamicStyles = `
+    :root {
+      --primary: ${primary_color};
+      --secondary: ${secondary_color};
+      --accent: ${accent_color};
+      --text: ${text_color};
+      --text-secondary: ${secondary_text_color};
+      --font-family: ${font_family}, system-ui, sans-serif;
+      --border-radius: ${border_radius}px;
+    }
+    h1, h2, h3 { font-family: var(--font-family); }
+    h1 { font-size: ${headingSizes.h1}; }
+    h2 { font-size: ${headingSizes.h2}; }
+    button { ${enable_animations ? 'transition: all 0.3s ease;' : ''} border-radius: var(--border-radius); }
+  `;
   const shades = [
     { id: 's1', hex: '#fbe4d5' },
     { id: 's2', hex: '#f4c7a1' },
@@ -35,6 +75,9 @@ export default function BeautyTemplate(props: TemplateProps) {
     { id: 's4', hex: '#c78453' },
     { id: 's5', hex: '#8a5a3d' }
   ];
+
+  const concerns = ['Acne', 'Sensitivity', 'Dryness', 'Oiliness', 'Aging'];
+  const routines = ['Morning', 'Evening'];
 
   const filteredProducts = products.filter((p: any) => {
     const bySearch = search ? p.title?.toLowerCase().includes(search.toLowerCase()) : true;
@@ -54,16 +97,17 @@ export default function BeautyTemplate(props: TemplateProps) {
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#fff6fb' }}>
+    <div className="min-h-screen" style={{ backgroundColor: secondary_color }}>
+      <style>{dynamicStyles}</style>
       {/* Floating bag */}
       <div className="fixed bottom-4 right-4 z-40">
         <button
-          style={{ backgroundColor: '#111827', color: '#fef2f2' }}
+          style={{ backgroundColor: primary_color, color: secondary_color }}
           className="rounded-full px-3 py-1.5 flex items-center gap-2 shadow-lg text-[11px] font-medium"
         >
           <span>Bag</span>
           <span
-            style={{ backgroundColor: '#fee2e2', color: '#b91c1c' }}
+            style={{ backgroundColor: accent_color, color: secondary_color }}
             className="w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold"
           >
             {bagCount}
@@ -72,20 +116,20 @@ export default function BeautyTemplate(props: TemplateProps) {
       </div>
 
       {/* HEADER */}
-      <header className="sticky top-0 z-40 backdrop-blur border-b" style={{ backgroundColor: 'rgba(255,255,255,0.9)', borderBottomColor: '#fce7f3' }}>
+      <header className="sticky top-0 z-40 backdrop-blur border-b" style={{ backgroundColor: `rgba(${secondary_color === '#fff6fb' ? '255,255,255' : '15,23,42'},0.9)`, borderBottomColor: secondary_text_color }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div
               className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-semibold tracking-[0.16em]"
-              style={{ backgroundColor: '#111827', color: '#fef2f2' }}
+              style={{ backgroundColor: primary_color, color: secondary_color }}
             >
               {settings.store_name ? settings.store_name.substring(0, 2).toUpperCase() : 'BS'}
             </div>
             <div>
-              <div className="font-serif text-lg font-semibold leading-tight">
+              <div className="font-serif text-lg font-semibold leading-tight" style={{ color: text_color }}>
                 {settings.store_name || 'BloomSkin'}
               </div>
-              <div className="text-[11px]" style={{ color: '#9f7a85' }}>
+              <div className="text-[11px]" style={{ color: secondary_text_color }}>
                 Skin · Color · Rituals · K‑beauty · Clinical
               </div>
             </div>
@@ -99,17 +143,17 @@ export default function BeautyTemplate(props: TemplateProps) {
               placeholder="Search serums, tints, cleansers..."
               className="w-full text-sm rounded-full px-3 py-1.5 focus:outline-none border"
               style={{
-                borderColor: '#fce7f3',
-                backgroundColor: '#fff7fb',
-                color: '#111827'
+                borderColor: secondary_text_color,
+                backgroundColor: secondary_color,
+                color: text_color
               }}
             />
           </div>
 
-          <div className="flex items-center gap-3 text-[11px]" style={{ color: '#7b4351' }}>
+          <div className="flex items-center gap-3 text-[11px]" style={{ color: secondary_text_color }}>
             <div className="hidden sm:flex items-center gap-1">
               <span>Wishlist</span>
-              <span className="px-2 py-0.5 rounded-full" style={{ backgroundColor: '#fee2e2' }}>
+              <span className="px-2 py-0.5 rounded-full" style={{ backgroundColor: accent_color, color: secondary_color }}>
                 {wishlist.length}
               </span>
             </div>

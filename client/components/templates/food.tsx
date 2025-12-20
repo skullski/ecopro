@@ -1,12 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { TemplateProps } from '@/pages/storefront/templates/types';
+import { useTemplateUniversalSettings } from '@/hooks/useTemplateUniversalSettings';
 
 export default function FoodTemplate(props: TemplateProps) {
+  const universalSettings = useTemplateUniversalSettings();
   const { navigate, storeSlug } = props;
   const [activeCategory, setActiveCategory] = useState('All');
   const [scrollY, setScrollY] = useState(0);
 
   const { products = [], settings = {}, formatPrice = (p: number) => `${p}` } = props;
+
+  // Extract universal settings with defaults
+  const {
+    primary_color = '#d97706',
+    secondary_color = '#fffbeb',
+    accent_color = '#f59e0b',
+    text_color = '#111827',
+    secondary_text_color = '#6b7280',
+    font_family = 'Inter',
+    enable_animations = true,
+  } = useMemo(() => universalSettings as any || {}, [universalSettings]);
 
   // Helper functions to save product data and navigate
   const handleProductClick = (product: any) => {
@@ -23,12 +36,12 @@ export default function FoodTemplate(props: TemplateProps) {
   // Add safety check for empty products - render placeholder
   if (!products || products.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-transparent" style={{ backgroundImage: 'radial-gradient(circle at top left, #f0eee8 0, #f7f6f4 40%, #f5f4f2 100%)' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: secondary_color }}>
         <div className="text-center max-w-md mx-auto p-4 md:p-6">
           <div className="text-6xl mb-4">🍽️</div>
-          <h1 className="text-xl md:text-2xl font-serif mb-4 text-[#111111]">No Products Yet</h1>
-          <p className="text-[#7a7a7a] mb-6">Add some menu items to your store to see them displayed here.</p>
-          <p className="text-sm text-[#9a9a9a]">Products will appear automatically once you add them to your store.</p>
+          <h1 className="text-xl md:text-2xl font-serif mb-4" style={{ color: text_color }}>No Products Yet</h1>
+          <p className="mb-6" style={{ color: secondary_text_color }}>Add some menu items to your store to see them displayed here.</p>
+          <p className="text-sm" style={{ color: secondary_text_color }}>Products will appear automatically once you add them to your store.</p>
         </div>
       </div>
     );
@@ -76,15 +89,15 @@ export default function FoodTemplate(props: TemplateProps) {
   const parallaxOffset = Math.min(scrollY * 0.06, 18);
 
   return (
-    <div className="min-h-screen bg-transparent text-[15px] antialiased" style={{ backgroundImage: 'radial-gradient(circle at top left, #f0eee8 0, #f7f6f4 40%, #f5f4f2 100%)' }}>
+    <div className="min-h-screen text-[15px] antialiased" style={{ backgroundColor: secondary_color }}>
       <style>{`
         :root {
-          --bg: #f6f5f3;
-          --bg-soft: #f9f8f6;
-          --bg-card: #ffffff;
-          --ink: #111111;
-          --muted: #7a7a7a;
-          --accent: #a3c76d;
+          --bg: ${secondary_color};
+          --bg-soft: ${secondary_color};
+          --bg-card: ${secondary_color};
+          --ink: ${text_color};
+          --muted: ${secondary_text_color};
+          --accent: ${primary_color};
           --accent-strong: #d34b36;
           --border-soft: #e3e1dd;
           --radius-lg: 18px;

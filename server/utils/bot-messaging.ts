@@ -1,5 +1,5 @@
 import twilio from "twilio";
-import { pool } from "./database";
+import { ensureConnection } from "./database";
 
 /**
  * Send WhatsApp message via Twilio
@@ -88,6 +88,7 @@ export async function createConfirmationLink(
 ): Promise<string> {
   const token = generateConfirmationToken();
   const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000); // 48 hours
+  const pool = await ensureConnection();
 
   await pool.query(
     `INSERT INTO confirmation_links (order_id, client_id, link_token, expires_at, created_at)
@@ -126,6 +127,7 @@ export async function sendOrderConfirmationMessages(
   confirmationLink: string
 ): Promise<void> {
   try {
+    const pool = await ensureConnection();
     // Get bot settings for this store owner
     const settingsResult = await pool.query(
       `SELECT * FROM bot_settings WHERE client_id = $1 AND enabled = true`,
@@ -222,6 +224,7 @@ function defaultSMSTemplate(): string {
  */
 export async function processPendingMessages(): Promise<void> {
   try {
+    const pool = await ensureConnection();
     // Get all messages that are due to be sent
     const result = await pool.query(
       `SELECT * FROM bot_messages 
@@ -265,6 +268,7 @@ export async function processPendingMessages(): Promise<void> {
         }
       } catch (error) {
         console.error(`Error processing message ${message.id}:`, error);
+        const pool = await ensureConnection();
         await pool.query(
           `UPDATE bot_messages SET status = 'failed', error_message = $1, updated_at = NOW() WHERE id = $2`,
           [error instanceof Error ? error.message : String(error), message.id]
@@ -286,6 +290,7 @@ export async function processPendingMessages(): Promise<void> {
  */
 export async function cleanupOldOrders(): Promise<void> {
   try {
+    const pool = await ensureConnection();
     // Archive declined orders older than 24 hours
     const declinedResult = await pool.query(
       `UPDATE store_orders 

@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { TemplateProps } from '@/pages/storefront/templates/types';
+import { useTemplateUniversalSettings } from '@/hooks/useTemplateUniversalSettings';
 
 export default function FurnitureTemplate(props: TemplateProps) {
+  const universalSettings = useTemplateUniversalSettings();
   const { navigate, storeSlug } = props;
   const [cartCount, setCartCount] = useState(0);
   const [wishlist, setWishlist] = useState<number[]>([]);
@@ -23,6 +25,47 @@ export default function FurnitureTemplate(props: TemplateProps) {
   const [filters, setFilters] = useState({ category: 'all', maxPrice: 999999, subcategories: [] });
 
   const { products = [], settings = {}, categories = [] } = props;
+  
+  // Extract universal settings with defaults
+  const {
+    primary_color = '#111827',
+    secondary_color = '#f3f4f6',
+    accent_color = '#1f2937',
+    text_color = '#111827',
+    secondary_text_color = '#6b7280',
+    font_family = 'Inter',
+    heading_size_multiplier = 'Large',
+    body_font_size = 15,
+    section_padding = 24,
+    border_radius = 8,
+    enable_dark_mode = false,
+    show_product_shadows = true,
+    enable_animations = true,
+  } = useMemo(() => universalSettings as any || {}, [universalSettings]);
+
+  const headingSizeMap: Record<string, { h1: string; h2: string }> = {
+    Small: { h1: '20px', h2: '16px' },
+    Medium: { h1: '28px', h2: '20px' },
+    Large: { h1: '32px', h2: '24px' },
+  };
+  const headingSizes = headingSizeMap[heading_size_multiplier] || headingSizeMap['Large'];
+
+  const dynamicStyles = `
+    :root {
+      --primary: ${primary_color};
+      --secondary: ${secondary_color};
+      --accent: ${accent_color};
+      --text: ${text_color};
+      --text-secondary: ${secondary_text_color};
+      --font-family: ${font_family}, system-ui, sans-serif;
+      --border-radius: ${border_radius}px;
+    }
+    h1, h2, h3 { font-family: var(--font-family); }
+    h1 { font-size: ${headingSizes.h1}; }
+    h2 { font-size: ${headingSizes.h2}; }
+    button { ${enable_animations ? 'transition: all 0.3s ease;' : ''} border-radius: var(--border-radius); }
+  `;
+  
   const storeName = settings.store_name || 'RoomGrid';
 
   const filteredProducts = products.slice(0, visibleCount);
@@ -37,27 +80,28 @@ export default function FurnitureTemplate(props: TemplateProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{ backgroundColor: secondary_color }}>
+      <style>{dynamicStyles}</style>
       {/* Floating Cart */}
       <div className="fixed bottom-6 right-6 z-40">
-        <button className="rounded-full bg-gray-900 text-white font-semibold px-5 py-3 flex items-center gap-2 shadow-lg">
-          Cart <span className="w-6 h-6 rounded-full bg-white text-gray-900 text-xs flex items-center justify-center font-bold">{cartCount}</span>
+        <button style={{ backgroundColor: primary_color, color: secondary_color }} className="rounded-full font-semibold px-5 py-3 flex items-center gap-2 shadow-lg">
+          Cart <span style={{ backgroundColor: secondary_color, color: primary_color }} className="w-6 h-6 rounded-full text-xs flex items-center justify-center font-bold">{cartCount}</span>
         </button>
       </div>
 
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
+      <header className="bg-white border-b sticky top-0 z-40" style={{ borderBottomColor: secondary_text_color }}>
         <div className="max-w-6xl mx-auto px-6 py-3">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-gray-900 text-white flex items-center justify-center text-xs font-bold">RG</div>
+              <div style={{ backgroundColor: primary_color, color: secondary_color }} className="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold">RG</div>
               <div>
-                <h1 className="text-sm font-semibold text-gray-900">{storeName}</h1>
-                <p className="text-xs text-gray-600">Furniture · Decor · Storage · Lighting</p>
+                <h1 className="text-sm font-semibold" style={{ color: text_color }}>{storeName}</h1>
+                <p className="text-xs" style={{ color: secondary_text_color }}>Furniture · Decor · Storage · Lighting</p>
               </div>
             </div>
-            <input type="text" placeholder="Search furniture..." className="hidden md:block flex-1 mx-6 text-sm border border-gray-200 rounded-full px-4 py-2" />
-            <div className="flex items-center gap-3 md:gap-4 text-xs text-gray-700">
+            <input type="text" placeholder="Search furniture..." className="hidden md:block flex-1 mx-6 text-sm border rounded-full px-4 py-2" style={{ borderColor: secondary_text_color, backgroundColor: secondary_color, color: text_color }} />
+            <div className="flex items-center gap-3 md:gap-4 text-xs" style={{ color: secondary_text_color }}>
               <div>Wishlist {wishlist.length}</div>
               <div>Compare {compareList.length}</div>
               <div>Cart {cartCount}</div>
@@ -65,12 +109,12 @@ export default function FurnitureTemplate(props: TemplateProps) {
           </div>
 
           {/* Navigation + Mega Menu */}
-          <div className="flex items-center gap-4 text-sm py-2 border-t border-gray-200">
+          <div className="flex items-center gap-4 text-sm py-2 border-t" style={{ borderTopColor: secondary_text_color }}>
             <div className="relative group">
-              <button className="text-gray-700 hover:text-gray-900">Shop by Room ▾</button>
-              <div className="absolute left-0 hidden group-hover:block w-80 bg-white border border-gray-200 rounded-lg shadow-lg p-4 z-50">
+              <button style={{ color: text_color }}>Shop by Room ▾</button>
+              <div className="absolute left-0 hidden group-hover:block w-80 bg-white border rounded-lg shadow-lg p-4 z-50" style={{ borderColor: secondary_text_color, backgroundColor: secondary_color }}>
                 {['Living Room', 'Bedroom', 'Office', 'Dining'].map((cat) => (
-                  <div key={cat} onClick={() => setActiveCategory(cat.toLowerCase())} className="px-3 py-2 hover:bg-gray-100 rounded cursor-pointer text-sm">
+                  <div key={cat} onClick={() => setActiveCategory(cat.toLowerCase())} className="px-3 py-2 hover:bg-gray-100 rounded cursor-pointer text-sm" style={{ color: text_color }}>
                     {cat}
                   </div>
                 ))}
@@ -81,10 +125,10 @@ export default function FurnitureTemplate(props: TemplateProps) {
       </header>
 
       {/* Hero Banner */}
-      <section className="bg-gradient-to-r from-gray-200 to-gray-100 py-6 md:py-4 md:py-6">
+      <section className="py-6 md:py-4 md:py-6" style={{ backgroundColor: secondary_text_color, color: secondary_color }}>
         <div className="max-w-6xl mx-auto px-6">
-          <h2 className="font-serif text-xl md:text-2xl font-semibold text-gray-900 mb-3">{settings.template_hero_heading || 'Furniture Collection'}</h2>
-          <p className="text-gray-700">Modern, timeless pieces for every room</p>
+          <h2 className="font-serif text-xl md:text-2xl font-semibold mb-3" style={{ fontSize: headingSizes.h2, color: text_color }}>{settings.template_hero_heading || 'Furniture Collection'}</h2>
+          <p style={{ color: secondary_text_color }}>Modern, timeless pieces for every room</p>
         </div>
       </section>
 

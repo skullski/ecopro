@@ -1,9 +1,10 @@
 import { RequestHandler } from "express";
-import { pool } from "../utils/database";
+import { ensureConnection } from "../utils/database";
 
 // Ensure images column exists on module load
 (async () => {
   try {
+    const pool = await ensureConnection();
     await pool.query(
       `ALTER TABLE IF EXISTS client_stock_products 
        ADD COLUMN IF NOT EXISTS images TEXT[] DEFAULT ARRAY[]::TEXT[]`

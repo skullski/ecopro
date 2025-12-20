@@ -1,137 +1,349 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { TemplateProps } from '@/pages/storefront/templates/types';
+import { useTemplateUniversalSettings } from '@/hooks/useTemplateUniversalSettings';
 
 export default function CafeTemplate(props: TemplateProps) {
+  const universalSettings = useTemplateUniversalSettings();
   const { navigate, storeSlug } = props;
-  const [activeCategory, setActiveCategory] = useState('All');
-
-  // Helper functions to save product data and navigate
-  const handleProductClick = (product: any) => {
-    localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
-    navigate(`/product/${product.id}`);
-  };
-
-  const handleBuyClick = (product: any, e?: any) => {
-    if (e) e.stopPropagation();
-    localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
-    navigate(`/checkout/${product.id}`);
-  };
+  const [activeCategory, setActiveCategory] = useState('all');
+  const [cartCount, setCartCount] = useState(0);
 
   const products = props.products || [];
   const settings = props.settings || {};
 
-  // Extract settings with defaults
+  // Extract universal settings with defaults
+  const {
+    primary_color = '#e2c48e',
+    secondary_color = '#f8f1e8',
+    accent_color = '#d19c54',
+    text_color = '#3b2b22',
+    secondary_text_color = '#7c6958',
+    font_family = 'Inter',
+    border_radius = 18,
+    enable_animations = true,
+  } = useMemo(() => universalSettings as any || {}, [universalSettings]);
+
   const storeName = settings.store_name || 'Sweet Home Dz';
   const storeCity = settings.store_city || 'Algiers';
-  const accentColor = settings.template_accent_color || '#92400e'; // amber-800
+  const sincYear = (settings as any).since_year || new Date().getFullYear() - 2;
+
+  // Parse custom categories from template settings if available
+  const customCategories = useMemo(() => {
+    try {
+      const cats = (settings as any).template_categories;
+      if (typeof cats === 'string') {
+        return JSON.parse(cats);
+      }
+      return Array.isArray(cats) ? cats : null;
+    } catch {
+      return null;
+    }
+  }, [settings]);
+
+  // Extract categories from products
+  let categoryList: any[] = [];
+  if (customCategories && customCategories.length > 0) {
+    // Use custom categories from settings
+    categoryList = ['all', ...customCategories.map((c: any) => c.name || c)];
+  } else {
+    // Fall back to product categories
+    categoryList = ['all', ...new Set(products.map((p: any) => p.category || 'Menu'))];
+  }
+
+  const filtered = activeCategory === 'all' ? products : products.filter((p: any) => (p.category || 'Menu') === activeCategory);
+
+  // Get best sellers (first 4 products by default)
+  const bestSellers = products.slice(0, 4);
+  
+  // Get bundle products (products with type = 'bundle' or marked as bundles)
+  const bundles = products.filter((p: any) => p.product_type === 'bundle' || p.type === 'bundle').slice(0, 3);
+
+  const handleQuickAdd = () => {
+    setCartCount(c => c + 1);
+  };
 
   // Render empty state
   if (!products || products.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-amber-50">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: secondary_color }}>
         <div className="text-center max-w-md mx-auto p-4 md:p-6">
           <div className="text-6xl mb-4">☕</div>
-          <h1 className="text-xl md:text-2xl font-bold mb-4 text-gray-900">No Products Yet</h1>
-          <p className="text-gray-600 mb-6">Add your bakery items to your store to see them displayed here.</p>
-          <p className="text-sm text-gray-500">Products will appear automatically once you add them to your store.</p>
+          <h1 className="text-xl md:text-2xl font-serif font-bold mb-4" style={{ color: text_color }}>No Products Yet</h1>
+          <p className="mb-6" style={{ color: secondary_text_color }}>Add your bakery items to your store to see them displayed here.</p>
+          <p className="text-sm" style={{ color: secondary_text_color }}>Products will appear automatically once you add them to your store.</p>
         </div>
       </div>
     );
   }
 
-  // Extract categories from products
-  const categories = ['All', ...new Set(products.map((p: any) => p.category || 'Menu'))];
-  const filtered = activeCategory === 'All' ? products : products.filter((p: any) => (p.category || 'Menu') === activeCategory);
+  // Product Card Component
+  const ProductCard = ({ product, isBundleType }: any) => (
+    <div 
+      className="rounded-lg overflow-hidden group cursor-pointer transition shadow-md hover:shadow-lg hover:-translate-y-0.5"
+      style={{ backgroundColor: '#ffffff', borderRadius: `${border_radius}px` }}
+      onClick={() => navigate(product.slug && product.slug.length > 0 ? `/store/${storeSlug}/${product.slug}` : `/product/${product.id}`)}
+    >
+      <div className="relative h-40 overflow-hidden" style={{ backgroundColor: `${secondary_text_color}20` }}>
+        <img 
+          src={product.images?.[0]} 
+          alt={product.name || product.title} 
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+        />
+      </div>
+
+      <div className="p-3">
+        <h4 className="text-sm font-semibold line-clamp-2" style={{ color: text_color }}>
+          {product.name || product.title}
+        </h4>
+        <p className="text-xs mt-1" style={{ color: secondary_text_color }}>
+          {product.price} DZD {product.unit ? `/ ${product.unit}` : ''}
+        </p>
+        
+        {product.description && (
+          <p className="text-[11px] mt-1 line-clamp-1" style={{ color: secondary_text_color }}>
+            {product.description}
+          </p>
+        )}
+
+        <div className="mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            className="w-full text-[11px] py-1.5 rounded-full font-semibold transition"
+            style={{ backgroundColor: text_color, color: secondary_color }}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleQuickAdd();
+              navigate(`/checkout/${product.id}`);
+            }}
+          >
+            {isBundleType ? 'Add tray to cart' : 'Quick add'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50 to-white">
-      {/* Header */}
-      <header className="border-b border-amber-200 bg-white sticky top-0 z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <h1 className="font-serif text-xl md:text-2xl font-semibold text-gray-900">{storeName}</h1>
-          <p className="text-sm text-gray-600 mt-1">{storeCity} · Artisan bakery</p>
+    <div style={{ background: `radial-gradient(circle at top, ${secondary_color} 0, #f8f1e8 40%, #f5ede4 100%)`, color: text_color }} className="min-h-screen">
+      {/* Sticky Cart Icon */}
+      <button
+        className="fixed bottom-4 right-4 z-30 flex items-center gap-2 px-4 py-2 rounded-full shadow-lg text-xs transition hover:shadow-xl"
+        style={{ backgroundColor: text_color, color: secondary_color }}
+      >
+        <span>Cart</span>
+        <span 
+          className="w-5 h-5 rounded-full text-[11px] flex items-center justify-center font-semibold"
+          style={{ backgroundColor: primary_color, color: text_color }}
+        >
+          {cartCount}
+        </span>
+      </button>
+
+      {/* HEADER */}
+      <header className="flex items-center justify-between px-6 py-8 max-w-6xl mx-auto">
+        <div>
+          <h1 className="font-serif text-3xl md:text-4xl font-bold tracking-tight" style={{ color: text_color }}>
+            {storeName}
+          </h1>
+          <p className="text-xs mt-1 max-w-xs" style={{ color: secondary_text_color }}>
+            Homemade Algerian sweets · prepared fresh in {storeCity}
+          </p>
+        </div>
+        <div className="hidden sm:flex flex-col items-end text-[11px]" style={{ color: secondary_text_color }}>
+          <span>Since {sincYear}</span>
+          <span>Orders via website · Delivery & pickup</span>
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="border-b border-amber-200 py-6 md:py-4 md:py-6 bg-gradient-to-br" style={{ backgroundImage: `linear-gradient(135deg, ${accentColor}20 0%, ${accentColor}10 100%)` }}>
-        <div className="max-w-7xl mx-auto px-6">
-          <h2 className="font-serif text-2xl md:text-xl md:text-2xl font-semibold mb-4 text-gray-900">Fresh Pastries</h2>
-          <p className="text-gray-700 mb-4 md:mb-6 text-sm max-w-2xl">Handcrafted bakery items made fresh daily. Order now for delivery.</p>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {products.slice(0, 6).map(p => (
-              <div key={p.id} className="bg-white border border-amber-100 rounded-lg p-4 hover:shadow-lg transition group cursor-pointer">
-                <img src={p.images?.[0]} alt={p.title || p.name} className="w-full h-40 object-cover rounded mb-3 group-hover:scale-105 transition" />
-                <p className="text-sm font-medium text-gray-900">{p.title || p.name}</p>
-                <p className="font-semibold mt-2" style={{ color: accentColor }}>{p.price} DZD</p>
-                <button 
-                  className="w-full mt-3 py-2 rounded text-sm font-medium text-white transition"
-                  style={{ backgroundColor: accentColor }}
-                  onClick={() => handleBuyClick(p)}
-                >
-                  Order Now
-                </button>
+      {/* HERO SECTION */}
+      <section className="px-6 pb-12 md:pb-16 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-7 items-center">
+          {/* Hero Text */}
+          <div>
+            <div 
+              className="inline-block rounded-full px-3 py-1.5 text-[11px] text-transform uppercase tracking-widest font-semibold mb-4"
+              style={{ backgroundColor: `${primary_color}30`, color: secondary_text_color, borderRadius: '999px', border: `1px solid ${primary_color}50` }}
+            >
+              Algerian home sweets · Online
+            </div>
+            
+            <h2 className="font-serif text-4xl md:text-5xl font-bold mt-4 leading-tight" style={{ color: text_color }}>
+              All your{' '}
+              <span style={{ color: accent_color }}>makroud, kalb el louz</span> and
+              more — in one organized store.
+            </h2>
+            
+            <p className="text-sm mt-3 max-w-md" style={{ color: secondary_text_color }}>
+              Built for 40+ different sweets, this layout keeps your trays, pieces and boxes cleanly organized so customers never feel lost.
+            </p>
+            
+            <div className="flex gap-2 mt-5 flex-wrap">
+              <button 
+                className="text-xs text-transform uppercase tracking-widest font-semibold py-2 px-4 rounded-full transition hover:-translate-y-0.5"
+                style={{ background: `linear-gradient(135deg, ${primary_color}, ${accent_color})`, color: text_color, borderRadius: '999px' }}
+                onClick={() => document.getElementById('all-products')?.scrollIntoView({ behavior: 'smooth' })}
+              >
+                Shop all sweets
+              </button>
+              
+              <button 
+                className="text-xs text-transform uppercase tracking-widest font-semibold py-2 px-4 rounded-full transition border"
+                style={{ borderColor: secondary_text_color, color: secondary_text_color, borderRadius: '999px', background: `rgba(255, 255, 255, 0.7)` }}
+              >
+                View trays & bundles
+              </button>
+            </div>
+          </div>
+
+          {/* Hero Collage - 6 images */}
+          <div className="grid grid-cols-3 gap-3">
+            {products.slice(0, 6).map((p, idx) => (
+              <div
+                key={idx}
+                className="rounded-2xl overflow-hidden shadow-md"
+                style={{ 
+                  backgroundColor: `${secondary_text_color}20`,
+                  transform: (idx === 1 || idx === 4) ? 'translateY(0.5rem)' : 'none'
+                }}
+              >
+                <img
+                  src={p.images?.[0]}
+                  alt={p.name || p.title}
+                  className="w-full h-[90px] md:h-[120px] object-cover"
+                />
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Categories */}
-      <section className="max-w-7xl mx-auto px-6 py-4 md:py-6">
-        <div className="mb-6">
-          <label className="text-xs text-gray-600 uppercase tracking-widest font-semibold block mb-3">Browse by Category</label>
-          <div className="flex gap-2 flex-wrap">
-            {categories.map(cat => (
+      {/* CATEGORY CHIPS */}
+      <section className="px-6 pb-10 max-w-6xl mx-auto">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-[11px] uppercase tracking-widest font-semibold" style={{ color: secondary_text_color }}>Browse by category</span>
+          <span className="text-[11px]" style={{ color: secondary_text_color }}>Click to filter the grid below</span>
+        </div>
+        
+        <div className="flex gap-2 md:gap-3 flex-wrap">
+          {categoryList.map((cat) => {
+            // Find custom category color if available
+            const customCat = customCategories?.find((c: any) => (c.name || c) === cat);
+            const catColor = customCat?.color || primary_color;
+            
+            return (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className="px-4 py-2 rounded-full text-sm font-medium transition border"
+                className="text-xs font-semibold uppercase tracking-widest py-1.5 px-4 rounded-full transition border"
                 style={{
-                  backgroundColor: activeCategory === cat ? accentColor : 'transparent',
-                  color: activeCategory === cat ? '#fff' : accentColor,
-                  borderColor: activeCategory === cat ? accentColor : `${accentColor}40`,
+                  backgroundColor: activeCategory === cat ? catColor : 'rgba(255, 255, 255, 0.85)',
+                  color: activeCategory === cat ? text_color : secondary_text_color,
+                  borderColor: activeCategory === cat ? catColor : '#e6d9c9',
+                  borderRadius: '999px',
                 }}
               >
-                {cat}
+                {cat === 'all' ? 'All sweets' : cat}
               </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Products Grid */}
-        <div>
-          <h3 className="font-serif text-2xl font-semibold mb-6 text-gray-900">
-            {activeCategory === 'All' ? 'All Products' : activeCategory}
-          </h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {filtered.map(p => (
-              <div 
-                key={p.id} 
-                onClick={() => handleProductClick(p)}
-                className="bg-white border border-amber-100 rounded-lg p-4 hover:shadow-lg transition group cursor-pointer flex flex-col"
-              >
-                <img src={p.images?.[0]} alt={p.title || p.name} className="w-full h-40 object-cover rounded mb-3 group-hover:scale-105 transition" />
-                <p className="text-sm font-medium text-gray-900 line-clamp-2 flex-grow">{p.title || p.name}</p>
-                <p className="text-xs text-gray-600 mt-1">{p.short_spec || p.category}</p>
-                <p className="font-semibold mt-2" style={{ color: accentColor }}>{p.price} DZD</p>
-                <button 
-                  className="w-full px-2 py-2 rounded text-sm font-medium text-white transition mt-3"
-                  style={{ backgroundColor: accentColor }}
-                  onClick={(e) => handleBuyClick(p, e)}
-                >
-                  Order Now
-                </button>
-              </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-amber-200 mt-6 md:mt-4 md:mt-6 py-4 md:py-6 bg-white">
-        <div className="max-w-7xl mx-auto px-6 text-center text-sm text-gray-600">
-          <p>&copy; {new Date().getFullYear()} {storeName}. All rights reserved.</p>
+      {/* BEST SELLERS */}
+      {bestSellers.length > 0 && (
+        <section className="px-6 pb-12 max-w-6xl mx-auto">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-[11px] uppercase tracking-widest font-semibold" style={{ color: secondary_text_color }}>Top choices</p>
+              <h3 className="font-serif text-xl font-bold" style={{ color: text_color }}>Best sellers</h3>
+            </div>
+            <span className="text-xs hidden md:inline" style={{ color: secondary_text_color }}>
+              The sweets people reorder again and again
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {bestSellers.map(p => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* BUNDLES / TRAYS */}
+      {bundles.length > 0 && (
+        <section className="px-6 pb-12 max-w-6xl mx-auto">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-[11px] uppercase tracking-widest font-semibold" style={{ color: secondary_text_color }}>High value</p>
+              <h3 className="font-serif text-xl font-bold" style={{ color: text_color }}>Trays & bundles</h3>
+            </div>
+            <span className="text-xs hidden md:inline" style={{ color: secondary_text_color }}>
+              Perfect for Eid, weddings, visits and gifts
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {bundles.map((bundle, idx) => (
+              <div key={bundle.id} className="relative">
+                {idx === 0 && (
+                  <span 
+                    className="absolute top-3 left-3 text-[10px] uppercase tracking-widest font-semibold px-2 py-1 rounded-full z-10"
+                    style={{ backgroundColor: accent_color, color: text_color, borderRadius: '999px' }}
+                  >
+                    Most popular
+                  </span>
+                )}
+                {idx === 1 && (
+                  <span 
+                    className="absolute top-3 left-3 text-[10px] uppercase tracking-widest font-semibold px-2 py-1 rounded-full z-10"
+                    style={{ backgroundColor: '#c4863a', color: '#f8f1e8', borderRadius: '999px' }}
+                  >
+                    Eid special
+                  </span>
+                )}
+                <ProductCard product={bundle} isBundleType={true} />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* FULL PRODUCT GRID */}
+      <section className="px-6 pb-14 max-w-6xl mx-auto" id="all-products">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="text-[11px] uppercase tracking-widest font-semibold" style={{ color: secondary_text_color }}>
+              {activeCategory === 'all' ? 'All items' : `Category: ${activeCategory}`}
+            </p>
+            <h3 className="font-serif text-xl font-bold" style={{ color: text_color }}>
+              {activeCategory === 'all' ? 'All sweets' : activeCategory}
+            </h3>
+          </div>
+          <span className="text-xs" style={{ color: secondary_text_color }}>
+            {filtered.length} items
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {filtered.map(p => (
+            <ProductCard key={p.id} product={p} />
+          ))}
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="border-t px-6 py-6 text-[11px]" style={{ borderColor: `${secondary_text_color}30` }}>
+        <div className="max-w-6xl mx-auto text-center flex flex-col md:flex-row gap-2 md:items-center md:justify-between" style={{ color: secondary_text_color }}>
+          <div>
+            <span>© {new Date().getFullYear()} {storeName}</span>
+            <span className="hidden md:inline"> · </span>
+            <span className="block md:inline">{storeCity} · Homemade Algerian sweets</span>
+          </div>
+          <div className="flex gap-3 justify-center md:justify-end">
+            <span>Instagram</span>
+            <span>Facebook</span>
+            <span>WhatsApp</span>
+          </div>
         </div>
       </footer>
     </div>

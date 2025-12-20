@@ -55,3 +55,15 @@ export function extractToken(authHeader: string | undefined): string | null {
   }
   return authHeader.substring(7);
 }
+
+/**
+ * Generate a secure random password for staff invitations
+ */
+export function generateSecurePassword(length: number = 12): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+  let password = '';
+  for (let i = 0; i < length; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return password;
+}

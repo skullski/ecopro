@@ -7,6 +7,10 @@ export interface JWTPayload {
   email: string;
   role: "user" | "admin" | "seller";
   user_type: "admin" | "client" | "seller";
+  // Staff authentication (completely separate from owner authentication)
+  isStaff?: boolean;
+  staffId?: number; // Only present if staff member
+  clientId?: number; // Only present if staff member (which client they work for)
   // Add other JWT payload properties as needed
 }
 /**

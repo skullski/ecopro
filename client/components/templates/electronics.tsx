@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { TemplateProps } from '@/pages/storefront/templates/types';
+import { useTemplateUniversalSettings } from '@/hooks/useTemplateUniversalSettings';
 
 export default function ElectronicsTemplate(props: TemplateProps) {
+  const universalSettings = useTemplateUniversalSettings();
   const { navigate, storeSlug } = props;
   const [activeCategory, setActiveCategory] = useState('all');
 
@@ -20,21 +22,61 @@ export default function ElectronicsTemplate(props: TemplateProps) {
   const products = props.products || [];
   const settings = props.settings || {};
   
-  // Extract settings with defaults
+  // Extract universal settings with defaults
+  const {
+    primary_color = '#22d3ee',
+    secondary_color = '#0f172a',
+    accent_color = '#22d3ee',
+    text_color = '#e2e8f0',
+    secondary_text_color = '#94a3b8',
+    font_family = 'Inter',
+    heading_size_multiplier = 'Large',
+    body_font_size = 14,
+    section_padding = 24,
+    border_radius = 8,
+    enable_dark_mode = true,
+    show_product_shadows = true,
+    enable_animations = true,
+  } = useMemo(() => universalSettings as any || {}, [universalSettings]);
+  
+  const accentColor = accent_color;
+  
   const storeName = settings.store_name || 'ElectroVerse';
   const storeCity = (settings as any).store_city || 'Algiers';
   const heroBadge = (settings as any).template_hero_badge || '2025 line-up';
-  const accentColor = settings.template_accent_color || '#22d3ee'; // cyan-400
+  
+  const headingSizeMap: Record<string, { h1: string; h2: string }> = {
+    Small: { h1: '20px', h2: '16px' },
+    Medium: { h1: '28px', h2: '20px' },
+    Large: { h1: '32px', h2: '24px' },
+  };
+  const headingSizes = headingSizeMap[heading_size_multiplier] || headingSizeMap['Large'];
+  
+  const dynamicStyles = `
+    :root {
+      --primary: ${primary_color};
+      --secondary: ${secondary_color};
+      --accent: ${accent_color};
+      --text: ${text_color};
+      --text-secondary: ${secondary_text_color};
+      --font-family: ${font_family}, system-ui, sans-serif;
+      --border-radius: ${border_radius}px;
+    }
+    h1, h2, h3 { font-family: var(--font-family); }
+    h1 { font-size: ${headingSizes.h1}; }
+    h2 { font-size: ${headingSizes.h2}; }
+    button { ${enable_animations ? 'transition: all 0.3s ease;' : ''} border-radius: var(--border-radius); }
+  `;
 
   // Render empty state if no products
   if (!products || products.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'radial-gradient(circle at top, #0f172a 0, #020617 45%, #000 100%)' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: enable_dark_mode ? 'radial-gradient(circle at top, #0f172a 0, #020617 45%, #000 100%)' : secondary_color }}>
         <div className="text-center max-w-md mx-auto p-4 md:p-6">
           <div className="text-6xl mb-4">🔌</div>
-          <h1 className="text-xl md:text-2xl font-bold mb-4 text-gray-200">No Products Yet</h1>
-          <p className="text-slate-400 mb-6">Add some electronics to your store to see them displayed here.</p>
-          <p className="text-sm text-slate-500">Products will appear automatically once you add them to your store.</p>
+          <h1 className="text-xl md:text-2xl font-bold mb-4" style={{ color: text_color }}>No Products Yet</h1>
+          <p className="mb-6" style={{ color: secondary_text_color }}>Add some electronics to your store to see them displayed here.</p>
+          <p className="text-sm" style={{ color: secondary_text_color }}>Products will appear automatically once you add them to your store.</p>
         </div>
       </div>
     );
@@ -45,7 +87,8 @@ export default function ElectronicsTemplate(props: TemplateProps) {
   const filteredProducts = activeCategory === 'all' ? products : products.filter((p: any) => p.category === activeCategory);
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-4 md:py-6 relative" style={{ background: 'radial-gradient(circle at top, #0f172a 0, #020617 45%, #000 100%)' }}>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-4 md:py-6 relative" style={{ background: enable_dark_mode ? 'radial-gradient(circle at top, #0f172a 0, #020617 45%, #000 100%)' : secondary_color }}>
+      <style>{dynamicStyles}</style>
       <header className="flex items-center justify-between mb-4 md:mb-6">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-slate-950 text-xs font-bold tracking-widest">EV</div>
@@ -74,7 +117,7 @@ export default function ElectronicsTemplate(props: TemplateProps) {
                 New · {heroBadge}
               </span>
               <h2 className="mt-4 text-xl md:text-2xl sm:text-2xl md:text-xl md:text-2xl font-bold leading-tight text-gray-100">
-                Flagship <span style={{ color: accentColor }}>performance</span> for your entire tech store.
+                Flagship <span style={{ color: accent_color }}>performance</span> for your entire tech store.
               </h2>
               <p className="mt-3 text-sm text-slate-200 max-w-md">
                 Showcase phones, headphones, gaming gear and accessories in a layout that feels engineered.

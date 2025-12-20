@@ -311,7 +311,7 @@ export default function SellerDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
-      <div className="container mx-auto px-4 py-4 md:py-6">
+      <div className="w-4/5 mx-auto px-4 py-4 md:py-6">
         {/* Header */}
         <div className="mb-4">
           <h1 className="text-2xl font-bold mb-1">My Products</h1>

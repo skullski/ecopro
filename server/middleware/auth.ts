@@ -91,3 +91,27 @@ export function requireSeller(req: Request, res: Response, next: NextFunction) {
   }
   next();
 }
+
+/**
+ * Middleware to check if user is a store owner (has a store)
+ * Allows clients and sellers with stores
+ */
+export function requireStoreOwner(req: Request, res: Response, next: NextFunction) {
+  if (!req.user) {
+    res.status(401).json({ error: "Authentication required - no user in token" });
+    return;
+  }
+
+  // Check if user has valid user_type
+  if (!req.user.user_type) {
+    res.status(403).json({ error: "Invalid token - user_type missing" });
+    return;
+  }
+
+  // Allow if user is admin, seller, or client (clients can have stores too)
+  if (req.user.user_type !== "admin" && req.user.user_type !== "seller" && req.user.user_type !== "client") {
+    res.status(403).json({ error: `Store owner access required - got user_type: ${req.user.user_type}` });
+    return;
+  }
+  next();
+}

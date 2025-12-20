@@ -50,10 +50,18 @@ export async function createPublicProduct(): Promise<never> {
 export async function uploadImage(file: File): Promise<{ url: string }> {
   const formData = new FormData();
   formData.append('image', file);
-  const res = await fetch(`${API_URL}/products/upload`, {
+  const token = getAuthToken();
+  const res = await fetch(`${API_URL}/upload`, {
     method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
     body: formData,
   });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.error || 'Upload failed');
+  }
   return res.json();
 }
 

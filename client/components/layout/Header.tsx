@@ -2,7 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/lib/i18n";
-import { Sparkles, Menu, X, LogOut, LayoutDashboard, ShoppingBag, Crown, PlusCircle } from "lucide-react";
+import { Sparkles, Menu, X, LogOut, LayoutDashboard, ShoppingBag, Crown, PlusCircle, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { authApi } from "@/lib/auth";
 
@@ -11,6 +11,7 @@ export default function Header() {
   const { locale, setLocale, t } = useTranslation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [langMenuOpen, setLangMenuOpen] = useState(false);
 
   const user = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user") || "null") : null;
   const isAdmin = user?.role === "admin";
@@ -93,16 +94,37 @@ export default function Header() {
             {/* Right Side Actions */}
             <div className="flex items-center gap-2">
               {/* Language Selector */}
-              <div className="hidden md:block">
-                <select 
-                  value={locale} 
-                  onChange={(e) => setLocale(e.target.value as 'ar' | 'en' | 'fr')} 
-                  className="px-3 py-2 rounded-lg border-2 border-primary/25 bg-gradient-to-br from-primary/10 to-accent/8 text-sm font-bold text-foreground hover:border-primary/40 hover:bg-gradient-to-br hover:from-primary/15 hover:to-accent/12 focus:border-primary/50 focus:outline-none transition-all shadow-md dark:bg-gradient-to-br dark:from-primary/12 dark:to-accent/10"
+              <div className="hidden md:block relative">
+                <button 
+                  onClick={() => setLangMenuOpen(!langMenuOpen)}
+                  className="px-4 py-2.5 rounded-lg border-2 border-primary/25 bg-gradient-to-br from-primary/10 to-accent/8 text-sm font-bold text-black dark:text-white hover:border-primary/40 hover:bg-gradient-to-br hover:from-primary/15 hover:to-accent/12 focus:border-primary/50 focus:outline-none transition-all shadow-md dark:bg-gradient-to-br dark:from-primary/12 dark:to-accent/10 flex items-center gap-2"
                 >
-                  <option value="ar">🇩🇿 العربية</option>
-                  <option value="en">🇬🇧 EN</option>
-                  <option value="fr">🇫🇷 FR</option>
-                </select>
+                  <span>{locale === 'ar' ? '🇩🇿' : locale === 'en' ? '🇬🇧' : '🇫🇷'}</span>
+                  <ChevronDown className="w-3 h-3" />
+                </button>
+                
+                {langMenuOpen && (
+                  <div className="absolute top-full mt-1 right-0 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg z-50 min-w-max">
+                    <button 
+                      onClick={() => { setLocale('ar'); setLangMenuOpen(false); }}
+                      className="w-full text-left px-4 py-2 text-sm text-black dark:text-white hover:bg-gray-100 dark:hover:bg-slate-700 first:rounded-t-lg transition-colors"
+                    >
+                      🇩🇿 العربية
+                    </button>
+                    <button 
+                      onClick={() => { setLocale('en'); setLangMenuOpen(false); }}
+                      className="w-full text-left px-4 py-2 text-sm text-black dark:text-white hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+                    >
+                      🇬🇧 EN
+                    </button>
+                    <button 
+                      onClick={() => { setLocale('fr'); setLangMenuOpen(false); }}
+                      className="w-full text-left px-4 py-2 text-sm text-black dark:text-white hover:bg-gray-100 dark:hover:bg-slate-700 last:rounded-b-lg transition-colors"
+                    >
+                      🇫🇷 FR
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Theme Toggle */}

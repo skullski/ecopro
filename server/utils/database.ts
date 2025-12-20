@@ -26,10 +26,11 @@ export async function ensureConnection(retries = 5): Promise<Pool> {
     pool = new Pool({
       connectionString,
       ssl: { rejectUnauthorized: false },
-      max: 20,
-      min: 2,
-      idleTimeoutMillis: 15000,
-      connectionTimeoutMillis: 10000,
+      max: 10,
+      min: 1,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 30000,
+      statementTimeoutMillis: 30000,
     });
   }
 
@@ -210,11 +211,20 @@ export async function createDefaultAdmin(
 }
 
 /**
+ * Get database pool - ensures connection before returning
+ */
+export async function getPool(): Promise<Pool> {
+  return ensureConnection();
+}
+
+/**
  * Close database pool
  */
 export async function closeDatabasePool(): Promise<void> {
-  await pool.end();
+  if (pool) {
+    await pool.end();
+  }
 }
 
-// Export pool for advanced queries
+// Export pool for backward compatibility (but it may be null initially)
 export { pool };

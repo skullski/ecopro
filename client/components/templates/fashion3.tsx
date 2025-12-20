@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { TemplateProps } from '@/pages/storefront/templates/types';
+import { useTemplateUniversalSettings } from '@/hooks/useTemplateUniversalSettings';
 
 export default function Fashion3Template(props: TemplateProps) {
+  const universalSettings = useTemplateUniversalSettings();
   const { navigate, storeSlug } = props;
   const [bagCount, setBagCount] = useState(0);
   const [wishlist, setWishlist] = useState<number[]>([]);
@@ -28,6 +30,19 @@ export default function Fashion3Template(props: TemplateProps) {
   const [quickViewProduct, setQuickViewProduct] = useState<any>(null);
 
   const { products = [], settings = {}, categories = [] } = props;
+  
+  // Extract universal settings with defaults
+  const {
+    primary_color = '#1f2937',
+    secondary_color = '#ffffff',
+    accent_color = '#3b82f6',
+    text_color = '#1f2937',
+    secondary_text_color = '#6b7280',
+    font_family = 'Inter',
+    heading_size_multiplier = 'Large',
+    enable_animations = true,
+  } = useMemo(() => universalSettings as any || {}, [universalSettings]);
+  
   const storeName = settings.store_name || 'LineaWear';
   const city = 'Algiers';
 
@@ -65,34 +80,34 @@ export default function Fashion3Template(props: TemplateProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100">
+    <div className="min-h-screen" style={{ backgroundColor: primary_color }}>
       {/* Floating Bag */}
       <div className="fixed bottom-6 right-6 z-40">
-        <button className="rounded-full bg-yellow-400 text-gray-900 font-semibold px-5 py-3 flex items-center gap-2 shadow-lg border border-yellow-400">
-          Bag <span className="w-6 h-6 rounded-full bg-gray-900 text-yellow-400 text-xs flex items-center justify-center font-bold">{bagCount}</span>
+        <button className="rounded-full font-semibold px-5 py-3 flex items-center gap-2 shadow-lg transition" style={{ backgroundColor: accent_color, color: secondary_color, border: `1px solid ${accent_color}` }}>
+          Bag <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" style={{ backgroundColor: primary_color, color: accent_color }}>{bagCount}</span>
         </button>
       </div>
 
       {/* Seasonal Drop Banner */}
-      <div className="bg-gradient-to-r from-yellow-500 via-amber-400 to-rose-500 text-gray-900 text-xs px-4 py-2 flex items-center justify-center gap-3 font-semibold">
+      <div className="text-xs px-4 py-2 flex items-center justify-center gap-3 font-semibold" style={{ backgroundImage: `linear-gradient(to right, ${accent_color}, ${accent_color}cc)`, color: secondary_color }}>
         <span className="uppercase tracking-widest">Drop 01 · Night Shift</span>
         <span className="hidden sm:inline text-xs">Oversized coat, cargos and sneakers — limited run.</span>
-        <button className="border border-gray-900 rounded-full px-3 py-0.5 uppercase text-xs font-semibold bg-gray-900 text-yellow-400">Shop</button>
+        <button className="rounded-full px-3 py-0.5 uppercase text-xs font-semibold transition" style={{ border: `1px solid ${secondary_color}`, backgroundColor: primary_color, color: accent_color }}>Shop</button>
       </div>
 
       {/* Header */}
-      <header className="bg-gray-900/90 backdrop-blur border-b border-gray-700 sticky top-0 z-40">
+      <header className="backdrop-blur sticky top-0 z-40" style={{ backgroundColor: `${primary_color}E6`, borderBottom: `1px solid ${secondary_text_color}30` }}>
         <div className="max-w-6xl mx-auto px-6 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-yellow-400 text-gray-900 flex items-center justify-center text-xs font-bold">LW</div>
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold" style={{ backgroundColor: accent_color, color: secondary_color }}>LW</div>
               <div>
-                <h1 className="font-serif text-lg font-semibold text-white">{storeName}</h1>
-                <p className="text-xs text-gray-400">Men · Women · Street · Tailored</p>
+                <h1 className="font-serif text-lg font-semibold" style={{ color: secondary_color }}>{storeName}</h1>
+                <p className="text-xs" style={{ color: secondary_text_color }}>Men · Women · Street · Tailored</p>
               </div>
             </div>
-            <input type="text" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} className="hidden md:block text-sm border border-gray-700 rounded-full px-4 py-2 bg-gray-800 text-white" />
-            <div className="flex items-center gap-4 text-xs text-gray-400">
+            <input type="text" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} className="hidden md:block text-sm rounded-full px-4 py-2" style={{ border: `1px solid ${secondary_text_color}40`, backgroundColor: `${secondary_color}20`, color: text_color }} />
+            <div className="flex items-center gap-4 text-xs" style={{ color: secondary_text_color }}>
               <div>Wishlist {wishlist.length}</div>
               <div>{city}</div>
             </div>
@@ -122,37 +137,37 @@ export default function Fashion3Template(props: TemplateProps) {
 
             {/* Hotspot Outfit */}
             <div className="flex flex-col gap-4">
-              <div className="relative rounded-2xl overflow-hidden border border-gray-700 bg-black h-56">
+              <div className="relative rounded-2xl overflow-hidden h-56" style={{ border: `1px solid ${secondary_text_color}30`, backgroundColor: primary_color }}>
                 <img src={products[0]?.images?.[0] || 'https://via.placeholder.com/400'} alt="Outfit" className="w-full h-full object-cover" />
                 {hotspotPoints.map((point) => (
                   <div key={point.id} className="absolute" style={{ top: point.y, left: point.x }} onMouseEnter={() => setActiveHotspot(point.id)} onMouseLeave={() => setActiveHotspot(null)}>
-                    <div className="w-4 h-4 rounded-full border-2 border-yellow-400 bg-gray-900/50 flex items-center justify-center text-xs text-yellow-400 cursor-pointer">+</div>
+                    <div className="w-4 h-4 rounded-full flex items-center justify-center text-xs cursor-pointer transition" style={{ border: `2px solid ${accent_color}`, backgroundColor: `${primary_color}80`, color: accent_color }}>+</div>
                     {activeHotspot === point.id && (
-                      <div className="absolute top-0 left-6 bg-gray-900 border border-gray-700 rounded-lg p-2 text-xs whitespace-nowrap z-10">
-                        <div className="font-semibold text-white">{point.label}</div>
-                        <div className="text-yellow-400">{point.price} DZD</div>
+                      <div className="absolute top-0 left-6 rounded-lg p-2 text-xs whitespace-nowrap z-10" style={{ backgroundColor: primary_color, border: `1px solid ${secondary_text_color}30` }}>
+                        <div className="font-semibold" style={{ color: secondary_color }}>{point.label}</div>
+                        <div style={{ color: accent_color }}>{point.price} DZD</div>
                       </div>
                     )}
                   </div>
                 ))}
               </div>
-              <div className="rounded-2xl border border-gray-700 bg-gradient-to-r from-gray-900 to-gray-800 p-4 flex flex-col justify-between h-40">
+              <div className="rounded-2xl p-4 flex flex-col justify-between h-40" style={{ border: `1px solid ${secondary_text_color}30`, backgroundImage: `linear-gradient(to right, ${primary_color}66, ${primary_color}33)` }}>
                 <div>
-                  <p className="text-yellow-400 text-xs font-bold uppercase mb-1">Shop the outfit</p>
-                  <h3 className="font-serif text-xl font-semibold text-white">One side is energy, the other is structure.</h3>
-                  <p className="text-xs text-gray-300 mt-2">Campaign video, hotspot outfit and lookbook slider above a clean catalog.</p>
+                  <p className="text-xs font-bold uppercase mb-1" style={{ color: accent_color }}>Shop the outfit</p>
+                  <h3 className="font-serif text-xl font-semibold" style={{ color: secondary_color }}>One side is energy, the other is structure.</h3>
+                  <p className="text-xs mt-2" style={{ color: secondary_text_color }}>Campaign video, hotspot outfit and lookbook slider above a clean catalog.</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Lookbook Slider */}
-          <div className="rounded-2xl border border-gray-700 bg-gray-900 p-6">
+          <div className="rounded-2xl p-6" style={{ border: `1px solid ${secondary_text_color}30`, backgroundColor: primary_color }}>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-yellow-400 text-xs font-bold uppercase">Lookbook</p>
-                <h3 className="font-serif text-2xl font-semibold text-white mt-1">{currentLook.name}</h3>
-                <p className="text-xs text-gray-300">{currentLook.description}</p>
+                <p className="text-xs font-bold uppercase" style={{ color: accent_color }}>Lookbook</p>
+                <h3 className="font-serif text-2xl font-semibold mt-1" style={{ color: secondary_color }}>{currentLook.name}</h3>
+                <p className="text-xs" style={{ color: secondary_text_color }}>{currentLook.description}</p>
               </div>
               <div className="hidden sm:flex gap-2">
                 <button onClick={() => setLookIndex(i => i === 0 ? lookbook.length - 1 : i - 1)} className="px-3 py-1 border border-gray-600 rounded-full text-gray-300 hover:border-yellow-400">←</button>
