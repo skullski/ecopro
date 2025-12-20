@@ -78,6 +78,17 @@ interface Store {
   created_at: string;
 }
 
+interface StaffMember {
+  id: number;
+  store_id: number;
+  email: string;
+  role: string;
+  status: string;
+  store_name: string;
+  owner_email: string;
+  created_at: string;
+}
+
 export default function PlatformAdmin() {
   const { t } = useTranslation();
   const [stats, setStats] = useState<PlatformStats>({
@@ -93,6 +104,7 @@ export default function PlatformAdmin() {
   const [users, setUsers] = useState<User[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [stores, setStores] = useState<Store[]>([]);
+  const [staff, setStaff] = useState<StaffMember[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stores' | 'products' | 'activity' | 'settings'>('overview');
@@ -116,7 +128,7 @@ export default function PlatformAdmin() {
         return;
       }
 
-      const [usersRes, productsRes, statsRes, storesRes, activityRes] = await Promise.all([
+      const [usersRes, productsRes, statsRes, storesRes, activityRes, staffRes] = await Promise.all([
         fetch('/api/admin/users', {
           headers: { Authorization: `Bearer ${token}` },
         }),
@@ -128,6 +140,9 @@ export default function PlatformAdmin() {
           headers: { Authorization: `Bearer ${token}` },
         }).catch(() => null),
         fetch('/api/admin/activity-logs', {
+          headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => null),
+        fetch('/api/admin/staff', {
           headers: { Authorization: `Bearer ${token}` },
         }).catch(() => null),
       ]);
@@ -166,6 +181,11 @@ export default function PlatformAdmin() {
       if (activityRes && activityRes.ok) {
         const activityData = await activityRes.json();
         setActivityLogs(activityData || []);
+      }
+
+      if (staffRes && staffRes.ok) {
+        const staffData = await staffRes.json();
+        setStaff(staffData || []);
       }
 
       if (statsRes && statsRes.ok) {
@@ -503,7 +523,7 @@ export default function PlatformAdmin() {
 
         {/* Users Tab */}
         {activeTab === 'users' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Admins */}
             <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 shadow-lg overflow-hidden">
               <div className="p-6 border-b border-slate-700/50 bg-gradient-to-r from-red-600/20 to-pink-600/20">
@@ -563,6 +583,35 @@ export default function PlatformAdmin() {
                 ))}
                 {users.filter(u => u.user_type === 'client').length === 0 && (
                   <div className="p-6 text-sm text-slate-400 text-center">No store owners</div>
+                )}
+              </div>
+            </div>
+
+            {/* Managers/Staff */}
+            <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 shadow-lg overflow-hidden">
+              <div className="p-6 border-b border-slate-700/50 bg-gradient-to-r from-blue-600/20 to-cyan-600/20">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Users className="w-5 h-5 text-blue-400" />
+                  Managers ({staff.length})
+                </h3>
+              </div>
+              <div className="divide-y divide-slate-700/50 max-h-96 overflow-auto">
+                {staff.map((staffMember) => (
+                  <div key={staffMember.id} className="p-4 hover:bg-slate-700/30 transition-colors">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-white text-sm">{staffMember.email}</p>
+                        <p className="text-xs text-slate-400 truncate">{staffMember.store_name}</p>
+                        <p className="text-xs text-slate-500">Owner: {staffMember.owner_email}</p>
+                      </div>
+                      <Badge className={staffMember.status === 'active' ? 'bg-blue-500/80 text-white' : 'bg-slate-500/80 text-white'}>
+                        {staffMember.status}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+                {staff.length === 0 && (
+                  <div className="p-6 text-sm text-slate-400 text-center">No managers</div>
                 )}
               </div>
             </div>

@@ -157,3 +157,22 @@ export const deleteClientStoreProduct: RequestHandler = async (req, res) => {
     return jsonError(res, 500, 'Failed to delete product');
   }
 };
+
+// List all staff members across all stores (admin only)
+export const listAllStaff: RequestHandler = async (_req, res) => {
+  try {
+    const { pool } = await import("../utils/database");
+    const result = await pool.query(
+      `SELECT 
+        ss.id, ss.store_id, ss.email, ss.role, ss.status, ss.created_at,
+        cs.store_name, cs.email as owner_email
+      FROM store_staff ss
+      JOIN clients cs ON ss.store_id = cs.id
+      ORDER BY ss.created_at DESC`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Failed to list staff:', err);
+    return jsonError(res, 500, "Failed to list staff members");
+  }
+};
