@@ -24,6 +24,7 @@
     "typecheck": "tsc"
   },
   "dependencies": {
+    "argon2": "^0.44.0",
     "bcrypt": "^6.0.0",
     "chart.js": "^4.5.1",
     "compression": "^1.8.1",

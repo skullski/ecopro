@@ -1,16 +1,25 @@
-// Extract user info from request (set by requireAuth)
-export function getUserFromRequest(req: any) {
-  return req.user;
-}
-import argon2 from "argon2";
-import jwt from "jsonwebtoken";
+import * as argon2 from "argon2";
+import * as jwt from "jsonwebtoken";
 
 // Security: Stronger token expiry (15 minutes for access token)
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-in-production";
 const JWT_EXPIRES_IN = "15m"; // Access token expires in 15 minutes (was 7d - security risk!)
 const REFRESH_TOKEN_EXPIRES_IN = "7d"; // Refresh token expires in 7 days
 
-import { JWTPayload } from "@shared/api";
+interface JWTPayload {
+  id: string;
+  email: string;
+  user_type?: string;
+  role?: string;
+  client_id?: string;
+  staff_id?: string;
+  permissions?: Record<string, boolean>;
+}
+
+// Extract user info from request (set by requireAuth)
+export function getUserFromRequest(req: any) {
+  return req.user;
+}
 
 /**
  * Hash a password using argon2id (more secure than bcrypt)
