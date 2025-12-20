@@ -54,8 +54,8 @@ export function ActivityLog({ storeId, staffId }: ActivityLogProps) {
     try {
       setLoading(true);
       const url = staffId
-        ? `/api/seller/staff/${staffId}/activity?limit=100`
-        : `/api/seller/staff/0/activity?limit=100`;
+        ? `/api/client/staff/${staffId}/activity?limit=100`
+        : `/api/client/staff/0/activity?limit=100`;
 
       const response = await fetch(url, {
         headers: {

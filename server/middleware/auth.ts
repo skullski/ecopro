@@ -77,24 +77,17 @@ export function requireClient(req: Request, res: Response, next: NextFunction) {
 }
 
 /**
- * Middleware to check if user is a seller
+ * Middleware to check if user is a seller (REMOVED - sellers no longer exist)
  */
 export function requireSeller(req: Request, res: Response, next: NextFunction) {
-  if (!req.user) {
-    res.status(401).json({ error: "Authentication required" });
-    return;
-  }
-
-  if (req.user.user_type !== "seller" && req.user.user_type !== "admin") {
-    res.status(403).json({ error: "Seller access required" });
-    return;
-  }
-  next();
+  // Sellers have been removed from the platform
+  res.status(403).json({ error: "Seller functionality has been removed" });
+  return;
 }
 
 /**
- * Middleware to check if user is a store owner (has a store)
- * Allows clients and sellers with stores
+ * Middleware to check if user is a store owner (clients only)
+ * Allows clients with stores
  */
 export function requireStoreOwner(req: Request, res: Response, next: NextFunction) {
   if (!req.user) {
@@ -108,8 +101,8 @@ export function requireStoreOwner(req: Request, res: Response, next: NextFunctio
     return;
   }
 
-  // Allow if user is admin, seller, or client (clients can have stores too)
-  if (req.user.user_type !== "admin" && req.user.user_type !== "seller" && req.user.user_type !== "client") {
+  // Allow if user is admin or client (removed seller check)
+  if (req.user.user_type !== "admin" && req.user.user_type !== "client") {
     res.status(403).json({ error: `Store owner access required - got user_type: ${req.user.user_type}` });
     return;
   }

@@ -10,7 +10,6 @@ import {
   AlertCircle,
   Activity,
   Eye,
-  UserCheck,
   Shield,
   BarChart3,
   Settings,
@@ -60,13 +59,6 @@ interface Product {
   created_at: string;
 }
 
-interface Seller {
-  id: number;
-  email: string;
-  name: string;
-  created_at: string;
-}
-
 interface ActivityLog {
   id: number;
   client_id: number;
@@ -100,7 +92,6 @@ export default function PlatformAdmin() {
   });
   const [users, setUsers] = useState<User[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  const [sellers, setSellers] = useState<Seller[]>([]);
   const [stores, setStores] = useState<Store[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -146,13 +137,11 @@ export default function PlatformAdmin() {
         setUsers(usersData);
 
         const clients = usersData.filter((u: User) => u.user_type === 'client').length;
-        const sellers = usersData.filter((u: User) => u.user_type === 'seller').length;
 
         setStats(prev => ({
           ...prev,
           totalUsers: usersData.length,
           totalClients: clients,
-          totalSellers: sellers,
         }));
       }
 
@@ -278,28 +267,6 @@ export default function PlatformAdmin() {
       alert('Failed to convert user to seller');
     } finally {
       setConverting(null);
-    }
-  };
-
-  const handleDeleteSeller = async (sellerId: number) => {
-    const confirmDelete = confirm('Delete this seller account? This action cannot be undone.');
-    if (!confirmDelete) return;
-    try {
-      const token = localStorage.getItem('authToken');
-      const res = await fetch(`/api/admin/sellers/${sellerId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        setSellers(prev => prev.filter(s => s.id !== sellerId));
-        setStats(prev => ({ ...prev, totalSellers: Math.max(0, prev.totalSellers - 1) }));
-      } else {
-        const txt = await res.text();
-        alert(`Failed to delete seller: ${txt}`);
-      }
-    } catch (e) {
-      console.error('Failed to delete seller:', e);
-      alert('Failed to delete seller');
     }
   };
 
@@ -596,35 +563,6 @@ export default function PlatformAdmin() {
                 ))}
                 {users.filter(u => u.user_type === 'client').length === 0 && (
                   <div className="p-6 text-sm text-slate-400 text-center">No store owners</div>
-                )}
-              </div>
-            </div>
-
-            {/* Sellers */}
-            <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 shadow-lg overflow-hidden">
-              <div className="p-6 border-b border-slate-700/50 bg-gradient-to-r from-cyan-600/20 to-blue-600/20">
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <UserCheck className="w-5 h-5 text-cyan-400" />
-                  Sellers ({sellers.length})
-                </h3>
-              </div>
-              <div className="divide-y divide-slate-700/50 max-h-96 overflow-auto">
-                {sellers.map((seller) => (
-                  <div key={seller.id} className="p-4 hover:bg-slate-700/30 transition-colors">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-white">{seller.name || seller.email}</p>
-                        <p className="text-xs text-slate-400 truncate">{seller.email}</p>
-                      </div>
-                      <Badge className="bg-cyan-500/80 text-white">Seller</Badge>
-                    </div>
-                    <Button size="sm" variant="destructive" className="w-full text-xs" onClick={() => handleDeleteSeller(seller.id)}>
-                      Delete
-                    </Button>
-                  </div>
-                ))}
-                {sellers.length === 0 && (
-                  <div className="p-6 text-sm text-slate-400 text-center">No sellers</div>
                 )}
               </div>
             </div>

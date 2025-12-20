@@ -1,4 +1,4 @@
-// SellerSignup page removed
+// Seller pages removed
 import Pricing from "./pages/Pricing";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
@@ -16,11 +16,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
-import Marketplace from "./pages/Marketplace";
 import Product from "./pages/Product";
-import SellerLogin from "./pages/SellerLogin";
-import SellerSignup from "./pages/SellerSignup";
-import SellerDashboard from "./pages/SellerDashboard";
 import PlatformAdmin from "./pages/PlatformAdmin";
 import React, { Suspense } from "react";
 // QuickSell removed
@@ -111,9 +107,6 @@ function RequirePaidClient({ children }: { children: JSX.Element }) {
   if (userType === "admin" || user.role === "admin") {
     return <Navigate to="/platform-admin" replace />;
   }
-  if (userType === "seller" || user.role === "seller") {
-    return <Navigate to="/seller/dashboard" replace />;
-  }
   return children;
 }
 
@@ -124,23 +117,6 @@ function RequireClient({ children }: { children: JSX.Element }) {
 
 function RequireVendor({ children }: { children: JSX.Element }) {
   // Vendor flows removed — treat this as a no-op guard to avoid redirects.
-  return children;
-}
-
-// Route guard for seller dashboard: only allow sellers
-function RequireSeller({ children }: { children: JSX.Element }) {
-  const user = getCurrentUser();
-  if (!user) {
-    return <Navigate to="/seller/login" replace />;
-  }
-  // Check user_type, not role
-  const userType = (user as any).user_type || user.role || 'client';
-  if (userType === "admin" || user.role === "admin") {
-    return <Navigate to="/platform-admin" replace />;
-  }
-  if (userType !== "seller") {
-    return <Navigate to="/dashboard" replace />;
-  }
   return children;
 }
 
@@ -201,21 +177,8 @@ function RequireStaff({ children }: { children: JSX.Element }) {
 function GuardPlatformAuthPages({ children }: { children: JSX.Element }) {
   const user = getCurrentUser();
   const userType = (user as any)?.user_type || 'client';
-  // If a seller/admin tries to access platform login/signup, redirect them to marketplace
-  if (user && (userType === 'seller' || user.role === 'seller' || user.role === 'admin')) {
-    return <Navigate to="/marketplace" replace />;
-  }
-  return children;
-}
-
-function GuardMarketplaceAuthPages({ children }: { children: JSX.Element }) {
-  const user = getCurrentUser();
-  const userType = (user as any)?.user_type || 'client';
-  // If a client/admin tries to access seller login/signup while already logged into platform, redirect appropriately
-  if (user && userType === 'client' && user.role !== 'seller' && user.role !== 'admin') {
-    return <Navigate to="/dashboard" replace />;
-  }
-  if (user && (user.role === 'admin')) {
+  // If an admin tries to access platform login/signup, redirect to platform
+  if (user && user.role === 'admin') {
     return <Navigate to="/platform-admin" replace />;
   }
   return children;
@@ -591,21 +554,9 @@ const App = () => (
                 <CartProvider>
                 <Routes>
                   <Route path="/" element={<Index />} />
-                  <Route path="/marketplace" element={<Marketplace />} />
                   <Route path="/product/:id" element={<ProductDetail />} />
                   <Route path="/login" element={<GuardPlatformAuthPages><Login /></GuardPlatformAuthPages>} />
                   <Route path="/signup" element={<GuardPlatformAuthPages><Signup /></GuardPlatformAuthPages>} />
-                  {/* Seller routes */}
-                  <Route path="/seller/login" element={<GuardMarketplaceAuthPages><SellerLogin /></GuardMarketplaceAuthPages>} />
-                  <Route path="/seller/signup" element={<GuardMarketplaceAuthPages><SellerSignup /></GuardMarketplaceAuthPages>} />
-                  <Route
-                    path="/seller/dashboard"
-                    element={
-                      <RequireSeller>
-                        <SellerDashboard />
-                      </RequireSeller>
-                    }
-                  />
                   {/* Staff routes */}
                   <Route path="/staff/login" element={<StaffLogin />} />
                   <Route

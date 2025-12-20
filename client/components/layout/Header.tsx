@@ -166,13 +166,6 @@ export default function Header() {
                         Admin
                       </Button>
                     </Link>
-                  ) : user?.role === "seller" ? (
-                    <Link to="/seller/dashboard">
-                      <Button variant="outline" className="border-2 border-primary/30 text-primary font-bold hover:bg-gradient-to-r hover:from-primary/18 hover:to-accent/15 hover:border-primary/45 shadow-md hover:shadow-lg transition-all">
-                        <ShoppingBag className="w-5 h-5 ml-2 drop-shadow" />
-                        My Products
-                      </Button>
-                    </Link>
                   ) : (
                     <Link to="/dashboard">
                       <Button variant="outline" className="border-2 border-primary/30 text-primary font-bold hover:bg-gradient-to-r hover:from-primary/18 hover:to-accent/15 hover:border-primary/45 shadow-md hover:shadow-lg transition-all">
@@ -253,13 +246,6 @@ export default function Header() {
                       <Button variant="outline" className="justify-start border-2 border-primary/30 text-primary hover:bg-gradient-to-r hover:from-primary/15 hover:to-accent/10 hover:border-primary/45 font-bold w-full shadow-sm hover:shadow-md">
                         <Crown className="w-5 h-5 ml-2 drop-shadow" />
                         Admin
-                      </Button>
-                    </Link>
-                  ) : user?.role === "seller" ? (
-                    <Link to="/seller/dashboard" onClick={() => setMobileMenuOpen(false)}>
-                      <Button variant="outline" className="justify-start border-2 border-primary/30 text-primary hover:bg-gradient-to-r hover:from-primary/15 hover:to-accent/10 hover:border-primary/45 font-bold w-full shadow-sm hover:shadow-md">
-                        <ShoppingBag className="w-5 h-5 ml-2 drop-shadow" />
-                        My Products
                       </Button>
                     </Link>
                   ) : (

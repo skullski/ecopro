@@ -41,30 +41,6 @@ export const listUsers: RequestHandler = async (_req, res) => {
   }
 };
 
-// List all sellers (platform admin only)
-export const listSellers: RequestHandler = async (_req, res) => {
-  try {
-    const { pool } = await import("../utils/database");
-    // Primary source: dedicated sellers table
-    const sellersRes = await pool.query(
-      "SELECT id, email, name, created_at FROM sellers ORDER BY created_at DESC"
-    );
-    let sellers = sellersRes.rows;
-
-    // Fallback: if sellers table empty or missing rows due to migration order, infer from users
-    if (!sellers || sellers.length === 0) {
-      const usersRes = await pool.query(
-        "SELECT id, email, name, created_at, updated_at FROM users WHERE user_type='seller' ORDER BY created_at DESC"
-      );
-      sellers = usersRes.rows.map((u: any) => ({ ...u, inferred: true }));
-    }
-    res.json(sellers);
-  } catch (err) {
-    console.error(err);
-    return jsonError(res, 500, "Failed to list sellers");
-  }
-};
-
 // Get platform statistics (fast aggregated query)
 export const getPlatformStats: RequestHandler = async (_req, res) => {
   try {
@@ -75,29 +51,27 @@ export const getPlatformStats: RequestHandler = async (_req, res) => {
       pool.query(`
         SELECT 
           COUNT(*) as total_users,
-          COUNT(*) FILTER (WHERE user_type = 'client') as total_clients,
-          COUNT(*) FILTER (WHERE user_type = 'seller') as total_sellers
+          COUNT(*) FILTER (WHERE user_type = 'client') as total_clients
         FROM users
       `),
       pool.query(`
         SELECT 
           COUNT(*) as total_products,
           COUNT(*) FILTER (WHERE status = 'active') as active_products
-        FROM marketplace_products
+        FROM client_store_products
       `),
       pool.query(`
         SELECT 
           COUNT(*) as total_orders,
           COUNT(*) FILTER (WHERE status = 'pending') as pending_orders,
           COALESCE(SUM(total_price), 0) as total_revenue
-        FROM marketplace_orders
+        FROM store_orders
       `).catch(() => ({ rows: [{ total_orders: 0, pending_orders: 0, total_revenue: 0 }] })),
     ]);
 
     res.json({
       totalUsers: parseInt(usersResult.rows[0].total_users),
       totalClients: parseInt(usersResult.rows[0].total_clients),
-      totalSellers: parseInt(usersResult.rows[0].total_sellers),
       totalProducts: parseInt(productsResult.rows[0].total_products),
       activeProducts: parseInt(productsResult.rows[0].active_products),
       totalOrders: parseInt(ordersResult.rows[0].total_orders),
@@ -154,119 +128,6 @@ export const deleteUser: RequestHandler = async (req, res) => {
   } catch (err) {
     console.error('Delete user error:', err);
     return jsonError(res, 500, 'Failed to delete user');
-  }
-};
-
-// Convert a platform user to seller (admin only)
-export const convertUserToSeller: RequestHandler = async (req, res) => {
-  try {
-    const { id } = req.params as { id: string };
-    if (!id) return jsonError(res, 400, 'User id is required');
-    const userId = parseInt(id, 10);
-    if (Number.isNaN(userId)) return jsonError(res, 400, 'Invalid user id');
-
-    const userRes = await pool.query('SELECT id, email, name FROM users WHERE id = $1', [userId]);
-    if (userRes.rows.length === 0) return jsonError(res, 404, 'User not found');
-    const user = userRes.rows[0];
-
-    // If seller already exists for email, return conflict
-    const exists = await pool.query('SELECT id FROM sellers WHERE email = $1', [user.email]);
-    if (exists.rows.length > 0) {
-      return jsonError(res, 409, 'Seller already exists for this email');
-    }
-
-    // Generate a random password for seller (can be reset later)
-    const randomPass = Math.random().toString(36).slice(-10);
-    const hashed = await bcrypt.hash(randomPass, 10);
-    const ins = await pool.query(
-      'INSERT INTO sellers (email, password, name) VALUES ($1, $2, $3) RETURNING id, email, name',
-      [user.email, hashed, user.name]
-    );
-
-    // Ensure seller store settings exists
-    try {
-      const slug = 'seller-' + (ins.rows[0].id || Math.random().toString(36).substr(2,8));
-      await pool.query(
-        `INSERT INTO seller_store_settings (seller_id, store_name, store_slug, created_at)
-         VALUES ($1, $2, $3, NOW()) ON CONFLICT (seller_id) DO NOTHING`,
-        [ins.rows[0].id, user.name || user.email.split('@')[0], slug]
-      );
-    } catch (e) {
-      console.error('Could not create seller_store_settings for converted seller:', (e as any).message);
-    }
-
-    // Audit log
-    const actorId = (req as any).user?.id ? parseInt((req as any).user.id, 10) : null;
-    if (actorId) {
-      await pool.query(
-        'INSERT INTO audit_logs(actor_id, action, target_type, target_id, details) VALUES ($1, $2, $3, $4, $5)',
-        [actorId, 'convert_user_to_seller', 'user', userId, JSON.stringify({ seller_id: ins.rows[0].id })]
-      );
-    }
-
-    res.json({
-      message: 'User converted to seller',
-      seller: ins.rows[0],
-      temp_password: randomPass,
-    });
-  } catch (err) {
-    console.error('Convert user to seller error:', err);
-    return jsonError(res, 500, 'Failed to convert user to seller');
-  }
-};
-
-// Delete a seller account (admin only)
-export const deleteSeller: RequestHandler = async (req, res) => {
-  try {
-    const { id } = req.params as { id: string };
-    if (!id) return jsonError(res, 400, 'Seller id is required');
-    const sellerId = parseInt(id, 10);
-    if (Number.isNaN(sellerId)) return jsonError(res, 400, 'Invalid seller id');
-
-    const sres = await pool.query('SELECT id FROM sellers WHERE id = $1', [sellerId]);
-    if (sres.rows.length === 0) return jsonError(res, 404, 'Seller not found');
-
-    // Optional: ensure no products linked, or handle cascade strategy externally
-    await pool.query('DELETE FROM sellers WHERE id = $1', [sellerId]);
-    // Audit log
-    const actorId = (req as any).user?.id ? parseInt((req as any).user.id, 10) : null;
-    if (actorId) {
-      await pool.query(
-        'INSERT INTO audit_logs(actor_id, action, target_type, target_id) VALUES ($1, $2, $3, $4)',
-        [actorId, 'delete_seller', 'seller', sellerId]
-      );
-    }
-    res.json({ message: 'Seller deleted successfully', id: sellerId });
-  } catch (err) {
-    console.error('Delete seller error:', err);
-    return jsonError(res, 500, 'Failed to delete seller');
-  }
-};
-
-// Delete a marketplace product (admin only)
-export const deleteMarketplaceProduct: RequestHandler = async (req, res) => {
-  try {
-    const { id } = req.params as { id: string };
-    if (!id) return jsonError(res, 400, 'Product id is required');
-    const productId = parseInt(id, 10);
-    if (Number.isNaN(productId)) return jsonError(res, 400, 'Invalid product id');
-
-    const exists = await pool.query('SELECT id FROM marketplace_products WHERE id = $1', [productId]);
-    if (!exists.rows.length) return jsonError(res, 404, 'Product not found');
-
-    await pool.query('DELETE FROM marketplace_products WHERE id = $1', [productId]);
-
-    const actorId = (req as any).user?.id ? parseInt((req as any).user.id, 10) : null;
-    if (actorId) {
-      await pool.query(
-        'INSERT INTO audit_logs(actor_id, action, target_type, target_id) VALUES ($1, $2, $3, $4)',
-        [actorId, 'delete_product', 'marketplace_product', productId]
-      );
-    }
-    res.json({ message: 'Marketplace product deleted', id: productId });
-  } catch (err) {
-    console.error('Delete marketplace product error:', err);
-    return jsonError(res, 500, 'Failed to delete product');
   }
 };
 

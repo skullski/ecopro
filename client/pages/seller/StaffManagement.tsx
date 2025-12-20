@@ -57,7 +57,7 @@ export default function StaffManagement() {
   const loadStaffList = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/seller/staff', {
+      const response = await fetch('/api/client/staff', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         },
@@ -95,7 +95,7 @@ export default function StaffManagement() {
 
     try {
       setCreating(true);
-      const response = await fetch('/api/seller/staff/create', {
+      const response = await fetch('/api/client/staff/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -166,7 +166,7 @@ export default function StaffManagement() {
 
     try {
       setSaving(true);
-      const response = await fetch(`/api/seller/staff/${editingStaff.id}/permissions`, {
+      const response = await fetch(`/api/client/staff/${editingStaff.id}/permissions`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -202,7 +202,7 @@ export default function StaffManagement() {
     }
 
     try {
-      const response = await fetch(`/api/seller/staff/${staffId}`, {
+      const response = await fetch(`/api/client/staff/${staffId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`,

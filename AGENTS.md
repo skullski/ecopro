@@ -764,3 +764,54 @@ const data: MyRouteResponse = await response.json();
 - ✅ TODO: Build activity log viewer
 - ✅ TODO: Add permission status display in staff dashboard
 
+---
+
+# 🔐 **SECURITY HARDENING TASK**
+
+You are coding inside the EcoPro SaaS platform (React + Vite frontend, Node.js/Express backend, PostgreSQL database). 
+Implement **security hardening** across the stack. Focus on:
+
+1. **Authentication**
+   - Use argon2id for password hashing.
+   - Implement JWT access tokens (15m expiry) + refresh tokens stored hashed in DB.
+   - Add middleware `requireAuth` for protected routes.
+
+2. **Authorization**
+   - Enforce `client_id` scoping on all `/api/client/*` routes.
+   - Prevent one store owner from accessing another's data.
+
+3. **API Security**
+   - Validate all inputs with `zod` schemas.
+   - Add rate limiting for login, checkout, and messaging endpoints.
+   - Use `helmet` middleware for secure headers (CSP, HSTS, X‑Frame‑Options).
+
+4. **Payments (RedotPay)**
+   - Create `/api/billing/checkout` endpoint to generate checkout session.
+   - Create `/api/billing/webhook/redotpay` endpoint:
+     - Verify HMAC signature using `REDOTPAY_SECRET`.
+     - Enforce idempotency with `transaction_id`.
+     - Update `subscriptions` and `payments` tables.
+
+5. **Messaging Bot**
+   - Add per‑client rate limiter for SMS/WhatsApp sends.
+   - Sanitize templates to strip `<script>` tags, `on*` attributes, and `javascript:` URLs.
+   - Queue messages for retry if SMS server is offline.
+
+6. **Database**
+   - Add migrations for `subscriptions`, `payments`, `message_logs`, `blocked_customers`.
+   - Encrypt sensitive fields (phone, email) with AES‑GCM using `ENCRYPTION_KEY`.
+
+7. **Frontend (React + Vite)**
+   - Escape all dynamic content to prevent XSS.
+   - Use CSRF tokens for forms.
+   - Store auth tokens in HttpOnly cookies, not localStorage.
+   - Add error boundaries to avoid leaking stack traces.
+
+8. **Deployment**
+   - Enforce HTTPS and redirect HTTP → HTTPS.
+   - Fail fast if secrets (`JWT_SECRET`, `REDOTPAY_SECRET`, `ENCRYPTION_KEY`) are missing.
+   - Add CI job to run `pnpm typecheck`, `pnpm test`, and security tests.
+
+Deliver small, focused commits with clear messages (e.g., `feat(auth): add argon2 password hashing`). 
+Write TypeScript code with type safety, unit tests, and integration tests for billing flow.
+

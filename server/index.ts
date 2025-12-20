@@ -8,7 +8,6 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { handleDemo } from "./routes/demo";
 import * as authRoutes from "./routes/auth";
-import * as sellerAuthRoutes from "./routes/seller-auth";
 import * as productRoutes from "./routes/products";
 import * as stockRoutes from "./routes/stock";
 import * as clientStoreRoutes from "./routes/client-store";
@@ -18,9 +17,8 @@ import { createProduct as createStorefrontProduct, updateProduct as updateStoref
 import * as orderRoutes from "./routes/orders";
 import * as orderConfirmationRoutes from "./routes/order-confirmation";
 import { upload, uploadImage } from "./routes/uploads";
-import { authenticate, requireAdmin, requireSeller, requireClient, requireStoreOwner } from "./middleware/auth";
+import { authenticate, requireAdmin, requireClient, requireStoreOwner } from "./middleware/auth";
 import * as adminRoutes from "./routes/admin";
-import * as sellerStoreRoutes from "./routes/seller-store";
 import * as dashboardRoutes from "./routes/dashboard";
 import * as botRoutes from "./routes/bot";
 import * as staffRoutes from "./routes/staff";
@@ -198,26 +196,6 @@ export function createServer() {
   app.get("/api/auth/me", authenticate, authRoutes.getCurrentUser);
   app.post("/api/auth/change-password", authenticate, authRoutes.changePassword);
 
-  // Seller auth routes (with rate limiting)
-  app.post(
-    "/api/seller/register",
-    authLimiter,
-    registerValidation,
-    validate,
-    sellerAuthRoutes.registerSeller
-  );
-  app.post(
-    "/api/seller/login",
-    authLimiter,
-    loginValidation,
-    validate,
-    sellerAuthRoutes.loginSeller
-  );
-
-  // Seller storefront settings (authenticated sellers)
-  app.get('/api/seller/store/settings', authenticate, requireSeller, sellerStoreRoutes.getSellerStoreSettings);
-  app.put('/api/seller/store/settings', authenticate, requireSeller, sellerStoreRoutes.updateSellerStoreSettings);
-
   // Public product routes
   app.get(
     "/api/products/categories/counts",
@@ -234,42 +212,6 @@ export function createServer() {
 
   // Guest checkout (no auth)
   app.post("/api/guest/orders", apiLimiter, productRoutes.createGuestOrder);
-
-  // Seller product management routes (protected)
-  app.get(
-    "/api/seller/products",
-    authenticate,
-    requireSeller,
-    productRoutes.getSellerProducts
-  );
-  app.post(
-    "/api/seller/products",
-    authenticate,
-    requireSeller,
-    apiLimiter,
-    productRoutes.createProduct
-  );
-  app.put(
-    "/api/seller/products/:id",
-    authenticate,
-    requireSeller,
-    apiLimiter,
-    productRoutes.updateProduct
-  );
-  app.delete(
-    "/api/seller/products/:id",
-    authenticate,
-    requireSeller,
-    productRoutes.deleteProduct
-  );
-
-  // Seller orders route (DB-backed)
-  app.get(
-    "/api/seller/orders",
-    authenticate,
-    requireSeller,
-    productRoutes.getSellerOrders
-  );
 
   // Staff orders route (staff members can access their store's orders)
   app.get(
@@ -294,43 +236,43 @@ export function createServer() {
     staffRoutes.staffLogin
   );
 
-  // Staff management routes (authenticated store owners only)
+  // Staff management routes (authenticated store owners/clients only)
   app.post(
-    "/api/seller/staff/create",
+    "/api/client/staff/create",
     authenticate,
     requireStoreOwner,
     apiLimiter,
     staffRoutes.createStaff
   );
   app.post(
-    "/api/seller/staff/invite",
+    "/api/client/staff/invite",
     authenticate,
     requireStoreOwner,
     apiLimiter,
     staffRoutes.inviteStaff
   );
   app.get(
-    "/api/seller/staff",
+    "/api/client/staff",
     authenticate,
     requireStoreOwner,
     staffRoutes.getStaffList
   );
   app.patch(
-    "/api/seller/staff/:id/permissions",
+    "/api/client/staff/:id/permissions",
     authenticate,
     requireStoreOwner,
     apiLimiter,
     staffRoutes.updateStaffPermissions
   );
   app.delete(
-    "/api/seller/staff/:id",
+    "/api/client/staff/:id",
     authenticate,
     requireStoreOwner,
     apiLimiter,
     staffRoutes.removeStaff
   );
   app.get(
-    "/api/seller/staff/:id/activity",
+    "/api/client/staff/:id/activity",
     authenticate,
     requireStoreOwner,
     staffRoutes.getActivityLog
@@ -376,40 +318,11 @@ export function createServer() {
     adminRoutes.listUsers
   );
 
-  app.get(
-    "/api/admin/sellers",
-    authenticate,
-    requireAdmin,
-    adminRoutes.listSellers
-  );
-
   app.delete(
     "/api/admin/users/:id",
     authenticate,
     requireAdmin,
     adminRoutes.deleteUser
-  );
-
-  app.post(
-    "/api/admin/users/:id/convert-to-seller",
-    authenticate,
-    requireAdmin,
-    adminRoutes.convertUserToSeller
-  );
-
-  app.delete(
-    "/api/admin/sellers/:id",
-    authenticate,
-    requireAdmin,
-    adminRoutes.deleteSeller
-  );
-
-  // Admin product moderation routes
-  app.delete(
-    "/api/admin/marketplace/products/:id",
-    authenticate,
-    requireAdmin,
-    adminRoutes.deleteMarketplaceProduct
   );
   app.delete(
     "/api/admin/client-store/products/:id",
