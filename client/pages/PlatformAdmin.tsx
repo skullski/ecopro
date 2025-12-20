@@ -11,7 +11,19 @@ import {
   Activity,
   Eye,
   UserCheck,
-  Shield
+  Shield,
+  BarChart3,
+  Settings,
+  Lock,
+  LogOut,
+  Trash2,
+  CheckCircle,
+  XCircle,
+  Clock,
+  MapPin,
+  Zap,
+  Award,
+  Search
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { GradientCard } from '@/components/ui/GradientCard';
@@ -55,6 +67,25 @@ interface Seller {
   created_at: string;
 }
 
+interface ActivityLog {
+  id: number;
+  client_id: number;
+  staff_id?: number;
+  action: string;
+  resource_type: string;
+  timestamp: string;
+}
+
+interface Store {
+  id: number;
+  email: string;
+  store_name: string;
+  store_slug: string;
+  subscription_status?: string;
+  paid_until?: string;
+  created_at: string;
+}
+
 export default function PlatformAdmin() {
   const { t } = useTranslation();
   const [stats, setStats] = useState<PlatformStats>({
@@ -70,13 +101,21 @@ export default function PlatformAdmin() {
   const [users, setUsers] = useState<User[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [sellers, setSellers] = useState<Seller[]>([]);
+  const [stores, setStores] = useState<Store[]>([]);
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'products'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stores' | 'products' | 'activity' | 'settings'>('overview');
   const [converting, setConverting] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
 
   useEffect(() => {
     loadPlatformData();
-  }, []);
+    const interval = setInterval(() => {
+      if (activeTab === 'activity') loadActivityLogs();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [activeTab]);
 
   const loadPlatformData = async () => {
     try {
@@ -86,18 +125,18 @@ export default function PlatformAdmin() {
         return;
       }
 
-      // Fetch users and products in parallel for faster loading
-      const [usersRes, productsRes, statsRes, sellersRes] = await Promise.all([
+      const [usersRes, productsRes, statsRes, storesRes, activityRes] = await Promise.all([
         fetch('/api/admin/users', {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        // Only fetch first 20 products for display
-        fetch('/api/products?limit=20&offset=0'),
-        // Fetch just the counts for stats
+        fetch('/api/products?limit=50&offset=0'),
         fetch('/api/admin/stats', {
           headers: { Authorization: `Bearer ${token}` },
-        }).catch(() => null), // Make stats optional
-        fetch('/api/admin/sellers', {
+        }).catch(() => null),
+        fetch('/api/admin/stores', {
+          headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => null),
+        fetch('/api/admin/activity-logs', {
           headers: { Authorization: `Bearer ${token}` },
         }).catch(() => null),
       ]);
@@ -106,7 +145,6 @@ export default function PlatformAdmin() {
         const usersData = await usersRes.json();
         setUsers(usersData);
 
-        // Calculate stats from users
         const clients = usersData.filter((u: User) => u.user_type === 'client').length;
         const sellers = usersData.filter((u: User) => u.user_type === 'seller').length;
 
@@ -131,17 +169,16 @@ export default function PlatformAdmin() {
         }));
       }
 
-      // Sellers endpoint with fallback behavior
-      if (sellersRes && sellersRes.ok) {
-        const sellersData = await sellersRes.json();
-        setSellers(sellersData || []);
-        setStats(prev => ({
-          ...prev,
-          totalSellers: Array.isArray(sellersData) ? sellersData.length : prev.totalSellers,
-        }));
+      if (storesRes && storesRes.ok) {
+        const storesData = await storesRes.json();
+        setStores(storesData || []);
       }
 
-      // Use stats endpoint if available
+      if (activityRes && activityRes.ok) {
+        const activityData = await activityRes.json();
+        setActivityLogs(activityData || []);
+      }
+
       if (statsRes && statsRes.ok) {
         const statsData = await statsRes.json();
         setStats(prev => ({
@@ -153,6 +190,21 @@ export default function PlatformAdmin() {
       console.error('Failed to load platform data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadActivityLogs = async () => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const res = await fetch('/api/admin/activity-logs', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setActivityLogs(data || []);
+      }
+    } catch (error) {
+      console.error('Failed to load activity logs:', error);
     }
   };
 
@@ -253,333 +305,509 @@ export default function PlatformAdmin() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">{t('loading')}</div>
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
+        <div className="text-white text-lg font-semibold">{t('loading') || 'Loading...'}</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
-      {/* Modern Admin Header with Pattern Background */}
-      <div className="relative bg-gradient-to-br from-purple-600 via-violet-600 to-indigo-700 text-white overflow-hidden">
-        {/* Animated Pattern Background */}
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC40Ij48cGF0aCBkPSJNMzYgMzR2LTRoLTJ2NGgtNHYyaDR2NGgydi00aDR2LTJoLTR6bTAtMzBoLTJ2Mmgydi0yem0wIDI4aC0ydjJoMnYtMnptLTItMmgtMnYyaDJ2LTJ6bS0yLTJoLTJ2Mmgydi0yem0tMi0yaC0ydjJoMnYtMnptLTYgMHYtMmgtMnYyaDJ6bS0yIDJ2LTJoLTJ2MmgyeiIvPjwvZz48L2c+PC9zdmc+')] animate-[slide_20s_linear_infinite]"></div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      {/* Premium Admin Header */}
+      <div className="relative bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white overflow-hidden shadow-2xl border-b border-emerald-500/30">
+        {/* Animated Background */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0 animate-pulse"></div>
         </div>
         
-        {/* Glowing Orbs */}
-        <div className="absolute top-0 right-0 w-72 h-72 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
-        <div className="absolute bottom-0 left-0 w-72 h-72 bg-indigo-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{animationDelay: '2s'}}></div>
+        {/* Glowing Accents */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-400 rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-pulse"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-400 rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-pulse" style={{animationDelay: '2s'}}></div>
         
-        <div className="container relative mx-auto px-4 py-6">
+        <div className="container relative mx-auto px-4 py-8">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <div className="relative">
-                <div className="absolute inset-0 bg-white/30 rounded-xl blur-lg"></div>
-                <div className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-white/30 to-white/10 backdrop-blur-md border border-white/40 flex items-center justify-center shadow-2xl">
-                  <Shield className="w-6 h-6 text-white drop-shadow-lg" strokeWidth={2.5} />
+                <div className="absolute inset-0 bg-white/30 rounded-2xl blur-xl"></div>
+                <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-white/40 to-white/10 backdrop-blur-md border border-white/50 flex items-center justify-center shadow-2xl">
+                  <Zap className="w-8 h-8 text-white drop-shadow-lg" strokeWidth={2} />
                 </div>
               </div>
               <div>
-                <h1 className="text-2xl font-black drop-shadow-lg">{t('admin.dashboardTitle') || 'Admin Dashboard'}</h1>
-                <p className="text-white/90 text-xs font-semibold drop-shadow">{t('admin.dashboardSubtitle') || 'Platform Management'}</p>
-                <p className="mt-1 text-white/80 text-xs drop-shadow">
-                  {t('admin.header.help') || 'Manage users, sellers, marketplace products and orders from here.'}
-                </p>
+                <h1 className="text-3xl font-black drop-shadow-lg">Platform Control</h1>
+                <p className="text-white/90 text-sm font-semibold drop-shadow">Complete Platform Management & Analytics</p>
               </div>
             </div>
             
-            {/* Quick Actions */}
-            <div className="hidden lg:flex items-center gap-2">
-              <div className="px-3 py-1.5 rounded-lg bg-white/20 backdrop-blur-md border border-white/30 hover:bg-white/30 transition-all cursor-pointer">
+            {/* Quick Stats */}
+            <div className="hidden xl:flex items-center gap-3">
+              <div className="px-4 py-2 rounded-xl bg-white/20 backdrop-blur-md border border-white/40 hover:bg-white/30 transition-all">
                 <div className="flex items-center gap-2">
-                  <Users className="w-3.5 h-3.5" />
-                  <span className="text-xs font-bold">{stats.totalUsers}</span>
+                  <Users className="w-4 h-4" />
+                  <span className="text-sm font-bold">{stats.totalUsers} Users</span>
                 </div>
               </div>
-              <div className="px-3 py-1.5 rounded-lg bg-white/20 backdrop-blur-md border border-white/30 hover:bg-white/30 transition-all cursor-pointer">
+              <div className="px-4 py-2 rounded-xl bg-white/20 backdrop-blur-md border border-white/40 hover:bg-white/30 transition-all">
                 <div className="flex items-center gap-2">
-                  <Package className="w-3.5 h-3.5" />
-                  <span className="text-xs font-bold">{stats.totalProducts}</span>
+                  <Store className="w-4 h-4" />
+                  <span className="text-sm font-bold">{stats.totalClients} Stores</span>
                 </div>
               </div>
-              {/* Removed Roles badge box per request */}
+              <div className="px-4 py-2 rounded-xl bg-white/20 backdrop-blur-md border border-white/40 hover:bg-white/30 transition-all">
+                <div className="flex items-center gap-2">
+                  <Package className="w-4 h-4" />
+                  <span className="text-sm font-bold">{stats.totalProducts} Products</span>
+                </div>
+              </div>
               <Button 
-                variant="ghost" 
                 size="sm"
-                className="text-white hover:bg-white/20 border border-white/30"
+                className="text-white bg-white/20 hover:bg-white/30 border border-white/40"
                 onClick={() => window.location.href = '/'}
               >
-                {t('admin.exit')}
+                <LogOut className="w-4 h-4 mr-1" />
+                Exit
               </Button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-4 md:py-6">
-        {/* Navigation Tabs */}
-        <div className="flex gap-2 mb-4 md:mb-6 bg-card rounded-xl border p-2 shadow-sm">
+      <div className="container mx-auto px-4 py-6">
+        {/* Enhanced Navigation Tabs */}
+        <div className="flex gap-2 mb-6 bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 p-2 shadow-lg overflow-x-auto">
           <Button
             variant={activeTab === 'overview' ? 'default' : 'ghost'}
             onClick={() => setActiveTab('overview')}
-            className="flex-1"
+            className="whitespace-nowrap text-slate-200"
           >
-            <Activity className="w-4 h-4 mr-2" />
-            {t('admin.tab.overview')}
+            <BarChart3 className="w-4 h-4 mr-2" />
+            Overview
           </Button>
           <Button
             variant={activeTab === 'users' ? 'default' : 'ghost'}
             onClick={() => setActiveTab('users')}
-            className="flex-1"
+            className="whitespace-nowrap text-slate-200"
           >
             <Users className="w-4 h-4 mr-2" />
-            {t('admin.tab.users', { n: stats.totalUsers })}
+            Users ({stats.totalUsers})
+          </Button>
+          <Button
+            variant={activeTab === 'stores' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('stores')}
+            className="whitespace-nowrap text-slate-200"
+          >
+            <Store className="w-4 h-4 mr-2" />
+            Stores ({stats.totalClients})
           </Button>
           <Button
             variant={activeTab === 'products' ? 'default' : 'ghost'}
             onClick={() => setActiveTab('products')}
-            className="flex-1"
+            className="whitespace-nowrap text-slate-200"
           >
             <Package className="w-4 h-4 mr-2" />
-            {t('admin.tab.products', { n: stats.totalProducts })}
+            Products ({stats.totalProducts})
+          </Button>
+          <Button
+            variant={activeTab === 'activity' ? 'default' : 'ghost'}
+            onClick={() => { setActiveTab('activity'); loadActivityLogs(); }}
+            className="whitespace-nowrap text-slate-200"
+          >
+            <Activity className="w-4 h-4 mr-2" />
+            Activity Logs
+          </Button>
+          <Button
+            variant={activeTab === 'settings' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('settings')}
+            className="whitespace-nowrap text-slate-200"
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            Settings
           </Button>
         </div>
 
         {/* Overview Tab */}
         {activeTab === 'overview' && (
           <>
-            {/* Stats Grid (vibrant presets) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4 md:mb-6">
-              <GradientCard
-                title={t('admin.stats.totalUsers')}
-                value={stats.totalUsers}
-                preset="blue"
-                icon={<Users className="w-6 h-6 text-blue-400" />}
-              />
-
-              <GradientCard
-                title={t('admin.stats.clients')}
-                value={stats.totalClients}
-                preset="purple"
-                icon={<UserCheck className="w-6 h-6 text-purple-400" />}
-              />
-
-              <GradientCard
-                title={t('admin.stats.sellers')}
-                value={stats.totalSellers}
-                preset="orange"
-                icon={<Store className="w-6 h-6 text-orange-400" />}
-              />
-
-              <GradientCard
-                title={t('admin.stats.totalProducts')}
-                value={
-                  <div className="flex items-center justify-between">
-                    <span>{stats.totalProducts}</span>
-                    <Badge variant="secondary">{stats.activeProducts} active</Badge>
+            {/* Premium Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 text-white shadow-lg border border-blue-500/30 hover:shadow-xl hover:border-blue-400/50 transition-all">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-blue-200 text-sm font-semibold mb-1">Total Users</p>
+                    <h3 className="text-4xl font-black">{stats.totalUsers}</h3>
                   </div>
-                }
-                preset="emerald"
-                icon={<Package className="w-6 h-6 text-emerald-400" />}
-              />
+                  <Users className="w-12 h-12 text-blue-300 opacity-20" />
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-2xl p-6 text-white shadow-lg border border-emerald-500/30 hover:shadow-xl hover:border-emerald-400/50 transition-all">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-emerald-200 text-sm font-semibold mb-1">Active Stores</p>
+                    <h3 className="text-4xl font-black">{stats.totalClients}</h3>
+                  </div>
+                  <Store className="w-12 h-12 text-emerald-300 opacity-20" />
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-2xl p-6 text-white shadow-lg border border-purple-500/30 hover:shadow-xl hover:border-purple-400/50 transition-all">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-purple-200 text-sm font-semibold mb-1">Total Products</p>
+                    <h3 className="text-4xl font-black">{stats.totalProducts}</h3>
+                    <p className="text-purple-300 text-xs mt-1">{stats.activeProducts} active</p>
+                  </div>
+                  <Package className="w-12 h-12 text-purple-300 opacity-20" />
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-orange-600 to-orange-700 rounded-2xl p-6 text-white shadow-lg border border-orange-500/30 hover:shadow-xl hover:border-orange-400/50 transition-all">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-orange-200 text-sm font-semibold mb-1">Pending Orders</p>
+                    <h3 className="text-4xl font-black">{stats.pendingOrders}</h3>
+                  </div>
+                  <ShoppingBag className="w-12 h-12 text-orange-300 opacity-20" />
+                </div>
+              </div>
             </div>
 
-            {/* Overview shows stats only */}
+            {/* Quick Insights */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Recent Activity */}
+              <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 shadow-lg p-6">
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-cyan-400" />
+                  Recent Activity
+                </h3>
+                <div className="space-y-3">
+                  {activityLogs.slice(0, 5).map((log) => (
+                    <div key={log.id} className="flex items-start gap-3 pb-3 border-b border-slate-700/50 last:border-0">
+                      <div className="w-2 h-2 mt-2 rounded-full bg-cyan-400"></div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-white font-medium truncate">{log.action}</p>
+                        <p className="text-xs text-slate-400">{log.resource_type}</p>
+                      </div>
+                      <span className="text-xs text-slate-500 whitespace-nowrap">{new Date(log.timestamp).toLocaleDateString()}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Platform Health */}
+              <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 shadow-lg p-6">
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-yellow-400" />
+                  Platform Health
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-slate-300">System Status</span>
+                      <CheckCircle className="w-4 h-4 text-emerald-400" />
+                    </div>
+                    <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-emerald-400 to-cyan-400" style={{width: '95%'}}></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-slate-300">Active Connections</span>
+                      <span className="text-sm font-bold text-cyan-400">{stats.totalClients}</span>
+                    </div>
+                    <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-cyan-400 to-blue-400" style={{width: '75%'}}></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-slate-300">Database Usage</span>
+                      <span className="text-sm font-bold text-purple-400">42%</span>
+                    </div>
+                    <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-purple-400 to-pink-400" style={{width: '42%'}}></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </>
         )}
 
         {/* Users Tab */}
         {activeTab === 'users' && (
-          <div className="space-y-3 md:space-y-4">
-            {/* Role Boxes */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4">
-              {/* Admins Box */}
-              <div className="bg-card rounded-xl border shadow-sm">
-                <div className="p-6 border-b">
-                  <h2 className="text-xl font-bold flex items-center gap-2">
-                    <Shield className="w-5 h-5" />
-                    {t('admin.box.admins') || 'Admins'}
-                  </h2>
-                </div>
-                <div className="divide-y max-h-96 overflow-auto">
-                  {users.filter(u => u.user_type === 'admin').map((user) => (
-                    <div key={user.id} className="p-4 hover:bg-muted/50 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">{user.name}</p>
-                          <p className="text-sm text-muted-foreground">{user.email}</p>
-                        </div>
-                        <div className="text-right">
-                          <div className="flex items-center gap-2 justify-end">
-                            <Badge variant="default">{t('user.type.admin') || 'Admin'}</Badge>
-                            <Button size="sm" variant="destructive" onClick={() => handleDeleteUser(user.id)}>
-                              {t('delete') || 'Delete'}
-                            </Button>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {new Date(user.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Admins */}
+            <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 shadow-lg overflow-hidden">
+              <div className="p-6 border-b border-slate-700/50 bg-gradient-to-r from-red-600/20 to-pink-600/20">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-red-400" />
+                  Super Admins ({users.filter(u => u.user_type === 'admin').length})
+                </h3>
+              </div>
+              <div className="divide-y divide-slate-700/50 max-h-96 overflow-auto">
+                {users.filter(u => u.user_type === 'admin').map((user) => (
+                  <div key={user.id} className="p-4 hover:bg-slate-700/30 transition-colors">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-white">{user.name}</p>
+                        <p className="text-xs text-slate-400 truncate">{user.email}</p>
                       </div>
+                      <Badge className="bg-red-500/80 text-white">Admin</Badge>
                     </div>
-                  ))}
-                  {users.filter(u => u.user_type === 'admin').length === 0 && (
-                    <div className="p-6 text-sm text-muted-foreground">No admins.</div>
-                  )}
-                </div>
+                    <Button size="sm" variant="destructive" className="w-full text-xs" onClick={() => handleDeleteUser(user.id)}>
+                      Delete
+                    </Button>
+                  </div>
+                ))}
+                {users.filter(u => u.user_type === 'admin').length === 0 && (
+                  <div className="p-6 text-sm text-slate-400 text-center">No admins</div>
+                )}
               </div>
+            </div>
 
-              {/* Clients Box */}
-              <div className="bg-card rounded-xl border shadow-sm">
-                <div className="p-6 border-b">
-                  <h2 className="text-xl font-bold flex items-center gap-2">
-                    <Users className="w-5 h-5" />
-                    {t('admin.box.clients') || 'Clients'}
-                  </h2>
-                </div>
-                <div className="divide-y max-h-96 overflow-auto">
-                  {users.filter(u => u.user_type === 'client').map((user) => (
-                    <div key={user.id} className="p-4 hover:bg-muted/50 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">{user.name}</p>
-                          <p className="text-sm text-muted-foreground">{user.email}</p>
-                        </div>
-                        <div className="text-right">
-                          <div className="flex items-center gap-2 justify-end">
-                            <Badge variant="secondary">{t('user.type.client') || 'Client'}</Badge>
-                            <Button size="sm" variant="destructive" onClick={() => handleDeleteUser(user.id)}>
-                              {t('delete') || 'Delete'}
-                            </Button>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {new Date(user.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
+            {/* Store Owners */}
+            <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 shadow-lg overflow-hidden">
+              <div className="p-6 border-b border-slate-700/50 bg-gradient-to-r from-emerald-600/20 to-teal-600/20">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Store className="w-5 h-5 text-emerald-400" />
+                  Store Owners ({users.filter(u => u.user_type === 'client').length})
+                </h3>
+              </div>
+              <div className="divide-y divide-slate-700/50 max-h-96 overflow-auto">
+                {users.filter(u => u.user_type === 'client').map((user) => (
+                  <div key={user.id} className="p-4 hover:bg-slate-700/30 transition-colors">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-white">{user.name}</p>
+                        <p className="text-xs text-slate-400 truncate">{user.email}</p>
                       </div>
+                      <Badge className="bg-emerald-500/80 text-white">Client</Badge>
                     </div>
-                  ))}
-                  {users.filter(u => u.user_type === 'client').length === 0 && (
-                    <div className="p-6 text-sm text-muted-foreground">No clients.</div>
-                  )}
-                </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" className="flex-1 text-xs" onClick={() => handlePromoteToAdmin(user.id)}>
+                        Promote
+                      </Button>
+                      <Button size="sm" variant="destructive" className="flex-1 text-xs" onClick={() => handleDeleteUser(user.id)}>
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                {users.filter(u => u.user_type === 'client').length === 0 && (
+                  <div className="p-6 text-sm text-slate-400 text-center">No store owners</div>
+                )}
               </div>
+            </div>
 
-              {/* Sellers Box */}
-              <div className="bg-card rounded-xl border shadow-sm">
-                <div className="p-6 border-b">
-                  <h2 className="text-xl font-bold flex items-center gap-2">
-                    <Store className="w-5 h-5" />
-                    {t('admin.box.sellers') || 'Sellers'}
-                  </h2>
-                </div>
-                <div className="divide-y max-h-96 overflow-auto">
-                  {sellers.length === 0 ? (
-                    <div className="p-6 text-sm text-muted-foreground">No sellers yet.</div>
-                  ) : (
-                    sellers.map((seller) => (
-                      <div key={seller.id} className="p-4 hover:bg-muted/50 transition-colors">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium">{seller.name || seller.email}</p>
-                            <p className="text-sm text-muted-foreground">{seller.email}</p>
-                          </div>
-                          <div className="text-right">
-                            <div className="flex items-center gap-2 justify-end">
-                              <Badge variant="secondary">{t('user.type.seller')}</Badge>
-                              <Button size="sm" variant="destructive" onClick={() => handleDeleteSeller(seller.id)}>
-                                {t('delete') || 'Delete'}
-                              </Button>
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {seller.created_at ? new Date(seller.created_at).toLocaleDateString() : ''}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
+            {/* Sellers */}
+            <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 shadow-lg overflow-hidden">
+              <div className="p-6 border-b border-slate-700/50 bg-gradient-to-r from-cyan-600/20 to-blue-600/20">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <UserCheck className="w-5 h-5 text-cyan-400" />
+                  Sellers ({sellers.length})
+                </h3>
               </div>
+              <div className="divide-y divide-slate-700/50 max-h-96 overflow-auto">
+                {sellers.map((seller) => (
+                  <div key={seller.id} className="p-4 hover:bg-slate-700/30 transition-colors">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-white">{seller.name || seller.email}</p>
+                        <p className="text-xs text-slate-400 truncate">{seller.email}</p>
+                      </div>
+                      <Badge className="bg-cyan-500/80 text-white">Seller</Badge>
+                    </div>
+                    <Button size="sm" variant="destructive" className="w-full text-xs" onClick={() => handleDeleteSeller(seller.id)}>
+                      Delete
+                    </Button>
+                  </div>
+                ))}
+                {sellers.length === 0 && (
+                  <div className="p-6 text-sm text-slate-400 text-center">No sellers</div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Stores Tab */}
+        {activeTab === 'stores' && (
+          <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 shadow-lg overflow-hidden">
+            <div className="p-6 border-b border-slate-700/50">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <Store className="w-5 h-5 text-emerald-400" />
+                All Stores
+              </h3>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-slate-700/30 border-b border-slate-600/50">
+                  <tr>
+                    <th className="text-left p-4 font-semibold text-slate-300">Store Name</th>
+                    <th className="text-left p-4 font-semibold text-slate-300">Email</th>
+                    <th className="text-left p-4 font-semibold text-slate-300">Slug</th>
+                    <th className="text-left p-4 font-semibold text-slate-300">Status</th>
+                    <th className="text-left p-4 font-semibold text-slate-300">Created</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-700/30">
+                  {stores.map((store) => (
+                    <tr key={store.id} className="hover:bg-slate-700/20 transition-colors">
+                      <td className="p-4 font-medium text-white">{store.store_name}</td>
+                      <td className="p-4 text-slate-300 text-sm">{store.email}</td>
+                      <td className="p-4 text-slate-400 text-sm font-mono">{store.store_slug}</td>
+                      <td className="p-4">
+                        <Badge className={store.subscription_status === 'active' ? 'bg-emerald-500/80' : 'bg-red-500/80'}>
+                          {store.subscription_status || 'Free'}
+                        </Badge>
+                      </td>
+                      <td className="p-4 text-slate-400 text-sm">{new Date(store.created_at).toLocaleDateString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
 
         {/* Products Tab */}
         {activeTab === 'products' && (
-          <div className="bg-card rounded-xl border shadow-sm">
-            <div className="p-6 border-b">
-              <h2 className="text-xl font-bold">{t('admin.allProducts')}</h2>
+          <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 shadow-lg overflow-hidden">
+            <div className="p-6 border-b border-slate-700/50">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <Package className="w-5 h-5 text-purple-400" />
+                All Products
+              </h3>
+              <div className="flex gap-2 flex-wrap">
+                <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="px-3 py-2 rounded-lg bg-slate-700/50 border border-slate-600/50 text-white">
+                  <option value="all">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-muted/50">
+                <thead className="bg-slate-700/30 border-b border-slate-600/50">
                   <tr>
-                    <th className="text-left p-4 font-medium">{t('product.name')}</th>
-                    <th className="text-left p-4 font-medium">{t('product.seller')}</th>
-                    <th className="text-left p-4 font-medium">{t('product.price')}</th>
-                    <th className="text-left p-4 font-medium">{t('product.status')}</th>
-                    <th className="text-left p-4 font-medium">{t('product.views')}</th>
-                    <th className="text-left p-4 font-medium">{t('product.created')}</th>
-                    <th className="text-left p-4 font-medium">{t('actions') || 'Actions'}</th>
+                    <th className="text-left p-4 font-semibold text-slate-300">Product</th>
+                    <th className="text-left p-4 font-semibold text-slate-300">Seller</th>
+                    <th className="text-left p-4 font-semibold text-slate-300">Price</th>
+                    <th className="text-left p-4 font-semibold text-slate-300">Status</th>
+                    <th className="text-left p-4 font-semibold text-slate-300">Views</th>
+                    <th className="text-left p-4 font-semibold text-slate-300">Created</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y">
-                  {products.map((product) => (
-                    <tr key={product.id} className="hover:bg-muted/50 transition-colors">
-                      <td className="p-4 font-medium">{product.title}</td>
+                <tbody className="divide-y divide-slate-700/30">
+                  {products.filter(p =>
+                    (filterStatus === 'all' || p.status === filterStatus) &&
+                    p.title.toLowerCase().includes(searchQuery.toLowerCase())
+                  ).map((product) => (
+                    <tr key={product.id} className="hover:bg-slate-700/20 transition-colors">
+                      <td className="p-4 font-medium text-white truncate max-w-xs">{product.title}</td>
                       <td className="p-4">
                         <div>
-                          <p className="text-sm font-medium">{product.seller_name}</p>
-                          <p className="text-xs text-muted-foreground">{product.seller_email}</p>
+                          <p className="text-sm font-medium text-slate-300">{product.seller_name}</p>
+                          <p className="text-xs text-slate-500">{product.seller_email}</p>
                         </div>
                       </td>
-                      <td className="p-4 font-bold text-primary">${product.price}</td>
+                      <td className="p-4 font-bold text-emerald-400">${product.price}</td>
                       <td className="p-4">
-                        <Badge variant={product.status === 'active' ? 'default' : 'secondary'}>
-                          {t('product.status.' + product.status)}
+                        <Badge className={product.status === 'active' ? 'bg-emerald-500/80' : 'bg-slate-500/80'}>
+                          {product.status}
                         </Badge>
                       </td>
-                      <td className="p-4">
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                          <Eye className="w-4 h-4" />
-                          {product.views}
-                        </div>
+                      <td className="p-4 flex items-center gap-1 text-slate-300">
+                        <Eye className="w-4 h-4" />
+                        {product.views}
                       </td>
-                      <td className="p-4 text-sm text-muted-foreground">
-                        {new Date(product.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="p-4">
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={async () => {
-                            const ok = confirm('Delete this marketplace product?');
-                            if (!ok) return;
-                            try {
-                              const token = localStorage.getItem('authToken');
-                              const res = await fetch(`/api/admin/marketplace/products/${product.id}`,
-                                { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
-                              if (res.ok) {
-                                setProducts(prev => prev.filter(p => p.id !== product.id));
-                                setStats(prev => ({ ...prev, totalProducts: Math.max(0, prev.totalProducts - 1) }));
-                              } else {
-                                alert(await res.text());
-                              }
-                            } catch (e) {
-                              alert('Failed to delete product');
-                            }
-                          }}
-                        >
-                          {t('delete') || 'Delete'}
-                        </Button>
-                      </td>
+                      <td className="p-4 text-slate-400 text-sm">{new Date(product.created_at).toLocaleDateString()}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* Activity Logs Tab */}
+        {activeTab === 'activity' && (
+          <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 shadow-lg">
+            <div className="p-6 border-b border-slate-700/50">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Activity className="w-5 h-5 text-cyan-400" />
+                Staff Activity Logs
+              </h3>
+            </div>
+            <div className="divide-y divide-slate-700/50 max-h-96 overflow-auto">
+              {activityLogs.map((log) => (
+                <div key={log.id} className="p-4 hover:bg-slate-700/30 transition-colors">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1">
+                      <p className="text-white font-medium">{log.action}</p>
+                      <p className="text-sm text-slate-400">{log.resource_type}</p>
+                      <p className="text-xs text-slate-500 mt-1">{new Date(log.timestamp).toLocaleString()}</p>
+                    </div>
+                    <Badge variant="outline">{log.staff_id ? 'Staff' : 'Owner'}</Badge>
+                  </div>
+                </div>
+              ))}
+              {activityLogs.length === 0 && (
+                <div className="p-6 text-sm text-slate-400 text-center">No activity logs</div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Settings Tab */}
+        {activeTab === 'settings' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 shadow-lg p-6">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <Settings className="w-5 h-5 text-yellow-400" />
+                Platform Settings
+              </h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Max Users</label>
+                  <input type="number" defaultValue="10000" className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600/50 text-white rounded-lg" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Max Stores</label>
+                  <input type="number" defaultValue="5000" className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600/50 text-white rounded-lg" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Commission Rate (%)</label>
+                  <input type="number" step="0.1" defaultValue="5" className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600/50 text-white rounded-lg" />
+                </div>
+                <Button className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700">Save Settings</Button>
+              </div>
+            </div>
+
+            <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 shadow-lg p-6">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <Lock className="w-5 h-5 text-red-400" />
+                Security & System
+              </h3>
+              <div className="space-y-3">
+                <Button variant="outline" className="w-full justify-start text-slate-200">
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Clear Cache
+                </Button>
+                <Button variant="outline" className="w-full justify-start text-slate-200">
+                  <Package className="w-4 h-4 mr-2" />
+                  Export Database
+                </Button>
+                <Button variant="outline" className="w-full justify-start text-slate-200">
+                  <Award className="w-4 h-4 mr-2" />
+                  View Audit Log
+                </Button>
+                <Button variant="destructive" className="w-full justify-start">
+                  <AlertCircle className="w-4 h-4 mr-2" />
+                  Emergency Mode
+                </Button>
+              </div>
             </div>
           </div>
         )}
