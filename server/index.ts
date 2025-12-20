@@ -345,6 +345,27 @@ export function createServer() {
     adminRoutes.listAllStaff
   );
 
+  app.delete(
+    "/api/admin/staff/:id",
+    authenticate,
+    requireAdmin,
+    adminRoutes.deleteStaffMember
+  );
+
+  app.get(
+    "/api/admin/stores",
+    authenticate,
+    requireAdmin,
+    adminRoutes.listAllStores
+  );
+
+  app.get(
+    "/api/admin/activity-logs",
+    authenticate,
+    requireAdmin,
+    adminRoutes.listActivityLogs
+  );
+
   // Client Stock Management routes (protected)
   app.get(
     "/api/client/stock",

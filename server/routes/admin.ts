@@ -178,3 +178,66 @@ export const listAllStaff: RequestHandler = async (_req, res) => {
     return jsonError(res, 500, "Failed to list staff members");
   }
 };
+
+// Delete a staff member (admin only)
+export const deleteStaffMember: RequestHandler = async (req, res) => {
+  try {
+    const { id } = req.params as { id: string };
+    if (!id) {
+      return jsonError(res, 400, "Staff id is required");
+    }
+
+    const staffId = parseInt(id, 10);
+    if (Number.isNaN(staffId)) {
+      return jsonError(res, 400, "Invalid staff id");
+    }
+
+    const result = await pool.query('DELETE FROM staff WHERE id = $1 RETURNING id', [staffId]);
+    if (result.rows.length === 0) {
+      return jsonError(res, 404, "Staff member not found");
+    }
+
+    res.json({ message: "Staff member deleted successfully" });
+  } catch (err) {
+    console.error('Failed to delete staff:', err);
+    return jsonError(res, 500, "Failed to delete staff member");
+  }
+};
+
+// List all stores (admin only)
+export const listAllStores: RequestHandler = async (_req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT 
+        c.id, c.email, c.company_name as store_name,
+        COALESCE(css.store_slug, '') as store_slug,
+        c.subscription_status, c.subscription_until as paid_until,
+        c.created_at
+      FROM clients c
+      LEFT JOIN client_store_settings css ON c.id = css.client_id
+      ORDER BY c.created_at DESC`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Failed to list stores:', err);
+    return jsonError(res, 500, "Failed to list stores");
+  }
+};
+
+// List all activity logs (admin only)
+export const listActivityLogs: RequestHandler = async (_req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT 
+        id, client_id, staff_id, action, resource_type, resource_id,
+        before_value, after_value, timestamp
+      FROM staff_activity_log
+      ORDER BY timestamp DESC
+      LIMIT 500`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Failed to list activity logs:', err);
+    return jsonError(res, 500, "Failed to list activity logs");
+  }
+};

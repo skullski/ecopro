@@ -290,6 +290,32 @@ export default function PlatformAdmin() {
     }
   };
 
+  const handleDeleteStaff = async (staffId: number) => {
+    const confirmDelete = confirm('Are you sure you want to delete this staff member? This action cannot be undone.');
+    if (!confirmDelete) return;
+
+    try {
+      const token = localStorage.getItem('authToken');
+      const res = await fetch(`/api/admin/staff/${staffId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        await loadPlatformData();
+        alert('Staff member deleted successfully');
+      } else {
+        const txt = await res.text();
+        alert(`Failed to delete staff member: ${txt}`);
+      }
+    } catch (error) {
+      console.error('Failed to delete staff:', error);
+      alert('Failed to delete staff member');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
@@ -608,6 +634,9 @@ export default function PlatformAdmin() {
                         {staffMember.status}
                       </Badge>
                     </div>
+                    <Button size="sm" variant="destructive" className="w-full text-xs" onClick={() => handleDeleteStaff(staffMember.id)}>
+                      Delete
+                    </Button>
                   </div>
                 ))}
                 {staff.length === 0 && (
