@@ -164,11 +164,11 @@ export const listAllStaff: RequestHandler = async (_req, res) => {
     const { pool } = await import("../utils/database");
     const result = await pool.query(
       `SELECT 
-        ss.id, ss.store_id, ss.email, ss.role, ss.status, ss.created_at,
-        cs.store_name, cs.email as owner_email
-      FROM store_staff ss
-      JOIN clients cs ON ss.store_id = cs.id
-      ORDER BY ss.created_at DESC`
+        s.id, s.client_id, s.email, s.role, s.status, s.created_at,
+        c.store_name, c.email as owner_email
+      FROM staff s
+      JOIN clients c ON s.client_id = c.id
+      ORDER BY s.created_at DESC`
     );
     res.json(result.rows);
   } catch (err) {
