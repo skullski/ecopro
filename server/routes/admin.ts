@@ -165,9 +165,11 @@ export const listAllStaff: RequestHandler = async (_req, res) => {
     const result = await pool.query(
       `SELECT 
         s.id, s.client_id, s.email, s.role, s.status, s.created_at,
-        c.store_name, c.email as owner_email
+        COALESCE(css.store_name, c.company_name, c.email) as store_name, 
+        c.email as owner_email
       FROM staff s
       JOIN clients c ON s.client_id = c.id
+      LEFT JOIN client_store_settings css ON s.client_id = css.client_id
       ORDER BY s.created_at DESC`
     );
     res.json(result.rows);
