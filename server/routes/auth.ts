@@ -128,7 +128,10 @@ export const login: RequestHandler = async (req, res) => {
     }
 
     // Verify password
+    console.log("[LOGIN] Comparing password...");
     const isValidPassword = await comparePassword(password, user.password_hash);
+    console.log("[LOGIN] Password comparison result:", isValidPassword);
+    
     if (!isValidPassword) {
       console.log("[LOGIN] Invalid password");
       return jsonError(res, 401, "Invalid email or password");

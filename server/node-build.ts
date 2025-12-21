@@ -1,6 +1,6 @@
 import { createServer } from "./index";
 import { initializeDatabase, createDefaultAdmin } from "./utils/database";
-import bcrypt from "bcrypt";
+import * as argon2 from "argon2";
 
 async function startServer() {
   try {
@@ -8,10 +8,15 @@ async function startServer() {
     console.log("🔄 Initializing database...");
     await initializeDatabase();
 
-    // Create default admin user
+    // Create default admin user with argon2id hashing
     const adminEmail = "admin@ecopro.com";
     const adminPassword = "admin123";
-    const hashedPassword = await bcrypt.hash(adminPassword, 10);
+    const hashedPassword = await argon2.hash(adminPassword, {
+      type: argon2.argon2id,
+      timeCost: 2,
+      memoryCost: 65536,
+      parallelism: 1,
+    });
     await createDefaultAdmin(adminEmail, hashedPassword);
     console.log(`✅ Default admin user created: ${adminEmail}`);
     console.log(`🔑 Default password: ${adminPassword}`);
