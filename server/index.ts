@@ -5,7 +5,7 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 import helmet from "helmet";
-import rateLimit from "express-rate-limit";
+// import rateLimit from "express-rate-limit"; // DISABLED FOR TESTING
 import { handleDemo } from "./routes/demo";
 import * as authRoutes from "./routes/auth";
 import * as productRoutes from "./routes/products";
