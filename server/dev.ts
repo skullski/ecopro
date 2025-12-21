@@ -1,7 +1,7 @@
 import { createServer } from "./index";
 import { initializeDatabase, createDefaultAdmin, runPendingMigrations } from "./utils/database";
 import { processPendingMessages, cleanupOldOrders } from "./utils/bot-messaging";
-import * as bcrypt from "bcrypt";
+import { hashPassword } from "./utils/auth";
 
 const PORT = process.env.PORT || 8080;
 
@@ -20,7 +20,7 @@ async function startServer() {
       // Create default admin user
       const adminEmail = "admin@ecopro.com";
       const adminPassword = "admin123";
-      const hashedPassword = await bcrypt.hash(adminPassword, 10);
+      const hashedPassword = await hashPassword(adminPassword);
       await createDefaultAdmin(adminEmail, hashedPassword);
       console.log(`✅ Default admin user created: ${adminEmail}`);
       console.log(`🔑 Default password: ${adminPassword}`);

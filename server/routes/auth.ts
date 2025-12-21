@@ -1,25 +1,8 @@
 import jwt from "jsonwebtoken";
 import { JWTPayload } from "@shared/api";
 import { jsonError } from "../utils/httpHelpers";
-
-// JWT authentication middleware
-export const requireAuth: RequestHandler = (req, res, next) => {
-  const auth = req.headers.authorization;
-  if (!auth) return jsonError(res, 401, "No token");
-  try {
-    const decoded = jwt.verify(auth.split(" ")[1], process.env.JWT_SECRET || "changeme");
-    if (typeof decoded === "object" && decoded !== null) {
-      req.user = decoded as JWTPayload;
-    } else {
-      req.user = undefined;
-    }
-    next();
-  } catch {
-    return jsonError(res, 401, "Invalid token");
-  }
-};
 import { RequestHandler } from "express";
-import { hashPassword, comparePassword, generateToken } from "../utils/auth";
+import { hashPassword, comparePassword, generateToken, verifyToken, extractToken } from "../utils/auth";
 import {
   findUserByEmail,
   findUserById,
@@ -29,6 +12,19 @@ import {
   createDefaultAdmin,
   ensureConnection,
 } from "../utils/database";
+
+// JWT authentication middleware
+export const requireAuth: RequestHandler = (req, res, next) => {
+  const token = extractToken(req.headers.authorization);
+  if (!token) return jsonError(res, 401, "No token");
+  try {
+    const decoded = verifyToken(token);
+    req.user = decoded as JWTPayload;
+    next();
+  } catch {
+    return jsonError(res, 401, "Invalid token");
+  }
+};
 
 // Database initialization moved to server startup (dev.ts / index.ts)
 // Removed immediate init to prevent crashes when DB is unavailable
@@ -51,6 +47,23 @@ export const register: RequestHandler = async (req, res) => {
       return jsonError(res, 400, "Email already registered");
     }
 
+    // Check platform user limit
+    const pool = await ensureConnection();
+    const userCountResult = await pool.query("SELECT COUNT(*) as count FROM users WHERE user_type = 'client'");
+    const currentUserCount = parseInt(userCountResult.rows[0].count);
+    
+    const maxUsersResult = await pool.query(
+      "SELECT setting_value FROM platform_settings WHERE setting_key = 'max_users'"
+    );
+    const maxUsers = maxUsersResult.rows.length > 0 
+      ? parseInt(maxUsersResult.rows[0].setting_value) 
+      : 1000; // Default to 1000 if not set
+    
+    if (currentUserCount >= maxUsers) {
+      console.log("[REGISTER] User limit reached. Current:", currentUserCount, "Max:", maxUsers);
+      return jsonError(res, 429, `Platform is at capacity. Maximum users: ${maxUsers}`);
+    }
+
     // Hash password
     const hashedPassword = await hashPassword(password);
     console.log("[REGISTER] Password hashed");
@@ -60,7 +73,7 @@ export const register: RequestHandler = async (req, res) => {
     const normalizedRole = role === 'admin' ? 'admin' : 'user';
     const user = await createUser({
       email,
-      password_hash: hashedPassword,
+      password: hashedPassword,
       name,
       role: normalizedRole,
       user_type: normalizedRole === 'admin' ? 'admin' : 'client',
@@ -70,12 +83,11 @@ export const register: RequestHandler = async (req, res) => {
     // If user_type is 'client', also create a client record (for store owners)
     if (user.user_type === 'client') {
       try {
-        const pool = await ensureConnection();
         await pool.query(
-          `INSERT INTO clients (email, password_hash, name, role, created_at, updated_at)
+          `INSERT INTO clients (email, password, name, role, created_at, updated_at)
            VALUES ($1, $2, $3, $4, NOW(), NOW())
            ON CONFLICT (email) DO NOTHING`,
-          [user.email, user.password_hash, user.name || 'Store Owner', 'client']
+          [user.email, user.password, user.name || 'Store Owner', 'client']
         );
         console.log("[REGISTER] Client record created for:", user.email);
       } catch (clientError) {
@@ -125,7 +137,7 @@ export const login: RequestHandler = async (req, res) => {
     console.log("User found:", !!user);
     if (user) {
       console.log("User role:", user.role);
-      console.log("Hash starts with:", user.password_hash?.substring(0, 20));
+      console.log("Hash starts with:", user.password?.substring(0, 10));
     }
 
     if (!user) {
@@ -135,7 +147,7 @@ export const login: RequestHandler = async (req, res) => {
 
     // Verify password
     console.log("Comparing passwords...");
-    const isValidPassword = await comparePassword(password, user.password_hash);
+    const isValidPassword = await comparePassword(password, user.password);
     console.log("Password match:", isValidPassword ? "✅ YES" : "❌ NO");
     
     if (!isValidPassword) {
@@ -147,10 +159,10 @@ export const login: RequestHandler = async (req, res) => {
 
     // Generate token
     const token = generateToken({
-      id: user.id,
+      id: user.id.toString(),
       email: user.email,
-      role: (user.role as "user" | "admin") || "user",
-      user_type: user.role === "admin" ? "admin" : "client",
+      role: (user.role as any) || "user",
+      user_type: (user.user_type as any) || (user.role === "admin" ? "admin" : "client"),
     });
 
     res.json({
@@ -161,7 +173,7 @@ export const login: RequestHandler = async (req, res) => {
         email: user.email,
         name: user.name,
         role: user.role,
-        user_type: user.role === "admin" ? "admin" : "client",
+        user_type: user.user_type || (user.role === "admin" ? "admin" : "client"),
       },
     });
   } catch (error) {
@@ -215,14 +227,14 @@ export const changePassword: RequestHandler = async (req, res) => {
     }
 
     // Verify current password
-    const isValidPassword = await comparePassword(currentPassword, user.password_hash);
+    const isValidPassword = await comparePassword(currentPassword, user.password);
     if (!isValidPassword) {
       return jsonError(res, 401, "Current password is incorrect");
     }
 
     // Hash new password
     const hashedPassword = await hashPassword(newPassword);
-    await updateUser(user.id, { password_hash: hashedPassword });
+    await updateUser(user.id, { password: hashedPassword });
 
     res.json({ message: "Password changed successfully" });
   } catch (error) {

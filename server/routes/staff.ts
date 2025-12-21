@@ -58,9 +58,9 @@ export const createStaff: RequestHandler = async (req, res) => {
     try {
       result = await pool.query(
         `INSERT INTO staff 
-          (client_id, email, password_hash, role, status, permissions, created_by, invited_at)
+          (client_id, email, password, role, status, permissions, created_by, invited_at)
           VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
-          RETURNING id`,
+          RETURNING id, email, role, status`,
         [clientId, username, passwordHash, role, 'active', JSON.stringify(permissions || {}), clientId]
       );
     } catch (dbError: any) {
@@ -140,10 +140,10 @@ export const inviteStaff: RequestHandler = async (req, res) => {
     // Create staff record
     const result = await pool.query(
       `INSERT INTO staff 
-        (client_id, email, password_hash, role, status, permissions, created_by, invited_at)
+        (client_id, email, password, role, status, permissions, created_by, invited_at)
         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
         RETURNING id`,
-      [clientId, email, passwordHash, role, 'pending', JSON.stringify(permissions), clientId]
+      [clientId, email, passwordHash, role || 'staff', 'pending', JSON.stringify(permissions || {}), clientId]
     );
 
     const staffId = result.rows[0].id;
@@ -486,7 +486,7 @@ export const staffLogin: RequestHandler = async (req, res) => {
     // This prevents any privilege escalation
     // Username can be email or any identifier
     const result = await pool.query(
-      `SELECT id, email, password_hash, client_id, role, status, permissions, full_name
+      `SELECT id, email, password, client_id, role, status, permissions, full_name
        FROM staff 
        WHERE email = $1 AND status IN ('active', 'pending')`,
       [username]
@@ -500,7 +500,7 @@ export const staffLogin: RequestHandler = async (req, res) => {
     const staffMember = result.rows[0];
 
     // Check password
-    const passwordMatch = await comparePassword(password, staffMember.password_hash);
+    const passwordMatch = await comparePassword(password, staffMember.password);
     if (!passwordMatch) {
       console.log(`[Staff] Password mismatch for staff ${staffMember.id}`);
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -528,7 +528,7 @@ export const staffLogin: RequestHandler = async (req, res) => {
         isStaff: true,                     // CRITICAL: Mark as staff, not owner
         role: staffMember.role,
       },
-      process.env.JWT_SECRET || 'your-secret-key',
+      process.env.JWT_SECRET || 'your-secret-key-change-in-production',
       { expiresIn: '7d' }
     );
 

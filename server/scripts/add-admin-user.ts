@@ -27,12 +27,12 @@ async function addAdminUser() {
 
     // Insert or update admin user
     const result = await client.query(
-      `INSERT INTO users (email, password_hash, is_verified, role, created_at, updated_at)
+      `INSERT INTO users (email, password, is_verified, role, created_at, updated_at)
        VALUES ($1, $2, $3, $4, NOW(), NOW())
        ON CONFLICT (email) DO UPDATE SET
          role = $4,
          is_verified = $3,
-         password_hash = $2,
+         password = $2,
          updated_at = NOW()
        RETURNING id, email, role`,
       [email, passwordHash, true, 'admin']

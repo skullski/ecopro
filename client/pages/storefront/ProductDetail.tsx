@@ -247,6 +247,29 @@ export default function ProductDetail() {
                 </div>
                 <span className="text-sm text-gray-500">(128 reviews)</span>
               </div>
+
+              {/* Product Statistics */}
+              <div className={`grid grid-cols-3 gap-3 p-4 rounded-lg mb-4 border ${style.border}`}
+                   style={{ backgroundColor: accentColor + '10', borderColor: accentColor + '50' }}>
+                <div className="text-center">
+                  <div className="text-xs text-gray-500 uppercase tracking-wide">Views</div>
+                  <div className="text-2xl font-bold" style={{ color: accentColor }}>
+                    {Math.floor(Math.random() * 5000) + 100}
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xs text-gray-500 uppercase tracking-wide">Sold</div>
+                  <div className="text-2xl font-bold" style={{ color: accentColor }}>
+                    {Math.floor(Math.random() * 500) + 10}
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xs text-gray-500 uppercase tracking-wide">Popularity</div>
+                  <div className="text-2xl font-bold" style={{ color: accentColor }}>
+                    {(Math.random() * 40 + 60).toFixed(0)}%
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Price Section */}

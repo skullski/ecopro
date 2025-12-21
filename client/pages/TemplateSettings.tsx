@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Loader2, Save, Eye, Check, ChevronDown, Plus, Trash2 } from 'lucide-react';
+import { Loader2, Save, Eye, Check, ChevronDown, Plus, Trash2, AlertCircle, CheckCircle } from 'lucide-react';
 import { getAuthToken } from '@/lib/auth';
 import { uploadImage } from '@/lib/api';
 
@@ -639,7 +639,34 @@ export default function TemplateSettingsPage() {
     }));
   };
 
+  // Validation helper
+  const validateSettings = () => {
+    if (!settings.store_name || settings.store_name.trim().length === 0) {
+      setMessage({ type: 'error', text: '❌ Store name is required' });
+      return false;
+    }
+    if (settings.store_name.length > 100) {
+      setMessage({ type: 'error', text: '❌ Store name must be less than 100 characters' });
+      return false;
+    }
+    if (settings.primary_color && !/^#[0-9A-F]{6}$/i.test(settings.primary_color)) {
+      setMessage({ type: 'error', text: '❌ Primary color must be a valid hex color (#RRGGBB)' });
+      return false;
+    }
+    if (settings.secondary_color && !/^#[0-9A-F]{6}$/i.test(settings.secondary_color)) {
+      setMessage({ type: 'error', text: '❌ Secondary color must be a valid hex color (#RRGGBB)' });
+      return false;
+    }
+    return true;
+  };
+
   const handleSave = async () => {
+    // Validate first
+    if (!validateSettings()) {
+      setTimeout(() => setMessage(null), 5000);
+      return;
+    }
+
     try {
       setSaving(true);
       const token = getAuthToken();
@@ -651,29 +678,64 @@ export default function TemplateSettingsPage() {
         },
         body: JSON.stringify(settings)
       });
+      
       if (res.ok) {
-        setMessage({ type: 'success', text: 'Settings saved successfully!' });
-        setTimeout(() => setMessage(null), 3000);
+        const data = await res.json();
+        setSettings(data);
+        setMessage({ type: 'success', text: '✅ Settings saved successfully!' });
+        // Auto-clear after 4 seconds
+        setTimeout(() => setMessage(null), 4000);
       } else {
         const error = await res.json().catch(() => ({ error: 'Failed to save settings' }));
-        setMessage({ type: 'error', text: error.error || 'Failed to save settings' });
+        setMessage({ type: 'error', text: `❌ ${error.error || 'Failed to save settings'}` });
       }
     } catch (err) {
       console.error('Error saving settings:', err);
-      setMessage({ type: 'error', text: 'Error saving settings' });
+      setMessage({ type: 'error', text: `❌ Error saving settings: ${(err as any).message}` });
     } finally {
       setSaving(false);
     }
   };
 
   if (loading) {
-    return <div className="p-3 md:p-4 text-center"><Loader2 className="animate-spin mx-auto" /></div>;
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-black' : 'bg-gray-50'}`}>
+        <div className="text-center">
+          <Loader2 className="animate-spin mx-auto mb-4 w-8 h-8" />
+          <p className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>Loading your store settings...</p>
+        </div>
+      </div>
+    );
   }
 
   const config = templateConfigs[template] || templateConfigs.fashion;
 
   return (
     <div className={`min-h-screen transition-colors duration-200 ${isDarkMode ? 'bg-gradient-to-br from-gray-900 to-black' : 'bg-gradient-to-br from-gray-50 to-gray-100'}`}>
+      {/* Improved Toast Notification */}
+      {message && (
+        <div className="fixed top-4 left-4 right-4 md:left-auto md:right-8 z-50 animate-in fade-in slide-in-from-top-2">
+          <div className={`flex items-center gap-3 px-4 py-3 md:px-5 md:py-4 rounded-xl shadow-2xl backdrop-blur-sm border ${
+            message.type === 'success'
+              ? 'bg-emerald-50/95 dark:bg-emerald-950/95 border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-100'
+              : 'bg-red-50/95 dark:bg-red-950/95 border-red-200 dark:border-red-800 text-red-900 dark:text-red-100'
+          }`}>
+            {message.type === 'success' ? (
+              <CheckCircle className="w-5 h-5 flex-shrink-0" />
+            ) : (
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            )}
+            <span className="text-sm md:text-base font-medium flex-1">{message.text}</span>
+            <button
+              onClick={() => setMessage(null)}
+              className="text-lg leading-none opacity-70 hover:opacity-100 transition-opacity"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+      
       {/* Full-width Template Selector Section */}
       <div className={`w-full border-b transition-colors duration-200 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
         <div className="max-w-7xl mx-auto px-3 md:px-4 py-2 md:py-3">

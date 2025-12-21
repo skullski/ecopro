@@ -3,7 +3,6 @@ import { jsonError } from '../utils/httpHelpers';
 import { RequestHandler } from "express";
 import { requireAdmin } from "../middleware/auth";
 import { findUserByEmail, updateUser } from "../utils/database";
-import bcrypt from 'bcrypt';
 
 // Promote a user to admin
 export const promoteUserToAdmin: RequestHandler = async (req, res) => {
@@ -209,13 +208,14 @@ export const listAllStores: RequestHandler = async (_req, res) => {
   try {
     const result = await pool.query(
       `SELECT 
-        c.id, c.email, c.company_name as store_name,
+        u.id, u.email, u.name as store_name,
         COALESCE(css.store_slug, '') as store_slug,
-        c.subscription_status, c.subscription_until as paid_until,
-        c.created_at
-      FROM clients c
-      LEFT JOIN client_store_settings css ON c.id = css.client_id
-      ORDER BY c.created_at DESC`
+        'active' as subscription_status,
+        u.created_at
+      FROM users u
+      LEFT JOIN client_store_settings css ON u.id = css.client_id
+      WHERE u.user_type = 'client'
+      ORDER BY u.created_at DESC`
     );
     res.json(result.rows);
   } catch (err) {
@@ -248,11 +248,13 @@ export const listAllProducts: RequestHandler = async (_req, res) => {
     const result = await pool.query(
       `SELECT 
         p.id, p.title, p.price, p.status,
-        COALESCE(c.company_name, c.email) as seller_name,
-        c.email as seller_email,
-        COALESCE(p.views, 0) as views, p.created_at
+        COALESCE(u.name, u.email) as seller_name,
+        u.email as seller_email,
+        COALESCE(p.views, 0) as views, p.created_at,
+        p.images
       FROM client_store_products p
-      JOIN clients c ON p.client_id = c.id
+      JOIN users u ON p.client_id = u.id
+      WHERE u.user_type = 'client'
       ORDER BY p.created_at DESC
       LIMIT 100`
     );
@@ -260,5 +262,79 @@ export const listAllProducts: RequestHandler = async (_req, res) => {
   } catch (err) {
     console.error('Failed to list products:', err);
     return jsonError(res, 500, "Failed to list products");
+  }
+};
+
+// Flag a product for review/moderation (admin only)
+export const flagProduct: RequestHandler = async (req, res) => {
+  try {
+    const { productId, reason, description } = req.body;
+    const adminId = (req.user as any)?.id;
+
+    if (!adminId) {
+      return jsonError(res, 401, "Not authenticated");
+    }
+
+    if (!productId || !reason) {
+      return jsonError(res, 400, "Product ID and reason are required");
+    }
+
+    // Get product info first
+    const productResult = await pool.query(
+      'SELECT client_id FROM client_store_products WHERE id = $1',
+      [productId]
+    );
+
+    if (productResult.rows.length === 0) {
+      return jsonError(res, 404, "Product not found");
+    }
+
+    const clientId = productResult.rows[0].client_id;
+
+    // Insert flag record
+    await pool.query(
+      `INSERT INTO flagged_products (product_id, client_id, flagged_by, reason, description, status)
+       VALUES ($1, $2, $3, $4, $5, 'pending')`,
+      [productId, clientId, adminId, reason, description]
+    );
+
+    // Update product to mark as flagged
+    await pool.query(
+      'UPDATE client_store_products SET is_flagged = true, flag_reason = $1 WHERE id = $2',
+      [reason, productId]
+    );
+
+    res.json({ message: "Product flagged for review" });
+  } catch (err) {
+    console.error('Failed to flag product:', err);
+    return jsonError(res, 500, "Failed to flag product");
+  }
+};
+
+// Unflag a product (admin only)
+export const unflagProduct: RequestHandler = async (req, res) => {
+  try {
+    const { productId } = req.body;
+
+    if (!productId) {
+      return jsonError(res, 400, "Product ID is required");
+    }
+
+    // Update flag records
+    await pool.query(
+      'UPDATE flagged_products SET status = $1, resolved_at = NOW() WHERE product_id = $2 AND status = $3',
+      ['dismissed', productId, 'pending']
+    );
+
+    // Update product to unmark as flagged
+    await pool.query(
+      'UPDATE client_store_products SET is_flagged = false, flag_reason = NULL WHERE id = $1',
+      [productId]
+    );
+
+    res.json({ message: "Product unflagged" });
+  } catch (err) {
+    console.error('Failed to unflag product:', err);
+    return jsonError(res, 500, "Failed to unflag product");
   }
 };

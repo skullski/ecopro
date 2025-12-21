@@ -57,6 +57,7 @@ const menuItems: MenuItem[] = [
   { titleKey: "sidebar.home", path: "/dashboard", icon: <Home className="w-5 h-5" /> },
   { titleKey: "sidebar.store", path: "/dashboard/preview", icon: <Eye className="w-5 h-5" /> },
   { titleKey: "sidebar.stock", path: "/dashboard/stock", icon: <Package className="w-5 h-5" /> },
+  { titleKey: "sidebar.products", path: "/dashboard/products", icon: <Tag className="w-5 h-5" /> },
   { titleKey: "sidebar.orders", path: "/dashboard/orders", icon: <ShoppingCart className="w-5 h-5" /> },
   { 
     titleKey: "sidebar.delivery", 

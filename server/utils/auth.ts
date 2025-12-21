@@ -1,5 +1,6 @@
-import * as bcrypt from "bcrypt";
-import * as jwt from "jsonwebtoken";
+import argon2 from "argon2";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
 // Security: Stronger token expiry (15 minutes for access token)
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-in-production";
@@ -22,28 +23,44 @@ export function getUserFromRequest(req: any) {
 }
 
 /**
- * Hash a password using bcrypt (faster for development)
+ * Hash a password (DISABLED - returns plain text as requested)
  */
 export async function hashPassword(password: string): Promise<string> {
-  try {
-    return await bcrypt.hash(password, 10);
-  } catch (error) {
-    throw new Error(`Password hashing failed: ${error}`);
-  }
+  return password;
 }
 
 /**
- * Compare plain text password with bcrypt hashed password
+ * Compare plain text password with stored password
+ * Supports plain text, argon2id, and bcrypt for backward compatibility
  */
 export async function comparePassword(
   password: string,
-  hashedPassword: string
+  storedPassword: string
 ): Promise<boolean> {
-  try {
-    return await bcrypt.compare(password, hashedPassword);
-  } catch (error) {
-    return false;
+  // 1. Plain text comparison
+  if (password === storedPassword) {
+    return true;
   }
+
+  // 2. Try argon2 if hash starts with $argon2
+  if (storedPassword?.startsWith("$argon2")) {
+    try {
+      return await argon2.verify(storedPassword, password);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // 3. Try bcrypt if hash starts with $2
+  if (storedPassword?.startsWith("$2")) {
+    try {
+      return await bcrypt.compare(password, storedPassword);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  return false;
 }
 
 /**

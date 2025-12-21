@@ -26,6 +26,7 @@ import AdminDashboard from "./pages/admin/Dashboard";
 import EnhancedDashboard from "./pages/admin/EnhancedDashboard";
 import AdminOrders from "./pages/admin/Orders";
 import AdminAnalytics from "./pages/admin/Analytics";
+import AdminProducts from "./pages/admin/Products";
 // StoreSettings removed
 import AdminSettings from "./pages/admin/Settings";
 // StorePreview removed
@@ -57,6 +58,9 @@ import StaffDashboard from "./pages/StaffDashboard";
 import ProductDetail from "./pages/storefront/ProductDetail";
 import StorefrontCheckout from "./pages/storefront/Checkout";
 import OrderConfirmation from "./pages/storefront/OrderConfirmation";
+import AccountLocked from "./pages/AccountLocked";
+import BillingSuccess from "./pages/BillingSuccess";
+import BillingCancelled from "./pages/BillingCancelled";
 
 // Orders submenu pages
 import AddOrder from "./pages/admin/orders/AddOrder";
@@ -559,6 +563,11 @@ const App = () => (
                   <Route path="/signup" element={<GuardPlatformAuthPages><Signup /></GuardPlatformAuthPages>} />
                   {/* Staff routes */}
                   <Route path="/staff/login" element={<StaffLogin />} />
+                  {/* Account locked route - shown when subscription expires */}
+                  <Route path="/account-locked" element={<AccountLocked />} />
+                  {/* Billing success/cancelled routes - RedotPay payment callbacks */}
+                  <Route path="/billing/success" element={<BillingSuccess />} />
+                  <Route path="/billing/cancelled" element={<BillingCancelled />} />
                   <Route
                     path="/staff/dashboard"
                     element={
@@ -594,7 +603,8 @@ const App = () => (
                     <Route path="orders/add" element={<AddOrder />} />
                     <Route path="orders/abandoned" element={<AbandonedOrders />} />
                     <Route path="orders/flex-scan" element={<FlexScan />} />
-                    {/* Products routes removed */}
+                    {/* Products management routes */}
+                    <Route path="products" element={<AdminProducts />} />
                     {/* Delivery submenu routes */}
                     <Route path="delivery/companies" element={<DeliveryCompanies />} />
                     {/* Addons submenu routes */}

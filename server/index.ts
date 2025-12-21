@@ -18,10 +18,12 @@ import * as orderRoutes from "./routes/orders";
 import * as orderConfirmationRoutes from "./routes/order-confirmation";
 import { upload, uploadImage } from "./routes/uploads";
 import { authenticate, requireAdmin, requireClient, requireStoreOwner } from "./middleware/auth";
+import { requireActiveSubscription } from "./middleware/subscription-check";
 import * as adminRoutes from "./routes/admin";
 import * as dashboardRoutes from "./routes/dashboard";
 import * as botRoutes from "./routes/bot";
 import * as staffRoutes from "./routes/staff";
+import * as billingRoutes from "./routes/billing";
 import { authenticateStaff, requireStaffPermission, requireStaffClientAccess } from "./utils/staff-middleware";
 import { initializeDatabase, createDefaultAdmin, runPendingMigrations } from "./utils/database";
 import { handleHealth } from "./routes/health";
@@ -76,7 +78,8 @@ export function createServer() {
   // Trust proxy for rate limiting (required for deployment behind reverse proxies like Render)
   app.set("trust proxy", 1);
 
-  // Security: Helmet adds security headers
+  // Security: Helmet adds security headers (DISABLED for troubleshooting)
+  /*
   app.use(
     helmet({
       contentSecurityPolicy: {
@@ -90,6 +93,7 @@ export function createServer() {
       }
     })
   );
+  */
 
   // Security: Rate limiting to prevent brute force attacks
   // Rate limiting DISABLED for testing
@@ -223,6 +227,12 @@ export function createServer() {
     apiLimiter,
     staffRoutes.staffLogin
   );
+
+  // Subscription check middleware: Enforce active subscriptions on /api/client/*, /api/seller/*, and /api/store/* routes
+  // This must come AFTER staff/login (public route) but BEFORE authenticated routes
+  app.use(/^\/api\/client\//, authenticate, requireActiveSubscription);
+  app.use(/^\/api\/seller\//, authenticate, requireActiveSubscription);
+  app.use(/^\/api\/store\//, authenticate, requireActiveSubscription);
 
   // Staff management routes (authenticated store owners/clients only)
   app.post(
@@ -359,6 +369,116 @@ export function createServer() {
     authenticate,
     requireAdmin,
     adminRoutes.listAllProducts
+  );
+
+  app.post(
+    "/api/admin/flag-product",
+    authenticate,
+    requireAdmin,
+    adminRoutes.flagProduct
+  );
+
+  app.post(
+    "/api/admin/unflag-product",
+    authenticate,
+    requireAdmin,
+    adminRoutes.unflagProduct
+  );
+
+  // Billing routes (both user and admin)
+  app.get(
+    "/api/billing/subscription",
+    authenticate,
+    billingRoutes.getSubscription
+  );
+
+  app.get(
+    "/api/billing/check-access",
+    authenticate,
+    billingRoutes.checkAccess
+  );
+
+  // Admin billing routes
+  app.get(
+    "/api/billing/admin/subscriptions",
+    authenticate,
+    requireAdmin,
+    billingRoutes.getAllSubscriptions
+  );
+
+  app.get(
+    "/api/billing/admin/metrics",
+    authenticate,
+    requireAdmin,
+    billingRoutes.getBillingMetrics
+  );
+
+  app.get(
+    "/api/billing/admin/settings",
+    authenticate,
+    requireAdmin,
+    billingRoutes.getPlatformSettings
+  );
+
+  app.post(
+    "/api/billing/admin/settings",
+    authenticate,
+    requireAdmin,
+    billingRoutes.updatePlatformSettings
+  );
+
+  app.get(
+    "/api/billing/admin/stores",
+    authenticate,
+    requireAdmin,
+    billingRoutes.getStoresWithSubscription
+  );
+
+  // Phase 3: Checkout and payment endpoints
+  app.post(
+    "/api/billing/checkout",
+    authenticate,
+    apiLimiter,
+    billingRoutes.createCheckout
+  );
+
+  app.get(
+    "/api/billing/payments",
+    authenticate,
+    billingRoutes.getPaymentHistory
+  );
+
+  // Payment failures management endpoints
+  app.get(
+    "/api/billing/admin/payment-failures",
+    authenticate,
+    requireAdmin,
+    billingRoutes.getPaymentFailures
+  );
+
+  app.post(
+    "/api/billing/admin/retry-payment",
+    authenticate,
+    requireAdmin,
+    billingRoutes.retryPayment
+  );
+  // RedotPay webhook (public, signature verified, with raw body parser)
+  app.post(
+    "/api/billing/webhook/redotpay",
+    express.raw({ type: 'application/json' }),
+    (req, res, next) => {
+      // Convert raw body back to json for handler
+      try {
+        if (Buffer.isBuffer(req.body)) {
+          (req as any).rawBody = req.body.toString('utf8');
+          req.body = JSON.parse((req as any).rawBody);
+        }
+        next();
+      } catch (e) {
+        res.status(400).json({ error: 'Invalid JSON' });
+      }
+    },
+    billingRoutes.handleRedotPayWebhook
   );
 
   // Client Stock Management routes (protected)

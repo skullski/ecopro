@@ -280,6 +280,27 @@ export const getStoreSettings: RequestHandler = async (req, res) => {
     );
 
     if (result.rows.length === 0) {
+      // Check platform store limit before creating new store
+      const storeCountResult = await pool.query(
+        "SELECT COUNT(*) as count FROM client_store_settings WHERE client_id IS NOT NULL"
+      );
+      const currentStoreCount = parseInt(storeCountResult.rows[0].count);
+      
+      const maxStoresResult = await pool.query(
+        "SELECT setting_value FROM platform_settings WHERE setting_key = 'max_stores'"
+      );
+      const maxStores = maxStoresResult.rows.length > 0 
+        ? parseInt(maxStoresResult.rows[0].setting_value) 
+        : 1000; // Default to 1000 if not set
+      
+      if (currentStoreCount >= maxStores) {
+        console.log("[STORE] Store limit reached. Current:", currentStoreCount, "Max:", maxStores);
+        return res.status(429).json({ 
+          error: `Platform store limit reached. Maximum stores: ${maxStores}`,
+          code: "STORE_LIMIT_REACHED"
+        });
+      }
+
       // Generate unique slug
       const randomSlug = 'store-' + Math.random().toString(36).substr(2, 8);
       
