@@ -46,8 +46,16 @@ export async function comparePassword(
   hashedPassword: string
 ): Promise<boolean> {
   try {
-    return await argon2.verify(hashedPassword, password);
+    console.log("[COMPARE_PASSWORD] Starting comparison...");
+    console.log("[COMPARE_PASSWORD] Hash type:", hashedPassword.substring(0, 20) + "...");
+    console.log("[COMPARE_PASSWORD] Password length:", password.length);
+    
+    const result = await argon2.verify(hashedPassword, password);
+    console.log("[COMPARE_PASSWORD] Result:", result);
+    return result;
   } catch (error) {
+    console.error("[COMPARE_PASSWORD] Error:", error instanceof Error ? error.message : String(error));
+    console.error("[COMPARE_PASSWORD] Full error:", error);
     // Return false on any verification error (invalid hash, etc)
     return false;
   }
