@@ -55,14 +55,6 @@ export default function Header() {
 
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center gap-2">
-              {!user && (
-                <Link 
-                  to="/marketplace" 
-                  className="px-4 py-2.5 rounded-lg text-sm font-bold text-foreground hover:text-primary hover:bg-gradient-to-r hover:from-primary/15 hover:to-accent/12 transition-all border border-transparent hover:border-primary/20 shadow-sm hover:shadow-md"
-                >
-                  Marketplace
-                </Link>
-              )}
               <Link 
                 to="/pricing" 
                 className="px-4 py-2.5 rounded-lg text-sm font-bold text-foreground hover:text-primary hover:bg-gradient-to-r hover:from-primary/15 hover:to-accent/12 transition-all border border-transparent hover:border-primary/20 shadow-sm hover:shadow-md"
@@ -207,15 +199,7 @@ export default function Header() {
         <div className="lg:hidden fixed inset-0 top-20 z-40 bg-background/96 backdrop-blur-xl border-t border-primary/12">
           <div className="container mx-auto px-4 py-6">
             <nav className="flex flex-col gap-2">
-              {!user && (
-                <Link 
-                  to="/marketplace" 
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="px-4 py-3 rounded-lg text-base font-bold text-foreground hover:text-primary hover:bg-gradient-to-r hover:from-primary/12 hover:to-accent/10 transition-all border border-transparent hover:border-primary/15 shadow-sm hover:shadow-md"
-                >
-                  Marketplace
-                </Link>
-              )}
+
               <Link 
                 to="/pricing" 
                 onClick={() => setMobileMenuOpen(false)}

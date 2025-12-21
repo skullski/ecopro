@@ -277,10 +277,10 @@ function GuestCheckout() {
         <div className="text-center space-y-4">
           <div className="text-red-500 text-lg font-semibold">Error: {state.error}</div>
           <button
-            onClick={() => navigate('/marketplace')}
+            onClick={() => navigate('/')}
             className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
           >
-            Back to Marketplace
+            Back to Home
           </button>
         </div>
       </div>
@@ -294,13 +294,13 @@ function GuestCheckout() {
         {/* Header */}
         <div className="max-w-4xl mx-auto mb-4 md:mb-6">
           <button
-            onClick={() => navigate('/marketplace')}
+            onClick={() => navigate('/')}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to Marketplace
+            Back to Home
           </button>
           <h1 className="text-3xl font-bold mb-2">Guest Checkout</h1>
           <p className="text-muted-foreground">Complete your order without creating an account</p>
@@ -525,10 +525,10 @@ function GuestCheckout() {
               </div>
               <div className="flex gap-3 justify-center">
                 <button
-                  onClick={() => navigate('/marketplace')}
+                  onClick={() => navigate('/')}
                   className="px-6 py-2.5 bg-primary text-white font-medium rounded-lg hover:bg-primary/90 transition-colors"
                 >
-                  Continue Shopping
+                  Back to Home
                 </button>
                 <button
                   onClick={() => navigate('/seller/login')}

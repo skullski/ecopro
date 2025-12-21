@@ -111,7 +111,6 @@ export default function EditorialTemplate(props: TemplateProps & { mode: 'suprem
       <div className="border-t bg-muted/30">
         <div className="container mx-auto px-4 py-4 md:py-6 text-center">
           <p className="text-sm text-muted-foreground mb-2">Powered by {settings.store_name || 'EcoPro'}</p>
-          <Button variant="outline" size="sm" onClick={() => navigate('/marketplace')}><ExternalLink className="w-4 h-4 mr-2"/>Explore More Stores</Button>
         </div>
       </div>
     </div>

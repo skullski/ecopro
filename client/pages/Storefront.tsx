@@ -198,7 +198,7 @@ export default function Storefront() {
           <p className="text-muted-foreground text-xs">The store link may be incorrect or the store is temporarily unavailable.</p>
           <div className="flex gap-2 pt-4">
             <button onClick={() => window.location.reload()} className="flex-1 px-4 py-2 border rounded-md font-semibold hover:bg-muted transition">🔄 Retry</button>
-            <a href="/marketplace" className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-md font-semibold hover:opacity-90 transition">{t('storefront.browseMarketplace')}</a>
+            <a href="/" className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-md font-semibold hover:opacity-90 transition">Back to Home</a>
           </div>
         </div>
       </div>

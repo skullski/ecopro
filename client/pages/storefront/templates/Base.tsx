@@ -161,12 +161,9 @@ export default function BaseTemplate(props: TemplateProps & { variant: 'classic'
                 </div>
                 <div className="space-y-3">
                   <h3 className="text-xl md:text-2xl font-bold tracking-tight">No Products Yet</h3>
-                  <p className="text-muted-foreground text-lg max-w-md mx-auto">This store is being stocked. Check back soon or explore our marketplace!</p>
+                  <p className="text-muted-foreground text-lg max-w-md mx-auto">This store is being stocked. Check back soon!</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center pt-2">
-                  <Button onClick={() => navigate('/marketplace')} size="lg" className="bg-gradient-to-r from-primary to-accent hover:opacity-90">
-                    <Package className="mr-2 h-5 w-5" /> Browse Marketplace
-                  </Button>
                   <Button onClick={() => navigate('/contact')} variant="outline" size="lg">Contact Store Owner</Button>
                 </div>
               </div>
@@ -285,9 +282,6 @@ export default function BaseTemplate(props: TemplateProps & { variant: 'classic'
       <div className="border-t bg-muted/30 mt-6 md:mt-4 md:mt-6">
         <div className="container mx-auto px-4 py-4 md:py-6 text-center">
           <p className="text-sm text-muted-foreground mb-2">Powered by {settings.store_name || 'EcoPro'}</p>
-          <Button variant="outline" size="sm" onClick={() => navigate('/marketplace')}>
-            <ExternalLink className="w-4 h-4 mr-2" /> Explore More Stores
-          </Button>
         </div>
       </div>
     </div>
