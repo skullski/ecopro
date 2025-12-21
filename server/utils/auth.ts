@@ -1,4 +1,4 @@
-import * as argon2 from "argon2";
+import * as bcrypt from "bcrypt";
 import * as jwt from "jsonwebtoken";
 
 // Security: Stronger token expiry (15 minutes for access token)
@@ -22,41 +22,26 @@ export function getUserFromRequest(req: any) {
 }
 
 /**
- * Hash a password using argon2id (more secure than bcrypt)
- * Parameters: timeCost=2, memoryCost=65536 (64MB), parallelism=1
+ * Hash a password using bcrypt (faster for development)
  */
 export async function hashPassword(password: string): Promise<string> {
   try {
-    return await argon2.hash(password, {
-      type: argon2.argon2id,
-      timeCost: 2,
-      memoryCost: 65536,
-      parallelism: 1,
-    });
+    return await bcrypt.hash(password, 10);
   } catch (error) {
     throw new Error(`Password hashing failed: ${error}`);
   }
 }
 
 /**
- * Compare plain text password with argon2id hashed password (secure method only)
+ * Compare plain text password with bcrypt hashed password
  */
 export async function comparePassword(
   password: string,
   hashedPassword: string
 ): Promise<boolean> {
   try {
-    console.log("[COMPARE_PASSWORD] Starting comparison...");
-    console.log("[COMPARE_PASSWORD] Hash type:", hashedPassword.substring(0, 20) + "...");
-    console.log("[COMPARE_PASSWORD] Password length:", password.length);
-    
-    const result = await argon2.verify(hashedPassword, password);
-    console.log("[COMPARE_PASSWORD] Result:", result);
-    return result;
+    return await bcrypt.compare(password, hashedPassword);
   } catch (error) {
-    console.error("[COMPARE_PASSWORD] Error:", error instanceof Error ? error.message : String(error));
-    console.error("[COMPARE_PASSWORD] Full error:", error);
-    // Return false on any verification error (invalid hash, etc)
     return false;
   }
 }

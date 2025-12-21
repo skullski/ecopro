@@ -116,28 +116,34 @@ export const login: RequestHandler = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    console.log("[LOGIN] Attempting login for:", email);
+    console.log("\n=== LOGIN ATTEMPT ===");
+    console.log("Email:", email);
+    console.log("Password length:", password?.length);
 
     // Find user
     const user = await findUserByEmail(email);
-    console.log("[LOGIN] Found user:", !!user, "role:", user?.role);
+    console.log("User found:", !!user);
+    if (user) {
+      console.log("User role:", user.role);
+      console.log("Hash starts with:", user.password_hash?.substring(0, 20));
+    }
 
     if (!user) {
-      console.log("[LOGIN] User not found");
+      console.log("❌ User not found");
       return jsonError(res, 401, "Invalid email or password");
     }
 
     // Verify password
-    console.log("[LOGIN] Comparing password...");
+    console.log("Comparing passwords...");
     const isValidPassword = await comparePassword(password, user.password_hash);
-    console.log("[LOGIN] Password comparison result:", isValidPassword);
+    console.log("Password match:", isValidPassword ? "✅ YES" : "❌ NO");
     
     if (!isValidPassword) {
-      console.log("[LOGIN] Invalid password");
+      console.log("❌ Invalid password");
       return jsonError(res, 401, "Invalid email or password");
     }
 
-    console.log("[LOGIN] Login successful for:", email, "role:", user.role);
+    console.log("✅ Login successful");
 
     // Generate token
     const token = generateToken({
