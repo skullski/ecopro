@@ -76,8 +76,8 @@ const menuItems: MenuItem[] = [
   },
   { titleKey: "sidebar.analytics", path: "/dashboard/analytics", icon: <BarChart3 className="w-5 h-5" /> },
   { titleKey: "sidebar.staff", path: "/dashboard/staff", icon: <Users className="w-5 h-5" /> },
-  { titleKey: "sidebar.billing", path: "/admin/billing", icon: <CreditCard className="w-5 h-5" /> },
-  { titleKey: "sidebar.settingsOwner", path: "/admin/settings", icon: <Settings className="w-5 h-5" /> },
+  { titleKey: "sidebar.billing", path: "/dashboard/billing", icon: <CreditCard className="w-5 h-5" /> },
+  { titleKey: "sidebar.settingsOwner", path: "/dashboard/settings", icon: <Settings className="w-5 h-5" /> },
 ];
 
 export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {}) {
