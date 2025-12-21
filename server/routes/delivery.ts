@@ -102,7 +102,7 @@ export const assignDeliveryToOrder: RequestHandler = async (req, res) => {
       return;
     }
 
-    const result = await DeliveryService.assignDeliveryCompany(orderId, clientId, Number(delivery_company_id), cod_amount);
+    const result = await DeliveryService.assignDeliveryCompany(orderId, clientId as number, Number(delivery_company_id), cod_amount);
 
     if (!result.success) {
       res.status(400).json({ error: result.error });
@@ -131,7 +131,7 @@ export const generateShippingLabel: RequestHandler = async (req, res) => {
       return;
     }
 
-    const result = await DeliveryService.generateLabel(orderId, clientId, Number(delivery_company_id));
+    const result = await DeliveryService.generateLabel(orderId, clientId as number, Number(delivery_company_id));
 
     if (!result.success) {
       res.status(400).json({ error: result.error });

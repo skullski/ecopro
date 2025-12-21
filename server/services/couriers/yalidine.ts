@@ -1,6 +1,6 @@
 // Yalidine Express Courier Service
-import { CourierService } from './courier-service';
-import { CourierShipmentResponse, CourierStatusResponse, ShipmentInput } from '../types/delivery';
+import { CourierService } from '../courier-service';
+import { CourierShipmentResponse, CourierStatusResponse, ShipmentInput } from '../../types/delivery';
 import crypto from 'crypto';
 
 export class YalidineService implements CourierService {
