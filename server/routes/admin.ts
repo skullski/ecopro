@@ -241,3 +241,24 @@ export const listActivityLogs: RequestHandler = async (_req, res) => {
     return jsonError(res, 500, "Failed to list activity logs");
   }
 };
+
+// List all products with owner details (admin only)
+export const listAllProducts: RequestHandler = async (_req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT 
+        p.id, p.title, p.price, p.status,
+        COALESCE(c.company_name, c.email) as seller_name,
+        c.email as seller_email,
+        COALESCE(p.views, 0) as views, p.created_at
+      FROM client_store_products p
+      JOIN clients c ON p.client_id = c.id
+      ORDER BY p.created_at DESC
+      LIMIT 100`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Failed to list products:', err);
+    return jsonError(res, 500, "Failed to list products");
+  }
+};

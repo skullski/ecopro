@@ -132,7 +132,9 @@ export default function PlatformAdmin() {
         fetch('/api/admin/users', {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch('/api/products?limit=50&offset=0'),
+        fetch('/api/admin/products', {
+          headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => null),
         fetch('/api/admin/stats', {
           headers: { Authorization: `Bearer ${token}` },
         }).catch(() => null),
