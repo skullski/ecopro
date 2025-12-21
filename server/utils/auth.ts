@@ -1,4 +1,5 @@
 import * as argon2 from "argon2";
+import * as bcrypt from "bcrypt";
 import * as jwt from "jsonwebtoken";
 
 // Security: Stronger token expiry (15 minutes for access token)
@@ -39,16 +40,27 @@ export async function hashPassword(password: string): Promise<string> {
 }
 
 /**
- * Compare plain text password with argon2id hashed password
+ * Compare plain text password with hashed password (supports both argon2id and bcrypt)
+ * First tries argon2.verify() for new passwords, then falls back to bcrypt.compare() for legacy passwords
  */
 export async function comparePassword(
   password: string,
   hashedPassword: string
 ): Promise<boolean> {
   try {
-    return await argon2.verify(hashedPassword, password);
+    // Try argon2 first (new passwords)
+    try {
+      return await argon2.verify(hashedPassword, password);
+    } catch (argon2Error) {
+      // If argon2 fails, try bcrypt for legacy passwords
+      try {
+        return await bcrypt.compare(password, hashedPassword);
+      } catch (bcryptError) {
+        // Both failed, invalid password
+        return false;
+      }
+    }
   } catch (error) {
-    // Return false on any verification error (invalid hash, etc)
     return false;
   }
 }
