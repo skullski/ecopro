@@ -52,7 +52,12 @@ export const uploadImage: RequestHandler = async (req, res) => {
     console.log('[uploadImage] MIME type:', req.file.mimetype);
 
     res.set('Content-Type', 'application/json');
-    const response = { url: urlPath };
+    const response = { 
+      url: urlPath,
+      filename: req.file.filename,
+      size: req.file.size,
+      mimetype: req.file.mimetype
+    };
     console.log('[uploadImage] Sending response:', JSON.stringify(response));
     
     return res.status(200).json(response);

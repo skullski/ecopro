@@ -7,9 +7,6 @@ export default function Fashion3Template(props: TemplateProps) {
   const { navigate, storeSlug } = props;
   const [bagCount, setBagCount] = useState(0);
   const [wishlist, setWishlist] = useState<number[]>([]);
-  const [search, setSearch] = useState('');
-  const [gender, setGender] = useState('All');
-  const [category, setCategory] = useState('All');
 
   // Helper functions to save product data and navigate
   const handleProductClick = (product: any) => {
@@ -22,92 +19,72 @@ export default function Fashion3Template(props: TemplateProps) {
     localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
     navigate(`/checkout/${product.id}`);
   };
-  const [size, setSize] = useState('All');
-  const [maxPrice, setMaxPrice] = useState(999999);
-  const [sortBy, setSortBy] = useState('featured');
-  const [lookIndex, setLookIndex] = useState(0);
-  const [activeHotspot, setActiveHotspot] = useState<number | null>(null);
-  const [quickViewProduct, setQuickViewProduct] = useState<any>(null);
 
   const { products = [], settings = {}, categories = [] } = props;
   
   // Extract universal settings with defaults
   const {
-    primary_color = '#1f2937',
+    primary_color = '#000000',
     secondary_color = '#ffffff',
-    accent_color = '#3b82f6',
-    text_color = '#1f2937',
-    secondary_text_color = '#6b7280',
+    accent_color = '#FFD700',
+    text_color = '#ffffff',
+    secondary_text_color = '#999999',
     font_family = 'Inter',
     heading_size_multiplier = 'Large',
     enable_animations = true,
   } = useMemo(() => universalSettings as any || {}, [universalSettings]);
   
   const storeName = settings.store_name || 'LineaWear';
-  const city = 'Algiers';
+  const city = settings.store_description?.split('·')[0] || 'Algiers';
+  const heroHeading = settings.template_hero_heading || 'Premium Essentials';
 
-  const filteredProducts = products
-    .filter((p: any) => {
-      const bySearch = search ? p.title?.toLowerCase().includes(search.toLowerCase()) : true;
-      const byGender = gender === 'All' ? true : p.category === gender;
-      const byCategory = category === 'All' ? true : p.category === category;
-      const bySize = size === 'All' ? true : true;
-      const byPrice = p.price <= maxPrice;
-      return bySearch && byGender && byCategory && bySize && byPrice;
-    })
-    .sort((a: any, b: any) => {
-      if (sortBy === 'price_low') return a.price - b.price;
-      if (sortBy === 'price_high') return b.price - a.price;
-      if (sortBy === 'new') return b.id - a.id;
-      return 0;
-    });
+  const filteredProducts = products.filter((p: any) => {
+    const search = props.searchQuery?.toLowerCase() || '';
+    const matchesSearch = !search || p.title?.toLowerCase().includes(search);
+    const matchesCategory = props.categoryFilter === 'all' || p.category === props.categoryFilter;
+    return matchesSearch && matchesCategory;
+  });
 
   const toggleWishlist = (id: number) => {
     setWishlist(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
   };
 
-  const lookbook = [
-    { name: 'Urban Nomad', description: 'City exploration edit', images: [products[0]?.images?.[0] || 'https://via.placeholder.com/400'], items: [] },
-    { name: 'Night Shift', description: 'Evening essentials', images: [products[1]?.images?.[0] || 'https://via.placeholder.com/400'], items: [] },
-  ];
-
-  const currentLook = lookbook[lookIndex] || lookbook[0];
-
-  const hotspotPoints = [
-    { id: 1, x: '30%', y: '40%', label: 'Oversized Coat', price: 16000, productKey: 'coat' },
-    { id: 2, x: '60%', y: '65%', label: 'Tapered Trousers', price: 7800, productKey: 'trousers' },
-    { id: 3, x: '80%', y: '70%', label: 'Minimal Sneakers', price: 9500, productKey: 'sneakers' },
-  ];
-
   return (
-    <div className="min-h-screen" style={{ backgroundColor: primary_color }}>
-      {/* Floating Bag */}
+    <div className="min-h-screen bg-black">
+      {/* Floating Bag Button */}
       <div className="fixed bottom-6 right-6 z-40">
-        <button className="rounded-full font-semibold px-5 py-3 flex items-center gap-2 shadow-lg transition" style={{ backgroundColor: accent_color, color: secondary_color, border: `1px solid ${accent_color}` }}>
-          Bag <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold" style={{ backgroundColor: primary_color, color: accent_color }}>{bagCount}</span>
+        <button style={{ backgroundColor: accent_color, color: '#000' }} className="rounded-full font-semibold px-5 py-3 flex items-center gap-2 shadow-lg hover:shadow-xl transition">
+          Bag <span style={{ backgroundColor: '#000', color: accent_color }} className="w-6 h-6 rounded-full text-xs flex items-center justify-center font-bold">{bagCount}</span>
         </button>
       </div>
 
-      {/* Seasonal Drop Banner */}
-      <div className="text-xs px-4 py-2 flex items-center justify-center gap-3 font-semibold" style={{ backgroundImage: `linear-gradient(to right, ${accent_color}, ${accent_color}cc)`, color: secondary_color }}>
-        <span className="uppercase tracking-widest">Drop 01 · Night Shift</span>
-        <span className="hidden sm:inline text-xs">Oversized coat, cargos and sneakers — limited run.</span>
-        <button className="rounded-full px-3 py-0.5 uppercase text-xs font-semibold transition" style={{ border: `1px solid ${secondary_color}`, backgroundColor: primary_color, color: accent_color }}>Shop</button>
+      {/* Banner */}
+      <div className="text-xs px-4 py-2 flex items-center justify-center gap-3 font-semibold" style={{ backgroundColor: accent_color, color: '#000' }}>
+        <span className="uppercase tracking-widest">Limited Drop · Night Shift</span>
+        <button className="rounded-full px-3 py-1 uppercase text-xs font-semibold border border-black bg-black text-yellow-400 hover:bg-gray-900 transition">Shop</button>
       </div>
 
       {/* Header */}
-      <header className="backdrop-blur sticky top-0 z-40" style={{ backgroundColor: `${primary_color}E6`, borderBottom: `1px solid ${secondary_text_color}30` }}>
-        <div className="max-w-6xl mx-auto px-6 py-3">
+      <header className="sticky top-0 z-40 bg-black border-b border-gray-800">
+        <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold" style={{ backgroundColor: accent_color, color: secondary_color }}>LW</div>
+              <div style={{ backgroundColor: accent_color, color: '#000' }} className="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold">LW</div>
               <div>
-                <h1 className="font-serif text-lg font-semibold" style={{ color: secondary_color }}>{storeName}</h1>
-                <p className="text-xs" style={{ color: secondary_text_color }}>Men · Women · Street · Tailored</p>
+                <h1 className="font-semibold text-lg text-white">{storeName}</h1>
+                <p className="text-xs text-gray-500">Curated Essentials</p>
               </div>
             </div>
-            <input type="text" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} className="hidden md:block text-sm rounded-full px-4 py-2" style={{ border: `1px solid ${secondary_text_color}40`, backgroundColor: `${secondary_color}20`, color: text_color }} />
-            <div className="flex items-center gap-4 text-xs" style={{ color: secondary_text_color }}>
+            <div className="hidden md:flex flex-1 mx-8">
+              <input
+                type="text"
+                placeholder="Search collection..."
+                value={props.searchQuery || ''}
+                onChange={(e) => props.setSearchQuery(e.target.value)}
+                className="w-full text-sm border border-gray-700 rounded-full px-4 py-2 bg-gray-950 text-white placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-yellow-400"
+              />
+            </div>
+            <div className="flex items-center gap-6 text-xs text-gray-500">
               <div>Wishlist {wishlist.length}</div>
               <div>{city}</div>
             </div>
@@ -115,178 +92,195 @@ export default function Fashion3Template(props: TemplateProps) {
         </div>
       </header>
 
-      {/* Hero + Hotspot + Lookbook Section */}
-      <section className="border-b border-gray-700 bg-gray-900">
-        <div className="max-w-6xl mx-auto px-6 py-4 md:py-6 space-y-3 md:space-y-4">
-          {/* Video Hero + Hotspot Split */}
-          <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.95fr] gap-3 md:gap-4">
-            {/* Video Hero */}
-            <div className="relative rounded-2xl overflow-hidden border border-gray-700 bg-black h-80">
-              <video autoPlay muted loop className="w-full h-full object-cover opacity-60" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent flex items-end justify-between p-6">
-                <div>
-                  <p className="text-yellow-400 text-xs font-bold uppercase mb-2">Night Shift · Video Hero</p>
-                  <h2 className="font-serif text-2xl font-semibold text-white">A fashion store that opens on a scene, not a grid.</h2>
-                </div>
-                <div className="flex gap-2">
-                  <button className="text-xs px-4 py-2 rounded-full bg-yellow-400 text-gray-900 font-bold uppercase">Shop</button>
-                  <button className="text-xs px-4 py-2 rounded-full border border-gray-500 text-white uppercase">View Looks</button>
-                </div>
+      {/* Hero Section */}
+      <section className="border-b border-gray-800 bg-gradient-to-b from-gray-950 to-black">
+        <div className="max-w-7xl mx-auto px-6 py-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+            <div className="relative rounded-xl overflow-hidden h-80 border border-gray-800">
+              <img
+                src={settings.banner_url || products[0]?.images?.[0] || 'https://images.unsplash.com/photo-1543087903-1ac2ec7aa8c5?auto=format&fit=crop&w=600&q=80'}
+                alt="Hero"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+              <div className="absolute bottom-0 left-0 right-0 p-6">
+                <p className="text-xs text-yellow-400 font-bold uppercase tracking-wider mb-2">Featured Collection</p>
+                <h2 className="text-2xl font-light text-white">{settings.template_hero_heading || 'Minimalist Pieces for the Modern Wardrobe'}</h2>
               </div>
             </div>
-
-            {/* Hotspot Outfit */}
-            <div className="flex flex-col gap-4">
-              <div className="relative rounded-2xl overflow-hidden h-56" style={{ border: `1px solid ${secondary_text_color}30`, backgroundColor: primary_color }}>
-                <img src={products[0]?.images?.[0] || 'https://via.placeholder.com/400'} alt="Outfit" className="w-full h-full object-cover" />
-                {hotspotPoints.map((point) => (
-                  <div key={point.id} className="absolute" style={{ top: point.y, left: point.x }} onMouseEnter={() => setActiveHotspot(point.id)} onMouseLeave={() => setActiveHotspot(null)}>
-                    <div className="w-4 h-4 rounded-full flex items-center justify-center text-xs cursor-pointer transition" style={{ border: `2px solid ${accent_color}`, backgroundColor: `${primary_color}80`, color: accent_color }}>+</div>
-                    {activeHotspot === point.id && (
-                      <div className="absolute top-0 left-6 rounded-lg p-2 text-xs whitespace-nowrap z-10" style={{ backgroundColor: primary_color, border: `1px solid ${secondary_text_color}30` }}>
-                        <div className="font-semibold" style={{ color: secondary_color }}>{point.label}</div>
-                        <div style={{ color: accent_color }}>{point.price} DZD</div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <div className="rounded-2xl p-4 flex flex-col justify-between h-40" style={{ border: `1px solid ${secondary_text_color}30`, backgroundImage: `linear-gradient(to right, ${primary_color}66, ${primary_color}33)` }}>
-                <div>
-                  <p className="text-xs font-bold uppercase mb-1" style={{ color: accent_color }}>Shop the outfit</p>
-                  <h3 className="font-serif text-xl font-semibold" style={{ color: secondary_color }}>One side is energy, the other is structure.</h3>
-                  <p className="text-xs mt-2" style={{ color: secondary_text_color }}>Campaign video, hotspot outfit and lookbook slider above a clean catalog.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Lookbook Slider */}
-          <div className="rounded-2xl p-6" style={{ border: `1px solid ${secondary_text_color}30`, backgroundColor: primary_color }}>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-xs font-bold uppercase" style={{ color: accent_color }}>Lookbook</p>
-                <h3 className="font-serif text-2xl font-semibold mt-1" style={{ color: secondary_color }}>{currentLook.name}</h3>
-                <p className="text-xs" style={{ color: secondary_text_color }}>{currentLook.description}</p>
-              </div>
-              <div className="hidden sm:flex gap-2">
-                <button onClick={() => setLookIndex(i => i === 0 ? lookbook.length - 1 : i - 1)} className="px-3 py-1 border border-gray-600 rounded-full text-gray-300 hover:border-yellow-400">←</button>
-                <button onClick={() => setLookIndex(i => i === lookbook.length - 1 ? 0 : i + 1)} className="px-3 py-1 border border-gray-600 rounded-full text-gray-300 hover:border-yellow-400">→</button>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-[1.2fr_0.9fr] gap-4">
-              <div className="relative rounded-2xl overflow-hidden border border-gray-700 h-64">
-                <img src={currentLook.images[0]} alt="Look" className="w-full h-full object-cover" />
-                <div className="absolute top-2 left-2 px-2 py-1 rounded-full bg-black/70 text-yellow-400 text-xs uppercase font-bold">Look {lookIndex + 1}/{lookbook.length}</div>
-              </div>
-              <div className="flex flex-col justify-between">
-                <div className="flex gap-1">
-                  {lookbook.map((_, idx) => (
-                    <button key={idx} onClick={() => setLookIndex(idx)} className={`w-2 h-2 rounded-full ${idx === lookIndex ? 'bg-yellow-400' : 'border border-yellow-400'}`} />
-                  ))}
-                </div>
-                <div className="sm:hidden flex gap-2">
-                  <button onClick={() => setLookIndex(i => i === 0 ? lookbook.length - 1 : i - 1)} className="px-2 py-1 border border-gray-600 rounded-full text-xs">←</button>
-                  <button onClick={() => setLookIndex(i => i === lookbook.length - 1 ? 0 : i + 1)} className="px-2 py-1 border border-gray-600 rounded-full text-xs">→</button>
-                </div>
-              </div>
+            <div>
+              <p className="text-xs text-yellow-400 font-bold uppercase tracking-wider mb-4">New Arrival</p>
+              <h2 className="text-4xl font-light text-white mb-6">{heroHeading || 'Premium Essentials'}</h2>
+              <p className="text-gray-400 text-sm leading-relaxed mb-8">{settings.template_hero_subtitle || 'Timeless pieces designed with intention and built to last.'}</p>
+              <button onClick={() => window.scrollTo({ top: window.innerHeight, behavior: 'smooth' })} className="px-8 py-3 bg-yellow-400 text-black text-sm font-semibold rounded-lg hover:bg-yellow-500 transition">
+                {settings.template_button_text || 'Explore'}
+              </button>
             </div>
           </div>
         </div>
       </section>
 
+      {/* Featured Products Section */}
+      <section className="border-b border-gray-800 bg-black">
+        <div className="max-w-7xl mx-auto px-6 py-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {products.slice(0, 2).map((p: any) => (
+              <div 
+                key={p.id}
+                className="group cursor-pointer rounded-lg overflow-hidden border border-gray-800 hover:border-yellow-400 transition"
+                onClick={() => handleProductClick(p)}
+              >
+                <div className="relative h-72 bg-gray-900 overflow-hidden">
+                  <img src={p.images?.[0] || 'https://via.placeholder.com/400'} alt={p.title} className="w-full h-full object-cover group-hover:scale-110 transition duration-500" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-40"></div>
+                  <div className="absolute bottom-0 left-0 right-0 p-6">
+                    <p className="text-xs text-yellow-400 font-bold uppercase mb-2">Featured</p>
+                    <h3 className="text-xl font-light text-white line-clamp-2 mb-2">{p.title}</h3>
+                    <p className="text-yellow-400 font-semibold">{p.price} DZD</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Main Catalog */}
-      <main className="max-w-6xl mx-auto px-6 py-4 md:py-6">
-        <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4 md:gap-3 md:gap-4">
-          {/* Filters */}
-          <aside className="bg-gray-800 rounded-2xl border border-gray-700 p-4 h-fit">
-            <div className="text-sm font-semibold mb-4 text-white">Filters</div>
-            {[{ label: 'Gender', items: ['All', 'Men', 'Women', 'Unisex'], current: gender, set: setGender }, { label: 'Size', items: ['All', 'XS', 'S', 'M', 'L', 'XL'], current: size, set: setSize }].map((filter) => (
-              <div key={filter.label} className="mb-4">
-                <label className="text-xs font-bold text-gray-400 uppercase block mb-2">{filter.label}</label>
-                <div className="flex flex-wrap gap-2">
-                  {filter.items.map((item) => (
-                    <button key={item} onClick={() => filter.set(item)} className={`text-xs px-3 py-1 rounded-full border ${filter.current === item ? 'bg-white text-gray-900 border-white' : 'bg-gray-900 text-gray-300 border-gray-700'}`}>
-                      {item}
+      <main className="bg-black">
+        <div className="max-w-7xl mx-auto px-6 py-12">
+          <div className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-12">
+            {/* Filters Sidebar */}
+            <aside className="h-fit">
+              <div className="text-sm font-semibold text-white mb-8">Filter</div>
+              
+              <div className="mb-8">
+                <label className="text-xs font-semibold uppercase text-gray-500 block mb-4">Gender</label>
+                <div className="space-y-3">
+                  {['All', 'Men', 'Women', 'Unisex'].map(g => (
+                    <button key={g} className="block text-sm text-gray-400 hover:text-white transition font-light">
+                      {g}
                     </button>
                   ))}
                 </div>
               </div>
-            ))}
-          </aside>
 
-          {/* Products */}
-          <section>
-            <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-700">
-              <div>
-                <h3 className="text-lg font-semibold text-white">{filteredProducts.length} Items</h3>
-                <p className="text-xs text-gray-400">{wishlist.length} Wishlisted</p>
+              <div className="mb-8">
+                <label className="text-xs font-semibold uppercase text-gray-500 block mb-4">Category</label>
+                <div className="space-y-3">
+                  {categories.slice(0, 5).map((cat: any) => (
+                    <button key={cat} className="block text-sm text-gray-400 hover:text-white transition font-light">
+                      {cat}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="text-xs border border-gray-700 rounded-full px-3 py-2 bg-gray-800 text-white">
-                <option>featured</option>
-                <option value="price_low">Price Low-High</option>
-                <option value="price_high">Price High-Low</option>
-                <option value="new">Newest</option>
-              </select>
-            </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {filteredProducts.map((p: any) => (
-                <div 
-                  key={p.id} 
-                  className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden hover:border-yellow-400 transition group cursor-pointer flex flex-col"
-                  onClick={() => navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/${p.slug}` : `/product/${p.id}`)}
-                >
-                  <div className="relative h-56 bg-gray-900 overflow-hidden">
-                    <img src={p.images?.[0] || 'https://via.placeholder.com/400'} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition" />
-                    <div className="absolute top-2 right-2 flex gap-2">
+              <div>
+                <label className="text-xs font-semibold uppercase text-gray-500 block mb-4">Size</label>
+                <div className="flex flex-wrap gap-2">
+                  {['All', 'XS', 'S', 'M', 'L', 'XL'].map(s => (
+                    <button key={s} className="text-xs px-3 py-2 rounded-lg border border-gray-700 text-gray-400 hover:border-yellow-400 hover:text-white transition">
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </aside>
+
+            {/* Products Grid */}
+            <section>
+              <div className="flex items-center justify-between mb-10 pb-6 border-b border-gray-800">
+                <div>
+                  <h3 className="text-xl font-light text-white">{filteredProducts.length} Items</h3>
+                  <p className="text-xs text-gray-500 mt-1">{wishlist.length} Saved</p>
+                </div>
+                <select value={props.sortOption} onChange={(e) => props.setSortOption(e.target.value as any)} className="text-sm px-4 py-2 rounded-lg border border-gray-700 bg-gray-950 text-white font-light">
+                  <option>Featured</option>
+                  <option>Price Low-High</option>
+                  <option>Price High-Low</option>
+                  <option>Newest</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                {filteredProducts.map((p: any) => (
+                  <div 
+                    key={p.id}
+                    className="group cursor-pointer rounded-lg overflow-hidden border border-gray-800 hover:border-yellow-400 transition flex flex-col"
+                    onClick={() => handleProductClick(p)}
+                  >
+                    <div className="relative h-80 bg-gray-900 overflow-hidden flex-grow">
+                      <img src={p.images?.[0] || 'https://via.placeholder.com/400'} alt={p.title} className="w-full h-full object-cover group-hover:scale-110 transition duration-500" />
                       <button 
-                        onClick={(e) => {
+                        onClick={(e) => { 
                           e.stopPropagation();
                           toggleWishlist(p.id);
                         }} 
-                        className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${wishlist.includes(p.id) ? 'bg-yellow-400 text-gray-900' : 'bg-gray-900/50 border border-yellow-400 text-yellow-400'}`}
+                        className="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center text-lg transition"
+                        style={{ 
+                          backgroundColor: wishlist.includes(p.id) ? accent_color : 'rgba(0,0,0,0.5)',
+                          color: wishlist.includes(p.id) ? '#000' : accent_color,
+                          border: wishlist.includes(p.id) ? 'none' : `1px solid ${accent_color}`
+                        }}
                       >
                         ♥
                       </button>
                     </div>
+                    <div className="p-5 flex flex-col flex-grow bg-gray-950">
+                      <p className="font-light text-sm text-white line-clamp-2">{p.title}</p>
+                      <p className="text-xs text-gray-500 mt-2 font-light">{p.category}</p>
+                      <p className="font-semibold text-sm mt-4 text-yellow-400">{p.price} DZD</p>
+                      <button 
+                        onClick={(e) => handleBuyClick(p, e)}
+                        className="w-full mt-4 py-2 text-xs font-semibold rounded-lg bg-yellow-400 text-black hover:bg-yellow-500 transition"
+                      >
+                        Add to Bag
+                      </button>
+                    </div>
                   </div>
-                  <div className="p-3 flex flex-col flex-grow">
-                    <p className="font-semibold text-sm text-white line-clamp-2">{p.title}</p>
-                    <p className="text-xs text-gray-400 mt-1">{p.category}</p>
-                    <p className="font-bold text-yellow-400 mt-2">{p.price} DZD</p>
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/checkout/${p.id}`);
-                      }} 
-                      className="w-full mt-3 py-2 bg-yellow-400 text-gray-900 rounded font-semibold text-xs hover:bg-yellow-500"
-                    >
-                      Buy Now
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
+                ))}
+              </div>
+            </section>
+          </div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-gray-700 mt-6 md:mt-4 md:mt-6 py-4 md:py-6 bg-gray-900">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="grid md:grid-cols-3 gap-4 md:gap-3 md:gap-4 mb-4 md:mb-6">
-            {['About', 'Support', 'Legal'].map((section) => (
-              <div key={section}>
-                <h4 className="font-semibold text-white mb-3">{section}</h4>
-                <ul className="text-sm text-gray-400 space-y-2">
-                  <li><a href="#" className="hover:text-white">Link 1</a></li>
-                  <li><a href="#" className="hover:text-white">Link 2</a></li>
-                </ul>
-              </div>
-            ))}
+      <footer className="border-t border-gray-800 bg-black mt-16 py-12">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid md:grid-cols-4 gap-12 mb-12">
+            <div>
+              <h4 className="font-semibold text-sm text-white mb-4">About</h4>
+              <ul className="text-xs space-y-3">
+                <li><a href="#" className="text-gray-500 hover:text-white transition font-light">About Us</a></li>
+                <li><a href="#" className="text-gray-500 hover:text-white transition font-light">Stories</a></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold text-sm text-white mb-4">Support</h4>
+              <ul className="text-xs space-y-3">
+                <li><a href="#" className="text-gray-500 hover:text-white transition font-light">Contact</a></li>
+                <li><a href="#" className="text-gray-500 hover:text-white transition font-light">Shipping</a></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold text-sm text-white mb-4">Legal</h4>
+              <ul className="text-xs space-y-3">
+                <li><a href="#" className="text-gray-500 hover:text-white transition font-light">Privacy</a></li>
+                <li><a href="#" className="text-gray-500 hover:text-white transition font-light">Terms</a></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold text-sm text-white mb-4">Connect</h4>
+              <ul className="text-xs space-y-3">
+                <li><a href="#" className="text-gray-500 hover:text-white transition font-light">Instagram</a></li>
+                <li><a href="#" className="text-gray-500 hover:text-white transition font-light">Email</a></li>
+              </ul>
+            </div>
           </div>
-          <p className="text-xs text-gray-500 text-center">&copy; 2024 {storeName}</p>
+          <div className="border-t border-gray-800 pt-6">
+            <p className="text-xs text-center text-gray-600 font-light">&copy; 2024 {storeName}. All rights reserved.</p>
+          </div>
         </div>
       </footer>
     </div>

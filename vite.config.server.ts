@@ -43,6 +43,8 @@ export default defineConfig({
         "multer",
         "uuid",
         "ws",
+        "googleapis",
+        "google-auth-library",
       ],
     },
     minify: false, // Keep readable for debugging

@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { TemplatesTab } from '@/components/TemplatesTab';
+import { generateStoreUrl, storeNameToSlug } from '@/utils/storeUrl';
 import {
   Dialog,
   DialogContent,
@@ -64,8 +65,8 @@ export default function Store() {
   let storeSettingsRef: any = null;
   let setStoreLinkCopiedRef: any = null;
   const copyStoreLink = () => {
-    if (!storeSettingsRef?.store_slug) return;
-    const storeUrl = `${window.location.origin}/store/${storeSettingsRef.store_slug}`;
+    if (!storeSettingsRef?.store_name) return;
+    const storeUrl = `${window.location.origin}${generateStoreUrl(storeSettingsRef.store_name, false)}`;
     navigator.clipboard.writeText(storeUrl);
     setStoreLinkCopiedRef(true);
     setTimeout(() => setStoreLinkCopiedRef(false), 2000);
@@ -639,11 +640,11 @@ export default function Store() {
             <Button 
               variant="outline"
               onClick={() => {
-                if (storeSettings.store_slug) {
-                  window.open(`/store/${storeSettings.store_slug}`, '_blank');
+                if (storeSettings.store_name) {
+                  window.open(generateStoreUrl(storeSettings.store_name, false), '_blank');
                 }
               }}
-              disabled={!storeSettings.store_slug}
+              disabled={!storeSettings.store_name}
             >
               <StoreIcon className="w-4 h-4 mr-2" />
               View Storefront
@@ -753,11 +754,11 @@ export default function Store() {
                   size="sm"
                   variant="outline"
                   onClick={() => {
-                    if (storeSettings.store_slug) {
-                      window.open(`/store/${storeSettings.store_slug}`, '_blank');
+                    if (storeSettings.store_name) {
+                      window.open(generateStoreUrl(storeSettings.store_name, false), '_blank');
                     }
                   }}
-                  disabled={!storeSettings.store_slug}
+                  disabled={!storeSettings.store_name}
                 >
                   <ExternalLink className="w-4 h-4 mr-2" />
                   Open Store

@@ -74,12 +74,20 @@ export default function Header() {
                 Support
               </Link>
               {user && isClient && (
-                <Link 
-                  to="/dashboard/preview" 
-                  className="px-4 py-2.5 rounded-lg text-sm font-bold text-accent hover:text-accent hover:bg-gradient-to-r hover:from-accent/20 hover:to-primary/15 transition-all border border-accent/20 hover:border-accent/30 shadow-sm hover:shadow-md"
-                >
-                  My Store
-                </Link>
+                <>
+                  <Link 
+                    to="/codes-store" 
+                    className="px-4 py-2.5 rounded-lg text-sm font-bold text-accent hover:text-accent hover:bg-gradient-to-r hover:from-accent/20 hover:to-primary/15 transition-all border border-accent/20 hover:border-accent/30 shadow-sm hover:shadow-md"
+                  >
+                    💎 Codes Store
+                  </Link>
+                  <Link 
+                    to="/dashboard/preview" 
+                    className="px-4 py-2.5 rounded-lg text-sm font-bold text-accent hover:text-accent hover:bg-gradient-to-r hover:from-accent/20 hover:to-primary/15 transition-all border border-accent/20 hover:border-accent/30 shadow-sm hover:shadow-md"
+                  >
+                    My Store
+                  </Link>
+                </>
               )}
             </nav>
 

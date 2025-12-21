@@ -6,7 +6,6 @@ export default function Fashion2Template(props: TemplateProps) {
   const { navigate, storeSlug } = props;
   const [bagCount, setBagCount] = useState(0);
   const [wishlist, setWishlist] = useState<number[]>([]);
-  const [quickViewProduct, setQuickViewProduct] = useState<any>(null);
 
   // Read universal settings from window
   const universalSettings = useTemplateUniversalSettings() || {};
@@ -29,24 +28,14 @@ export default function Fashion2Template(props: TemplateProps) {
   const {
     primary_color = '#000000',
     secondary_color = '#f5f5f5',
-    accent_color = '#1f2937',
     text_color = '#1f2937',
     secondary_text_color = '#6b7280',
-    font_family = 'Inter',
-    heading_size_multiplier = 'Large',
-    body_font_size = 15,
-    section_padding = 24,
-    border_radius = 8,
-    enable_dark_mode = false,
-    default_theme = 'Light',
-    show_product_shadows = true,
-    enable_animations = true,
   } = useMemo(() => universalSettings as any || {}, [universalSettings]);
   
   const storeName = settings.store_name || 'LineaWear';
   const city = settings.store_description?.split('·')[0] || 'Algiers';
-  const tagline = settings.template_hero_subtitle || 'Modern Fashion';
-  const heroHeading = settings.template_hero_heading || 'Build a fashion store that feels like a campaign';
+  const tagline = settings.store_description?.split('·')[1]?.trim() || 'Modern street & clean tailoring';
+  const heroHeading = settings.template_hero_heading || 'Build a fashion store that feels like a campaign, but behaves like a clean, modern catalog.';
   const buttonText = settings.template_button_text || 'Shop Now';
 
   const genders = ['All', 'Men', 'Women', 'Unisex'];
@@ -65,69 +54,80 @@ export default function Fashion2Template(props: TemplateProps) {
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: secondary_color }}>
-      <div className="fixed bottom-6 right-6 z-40">
-        <button style={{ backgroundColor: primary_color, color: secondary_color }} className="rounded-full font-semibold px-5 py-3 flex items-center gap-2 shadow-lg">
-          Bag <span style={{ backgroundColor: secondary_color, color: primary_color }} className="w-6 h-6 rounded-full text-xs flex items-center justify-center font-bold">{bagCount}</span>
+    <div className="min-h-screen bg-gray-50">
+      {/* Floating Bag */}
+      <div className="fixed bottom-4 right-4 z-40">
+        <button style={{ backgroundColor: primary_color, color: secondary_color }} className="rounded-full font-semibold text-xs px-3 py-2 flex items-center gap-2 shadow-lg">
+          Bag
+          <span style={{ backgroundColor: secondary_color, color: primary_color }} className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold">{bagCount}</span>
         </button>
       </div>
 
-      <header className="bg-white/90 backdrop-blur border-b sticky top-0 z-40" style={{ borderBottomColor: secondary_text_color }}>
-        <div className="max-w-6xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div style={{ backgroundColor: primary_color, color: secondary_color }} className="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold">LW</div>
-              <div>
-                <h1 className="font-serif text-xl font-semibold" style={{ color: text_color }}>{storeName}</h1>
-                <p className="text-xs" style={{ color: secondary_text_color }}>Men · Women · Street · Tailored</p>
-              </div>
+      {/* Header */}
+      <header className="bg-white/90 backdrop-blur border-b border-gray-200 sticky top-0 z-40">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div style={{ backgroundColor: primary_color, color: secondary_color }} className="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-semibold">LW</div>
+            <div>
+              <div style={{ color: text_color }} className="font-serif text-lg font-semibold leading-tight">{storeName}</div>
+              <div className="text-xs text-gray-500">Men · Women · Street · Tailored</div>
             </div>
-            <div className="hidden md:flex flex-1 mx-6">
-              <input
-                type="text"
-                placeholder="Search jackets, cargos, sneakers..."
-                value={props.searchQuery || ''}
-                onChange={(e) => props.setSearchQuery(e.target.value)}
-                className="w-full text-sm border border-gray-200 rounded-full px-4 py-2 focus:outline-none focus:ring-1 focus:ring-gray-400"
-              />
+          </div>
+
+          <div className="hidden md:flex flex-1 mx-4">
+            <input
+              type="text"
+              value={props.searchQuery || ''}
+              onChange={(e) => props.setSearchQuery(e.target.value)}
+              placeholder="Search jackets, cargos, sneakers..."
+              className="w-full text-sm border border-gray-200 rounded-full px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-gray-400 bg-gray-50"
+            />
+          </div>
+
+          <div className="flex items-center gap-4 text-xs text-gray-600">
+            <div className="hidden sm:flex items-center gap-1">
+              <span>Wishlist</span>
+              <span style={{ backgroundColor: primary_color, color: secondary_color }} className="px-2 py-0.5 rounded-full">{wishlist.length}</span>
             </div>
-            <div className="flex items-center gap-4 text-xs text-gray-600">
-              <div><span className="font-semibold">Wishlist</span> {wishlist.length}</div>
-              <div className="text-xs text-gray-500">{city}</div>
+            <div className="hidden sm:flex flex-col items-end">
+              <span className="text-xs">{city}</span>
+              <span className="text-xs text-gray-400">{tagline}</span>
             </div>
           </div>
         </div>
       </header>
 
-      <section className="border-b" style={{ borderColor: secondary_text_color, backgroundColor: secondary_color }}>
-        <div className="max-w-6xl mx-auto px-6 py-4 md:py-6">
-          <div className="mb-6">
-            <span className="inline-block text-xs font-bold px-3 py-1 rounded-full mb-3" style={{ backgroundColor: accent_color, color: secondary_color }}>Season Drop · Fashion Store</span>
-            <h2 className="font-serif text-xl md:text-2xl font-semibold mb-3 max-w-2xl" style={{ color: text_color }}>{settings.template_hero_heading || 'Build a fashion store that feels like a campaign'}</h2>
-            <p className="text-sm max-w-xl" style={{ color: secondary_text_color }}>{settings.template_hero_subtitle || 'Push your key pieces first'}</p>
+      {/* Hero Section - 3 Image Grid */}
+      <section className="border-b border-gray-200 bg-gray-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-8">
+          <div className="mb-5">
+            <span className="inline-block text-xs font-bold px-3 py-1 rounded-full mb-3" style={{ backgroundColor: primary_color, color: secondary_color }}>Season drop · Fashion store</span>
+            <h2 style={{ color: text_color }} className="font-serif text-2xl sm:text-3xl font-semibold mt-3 leading-tight max-w-xl">{heroHeading}</h2>
+            <p className="text-sm text-gray-600 mt-2 max-w-md">{settings.template_hero_subtitle || 'Push your key pieces first. Then let filters, sizes and structure do their job in the catalog below.'}</p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.9fr] gap-3 md:gap-4">
-            <div className="relative rounded-2xl overflow-hidden" style={{ border: `1px solid ${secondary_text_color}30`, backgroundColor: secondary_color, borderRadius: `${border_radius}px` }}>
+          <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.9fr] gap-6">
+            {/* Left – Main product */}
+            <div className="relative rounded-2xl overflow-hidden border border-gray-200 bg-white h-96">
               <img
-                src={settings.banner_url || 'https://images.unsplash.com/photo-1543087903-1ac2ec7aa8c5?auto=format&fit=crop&w=1200&q=80'}
+                src={settings.banner_url || products[0]?.images?.[0] || 'https://images.unsplash.com/photo-1543087903-1ac2ec7aa8c5?auto=format&fit=crop&w=1200&q=80'}
                 alt="Hero"
-                className="w-full h-96 object-cover"
+                className="w-full h-full object-cover"
               />
-              <div className="absolute bottom-0 left-0 right-0 p-4" style={{ backgroundColor: `${primary_color}B3`, color: secondary_color }}>
-                <div className="text-sm font-semibold">{settings.template_hero_heading || 'Featured Collection'}</div>
-                <div className="text-xs text-gray-300">{settings.template_button_text || 'Shop Now'}</div>
+              <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-4">
+                <div className="text-sm font-semibold">{products[0]?.title || 'Featured Product'}</div>
+                <div className="text-xs text-gray-300">{products[0]?.price || 'Price'} DZD</div>
+                <button onClick={() => handleBuyClick(products[0])} className="mt-2 text-xs py-1 px-3 rounded-full bg-white text-black font-semibold">Shop now</button>
               </div>
+              <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black text-white text-xs uppercase tracking-widest">Drop 01</div>
             </div>
+
+            {/* Right – Two smaller products */}
             <div className="flex flex-col gap-4">
-              {products.slice(0, 2).map((p: any) => (
-                <div key={p.id} className="relative rounded-2xl overflow-hidden" style={{ border: `1px solid ${secondary_text_color}30`, backgroundColor: secondary_color, borderRadius: `${border_radius}px` }}>
-                  <img
-                    src={p.images?.[0] || 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80'}
-                    alt={p.title}
-                    className="w-full h-44 object-cover"
-                  />
-                  <div className="absolute bottom-0 left-0 right-0 p-3" style={{ backgroundColor: `${primary_color}B3`, color: secondary_color }}>
+              {products.slice(1, 3).map((p: any) => (
+                <div key={p.id} className="relative rounded-2xl overflow-hidden border border-gray-200 bg-white h-44">
+                  <img src={p.images?.[0] || 'https://via.placeholder.com/400'} alt={p.title} className="w-full h-full object-cover" />
+                  <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-3">
                     <div className="text-sm font-semibold line-clamp-1">{p.title}</div>
                     <div className="text-xs text-gray-300">{p.price} DZD</div>
                   </div>
@@ -138,86 +138,93 @@ export default function Fashion2Template(props: TemplateProps) {
         </div>
       </section>
 
-      <main className="max-w-6xl mx-auto px-6 py-4 md:py-6">
-        <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4 md:gap-3 md:gap-4">
-          <aside className="rounded-2xl p-4 h-fit" style={{ backgroundColor: secondary_color, border: `1px solid ${secondary_text_color}30`, borderRadius: `${border_radius}px` }}>
-            <div className="text-sm font-semibold mb-4" style={{ color: text_color }}>Filters</div>
-            <div className="mb-5">
-              <label className="text-xs font-bold uppercase block mb-2" style={{ color: secondary_text_color }}>Gender</label>
-              <div className="space-y-2">
+      {/* Main Catalog */}
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-7">
+        <div className="grid grid-cols-1 md:grid-cols-[240px_minmax(0,1fr)] gap-6">
+          {/* Filters Sidebar */}
+          <aside className="bg-white rounded-2xl border border-gray-200 p-4 h-fit">
+            <div className="text-sm font-semibold mb-3">Filters</div>
+
+            <div className="mb-4">
+              <div className="text-xs font-bold uppercase text-gray-600 mb-2">Gender</div>
+              <div className="flex flex-wrap gap-2 text-xs">
                 {genders.map(g => (
-                  <button key={g} className="block text-sm w-full text-left px-3 py-2 rounded hover:bg-gray-100">
+                  <button key={g} className="filter-pill px-3 py-1 rounded-full border border-gray-200 bg-white text-gray-700 hover:bg-gray-100">
                     {g}
                   </button>
                 ))}
               </div>
             </div>
-            <div className="mb-5">
-              <label className="text-xs font-bold uppercase block mb-2" style={{ color: secondary_text_color }}>Category</label>
-              <div className="space-y-2">
+
+            <div className="mb-4">
+              <div className="text-xs font-bold uppercase text-gray-600 mb-2">Category</div>
+              <div className="flex flex-wrap gap-2 text-xs">
                 {categoryList.map(cat => (
-                  <button key={cat} className="block text-sm w-full text-left px-3 py-2 rounded hover:bg-gray-100">
+                  <button key={cat} className="filter-pill px-3 py-1 rounded-full border border-gray-200 bg-white text-gray-700 hover:bg-gray-100">
                     {cat}
                   </button>
                 ))}
               </div>
             </div>
-            <div className="mb-5">
-              <label className="text-xs font-bold uppercase block mb-2" style={{ color: secondary_text_color }}>Size</label>
-              <div className="flex flex-wrap gap-2">
+
+            <div className="mb-4">
+              <div className="text-xs font-bold uppercase text-gray-600 mb-2">Size</div>
+              <div className="flex flex-wrap gap-2 text-xs">
                 {sizes.map(s => (
-                  <button key={s} className="text-xs px-3 py-1 rounded-full border border-gray-200 hover:bg-gray-100">
+                  <button key={s} className="filter-pill px-3 py-1 rounded-full border border-gray-200 bg-white text-gray-700 hover:bg-gray-100">
                     {s}
                   </button>
                 ))}
               </div>
             </div>
-          </aside>
 
-          <section>
-            <div className="flex items-center justify-between mb-6 pb-4" style={{ borderBottom: `1px solid ${secondary_text_color}30` }}>
-              <div>
-                <h3 className="text-lg font-semibold" style={{ color: text_color }}>{filteredProducts.length} Items</h3>
-                <p className="text-xs" style={{ color: secondary_text_color }}>{wishlist.length} Wishlisted</p>
-              </div>
-              <select value={props.sortOption} onChange={(e) => props.setSortOption(e.target.value as any)} className="text-xs rounded-full px-3 py-2" style={{ border: `1px solid ${secondary_text_color}40`, color: text_color, backgroundColor: secondary_color, borderRadius: `${border_radius}px` }}>
-                <option>Featured</option>
-                <option>Price Low-High</option>
-                <option>Price High-Low</option>
-                <option>Newest</option>
+            <div>
+              <div className="text-xs font-bold uppercase text-gray-600 mb-2">Price (max)</div>
+              <select className="w-full text-xs border border-gray-200 rounded-md px-2 py-1.5 bg-gray-50">
+                <option>Any</option>
+                <option>Up to 6,000 DZD</option>
+                <option>Up to 12,000 DZD</option>
+                <option>Up to 20,000 DZD</option>
               </select>
             </div>
+          </aside>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {/* Product Area */}
+          <section>
+            {/* Top bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+              <div>
+                <div className="text-xs font-bold uppercase text-gray-600">All items</div>
+                <h3 style={{ color: text_color }} className="font-serif text-lg font-semibold mt-1">Catalog</h3>
+              </div>
+              <div className="flex items-center gap-3 justify-between sm:justify-end">
+                <div className="text-xs text-gray-600">{filteredProducts.length} items · Wishlist: {wishlist.length}</div>
+                <select value={props.sortOption} onChange={(e) => props.setSortOption(e.target.value as any)} className="text-xs border border-gray-200 rounded-full px-3 py-1.5 bg-white">
+                  <option>Featured</option>
+                  <option>Price: Low to High</option>
+                  <option>Price: High to Low</option>
+                  <option>New arrivals</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Products Grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredProducts.map((p: any) => (
-                <div 
-                  key={p.id} 
-                  className="rounded-lg overflow-hidden hover:shadow-lg transition cursor-pointer group flex flex-col"
-                  style={{ backgroundColor: secondary_color, border: `1px solid ${secondary_text_color}30`, borderRadius: `${border_radius}px` }}
-                  onClick={() => navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/${p.slug}` : `/product/${p.id}`)}
-                >
-                  <div className="relative h-64 bg-gray-100 overflow-hidden flex-grow">
-                    <img src={p.images?.[0] || 'https://via.placeholder.com/400'} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition" />
-                    <div className="absolute top-2 right-2 flex gap-2">
-                      <button onClick={(e) => { e.stopPropagation(); toggleWishlist(p.id); }} className="w-8 h-8 rounded-full flex items-center justify-center text-sm transition" style={{ backgroundColor: wishlist.includes(p.id) ? primary_color : secondary_color, color: wishlist.includes(p.id) ? secondary_color : primary_color, border: wishlist.includes(p.id) ? 'none' : `1px solid ${secondary_text_color}30`, borderRadius: '50%' }}>
-                        ♥
-                      </button>
+                <div key={p.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg hover:border-gray-400 transition cursor-pointer" onClick={() => handleProductClick(p)}>
+                  <div className="relative">
+                    <img src={p.images?.[0] || 'https://via.placeholder.com/400'} alt={p.title} className="w-full h-60 object-cover" />
+                    <div className="absolute top-2 right-2 flex flex-col gap-1">
+                      <button onClick={(e) => { e.stopPropagation(); toggleWishlist(p.id); }} className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${ wishlist.includes(p.id) ? 'bg-black text-white border-0' : 'bg-white border border-gray-200 text-gray-800'}`}>♥</button>
                     </div>
                   </div>
-                  <div className="p-3 flex flex-col">
-                    <p className="font-semibold text-sm line-clamp-2" style={{ color: text_color }}>{p.title}</p>
-                    <p className="text-xs mt-1" style={{ color: secondary_text_color }}>{p.category}</p>
-                    <p className="font-bold text-sm mt-2" style={{ color: primary_color }}>{p.price} DZD</p>
-                    <button 
-                      onClick={(e) => { 
-                        e.stopPropagation(); 
-                        navigate(`/checkout/${p.id}`);
-                      }} 
-                      className="w-full mt-3 py-2 text-xs font-semibold transition"
-                      style={{ backgroundColor: primary_color, color: secondary_color, borderRadius: `${border_radius}px` }}
-                    >
-                      Buy Now
-                    </button>
+                  <div className="p-3">
+                    <div style={{ color: text_color }} className="text-sm font-semibold line-clamp-2">{p.title}</div>
+                    <div className="text-xs text-gray-600 mt-1">{p.category}</div>
+                    <div className="flex items-center justify-between mt-2">
+                      <div className="text-xs font-semibold">{p.price} DZD</div>
+                    </div>
+                    <button onClick={(e) => handleBuyClick(p, e)} className="w-full text-xs py-1.5 rounded-full mt-3" style={{ backgroundColor: primary_color, color: secondary_color, fontWeight: '600' }}>Add to bag</button>
                   </div>
                 </div>
               ))}
@@ -226,32 +233,15 @@ export default function Fashion2Template(props: TemplateProps) {
         </div>
       </main>
 
-      <footer className="mt-6 md:mt-4 md:mt-6 py-4 md:py-6" style={{ borderTop: `1px solid ${secondary_text_color}30`, backgroundColor: secondary_color }}>
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="grid md:grid-cols-3 gap-3 md:gap-4 md:gap-4 md:gap-3 md:gap-4 mb-6 md:mb-4 md:mb-6">
-            <div>
-              <h4 className="font-semibold mb-3" style={{ color: text_color }}>About</h4>
-              <ul className="text-sm space-y-2">
-                <li><a href="#" className="transition" style={{ color: secondary_text_color }} onMouseEnter={(e) => e.currentTarget.style.color = text_color} onMouseLeave={(e) => e.currentTarget.style.color = secondary_text_color}>About Us</a></li>
-                <li><a href="#" className="transition" style={{ color: secondary_text_color }} onMouseEnter={(e) => e.currentTarget.style.color = text_color} onMouseLeave={(e) => e.currentTarget.style.color = secondary_text_color}>Stories</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-3" style={{ color: text_color }}>Support</h4>
-              <ul className="text-sm space-y-2">
-                <li><a href="#" className="transition" style={{ color: secondary_text_color }} onMouseEnter={(e) => e.currentTarget.style.color = text_color} onMouseLeave={(e) => e.currentTarget.style.color = secondary_text_color}>Contact</a></li>
-                <li><a href="#" className="transition" style={{ color: secondary_text_color }} onMouseEnter={(e) => e.currentTarget.style.color = text_color} onMouseLeave={(e) => e.currentTarget.style.color = secondary_text_color}>Shipping</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-3" style={{ color: text_color }}>Legal</h4>
-              <ul className="text-sm space-y-2">
-                <li><a href="#" className="transition" style={{ color: secondary_text_color }} onMouseEnter={(e) => e.currentTarget.style.color = text_color} onMouseLeave={(e) => e.currentTarget.style.color = secondary_text_color}>Privacy</a></li>
-                <li><a href="#" className="transition" style={{ color: secondary_text_color }} onMouseEnter={(e) => e.currentTarget.style.color = text_color} onMouseLeave={(e) => e.currentTarget.style.color = secondary_text_color}>Terms</a></li>
-              </ul>
-            </div>
+      {/* Footer */}
+      <footer className="border-t border-gray-200 bg-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-5 text-xs text-gray-600 flex flex-col sm:flex-row gap-2 sm:justify-between">
+          <span>© {new Date().getFullYear()} {storeName} · Fashion store</span>
+          <div className="flex gap-3">
+            <span>Lookbook</span>
+            <span>Shipping</span>
+            <span>Returns</span>
           </div>
-          <p className="text-xs text-center" style={{ color: secondary_text_color }}>&copy; 2024 {storeName}</p>
         </div>
       </footer>
     </div>

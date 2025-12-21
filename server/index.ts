@@ -24,6 +24,10 @@ import * as dashboardRoutes from "./routes/dashboard";
 import * as botRoutes from "./routes/bot";
 import * as staffRoutes from "./routes/staff";
 import * as billingRoutes from "./routes/billing";
+import { deliveryRouter } from "./routes/delivery";
+import googleSheetsRouter from "./routes/google-sheets";
+import chatRouter from "./routes/chat";
+import codesRouter from "./routes/codes";
 import { authenticateStaff, requireStaffPermission, requireStaffClientAccess } from "./utils/staff-middleware";
 import { initializeDatabase, createDefaultAdmin, runPendingMigrations } from "./utils/database";
 import { handleHealth } from "./routes/health";
@@ -627,6 +631,18 @@ export function createServer() {
   app.post("/api/storefront/:storeSlug/order/:orderId/confirm", orderConfirmationRoutes.confirmOrder);
   app.patch("/api/storefront/:storeSlug/order/:orderId/update", orderConfirmationRoutes.updateOrderDetails);
   app.patch("/api/client/orders/:id/status", authenticate, requireClient, orderRoutes.updateOrderStatus);
+
+  // Delivery routes (authenticated)
+  app.use('/api/delivery', authenticate, deliveryRouter);
+
+  // Google Sheets integration routes (authenticated)
+  app.use('/api/google', authenticate, googleSheetsRouter);
+
+  // Chat routes (authenticated - handles both client and seller roles)
+  app.use('/api/chat', authenticate, chatRouter);
+
+  // Subscription codes routes (authenticated - client/seller operations)
+  app.use('/api/codes', authenticate, codesRouter);
 
   // Checkout session routes (database-backed, not localStorage)
   app.post("/api/checkout/save-product", orderRoutes.saveProductForCheckout); // Public - save product for checkout

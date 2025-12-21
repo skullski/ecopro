@@ -6,6 +6,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useTranslation } from '@/lib/i18n';
 import { RenderStorefront } from './storefront/templates';
+import { storeNameToSlug } from '@/utils/storeUrl';
 
 interface StoreProduct {
   id: number;

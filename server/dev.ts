@@ -1,6 +1,7 @@
 import { createServer } from "./index";
 import { initializeDatabase, createDefaultAdmin, runPendingMigrations } from "./utils/database";
 import { processPendingMessages, cleanupOldOrders } from "./utils/bot-messaging";
+import { cleanupExpiredCodes } from "./utils/code-utils";
 import { hashPassword } from "./utils/auth";
 
 const PORT = process.env.PORT || 8080;
@@ -48,6 +49,12 @@ async function startServer() {
       cleanupOldOrders().catch(err => console.error("Order cleanup error:", err));
     }, 60 * 60 * 1000);
     console.log("🧹 Order cleanup started (runs every 1 hour)");
+
+    // Start background job to cleanup expired subscription codes (every 10 minutes)
+    setInterval(() => {
+      cleanupExpiredCodes().catch(err => console.error("Code cleanup error:", err));
+    }, 10 * 60 * 1000);
+    console.log("📋 Subscription code cleanup started (runs every 10 minutes)");
   } catch (error) {
     console.error("❌ Failed to start server:", error);
     console.log("💡 Starting server anyway for frontend development...");

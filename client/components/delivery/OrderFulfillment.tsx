@@ -1,0 +1,328 @@
+// Order fulfillment component with delivery management
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Truck, Printer, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+
+interface DeliveryCompany {
+  id: number;
+  name: string;
+  features: {
+    supports_cod: boolean;
+    supports_tracking: boolean;
+    supports_labels: boolean;
+  };
+}
+
+interface Order {
+  id: number;
+  customer_name: string;
+  customer_phone: string;
+  customer_address: string;
+  total_price: number;
+  delivery_company_id?: number;
+  tracking_number?: string;
+  delivery_status?: string;
+  shipping_label_url?: string;
+}
+
+interface OrderFulfillmentProps {
+  order: Order;
+  onDeliveryAssigned?: () => void;
+}
+
+export function OrderFulfillment({ order, onDeliveryAssigned }: OrderFulfillmentProps) {
+  const [companies, setCompanies] = useState<DeliveryCompany[]>([]);
+  const [selectedCompany, setSelectedCompany] = useState<number | null>(order.delivery_company_id || null);
+  const [codAmount, setCodAmount] = useState<number>(order.total_price);
+  const [showDialog, setShowDialog] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [labelGenerating, setLabelGenerating] = useState(false);
+
+  // Fetch available delivery companies
+  useEffect(() => {
+    fetchCompanies();
+  }, []);
+
+  const fetchCompanies = async () => {
+    try {
+      const response = await fetch('/api/delivery/companies', {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setCompanies(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch delivery companies', err);
+    }
+  };
+
+  const handleAssignDelivery = async () => {
+    if (!selectedCompany) {
+      setError('Please select a delivery company');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/delivery/orders/${order.id}/assign`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+        },
+        body: JSON.stringify({
+          delivery_company_id: selectedCompany,
+          cod_amount: codAmount > 0 ? codAmount : null,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to assign delivery');
+      }
+
+      setSuccess('Delivery company assigned successfully!');
+      setShowDialog(false);
+      onDeliveryAssigned?.();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGenerateLabel = async () => {
+    if (!selectedCompany) {
+      setError('No delivery company selected');
+      return;
+    }
+
+    setLabelGenerating(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/delivery/orders/${order.id}/generate-label`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+        },
+        body: JSON.stringify({
+          delivery_company_id: selectedCompany,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to generate label');
+      }
+
+      const data = await response.json();
+      setSuccess(`Label generated! Tracking: ${data.tracking_number}`);
+
+      // Download label if available
+      if (data.label_url) {
+        window.open(data.label_url, '_blank');
+      }
+
+      onDeliveryAssigned?.();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLabelGenerating(false);
+    }
+  };
+
+  const selectedCompanyData = companies.find(c => c.id === selectedCompany);
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Truck className="w-5 h-5" />
+            Delivery Management
+          </CardTitle>
+          <CardDescription>
+            Assign a delivery company and generate shipping labels
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent className="space-y-4">
+          {/* Current Delivery Status */}
+          {order.delivery_company_id && (
+            <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-blue-600" />
+                <span className="font-medium">Delivery Assigned</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Company</p>
+                  <p className="font-medium">{companies.find(c => c.id === order.delivery_company_id)?.name}</p>
+                </div>
+                {order.tracking_number && (
+                  <div>
+                    <p className="text-muted-foreground">Tracking</p>
+                    <p className="font-medium">{order.tracking_number}</p>
+                  </div>
+                )}
+                {order.delivery_status && (
+                  <div>
+                    <p className="text-muted-foreground">Status</p>
+                    <p className="font-medium capitalize">{order.delivery_status}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Error Messages */}
+          {error && (
+            <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-3 flex gap-2">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+              <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+            </div>
+          )}
+
+          {success && (
+            <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-3 flex gap-2">
+              <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+              <p className="text-sm text-green-700 dark:text-green-300">{success}</p>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setShowDialog(true)}
+              variant="default"
+              className="flex-1"
+              disabled={isLoading}
+            >
+              {order.delivery_company_id ? 'Change Delivery' : 'Assign Delivery'}
+            </Button>
+
+            {order.delivery_company_id && (
+              <Button
+                onClick={handleGenerateLabel}
+                variant="outline"
+                disabled={labelGenerating}
+                className="flex-1"
+              >
+                {labelGenerating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Printer className="w-4 h-4 mr-2" />
+                    Generate Label
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+
+          {order.shipping_label_url && (
+            <Button
+              onClick={() => window.open(order.shipping_label_url, '_blank')}
+              variant="outline"
+              className="w-full"
+            >
+              <Printer className="w-4 h-4 mr-2" />
+              Download Label
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Delivery Assignment Dialog */}
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Select Delivery Company</DialogTitle>
+            <DialogDescription>
+              Choose a delivery company to handle this order
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Company Selection Grid */}
+            <div className="grid grid-cols-1 gap-2 max-h-80 overflow-y-auto">
+              {companies.map(company => (
+                <label
+                  key={company.id}
+                  className={`flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                    selectedCompany === company.id
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-primary/50'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    value={company.id}
+                    checked={selectedCompany === company.id}
+                    onChange={(e) => setSelectedCompany(parseInt(e.target.value))}
+                    className="w-4 h-4"
+                  />
+                  <div className="flex-1">
+                    <p className="font-medium text-sm">{company.name}</p>
+                    <div className="flex gap-2 text-xs text-muted-foreground mt-1">
+                      {company.features.supports_cod && <span>✓ COD</span>}
+                      {company.features.supports_tracking && <span>✓ Tracking</span>}
+                      {company.features.supports_labels && <span>✓ Labels</span>}
+                    </div>
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            {/* COD Amount Input */}
+            {selectedCompanyData?.features.supports_cod && (
+              <div className="space-y-2">
+                <Label htmlFor="cod-amount">Cash on Delivery Amount (DA)</Label>
+                <Input
+                  id="cod-amount"
+                  type="number"
+                  value={codAmount}
+                  onChange={(e) => setCodAmount(parseFloat(e.target.value))}
+                  placeholder="Enter COD amount"
+                />
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAssignDelivery}
+              disabled={!selectedCompany || isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Assigning...
+                </>
+              ) : (
+                'Assign Delivery'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

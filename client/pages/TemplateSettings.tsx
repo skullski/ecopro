@@ -544,9 +544,9 @@ const templateComponents: Record<string, any> = {
 };
 
 const templateList = [
-  { id: 'fashion', label: 'Fashion', preview: '/template-previews/fashion-minimal.png' },
-  { id: 'fashion2', label: 'Fashion 2', preview: '/template-previews/fashion-modern.png' },
-  { id: 'fashion3', label: 'Fashion 3', preview: '/template-previews/fashion-premium.png' },
+  { id: 'fashion', label: 'Fashion', preview: '/template-previews/fashion.png' },
+  { id: 'fashion2', label: 'Fashion 2', preview: '/template-previews/fashion2.png' },
+  { id: 'fashion3', label: 'Fashion 3', preview: '/template-previews/fashion3.png' },
   { id: 'electronics', label: 'Electronics', preview: '/template-previews/electronics.png' },
   { id: 'food', label: 'Food', preview: '/template-previews/food.png' },
   { id: 'furniture', label: 'Furniture', preview: '/template-previews/furniture.png' },
@@ -592,6 +592,16 @@ export default function TemplateSettingsPage() {
     try {
       setLoading(true);
       const token = getAuthToken();
+      
+      if (!token) {
+        console.error('No auth token found');
+        setMessage({ type: 'error', text: 'Please log in to access template settings' });
+        // Redirect to login
+        window.location.href = '/login';
+        return;
+      }
+      
+      console.log('Fetching settings with token:', token.substring(0, 20) + '...');
       const res = await fetch('/api/client/store/settings', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -603,8 +613,13 @@ export default function TemplateSettingsPage() {
         setSettings(data);
         setTemplate(data.template || 'fashion');
       } else {
-        console.error('Failed to fetch settings:', res.status);
-        setMessage({ type: 'error', text: 'Failed to load settings' });
+        console.error('Failed to fetch settings:', res.status, res.statusText);
+        if (res.status === 401) {
+          setMessage({ type: 'error', text: 'Session expired. Please log in again' });
+          window.location.href = '/login';
+        } else {
+          setMessage({ type: 'error', text: 'Failed to load settings' });
+        }
       }
     } catch (err) {
       console.error('Error fetching settings:', err);
@@ -617,6 +632,13 @@ export default function TemplateSettingsPage() {
   const fetchProducts = async () => {
     try {
       const token = getAuthToken();
+      
+      if (!token) {
+        console.warn('No token for fetching products');
+        return;
+      }
+      
+      console.log('Fetching products with token:', token.substring(0, 20) + '...');
       const res = await fetch('/api/client/store/products', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -626,6 +648,8 @@ export default function TemplateSettingsPage() {
       if (res.ok) {
         const data = await res.json();
         setProducts(data.products || data || []);
+      } else {
+        console.error('Failed to fetch products:', res.status, res.statusText);
       }
     } catch (err) {
       console.error('Error fetching products:', err);
@@ -796,8 +820,8 @@ export default function TemplateSettingsPage() {
       {/* Settings and Preview Content */}
       <div className="max-w-7xl mx-auto px-3 md:px-4 py-3 md:py-4">
         {/* Settings Form and Preview */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-2">
-        {/* Left Column - Settings (Now smaller) */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-2">
+        {/* Left Column - Settings (First Half) */}
         <div className="lg:col-span-1 space-y-2">
           {/* Store Name */}
 
@@ -837,8 +861,8 @@ export default function TemplateSettingsPage() {
           )}
         </div>
 
-        {/* Template-Specific Sections */}
-        {config.sections?.map((section: any, idx: number) => (
+        {/* Template-Specific Sections - Left Half */}
+        {config.sections?.slice(0, Math.ceil(config.sections.length / 2)).map((section: any, idx: number) => (
           <div key={idx} className={`border rounded-lg overflow-hidden transition-colors ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
             <button
               onClick={() => setExpandedSections(prev => ({ ...prev, [idx]: !prev[idx] }))}
@@ -919,11 +943,17 @@ export default function TemplateSettingsPage() {
                             const file = e.target.files?.[0];
                             if (file) {
                               try {
+                                console.log('Uploading file:', file.name, file.size);
                                 const res = await uploadImage(file);
+                                console.log('Upload response:', res);
                                 handleChange(field.key, res.url);
                                 setMessage({ type: 'success', text: 'Image uploaded successfully' });
+                                setTimeout(() => setMessage(null), 3000);
                               } catch (err) {
-                                setMessage({ type: 'error', text: 'Failed to upload image' });
+                                console.error('Upload error:', err);
+                                const errorMsg = err instanceof Error ? err.message : 'Failed to upload image';
+                                setMessage({ type: 'error', text: errorMsg });
+                                setTimeout(() => setMessage(null), 5000);
                               }
                             }
                           }}
@@ -953,35 +983,9 @@ export default function TemplateSettingsPage() {
             )}
           </div>
         ))}
-
-        {/* Action Buttons */}
-        <div className="flex gap-2 pt-2 md:pt-3">
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex-1 gap-2"
-          >
-            {saving ? <Loader2 className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4" />}
-            Save Changes
-          </Button>
-          <Button
-            onClick={() => setShowPreview(!showPreview)}
-            variant="outline"
-            className="gap-2"
-          >
-            <Eye className="w-4 h-4" />
-            Preview
-          </Button>
         </div>
 
-        {message && (
-          <div className={`p-2 md:p-3 rounded-lg transition-colors ${message.type === 'success' ? isDarkMode ? 'bg-green-900/30 text-green-300' : 'bg-green-50 text-green-900' : isDarkMode ? 'bg-red-900/30 text-red-300' : 'bg-red-50 text-red-900'}`}>
-            {message.text}
-          </div>
-        )}
-        </div>
-
-        {/* Right Column - Preview (Now larger) */}
+        {/* Center Column - Preview */}
         <div className="lg:col-span-3">
           <div className="sticky top-2 space-y-2">
             <h3 className={`font-bold text-base md:text-lg transition-colors ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Template Preview</h3>
@@ -1000,6 +1004,171 @@ export default function TemplateSettingsPage() {
                 <div className={`p-3 md:p-4 text-center transition-colors ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Template not found</div>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* Right Column - Settings (Second Half) + Actions */}
+        <div className="lg:col-span-1 space-y-2">
+          {/* Template-Specific Sections - Right Half */}
+          {config.sections?.slice(Math.ceil(config.sections.length / 2)).map((section: any, idx: number) => {
+            const actualIdx = Math.ceil(config.sections.length / 2) + idx;
+            return (
+              <div key={actualIdx} className={`border rounded-lg overflow-hidden transition-colors ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <button
+                  onClick={() => setExpandedSections(prev => ({ ...prev, [actualIdx]: !prev[actualIdx] }))}
+                  className={`w-full px-2 md:px-3 py-2 font-semibold text-left flex items-center justify-between transition-colors ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-50 hover:bg-gray-100 text-gray-900'}`}
+                >
+                  <div className="text-left">
+                    <h3 className="text-base">{section.title}</h3>
+                    {section.description && (
+                      <p className={`text-xs font-normal mt-0 transition-colors ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{section.description}</p>
+                    )}
+                  </div>
+                  <ChevronDown className={`w-5 h-5 transform transition-transform ${expandedSections[actualIdx] ? 'rotate-180' : ''}`} />
+                </button>
+                {expandedSections[actualIdx] && (
+                  <div className={`p-2 md:p-3 space-y-2 md:space-y-3 transition-colors ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                    {section.fields?.map((field: any) => (
+                      <div key={field.key}>
+                        <label className={`block text-sm font-medium mb-1 transition-colors ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>{field.label}</label>
+                        {field.type === 'color' && (
+                          <div className="flex gap-2">
+                            <input
+                              type="color"
+                              value={(settings[field.key as keyof TemplateSettings] as string) || '#000000'}
+                              onChange={(e) => handleChange(field.key, e.target.value)}
+                              className={`w-12 h-10 rounded cursor-pointer transition-colors ${isDarkMode ? 'border border-gray-600' : 'border border-gray-300'}`}
+                            />
+                            <Input
+                              value={(settings[field.key as keyof TemplateSettings] as string) || ''}
+                              onChange={(e) => handleChange(field.key, e.target.value)}
+                              placeholder="#000000"
+                              className={isDarkMode ? 'dark' : ''}
+                            />
+                          </div>
+                        )}
+                        {field.type === 'checkbox' && (
+                          <input
+                            type="checkbox"
+                            checked={!!settings[field.key as keyof TemplateSettings]}
+                            onChange={(e) => handleChange(field.key, e.target.checked)}
+                            className="w-4 h-4"
+                          />
+                        )}
+                        {field.type === 'number' && (
+                          <Input
+                            type="number"
+                            value={settings[field.key as keyof TemplateSettings] || field.placeholder || ''}
+                            onChange={(e) => handleChange(field.key, parseInt(e.target.value))}
+                            min={field.min}
+                            max={field.max}
+                            placeholder={field.placeholder}
+                            className={isDarkMode ? 'dark' : ''}
+                          />
+                        )}
+                        {field.type === 'textarea' && (
+                          <>
+                            {field.key === 'template_categories' ? (
+                              <CategoryManager 
+                                categories={settings.template_categories} 
+                                onChange={(cats) => handleChange('template_categories', cats)}
+                                isDarkMode={isDarkMode}
+                              />
+                            ) : (
+                              <textarea
+                                value={(settings[field.key as keyof TemplateSettings] as string) || ''}
+                                onChange={(e) => handleChange(field.key, e.target.value)}
+                                placeholder={field.placeholder}
+                                className={`w-full p-2 rounded text-sm font-mono resize-vertical min-h-24 transition-colors ${isDarkMode ? 'bg-gray-700 border border-gray-600 text-white' : 'bg-white border border-gray-300 text-gray-900'}`}
+                              />
+                            )}
+                          </>
+                        )}
+                        {field.type === 'image' && (
+                          <div className="flex gap-2">
+                            <Input
+                              type="file"
+                              accept="image/*"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  try {
+                                    console.log('Uploading file:', file.name, file.size);
+                                    const res = await uploadImage(file);
+                                    console.log('Upload response:', res);
+                                    handleChange(field.key, res.url);
+                                    setMessage({ type: 'success', text: 'Image uploaded successfully' });
+                                    setTimeout(() => setMessage(null), 3000);
+                                  } catch (err) {
+                                    console.error('Upload error:', err);
+                                    const errorMsg = err instanceof Error ? err.message : 'Failed to upload image';
+                                    setMessage({ type: 'error', text: errorMsg });
+                                    setTimeout(() => setMessage(null), 5000);
+                                  }
+                                }
+                              }}
+                              className={`flex-1 ${isDarkMode ? 'dark' : ''}`}
+                            />
+                            {(settings[field.key as keyof TemplateSettings] as string) && (
+                              <img
+                                src={(settings[field.key as keyof TemplateSettings] as string) || ''}
+                                alt="preview"
+                                className="w-12 h-12 object-cover rounded border"
+                              />
+                            )}
+                          </div>
+                        )}
+                        {['text', 'url'].includes(field.type) && (
+                          <Input
+                            type={field.type}
+                            value={(settings[field.key as keyof TemplateSettings] as string) || ''}
+                            onChange={(e) => handleChange(field.key, e.target.value)}
+                            placeholder={field.placeholder}
+                            className={isDarkMode ? 'dark' : ''}
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Action Buttons */}
+          <div className={`border rounded-lg overflow-hidden transition-colors ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+            <button
+              onClick={() => setExpandedSections(prev => ({ ...prev, actions: !prev.actions }))}
+              className={`w-full px-2 md:px-3 py-2 font-semibold text-left flex items-center justify-between transition-colors ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-50 hover:bg-gray-100 text-gray-900'}`}
+            >
+              <h3 className="text-base">Actions</h3>
+              <span className={`transform transition-transform ${expandedSections.actions ? 'rotate-180' : ''}`}>
+                ▼
+              </span>
+            </button>
+            {expandedSections.actions && (
+              <div className={`p-2 md:p-3 space-y-2 md:space-y-3 transition-colors ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                {/* Action Buttons */}
+                <div className="flex gap-2 pt-2 md:pt-3 flex-col">
+                  <Button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="w-full gap-2"
+                  >
+                    {saving ? <Loader2 className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4" />}
+                    Save Changes
+                  </Button>
+                  <Button
+                    onClick={() => setShowPreview(!showPreview)}
+                    variant="outline"
+                    className="w-full gap-2"
+                  >
+                    <Eye className="w-4 h-4" />
+                    Preview
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
         </div>
