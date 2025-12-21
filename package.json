@@ -21,7 +21,8 @@
     "render:build": "npm run build",
     "test": "vitest --run",
     "format.fix": "prettier --write .",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "migrate:rehash-passwords": "tsx server/scripts/rehash-passwords.ts"
   },
   "dependencies": {
     "argon2": "^0.44.0",
