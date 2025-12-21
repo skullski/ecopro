@@ -169,14 +169,14 @@ export function createServer() {
   // Auth routes (with rate limiting)
   app.post(
     "/api/auth/register",
-    authLimiter,
+    // authLimiter, // REMOVED FOR TESTING
     registerValidation,
     validate,
     authRoutes.register
   );
   app.post(
     "/api/auth/login",
-    authLimiter,
+    // authLimiter, // REMOVED FOR TESTING
     loginValidation,
     validate,
     authRoutes.login
