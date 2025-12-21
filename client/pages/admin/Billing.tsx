@@ -269,22 +269,45 @@ const AdminBilling = () => {
 
           {/* Action Buttons */}
           <div className="mt-6 flex gap-3">
-            {isSubscriptionExpired || (isTrialActive && daysUntilExpiry < 7) ? (
+            {isSubscriptionExpired ? (
               <Button
                 onClick={handleCheckout}
                 disabled={isCheckingOut}
-                className="gap-2 bg-blue-600 hover:bg-blue-700"
+                className="gap-2 bg-red-600 hover:bg-red-700"
               >
                 <CreditCard className="w-4 h-4" />
-                {isCheckingOut ? 'Processing...' : 'Renew Now'}
+                {isCheckingOut ? 'Processing...' : 'Renew Subscription'}
               </Button>
+            ) : isTrialActive ? (
+              <>
+                <Button
+                  onClick={handleCheckout}
+                  disabled={isCheckingOut}
+                  className="gap-2 bg-blue-600 hover:bg-blue-700"
+                >
+                  <CreditCard className="w-4 h-4" />
+                  {isCheckingOut ? 'Processing...' : 'Start Paid Plan'}
+                </Button>
+                <p className="text-sm text-gray-600 dark:text-gray-400 self-center">
+                  {daysUntilExpiry} days of free trial remaining
+                </p>
+              </>
+            ) : subscription?.status === 'active' ? (
+              <>
+                <Button variant="outline" disabled>
+                  ✓ Active Subscription
+                </Button>
+                <Button
+                  onClick={handleCheckout}
+                  disabled={isCheckingOut}
+                  variant="outline"
+                  className="gap-2"
+                >
+                  <CreditCard className="w-4 h-4" />
+                  {isCheckingOut ? 'Processing...' : 'Renew Next Month'}
+                </Button>
+              </>
             ) : null}
-
-            {subscription?.status === 'active' && (
-              <Button variant="outline" disabled>
-                ✓ Active Subscription
-              </Button>
-            )}
           </div>
         </CardContent>
       </Card>
