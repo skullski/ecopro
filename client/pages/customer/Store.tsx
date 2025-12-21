@@ -58,6 +58,7 @@ interface StoreProduct {
 
 export default function Store() {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<'overview' | 'products'>('overview');
   // Copy store link to clipboard
   // This must be above all JSX usage
   let storeSettingsRef: any = null;
@@ -711,8 +712,35 @@ export default function Store() {
           </div>
         </div>
 
-        {/* Store Preview: Store URL, compact badges, and How-to guide (hidden here; rendered at bottom) */}
-        {false && (
+        {/* Tab Navigation */}
+        <div className="flex gap-4 border-b border-border">
+          <button
+            onClick={() => setActiveTab('overview')}
+            className={`px-4 py-3 font-medium transition-colors ${
+              activeTab === 'overview'
+                ? 'text-primary border-b-2 border-primary -mb-[2px]'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Overview
+          </button>
+          <button
+            onClick={() => setActiveTab('products')}
+            className={`px-4 py-3 font-medium transition-colors ${
+              activeTab === 'products'
+                ? 'text-primary border-b-2 border-primary -mb-[2px]'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Products Management
+          </button>
+        </div>
+
+        {/* Overview Tab */}
+        {activeTab === 'overview' && (
+          <>
+            {/* Store Preview: Store URL, compact badges, and How-to guide (hidden here; rendered at bottom) */}
+            {false && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2 bg-card rounded-xl border p-4">
             <div className="flex items-center justify-between">
@@ -986,6 +1014,180 @@ export default function Store() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+          </>
+        )}
+
+        {/* Products Management Tab */}
+        {activeTab === 'products' && (
+          <div className="space-y-4">
+            {/* Filters and View Mode */}
+            <div className="bg-card rounded-xl border p-4">
+              <div className="flex flex-wrap gap-4 items-center">
+                <div className="flex-1 min-w-[200px]">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search products..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="archived">Archived</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant={viewMode === 'grid' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setViewMode('grid')}
+                  >
+                    <Grid className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant={viewMode === 'list' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setViewMode('list')}
+                  >
+                    <List className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Products List/Grid */}
+            {filteredProducts.length === 0 ? (
+              <div className="bg-card rounded-xl border p-12 text-center">
+                <Package className="w-16 h-16 mx-auto text-muted-foreground opacity-30 mb-4" />
+                <h3 className="text-xl font-semibold mb-2">No products found</h3>
+                <p className="text-muted-foreground mb-6">
+                  {searchQuery || statusFilter !== 'all' 
+                    ? 'Try adjusting your search or filters' 
+                    : 'Add your first product to get started'}
+                </p>
+                <Button
+                  onClick={() => {
+                    setShowSelectInventory(true);
+                    setSelectedInventoryProduct(null);
+                    setInventoryStockQuantity(1);
+                  }}
+                  className="bg-gradient-to-r from-primary to-purple-600"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Product
+                </Button>
+              </div>
+            ) : viewMode === 'grid' ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredProducts.map((product) => (
+                  <div key={product.id} className="bg-card rounded-xl border p-4 hover:shadow-lg transition-shadow">
+                    <div className="relative mb-4">
+                      {product.images?.[0] ? (
+                        <img
+                          src={product.images[0]}
+                          alt={product.title}
+                          className="w-full h-48 object-cover rounded-lg"
+                        />
+                      ) : (
+                        <div className="w-full h-48 bg-muted rounded-lg flex items-center justify-center">
+                          <ImageIcon className="w-8 h-8 text-muted-foreground opacity-20" />
+                        </div>
+                      )}
+                      <Badge className="absolute top-2 right-2" variant={
+                        product.status === 'active' ? 'default' :
+                        product.status === 'draft' ? 'secondary' : 'outline'
+                      }>
+                        {product.status}
+                      </Badge>
+                    </div>
+                    <h3 className="font-semibold mb-1 line-clamp-2">{product.title}</h3>
+                    <p className="text-sm text-muted-foreground mb-3 line-clamp-1">
+                      {product.category || 'No category'}
+                    </p>
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-lg font-bold text-primary">${product.price}</span>
+                      <Badge variant="outline" className="text-xs">
+                        Stock: {product.stock_quantity}
+                      </Badge>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" className="flex-1" onClick={() => openEditModal(product)}>
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button size="sm" variant="outline" className="flex-1" onClick={() => openDeleteDialog(product)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-card rounded-xl border overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted border-b">
+                      <tr>
+                        <th className="px-4 py-3 text-left font-semibold">Product</th>
+                        <th className="px-4 py-3 text-left font-semibold">Price</th>
+                        <th className="px-4 py-3 text-left font-semibold">Stock</th>
+                        <th className="px-4 py-3 text-left font-semibold">Status</th>
+                        <th className="px-4 py-3 text-left font-semibold">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {filteredProducts.map((product) => (
+                        <tr key={product.id} className="hover:bg-muted/50">
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              {product.images?.[0] && (
+                                <img src={product.images[0]} alt={product.title} className="w-10 h-10 rounded object-cover" />
+                              )}
+                              <div className="flex-1">
+                                <p className="font-medium">{product.title}</p>
+                                <p className="text-xs text-muted-foreground">{product.category}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 font-semibold">${product.price}</td>
+                          <td className="px-4 py-3">{product.stock_quantity}</td>
+                          <td className="px-4 py-3">
+                            <Badge variant={
+                              product.status === 'active' ? 'default' :
+                              product.status === 'draft' ? 'secondary' : 'outline'
+                            }>
+                              {product.status}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="ghost" onClick={() => openEditModal(product)}>
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={() => openDeleteDialog(product)}>
+                                <Trash2 className="w-4 h-4 text-red-500" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

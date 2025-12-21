@@ -26,8 +26,7 @@ import AdminDashboard from "./pages/admin/Dashboard";
 import EnhancedDashboard from "./pages/admin/EnhancedDashboard";
 import AdminOrders from "./pages/admin/Orders";
 import AdminAnalytics from "./pages/admin/Analytics";
-import AdminProducts from "./pages/admin/Products";
-// StoreSettings removed
+// AdminProducts removed - now integrated into Store page
 import AdminSettings from "./pages/admin/Settings";
 // StorePreview removed
 // OrderSuccess, AdminProducts, and top-level Billing pages were removed.
@@ -603,8 +602,7 @@ const App = () => (
                     <Route path="orders/add" element={<AddOrder />} />
                     <Route path="orders/abandoned" element={<AbandonedOrders />} />
                     <Route path="orders/flex-scan" element={<FlexScan />} />
-                    {/* Products management routes */}
-                    <Route path="products" element={<AdminProducts />} />
+                    {/* Products management moved to Store page with tabs */}
                     {/* Delivery submenu routes */}
                     <Route path="delivery/companies" element={<DeliveryCompanies />} />
                     {/* Addons submenu routes */}
