@@ -456,7 +456,7 @@ export function createServer() {
     "/api/billing/admin/metrics",
     authenticate,
     requireAdmin,
-    billingRoutes.getBillingMetrics
+    billingRoutes.getPaymentMetrics
   );
 
   app.get(
