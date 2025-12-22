@@ -110,7 +110,7 @@ export default function Login() {
                 placeholder={t('auth.passwordPlaceholder')}
                 required
                 disabled={loading}
-                autoComplete="off"
+                autoComplete="current-password"
               />
             </div>
             <div className="flex items-center justify-between pt-1">

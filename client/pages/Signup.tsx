@@ -102,6 +102,7 @@ export default function Signup() {
                 required
                 disabled={loading}
                 minLength={6}
+                autoComplete="new-password"
               />
               <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
                 {t("auth.passwordHint")}

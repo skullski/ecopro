@@ -2,7 +2,10 @@
  * Secure API client with token management
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
+// Use relative /api path by default (works in both dev and production)
+// Only use VITE_API_URL if explicitly set to an absolute URL
+const VITE_API_URL = import.meta.env.VITE_API_URL || "";
+const API_BASE_URL = VITE_API_URL || "/api";
 
 export interface AuthResponse {
   message: string;
