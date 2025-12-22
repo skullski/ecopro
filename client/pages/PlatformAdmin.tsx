@@ -112,27 +112,34 @@ interface LockedAccount {
   id: number;
   email: string;
   name: string;
-  locked_reason: string;
-  locked_at: string;
+  is_locked: boolean;
+  locked_reason?: string;
+  locked_at?: string;
+  unlock_reason?: string;
+  unlocked_at?: string;
+  is_paid_temporarily?: boolean;
+  subscription_extended_until?: string;
   created_at: string;
 }
 
 // Locked Accounts Manager Component
 function LockedAccountsManager() {
-  const [lockedAccounts, setLockedAccounts] = useState<LockedAccount[]>([]);
+  const [allAccounts, setAllAccounts] = useState<LockedAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAccounts, setSelectedAccounts] = useState<number[]>([]);
-  const [showUnlockModal, setShowUnlockModal] = useState(false);
-  const [unlockReason, setUnlockReason] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [modalMode, setModalMode] = useState<'unlock' | 'lock'>('unlock');
+  const [reason, setReason] = useState('');
   const [action, setAction] = useState<'extend' | 'mark_paid'>('extend');
   const [extendDays, setExtendDays] = useState(30);
-  const [unlocking, setUnlocking] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [filterStatus, setFilterStatus] = useState<'all' | 'locked' | 'unlocked'>('all');
 
   useEffect(() => {
-    fetchLockedAccounts();
+    fetchAllAccounts();
   }, []);
 
-  async function fetchLockedAccounts() {
+  async function fetchAllAccounts() {
     try {
       setLoading(true);
       const response = await fetch('/api/admin/locked-accounts', {
@@ -141,67 +148,87 @@ function LockedAccountsManager() {
         }
       });
       const data = await response.json();
-      setLockedAccounts(data.accounts || []);
+      setAllAccounts(data.accounts || []);
     } catch (err) {
-      console.error('Failed to fetch locked accounts:', err);
+      console.error('Failed to fetch accounts:', err);
+      alert('Failed to fetch accounts');
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleUnlockSelected() {
+  const filteredAccounts = allAccounts.filter(acc => {
+    if (filterStatus === 'all') return true;
+    if (filterStatus === 'locked') return acc.is_locked;
+    if (filterStatus === 'unlocked') return !acc.is_locked;
+    return true;
+  });
+
+  const lockedCount = allAccounts.filter(a => a.is_locked).length;
+  const unlockedCount = allAccounts.filter(a => !a.is_locked).length;
+
+  async function handleProcess() {
     if (selectedAccounts.length === 0) {
-      alert('Please select accounts to unlock');
+      alert('Please select accounts');
       return;
     }
 
-    if (!unlockReason.trim()) {
-      alert('Please enter an unlock reason');
+    if (!reason.trim()) {
+      alert('Please enter a reason');
       return;
     }
 
-    setUnlocking(true);
+    setProcessing(true);
     try {
       for (const clientId of selectedAccounts) {
-        const response = await fetch('/api/admin/unlock-account', {
+        const endpoint = modalMode === 'unlock' ? '/api/admin/unlock-account' : '/api/admin/lock-account';
+        const body = modalMode === 'unlock'
+          ? {
+              client_id: clientId,
+              unlock_reason: reason,
+              action,
+              days: action === 'extend' ? extendDays : undefined
+            }
+          : {
+              client_id: clientId,
+              reason
+            };
+
+        const response = await fetch(endpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${localStorage.getItem('authToken')}`
           },
-          body: JSON.stringify({
-            client_id: clientId,
-            unlock_reason: unlockReason,
-            action,
-            days: action === 'extend' ? extendDays : undefined
-          })
+          body: JSON.stringify(body)
         });
 
         if (!response.ok) {
           const error = await response.json();
-          alert(`Failed to unlock account: ${error.error}`);
+          alert(`Failed: ${error.error}`);
           return;
         }
       }
 
-      alert(`Successfully unlocked ${selectedAccounts.length} account(s)`);
+      const action_text = modalMode === 'unlock' ? 'unlocked' : 'locked';
+      alert(`Successfully ${action_text} ${selectedAccounts.length} account(s)`);
       setSelectedAccounts([]);
-      setUnlockReason('');
-      setShowUnlockModal(false);
-      await fetchLockedAccounts();
+      setReason('');
+      setShowModal(false);
+      await fetchAllAccounts();
     } catch (err) {
-      console.error('Error unlocking accounts:', err);
-      alert('Failed to unlock accounts');
+      console.error('Error processing accounts:', err);
+      alert('Failed to process accounts');
     } finally {
-      setUnlocking(false);
+      setProcessing(false);
     }
   }
 
   function toggleSelectAll() {
-    if (selectedAccounts.length === lockedAccounts.length) {
+    if (selectedAccounts.length === filteredAccounts.length) {
       setSelectedAccounts([]);
     } else {
-      setSelectedAccounts(lockedAccounts.map(a => a.id));
+      setSelectedAccounts(filteredAccounts.map(a => a.id));
     }
   }
 
@@ -229,27 +256,65 @@ function LockedAccountsManager() {
       <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-md rounded-2xl border border-green-500/30 p-6 shadow-lg">
         <h2 className="text-2xl font-bold text-green-300 mb-2 flex items-center gap-2">
           <Unlock className="w-6 h-6" />
-          Locked Accounts Manager
+          Subscription & Lock Management
         </h2>
         <p className="text-green-200/80">
-          Manage locked accounts and restore access for users with subscription or voucher code issues
+          Manage all accounts: lock for payment issues, unlock and extend subscriptions, or grant temporary paid access
         </p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4">
-          <div className="text-sm text-slate-400">Total Locked Accounts</div>
-          <div className="text-3xl font-bold text-white mt-2">{lockedAccounts.length}</div>
+          <div className="text-sm text-slate-400">Total Accounts</div>
+          <div className="text-3xl font-bold text-white mt-2">{allAccounts.length}</div>
+        </div>
+        <div className="bg-red-500/10 rounded-xl border border-red-500/30 p-4">
+          <div className="text-sm text-red-300">Locked Accounts</div>
+          <div className="text-3xl font-bold text-red-400 mt-2">{lockedCount}</div>
+        </div>
+        <div className="bg-green-500/10 rounded-xl border border-green-500/30 p-4">
+          <div className="text-sm text-green-300">Active Accounts</div>
+          <div className="text-3xl font-bold text-green-400 mt-2">{unlockedCount}</div>
         </div>
         <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4">
-          <div className="text-sm text-slate-400">Selected for Unlock</div>
+          <div className="text-sm text-slate-400">Selected</div>
           <div className="text-3xl font-bold text-cyan-400 mt-2">{selectedAccounts.length}</div>
         </div>
-        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4">
-          <div className="text-sm text-slate-400">Actions Available</div>
-          <div className="text-3xl font-bold text-green-400 mt-2">2</div>
-        </div>
+      </div>
+
+      {/* Filter Buttons */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setFilterStatus('all')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            filterStatus === 'all'
+              ? 'bg-cyan-600 text-white'
+              : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600'
+          }`}
+        >
+          All ({allAccounts.length})
+        </button>
+        <button
+          onClick={() => setFilterStatus('locked')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            filterStatus === 'locked'
+              ? 'bg-red-600 text-white'
+              : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600'
+          }`}
+        >
+          Locked ({lockedCount})
+        </button>
+        <button
+          onClick={() => setFilterStatus('unlocked')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            filterStatus === 'unlocked'
+              ? 'bg-green-600 text-white'
+              : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600'
+          }`}
+        >
+          Active ({unlockedCount})
+        </button>
       </div>
 
       {/* Bulk Actions */}
@@ -259,13 +324,28 @@ function LockedAccountsManager() {
             <CheckCircle className="w-5 h-5 text-cyan-400" />
             Bulk Actions ({selectedAccounts.length} selected)
           </h3>
-          <Button
-            onClick={() => setShowUnlockModal(true)}
-            className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
-          >
-            <Unlock className="w-4 h-4 mr-2" />
-            Unlock Selected Accounts
-          </Button>
+          <div className="flex gap-3">
+            <Button
+              onClick={() => {
+                setModalMode('unlock');
+                setShowModal(true);
+              }}
+              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
+            >
+              <Unlock className="w-4 h-4 mr-2" />
+              Unlock & Extend
+            </Button>
+            <Button
+              onClick={() => {
+                setModalMode('lock');
+                setShowModal(true);
+              }}
+              className="bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white"
+            >
+              <Lock className="w-4 h-4 mr-2" />
+              Lock for Payment Issues
+            </Button>
+          </div>
         </div>
       )}
 
@@ -278,28 +358,40 @@ function LockedAccountsManager() {
                 <th className="px-6 py-4 text-left">
                   <input
                     type="checkbox"
-                    checked={selectedAccounts.length === lockedAccounts.length && lockedAccounts.length > 0}
+                    checked={selectedAccounts.length === filteredAccounts.length && filteredAccounts.length > 0}
                     onChange={toggleSelectAll}
                     className="rounded border-slate-600"
                   />
                 </th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Status</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Email</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Name</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Lock Reason</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Locked At</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Reason/Notes</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Date</th>
               </tr>
             </thead>
             <tbody>
-              {lockedAccounts.length === 0 ? (
+              {filteredAccounts.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
+                  <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
                     <CheckCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p>No locked accounts. All users have access!</p>
+                    <p>
+                      {filterStatus === 'all'
+                        ? 'No accounts found'
+                        : filterStatus === 'locked'
+                        ? 'No locked accounts'
+                        : 'No active accounts'}
+                    </p>
                   </td>
                 </tr>
               ) : (
-                lockedAccounts.map(account => (
-                  <tr key={account.id} className="border-b border-slate-700/20 hover:bg-slate-900/30 transition-colors">
+                filteredAccounts.map(account => (
+                  <tr
+                    key={account.id}
+                    className={`border-b border-slate-700/20 hover:bg-slate-900/30 transition-colors ${
+                      account.is_locked ? 'bg-red-500/5' : 'bg-green-500/5'
+                    }`}
+                  >
                     <td className="px-6 py-4">
                       <input
                         type="checkbox"
@@ -308,11 +400,25 @@ function LockedAccountsManager() {
                         className="rounded border-slate-600"
                       />
                     </td>
+                    <td className="px-6 py-4">
+                      <Badge className={account.is_locked ? 'bg-red-600' : 'bg-green-600'}>
+                        {account.is_locked ? 'Locked' : 'Active'}
+                      </Badge>
+                      {account.is_paid_temporarily && <Badge className="bg-blue-600 ml-2">Paid Temp</Badge>}
+                    </td>
                     <td className="px-6 py-4 text-sm text-white font-mono">{account.email}</td>
                     <td className="px-6 py-4 text-sm text-slate-300">{account.name}</td>
-                    <td className="px-6 py-4 text-sm text-slate-400">{account.locked_reason || 'Subscription expired'}</td>
                     <td className="px-6 py-4 text-sm text-slate-400">
-                      {new Date(account.locked_at).toLocaleDateString()}
+                      {account.is_locked
+                        ? account.locked_reason || 'Subscription expired'
+                        : account.unlock_reason || 'Active'}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-400">
+                      {account.is_locked && account.locked_at
+                        ? new Date(account.locked_at).toLocaleDateString()
+                        : account.unlocked_at
+                        ? new Date(account.unlocked_at).toLocaleDateString()
+                        : new Date(account.created_at).toLocaleDateString()}
                     </td>
                   </tr>
                 ))
@@ -322,74 +428,86 @@ function LockedAccountsManager() {
         </div>
       </div>
 
-      {/* Unlock Modal */}
-      {showUnlockModal && (
+      {/* Modal */}
+      {showModal && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
           <div className="bg-slate-800 rounded-2xl border border-slate-700 p-6 max-w-md w-full shadow-2xl">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-white">Unlock Accounts</h3>
-              <button onClick={() => setShowUnlockModal(false)} className="text-slate-400 hover:text-white">
+              <h3 className="text-xl font-bold text-white">
+                {modalMode === 'unlock' ? 'Unlock & Extend' : 'Lock Account'}
+              </h3>
+              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="space-y-4">
-              {/* Action Selection */}
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Action</label>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 p-3 rounded-lg border border-slate-600 cursor-pointer hover:bg-slate-700/50"
-                    style={{ background: action === 'extend' ? 'rgba(59, 130, 246, 0.1)' : undefined }}>
-                    <input
-                      type="radio"
-                      checked={action === 'extend'}
-                      onChange={() => setAction('extend')}
-                      name="action"
-                    />
-                    <div>
-                      <div className="font-medium text-white">Extend Subscription</div>
-                      <div className="text-xs text-slate-400">Add days to their subscription</div>
+              {modalMode === 'unlock' && (
+                <>
+                  {/* Action Selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">Action</label>
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-2 p-3 rounded-lg border border-slate-600 cursor-pointer hover:bg-slate-700/50"
+                        style={{ background: action === 'extend' ? 'rgba(59, 130, 246, 0.1)' : undefined }}>
+                        <input
+                          type="radio"
+                          checked={action === 'extend'}
+                          onChange={() => setAction('extend')}
+                          name="action"
+                        />
+                        <div>
+                          <div className="font-medium text-white">Extend Subscription</div>
+                          <div className="text-xs text-slate-400">Add days to their subscription</div>
+                        </div>
+                      </label>
+                      <label className="flex items-center gap-2 p-3 rounded-lg border border-slate-600 cursor-pointer hover:bg-slate-700/50"
+                        style={{ background: action === 'mark_paid' ? 'rgba(34, 197, 94, 0.1)' : undefined }}>
+                        <input
+                          type="radio"
+                          checked={action === 'mark_paid'}
+                          onChange={() => setAction('mark_paid')}
+                          name="action"
+                        />
+                        <div>
+                          <div className="font-medium text-white">Mark as Paid Temporarily</div>
+                          <div className="text-xs text-slate-400">Grant 30-day paid access</div>
+                        </div>
+                      </label>
                     </div>
-                  </label>
-                  <label className="flex items-center gap-2 p-3 rounded-lg border border-slate-600 cursor-pointer hover:bg-slate-700/50"
-                    style={{ background: action === 'mark_paid' ? 'rgba(34, 197, 94, 0.1)' : undefined }}>
-                    <input
-                      type="radio"
-                      checked={action === 'mark_paid'}
-                      onChange={() => setAction('mark_paid')}
-                      name="action"
-                    />
-                    <div>
-                      <div className="font-medium text-white">Mark as Paid Temporarily</div>
-                      <div className="text-xs text-slate-400">Grant 30-day paid access</div>
-                    </div>
-                  </label>
-                </div>
-              </div>
+                  </div>
 
-              {/* Days Input (for extend) */}
-              {action === 'extend' && (
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Days to Extend</label>
-                  <input
-                    type="number"
-                    value={extendDays}
-                    onChange={(e) => setExtendDays(Math.min(365, Math.max(1, parseInt(e.target.value) || 1)))}
-                    min="1"
-                    max="365"
-                    className="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-4 py-2 text-white"
-                  />
-                  <p className="text-xs text-slate-400 mt-1">Maximum: 365 days</p>
-                </div>
+                  {/* Days Input (for extend) */}
+                  {action === 'extend' && (
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">Days to Extend</label>
+                      <input
+                        type="number"
+                        value={extendDays}
+                        onChange={(e) => setExtendDays(Math.min(365, Math.max(1, parseInt(e.target.value) || 1)))}
+                        min="1"
+                        max="365"
+                        className="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-4 py-2 text-white"
+                      />
+                      <p className="text-xs text-slate-400 mt-1">Maximum: 365 days</p>
+                    </div>
+                  )}
+                </>
               )}
 
-              {/* Unlock Reason */}
+              {/* Reason */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Unlock Reason</label>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  {modalMode === 'unlock' ? 'Unlock Reason' : 'Lock Reason'}
+                </label>
                 <textarea
-                  value={unlockReason}
-                  onChange={(e) => setUnlockReason(e.target.value)}
-                  placeholder="e.g., Voucher code issue fixed, Customer requested, Trial extension..."
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  placeholder={
+                    modalMode === 'unlock'
+                      ? 'e.g., Voucher code issue fixed, Customer requested, Trial extension...'
+                      : 'e.g., Subscription payment overdue, Account flagged for review...'
+                  }
                   className="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder-slate-500 text-sm"
                   rows={3}
                 />
@@ -398,27 +516,40 @@ function LockedAccountsManager() {
               {/* Actions */}
               <div className="flex gap-3">
                 <Button
-                  onClick={() => setShowUnlockModal(false)}
+                  onClick={() => setShowModal(false)}
                   variant="ghost"
                   className="flex-1"
-                  disabled={unlocking}
+                  disabled={processing}
                 >
                   Cancel
                 </Button>
                 <Button
-                  onClick={handleUnlockSelected}
-                  className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
-                  disabled={unlocking || !unlockReason.trim()}
+                  onClick={handleProcess}
+                  className={`flex-1 ${
+                    modalMode === 'unlock'
+                      ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700'
+                      : 'bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700'
+                  }`}
+                  disabled={processing || !reason.trim()}
                 >
-                  {unlocking ? (
+                  {processing ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Unlocking...
+                      Processing...
                     </>
                   ) : (
                     <>
-                      <Unlock className="w-4 h-4 mr-2" />
-                      Unlock {selectedAccounts.length}
+                      {modalMode === 'unlock' ? (
+                        <>
+                          <Unlock className="w-4 h-4 mr-2" />
+                          Unlock {selectedAccounts.length}
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="w-4 h-4 mr-2" />
+                          Lock {selectedAccounts.length}
+                        </>
+                      )}
                     </>
                   )}
                 </Button>

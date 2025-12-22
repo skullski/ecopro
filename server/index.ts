@@ -423,6 +423,14 @@ export function createServer() {
     adminRoutes.unlockAccountWithOptions
   );
 
+  // Lock account manually for subscription issues
+  app.post(
+    "/api/admin/lock-account",
+    authenticate,
+    requireAdmin,
+    adminRoutes.lockAccountManually
+  );
+
   // Billing routes (both user and admin)
   app.get(
     "/api/billing/subscription",

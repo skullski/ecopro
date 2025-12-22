@@ -518,19 +518,25 @@ export const unlockUser: RequestHandler = async (req, res) => {
  */
 export const getLockedAccounts: RequestHandler = async (_req, res) => {
   try {
+    // Get ALL clients with their lock status and subscription info
     const result = await pool.query(`
       SELECT 
         id, 
         email, 
         name,
+        is_locked,
         locked_reason,
         locked_at,
         locked_by_admin_id,
+        unlock_reason,
+        unlocked_at,
+        unlocked_by_admin_id,
         subscription_ends_at,
+        is_paid_temporarily,
+        subscription_extended_until,
         created_at
       FROM clients
-      WHERE is_locked = true
-      ORDER BY locked_at DESC
+      ORDER BY is_locked DESC, locked_at DESC, created_at DESC
     `);
 
     res.json({ accounts: result.rows });
@@ -640,5 +646,51 @@ export const unlockAccountWithOptions: RequestHandler = async (req, res) => {
   } catch (err) {
     console.error('Unlock account with options error:', err);
     return jsonError(res, 500, "Failed to unlock account");
+  }
+};
+
+/**
+ * Lock an account manually for subscription issues
+ * POST /api/admin/lock-account
+ * Body: { client_id, reason }
+ */
+export const lockAccountManually: RequestHandler = async (req, res) => {
+  try {
+    const adminUser = (req as any).user;
+    if (!adminUser || adminUser.role !== 'admin') {
+      return jsonError(res, 403, "Only admins can lock accounts");
+    }
+
+    const { client_id, reason } = req.body;
+
+    if (!client_id || !reason) {
+      return jsonError(res, 400, "client_id and reason are required");
+    }
+
+    const clientId = parseInt(client_id, 10);
+    if (Number.isNaN(clientId)) {
+      return jsonError(res, 400, "Invalid client_id");
+    }
+
+    const result = await pool.query(
+      `UPDATE clients 
+       SET is_locked = true, locked_reason = $1, locked_at = NOW(), locked_by_admin_id = $2
+       WHERE id = $3
+       RETURNING id, email, name`,
+      [reason, adminUser.id, clientId]
+    );
+
+    if (result.rowCount === 0) {
+      return jsonError(res, 404, "Client not found");
+    }
+
+    res.json({
+      message: "Account locked successfully",
+      account: result.rows[0],
+      reason
+    });
+  } catch (err) {
+    console.error('Lock account manually error:', err);
+    return jsonError(res, 500, "Failed to lock account");
   }
 };
