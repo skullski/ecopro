@@ -194,6 +194,7 @@ function LockedAccountsManager() {
               reason
             };
 
+        console.log(`[${modalMode.toUpperCase()}] Sending to ${endpoint}:`, body);
         const response = await fetch(endpoint, {
           method: 'POST',
           headers: {
@@ -203,11 +204,17 @@ function LockedAccountsManager() {
           body: JSON.stringify(body)
         });
 
+        console.log(`[${modalMode.toUpperCase()}] Response status:`, response.status);
+        
         if (!response.ok) {
           const error = await response.json();
-          alert(`Failed: ${error.error}`);
+          console.error(`[${modalMode.toUpperCase()}] Error response:`, error);
+          alert(`Failed: ${error.error || 'Unknown error'}`);
           return;
         }
+
+        const result = await response.json();
+        console.log(`[${modalMode.toUpperCase()}] Success:`, result);
       }
 
       const action_text = modalMode === 'unlock' ? 'unlocked' : 'locked';
@@ -218,7 +225,7 @@ function LockedAccountsManager() {
       await fetchAllAccounts();
     } catch (err) {
       console.error('Error processing accounts:', err);
-      alert('Failed to process accounts');
+      alert(`Error: ${err instanceof Error ? err.message : 'Failed to process accounts'}`);
     } finally {
       setProcessing(false);
     }

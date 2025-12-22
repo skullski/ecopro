@@ -657,21 +657,28 @@ export const unlockAccountWithOptions: RequestHandler = async (req, res) => {
 export const lockAccountManually: RequestHandler = async (req, res) => {
   try {
     const adminUser = (req as any).user;
+    console.log('[LOCK ACCOUNT] Admin user:', adminUser?.email, 'Role:', adminUser?.role);
+    
     if (!adminUser || adminUser.role !== 'admin') {
+      console.log('[LOCK ACCOUNT] ❌ Not authorized: admin user:', !!adminUser, 'is admin:', adminUser?.role === 'admin');
       return jsonError(res, 403, "Only admins can lock accounts");
     }
 
     const { client_id, reason } = req.body;
+    console.log('[LOCK ACCOUNT] Request body:', { client_id, reason });
 
     if (!client_id || !reason) {
+      console.log('[LOCK ACCOUNT] ❌ Missing fields');
       return jsonError(res, 400, "client_id and reason are required");
     }
 
     const clientId = parseInt(client_id, 10);
     if (Number.isNaN(clientId)) {
+      console.log('[LOCK ACCOUNT] ❌ Invalid client_id:', client_id);
       return jsonError(res, 400, "Invalid client_id");
     }
 
+    console.log('[LOCK ACCOUNT] Locking client:', clientId, 'by admin:', adminUser.id);
     const result = await pool.query(
       `UPDATE clients 
        SET is_locked = true, locked_reason = $1, locked_at = NOW(), locked_by_admin_id = $2
@@ -680,17 +687,20 @@ export const lockAccountManually: RequestHandler = async (req, res) => {
       [reason, adminUser.id, clientId]
     );
 
+    console.log('[LOCK ACCOUNT] Query result rowCount:', result.rowCount);
     if (result.rowCount === 0) {
+      console.log('[LOCK ACCOUNT] ❌ Client not found:', clientId);
       return jsonError(res, 404, "Client not found");
     }
 
+    console.log('[LOCK ACCOUNT] ✅ Account locked successfully:', result.rows[0].email);
     res.json({
       message: "Account locked successfully",
       account: result.rows[0],
       reason
     });
   } catch (err) {
-    console.error('Lock account manually error:', err);
+    console.error('[LOCK ACCOUNT] ❌ Error:', err);
     return jsonError(res, 500, "Failed to lock account");
   }
 };
