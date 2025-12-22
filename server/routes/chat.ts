@@ -17,15 +17,25 @@ import { ZodError } from 'zod';
 const router = Router();
 
 // Middleware to verify user role
-const getUserRole = (req: Request): { userId: number; role: 'client' | 'seller' | null } => {
+const getUserRole = (req: Request): { userId: number; role: 'client' | 'seller' | 'admin' | null } => {
   const user = (req.user as any);
   if (!user) {
     return { userId: 0, role: null };
   }
 
+  // Check if user is an admin
+  if (user.role === 'admin' || user.user_type === 'admin') {
+    return { userId: parseInt(user.id), role: 'admin' };
+  }
+
   // Check if user is a client
   if (user.clientId) {
     return { userId: user.clientId, role: 'client' };
+  }
+
+  // Check if user is a regular client (using id field)
+  if (user.user_type === 'client' && user.id) {
+    return { userId: parseInt(user.id), role: 'client' };
   }
 
   // Check if user is a seller
@@ -127,7 +137,6 @@ router.get('/:chatId/messages', async (req: Request, res: Response) => {
       message_type: row.message_type,
       metadata: row.metadata,
       created_at: row.created_at,
-      image_url: row.image_url,
     }));
 
     res.json({ items, total: items.length });
@@ -145,25 +154,29 @@ router.post('/:chatId/messages', async (req: Request, res: Response) => {
   const user = (req.user as any);
   const { body, image_url, message_type } = req.body;
 
-  if (!user || (!user.clientId && user.role !== 'admin')) {
+  // Allow clients and admins
+  const isClient = user?.user_type === 'client' && user?.id;
+  const isAdmin = user?.role === 'admin' || user?.user_type === 'admin';
+  
+  if (!user || (!isClient && !isAdmin)) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
   try {
     // Determine sender type and ID
     let sender_type: 'admin' | 'client' = 'client';
-    let sender_id = user.clientId;
+    let sender_id = user.clientId || parseInt(user.id); // Handle both staff (clientId) and clients (id)
 
-    if (user.role === 'admin') {
+    if (user.role === 'admin' || user.user_type === 'admin') {
       sender_type = 'admin';
       sender_id = user.id;
     }
 
     const result = await pool.query(
-      `INSERT INTO chat_messages (chat_id, sender_id, sender_type, message_content, message_type, image_url, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, NOW())
-       RETURNING id, sender_id, sender_type, message_content, message_type, image_url, created_at`,
-      [chatId, sender_id, sender_type, body, message_type || 'text', image_url || null]
+      `INSERT INTO chat_messages (chat_id, sender_id, sender_type, message_content, message_type, created_at)
+       VALUES ($1, $2, $3, $4, $5, NOW())
+       RETURNING id, sender_id, sender_type, message_content, message_type, created_at`,
+      [chatId, sender_id, sender_type, body, message_type || 'text']
     );
 
     const message = result.rows[0];
@@ -531,7 +544,10 @@ router.get('/admin/all-chats', async (req: Request, res: Response) => {
  */
 router.post('/create-admin-chat', async (req: Request, res: Response) => {
   const user = (req.user as any);
-  const clientId = user?.clientId;
+  
+  // For regular clients: use id field
+  // For staff: use clientId field
+  const clientId = user?.clientId || (user?.user_type === 'client' ? parseInt(user?.id) : null);
 
   if (!clientId) {
     return res.status(401).json({ error: 'Client authentication required' });
