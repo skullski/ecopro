@@ -380,6 +380,57 @@ export const getCodeStats: RequestHandler = async (req, res) => {
 };
 
 /**
+ * POST /api/codes/admin/issue
+ * Admin endpoint to issue a code for a specific tier
+ * Generates code with 1-hour expiration
+ */
+export const adminIssueCode: RequestHandler = async (req, res) => {
+  try {
+    const adminUser = req.user as any;
+    
+    // Verify admin access
+    if (!adminUser || adminUser.role !== 'admin') {
+      return jsonError(res, 403, 'Admin access required');
+    }
+
+    const { chat_id, client_id, tier, admin_id } = req.body;
+
+    if (!client_id || !tier) {
+      return jsonError(res, 400, 'Client ID and tier are required');
+    }
+
+    // Validate tier
+    const validTiers = ['bronze', 'silver', 'gold'];
+    if (!validTiers.includes(tier)) {
+      return jsonError(res, 400, 'Invalid tier');
+    }
+
+    // Generate code
+    const code = generateSubscriptionCode(tier, 1); // 1 hour expiration
+
+    // Store code in database
+    const result = await pool.query(
+      `INSERT INTO code_requests (code, tier, client_id, chat_id, admin_id, status, expires_at, created_at)
+       VALUES ($1, $2, $3, $4, $5, 'issued', NOW() + INTERVAL '1 hour', NOW())
+       RETURNING id, code, tier, expires_at`,
+      [code, tier, client_id, chat_id || null, admin_id]
+    );
+
+    const codeRecord = result.rows[0];
+
+    res.json({
+      success: true,
+      code: codeRecord.code,
+      tier: codeRecord.tier,
+      expires_at: codeRecord.expires_at,
+      message: 'Code generated successfully'
+    });
+  } catch (error: any) {
+    return jsonError(res, 500, 'Code generation failed');
+  }
+};
+
+/**
  * POST /api/codes/cleanup
  * Admin endpoint to cleanup expired codes (background job)
  */
@@ -404,5 +455,14 @@ export const cleanupCodes: RequestHandler = async (req, res) => {
     return jsonError(res, 500, 'Cleanup failed');
   }
 };
+
+// Wire up the routes
+router.post('/validate', validateCode);
+router.post('/redeem', redeemCode);
+router.post('/request', requestCode);
+router.get('/my-codes', getMyCodes);
+router.get('/stats', getCodeStats);
+router.post('/admin/issue', adminIssueCode);
+router.post('/cleanup', cleanupCodes);
 
 export default router;

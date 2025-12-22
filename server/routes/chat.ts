@@ -99,6 +99,85 @@ router.post('/create', async (req: Request, res: Response) => {
  * Get messages from a chat
  */
 router.get('/:chatId/messages', async (req: Request, res: Response) => {
+  const { chatId } = req.params;
+  const user = (req.user as any);
+
+  try {
+    // Get chat to verify access
+    const chatCheck = await pool.query(
+      'SELECT * FROM chats WHERE id = $1',
+      [chatId]
+    );
+
+    if (chatCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Chat not found' });
+    }
+
+    // Get messages
+    const result = await pool.query(
+      `SELECT * FROM chat_messages WHERE chat_id = $1 ORDER BY created_at ASC`,
+      [chatId]
+    );
+
+    const items = result.rows.map(row => ({
+      id: row.id,
+      sender_id: row.sender_id,
+      sender_type: row.sender_type,
+      message_content: row.message_content,
+      message_type: row.message_type,
+      metadata: row.metadata,
+      created_at: row.created_at,
+      image_url: row.image_url,
+    }));
+
+    res.json({ items, total: items.length });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/chat/:chatId/messages
+ * Send a message to chat
+ */
+router.post('/:chatId/messages', async (req: Request, res: Response) => {
+  const { chatId } = req.params;
+  const user = (req.user as any);
+  const { body, image_url, message_type } = req.body;
+
+  if (!user || (!user.clientId && user.role !== 'admin')) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    // Determine sender type and ID
+    let sender_type: 'admin' | 'client' = 'client';
+    let sender_id = user.clientId;
+
+    if (user.role === 'admin') {
+      sender_type = 'admin';
+      sender_id = user.id;
+    }
+
+    const result = await pool.query(
+      `INSERT INTO chat_messages (chat_id, sender_id, sender_type, message_content, message_type, image_url, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW())
+       RETURNING id, sender_id, sender_type, message_content, message_type, image_url, created_at`,
+      [chatId, sender_id, sender_type, body, message_type || 'text', image_url || null]
+    );
+
+    const message = result.rows[0];
+    res.json({ success: true, message });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/chat/:chatId/messages
+ * Get messages from a chat
+ */
+router.get('/:chatId/messages', async (req: Request, res: Response) => {
   const { userId, role } = getUserRole(req);
   const { chatId } = req.params;
   const { limit = 50, offset = 0 } = req.query;
@@ -393,6 +472,98 @@ router.delete('/:chatId', async (req: Request, res: Response) => {
 
     await chatService.deleteChat(Number(chatId));
     res.json({ success: true, message: 'Chat archived' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/chat/admin/all-chats
+ * Get all client chats for admin panel
+ * Admin only - lists all code requests from clients
+ */
+router.get('/admin/all-chats', async (req: Request, res: Response) => {
+  const user = (req.user as any);
+  
+  // Verify admin access
+  if (!user || user.role !== 'admin') {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  try {
+    const result = await pool.query(`
+      SELECT 
+        c.id,
+        c.client_id,
+        u.name as client_name,
+        u.email as client_email,
+        c.status,
+        c.created_at,
+        (SELECT COUNT(*) FROM chat_messages cm 
+         WHERE cm.chat_id = c.id AND cm.is_read = false AND cm.sender_type = 'client') as unread_count,
+        (SELECT MAX(created_at) FROM chat_messages cm WHERE cm.chat_id = c.id) as last_message_at
+      FROM chats c
+      JOIN users u ON u.id = c.client_id
+      WHERE c.client_id IS NOT NULL
+      ORDER BY last_message_at DESC NULLS LAST
+    `);
+
+    const chats = result.rows.map(row => ({
+      id: row.id,
+      client_id: row.client_id,
+      client_name: row.client_name,
+      client_email: row.client_email,
+      status: row.status,
+      created_at: row.created_at,
+      unread_count: parseInt(row.unread_count) || 0,
+      last_message_at: row.last_message_at,
+    }));
+
+    res.json({ chats, total: chats.length });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/chat/create-admin-chat
+ * Client creates/initiates chat with admin to request code
+ */
+router.post('/create-admin-chat', async (req: Request, res: Response) => {
+  const user = (req.user as any);
+  const clientId = user?.clientId;
+
+  if (!clientId) {
+    return res.status(401).json({ error: 'Client authentication required' });
+  }
+
+  try {
+    const { tier } = req.body;
+
+    // Get or create chat with admin (client_id set, seller_id = null for admin)
+    const existing = await pool.query(
+      `SELECT * FROM chats WHERE client_id = $1 AND seller_id IS NULL LIMIT 1`,
+      [clientId]
+    );
+
+    let chat;
+    if (existing.rows.length > 0) {
+      chat = existing.rows[0];
+    } else {
+      // Create new admin chat
+      const result = await pool.query(
+        `INSERT INTO chats (client_id, seller_id, status, tier, created_at)
+         VALUES ($1, NULL, 'open', $2, NOW())
+         RETURNING id, client_id, seller_id, status, tier, created_at`,
+        [clientId, tier || 'bronze']
+      );
+      chat = result.rows[0];
+    }
+
+    res.json({ 
+      chat,
+      message: 'Chat with admin created/retrieved'
+    });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
