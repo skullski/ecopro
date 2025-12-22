@@ -407,6 +407,22 @@ export function createServer() {
     adminRoutes.unlockUser
   );
 
+  // Get locked accounts (for Tools page)
+  app.get(
+    "/api/admin/locked-accounts",
+    authenticate,
+    requireAdmin,
+    adminRoutes.getLockedAccounts
+  );
+
+  // Unlock account with options (extend days or mark as paid)
+  app.post(
+    "/api/admin/unlock-account",
+    authenticate,
+    requireAdmin,
+    adminRoutes.unlockAccountWithOptions
+  );
+
   // Billing routes (both user and admin)
   app.get(
     "/api/billing/subscription",

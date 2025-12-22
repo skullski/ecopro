@@ -512,3 +512,133 @@ export const unlockUser: RequestHandler = async (req, res) => {
     return jsonError(res, 500, "Failed to unlock user account");
   }
 };
+
+/**
+ * Get all locked accounts (for admin Tools page)
+ */
+export const getLockedAccounts: RequestHandler = async (_req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        id, 
+        email, 
+        name,
+        locked_reason,
+        locked_at,
+        locked_by_admin_id,
+        subscription_ends_at,
+        created_at
+      FROM clients
+      WHERE is_locked = true
+      ORDER BY locked_at DESC
+    `);
+
+    res.json({ accounts: result.rows });
+  } catch (err) {
+    console.error('Get locked accounts error:', err);
+    return jsonError(res, 500, "Failed to fetch locked accounts");
+  }
+};
+
+/**
+ * Unlock account with options: extend subscription or mark as paid temporarily
+ * POST /api/admin/unlock-account
+ * Body: { client_id, unlock_reason, action: 'extend' | 'mark_paid', days?: number }
+ */
+export const unlockAccountWithOptions: RequestHandler = async (req, res) => {
+  try {
+    const adminUser = (req as any).user;
+    if (!adminUser || adminUser.role !== 'admin') {
+      return jsonError(res, 403, "Only admins can unlock accounts");
+    }
+
+    const { client_id, unlock_reason, action, days } = req.body;
+
+    if (!client_id || !unlock_reason || !action) {
+      return jsonError(res, 400, "client_id, unlock_reason, and action are required");
+    }
+
+    if (action !== 'extend' && action !== 'mark_paid') {
+      return jsonError(res, 400, "action must be 'extend' or 'mark_paid'");
+    }
+
+    if (action === 'extend' && (!days || days < 1 || days > 365)) {
+      return jsonError(res, 400, "days must be between 1 and 365 for extend action");
+    }
+
+    const clientId = parseInt(client_id, 10);
+    if (Number.isNaN(clientId)) {
+      return jsonError(res, 400, "Invalid client_id");
+    }
+
+    // Start transaction
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Get current client
+      const clientResult = await client.query(
+        'SELECT * FROM clients WHERE id = $1',
+        [clientId]
+      );
+
+      if (clientResult.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return jsonError(res, 404, "Client not found");
+      }
+
+      const currentClient = clientResult.rows[0];
+
+      // Prepare update fields
+      let updateFields = `
+        is_locked = false,
+        locked_reason = NULL,
+        locked_at = NULL,
+        locked_by_admin_id = NULL,
+        unlocked_by_admin_id = $2,
+        unlock_reason = $3,
+        unlocked_at = NOW()
+      `;
+      let params: any[] = [clientId, adminUser.id, unlock_reason];
+
+      // Handle action-specific updates
+      if (action === 'extend') {
+        const extendUntil = new Date();
+        extendUntil.setDate(extendUntil.getDate() + days);
+        updateFields += `, subscription_extended_until = $4, is_paid_temporarily = false`;
+        params.push(extendUntil);
+      } else if (action === 'mark_paid') {
+        updateFields += `, is_paid_temporarily = true`;
+        // Set paid temporarily until some future date (e.g., 30 days)
+        const paidUntil = new Date();
+        paidUntil.setDate(paidUntil.getDate() + 30);
+        updateFields += `, subscription_extended_until = $4`;
+        params.push(paidUntil);
+      }
+
+      // Update client
+      await client.query(
+        `UPDATE clients SET ${updateFields} WHERE id = $1`,
+        params
+      );
+
+      await client.query('COMMIT');
+
+      res.json({
+        message: "Account unlocked successfully",
+        action,
+        unlock_reason,
+        extended_days: action === 'extend' ? days : null,
+        marked_paid_temporarily: action === 'mark_paid'
+      });
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    console.error('Unlock account with options error:', err);
+    return jsonError(res, 500, "Failed to unlock account");
+  }
+};

@@ -108,6 +108,329 @@ interface StaffMember {
   created_at: string;
 }
 
+interface LockedAccount {
+  id: number;
+  email: string;
+  name: string;
+  locked_reason: string;
+  locked_at: string;
+  created_at: string;
+}
+
+// Locked Accounts Manager Component
+function LockedAccountsManager() {
+  const [lockedAccounts, setLockedAccounts] = useState<LockedAccount[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedAccounts, setSelectedAccounts] = useState<number[]>([]);
+  const [showUnlockModal, setShowUnlockModal] = useState(false);
+  const [unlockReason, setUnlockReason] = useState('');
+  const [action, setAction] = useState<'extend' | 'mark_paid'>('extend');
+  const [extendDays, setExtendDays] = useState(30);
+  const [unlocking, setUnlocking] = useState(false);
+
+  useEffect(() => {
+    fetchLockedAccounts();
+  }, []);
+
+  async function fetchLockedAccounts() {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/admin/locked-accounts', {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('authToken')}`
+        }
+      });
+      const data = await response.json();
+      setLockedAccounts(data.accounts || []);
+    } catch (err) {
+      console.error('Failed to fetch locked accounts:', err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleUnlockSelected() {
+    if (selectedAccounts.length === 0) {
+      alert('Please select accounts to unlock');
+      return;
+    }
+
+    if (!unlockReason.trim()) {
+      alert('Please enter an unlock reason');
+      return;
+    }
+
+    setUnlocking(true);
+    try {
+      for (const clientId of selectedAccounts) {
+        const response = await fetch('/api/admin/unlock-account', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('authToken')}`
+          },
+          body: JSON.stringify({
+            client_id: clientId,
+            unlock_reason: unlockReason,
+            action,
+            days: action === 'extend' ? extendDays : undefined
+          })
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          alert(`Failed to unlock account: ${error.error}`);
+          return;
+        }
+      }
+
+      alert(`Successfully unlocked ${selectedAccounts.length} account(s)`);
+      setSelectedAccounts([]);
+      setUnlockReason('');
+      setShowUnlockModal(false);
+      await fetchLockedAccounts();
+    } catch (err) {
+      console.error('Error unlocking accounts:', err);
+      alert('Failed to unlock accounts');
+    } finally {
+      setUnlocking(false);
+    }
+  }
+
+  function toggleSelectAll() {
+    if (selectedAccounts.length === lockedAccounts.length) {
+      setSelectedAccounts([]);
+    } else {
+      setSelectedAccounts(lockedAccounts.map(a => a.id));
+    }
+  }
+
+  function toggleSelect(id: number) {
+    setSelectedAccounts(prev =>
+      prev.includes(id)
+        ? prev.filter(x => x !== id)
+        : [...prev, id]
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin">
+          <Zap className="w-8 h-8 text-amber-400" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-md rounded-2xl border border-green-500/30 p-6 shadow-lg">
+        <h2 className="text-2xl font-bold text-green-300 mb-2 flex items-center gap-2">
+          <Unlock className="w-6 h-6" />
+          Locked Accounts Manager
+        </h2>
+        <p className="text-green-200/80">
+          Manage locked accounts and restore access for users with subscription or voucher code issues
+        </p>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4">
+          <div className="text-sm text-slate-400">Total Locked Accounts</div>
+          <div className="text-3xl font-bold text-white mt-2">{lockedAccounts.length}</div>
+        </div>
+        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4">
+          <div className="text-sm text-slate-400">Selected for Unlock</div>
+          <div className="text-3xl font-bold text-cyan-400 mt-2">{selectedAccounts.length}</div>
+        </div>
+        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4">
+          <div className="text-sm text-slate-400">Actions Available</div>
+          <div className="text-3xl font-bold text-green-400 mt-2">2</div>
+        </div>
+      </div>
+
+      {/* Bulk Actions */}
+      {selectedAccounts.length > 0 && (
+        <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 shadow-lg p-6">
+          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <CheckCircle className="w-5 h-5 text-cyan-400" />
+            Bulk Actions ({selectedAccounts.length} selected)
+          </h3>
+          <Button
+            onClick={() => setShowUnlockModal(true)}
+            className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
+          >
+            <Unlock className="w-4 h-4 mr-2" />
+            Unlock Selected Accounts
+          </Button>
+        </div>
+      )}
+
+      {/* Accounts Table */}
+      <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 shadow-lg overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-slate-700/50 bg-slate-900/30">
+                <th className="px-6 py-4 text-left">
+                  <input
+                    type="checkbox"
+                    checked={selectedAccounts.length === lockedAccounts.length && lockedAccounts.length > 0}
+                    onChange={toggleSelectAll}
+                    className="rounded border-slate-600"
+                  />
+                </th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Email</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Name</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Lock Reason</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Locked At</th>
+              </tr>
+            </thead>
+            <tbody>
+              {lockedAccounts.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
+                    <CheckCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>No locked accounts. All users have access!</p>
+                  </td>
+                </tr>
+              ) : (
+                lockedAccounts.map(account => (
+                  <tr key={account.id} className="border-b border-slate-700/20 hover:bg-slate-900/30 transition-colors">
+                    <td className="px-6 py-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedAccounts.includes(account.id)}
+                        onChange={() => toggleSelect(account.id)}
+                        className="rounded border-slate-600"
+                      />
+                    </td>
+                    <td className="px-6 py-4 text-sm text-white font-mono">{account.email}</td>
+                    <td className="px-6 py-4 text-sm text-slate-300">{account.name}</td>
+                    <td className="px-6 py-4 text-sm text-slate-400">{account.locked_reason || 'Subscription expired'}</td>
+                    <td className="px-6 py-4 text-sm text-slate-400">
+                      {new Date(account.locked_at).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Unlock Modal */}
+      {showUnlockModal && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-800 rounded-2xl border border-slate-700 p-6 max-w-md w-full shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-white">Unlock Accounts</h3>
+              <button onClick={() => setShowUnlockModal(false)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Action Selection */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Action</label>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 p-3 rounded-lg border border-slate-600 cursor-pointer hover:bg-slate-700/50"
+                    style={{ background: action === 'extend' ? 'rgba(59, 130, 246, 0.1)' : undefined }}>
+                    <input
+                      type="radio"
+                      checked={action === 'extend'}
+                      onChange={() => setAction('extend')}
+                      name="action"
+                    />
+                    <div>
+                      <div className="font-medium text-white">Extend Subscription</div>
+                      <div className="text-xs text-slate-400">Add days to their subscription</div>
+                    </div>
+                  </label>
+                  <label className="flex items-center gap-2 p-3 rounded-lg border border-slate-600 cursor-pointer hover:bg-slate-700/50"
+                    style={{ background: action === 'mark_paid' ? 'rgba(34, 197, 94, 0.1)' : undefined }}>
+                    <input
+                      type="radio"
+                      checked={action === 'mark_paid'}
+                      onChange={() => setAction('mark_paid')}
+                      name="action"
+                    />
+                    <div>
+                      <div className="font-medium text-white">Mark as Paid Temporarily</div>
+                      <div className="text-xs text-slate-400">Grant 30-day paid access</div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Days Input (for extend) */}
+              {action === 'extend' && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Days to Extend</label>
+                  <input
+                    type="number"
+                    value={extendDays}
+                    onChange={(e) => setExtendDays(Math.min(365, Math.max(1, parseInt(e.target.value) || 1)))}
+                    min="1"
+                    max="365"
+                    className="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-4 py-2 text-white"
+                  />
+                  <p className="text-xs text-slate-400 mt-1">Maximum: 365 days</p>
+                </div>
+              )}
+
+              {/* Unlock Reason */}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Unlock Reason</label>
+                <textarea
+                  value={unlockReason}
+                  onChange={(e) => setUnlockReason(e.target.value)}
+                  placeholder="e.g., Voucher code issue fixed, Customer requested, Trial extension..."
+                  className="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder-slate-500 text-sm"
+                  rows={3}
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => setShowUnlockModal(false)}
+                  variant="ghost"
+                  className="flex-1"
+                  disabled={unlocking}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleUnlockSelected}
+                  className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                  disabled={unlocking || !unlockReason.trim()}
+                >
+                  {unlocking ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Unlocking...
+                    </>
+                  ) : (
+                    <>
+                      <Unlock className="w-4 h-4 mr-2" />
+                      Unlock {selectedAccounts.length}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function PlatformAdmin() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -2446,99 +2769,10 @@ export default function PlatformAdmin() {
           </div>
         )}
 
-        {/* Tools Tab - Testing utilities */}
+        {/* Tools Tab - Manage locked accounts */}
         {activeTab === 'tools' && (
           <div className="space-y-6">
-            <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 backdrop-blur-md rounded-2xl border border-amber-500/30 p-6 shadow-lg">
-              <h2 className="text-2xl font-bold text-amber-300 mb-2 flex items-center gap-2">
-                <Zap className="w-6 h-6" />
-                Testing Tools
-              </h2>
-              <p className="text-amber-200/80">Admin tools for testing voucher code redemption flow</p>
-            </div>
-
-            {/* Expire Account Section */}
-            <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 shadow-lg p-6">
-              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-amber-400" />
-                Expire Test Account
-              </h3>
-              <p className="text-slate-300 mb-4 text-sm">
-                Set a client's subscription to expired. They can still login but will be redirected to the renewal page to enter a voucher code.
-              </p>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Client Email Address
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="email"
-                      value={expireClientEmail}
-                      onChange={(e) => setExpireClientEmail(e.target.value)}
-                      placeholder="client@example.com"
-                      className="flex-1 bg-slate-900/50 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder-slate-500"
-                      disabled={expiringClient}
-                    />
-                    <Button
-                      onClick={handleExpireClientAccount}
-                      disabled={expiringClient || !expireClientEmail.trim()}
-                      className="bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white"
-                    >
-                      {expiringClient ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Expiring...
-                        </>
-                      ) : (
-                        <>
-                          <AlertCircle className="w-4 h-4 mr-2" />
-                          Expire Account
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
-                  <h4 className="text-sm font-medium text-slate-300 mb-2">What happens:</h4>
-                  <ul className="text-sm text-slate-400 space-y-1">
-                    <li>✓ Account subscription set to expired</li>
-                    <li>✓ User can still login with password</li>
-                    <li>✓ User redirected to /renew-subscription page</li>
-                    <li>✓ User must enter voucher code to regain access</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            {/* Info Card */}
-            <div className="bg-slate-800/30 backdrop-blur-sm rounded-2xl border border-slate-700/30 p-4">
-              <h3 className="text-sm font-medium text-slate-300 mb-3">Testing Workflow:</h3>
-              <ol className="text-sm text-slate-400 space-y-2">
-                <li className="flex items-start gap-2">
-                  <span className="text-cyan-400 font-bold">1.</span>
-                  <span>Create a test client account (or use existing)</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-cyan-400 font-bold">2.</span>
-                  <span>Enter their email above and click "Expire Account"</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-cyan-400 font-bold">3.</span>
-                  <span>Go to Codes tab and generate a voucher code</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-cyan-400 font-bold">4.</span>
-                  <span>Have the test client login (they'll redirect to renew page)</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-cyan-400 font-bold">5.</span>
-                  <span>Enter the voucher code to reactivate their account</span>
-                </li>
-              </ol>
-            </div>
+            <LockedAccountsManager />
           </div>
         )}
       </div>
