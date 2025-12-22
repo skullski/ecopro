@@ -30,6 +30,8 @@ import {
   UserPlus,
   AlertTriangle,
   Unlock,
+  Copy,
+  X,
   PieChart as PieChartIcon
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
@@ -151,6 +153,7 @@ export default function PlatformAdmin() {
   const [generatedCodes, setGeneratedCodes] = useState<any[]>([]);
   const [issuingCode, setIssuingCode] = useState(false);
   const [selectedTier, setSelectedTier] = useState<'bronze' | 'silver' | 'gold'>('bronze');
+  const [lastGeneratedCode, setLastGeneratedCode] = useState<any>(null);
 
   useEffect(() => {
     loadPlatformData();
@@ -385,7 +388,11 @@ export default function PlatformAdmin() {
 
       if (res.ok) {
         const data = await res.json();
-        alert(`Code generated successfully!\n\nCode: ${data.code}\n\nTier: ${data.tier}\n\nExpires in 1 hour.`);
+        setLastGeneratedCode({
+          code: data.code,
+          tier: data.tier,
+          expires_at: data.expires_at,
+        });
         await loadCodes();
         await loadPlatformData(); // Refresh stats
       } else {
@@ -2209,6 +2216,72 @@ export default function PlatformAdmin() {
                 </Button>
               </div>
             </div>
+
+            {/* Last Generated Code Display */}
+            {lastGeneratedCode && (
+              <div className="bg-gradient-to-r from-emerald-500/20 to-green-500/20 backdrop-blur-md rounded-2xl border border-emerald-500/50 shadow-lg p-6 animate-pulse">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-3">
+                      <CheckCircle className="w-6 h-6 text-emerald-400" />
+                      <h3 className="text-lg font-bold text-emerald-300">Code Generated Successfully! 🎉</h3>
+                    </div>
+                    <p className="text-emerald-200 mb-4">Your new code has been created and is ready to distribute.</p>
+                    
+                    <div className="space-y-3">
+                      <div className="bg-slate-900/50 rounded-lg p-4 border border-emerald-500/30">
+                        <p className="text-xs text-slate-400 mb-2">SUBSCRIPTION CODE</p>
+                        <div className="flex items-center justify-between gap-3">
+                          <code className="text-2xl font-mono font-bold text-emerald-400 break-all">{lastGeneratedCode.code}</code>
+                          <Button
+                            size="sm"
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white flex-shrink-0"
+                            onClick={() => {
+                              navigator.clipboard.writeText(lastGeneratedCode.code);
+                              alert('Code copied to clipboard!');
+                            }}
+                          >
+                            <Copy className="w-4 h-4 mr-2" />
+                            Copy
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="bg-slate-900/50 rounded-lg p-3 border border-emerald-500/20">
+                          <p className="text-xs text-slate-400">Tier</p>
+                          <p className="text-sm font-bold text-emerald-300 capitalize">{lastGeneratedCode.tier}</p>
+                        </div>
+                        <div className="bg-slate-900/50 rounded-lg p-3 border border-emerald-500/20">
+                          <p className="text-xs text-slate-400">Expires In</p>
+                          <p className="text-sm font-bold text-emerald-300">1 Hour</p>
+                        </div>
+                        <div className="bg-slate-900/50 rounded-lg p-3 border border-emerald-500/20">
+                          <p className="text-xs text-slate-400">Status</p>
+                          <p className="text-sm font-bold text-emerald-300">Active</p>
+                        </div>
+                      </div>
+
+                      <div className="text-xs text-emerald-300/80">
+                        ✓ Code is ready to share with clients
+                        <br/>
+                        ✓ Expires in 1 hour if not redeemed
+                        <br/>
+                        ✓ Can be redeemed only once
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-slate-400 hover:text-slate-200"
+                    onClick={() => setLastGeneratedCode(null)}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {/* Generated Codes List */}
             <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 shadow-lg overflow-hidden">
