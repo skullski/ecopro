@@ -640,3 +640,139 @@ export const getPaymentMetrics: RequestHandler = async (req, res) => {
     return jsonError(res, 500, 'Failed to get payment metrics');
   }
 };
+
+/**
+ * Expire a client's subscription (admin only)
+ * POST /api/billing/admin/expire-subscription
+ * Used for testing voucher code redemption flow
+ */
+export const expireSubscription: RequestHandler = async (req, res) => {
+  try {
+    const adminUser = req.user as any;
+    
+    // Verify admin access
+    if (!adminUser || (adminUser.role !== 'admin' && adminUser.user_type !== 'admin')) {
+      return jsonError(res, 403, 'Admin access required');
+    }
+
+    const { clientId, reason } = req.body;
+
+    if (!clientId) {
+      return jsonError(res, 400, 'Client ID is required');
+    }
+
+    // Check if client exists
+    const clientResult = await pool.query(
+      'SELECT id, email, name FROM clients WHERE id = $1',
+      [clientId]
+    );
+
+    if (clientResult.rows.length === 0) {
+      return jsonError(res, 404, 'Client not found');
+    }
+
+    const client = clientResult.rows[0];
+
+    // Begin transaction
+    const dbClient = await pool.connect();
+    try {
+      await dbClient.query('BEGIN');
+
+      // Update or create subscription as expired
+      const subResult = await dbClient.query(
+        `INSERT INTO subscriptions (user_id, status, current_period_start, current_period_end, updated_at)
+         VALUES ($1, 'expired', NOW() - INTERVAL '40 days', NOW() - INTERVAL '1 day', NOW())
+         ON CONFLICT (user_id) DO UPDATE SET
+           status = 'expired',
+           current_period_end = NOW() - INTERVAL '1 day',
+           updated_at = NOW()
+         RETURNING *`,
+        [clientId]
+      );
+
+      // Note: We do NOT lock the account - user can still login
+      // They will be redirected to the renew page instead
+
+      await dbClient.query('COMMIT');
+
+      res.json({
+        success: true,
+        message: `Subscription expired for ${client.email}`,
+        client: {
+          id: client.id,
+          email: client.email,
+          name: client.name
+        },
+        subscription: subResult.rows[0],
+        reason: reason || 'Testing voucher code flow'
+      });
+    } catch (err) {
+      await dbClient.query('ROLLBACK');
+      throw err;
+    } finally {
+      dbClient.release();
+    }
+  } catch (error) {
+    console.error('Error expiring subscription:', error);
+    return jsonError(res, 500, 'Failed to expire subscription');
+  }
+};
+
+/**
+ * Reactivate a client's subscription (admin only)
+ * POST /api/billing/admin/reactivate-subscription
+ */
+export const reactivateSubscription: RequestHandler = async (req, res) => {
+  try {
+    const adminUser = req.user as any;
+    
+    if (!adminUser || (adminUser.role !== 'admin' && adminUser.user_type !== 'admin')) {
+      return jsonError(res, 403, 'Admin access required');
+    }
+
+    const { clientId, durationDays = 30 } = req.body;
+
+    if (!clientId) {
+      return jsonError(res, 400, 'Client ID is required');
+    }
+
+    const clientResult = await pool.query(
+      'SELECT id, email, name FROM clients WHERE id = $1',
+      [clientId]
+    );
+
+    if (clientResult.rows.length === 0) {
+      return jsonError(res, 404, 'Client not found');
+    }
+
+    const client = clientResult.rows[0];
+
+    // Update subscription to active
+    const subResult = await pool.query(
+      `INSERT INTO subscriptions (user_id, status, current_period_start, current_period_end, updated_at)
+       VALUES ($1, 'active', NOW(), NOW() + INTERVAL '${durationDays} days', NOW())
+       ON CONFLICT (user_id) DO UPDATE SET
+         status = 'active',
+         current_period_start = NOW(),
+         current_period_end = NOW() + INTERVAL '${durationDays} days',
+         updated_at = NOW()
+       RETURNING *`,
+      [clientId]
+    );
+
+    res.json({
+      success: true,
+      message: `Subscription reactivated for ${client.email} (${durationDays} days)`,
+      client: {
+        id: client.id,
+        email: client.email,
+        name: client.name
+      },
+      subscription: subResult.rows[0]
+    });
+  } catch (error) {
+    console.error('Error reactivating subscription:', error);
+    return jsonError(res, 500, 'Failed to reactivate subscription');
+  }
+};
+

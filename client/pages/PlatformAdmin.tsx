@@ -132,7 +132,7 @@ export default function PlatformAdmin() {
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stores' | 'products' | 'activity' | 'settings' | 'billing' | 'payment-failures' | 'codes'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stores' | 'products' | 'activity' | 'settings' | 'billing' | 'payment-failures' | 'codes' | 'tools'>('overview');
   const [billingMetrics, setBillingMetrics] = useState<any>(null);
   const [billingLoading, setBillingLoading] = useState(false);
   const [platformSettings, setPlatformSettings] = useState<any>(null);
@@ -154,6 +154,8 @@ export default function PlatformAdmin() {
   const [issuingCode, setIssuingCode] = useState(false);
   const [selectedTier, setSelectedTier] = useState<'bronze' | 'silver' | 'gold'>('bronze');
   const [lastGeneratedCode, setLastGeneratedCode] = useState<any>(null);
+  const [expireClientEmail, setExpireClientEmail] = useState('');
+  const [expiringClient, setExpiringClient] = useState(false);
 
   useEffect(() => {
     loadPlatformData();
@@ -406,6 +408,60 @@ export default function PlatformAdmin() {
       setIssuingCode(false);
     }
   };
+
+  const handleExpireClientAccount = async () => {
+    if (!expireClientEmail.trim()) {
+      alert('Please enter a client email');
+      return;
+    }
+
+    setExpiringClient(true);
+    try {
+      const token = localStorage.getItem('authToken');
+      
+      // First, find the client by email
+      const searchRes = await fetch(`/api/users/search?email=${encodeURIComponent(expireClientEmail)}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (!searchRes.ok) {
+        alert('Client not found');
+        setExpiringClient(false);
+        return;
+      }
+
+      const clientData = await searchRes.json();
+      const clientId = clientData.id;
+
+      // Now expire the subscription
+      const res = await fetch('/api/billing/admin/expire-subscription', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          clientId: clientId,
+          reason: 'Testing voucher code redemption'
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        alert(`✅ Account expired: ${data.client.email}\n\nUser can still login but will be redirected to renew subscription page.`);
+        setExpireClientEmail('');
+      } else {
+        const error = await res.json();
+        alert(`❌ ${error.error || 'Failed to expire account'}`);
+      }
+    } catch (error) {
+      console.error('Error expiring account:', error);
+      alert('Error expiring account');
+    } finally {
+      setExpiringClient(false);
+    }
+  };
+
 
   const handleBulkRemoveProducts = async () => {
     if (selectedProducts.size === 0) {
@@ -798,6 +854,15 @@ export default function PlatformAdmin() {
             <Gift className="w-4 h-4 mr-1.5" />
             <span className="hidden md:inline">Codes</span>
             <span className="md:hidden">C</span>
+          </Button>
+          <Button
+            variant={activeTab === 'tools' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('tools')}
+            className="whitespace-nowrap text-slate-200 text-xs sm:text-sm px-2 sm:px-3 py-1.5 h-8 sm:h-9"
+          >
+            <Zap className="w-4 h-4 mr-1.5" />
+            <span className="hidden sm:inline">Tools</span>
+            <span className="sm:hidden">T</span>
           </Button>
           <Button
             variant={activeTab === 'settings' ? 'default' : 'ghost'}
@@ -2377,6 +2442,102 @@ export default function PlatformAdmin() {
                   </table>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Tools Tab - Testing utilities */}
+        {activeTab === 'tools' && (
+          <div className="space-y-6">
+            <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 backdrop-blur-md rounded-2xl border border-amber-500/30 p-6 shadow-lg">
+              <h2 className="text-2xl font-bold text-amber-300 mb-2 flex items-center gap-2">
+                <Zap className="w-6 h-6" />
+                Testing Tools
+              </h2>
+              <p className="text-amber-200/80">Admin tools for testing voucher code redemption flow</p>
+            </div>
+
+            {/* Expire Account Section */}
+            <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 shadow-lg p-6">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-amber-400" />
+                Expire Test Account
+              </h3>
+              <p className="text-slate-300 mb-4 text-sm">
+                Set a client's subscription to expired. They can still login but will be redirected to the renewal page to enter a voucher code.
+              </p>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Client Email Address
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      value={expireClientEmail}
+                      onChange={(e) => setExpireClientEmail(e.target.value)}
+                      placeholder="client@example.com"
+                      className="flex-1 bg-slate-900/50 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder-slate-500"
+                      disabled={expiringClient}
+                    />
+                    <Button
+                      onClick={handleExpireClientAccount}
+                      disabled={expiringClient || !expireClientEmail.trim()}
+                      className="bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white"
+                    >
+                      {expiringClient ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Expiring...
+                        </>
+                      ) : (
+                        <>
+                          <AlertCircle className="w-4 h-4 mr-2" />
+                          Expire Account
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+                  <h4 className="text-sm font-medium text-slate-300 mb-2">What happens:</h4>
+                  <ul className="text-sm text-slate-400 space-y-1">
+                    <li>✓ Account subscription set to expired</li>
+                    <li>✓ User can still login with password</li>
+                    <li>✓ User redirected to /renew-subscription page</li>
+                    <li>✓ User must enter voucher code to regain access</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Info Card */}
+            <div className="bg-slate-800/30 backdrop-blur-sm rounded-2xl border border-slate-700/30 p-4">
+              <h3 className="text-sm font-medium text-slate-300 mb-3">Testing Workflow:</h3>
+              <ol className="text-sm text-slate-400 space-y-2">
+                <li className="flex items-start gap-2">
+                  <span className="text-cyan-400 font-bold">1.</span>
+                  <span>Create a test client account (or use existing)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-cyan-400 font-bold">2.</span>
+                  <span>Enter their email above and click "Expire Account"</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-cyan-400 font-bold">3.</span>
+                  <span>Go to Codes tab and generate a voucher code</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-cyan-400 font-bold">4.</span>
+                  <span>Have the test client login (they'll redirect to renew page)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-cyan-400 font-bold">5.</span>
+                  <span>Enter the voucher code to reactivate their account</span>
+                </li>
+              </ol>
             </div>
           </div>
         )}

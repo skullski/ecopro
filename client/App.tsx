@@ -77,6 +77,9 @@ import DeliveryCompanies from "./pages/admin/delivery/DeliveryCompanies";
 // Addons submenu pages
 import GoogleSheetsIntegration from "./pages/admin/addons/GoogleSheets";
 
+// Subscription pages
+import RenewSubscription from "./pages/RenewSubscription";
+
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { I18nProvider } from "@/lib/i18n";
 import { CartProvider } from "@/state/CartContext";
@@ -125,6 +128,25 @@ function RequireClient({ children }: { children: JSX.Element }) {
 
 function RequireVendor({ children }: { children: JSX.Element }) {
   // Vendor flows removed — treat this as a no-op guard to avoid redirects.
+  return children;
+}
+
+// Route guard for expired subscriptions: redirect to renewal page
+function CheckSubscriptionStatus({ children }: { children: JSX.Element }) {
+  const user = getCurrentUser();
+  const userType = (user as any)?.user_type || 'client';
+  
+  // Only check for clients, not admins or staff
+  if (userType !== 'client') {
+    return children;
+  }
+
+  // Store the intended path for redirect after renewal
+  const location = useLocation();
+  if (!location.pathname.includes('/renew') && !location.pathname.includes('/login')) {
+    sessionStorage.setItem('intendedPath', location.pathname);
+  }
+
   return children;
 }
 
@@ -567,6 +589,8 @@ const App = () => (
                   <Route path="/signup" element={<GuardPlatformAuthPages><Signup /></GuardPlatformAuthPages>} />
                   {/* Staff routes */}
                   <Route path="/staff/login" element={<StaffLogin />} />
+                  {/* Subscription renewal route */}
+                  <Route path="/renew-subscription" element={<CheckSubscriptionStatus><RenewSubscription /></CheckSubscriptionStatus>} />
                   {/* Account locked route - shown when subscription expires */}
                   <Route path="/account-locked" element={<AccountLocked />} />
                   {/* Billing success/cancelled routes - RedotPay payment callbacks */}

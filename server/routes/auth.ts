@@ -253,3 +253,39 @@ export const changePassword: RequestHandler = async (req, res) => {
     return jsonError(res, 500, "Failed to change password");
   }
 };
+
+/**
+ * Search for a user by email (admin only)
+ * GET /api/users/search?email=...
+ */
+export const searchUserByEmail: RequestHandler = async (req, res) => {
+  try {
+    const adminUser = req.user as any;
+    
+    // Verify admin access
+    if (!adminUser || (adminUser.role !== 'admin' && adminUser.user_type !== 'admin')) {
+      return jsonError(res, 403, 'Admin access required');
+    }
+
+    const { email } = req.query;
+    if (!email || typeof email !== 'string') {
+      return jsonError(res, 400, 'Email query parameter required');
+    }
+
+    // Search in clients table
+    const { pool } = await import("../utils/database");
+    const result = await pool.query(
+      'SELECT id, email, name, user_type FROM clients WHERE email = $1 LIMIT 1',
+      [email]
+    );
+
+    if (result.rows.length === 0) {
+      return jsonError(res, 404, 'User not found');
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Error searching user:', error);
+    return jsonError(res, 500, 'Failed to search user');
+  }
+};

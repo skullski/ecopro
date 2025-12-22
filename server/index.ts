@@ -191,6 +191,9 @@ export function createServer() {
   );
   app.get("/api/auth/me", authenticate, authRoutes.getCurrentUser);
   app.post("/api/auth/change-password", authenticate, authRoutes.changePassword);
+  
+  // Admin: Search user by email
+  app.get("/api/users/search", authenticate, authRoutes.searchUserByEmail);
 
   // Public product routes
   app.get(
@@ -451,6 +454,22 @@ export function createServer() {
     authenticate,
     requireAdmin,
     billingRoutes.getStoresWithSubscription
+  );
+
+  // Admin: Expire subscription (for testing)
+  app.post(
+    "/api/billing/admin/expire-subscription",
+    authenticate,
+    requireAdmin,
+    billingRoutes.expireSubscription
+  );
+
+  // Admin: Reactivate subscription
+  app.post(
+    "/api/billing/admin/reactivate-subscription",
+    authenticate,
+    requireAdmin,
+    billingRoutes.reactivateSubscription
   );
 
   // Phase 3: Checkout and payment endpoints
