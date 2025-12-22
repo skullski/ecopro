@@ -107,29 +107,53 @@ export async function runPendingMigrations(): Promise<void> {
 }
 
 /**
- * Find user by email
+ * Find user by email - checks admins and clients tables
  */
 export async function findUserByEmail(email: string): Promise<User | null> {
-  const result = await pool.query(
-    "SELECT * FROM users WHERE email = $1",
+  // First try admins table
+  let result = await pool.query(
+    "SELECT id, email, password, full_name as name, role, user_type, is_verified, created_at, updated_at FROM admins WHERE email = $1",
     [email]
   );
+  
+  if (result.rows.length > 0) {
+    return result.rows[0];
+  }
+  
+  // Then try clients table
+  result = await pool.query(
+    "SELECT id, email, password, name, role, user_type, is_verified, created_at, updated_at FROM clients WHERE email = $1",
+    [email]
+  );
+  
   return result.rows[0] || null;
 }
 
 /**
- * Find user by ID
+ * Find user by ID - checks admins and clients tables
  */
 export async function findUserById(id: string): Promise<User | null> {
-  const result = await pool.query(
-    "SELECT * FROM users WHERE id = $1",
+  // First try admins table
+  let result = await pool.query(
+    "SELECT id, email, password, full_name as name, role, user_type, is_verified, created_at, updated_at FROM admins WHERE id = $1",
     [id]
   );
+  
+  if (result.rows.length > 0) {
+    return result.rows[0];
+  }
+  
+  // Then try clients table
+  result = await pool.query(
+    "SELECT id, email, password, name, role, user_type, is_verified, created_at, updated_at FROM clients WHERE id = $1",
+    [id]
+  );
+  
   return result.rows[0] || null;
 }
 
 /**
- * Create new user
+ * Create new user - inserts into clients table for regular users
  */
 export async function createUser(user: {
   email: string;
@@ -138,17 +162,18 @@ export async function createUser(user: {
   role?: string;
   user_type?: string;
 }): Promise<User> {
+  // New users always go to clients table, not staff
   const result = await pool.query(
-    `INSERT INTO users (email, password, name, role, user_type) 
-     VALUES ($1, $2, $3, $4, $5) 
-     RETURNING *`,
-    [user.email, user.password, user.name, user.role || 'user', user.user_type || 'client']
+    `INSERT INTO clients (email, password, name, role, user_type, is_verified, created_at, updated_at) 
+     VALUES ($1, $2, $3, $4, $5, false, NOW(), NOW()) 
+     RETURNING id, email, password, name, role, user_type, is_verified, created_at, updated_at`,
+    [user.email, user.password, user.name, user.role || 'client', user.user_type || 'client']
   );
   return result.rows[0];
 }
 
 /**
- * Update user
+ * Update user - now updates clients table
  */
 export async function updateUser(
   id: string,
@@ -172,7 +197,7 @@ export async function updateUser(
 
   values.push(id);
   const result = await pool.query(
-    `UPDATE users SET ${fields.join(", ")} WHERE id = $${paramCount} RETURNING *`,
+    `UPDATE clients SET ${fields.join(", ")} WHERE id = $${paramCount} RETURNING id, email, password, name, role, user_type, is_verified, created_at, updated_at`,
     values
   );
 
@@ -180,11 +205,11 @@ export async function updateUser(
 }
 
 /**
- * Delete user
+ * Delete user - now deletes from clients table
  */
 export async function deleteUser(id: string): Promise<boolean> {
   const result = await pool.query(
-    "DELETE FROM users WHERE id = $1 RETURNING id",
+    "DELETE FROM clients WHERE id = $1 RETURNING id",
     [id]
   );
   return result.rowCount !== null && result.rowCount > 0;
@@ -199,13 +224,11 @@ export async function createDefaultAdmin(
 ): Promise<void> {
   const existingAdmin = await findUserByEmail(email);
   if (!existingAdmin) {
-    await createUser({
-      email,
-      password: hashedPassword,
-      name: "Admin User",
-      role: 'admin',
-      user_type: 'admin'
-    });
+    await pool.query(
+      `INSERT INTO admins (email, password, full_name, role, user_type, is_verified, created_at, updated_at)
+       VALUES ($1, $2, 'Admin User', 'admin', 'admin', true, NOW(), NOW())`,
+      [email, hashedPassword]
+    );
     console.log(`✅ Default admin user created: ${email}`);
   }
 }
