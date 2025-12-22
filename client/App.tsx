@@ -79,6 +79,7 @@ import GoogleSheetsIntegration from "./pages/admin/addons/GoogleSheets";
 
 // Subscription pages
 import RenewSubscription from "./pages/RenewSubscription";
+import SubscriptionGuard from "./components/SubscriptionGuard";
 
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { I18nProvider } from "@/lib/i18n";
@@ -618,7 +619,9 @@ const App = () => (
                     path="/dashboard"
                     element={
                       <RequirePaidClient>
-                        <AdminLayout />
+                        <SubscriptionGuard>
+                          <AdminLayout />
+                        </SubscriptionGuard>
                       </RequirePaidClient>
                     }
                   >
@@ -664,6 +667,7 @@ const App = () => (
                   <Route path="/about" element={<About />} />
                   <Route path="/contact" element={<Contact />} />
                   <Route path="/codes-store" element={<RequirePaidClient><CodesStorePage /></RequirePaidClient>} />
+                  <Route path="/codes" element={<RequirePaidClient><CodesStorePage /></RequirePaidClient>} />
                   <Route path="/chat" element={<RequirePaidClient><ChatPage /></RequirePaidClient>} />
                   {/* Guest checkout route (public, no account needed) */}
                   <Route path="/guest-checkout/:productId" element={<GuestCheckout />} />

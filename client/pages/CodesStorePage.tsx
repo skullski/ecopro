@@ -61,6 +61,32 @@ export default function CodesStorePage() {
   const [error, setError] = useState<string | null>(null);
   const [showRedemption, setShowRedemption] = useState(false);
   const [redemptionSuccess, setRedemptionSuccess] = useState(false);
+  const [subscriptionExpired, setSubscriptionExpired] = useState(false);
+
+  // Check subscription status on mount
+  React.useEffect(() => {
+    const checkSubscription = async () => {
+      try {
+        const token = localStorage.getItem('authToken');
+        if (!token) return;
+
+        const res = await fetch('/api/billing/check-access', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (!data.hasAccess) {
+            setSubscriptionExpired(true);
+            setShowRedemption(true); // Auto-show redemption form
+          }
+        }
+      } catch (err) {
+        console.error('Error checking subscription:', err);
+      }
+    };
+    checkSubscription();
+  }, []);
 
   const handleRequestCode = async (tierId: string) => {
     setLoading(true);
@@ -92,18 +118,35 @@ export default function CodesStorePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            Choose Your Plan
-          </h1>
-          <p className="text-xl text-slate-300 mb-2">
-            Get exclusive codes and unlock powerful features for your store
-          </p>
-          <p className="text-slate-400">
-            Chat with our admin to request your code and discuss upgrade options
-          </p>
-        </div>
+        {/* Header - Different message if subscription expired */}
+        {subscriptionExpired ? (
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-amber-500/20 mb-6">
+              <Ticket className="w-10 h-10 text-amber-400" />
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold text-amber-300 mb-4">
+              Subscription Expired
+            </h1>
+            <p className="text-xl text-slate-300 mb-2">
+              Enter your voucher code below to reactivate your account
+            </p>
+            <p className="text-slate-400">
+              Don't have a code? Contact support via chat to request one
+            </p>
+          </div>
+        ) : (
+          <div className="text-center mb-12">
+            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+              Choose Your Plan
+            </h1>
+            <p className="text-xl text-slate-300 mb-2">
+              Get exclusive codes and unlock powerful features for your store
+            </p>
+            <p className="text-slate-400">
+              Chat with our admin to request your code and discuss upgrade options
+            </p>
+          </div>
+        )}
 
         {/* Code Redemption Section */}
         <div className="max-w-xl mx-auto mb-12">
@@ -111,21 +154,29 @@ export default function CodesStorePage() {
             <div className="p-6 bg-green-500/10 border border-green-500/50 rounded-2xl text-center">
               <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
               <h3 className="text-xl font-bold text-white mb-2">Code Redeemed Successfully!</h3>
-              <p className="text-green-300">Your subscription has been activated.</p>
+              <p className="text-green-300 mb-4">Your subscription has been activated.</p>
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="px-6 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all"
+              >
+                Go to Dashboard →
+              </button>
             </div>
           ) : showRedemption ? (
             <div className="p-6 bg-slate-800/50 backdrop-blur-md border border-slate-700/50 rounded-2xl">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-bold text-white flex items-center gap-2">
                   <Ticket className="w-5 h-5 text-blue-400" />
-                  Redeem Your Code
+                  {subscriptionExpired ? 'Reactivate Your Account' : 'Redeem Your Code'}
                 </h3>
-                <button
-                  onClick={() => setShowRedemption(false)}
-                  className="text-slate-400 hover:text-white transition-colors"
-                >
-                  ✕
-                </button>
+                {!subscriptionExpired && (
+                  <button
+                    onClick={() => setShowRedemption(false)}
+                    className="text-slate-400 hover:text-white transition-colors"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
               <CodeRedemption 
                 showInline={true}
