@@ -32,11 +32,39 @@ export const promoteUserToAdmin: RequestHandler = async (req, res) => {
 export const listUsers: RequestHandler = async (_req, res) => {
   try {
     const { pool } = await import("../utils/database");
-    const result = await pool.query("SELECT id, email, name, role, user_type, created_at FROM users ORDER BY created_at DESC");
+    
+    // Get from both admins and clients tables with is_locked status
+    const result = await pool.query(`
+      SELECT 
+        id, 
+        email, 
+        full_name as name, 
+        role, 
+        'admin' as user_type, 
+        created_at,
+        COALESCE(is_locked, false) as is_locked,
+        locked_reason,
+        locked_at
+      FROM admins
+      UNION ALL
+      SELECT 
+        id, 
+        email, 
+        name, 
+        role, 
+        'client' as user_type, 
+        created_at,
+        COALESCE(is_locked, false) as is_locked,
+        locked_reason,
+        locked_at
+      FROM clients
+      ORDER BY created_at DESC
+    `);
+    
     res.json(result.rows);
   } catch (err) {
-    console.error(err);
-    return jsonError(res, 500, "Failed to list users");
+    console.error('listUsers error:', err);
+    return jsonError(res, 500, `Failed to list users: ${err instanceof Error ? err.message : 'Unknown error'}`);
   }
 };
 
@@ -46,36 +74,52 @@ export const getPlatformStats: RequestHandler = async (_req, res) => {
     const { pool } = await import("../utils/database");
     
     // Run all count queries in parallel for speed
-    const [usersResult, productsResult, ordersResult] = await Promise.all([
+    const [usersResult, subscriptionsResult, codesResult, newSignupsResult] = await Promise.all([
       pool.query(`
         SELECT 
-          COUNT(*) as total_users,
-          COUNT(*) FILTER (WHERE user_type = 'client') as total_clients
-        FROM users
+          (SELECT COUNT(*) FROM admins) + (SELECT COUNT(*) FROM clients) as total_users,
+          (SELECT COUNT(*) FROM clients) as total_clients,
+          (SELECT COUNT(*) FROM admins WHERE role = 'admin') as total_admins,
+          (SELECT COUNT(*) FROM clients WHERE is_locked = true) as locked_accounts
       `),
       pool.query(`
         SELECT 
-          COUNT(*) as total_products,
-          COUNT(*) FILTER (WHERE status = 'active') as active_products
-        FROM client_store_products
-      `),
+          COUNT(*) as total_subscriptions,
+          COUNT(*) FILTER (WHERE status = 'active') as active_subscriptions,
+          COUNT(*) FILTER (WHERE status = 'trial') as trial_subscriptions,
+          COUNT(*) FILTER (WHERE status = 'expired' OR status = 'cancelled') as expired_subscriptions
+        FROM subscriptions
+      `).catch(() => ({ rows: [{ total_subscriptions: 0, active_subscriptions: 0, trial_subscriptions: 0, expired_subscriptions: 0 }] })),
       pool.query(`
         SELECT 
-          COUNT(*) as total_orders,
-          COUNT(*) FILTER (WHERE status = 'pending') as pending_orders,
-          COALESCE(SUM(total_price), 0) as total_revenue
-        FROM store_orders
-      `).catch(() => ({ rows: [{ total_orders: 0, pending_orders: 0, total_revenue: 0 }] })),
+          COUNT(*) as total_codes,
+          COUNT(*) FILTER (WHERE status = 'used') as redeemed_codes,
+          COUNT(*) FILTER (WHERE status = 'pending' OR status = 'issued') as pending_codes,
+          COUNT(*) FILTER (WHERE status = 'expired') as expired_codes
+        FROM code_requests
+      `).catch(() => ({ rows: [{ total_codes: 0, redeemed_codes: 0, pending_codes: 0, expired_codes: 0 }] })),
+      pool.query(`
+        SELECT 
+          COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '7 days') as new_signups_week,
+          COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '30 days') as new_signups_month
+        FROM clients
+      `).catch(() => ({ rows: [{ new_signups_week: 0, new_signups_month: 0 }] })),
     ]);
 
     res.json({
       totalUsers: parseInt(usersResult.rows[0].total_users),
       totalClients: parseInt(usersResult.rows[0].total_clients),
-      totalProducts: parseInt(productsResult.rows[0].total_products),
-      activeProducts: parseInt(productsResult.rows[0].active_products),
-      totalOrders: parseInt(ordersResult.rows[0].total_orders),
-      pendingOrders: parseInt(ordersResult.rows[0].pending_orders),
-      totalRevenue: parseFloat(ordersResult.rows[0].total_revenue),
+      totalAdmins: parseInt(usersResult.rows[0].total_admins),
+      lockedAccounts: parseInt(usersResult.rows[0].locked_accounts),
+      activeSubscriptions: parseInt(subscriptionsResult.rows[0].active_subscriptions),
+      trialSubscriptions: parseInt(subscriptionsResult.rows[0].trial_subscriptions),
+      expiredSubscriptions: parseInt(subscriptionsResult.rows[0].expired_subscriptions),
+      totalCodes: parseInt(codesResult.rows[0].total_codes),
+      redeemedCodes: parseInt(codesResult.rows[0].redeemed_codes),
+      pendingCodes: parseInt(codesResult.rows[0].pending_codes),
+      expiredCodes: parseInt(codesResult.rows[0].expired_codes),
+      newSignupsWeek: parseInt(newSignupsResult.rows[0].new_signups_week),
+      newSignupsMonth: parseInt(newSignupsResult.rows[0].new_signups_month),
     });
   } catch (err) {
     console.error('Get stats error:', err);
@@ -87,6 +131,8 @@ export const getPlatformStats: RequestHandler = async (_req, res) => {
 export const deleteUser: RequestHandler = async (req, res) => {
   try {
     const { id } = req.params as { id: string };
+    const { email, user_type } = req.body;
+    
     if (!id) {
       return jsonError(res, 400, "User id is required");
     }
@@ -96,30 +142,65 @@ export const deleteUser: RequestHandler = async (req, res) => {
       return jsonError(res, 400, "Invalid user id");
     }
 
-    // Prevent deleting the last admin or self without confirmation
-    const userRes = await pool.query('SELECT id, role FROM users WHERE id = $1', [userId]);
+    // Prevent deleting the last admin
+    // If user_type is provided, use it to determine the table
+    let userRes: any;
+    let tableToDelete = 'admins';
+    let isAdmin = false;
+    let userEmail = '';
+    
+    if (user_type === 'client') {
+      // If explicitly told it's a client, look in clients table only
+      userRes = await pool.query('SELECT id, role, user_type, email FROM clients WHERE id = $1', [userId]);
+      tableToDelete = 'clients';
+    } else if (user_type === 'admin') {
+      // If explicitly told it's an admin, look in admins table only
+      userRes = await pool.query('SELECT id, role, user_type, email FROM admins WHERE id = $1', [userId]);
+      tableToDelete = 'admins';
+      isAdmin = true;
+    } else {
+      // Fallback: check both tables (admins first, then clients)
+      userRes = await pool.query('SELECT id, role, user_type, email FROM admins WHERE id = $1', [userId]);
+      if (userRes.rows.length === 0) {
+        userRes = await pool.query('SELECT id, role, user_type, email FROM clients WHERE id = $1', [userId]);
+        tableToDelete = 'clients';
+      } else {
+        isAdmin = true;
+      }
+    }
+    
     if (userRes.rows.length === 0) {
       return jsonError(res, 404, "User not found");
     }
-    const targetRole = userRes.rows[0].role;
-    if (targetRole === 'admin') {
-      const adminsCountRes = await pool.query("SELECT COUNT(*)::int AS cnt FROM users WHERE role='admin'", []);
+
+    // Get the user's email for protection check
+    userEmail = userRes.rows[0].email || '';
+
+    // Protect the default admin account - check by email
+    if (userEmail === 'admin@ecopro.com') {
+      console.log(`Attempt to delete protected admin account: ${userEmail}`);
+      return jsonError(res, 400, 'Cannot delete the default admin account');
+    }
+    
+    // Only check admin count if actually deleting from admins table
+    if (isAdmin) {
+      const adminsCountRes = await pool.query("SELECT COUNT(*)::int AS cnt FROM admins WHERE role='admin'");
       const adminsCount = adminsCountRes.rows[0].cnt;
       if (adminsCount <= 1) {
         return jsonError(res, 400, 'Cannot delete the last admin');
       }
     }
 
-    // Optional: cascade deletes for marketplace products/orders owned by this user
-    // For safety, we soft-delete by removing user and leaving products orphaned only if FK allows
-    await pool.query('DELETE FROM users WHERE id = $1', [userId]);
+    // Delete from appropriate table
+    await pool.query(`DELETE FROM ${tableToDelete} WHERE id = $1`, [userId]);
 
     // Audit log
     const actorId = (req as any).user?.id ? parseInt((req as any).user.id, 10) : null;
+    const targetRole = userRes.rows[0].role;
     if (actorId) {
       await pool.query(
         'INSERT INTO audit_logs(actor_id, action, target_type, target_id, details) VALUES ($1, $2, $3, $4, $5)',
-        [actorId, 'delete_user', 'user', userId, JSON.stringify({ role: targetRole })]
+        [actorId, 'delete_user', 'user', userId, JSON.stringify({ role: targetRole, table: tableToDelete })]
       );
     }
 
@@ -208,14 +289,13 @@ export const listAllStores: RequestHandler = async (_req, res) => {
   try {
     const result = await pool.query(
       `SELECT 
-        u.id, u.email, u.name as store_name,
+        c.id, c.email, c.name as store_name,
         COALESCE(css.store_slug, '') as store_slug,
         'active' as subscription_status,
-        u.created_at
-      FROM users u
-      LEFT JOIN client_store_settings css ON u.id = css.client_id
-      WHERE u.user_type = 'client'
-      ORDER BY u.created_at DESC`
+        c.created_at
+      FROM clients c
+      LEFT JOIN client_store_settings css ON c.id = css.client_id
+      ORDER BY c.created_at DESC`
     );
     res.json(result.rows);
   } catch (err) {
@@ -248,13 +328,12 @@ export const listAllProducts: RequestHandler = async (_req, res) => {
     const result = await pool.query(
       `SELECT 
         p.id, p.title, p.price, p.status,
-        COALESCE(u.name, u.email) as seller_name,
-        u.email as seller_email,
+        COALESCE(c.name, c.email) as seller_name,
+        c.email as seller_email,
         COALESCE(p.views, 0) as views, p.created_at,
         p.images
       FROM client_store_products p
-      JOIN users u ON p.client_id = u.id
-      WHERE u.user_type = 'client'
+      JOIN clients c ON p.client_id = c.id
       ORDER BY p.created_at DESC
       LIMIT 100`
     );
@@ -336,5 +415,100 @@ export const unflagProduct: RequestHandler = async (req, res) => {
   } catch (err) {
     console.error('Failed to unflag product:', err);
     return jsonError(res, 500, "Failed to unflag product");
+  }
+};
+// Lock a user account (prevent login)
+export const lockUser: RequestHandler = async (req, res) => {
+  try {
+    const { id } = req.params as { id: string };
+    const { reason } = req.body;
+
+    if (!id) {
+      return jsonError(res, 400, "User ID is required");
+    }
+
+    const userId = parseInt(id, 10);
+    if (Number.isNaN(userId)) {
+      return jsonError(res, 400, "Invalid user ID");
+    }
+
+    // Check if user exists and get their email
+    let userRes = await pool.query('SELECT id, email FROM admins WHERE id = $1', [userId]);
+    
+    if (userRes.rows.length === 0) {
+      userRes = await pool.query('SELECT id, email FROM clients WHERE id = $1', [userId]);
+    }
+
+    if (userRes.rows.length === 0) {
+      return jsonError(res, 404, "User not found");
+    }
+
+    // Protect the default admin account
+    const userEmail = userRes.rows[0].email;
+    if (userEmail === 'admin@ecopro.com') {
+      return jsonError(res, 400, 'Cannot lock the default admin account');
+    }
+
+    const adminId = (req as any).user?.id ? parseInt((req as any).user.id, 10) : null;
+
+    // Try locking in admins table first, then clients
+    let result = await pool.query(
+      `UPDATE admins SET is_locked = true, locked_reason = $1, locked_at = NOW(), locked_by_admin_id = $2 WHERE id = $3`,
+      [reason || 'Account locked by admin', adminId, userId]
+    );
+
+    if (result.rowCount === 0) {
+      result = await pool.query(
+        `UPDATE clients SET is_locked = true, locked_reason = $1, locked_at = NOW(), locked_by_admin_id = $2 WHERE id = $3`,
+        [reason || 'Account locked by admin', adminId, userId]
+      );
+    }
+
+    if (result.rowCount === 0) {
+      return jsonError(res, 404, "User not found");
+    }
+
+    res.json({ message: "User account locked successfully" });
+  } catch (err) {
+    console.error('Lock user error:', err);
+    return jsonError(res, 500, "Failed to lock user account");
+  }
+};
+
+// Unlock a user account (allow login again)
+export const unlockUser: RequestHandler = async (req, res) => {
+  try {
+    const { id } = req.params as { id: string };
+
+    if (!id) {
+      return jsonError(res, 400, "User ID is required");
+    }
+
+    const userId = parseInt(id, 10);
+    if (Number.isNaN(userId)) {
+      return jsonError(res, 400, "Invalid user ID");
+    }
+
+    // Try unlocking in admins table first, then clients
+    let result = await pool.query(
+      `UPDATE admins SET is_locked = false, locked_reason = NULL, locked_at = NULL, locked_by_admin_id = NULL WHERE id = $1`,
+      [userId]
+    );
+
+    if (result.rowCount === 0) {
+      result = await pool.query(
+        `UPDATE clients SET is_locked = false, locked_reason = NULL, locked_at = NULL, locked_by_admin_id = NULL WHERE id = $1`,
+        [userId]
+      );
+    }
+
+    if (result.rowCount === 0) {
+      return jsonError(res, 404, "User not found");
+    }
+
+    res.json({ message: "User account unlocked successfully" });
+  } catch (err) {
+    console.error('Unlock user error:', err);
+    return jsonError(res, 500, "Failed to unlock user account");
   }
 };

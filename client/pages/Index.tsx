@@ -25,25 +25,25 @@ export default function Index() {
   return (
     <div className="min-h-screen">
       {/* Modern Hero Section */}
-      <section className="relative min-h-[90vh] flex items-center overflow-hidden">
+      <section className="relative min-h-[75vh] flex items-center overflow-hidden py-6 sm:py-8">
         {/* Animated Background */}
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-white to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM4ODg4ODgiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItaDJ2LTJoLTJ6bTAgNGgtMnYyaDJ2LTJ6bS0yIDJoLTJ2Mmgydi0yek0zMiAzOGgtMnYyaDJ2LTJ6bS0yLTJoLTJ2Mmgydi0yek0yOCAzNGgtMnYyaDJ2LTJ6bS02IDB2LTJoLTJ2Mmgyem0tMiAydi0ySDR2Mmgyem0tMiAydi0ySDR2MmgyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-40"></div>
         </div>
 
-        <div className="container relative z-10 mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-3 md:gap-4 md:gap-4 md:gap-6 items-center">
+        <div className="container relative z-10 mx-auto px-3 sm:px-4">
+          <div className="grid lg:grid-cols-2 gap-3 sm:gap-4 items-center">
             {/* Left Content */}
-            <div className="space-y-4 md:space-y-3 md:space-y-4">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border shadow-lg">
-                <span className="relative flex h-2 w-2">
+            <div className="space-y-3 sm:space-y-4">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border shadow-md text-xs">
+                <span className="relative flex h-1.5 w-1.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500"></span>
                 </span>
-                <span className="text-sm font-medium">{t("home.liveGrowing")}</span>
+                <span className="font-medium">{t("home.liveGrowing")}</span>
               </div>
 
-              <h1 className="text-xl md:text-2xl md:text-2xl md:text-xl md:text-2xl lg:text-xl md:text-2xl md:text-2xl md:text-xl md:text-2xl xl:text-6xl font-black leading-tight">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-black leading-tight">
                 {t("home.heroYour")}
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-600">
                   {t("brand")}
@@ -51,33 +51,33 @@ export default function Index() {
                 {t("home.heroTitle")}
               </h1>
 
-              <p className="text-base md:text-lg text-gray-600 dark:text-gray-300 max-w-lg">
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 max-w-lg">
                 {t("home.heroDescription")}
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <Link to="/signup">
-                  <Button size="lg" className="group bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-700 hover:to-cyan-700 text-white shadow-xl hover:shadow-2xl px-4 md:px-6 h-14 text-lg">
+                  <Button size="default" className="group bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-700 hover:to-cyan-700 text-white shadow-lg hover:shadow-xl px-4 h-10 text-sm">
                     {t("home.getStarted")}
-                    <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    <ArrowRight className="ml-1.5 w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
                 <Link to="/about">
-                  <Button size="lg" variant="outline" className="h-14 px-4 md:px-6 text-lg border-2 hover:border-indigo-600 hover:text-indigo-600">
+                  <Button size="default" variant="outline" className="h-10 px-4 text-sm border hover:border-indigo-600 hover:text-indigo-600">
                     {t("menu.about")}
                   </Button>
                 </Link>
               </div>
 
               {/* Trust Indicators */}
-              <div className="flex items-center gap-4 md:gap-3 md:gap-4 pt-3">
+              <div className="flex items-center gap-3 pt-2">
                 <div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-0.5">
                     {[1,2,3,4,5].map(i => (
-                      <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+                      <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                     ))}
                   </div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{t("home.reviews")}</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">{t("home.reviews")}</p>
                 </div>
               </div>
             </div>

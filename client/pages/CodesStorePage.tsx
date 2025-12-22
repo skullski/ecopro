@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle, Loader, CheckCircle, Clock } from 'lucide-react';
+import { MessageCircle, Loader, CheckCircle, Clock, Ticket } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
+import { CodeRedemption } from '@/components/chat/CodeRedemption';
 
 const TIERS = [
   {
@@ -58,6 +59,8 @@ export default function CodesStorePage() {
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showRedemption, setShowRedemption] = useState(false);
+  const [redemptionSuccess, setRedemptionSuccess] = useState(false);
 
   const handleRequestCode = async (tierId: string) => {
     setLoading(true);
@@ -100,6 +103,48 @@ export default function CodesStorePage() {
           <p className="text-slate-400">
             Chat with our admin to request your code and discuss upgrade options
           </p>
+        </div>
+
+        {/* Code Redemption Section */}
+        <div className="max-w-xl mx-auto mb-12">
+          {redemptionSuccess ? (
+            <div className="p-6 bg-green-500/10 border border-green-500/50 rounded-2xl text-center">
+              <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-white mb-2">Code Redeemed Successfully!</h3>
+              <p className="text-green-300">Your subscription has been activated.</p>
+            </div>
+          ) : showRedemption ? (
+            <div className="p-6 bg-slate-800/50 backdrop-blur-md border border-slate-700/50 rounded-2xl">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <Ticket className="w-5 h-5 text-blue-400" />
+                  Redeem Your Code
+                </h3>
+                <button
+                  onClick={() => setShowRedemption(false)}
+                  className="text-slate-400 hover:text-white transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+              <CodeRedemption 
+                showInline={true}
+                onSuccess={() => {
+                  setRedemptionSuccess(true);
+                  setShowRedemption(false);
+                }}
+                onError={(err) => setError(err)}
+              />
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowRedemption(true)}
+              className="w-full py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-2xl font-bold text-lg hover:shadow-lg transition-all flex items-center justify-center gap-3"
+            >
+              <Ticket className="w-6 h-6" />
+              Have a Code? Redeem Here
+            </button>
+          )}
         </div>
 
         {/* Error Message */}

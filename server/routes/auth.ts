@@ -47,9 +47,9 @@ export const register: RequestHandler = async (req, res) => {
       return jsonError(res, 400, "Email already registered");
     }
 
-    // Check platform user limit
+    // Check platform user limit (count from clients table only)
     const pool = await ensureConnection();
-    const userCountResult = await pool.query("SELECT COUNT(*) as count FROM users WHERE user_type = 'client'");
+    const userCountResult = await pool.query("SELECT COUNT(*) as count FROM clients");
     const currentUserCount = parseInt(userCountResult.rows[0].count);
     
     const maxUsersResult = await pool.query(
@@ -69,8 +69,8 @@ export const register: RequestHandler = async (req, res) => {
     console.log("[REGISTER] Password hashed");
 
     // Create user
-    // Allow 'seller' role and map user_type accordingly
-    const normalizedRole = role === 'admin' ? 'admin' : 'user';
+    // Map role to valid values: 'admin' stays admin, everything else becomes 'client'
+    const normalizedRole = role === 'admin' ? 'admin' : 'client';
     const user = await createUser({
       email,
       password: hashedPassword,
@@ -153,6 +153,17 @@ export const login: RequestHandler = async (req, res) => {
     if (!isValidPassword) {
       console.log("❌ Invalid password");
       return jsonError(res, 401, "Invalid email or password");
+    }
+
+    // Check if account is locked
+    if (user.is_locked) {
+      console.log("❌ Account is locked, reason:", user.locked_reason);
+      const reason = user.locked_reason || "Account locked by administrator";
+      return res.status(403).json({ 
+        error: `Account locked: ${reason}`,
+        locked: true,
+        locked_reason: reason
+      });
     }
 
     console.log("✅ Login successful");

@@ -119,7 +119,7 @@ export class ChatService {
   async sendMessage(
     chatId: number,
     senderId: number,
-    senderType: 'client' | 'seller',
+    senderType: 'client' | 'seller' | 'admin',
     content: string,
     messageType: string = 'text',
     metadata?: Record<string, any>
@@ -137,12 +137,14 @@ export class ChatService {
 
       const chat = chatCheck.rows[0];
 
-      // Verify sender is part of this chat
-      if (senderType === 'client' && chat.client_id !== senderId) {
-        throw new Error('Unauthorized: client cannot access this chat');
-      }
-      if (senderType === 'seller' && chat.seller_id !== senderId) {
-        throw new Error('Unauthorized: seller cannot access this chat');
+      // Admin can send to any chat, clients/sellers can only send to their own
+      if (senderType !== 'admin') {
+        if (senderType === 'client' && Number(chat.client_id) !== senderId) {
+          throw new Error('Unauthorized: client cannot access this chat');
+        }
+        if (senderType === 'seller' && Number(chat.seller_id) !== senderId) {
+          throw new Error('Unauthorized: seller cannot access this chat');
+        }
       }
 
       // Insert message
@@ -177,7 +179,7 @@ export class ChatService {
   /**
    * Mark messages as read
    */
-  async markMessagesAsRead(chatId: number, readerId: number, readerType: 'client' | 'seller'): Promise<void> {
+  async markMessagesAsRead(chatId: number, readerId: number, readerType: 'client' | 'seller' | 'admin'): Promise<void> {
     try {
       // Verify user has access to this chat
       const chatCheck = await pool.query(
@@ -191,22 +193,34 @@ export class ChatService {
 
       const chat = chatCheck.rows[0];
 
-      if (readerType === 'client' && chat.client_id !== readerId) {
-        throw new Error('Unauthorized');
-      }
-      if (readerType === 'seller' && chat.seller_id !== readerId) {
-        throw new Error('Unauthorized');
+      // Admin can access any chat, clients/sellers can only access their own
+      if (readerType !== 'admin') {
+        if (readerType === 'client' && chat.client_id !== readerId) {
+          throw new Error('Unauthorized');
+        }
+        if (readerType === 'seller' && chat.seller_id !== readerId) {
+          throw new Error('Unauthorized');
+        }
       }
 
-      // Mark unread messages from the other party as read
-      const otherPartyType = readerType === 'client' ? 'seller' : 'client';
+      // Mark unread messages as read (for admin, mark all; for client/seller, mark only from other party)
+      if (readerType === 'admin') {
+        await pool.query(
+          `UPDATE chat_messages 
+           SET is_read = true, updated_at = NOW()
+           WHERE chat_id = $1 AND is_read = false`,
+          [chatId]
+        );
+      } else {
+        const otherPartyType = readerType === 'client' ? 'seller' : 'client';
 
-      await pool.query(
-        `UPDATE chat_messages 
-         SET is_read = true, updated_at = NOW()
-         WHERE chat_id = $1 AND sender_type = $2 AND is_read = false`,
-        [chatId, otherPartyType]
-      );
+        await pool.query(
+          `UPDATE chat_messages 
+           SET is_read = true, updated_at = NOW()
+           WHERE chat_id = $1 AND sender_type = $2 AND is_read = false`,
+          [chatId, otherPartyType]
+        );
+      }
 
       // Update client's unread count
       if (readerType === 'client') {

@@ -112,7 +112,7 @@ export async function runPendingMigrations(): Promise<void> {
 export async function findUserByEmail(email: string): Promise<User | null> {
   // First try admins table
   let result = await pool.query(
-    "SELECT id, email, password, full_name as name, role, user_type, is_verified, created_at, updated_at FROM admins WHERE email = $1",
+    "SELECT id, email, password, full_name as name, role, user_type, is_verified, is_locked, locked_reason, created_at, updated_at FROM admins WHERE email = $1",
     [email]
   );
   
@@ -122,7 +122,7 @@ export async function findUserByEmail(email: string): Promise<User | null> {
   
   // Then try clients table
   result = await pool.query(
-    "SELECT id, email, password, name, role, user_type, is_verified, created_at, updated_at FROM clients WHERE email = $1",
+    "SELECT id, email, password, name, role, user_type, is_verified, is_locked, locked_reason, created_at, updated_at FROM clients WHERE email = $1",
     [email]
   );
   
@@ -196,19 +196,41 @@ export async function updateUser(
   }
 
   values.push(id);
-  const result = await pool.query(
-    `UPDATE clients SET ${fields.join(", ")} WHERE id = $${paramCount} RETURNING id, email, password, name, role, user_type, is_verified, created_at, updated_at`,
-    values
-  );
-
-  return result.rows[0] || null;
+  
+  // First check if this is an admin
+  const adminResult = await pool.query('SELECT id FROM admins WHERE id = $1', [id]);
+  if (adminResult.rows.length > 0) {
+    const result = await pool.query(
+      `UPDATE admins SET ${fields.join(", ")} WHERE id = $${paramCount} RETURNING id, email, password, full_name as name, role, user_type, is_verified, created_at, updated_at`,
+      values
+    );
+    return result.rows[0] || null;
+  } else {
+    // Update client
+    const result = await pool.query(
+      `UPDATE clients SET ${fields.join(", ")} WHERE id = $${paramCount} RETURNING id, email, password, name, role, user_type, is_verified, created_at, updated_at`,
+      values
+    );
+    return result.rows[0] || null;
+  }
 }
 
 /**
- * Delete user - now deletes from clients table
+ * Delete user - now deletes from admins or clients table based on where they exist
  */
 export async function deleteUser(id: string): Promise<boolean> {
-  const result = await pool.query(
+  // Check if admin
+  let result = await pool.query(
+    "DELETE FROM admins WHERE id = $1 RETURNING id",
+    [id]
+  );
+  
+  if (result.rowCount && result.rowCount > 0) {
+    return true;
+  }
+  
+  // Delete from clients if not admin
+  result = await pool.query(
     "DELETE FROM clients WHERE id = $1 RETURNING id",
     [id]
   );

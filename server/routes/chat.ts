@@ -4,6 +4,7 @@
 import { Router, Request, Response } from 'express';
 import { chatService } from '../services/chat';
 import { pool } from '../utils/database';
+import { upload } from './uploads';
 import {
   SendMessageSchema,
   CreateChatSchema,
@@ -109,88 +110,6 @@ router.post('/create', async (req: Request, res: Response) => {
  * Get messages from a chat
  */
 router.get('/:chatId/messages', async (req: Request, res: Response) => {
-  const { chatId } = req.params;
-  const user = (req.user as any);
-
-  try {
-    // Get chat to verify access
-    const chatCheck = await pool.query(
-      'SELECT * FROM chats WHERE id = $1',
-      [chatId]
-    );
-
-    if (chatCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'Chat not found' });
-    }
-
-    // Get messages
-    const result = await pool.query(
-      `SELECT * FROM chat_messages WHERE chat_id = $1 ORDER BY created_at ASC`,
-      [chatId]
-    );
-
-    const items = result.rows.map(row => ({
-      id: row.id,
-      sender_id: row.sender_id,
-      sender_type: row.sender_type,
-      message_content: row.message_content,
-      message_type: row.message_type,
-      metadata: row.metadata,
-      created_at: row.created_at,
-    }));
-
-    res.json({ items, total: items.length });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-/**
- * POST /api/chat/:chatId/messages
- * Send a message to chat
- */
-router.post('/:chatId/messages', async (req: Request, res: Response) => {
-  const { chatId } = req.params;
-  const user = (req.user as any);
-  const { body, image_url, message_type } = req.body;
-
-  // Allow clients and admins
-  const isClient = user?.user_type === 'client' && user?.id;
-  const isAdmin = user?.role === 'admin' || user?.user_type === 'admin';
-  
-  if (!user || (!isClient && !isAdmin)) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
-  try {
-    // Determine sender type and ID
-    let sender_type: 'admin' | 'client' = 'client';
-    let sender_id = user.clientId || parseInt(user.id); // Handle both staff (clientId) and clients (id)
-
-    if (user.role === 'admin' || user.user_type === 'admin') {
-      sender_type = 'admin';
-      sender_id = user.id;
-    }
-
-    const result = await pool.query(
-      `INSERT INTO chat_messages (chat_id, sender_id, sender_type, message_content, message_type, created_at)
-       VALUES ($1, $2, $3, $4, $5, NOW())
-       RETURNING id, sender_id, sender_type, message_content, message_type, created_at`,
-      [chatId, sender_id, sender_type, body, message_type || 'text']
-    );
-
-    const message = result.rows[0];
-    res.json({ success: true, message });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-/**
- * GET /api/chat/:chatId/messages
- * Get messages from a chat
- */
-router.get('/:chatId/messages', async (req: Request, res: Response) => {
   const { userId, role } = getUserRole(req);
   const { chatId } = req.params;
   const { limit = 50, offset = 0 } = req.query;
@@ -209,11 +128,14 @@ router.get('/:chatId/messages', async (req: Request, res: Response) => {
 
     const chat = chatCheck.rows[0];
 
-    if (role === 'client' && chat.client_id !== userId) {
-      return res.status(403).json({ error: 'Unauthorized access to chat' });
-    }
-    if (role === 'seller' && chat.seller_id !== userId) {
-      return res.status(403).json({ error: 'Unauthorized access to chat' });
+    // Admin can access any chat, clients/sellers can only access their own
+    if (role !== 'admin') {
+      if (role === 'client' && Number(chat.client_id) !== userId) {
+        return res.status(403).json({ error: 'Unauthorized access to chat' });
+      }
+      if (role === 'seller' && Number(chat.seller_id) !== userId) {
+        return res.status(403).json({ error: 'Unauthorized access to chat' });
+      }
     }
 
     const messages = await chatService.getChatMessages(
@@ -222,7 +144,7 @@ router.get('/:chatId/messages', async (req: Request, res: Response) => {
       Number(offset)
     );
 
-    res.json({ messages, total: messages.length });
+    res.json({ items: messages, total: messages.length });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -236,7 +158,10 @@ router.post('/:chatId/message', async (req: Request, res: Response) => {
   const { userId, role } = getUserRole(req);
   const { chatId } = req.params;
 
+  console.log('[chat/message] userId:', userId, 'role:', role, 'chatId:', chatId, 'body:', req.body);
+
   if (!userId || !role) {
+    console.log('[chat/message] Unauthorized - no userId or role');
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
@@ -499,7 +424,7 @@ router.get('/admin/all-chats', async (req: Request, res: Response) => {
   const user = (req.user as any);
   
   // Verify admin access
-  if (!user || user.role !== 'admin') {
+  if (!user || (user.role !== 'admin' && user.user_type !== 'admin')) {
     return res.status(403).json({ error: 'Admin access required' });
   }
 
@@ -516,7 +441,7 @@ router.get('/admin/all-chats', async (req: Request, res: Response) => {
          WHERE cm.chat_id = c.id AND cm.is_read = false AND cm.sender_type = 'client') as unread_count,
         (SELECT MAX(created_at) FROM chat_messages cm WHERE cm.chat_id = c.id) as last_message_at
       FROM chats c
-      JOIN users u ON u.id = c.client_id
+      JOIN clients u ON u.id = c.client_id
       WHERE c.client_id IS NOT NULL
       ORDER BY last_message_at DESC NULLS LAST
     `);
@@ -584,5 +509,96 @@ router.post('/create-admin-chat', async (req: Request, res: Response) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+/**
+ * POST /api/chat/:chatId/upload
+ * Upload a file to a chat
+ */
+router.post('/:chatId/upload', (req: Request, res: Response, next) => {
+  upload.single('file')(req, res, (err: any) => {
+    if (err) {
+      console.error('[chat upload] multer error:', err);
+      return res.status(400).json({ error: `Upload failed: ${err.message}` });
+    }
+    handleChatFileUpload(req, res, next);
+  });
+});
+
+const handleChatFileUpload = async (req: Request, res: Response, next: Function) => {
+  const { userId, role } = getUserRole(req);
+  const { chatId } = req.params;
+
+  if (!userId || !role) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
+
+  try {
+    // Verify user has access to this chat
+    const chatCheck = await pool.query(
+      'SELECT * FROM chats WHERE id = $1',
+      [chatId]
+    );
+
+    if (chatCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Chat not found' });
+    }
+
+    const chat = chatCheck.rows[0];
+
+    // Verify sender is part of this chat
+    if (role === 'client' && Number(chat.client_id) !== userId) {
+      return res.status(403).json({ error: 'Unauthorized: client cannot access this chat' });
+    }
+    if (role === 'seller' && Number(chat.seller_id) !== userId) {
+      return res.status(403).json({ error: 'Unauthorized: seller cannot access this chat' });
+    }
+
+    const fileUrl = `/uploads/${req.file.filename}`;
+    const fileName = req.file.originalname;
+    const fileType = req.file.mimetype;
+    const isImage = fileType.startsWith('image/');
+
+    console.log(`[chat upload] File: ${fileName}, Type: ${fileType}, IsImage: ${isImage}`);
+
+    // Create message with file metadata
+    const result = await pool.query(
+      `INSERT INTO chat_messages 
+       (chat_id, sender_id, sender_type, message_content, message_type, metadata, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+       RETURNING *`,
+      [
+        Number(chatId),
+        userId,
+        role,
+        fileName,
+        'file_attachment',
+        JSON.stringify({ 
+          fileUrl, 
+          fileName,
+          fileType,
+          isImage,
+          size: req.file.size
+        })
+      ]
+    );
+
+    // Update chat updated_at
+    await pool.query(
+      'UPDATE chats SET updated_at = NOW() WHERE id = $1',
+      [chatId]
+    );
+
+    res.json({ 
+      message: 'File uploaded successfully',
+      file: result.rows[0]
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
 export default router;

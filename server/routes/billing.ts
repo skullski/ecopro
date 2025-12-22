@@ -102,8 +102,7 @@ export const getAllSubscriptions: RequestHandler = async (req, res) => {
         s.tier, s.status, s.trial_started_at, s.trial_ends_at,
         s.current_period_start, s.current_period_end, s.created_at
       FROM subscriptions s
-      JOIN users u ON s.user_id = u.id
-      WHERE u.user_type = 'client'
+      JOIN clients u ON s.user_id = u.id
       ORDER BY s.created_at DESC`
     );
 
@@ -230,8 +229,7 @@ export const getStoresWithSubscription: RequestHandler = async (req, res) => {
         s.created_at as subscription_created,
         u.created_at as user_created
       FROM subscriptions s
-      JOIN users u ON s.user_id = u.id
-      WHERE u.user_type = 'client'
+      JOIN clients u ON s.user_id = u.id
       ORDER BY s.created_at DESC`
     );
 
@@ -256,9 +254,9 @@ export const createCheckout: RequestHandler = async (req, res) => {
       return jsonError(res, 401, "Not authenticated");
     }
 
-    // Get user email for checkout
+    // Get user email for checkout (from clients table)
     const userResult = await pool.query(
-      `SELECT email FROM users WHERE id = $1`,
+      `SELECT email FROM clients WHERE id = $1`,
       [userId]
     );
 
@@ -422,8 +420,9 @@ export const getPaymentHistory: RequestHandler = async (req, res) => {
 };
 
 /**
- * ADMIN: Get all payment failures across platform
+ * ADMIN: Get pending/expired code requests (replaces payment failures)
  * GET /api/billing/admin/payment-failures
+ * Now shows code requests that need attention
  */
 export const getPaymentFailures: RequestHandler = async (req, res) => {
   try {
@@ -432,38 +431,56 @@ export const getPaymentFailures: RequestHandler = async (req, res) => {
       return jsonError(res, 403, 'Admin access required');
     }
 
+    // Get pending and expired code requests
     const result = await pool.query(
       `SELECT 
-        p.id,
-        p.transaction_id,
-        p.user_id,
-        p.amount,
-        p.currency,
-        p.status,
-        p.error_message as failure_reason,
-        p.created_at,
-        p.updated_at,
-        u.email as store_owner_email,
-        s.store_name,
-        s.store_slug
-       FROM payments p
-       LEFT JOIN users u ON p.user_id = u.id
-       LEFT JOIN clients s ON u.id = s.user_id
-       WHERE p.status IN ('failed', 'pending_retry')
-       ORDER BY p.updated_at DESC`,
+        cr.id,
+        cr.id::text as transaction_id,
+        cr.client_id as user_id,
+        7.00 as amount,
+        'USD' as currency,
+        CASE 
+          WHEN cr.status = 'pending' THEN 'pending'
+          WHEN cr.status = 'expired' THEN 'failed'
+          WHEN cr.status = 'issued' AND cr.expiry_date < NOW() THEN 'expired'
+          ELSE cr.status
+        END as status,
+        CASE 
+          WHEN cr.status = 'pending' THEN 'Awaiting code issuance'
+          WHEN cr.status = 'expired' THEN 'Code expired before redemption'
+          WHEN cr.status = 'issued' AND cr.expiry_date < NOW() THEN 'Code expired - needs reissue'
+          ELSE 'Unknown'
+        END as failure_reason,
+        cr.created_at,
+        COALESCE(cr.expiry_date, cr.created_at) as updated_at,
+        c.email as store_owner_email,
+        c.name as store_owner_name,
+        css.store_name,
+        css.store_slug,
+        cr.code_tier as tier,
+        cr.payment_method,
+        ch.id as chat_id
+       FROM code_requests cr
+       LEFT JOIN clients c ON cr.client_id = c.id
+       LEFT JOIN client_store_settings css ON c.id = css.client_id
+       LEFT JOIN chats ch ON cr.chat_id = ch.id
+       WHERE cr.status IN ('pending', 'expired') 
+          OR (cr.status = 'issued' AND cr.expiry_date < NOW())
+       ORDER BY cr.created_at DESC`,
       []
     );
 
     res.json(result.rows);
   } catch (error) {
-    console.error('Error getting payment failures:', error);
-    return jsonError(res, 500, 'Failed to get payment failures');
+    console.error('Error getting code requests:', error);
+    return jsonError(res, 500, 'Failed to get code requests');
   }
 };
 
 /**
- * ADMIN: Retry a failed payment
+ * ADMIN: Reissue a code (replaces retry payment)
  * POST /api/billing/admin/retry-payment
+ * Now reissues an expired or pending code
  */
 export const retryPayment: RequestHandler = async (req, res) => {
   try {
@@ -474,43 +491,78 @@ export const retryPayment: RequestHandler = async (req, res) => {
 
     const { transactionId } = req.body;
     if (!transactionId) {
-      return jsonError(res, 400, 'Transaction ID is required');
+      return jsonError(res, 400, 'Code request ID is required');
     }
 
-    // Get the payment details
-    const paymentResult = await pool.query(
-      `SELECT * FROM payments WHERE transaction_id = $1`,
+    // Get the code request details
+    const codeResult = await pool.query(
+      `SELECT cr.*, c.email as client_email, ch.id as chat_id
+       FROM code_requests cr
+       LEFT JOIN clients c ON cr.client_id = c.id
+       LEFT JOIN chats ch ON cr.chat_id = ch.id
+       WHERE cr.id = $1`,
       [transactionId]
     );
 
-    if (paymentResult.rows.length === 0) {
-      return jsonError(res, 404, 'Payment not found');
+    if (codeResult.rows.length === 0) {
+      return jsonError(res, 404, 'Code request not found');
     }
 
-    const payment = paymentResult.rows[0];
+    const codeRequest = codeResult.rows[0];
 
-    // Update status to pending_retry
+    // Generate new code
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let newCode = '';
+    for (let i = 0; i < 16; i++) {
+      newCode += characters.charAt(Math.floor(Math.random() * characters.length));
+      if ((i + 1) % 4 === 0 && i !== 15) newCode += '-';
+    }
+
+    // Update code request with new code and extended expiry
+    const newExpiry = new Date();
+    newExpiry.setHours(newExpiry.getHours() + 1); // 1 hour expiry
+
     await pool.query(
-      `UPDATE payments 
-       SET status = 'pending_retry', updated_at = NOW()
-       WHERE transaction_id = $1`,
-      [transactionId]
+      `UPDATE code_requests 
+       SET generated_code = $1, 
+           expiry_date = $2, 
+           status = 'issued',
+           issued_at = NOW()
+       WHERE id = $3`,
+      [newCode, newExpiry, transactionId]
     );
+
+    // Send notification in chat if chat exists
+    if (codeRequest.chat_id) {
+      await pool.query(
+        `INSERT INTO chat_messages (chat_id, sender_id, sender_type, message_content, message_type, metadata)
+         VALUES ($1, $2, 'admin', $3, 'code_response', $4)`,
+        [
+          codeRequest.chat_id,
+          user.id,
+          `🔄 Code Reissued!\n\nYour new subscription code is:\n\`${newCode}\`\n\nThis code expires in 1 hour. Please redeem it at /codes-store`,
+          JSON.stringify({ code: newCode, expiry_date: newExpiry, reissued: true })
+        ]
+      );
+    }
 
     res.json({
-      message: 'Payment retry initiated',
+      message: 'Code reissued successfully',
       transactionId,
-      status: 'pending_retry',
+      newCode,
+      expiresAt: newExpiry,
+      status: 'issued',
     });
   } catch (error) {
-    console.error('Error retrying payment:', error);
-    return jsonError(res, 500, 'Failed to retry payment');
+    console.error('Error reissuing code:', error);
+    return jsonError(res, 500, 'Failed to reissue code');
   }
 };
 
 /**
  * ADMIN: Get payment metrics (for dashboard)
  * GET /api/billing/admin/metrics
+ * Updated to work with code-based payment system
  */
 export const getPaymentMetrics: RequestHandler = async (req, res) => {
   try {
@@ -518,14 +570,6 @@ export const getPaymentMetrics: RequestHandler = async (req, res) => {
     if (user?.user_type !== 'admin') {
       return jsonError(res, 403, 'Admin access required');
     }
-
-    // Get MRR (Monthly Recurring Revenue)
-    const mrrResult = await pool.query(
-      `SELECT COALESCE(SUM(amount), 0) as mrr
-       FROM payments
-       WHERE status = 'completed' 
-       AND created_at >= NOW() - INTERVAL '30 days'`
-    );
 
     // Get subscription counts
     const subscriptionResult = await pool.query(
@@ -536,32 +580,57 @@ export const getPaymentMetrics: RequestHandler = async (req, res) => {
        FROM subscriptions`
     );
 
-    // Get failed payments count
-    const failedPaymentsResult = await pool.query(
-      `SELECT COUNT(*) as count FROM payments WHERE status = 'failed'`
+    // Get code statistics
+    const codesResult = await pool.query(
+      `SELECT 
+        COUNT(*) as total_codes,
+        COUNT(CASE WHEN status = 'issued' THEN 1 END) as issued_codes,
+        COUNT(CASE WHEN status = 'used' THEN 1 END) as redeemed_codes,
+        COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_codes,
+        COUNT(CASE WHEN status = 'expired' THEN 1 END) as expired_codes
+       FROM code_requests`
     );
 
-    // Get churn rate (cancelled subscriptions this month)
+    // Get codes issued this month (as MRR equivalent)
+    const monthlyCodesResult = await pool.query(
+      `SELECT COUNT(*) as monthly_codes FROM code_requests 
+       WHERE status = 'used' 
+       AND created_at >= NOW() - INTERVAL '30 days'`
+    );
+
+    // Get churn rate (expired subscriptions this month)
     const churnResult = await pool.query(
       `SELECT COUNT(*) as churn_count FROM subscriptions 
-       WHERE status = 'cancelled' 
+       WHERE status IN ('expired', 'cancelled') 
        AND updated_at >= NOW() - INTERVAL '30 days'`
     );
 
     // Get new signups this month
     const signupsResult = await pool.query(
-      `SELECT COUNT(*) as new_signups FROM users
-       WHERE created_at >= NOW() - INTERVAL '30 days'
-       AND user_type != 'admin'`
+      `SELECT COUNT(*) as new_signups FROM clients
+       WHERE created_at >= NOW() - INTERVAL '30 days'`
     );
 
+    // Calculate estimated MRR based on redeemed codes (assuming $7/code)
+    const subscriptionPrice = 7; // $7 per month
+    const activeCount = parseInt(subscriptionResult.rows[0]?.active_subscriptions || 0);
+    const mrr = activeCount * subscriptionPrice;
+
     const metrics = {
-      mrr: parseFloat(mrrResult.rows[0]?.mrr || 0),
-      active_subscriptions: parseInt(subscriptionResult.rows[0]?.active_subscriptions || 0),
+      mrr: mrr,
+      active_subscriptions: activeCount,
       expired_count: parseInt(subscriptionResult.rows[0]?.expired_count || 0),
       trial_count: parseInt(subscriptionResult.rows[0]?.trial_count || 0),
-      failed_payments: parseInt(failedPaymentsResult.rows[0]?.count || 0),
-      churn_rate: (parseInt(churnResult.rows[0]?.churn_count || 0) / Math.max(parseInt(subscriptionResult.rows[0]?.active_subscriptions || 1), 1) * 100).toFixed(1),
+      // Code statistics
+      total_codes_issued: parseInt(codesResult.rows[0]?.total_codes || 0),
+      codes_redeemed: parseInt(codesResult.rows[0]?.redeemed_codes || 0),
+      codes_pending: parseInt(codesResult.rows[0]?.pending_codes || 0),
+      codes_expired: parseInt(codesResult.rows[0]?.expired_codes || 0),
+      monthly_redemptions: parseInt(monthlyCodesResult.rows[0]?.monthly_codes || 0),
+      // Legacy fields for backward compat
+      failed_payments: parseInt(codesResult.rows[0]?.expired_codes || 0), // Expired codes = "failed"
+      unpaid_count: parseInt(subscriptionResult.rows[0]?.expired_count || 0),
+      churn_rate: parseFloat(((parseInt(churnResult.rows[0]?.churn_count || 0) / Math.max(activeCount, 1)) * 100).toFixed(1)),
       new_signups: parseInt(signupsResult.rows[0]?.new_signups || 0),
     };
 

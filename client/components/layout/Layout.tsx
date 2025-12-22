@@ -6,6 +6,7 @@ import Footer from "./Footer";
 export default function Layout({ children }: PropsWithChildren) {
   const location = useLocation();
   const isStorefrontPage = location.pathname.startsWith('/store/');
+  const isAdminChat = location.pathname === '/platform-admin/chats' || location.pathname === '/platform-admin/chat';
 
   if (isStorefrontPage) {
     // Do not show platform header/footer on public storefront pages
@@ -17,10 +18,12 @@ export default function Layout({ children }: PropsWithChildren) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className={isAdminChat ? "flex flex-col h-screen" : "min-h-screen flex flex-col"}>
       <Header />
-      <main className="flex-1">{children}</main>
-      <Footer />
+      <main className={isAdminChat ? "flex-1 overflow-hidden" : "flex-1"}>
+        {children}
+      </main>
+      {!isAdminChat && <Footer />}
     </div>
   );
 }

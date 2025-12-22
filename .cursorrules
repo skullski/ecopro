@@ -1,0 +1,31 @@
+# Cursor Rules for EcoPro Platform
+
+**IMPORTANT: Before starting ANY coding task, read `/docs/AGENTS.md` first!**
+
+## Critical Rules
+
+1. NEVER create a local database - Only use the Render database
+2. NEVER ask the user to do anything - You are the one who does everything
+3. Read /docs/AGENTS.md before coding - It contains all platform specifics
+4. Read /docs/PLATFORM_OVERVIEW.md for architecture
+
+## Project Structure
+
+- Server: /server/ (Node.js + Express, port 8080)
+- Client: /client/ (Vite + React, port 5173)
+- Database: PostgreSQL on Render (NEVER local)
+- Docs: /docs/ (READ THESE FIRST)
+
+## Authentication
+
+- JWT tokens with role/user_type fields
+- Admin: role='admin' OR user_type='admin'
+- Client: user_type='client'
+- Always check both role AND user_type fields
+
+## Before Any Task
+
+1. Read /docs/AGENTS.md
+2. Understand existing code patterns
+3. Test thoroughly
+4. Don't break existing features

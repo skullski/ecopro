@@ -389,6 +389,21 @@ export function createServer() {
     adminRoutes.unflagProduct
   );
 
+  // Account lock/unlock routes
+  app.post(
+    "/api/admin/users/:id/lock",
+    authenticate,
+    requireAdmin,
+    adminRoutes.lockUser
+  );
+
+  app.post(
+    "/api/admin/users/:id/unlock",
+    authenticate,
+    requireAdmin,
+    adminRoutes.unlockUser
+  );
+
   // Billing routes (both user and admin)
   app.get(
     "/api/billing/subscription",

@@ -17,17 +17,36 @@ export function ChatPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get user info from token or auth context
-    const token = localStorage.getItem('token');
+    // Get user info from token
+    const token = localStorage.getItem('authToken');
     if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
+        
+        // Determine user type and ID based on token structure
+        let userId = 0;
+        let userType: 'client' | 'seller' | 'admin' = 'client';
+        
+        if (payload.user_type === 'admin' || payload.role === 'admin') {
+          userType = 'admin';
+          userId = parseInt(payload.id || 0);
+        } else if (payload.user_type === 'client') {
+          userType = 'client';
+          userId = parseInt(payload.id || 0);
+        } else if (payload.user_type === 'seller' || payload.sellerId) {
+          userType = 'seller';
+          userId = parseInt(payload.sellerId || payload.id || 0);
+        } else if (payload.staffId) {
+          userType = 'client';
+          userId = parseInt(payload.clientId || 0);
+        }
+        
         setUser({
-          id: payload.clientId || payload.sellerId,
+          id: userId,
           email: payload.email,
-          role: payload.clientId ? 'client' : 'seller',
-          clientId: payload.clientId,
-          sellerId: payload.sellerId
+          role: userType === 'admin' ? 'seller' : 'client',
+          clientId: userType === 'client' ? userId : parseInt(payload.clientId || 0),
+          sellerId: userType === 'seller' ? userId : parseInt(payload.sellerId || 0)
         });
       } catch (err) {
         console.error('Failed to parse user from token:', err);
@@ -38,7 +57,7 @@ export function ChatPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
+      <div className="flex items-center justify-center h-screen bg-gray-50 overflow-hidden">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
@@ -46,7 +65,7 @@ export function ChatPage() {
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
+      <div className="flex items-center justify-center h-screen bg-gray-50 overflow-hidden">
         <div className="text-center">
           <p className="text-gray-600 mb-4">Please log in to access chat</p>
           <a href="/login" className="text-blue-600 hover:text-blue-700 font-medium">
@@ -61,9 +80,9 @@ export function ChatPage() {
   const userId = user.clientId || user.sellerId || 0;
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Mobile: Show either list or chat, not both */}
-      <div className="hidden md:flex w-1/3 bg-white shadow-sm">
+    <div className="flex flex-col md:flex-row w-full bg-gray-50 overflow-hidden fixed top-[64px] left-0 right-0" style={{ height: 'calc(100vh - 64px)' }}>
+      {/* Chat List */}
+      <div className="w-full md:w-1/3 bg-white shadow-sm flex flex-col min-h-0 order-2 md:order-1 overflow-hidden">
         <ChatList
           userRole={userRole}
           selectedChatId={selectedChatId}
@@ -72,43 +91,32 @@ export function ChatPage() {
       </div>
 
       {/* Main Chat Area */}
-      {selectedChatId ? (
-        <div className="w-full md:w-2/3 bg-white">
+      <div className="w-full md:w-2/3 bg-white flex flex-col min-h-0 order-1 md:order-2 overflow-hidden">
+        {selectedChatId ? (
           <ChatWindow
             chatId={selectedChatId}
             userRole={userRole}
             userId={userId}
             onClose={() => setSelectedChatId(null)}
           />
-        </div>
-      ) : (
-        <div className="w-full md:w-2/3 hidden md:flex items-center justify-center bg-gray-50">
-          <div className="text-center">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl">💬</span>
+        ) : (
+          <div className="hidden md:flex items-center justify-center bg-gray-50 flex-1">
+            <div className="text-center px-4">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">💬</span>
+              </div>
+              <p className="text-gray-600 text-lg font-medium">
+                {userRole === 'seller' ? 'Select a chat to start' : 'Welcome to Chat'}
+              </p>
+              <p className="text-gray-500 text-sm mt-2">
+                {userRole === 'seller'
+                  ? 'Click on a customer to view and respond to messages'
+                  : 'Request codes from sellers'}
+              </p>
             </div>
-            <p className="text-gray-600 text-lg font-medium">
-              {userRole === 'seller' ? 'Select a chat to start' : 'Welcome to Chat'}
-            </p>
-            <p className="text-gray-500 text-sm mt-2">
-              {userRole === 'seller'
-                ? 'Click on a customer to view and respond to messages'
-                : 'Request codes from sellers'}
-            </p>
           </div>
-        </div>
-      )}
-
-      {/* Mobile: Show chat list modal-like when no chat selected */}
-      {selectedChatId === null && (
-        <div className="md:hidden fixed inset-0 z-50">
-          <ChatList
-            userRole={userRole}
-            selectedChatId={selectedChatId}
-            onSelectChat={setSelectedChatId}
-          />
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

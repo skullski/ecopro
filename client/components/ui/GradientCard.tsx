@@ -81,14 +81,14 @@ export function GradientCard({
       </div>
       <div className="flex items-center gap-2">
         {icon && (
-          <div className={cn("p-2 rounded-lg", theme?.iconBg || iconBg)}>
+          <div className={cn("p-1.5 md:p-2 rounded-lg", theme?.iconBg || iconBg)}>
             {icon}
           </div>
         )}
         <div className="flex-1 min-w-0">
           <div className={cn("text-xs text-muted-foreground truncate", titleClassName)}>{title}</div>
           {value !== undefined && (
-            <div className={cn("text-lg md:text-xl font-bold", theme?.value || valueClassName, "dark:text-white")}>{value}</div>
+            <div className={cn("text-base md:text-lg font-bold", theme?.value || valueClassName, "dark:text-white")}>{value}</div>
           )}
         </div>
       </div>

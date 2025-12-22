@@ -69,7 +69,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-3 dark:bg-black">
       {/* Top Stats Bar */}
-      <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid gap-2 grid-cols-4">
         <GradientCard
           title={t("dashboard.totalOrders")}
           value={loading ? "..." : stats.orders}

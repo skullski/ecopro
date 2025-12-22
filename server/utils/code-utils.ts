@@ -85,7 +85,7 @@ export function formatExpiryTime(expiryDate: Date | string): string {
 
 /**
  * Rate limit check for code validation attempts
- * Max 5 attempts per minute per user
+ * Strict: Max 3 attempts per 5 minutes per user (prevents brute force)
  */
 export async function checkCodeValidationRateLimit(
   userId: number,
@@ -93,18 +93,18 @@ export async function checkCodeValidationRateLimit(
   ipAddress?: string
 ): Promise<{ allowed: boolean; attemptsRemaining: number; resetIn: number }> {
   try {
-    const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
 
-    // Get attempts in last minute
+    // Get attempts in last 5 minutes
     const result = await pool.query(
       `SELECT COUNT(*) as attempt_count 
        FROM code_validation_attempts 
        WHERE user_id = $1 AND user_type = $2 AND created_at > $3`,
-      [userId, userType, oneMinuteAgo]
+      [userId, userType, fiveMinutesAgo]
     );
 
     const attemptCount = parseInt(result.rows[0].attempt_count);
-    const maxAttempts = 5;
+    const maxAttempts = 3;
     const allowed = attemptCount < maxAttempts;
 
     // Calculate reset time (seconds until oldest attempt expires)
@@ -112,13 +112,13 @@ export async function checkCodeValidationRateLimit(
       `SELECT created_at FROM code_validation_attempts 
        WHERE user_id = $1 AND user_type = $2 AND created_at > $3
        ORDER BY created_at ASC LIMIT 1`,
-      [userId, userType, oneMinuteAgo]
+      [userId, userType, fiveMinutesAgo]
     );
 
     let resetIn = 0;
     if (oldestAttempt.rows.length > 0) {
       const oldestTime = new Date(oldestAttempt.rows[0].created_at).getTime();
-      resetIn = Math.ceil((oldestTime + 60 * 1000 - Date.now()) / 1000);
+      resetIn = Math.ceil((oldestTime + 5 * 60 * 1000 - Date.now()) / 1000);
     }
 
     return {
@@ -264,7 +264,9 @@ export async function redeemSubscriptionCode(
     const codeRequest = validation.codeRequest;
 
     // Verify client matches the code request
-    if (codeRequest.client_id !== clientId) {
+    // If the code was issued to a specific client, enforce ownership.
+    // If client_id is NULL, the code is an unassigned voucher and can be redeemed by any client.
+    if (codeRequest.client_id != null && codeRequest.client_id !== clientId) {
       await recordCodeValidationAttempt(
         clientId,
         'client',
@@ -298,11 +300,9 @@ export async function redeemSubscriptionCode(
         throw new Error('Code was already redeemed');
       }
 
-      // Get user associated with client
+      // Get user associated with client (clients table is the store owner)
       const userResult = await client.query(
-        `SELECT u.id FROM users u
-         JOIN clients c ON c.user_id = u.id
-         WHERE c.id = $1`,
+        `SELECT id FROM clients WHERE id = $1`,
         [clientId]
       );
 
@@ -351,6 +351,17 @@ export async function redeemSubscriptionCode(
       const finalSub = await client.query(
         `SELECT * FROM subscriptions WHERE id = $1`,
         [subscriptionId]
+      );
+
+      // Unlock account if it was locked due to subscription expiry
+      // Only unlock if the lock reason contains 'subscription' or 'expired' or 'payment'
+      await client.query(
+        `UPDATE clients 
+         SET is_locked = false, locked_reason = NULL, locked_at = NULL, locked_by_admin_id = NULL
+         WHERE id = $1 
+         AND is_locked = true 
+         AND (locked_reason ILIKE '%subscription%' OR locked_reason ILIKE '%expired%' OR locked_reason ILIKE '%payment%' OR locked_reason ILIKE '%trial%')`,
+        [clientId]
       );
 
       // Record successful attempt

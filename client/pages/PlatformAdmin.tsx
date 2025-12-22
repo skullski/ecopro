@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from '@/lib/i18n';
+import { useNavigate } from 'react-router-dom';
 import { 
   Users, 
   ShoppingBag, 
@@ -24,22 +25,32 @@ import {
   Zap,
   Award,
   Search,
-  CreditCard
+  CreditCard,
+  Gift,
+  UserPlus,
+  AlertTriangle,
+  Unlock,
+  PieChart as PieChartIcon
 } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { Badge } from '@/components/ui/badge';
 import { GradientCard } from '@/components/ui/GradientCard';
 import { Button } from '@/components/ui/button';
-import AdminChats from './admin/Chats';
 
 interface PlatformStats {
   totalUsers: number;
   totalClients: number;
-  totalSellers: number;
-  totalProducts: number;
-  totalOrders: number;
-  totalRevenue: number;
-  activeProducts: number;
-  pendingOrders: number;
+  totalAdmins: number;
+  lockedAccounts: number;
+  activeSubscriptions: number;
+  trialSubscriptions: number;
+  expiredSubscriptions: number;
+  totalCodes: number;
+  redeemedCodes: number;
+  pendingCodes: number;
+  expiredCodes: number;
+  newSignupsWeek: number;
+  newSignupsMonth: number;
 }
 
 interface User {
@@ -97,15 +108,21 @@ interface StaffMember {
 
 export default function PlatformAdmin() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [stats, setStats] = useState<PlatformStats>({
     totalUsers: 0,
     totalClients: 0,
-    totalSellers: 0,
-    totalProducts: 0,
-    totalOrders: 0,
-    totalRevenue: 0,
-    activeProducts: 0,
-    pendingOrders: 0,
+    totalAdmins: 0,
+    lockedAccounts: 0,
+    activeSubscriptions: 0,
+    trialSubscriptions: 0,
+    expiredSubscriptions: 0,
+    totalCodes: 0,
+    redeemedCodes: 0,
+    pendingCodes: 0,
+    expiredCodes: 0,
+    newSignupsWeek: 0,
+    newSignupsMonth: 0,
   });
   const [users, setUsers] = useState<User[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -113,7 +130,7 @@ export default function PlatformAdmin() {
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stores' | 'products' | 'activity' | 'settings' | 'billing' | 'payment-failures' | 'chats'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stores' | 'products' | 'activity' | 'settings' | 'billing' | 'payment-failures' | 'codes'>('overview');
   const [billingMetrics, setBillingMetrics] = useState<any>(null);
   const [billingLoading, setBillingLoading] = useState(false);
   const [platformSettings, setPlatformSettings] = useState<any>(null);
@@ -130,6 +147,10 @@ export default function PlatformAdmin() {
   const [retryingPayment, setRetryingPayment] = useState<number | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<Set<number>>(new Set());
   const [bulkModeratingProducts, setBulkModeratingProducts] = useState(false);
+  const [codesLoading, setCodesLoading] = useState(false);
+  const [generatedCodes, setGeneratedCodes] = useState<any[]>([]);
+  const [issuingCode, setIssuingCode] = useState(false);
+  const [selectedTier, setSelectedTier] = useState<'bronze' | 'silver' | 'gold'>('bronze');
 
   useEffect(() => {
     loadPlatformData();
@@ -291,10 +312,10 @@ export default function PlatformAdmin() {
     }
   };
 
-  const handlePaymentRetry = async (transactionId: string) => {
-    if (!confirm('Retry payment for this transaction?')) return;
+  const handlePaymentRetry = async (codeRequestId: number | string) => {
+    if (!confirm('Issue/reissue code for this request?')) return;
     
-    setRetryingPayment(transactionId as any);
+    setRetryingPayment(codeRequestId as any);
     try {
       const token = localStorage.getItem('authToken');
       const res = await fetch('/api/billing/admin/retry-payment', {
@@ -303,21 +324,79 @@ export default function PlatformAdmin() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ transactionId }),
+        body: JSON.stringify({ transactionId: codeRequestId }),
       });
 
       if (res.ok) {
+        const data = await res.json();
         await loadPaymentFailures();
-        alert('Payment retry initiated');
+        alert(`Code issued successfully!\n\nCode: ${data.newCode}\n\nExpires in 1 hour.`);
       } else {
         const error = await res.json();
-        alert(error.error || 'Failed to retry payment');
+        alert(error.error || 'Failed to issue code');
       }
     } catch (error) {
-      console.error('Error retrying payment:', error);
-      alert('Error retrying payment');
+      console.error('Error issuing code:', error);
+      alert('Error issuing code');
     } finally {
       setRetryingPayment(null);
+    }
+  };
+
+  const loadCodes = async () => {
+    setCodesLoading(true);
+    try {
+      const token = localStorage.getItem('authToken');
+      const res = await fetch('/api/codes/admin/list', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setGeneratedCodes(data || []);
+      } else {
+        console.error('Failed to load codes');
+        setGeneratedCodes([]);
+      }
+    } catch (error) {
+      console.error('Failed to load codes:', error);
+      setGeneratedCodes([]);
+    } finally {
+      setCodesLoading(false);
+    }
+  };
+
+  const handleIssueCode = async () => {
+    if (issuingCode) return;
+    
+    setIssuingCode(true);
+    try {
+      const token = localStorage.getItem('authToken');
+      const res = await fetch('/api/codes/admin/issue', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          tier: selectedTier,
+          payment_method: 'admin',
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        alert(`Code generated successfully!\n\nCode: ${data.code}\n\nTier: ${data.tier}\n\nExpires in 1 hour.`);
+        await loadCodes();
+        await loadPlatformData(); // Refresh stats
+      } else {
+        const error = await res.json();
+        alert(error.error || 'Failed to generate code');
+      }
+    } catch (error) {
+      console.error('Error generating code:', error);
+      alert('Error generating code');
+    } finally {
+      setIssuingCode(false);
     }
   };
 
@@ -426,7 +505,69 @@ export default function PlatformAdmin() {
     }
   };
 
-  const handleDeleteUser = async (userId: number) => {
+  const handleLockUser = async (userId: number, userName: string) => {
+    const reason = prompt(`Lock account for ${userName}?\nEnter reason (optional):`);
+    if (reason === null) return;
+
+    try {
+      const token = localStorage.getItem('authToken');
+      const res = await fetch(`/api/admin/users/${userId}/lock`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ reason: reason || 'Account locked by admin' }),
+      });
+
+      if (res.ok) {
+        await loadPlatformData();
+        alert('User account locked successfully');
+      } else {
+        try {
+          const data = await res.json();
+          alert(`Failed to lock user account: ${data.error || data.message || 'Unknown error'}`);
+        } catch {
+          alert('Failed to lock user account');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to lock user:', error);
+      alert('Failed to lock user account');
+    }
+  };
+
+  const handleUnlockUser = async (userId: number, userName: string) => {
+    const confirm_unlock = confirm(`Unlock account for ${userName}?`);
+    if (!confirm_unlock) return;
+
+    try {
+      const token = localStorage.getItem('authToken');
+      const res = await fetch(`/api/admin/users/${userId}/unlock`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        await loadPlatformData();
+        alert('User account unlocked successfully');
+      } else {
+        try {
+          const data = await res.json();
+          alert(`Failed to unlock user account: ${data.error || data.message || 'Unknown error'}`);
+        } catch {
+          alert('Failed to unlock user account');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to unlock user:', error);
+      alert('Failed to unlock user account');
+    }
+  };
+
+  const handleDeleteUser = async (userId: number, userEmail?: string, userType?: string) => {
     const confirmDelete = confirm('Are you sure you want to delete this user account? This action cannot be undone.');
     if (!confirmDelete) return;
 
@@ -435,16 +576,23 @@ export default function PlatformAdmin() {
       const res = await fetch(`/api/admin/users/${userId}`, {
         method: 'DELETE',
         headers: {
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
+        body: userEmail && userType ? JSON.stringify({ email: userEmail, user_type: userType }) : undefined,
       });
 
       if (res.ok) {
         await loadPlatformData();
         alert('User deleted successfully');
       } else {
-        const txt = await res.text();
-        alert(`Failed to delete user: ${txt}`);
+        try {
+          const data = await res.json();
+          alert(`Failed to delete user: ${data.error || data.message || 'Unknown error'}`);
+        } catch {
+          const txt = await res.text();
+          alert(`Failed to delete user: ${txt}`);
+        }
       }
     } catch (error) {
       console.error('Failed to delete user:', error);
@@ -512,110 +660,110 @@ export default function PlatformAdmin() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Premium Admin Header - Responsive */}
-      <div className="relative bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white overflow-hidden shadow-2xl border-b border-emerald-500/30">
+      {/* Premium Admin Header - Compact */}
+      <div className="relative bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white overflow-hidden shadow-lg border-b border-emerald-500/30">
         {/* Animated Background */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute inset-0 animate-pulse"></div>
         </div>
         
         {/* Glowing Accents */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-400 rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-pulse hidden lg:block"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-400 rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-pulse hidden lg:block" style={{animationDelay: '2s'}}></div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-400 rounded-full mix-blend-screen filter blur-3xl opacity-15 animate-pulse hidden lg:block"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-400 rounded-full mix-blend-screen filter blur-3xl opacity-15 animate-pulse hidden lg:block" style={{animationDelay: '2s'}}></div>
         
-        <div className="container relative mx-auto px-2 sm:px-4 py-4 sm:py-6 lg:py-8 max-w-7xl">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-            <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 w-full sm:flex-1">
+        <div className="container relative mx-auto px-2 sm:px-3 py-2 sm:py-3 max-w-7xl">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-2.5">
               <div className="relative flex-shrink-0">
-                <div className="absolute inset-0 bg-white/30 rounded-lg sm:rounded-2xl blur-xl"></div>
-                <div className="relative w-12 sm:w-14 lg:w-16 h-12 sm:h-14 lg:h-16 rounded-lg sm:rounded-2xl bg-gradient-to-br from-white/40 to-white/10 backdrop-blur-md border border-white/50 flex items-center justify-center shadow-2xl">
-                  <Zap className="w-6 sm:w-7 lg:w-8 h-6 sm:h-7 lg:h-8 text-white drop-shadow-lg" strokeWidth={2} />
+                <div className="absolute inset-0 bg-white/30 rounded-lg blur-lg"></div>
+                <div className="relative w-9 sm:w-10 h-9 sm:h-10 rounded-lg bg-gradient-to-br from-white/40 to-white/10 backdrop-blur-md border border-white/50 flex items-center justify-center shadow-lg">
+                  <Zap className="w-5 sm:w-5 h-5 sm:h-5 text-white drop-shadow-lg" strokeWidth={2} />
                 </div>
               </div>
               <div className="min-w-0">
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-black drop-shadow-lg truncate">Platform Control</h1>
-                <p className="text-white/90 text-xs sm:text-sm font-semibold drop-shadow truncate">Management & Analytics</p>
+                <h1 className="text-base sm:text-lg font-black drop-shadow-lg truncate">Platform Control</h1>
+                <p className="text-white/90 text-[10px] sm:text-xs font-medium drop-shadow truncate">Management & Analytics</p>
               </div>
             </div>
             
-            {/* Quick Stats - Responsive */}
-            <div className="flex items-center gap-1 sm:gap-2 lg:gap-3 flex-wrap justify-end w-full sm:w-auto">
-              <div className="hidden sm:block px-2 sm:px-3 lg:px-4 py-1 sm:py-2 rounded-lg sm:rounded-xl bg-white/20 backdrop-blur-md border border-white/40 hover:bg-white/30 transition-all">
-                <div className="flex items-center gap-1 sm:gap-2">
-                  <Users className="w-3 sm:w-4 h-3 sm:h-4" />
-                  <span className="text-xs sm:text-sm font-bold whitespace-nowrap">{stats.totalUsers}</span>
+            {/* Quick Stats - Compact */}
+            <div className="flex items-center gap-1 sm:gap-1.5">
+              <div className="px-2 py-1 rounded-md bg-white/20 backdrop-blur-md border border-white/40 hover:bg-white/30 transition-all">
+                <div className="flex items-center gap-1">
+                  <Users className="w-3 h-3" />
+                  <span className="text-[10px] sm:text-xs font-bold">{stats.totalUsers}</span>
                 </div>
               </div>
-              <div className="hidden md:block px-2 sm:px-3 lg:px-4 py-1 sm:py-2 rounded-lg sm:rounded-xl bg-white/20 backdrop-blur-md border border-white/40 hover:bg-white/30 transition-all">
-                <div className="flex items-center gap-1 sm:gap-2">
-                  <Store className="w-3 sm:w-4 h-3 sm:h-4" />
-                  <span className="text-xs sm:text-sm font-bold whitespace-nowrap">{stats.totalClients}</span>
+              <div className="hidden sm:flex px-2 py-1 rounded-md bg-white/20 backdrop-blur-md border border-white/40 hover:bg-white/30 transition-all">
+                <div className="flex items-center gap-1">
+                  <Store className="w-3 h-3" />
+                  <span className="text-[10px] sm:text-xs font-bold">{stats.totalClients}</span>
                 </div>
               </div>
-              <div className="hidden lg:block px-3 lg:px-4 py-1 lg:py-2 rounded-lg lg:rounded-xl bg-white/20 backdrop-blur-md border border-white/40 hover:bg-white/30 transition-all">
-                <div className="flex items-center gap-2">
-                  <Package className="w-4 h-4" />
-                  <span className="text-sm font-bold">{stats.totalProducts}</span>
+              <div className="hidden md:flex px-2 py-1 rounded-md bg-white/20 backdrop-blur-md border border-white/40 hover:bg-white/30 transition-all">
+                <div className="flex items-center gap-1">
+                  <Package className="w-3 h-3" />
+                  <span className="text-xs font-bold">{stats.totalProducts}</span>
                 </div>
               </div>
               <Button 
                 size="sm"
-                className="text-white bg-white/20 hover:bg-white/30 border border-white/40 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-auto"
+                className="text-white bg-white/20 hover:bg-white/30 border border-white/40 text-[10px] sm:text-xs px-2 py-1 h-7"
                 onClick={() => window.location.href = '/'}
               >
-                <LogOut className="w-3 sm:w-4 h-3 sm:h-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Exit</span>
+                <LogOut className="w-3 h-3 mr-1" />
+                <span>Exit</span>
               </Button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6 max-w-7xl">
+      <div className="container mx-auto px-2 sm:px-3 py-3 sm:py-4 max-w-7xl">
         {/* Enhanced Navigation Tabs */}
-        <div className="flex gap-1 sm:gap-2 mb-4 sm:mb-6 bg-slate-800/50 backdrop-blur-md rounded-xl sm:rounded-2xl border border-slate-700/50 p-1 sm:p-2 shadow-lg overflow-x-auto">
+        <div className="flex gap-1 sm:gap-2 mb-4 bg-slate-800/50 backdrop-blur-md rounded-lg border border-slate-700/50 p-1.5 shadow-md overflow-x-auto">
           <Button
             variant={activeTab === 'overview' ? 'default' : 'ghost'}
             onClick={() => setActiveTab('overview')}
-            className="whitespace-nowrap text-slate-200 text-xs sm:text-sm px-2 sm:px-3"
+            className="whitespace-nowrap text-slate-200 text-xs sm:text-sm px-2 sm:px-3 py-1.5 h-8 sm:h-9"
           >
-            <BarChart3 className="w-3 sm:w-4 h-3 sm:h-4 mr-1 sm:mr-2" />
+            <BarChart3 className="w-4 h-4 mr-1.5" />
             <span className="hidden sm:inline">Overview</span>
             <span className="sm:hidden">OVR</span>
           </Button>
           <Button
             variant={activeTab === 'users' ? 'default' : 'ghost'}
             onClick={() => setActiveTab('users')}
-            className="whitespace-nowrap text-slate-200 text-xs sm:text-sm px-2 sm:px-3"
+            className="whitespace-nowrap text-slate-200 text-xs sm:text-sm px-2 sm:px-3 py-1.5 h-8 sm:h-9"
           >
-            <Users className="w-3 sm:w-4 h-3 sm:h-4 mr-1 sm:mr-2" />
+            <Users className="w-4 h-4 mr-1.5" />
             <span className="hidden sm:inline">Users</span>
             <span className="sm:hidden">U</span>
           </Button>
           <Button
             variant={activeTab === 'stores' ? 'default' : 'ghost'}
             onClick={() => setActiveTab('stores')}
-            className="whitespace-nowrap text-slate-200 text-xs sm:text-sm px-2 sm:px-3"
+            className="whitespace-nowrap text-slate-200 text-xs sm:text-sm px-2 sm:px-3 py-1.5 h-8 sm:h-9"
           >
-            <Store className="w-3 sm:w-4 h-3 sm:h-4 mr-1 sm:mr-2" />
+            <Store className="w-4 h-4 mr-1.5" />
             <span className="hidden sm:inline">Stores</span>
             <span className="sm:hidden">S</span>
           </Button>
           <Button
             variant={activeTab === 'products' ? 'default' : 'ghost'}
             onClick={() => setActiveTab('products')}
-            className="whitespace-nowrap text-slate-200 text-xs sm:text-sm px-2 sm:px-3"
+            className="whitespace-nowrap text-slate-200 text-xs sm:text-sm px-2 sm:px-3 py-1.5 h-8 sm:h-9"
           >
-            <Package className="w-3 sm:w-4 h-3 sm:h-4 mr-1 sm:mr-2" />
+            <Package className="w-4 h-4 mr-1.5" />
             <span className="hidden sm:inline">Products</span>
             <span className="sm:hidden">P</span>
           </Button>
           <Button
             variant={activeTab === 'activity' ? 'default' : 'ghost'}
             onClick={() => { setActiveTab('activity'); loadActivityLogs(); }}
-            className="whitespace-nowrap text-slate-200 text-xs sm:text-sm px-2 sm:px-3"
+            className="whitespace-nowrap text-slate-200 text-xs sm:text-sm px-2 sm:px-3 py-1.5 h-8 sm:h-9"
           >
-            <Activity className="w-3 sm:w-4 h-3 sm:h-4 mr-1 sm:mr-2" />
+            <Activity className="w-4 h-4 mr-1.5" />
             <span className="hidden sm:inline">Activity</span>
             <span className="sm:hidden">A</span>
           </Button>
@@ -626,39 +774,30 @@ export default function PlatformAdmin() {
               loadBillingMetrics();
               loadPlatformSettings();
             }}
-            className="whitespace-nowrap text-slate-200 text-xs sm:text-sm px-2 sm:px-3"
+            className="whitespace-nowrap text-slate-200 text-xs sm:text-sm px-2 sm:px-3 py-1.5 h-8 sm:h-9"
           >
-            <CreditCard className="w-3 sm:w-4 h-3 sm:h-4 mr-1 sm:mr-2" />
+            <CreditCard className="w-4 h-4 mr-1.5" />
             <span className="hidden sm:inline">Billing</span>
             <span className="sm:hidden">B</span>
           </Button>
           <Button
-            variant={activeTab === 'payment-failures' ? 'default' : 'ghost'}
+            variant={activeTab === 'codes' ? 'default' : 'ghost'}
             onClick={() => { 
-              setActiveTab('payment-failures');
-              loadPaymentFailures();
+              setActiveTab('codes');
+              loadCodes();
             }}
-            className="whitespace-nowrap text-slate-200 text-xs sm:text-sm px-2 sm:px-3"
+            className="whitespace-nowrap text-slate-200 text-xs sm:text-sm px-2 sm:px-3 py-1.5 h-8 sm:h-9"
           >
-            <AlertCircle className="w-3 sm:w-4 h-3 sm:h-4 mr-1 sm:mr-2" />
-            <span className="hidden md:inline">Failures</span>
-            <span className="md:hidden">F</span>
-          </Button>
-          <Button
-            variant={activeTab === 'chats' ? 'default' : 'ghost'}
-            onClick={() => setActiveTab('chats')}
-            className="whitespace-nowrap text-slate-200 text-xs sm:text-sm px-2 sm:px-3"
-          >
-            <MessageCircle className="w-3 sm:w-4 h-3 sm:h-4 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">Chats</span>
-            <span className="sm:hidden">C</span>
+            <Gift className="w-4 h-4 mr-1.5" />
+            <span className="hidden md:inline">Codes</span>
+            <span className="md:hidden">C</span>
           </Button>
           <Button
             variant={activeTab === 'settings' ? 'default' : 'ghost'}
             onClick={() => setActiveTab('settings')}
-            className="whitespace-nowrap text-slate-200 text-xs sm:text-sm px-2 sm:px-3"
+            className="whitespace-nowrap text-slate-200 text-xs sm:text-sm px-2 sm:px-3 py-1.5 h-8 sm:h-9"
           >
-            <Settings className="w-3 sm:w-4 h-3 sm:h-4 mr-1 sm:mr-2" />
+            <Settings className="w-4 h-4 mr-1.5" />
             <span className="hidden sm:inline">Settings</span>
             <span className="sm:hidden">ST</span>
           </Button>
@@ -667,138 +806,285 @@ export default function PlatformAdmin() {
         {/* Overview Tab */}
         {activeTab === 'overview' && (
           <>
-            {/* Premium Stats Grid - Responsive */}
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4 mb-4 sm:mb-6">
-              <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg sm:rounded-xl lg:rounded-2xl p-3 sm:p-4 lg:p-6 text-white shadow-lg border border-blue-500/30 hover:shadow-xl hover:border-blue-400/50 transition-all">
-                <div className="flex items-start sm:items-center justify-between gap-2">
+            {/* Premium Stats Grid - Compact */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-3">
+              <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg p-2.5 sm:p-3 text-white shadow-md border border-blue-500/30">
+                <div className="flex items-center justify-between gap-1">
                   <div className="min-w-0">
-                    <p className="text-blue-200 text-xs sm:text-sm font-semibold mb-1 truncate">Total Users</p>
-                    <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black">{stats.totalUsers}</h3>
-                    <p className="text-blue-300 text-xs mt-1 truncate">Platform wide</p>
+                    <p className="text-blue-200 text-[10px] sm:text-xs font-medium truncate">Total Users</p>
+                    <h3 className="text-lg sm:text-xl font-black">{stats.totalUsers}</h3>
+                    <p className="text-blue-300 text-[10px] truncate">{stats.totalClients} stores</p>
                   </div>
-                  <Users className="w-8 sm:w-10 lg:w-12 h-8 sm:h-10 lg:h-12 text-blue-300 opacity-20 flex-shrink-0" />
+                  <Users className="w-6 h-6 text-blue-300 opacity-20 flex-shrink-0" />
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-lg sm:rounded-xl lg:rounded-2xl p-3 sm:p-4 lg:p-6 text-white shadow-lg border border-emerald-500/30 hover:shadow-xl hover:border-emerald-400/50 transition-all">
-                <div className="flex items-start sm:items-center justify-between gap-2">
+              <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-lg p-2.5 sm:p-3 text-white shadow-md border border-emerald-500/30">
+                <div className="flex items-center justify-between gap-1">
                   <div className="min-w-0">
-                    <p className="text-emerald-200 text-xs sm:text-sm font-semibold mb-1 truncate">Active Stores</p>
-                    <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black">{stats.totalClients}</h3>
-                    <p className="text-emerald-300 text-xs mt-1 truncate">Subscribed</p>
+                    <p className="text-emerald-200 text-[10px] sm:text-xs font-medium truncate">Active Subs</p>
+                    <h3 className="text-lg sm:text-xl font-black">{stats.activeSubscriptions}</h3>
+                    <p className="text-emerald-300 text-[10px] truncate">Paying</p>
                   </div>
-                  <Store className="w-8 sm:w-10 lg:w-12 h-8 sm:h-10 lg:h-12 text-emerald-300 opacity-20 flex-shrink-0" />
+                  <CheckCircle className="w-6 h-6 text-emerald-300 opacity-20 flex-shrink-0" />
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-lg sm:rounded-xl lg:rounded-2xl p-3 sm:p-4 lg:p-6 text-white shadow-lg border border-purple-500/30 hover:shadow-xl hover:border-purple-400/50 transition-all">
-                <div className="flex items-start sm:items-center justify-between gap-2">
+              <div className="bg-gradient-to-br from-amber-600 to-amber-700 rounded-lg p-2.5 sm:p-3 text-white shadow-md border border-amber-500/30">
+                <div className="flex items-center justify-between gap-1">
                   <div className="min-w-0">
-                    <p className="text-purple-200 text-xs sm:text-sm font-semibold mb-1 truncate">Total Products</p>
-                    <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black">{stats.totalProducts}</h3>
-                    <p className="text-purple-300 text-xs mt-1">{stats.activeProducts} active</p>
+                    <p className="text-amber-200 text-[10px] sm:text-xs font-medium truncate">Trial</p>
+                    <h3 className="text-lg sm:text-xl font-black">{stats.trialSubscriptions}</h3>
+                    <p className="text-amber-300 text-[10px] truncate">Free trial</p>
                   </div>
-                  <Package className="w-8 sm:w-10 lg:w-12 h-8 sm:h-10 lg:h-12 text-purple-300 opacity-20 flex-shrink-0" />
+                  <Clock className="w-6 h-6 text-amber-300 opacity-20 flex-shrink-0" />
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-orange-600 to-orange-700 rounded-lg sm:rounded-xl lg:rounded-2xl p-3 sm:p-4 lg:p-6 text-white shadow-lg border border-orange-500/30 hover:shadow-xl hover:border-orange-400/50 transition-all">
-                <div className="flex items-start sm:items-center justify-between gap-2">
+              <div className="bg-gradient-to-br from-red-600 to-red-700 rounded-lg p-2.5 sm:p-3 text-white shadow-md border border-red-500/30">
+                <div className="flex items-center justify-between gap-1">
                   <div className="min-w-0">
-                    <p className="text-orange-200 text-xs sm:text-sm font-semibold mb-1 truncate">Pending Orders</p>
-                    <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black">{stats.pendingOrders}</h3>
-                    <p className="text-orange-300 text-xs mt-1">Awaiting</p>
+                    <p className="text-red-200 text-[10px] sm:text-xs font-medium truncate">Locked</p>
+                    <h3 className="text-lg sm:text-xl font-black">{stats.lockedAccounts}</h3>
+                    <p className="text-red-300 text-[10px] truncate">Attention</p>
                   </div>
-                  <ShoppingBag className="w-8 sm:w-10 lg:w-12 h-8 sm:h-10 lg:h-12 text-orange-300 opacity-20 flex-shrink-0" />
+                  <Lock className="w-6 h-6 text-red-300 opacity-20 flex-shrink-0" />
                 </div>
               </div>
             </div>
 
-            {/* Additional Stats Row */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 lg:gap-4 mb-4 sm:mb-6">
-              <div className="bg-slate-800/50 backdrop-blur-md rounded-lg sm:rounded-xl border border-slate-700/50 p-3 sm:p-4 shadow-md hover:bg-slate-800/70 transition-all">
-                <p className="text-slate-400 text-xs font-medium mb-2">Total Orders</p>
-                <h3 className="text-xl sm:text-2xl font-bold text-cyan-400">{stats.totalOrders}</h3>
-                <p className="text-slate-500 text-xs mt-1">All time</p>
-              </div>
-
-              <div className="bg-slate-800/50 backdrop-blur-md rounded-lg sm:rounded-xl border border-slate-700/50 p-3 sm:p-4 shadow-md hover:bg-slate-800/70 transition-all">
-                <p className="text-slate-400 text-xs font-medium mb-2">Total Revenue</p>
-                <h3 className="text-xl sm:text-2xl font-bold text-emerald-400">${(stats.totalRevenue / 1000).toFixed(0)}K</h3>
-                <p className="text-slate-500 text-xs mt-1">Generated</p>
-              </div>
-
-              <div className="bg-slate-800/50 backdrop-blur-md rounded-lg sm:rounded-xl border border-slate-700/50 p-3 sm:p-4 shadow-md hover:bg-slate-800/70 transition-all">
-                <p className="text-slate-400 text-xs font-medium mb-2">Seller Count</p>
-                <h3 className="text-xl sm:text-2xl font-bold text-blue-400">{stats.totalSellers}</h3>
-                <p className="text-slate-500 text-xs mt-1">Active sellers</p>
-              </div>
-
-              <div className="bg-slate-800/50 backdrop-blur-md rounded-lg sm:rounded-xl border border-slate-700/50 p-3 sm:p-4 shadow-md hover:bg-slate-800/70 transition-all">
-                <p className="text-slate-400 text-xs font-medium mb-2">Avg Products</p>
-                <h3 className="text-xl sm:text-2xl font-bold text-purple-400">
-                  {stats.totalClients > 0 ? (stats.totalProducts / stats.totalClients).toFixed(1) : 0}
+            {/* Charts Section - Compact */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-3 mb-3">
+              {/* Subscription Distribution Pie Chart */}
+              <div className="bg-slate-800/50 backdrop-blur-md rounded-lg border border-slate-700/50 shadow-md p-3">
+                <h3 className="text-xs sm:text-sm font-bold text-white mb-2 flex items-center gap-1.5">
+                  <PieChartIcon className="w-3.5 h-3.5 text-purple-400" />
+                  Subscriptions
                 </h3>
-                <p className="text-slate-500 text-xs mt-1">Per store</p>
+                <div className="h-36 sm:h-40">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Active', value: stats.activeSubscriptions, color: '#10b981' },
+                          { name: 'Trial', value: stats.trialSubscriptions, color: '#f59e0b' },
+                          { name: 'Expired', value: stats.expiredSubscriptions, color: '#ef4444' },
+                        ].filter(d => d.value > 0)}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={30}
+                        outerRadius={50}
+                        paddingAngle={3}
+                        dataKey="value"
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        labelLine={false}
+                      >
+                        {[
+                          { name: 'Active', value: stats.activeSubscriptions, color: '#10b981' },
+                          { name: 'Trial', value: stats.trialSubscriptions, color: '#f59e0b' },
+                          { name: 'Expired', value: stats.expiredSubscriptions, color: '#ef4444' },
+                        ].filter(d => d.value > 0).map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '6px', fontSize: '11px' }}
+                        labelStyle={{ color: '#f1f5f9' }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex justify-center gap-3 mt-1">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                    <span className="text-[10px] text-slate-400">Active</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                    <span className="text-[10px] text-slate-400">Trial</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                    <span className="text-[10px] text-slate-400">Expired</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Code Statistics Bar Chart */}
+              <div className="bg-slate-800/50 backdrop-blur-md rounded-lg border border-slate-700/50 shadow-md p-3">
+                <h3 className="text-xs sm:text-sm font-bold text-white mb-2 flex items-center gap-1.5">
+                  <BarChart3 className="w-3.5 h-3.5 text-cyan-400" />
+                  Codes
+                </h3>
+                <div className="h-36 sm:h-40">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={[
+                        { name: 'Total', value: stats.totalCodes, fill: '#06b6d4' },
+                        { name: 'Redeemed', value: stats.redeemedCodes, fill: '#10b981' },
+                        { name: 'Pending', value: stats.pendingCodes, fill: '#f59e0b' },
+                        { name: 'Expired', value: stats.expiredCodes, fill: '#ef4444' },
+                      ]}
+                      layout="vertical"
+                      margin={{ top: 5, right: 20, left: 50, bottom: 5 }}
+                    >
+                      <XAxis type="number" stroke="#64748b" fontSize={10} />
+                      <YAxis type="category" dataKey="name" stroke="#64748b" fontSize={10} />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '6px', fontSize: '11px' }}
+                        labelStyle={{ color: '#f1f5f9' }}
+                        cursor={{ fill: 'rgba(100, 116, 139, 0.1)' }}
+                      />
+                      <Bar dataKey="value" radius={[0, 3, 3, 0]}>
+                        {[
+                          { name: 'Total', value: stats.totalCodes, fill: '#06b6d4' },
+                          { name: 'Redeemed', value: stats.redeemedCodes, fill: '#10b981' },
+                          { name: 'Pending', value: stats.pendingCodes, fill: '#f59e0b' },
+                          { name: 'Expired', value: stats.expiredCodes, fill: '#ef4444' },
+                        ].map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             </div>
 
-            {/* Quick Insights - Responsive */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+            {/* Stats Shapes Row - Compact */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+              {/* Circular Progress - Subscription Rate */}
+              <div className="bg-slate-800/50 backdrop-blur-md rounded-lg border border-slate-700/50 p-2 shadow-md">
+                <div className="flex flex-col items-center">
+                  <div className="relative w-10 h-10 sm:w-12 sm:h-12">
+                    <svg className="w-full h-full transform -rotate-90">
+                      <circle cx="50%" cy="50%" r="40%" stroke="#334155" strokeWidth="4" fill="none" />
+                      <circle cx="50%" cy="50%" r="40%" stroke="#10b981" strokeWidth="4" fill="none" strokeLinecap="round"
+                        strokeDasharray={`${(stats.totalClients > 0 ? (stats.activeSubscriptions / stats.totalClients) * 226 : 0)} 226`}
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-[10px] sm:text-xs font-bold text-emerald-400">
+                        {stats.totalClients > 0 ? Math.round((stats.activeSubscriptions / stats.totalClients) * 100) : 0}%
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-1">Active</p>
+                </div>
+              </div>
+
+              {/* Circular Progress - Trial Rate */}
+              <div className="bg-slate-800/50 backdrop-blur-md rounded-lg border border-slate-700/50 p-2 shadow-md">
+                <div className="flex flex-col items-center">
+                  <div className="relative w-10 h-10 sm:w-12 sm:h-12">
+                    <svg className="w-full h-full transform -rotate-90">
+                      <circle cx="50%" cy="50%" r="40%" stroke="#334155" strokeWidth="4" fill="none" />
+                      <circle cx="50%" cy="50%" r="40%" stroke="#f59e0b" strokeWidth="4" fill="none" strokeLinecap="round"
+                        strokeDasharray={`${(stats.totalClients > 0 ? (stats.trialSubscriptions / stats.totalClients) * 226 : 0)} 226`}
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-[10px] sm:text-xs font-bold text-amber-400">
+                        {stats.totalClients > 0 ? Math.round((stats.trialSubscriptions / stats.totalClients) * 100) : 0}%
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-1">Trial</p>
+                </div>
+              </div>
+
+              {/* Circular Progress - Code Redemption */}
+              <div className="bg-slate-800/50 backdrop-blur-md rounded-lg border border-slate-700/50 p-2 shadow-md">
+                <div className="flex flex-col items-center">
+                  <div className="relative w-10 h-10 sm:w-12 sm:h-12">
+                    <svg className="w-full h-full transform -rotate-90">
+                      <circle cx="50%" cy="50%" r="40%" stroke="#334155" strokeWidth="4" fill="none" />
+                      <circle cx="50%" cy="50%" r="40%" stroke="#8b5cf6" strokeWidth="4" fill="none" strokeLinecap="round"
+                        strokeDasharray={`${(stats.totalCodes > 0 ? (stats.redeemedCodes / stats.totalCodes) * 226 : 0)} 226`}
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-[10px] sm:text-xs font-bold text-purple-400">
+                        {stats.totalCodes > 0 ? Math.round((stats.redeemedCodes / stats.totalCodes) * 100) : 0}%
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-1">Codes</p>
+                </div>
+              </div>
+
+              {/* Growth Indicator */}
+              <div className="bg-slate-800/50 backdrop-blur-md rounded-lg border border-slate-700/50 p-2 shadow-md">
+                <div className="flex flex-col items-center">
+                  <div className="relative w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-full"></div>
+                    <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400" />
+                  </div>
+                  <p className="text-sm font-bold text-cyan-400">+{stats.newSignupsWeek}</p>
+                  <p className="text-[10px] text-slate-400">Week</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Insights - Compact */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-3">
               {/* Recent Activity */}
-              <div className="bg-slate-800/50 backdrop-blur-md rounded-lg sm:rounded-xl lg:rounded-2xl border border-slate-700/50 shadow-lg p-4 sm:p-5 lg:p-6">
-                <h3 className="text-sm sm:text-base lg:text-lg font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
-                  <Activity className="w-4 sm:w-5 h-4 sm:h-5 text-cyan-400" />
+              <div className="bg-slate-800/50 backdrop-blur-md rounded-lg border border-slate-700/50 shadow-md p-3">
+                <h3 className="text-xs sm:text-sm font-bold text-white mb-2 flex items-center gap-1.5">
+                  <Activity className="w-3.5 h-3.5 text-cyan-400" />
                   Recent Activity
                 </h3>
-                <div className="space-y-2 sm:space-y-3">
-                  {activityLogs.slice(0, 5).map((log) => (
-                    <div key={log.id} className="flex items-start gap-2 sm:gap-3 pb-2 sm:pb-3 border-b border-slate-700/50 last:border-0">
-                      <div className="w-2 h-2 mt-1 sm:mt-2 rounded-full bg-cyan-400 flex-shrink-0"></div>
+                <div className="space-y-1.5">
+                  {activityLogs.slice(0, 4).map((log) => (
+                    <div key={log.id} className="flex items-start gap-2 pb-1.5 border-b border-slate-700/50 last:border-0">
+                      <div className="w-1.5 h-1.5 mt-1 rounded-full bg-cyan-400 flex-shrink-0"></div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs sm:text-sm text-white font-medium truncate">{log.action}</p>
-                        <p className="text-xs text-slate-400">{log.resource_type}</p>
+                        <p className="text-[10px] sm:text-xs text-white font-medium truncate">{log.action}</p>
+                        <p className="text-[10px] text-slate-400">{log.resource_type}</p>
                       </div>
-                      <span className="text-xs text-slate-500 whitespace-nowrap">{new Date(log.timestamp).toLocaleDateString()}</span>
+                      <span className="text-[10px] text-slate-500 whitespace-nowrap">{new Date(log.timestamp).toLocaleDateString()}</span>
                     </div>
                   ))}
+                  {activityLogs.length === 0 && (
+                    <p className="text-[10px] text-slate-500 text-center py-2">No recent activity</p>
+                  )}
                 </div>
               </div>
 
-              {/* Platform Health */}
-              <div className="bg-slate-800/50 backdrop-blur-md rounded-lg sm:rounded-xl lg:rounded-2xl border border-slate-700/50 shadow-lg p-4 sm:p-5 lg:p-6">
-                <h3 className="text-sm sm:text-base lg:text-lg font-bold text-white mb-3 sm:mb-4 flex items-center gap-2">
-                  <Zap className="w-4 sm:w-5 h-4 sm:h-5 text-yellow-400" />
-                  Platform Health
+              {/* Quick Stats Summary */}
+              <div className="bg-slate-800/50 backdrop-blur-md rounded-lg border border-slate-700/50 shadow-md p-3">
+                <h3 className="text-xs sm:text-sm font-bold text-white mb-2 flex items-center gap-1.5">
+                  <Zap className="w-3.5 h-3.5 text-yellow-400" />
+                  Quick Stats
                 </h3>
-                <div className="space-y-3 sm:space-y-4">
-                  <div>
-                    <div className="flex items-center justify-between mb-1 sm:mb-2">
-                      <span className="text-xs sm:text-sm text-slate-300">System Status</span>
-                      <CheckCircle className="w-3 sm:w-4 h-3 sm:h-4 text-emerald-400" />
-                    </div>
-                    <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-emerald-400 to-cyan-400" style={{width: '95%'}}></div>
-                    </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-slate-700/30 rounded-md p-2">
+                    <p className="text-[10px] text-slate-400">This Week</p>
+                    <p className="text-base font-bold text-emerald-400">{stats.newSignupsWeek}</p>
                   </div>
-                  <div>
-                    <div className="flex items-center justify-between mb-1 sm:mb-2">
-                      <span className="text-xs sm:text-sm text-slate-300">Active Connections</span>
-                      <span className="text-xs sm:text-sm font-bold text-cyan-400">{stats.totalClients}</span>
-                    </div>
-                    <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-cyan-400 to-blue-400" style={{width: '75%'}}></div>
-                    </div>
+                  <div className="bg-slate-700/30 rounded-md p-2">
+                    <p className="text-[10px] text-slate-400">This Month</p>
+                    <p className="text-base font-bold text-blue-400">{stats.newSignupsMonth}</p>
                   </div>
-                  <div>
-                    <div className="flex items-center justify-between mb-1 sm:mb-2">
-                      <span className="text-xs sm:text-sm text-slate-300">Database Usage</span>
-                      <span className="text-xs sm:text-sm font-bold text-purple-400">42%</span>
-                    </div>
-                    <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
-                      <div className="h-full bg-gradient-to-r from-purple-400 to-pink-400" style={{width: '42%'}}></div>
-                    </div>
+                  <div className="bg-slate-700/30 rounded-md p-2">
+                    <p className="text-[10px] text-slate-400">Redeemed</p>
+                    <p className="text-base font-bold text-purple-400">{stats.redeemedCodes}</p>
                   </div>
+                  <div className="bg-slate-700/30 rounded-md p-2">
+                    <p className="text-[10px] text-slate-400">Expired</p>
+                    <p className="text-base font-bold text-orange-400">{stats.expiredSubscriptions}</p>
+                  </div>
+                </div>
+                <div className="mt-2 pt-2 border-t border-slate-700/50">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full text-[10px] h-7"
+                    onClick={() => setActiveTab('billing')}
+                  >
+                    <CreditCard className="w-3 h-3 mr-1" />
+                    View Billing
+                  </Button>
                 </div>
               </div>
             </div>
@@ -823,12 +1109,31 @@ export default function PlatformAdmin() {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-white">{user.name}</p>
                         <p className="text-xs text-slate-400 truncate">{user.email}</p>
+                        {(user as any).is_locked && <p className="text-xs text-red-400">🔒 Account Locked</p>}
+                        {user.email === 'admin@ecopro.com' && <p className="text-xs text-blue-400">🛡️ System Admin</p>}
                       </div>
                       <Badge className="bg-red-500/80 text-white">Admin</Badge>
                     </div>
-                    <Button size="sm" variant="destructive" className="w-full text-xs" onClick={() => handleDeleteUser(user.id)}>
-                      Delete
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="flex-1 text-xs" 
+                        disabled={user.email === 'admin@ecopro.com'}
+                        onClick={() => (user as any).is_locked ? handleUnlockUser(user.id, user.name) : handleLockUser(user.id, user.name)}
+                      >
+                        {(user as any).is_locked ? '🔓 Unlock' : '🔒 Lock'}
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="destructive" 
+                        className="flex-1 text-xs"
+                        disabled={user.email === 'admin@ecopro.com'}
+                        onClick={() => handleDeleteUser(user.id)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
                   </div>
                 ))}
                 {users.filter(u => u.user_type === 'admin').length === 0 && (
@@ -852,14 +1157,18 @@ export default function PlatformAdmin() {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-white">{user.name}</p>
                         <p className="text-xs text-slate-400 truncate">{user.email}</p>
+                        {(user as any).is_locked && <p className="text-xs text-red-400">🔒 Account Locked</p>}
                       </div>
                       <Badge className="bg-emerald-500/80 text-white">Client</Badge>
                     </div>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline" className="flex-1 text-xs" onClick={() => handlePromoteToAdmin(user.id)}>
+                      <Button size="sm" variant="outline" className="flex-1 text-xs" onClick={() => (user as any).is_locked ? handleUnlockUser(user.id, user.name) : handleLockUser(user.id, user.name)}>
+                        {(user as any).is_locked ? '🔓 Unlock' : '🔒 Lock'}
+                      </Button>
+                      <Button size="sm" variant="default" className="flex-1 text-xs" onClick={() => handlePromoteToAdmin(user.id)}>
                         Promote
                       </Button>
-                      <Button size="sm" variant="destructive" className="flex-1 text-xs" onClick={() => handleDeleteUser(user.id)}>
+                      <Button size="sm" variant="destructive" className="flex-1 text-xs" onClick={() => handleDeleteUser(user.id, user.email, user.user_type)}>
                         Delete
                       </Button>
                     </div>
@@ -887,14 +1196,20 @@ export default function PlatformAdmin() {
                         <p className="font-medium text-white text-sm">{staffMember.email}</p>
                         <p className="text-xs text-slate-400 truncate">{staffMember.store_name}</p>
                         <p className="text-xs text-slate-500">Owner: {staffMember.owner_email}</p>
+                        {(staffMember as any).is_locked && <p className="text-xs text-red-400">🔒 Account Locked</p>}
                       </div>
                       <Badge className={staffMember.status === 'active' ? 'bg-blue-500/80 text-white' : 'bg-slate-500/80 text-white'}>
                         {staffMember.status}
                       </Badge>
                     </div>
-                    <Button size="sm" variant="destructive" className="w-full text-xs" onClick={() => handleDeleteStaff(staffMember.id)}>
-                      Delete
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" className="flex-1 text-xs" onClick={() => (staffMember as any).is_locked ? handleUnlockUser(staffMember.id, staffMember.email) : handleLockUser(staffMember.id, staffMember.email)}>
+                        {(staffMember as any).is_locked ? '🔓 Unlock' : '🔒 Lock'}
+                      </Button>
+                      <Button size="sm" variant="destructive" className="flex-1 text-xs" onClick={() => handleDeleteStaff(staffMember.id)}>
+                        Delete
+                      </Button>
+                    </div>
                   </div>
                 ))}
                 {staff.length === 0 && (
@@ -953,120 +1268,135 @@ export default function PlatformAdmin() {
           </div>
         )}
 
-        {/* Payment Failures Tab */}
+        {/* Code Requests Tab (was Payment Failures) */}
         {activeTab === 'payment-failures' && (
           <div className="space-y-6">
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-gradient-to-br from-red-500/10 to-red-500/5 backdrop-blur-md rounded-2xl border border-red-500/30 p-6 shadow-lg">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-slate-400 mb-1">Total Failed Payments</p>
-                    <p className="text-3xl font-bold text-red-400">
-                      {paymentFailures.filter(p => p.status === 'failed').length}
-                    </p>
-                  </div>
-                  <AlertCircle className="w-10 h-10 text-red-500/40" />
-                </div>
-              </div>
-
               <div className="bg-gradient-to-br from-yellow-500/10 to-yellow-500/5 backdrop-blur-md rounded-2xl border border-yellow-500/30 p-6 shadow-lg">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-slate-400 mb-1">Pending Retries</p>
+                    <p className="text-sm text-slate-400 mb-1">Pending Code Requests</p>
                     <p className="text-3xl font-bold text-yellow-400">
-                      {paymentFailures.filter(p => p.status === 'pending_retry').length}
+                      {paymentFailures.filter(p => p.status === 'pending').length}
                     </p>
                   </div>
                   <Clock className="w-10 h-10 text-yellow-500/40" />
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-orange-500/10 to-orange-500/5 backdrop-blur-md rounded-2xl border border-orange-500/30 p-6 shadow-lg">
+              <div className="bg-gradient-to-br from-red-500/10 to-red-500/5 backdrop-blur-md rounded-2xl border border-red-500/30 p-6 shadow-lg">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-slate-400 mb-1">Lost Revenue</p>
-                    <p className="text-3xl font-bold text-orange-400">
-                      ${paymentFailures.reduce((sum, p) => sum + (p.amount || 0), 0).toFixed(2)}
+                    <p className="text-sm text-slate-400 mb-1">Expired Codes</p>
+                    <p className="text-3xl font-bold text-red-400">
+                      {paymentFailures.filter(p => p.status === 'failed' || p.status === 'expired').length}
                     </p>
                   </div>
-                  <DollarSign className="w-10 h-10 text-orange-500/40" />
+                  <AlertCircle className="w-10 h-10 text-red-500/40" />
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 backdrop-blur-md rounded-2xl border border-blue-500/30 p-6 shadow-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-slate-400 mb-1">Total Requests</p>
+                    <p className="text-3xl font-bold text-blue-400">
+                      {paymentFailures.length}
+                    </p>
+                  </div>
+                  <CreditCard className="w-10 h-10 text-blue-500/40" />
                 </div>
               </div>
             </div>
 
-            {/* Payment Failures List */}
+            {/* Code Requests List */}
             <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 shadow-lg overflow-hidden">
               <div className="p-6 border-b border-slate-700/50 bg-slate-900/80">
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <AlertCircle className="w-5 h-5 text-red-400" />
-                  Failed Payment Transactions
+                  <CreditCard className="w-5 h-5 text-cyan-400" />
+                  Pending & Expired Code Requests
                 </h3>
-                <p className="text-sm text-slate-400 mt-2">Review and retry failed payments from store owners</p>
+                <p className="text-sm text-slate-400 mt-2">Review code requests that need attention - issue new codes or reissue expired ones</p>
               </div>
 
               {failuresLoading ? (
                 <div className="p-8 text-center">
-                  <p className="text-slate-400">Loading payment failures...</p>
+                  <p className="text-slate-400">Loading code requests...</p>
                 </div>
               ) : paymentFailures.length === 0 ? (
                 <div className="p-8 text-center">
                   <CheckCircle className="w-12 h-12 text-emerald-500/40 mx-auto mb-3" />
-                  <p className="text-slate-400">No payment failures detected</p>
+                  <p className="text-slate-400">No pending code requests</p>
+                  <p className="text-xs text-slate-500 mt-1">All code requests have been processed</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-slate-700/50 bg-slate-900/50">
-                        <th className="p-4 text-left text-xs font-semibold text-slate-300">Transaction ID</th>
-                        <th className="p-4 text-left text-xs font-semibold text-slate-300">Store Owner</th>
-                        <th className="p-4 text-left text-xs font-semibold text-slate-300">Amount</th>
-                        <th className="p-4 text-left text-xs font-semibold text-slate-300">Failure Reason</th>
+                        <th className="p-4 text-left text-xs font-semibold text-slate-300">ID</th>
+                        <th className="p-4 text-left text-xs font-semibold text-slate-300">Client</th>
+                        <th className="p-4 text-left text-xs font-semibold text-slate-300">Tier</th>
+                        <th className="p-4 text-left text-xs font-semibold text-slate-300">Issue</th>
                         <th className="p-4 text-left text-xs font-semibold text-slate-300">Status</th>
-                        <th className="p-4 text-left text-xs font-semibold text-slate-300">Last Attempted</th>
+                        <th className="p-4 text-left text-xs font-semibold text-slate-300">Requested</th>
                         <th className="p-4 text-left text-xs font-semibold text-slate-300">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-700/30">
                       {paymentFailures.map((failure) => (
                         <tr key={failure.id} className="hover:bg-slate-700/20 transition-colors">
-                          <td className="p-4 text-slate-300 text-sm font-mono">{failure.transaction_id?.substring(0, 12)}...</td>
-                          <td className="p-4 text-slate-400 text-sm">{failure.store_owner_email || 'Unknown'}</td>
-                          <td className="p-4 text-slate-300 text-sm font-bold">${failure.amount?.toFixed(2) || '0.00'}</td>
+                          <td className="p-4 text-slate-300 text-sm font-mono">#{failure.id}</td>
+                          <td className="p-4 text-sm">
+                            <p className="text-slate-300">{failure.store_owner_name || 'Unknown'}</p>
+                            <p className="text-xs text-slate-500">{failure.store_owner_email}</p>
+                          </td>
+                          <td className="p-4 text-sm">
+                            <Badge className={`${
+                              failure.tier === 'gold' ? 'bg-yellow-600' :
+                              failure.tier === 'silver' ? 'bg-slate-500' :
+                              'bg-amber-700'
+                            } text-white capitalize`}>
+                              {failure.tier || 'Standard'}
+                            </Badge>
+                          </td>
                           <td className="p-4 text-slate-400 text-sm">
-                            <span className="bg-red-500/20 text-red-300 px-2 py-1 rounded text-xs">
-                              {failure.failure_reason || 'Unknown'}
+                            <span className={`px-2 py-1 rounded text-xs ${
+                              failure.status === 'pending' ? 'bg-yellow-500/20 text-yellow-300' :
+                              'bg-red-500/20 text-red-300'
+                            }`}>
+                              {failure.failure_reason || 'Needs attention'}
                             </span>
                           </td>
                           <td className="p-4 text-sm">
-                            {failure.status === 'failed' && (
-                              <Badge className="bg-red-600 text-white">Failed</Badge>
+                            {failure.status === 'pending' && (
+                              <Badge className="bg-yellow-600 text-white">Pending</Badge>
                             )}
-                            {failure.status === 'pending_retry' && (
-                              <Badge className="bg-yellow-600 text-white">Pending Retry</Badge>
-                            )}
-                            {failure.status === 'retry_scheduled' && (
-                              <Badge className="bg-blue-600 text-white">Scheduled</Badge>
+                            {(failure.status === 'failed' || failure.status === 'expired') && (
+                              <Badge className="bg-red-600 text-white">Expired</Badge>
                             )}
                           </td>
-                          <td className="p-4 text-slate-400 text-sm">{new Date(failure.updated_at || failure.created_at).toLocaleDateString()}</td>
+                          <td className="p-4 text-slate-400 text-sm">{new Date(failure.created_at).toLocaleDateString()}</td>
                           <td className="p-4 text-sm flex gap-2">
                             <Button
                               size="sm"
-                              onClick={() => handlePaymentRetry(failure.transaction_id)}
-                              disabled={retryingPayment === failure.transaction_id}
+                              onClick={() => handlePaymentRetry(failure.id)}
+                              disabled={retryingPayment === failure.id}
                               className="bg-emerald-600 hover:bg-emerald-700 text-white"
                             >
-                              {retryingPayment === failure.transaction_id ? 'Retrying...' : 'Retry'}
+                              {retryingPayment === failure.id ? '...' : failure.status === 'pending' ? 'Issue Code' : 'Reissue'}
                             </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-slate-300 border-slate-600 hover:border-slate-500"
-                            >
-                              Details
-                            </Button>
+                            {failure.chat_id && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-slate-300 border-slate-600 hover:border-slate-500"
+                                onClick={() => navigate('/platform-admin/chat')}
+                              >
+                                Chat
+                              </Button>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -1076,31 +1406,30 @@ export default function PlatformAdmin() {
               )}
             </div>
 
-            {/* Retry History */}
+            {/* Info Box */}
             <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 shadow-lg p-6">
               <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                 <Zap className="w-5 h-5 text-blue-400" />
-                Automatic Retry Schedule
+                Code Issuance Flow
               </h3>
               <div className="space-y-3 text-sm text-slate-400">
                 <div className="flex items-center gap-3 p-3 bg-slate-700/20 rounded-lg">
-                  <Clock className="w-4 h-4 text-blue-400" />
-                  <span>First Retry: 5 minutes after failure</span>
+                  <span className="w-6 h-6 rounded-full bg-blue-500/30 flex items-center justify-center text-blue-400 text-xs">1</span>
+                  <span>Client requests a code via chat or Codes Store page</span>
                 </div>
                 <div className="flex items-center gap-3 p-3 bg-slate-700/20 rounded-lg">
-                  <Clock className="w-4 h-4 text-blue-400" />
-                  <span>Second Retry: 15 minutes after first retry</span>
+                  <span className="w-6 h-6 rounded-full bg-blue-500/30 flex items-center justify-center text-blue-400 text-xs">2</span>
+                  <span>Admin reviews request and verifies payment (if applicable)</span>
                 </div>
                 <div className="flex items-center gap-3 p-3 bg-slate-700/20 rounded-lg">
-                  <Clock className="w-4 h-4 text-blue-400" />
-                  <span>Third Retry: 1 hour after second retry</span>
+                  <span className="w-6 h-6 rounded-full bg-blue-500/30 flex items-center justify-center text-blue-400 text-xs">3</span>
+                  <span>Admin issues code (valid for 1 hour) via chat or this page</span>
                 </div>
                 <div className="flex items-center gap-3 p-3 bg-slate-700/20 rounded-lg">
-                  <Clock className="w-4 h-4 text-blue-400" />
-                  <span>Final Retry: 24 hours after third retry</span>
+                  <span className="w-6 h-6 rounded-full bg-emerald-500/30 flex items-center justify-center text-emerald-400 text-xs">4</span>
+                  <span>Client redeems code at /codes-store → Subscription activated!</span>
                 </div>
               </div>
-              <p className="text-xs text-slate-500 mt-4">If all automatic retries fail, manual action is required.</p>
             </div>
           </div>
         )}
@@ -1327,13 +1656,6 @@ export default function PlatformAdmin() {
           </div>
         )}
 
-        {/* Chats Tab */}
-        {activeTab === 'chats' && (
-          <div className="bg-slate-800/50 backdrop-blur-md rounded-xl sm:rounded-2xl border border-slate-700/50 shadow-lg overflow-hidden">
-            <AdminChats />
-          </div>
-        )}
-
         {/* Settings Tab */}
         {activeTab === 'settings' && (
           <div className="space-y-4 sm:space-y-6">
@@ -1470,74 +1792,109 @@ export default function PlatformAdmin() {
 
         {/* Billing Tab */}
         {activeTab === 'billing' && (
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* Billing Metrics Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 backdrop-blur-md rounded-2xl border border-emerald-500/30 p-6 shadow-lg">
+            <div className="grid grid-cols-4 gap-3">
+              <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 backdrop-blur-md rounded-2xl border border-emerald-500/30 p-3 md:p-4 shadow-lg">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-slate-400 mb-1">Monthly Revenue (MRR)</p>
-                    <p className="text-3xl font-bold text-emerald-400">
+                    <p className="text-xs text-slate-400 mb-0.5">Monthly Revenue (MRR)</p>
+                    <p className="text-xl md:text-2xl font-bold text-emerald-400">
                       ${billingMetrics?.mrr?.toFixed(2) || '0.00'}
                     </p>
                   </div>
-                  <DollarSign className="w-10 h-10 text-emerald-500/40" />
+                  <DollarSign className="w-6 h-6 md:w-8 md:h-8 text-emerald-500/40" />
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 backdrop-blur-md rounded-2xl border border-blue-500/30 p-6 shadow-lg">
+              <div className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 backdrop-blur-md rounded-2xl border border-blue-500/30 p-3 md:p-4 shadow-lg">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-slate-400 mb-1">Active Subscriptions</p>
-                    <p className="text-3xl font-bold text-blue-400">
+                    <p className="text-xs text-slate-400 mb-0.5">Active Subscriptions</p>
+                    <p className="text-xl md:text-2xl font-bold text-blue-400">
                       {billingMetrics?.active_subscriptions || 0}
                     </p>
                   </div>
-                  <CheckCircle className="w-10 h-10 text-blue-500/40" />
+                  <CheckCircle className="w-6 h-6 md:w-8 md:h-8 text-blue-500/40" />
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-orange-500/10 to-orange-500/5 backdrop-blur-md rounded-2xl border border-orange-500/30 p-6 shadow-lg">
+              <div className="bg-gradient-to-br from-orange-500/10 to-orange-500/5 backdrop-blur-md rounded-2xl border border-orange-500/30 p-3 md:p-4 shadow-lg">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-slate-400 mb-1">Unpaid Subscriptions</p>
-                    <p className="text-3xl font-bold text-orange-400">
+                    <p className="text-xs text-slate-400 mb-0.5">Unpaid Subscriptions</p>
+                    <p className="text-xl md:text-2xl font-bold text-orange-400">
                       {billingMetrics?.unpaid_count || 0}
                     </p>
                   </div>
-                  <AlertCircle className="w-10 h-10 text-orange-500/40" />
+                  <AlertCircle className="w-6 h-6 md:w-8 md:h-8 text-orange-500/40" />
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 backdrop-blur-md rounded-2xl border border-purple-500/30 p-6 shadow-lg">
+              <div className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 backdrop-blur-md rounded-2xl border border-purple-500/30 p-3 md:p-4 shadow-lg">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-slate-400 mb-1">New Signups (This Month)</p>
-                    <p className="text-3xl font-bold text-purple-400">
+                    <p className="text-xs text-slate-400 mb-0.5">New Signups (This Month)</p>
+                    <p className="text-xl md:text-2xl font-bold text-purple-400">
                       {billingMetrics?.new_signups || 0}
                     </p>
                   </div>
-                  <TrendingUp className="w-10 h-10 text-purple-500/40" />
+                  <TrendingUp className="w-6 h-6 md:w-8 md:h-8 text-purple-500/40" />
                 </div>
               </div>
             </div>
 
-            {/* Additional Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 p-6 shadow-lg">
-                <p className="text-sm text-slate-400 mb-2">Churn Rate</p>
-                <p className="text-2xl font-bold text-red-400">
-                  {billingMetrics?.churn_rate?.toFixed(1) || '0.0'}%
+            {/* Additional Metrics - Code Statistics */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 p-3 md:p-4 shadow-lg">
+                <p className="text-xs text-slate-400 mb-1">Codes Issued</p>
+                <p className="text-lg md:text-xl font-bold text-cyan-400">
+                  {billingMetrics?.total_codes_issued || 0}
                 </p>
-                <p className="text-xs text-slate-500 mt-2">Cancelled this month</p>
+                <p className="text-[10px] text-slate-500 mt-1">Total codes generated</p>
+              </div>
+
+              <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 p-3 md:p-4 shadow-lg">
+                <p className="text-xs text-slate-400 mb-1">Codes Redeemed</p>
+                <p className="text-lg md:text-xl font-bold text-emerald-400">
+                  {billingMetrics?.codes_redeemed || 0}
+                </p>
+                <p className="text-xs text-slate-500 mt-2">Successfully activated</p>
+              </div>
+
+              <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 p-3 md:p-4 shadow-lg">
+                <p className="text-xs text-slate-400 mb-1">Pending Codes</p>
+                <p className="text-lg md:text-xl font-bold text-yellow-400">
+                  {billingMetrics?.codes_pending || 0}
+                </p>
+                <p className="text-xs text-slate-500 mt-2">Awaiting issuance</p>
+              </div>
+
+              <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 p-3 md:p-4 shadow-lg">
+                <p className="text-xs text-slate-400 mb-1">Expired Codes</p>
+                <p className="text-lg md:text-xl font-bold text-red-400">
+                  {billingMetrics?.codes_expired || 0}
+                </p>
+                <p className="text-xs text-slate-500 mt-2">Need reissue</p>
+              </div>
+            </div>
+
+            {/* Subscription Status */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 p-3 md:p-4 shadow-lg">
+                <p className="text-xs text-slate-400 mb-1">Churn Rate</p>
+                <p className="text-lg md:text-xl font-bold text-red-400">
+                  {billingMetrics?.churn_rate || '0.0'}%
+                </p>
+                <p className="text-xs text-slate-500 mt-2">Expired this month</p>
               </div>
 
               <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 p-6 shadow-lg">
-                <p className="text-sm text-slate-400 mb-2">Failed Payments</p>
-                <p className="text-2xl font-bold text-yellow-400">
-                  {billingMetrics?.failed_payments || 0}
+                <p className="text-sm text-slate-400 mb-2">Monthly Redemptions</p>
+                <p className="text-2xl font-bold text-blue-400">
+                  {billingMetrics?.monthly_redemptions || 0}
                 </p>
-                <p className="text-xs text-slate-500 mt-2">Need retry</p>
+                <p className="text-xs text-slate-500 mt-2">This month</p>
               </div>
 
               <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 p-6 shadow-lg">
@@ -1765,7 +2122,193 @@ export default function PlatformAdmin() {
             </div>
           </div>
         )}
+
+        {/* Codes Tab */}
+        {activeTab === 'codes' && (
+          <div className="space-y-4">
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <div className="bg-gradient-to-br from-cyan-500/10 to-cyan-500/5 backdrop-blur-md rounded-2xl border border-cyan-500/30 p-3 md:p-4 shadow-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-slate-400 mb-0.5">Total Codes</p>
+                    <p className="text-xl md:text-2xl font-bold text-cyan-400">{stats.totalCodes}</p>
+                  </div>
+                  <Gift className="w-6 h-6 md:w-8 md:h-8 text-cyan-500/40" />
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 backdrop-blur-md rounded-2xl border border-emerald-500/30 p-3 md:p-4 shadow-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-slate-400 mb-0.5">Redeemed</p>
+                    <p className="text-xl md:text-2xl font-bold text-emerald-400">{stats.redeemedCodes}</p>
+                  </div>
+                  <CheckCircle className="w-6 h-6 md:w-8 md:h-8 text-emerald-500/40" />
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 backdrop-blur-md rounded-2xl border border-amber-500/30 p-3 md:p-4 shadow-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-slate-400 mb-0.5">Pending</p>
+                    <p className="text-xl md:text-2xl font-bold text-amber-400">{stats.pendingCodes}</p>
+                  </div>
+                  <Clock className="w-6 h-6 md:w-8 md:h-8 text-amber-500/40" />
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-red-500/10 to-red-500/5 backdrop-blur-md rounded-2xl border border-red-500/30 p-3 md:p-4 shadow-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-slate-400 mb-0.5">Expired</p>
+                    <p className="text-xl md:text-2xl font-bold text-red-400">{stats.expiredCodes}</p>
+                  </div>
+                  <AlertCircle className="w-6 h-6 md:w-8 md:h-8 text-red-500/40" />
+                </div>
+              </div>
+            </div>
+
+            {/* Generate Code Section */}
+            <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 shadow-lg p-6">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <Gift className="w-5 h-5 text-cyan-400" />
+                Generate New Code
+              </h3>
+              <div className="flex flex-col sm:flex-row gap-4 items-end">
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Select Tier</label>
+                  <div className="flex gap-2">
+                    {(['bronze', 'silver', 'gold'] as const).map((tier) => (
+                      <Button
+                        key={tier}
+                        onClick={() => setSelectedTier(tier)}
+                        variant={selectedTier === tier ? 'default' : 'outline'}
+                        className={`flex-1 text-sm capitalize ${
+                          selectedTier === tier
+                            ? tier === 'gold'
+                              ? 'bg-yellow-600 hover:bg-yellow-700'
+                              : tier === 'silver'
+                              ? 'bg-slate-500 hover:bg-slate-600'
+                              : 'bg-amber-700 hover:bg-amber-800'
+                            : 'border-slate-600 text-slate-300'
+                        }`}
+                      >
+                        {tier}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+                <Button
+                  onClick={handleIssueCode}
+                  disabled={issuingCode}
+                  className="w-full sm:w-auto bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white"
+                >
+                  <Gift className="w-4 h-4 mr-2" />
+                  {issuingCode ? 'Generating...' : 'Generate Code'}
+                </Button>
+              </div>
+            </div>
+
+            {/* Generated Codes List */}
+            <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 shadow-lg overflow-hidden">
+              <div className="p-6 border-b border-slate-700/50 bg-slate-900/80">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-cyan-400" />
+                  Recent Generated Codes
+                </h3>
+                <p className="text-sm text-slate-400 mt-2">All codes issued by admin. Codes expire after 1 hour if not redeemed.</p>
+              </div>
+
+              {codesLoading ? (
+                <div className="p-8 text-center">
+                  <p className="text-slate-400">Loading codes...</p>
+                </div>
+              ) : generatedCodes.length === 0 ? (
+                <div className="p-8 text-center">
+                  <Gift className="w-12 h-12 text-slate-500/40 mx-auto mb-3" />
+                  <p className="text-slate-400">No codes generated yet</p>
+                  <p className="text-xs text-slate-500 mt-1">Generate your first code using the button above</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-slate-700/50 bg-slate-900/50">
+                        <th className="p-4 text-left text-xs font-semibold text-slate-300">Code</th>
+                        <th className="p-4 text-left text-xs font-semibold text-slate-300">Tier</th>
+                        <th className="p-4 text-left text-xs font-semibold text-slate-300">Status</th>
+                        <th className="p-4 text-left text-xs font-semibold text-slate-300">Created</th>
+                        <th className="p-4 text-left text-xs font-semibold text-slate-300">Expires</th>
+                        <th className="p-4 text-left text-xs font-semibold text-slate-300">Client</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-700/30">
+                      {generatedCodes.map((code, idx) => {
+                        const createdAt = new Date(code.created_at);
+                        const expiryAt = new Date(code.expiry_date);
+                        const isExpired = expiryAt < new Date();
+                        const timeLeft = Math.max(0, expiryAt.getTime() - new Date().getTime()) / 60000; // minutes
+                        
+                        return (
+                          <tr key={idx} className="hover:bg-slate-700/20 transition-colors">
+                            <td className="p-4">
+                              <div className="flex items-center gap-2">
+                                <code className="text-sm font-mono text-cyan-400">{code.generated_code}</code>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-6 w-6 p-0"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(code.generated_code);
+                                    alert('Code copied to clipboard!');
+                                  }}
+                                >
+                                  <span className="text-xs">📋</span>
+                                </Button>
+                              </div>
+                            </td>
+                            <td className="p-4">
+                              <Badge className={`${
+                                code.code_tier === 'gold' ? 'bg-yellow-600' :
+                                code.code_tier === 'silver' ? 'bg-slate-500' :
+                                'bg-amber-700'
+                              } text-white capitalize`}>
+                                {code.code_tier}
+                              </Badge>
+                            </td>
+                            <td className="p-4">
+                              <Badge className={`${
+                                code.status === 'used' ? 'bg-emerald-600' :
+                                isExpired ? 'bg-red-600' :
+                                'bg-yellow-600'
+                              } text-white`}>
+                                {code.status === 'used' ? 'Redeemed' : isExpired ? 'Expired' : 'Active'}
+                              </Badge>
+                            </td>
+                            <td className="p-4 text-slate-400 text-sm">{createdAt.toLocaleDateString()} {createdAt.toLocaleTimeString()}</td>
+                            <td className="p-4 text-slate-400 text-sm">
+                              {isExpired ? (
+                                <span className="text-red-400">Expired</span>
+                              ) : (
+                                <span className="text-amber-400">{Math.floor(timeLeft)} min</span>
+                              )}
+                            </td>
+                            <td className="p-4 text-slate-400 text-sm">
+                              {code.redeemed_by_name || code.redeemed_by_email || code.client_name || code.client_email || '-'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
+

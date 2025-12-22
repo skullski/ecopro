@@ -2,10 +2,10 @@ import argon2 from "argon2";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
-// Security: Stronger token expiry (15 minutes for access token)
+// Security: Moderate token expiry for admin work (7 days)
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-in-production";
-const JWT_EXPIRES_IN = "15m"; // Access token expires in 15 minutes (was 7d - security risk!)
-const REFRESH_TOKEN_EXPIRES_IN = "7d"; // Refresh token expires in 7 days
+const JWT_EXPIRES_IN = "7d"; // Access token expires in 7 days (sufficient for admin use)
+const REFRESH_TOKEN_EXPIRES_IN = "30d"; // Refresh token expires in 30 days
 
 interface JWTPayload {
   id: string;

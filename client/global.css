@@ -282,3 +282,37 @@
   .border-subtle { border-color: hsl(var(--border-subtle)); }
   .text-muted-soft { color: hsl(var(--text-muted-soft)); }
 }
+
+/* Compact mode for small screens - reduce overall sizing */
+@layer base {
+  html {
+    font-size: 14px; /* Base font size reduced from 16px */
+  }
+  
+  @media (min-width: 1024px) {
+    html {
+      font-size: 15px;
+    }
+  }
+  
+  @media (min-width: 1280px) {
+    html {
+      font-size: 16px;
+    }
+  }
+}
+
+/* Compact spacing utilities */
+@layer utilities {
+  .compact-padding {
+    @apply p-2 sm:p-3 lg:p-4;
+  }
+  
+  .compact-gap {
+    @apply gap-2 sm:gap-3 lg:gap-4;
+  }
+  
+  .compact-margin {
+    @apply m-2 sm:m-3 lg:m-4;
+  }
+}

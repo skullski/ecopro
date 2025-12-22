@@ -3,4 +3,4 @@
 export { ChatList } from './ChatList';
 export { ChatWindow } from './ChatWindow';
 export { MessageList } from './MessageList';
-export { CodeRequestUI } from './CodeRequestUI';
+export { FileUploadUI } from './FileUploadUI';

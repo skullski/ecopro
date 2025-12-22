@@ -165,15 +165,17 @@ export const requestCode: RequestHandler = async (req, res) => {
 
 /**
  * POST /api/codes/issue
- * Seller issues a code to a client
- * REQUIRES: Authentication (seller), code_request_id, payment_method
+ * Seller or Admin issues a code to a client
+ * REQUIRES: Authentication (seller/admin), code_request_id, payment_method
  */
 export const issueCode: RequestHandler = async (req, res) => {
   try {
-    const sellerId = (req.user as any)?.sellerId;
+    const user = req.user as any;
+    const isAdmin = user?.role === 'admin' || user?.user_type === 'admin';
+    const sellerId = user?.sellerId;
 
-    if (!sellerId) {
-      return jsonError(res, 401, 'Only sellers can issue codes');
+    if (!isAdmin && !sellerId) {
+      return jsonError(res, 401, 'Only sellers or admins can issue codes');
     }
 
     const { code_request_id, payment_method, notes } = req.body;
@@ -182,11 +184,19 @@ export const issueCode: RequestHandler = async (req, res) => {
       return jsonError(res, 400, 'Code request ID and payment method are required');
     }
 
-    // Verify code request belongs to this seller
-    const codeReqCheck = await pool.query(
-      'SELECT * FROM code_requests WHERE id = $1 AND seller_id = $2',
-      [code_request_id, sellerId]
-    );
+    // Verify code request exists (admin can issue any, seller only theirs)
+    let codeReqCheck;
+    if (isAdmin) {
+      codeReqCheck = await pool.query(
+        'SELECT cr.*, c.seller_id FROM code_requests cr JOIN chats c ON cr.chat_id = c.id WHERE cr.id = $1',
+        [code_request_id]
+      );
+    } else {
+      codeReqCheck = await pool.query(
+        'SELECT cr.*, c.seller_id FROM code_requests cr JOIN chats c ON cr.chat_id = c.id WHERE cr.id = $1 AND c.seller_id = $2',
+        [code_request_id, sellerId]
+      );
+    }
 
     if (codeReqCheck.rows.length === 0) {
       return jsonError(res, 403, 'Code request not found or does not belong to you');
@@ -240,13 +250,18 @@ export const issueCode: RequestHandler = async (req, res) => {
 
     const updatedCode = updateResult.rows[0];
 
+    // Determine sender type and ID
+    const senderType = isAdmin ? 'admin' : 'seller';
+    const senderId = isAdmin ? user.id : sellerId;
+
     // Send code to client via chat
     await pool.query(
       `INSERT INTO chat_messages (chat_id, sender_id, sender_type, message_content, message_type, metadata)
-       VALUES ($1, $2, 'seller', $3, 'code_response', $4)`,
+       VALUES ($1, $2, $3, $4, 'code_response', $5)`,
       [
         codeRequest.chat_id,
-        sellerId,
+        senderId,
+        senderType,
         `Your subscription code is: ${code}\n\nCode expires in: 1 hour\n\nPayment method: ${payment_method}`,
         JSON.stringify({
           code,
@@ -257,23 +272,25 @@ export const issueCode: RequestHandler = async (req, res) => {
       ]
     );
 
-    // Update seller statistics
-    await pool.query(
-      `UPDATE code_statistics 
-       SET total_codes_generated = total_codes_generated + 1,
-           last_code_issued_at = NOW(),
-           payment_methods_used = 
-             CASE 
-               WHEN payment_methods_used IS NULL THEN jsonb_build_object($2, 1)
-               ELSE jsonb_set(
-                 payment_methods_used, 
-                 ARRAY[$2], 
-                 (COALESCE(payment_methods_used->>$2, '0')::int + 1)::text::jsonb
-               )
-             END
-       WHERE seller_id = $1`,
-      [sellerId, payment_method]
-    );
+    // Update statistics (if seller)
+    if (!isAdmin && sellerId) {
+      await pool.query(
+        `UPDATE code_statistics 
+         SET total_codes_generated = total_codes_generated + 1,
+             last_code_issued_at = NOW(),
+             payment_methods_used = 
+               CASE 
+                 WHEN payment_methods_used IS NULL THEN jsonb_build_object($2, 1)
+                 ELSE jsonb_set(
+                   payment_methods_used, 
+                   ARRAY[$2], 
+                   (COALESCE(payment_methods_used->>$2, '0')::int + 1)::text::jsonb
+                 )
+               END
+         WHERE seller_id = $1`,
+        [sellerId, payment_method]
+      );
+    }
 
     res.json({
       success: true,
@@ -383,50 +400,108 @@ export const getCodeStats: RequestHandler = async (req, res) => {
  * POST /api/codes/admin/issue
  * Admin endpoint to issue a code for a specific tier
  * Generates code with 1-hour expiration
+ * client_id is optional - codes can be issued without assigning to a specific client
  */
 export const adminIssueCode: RequestHandler = async (req, res) => {
   try {
     const adminUser = req.user as any;
     
     // Verify admin access
-    if (!adminUser || adminUser.role !== 'admin') {
+    if (!adminUser || (adminUser.role !== 'admin' && adminUser.user_type !== 'admin')) {
       return jsonError(res, 403, 'Admin access required');
     }
 
-    const { chat_id, client_id, tier, admin_id } = req.body;
+    const { chat_id, client_id, tier, payment_method } = req.body;
 
-    if (!client_id || !tier) {
-      return jsonError(res, 400, 'Client ID and tier are required');
+    if (!tier) {
+      return jsonError(res, 400, 'Tier is required');
     }
 
     // Validate tier
-    const validTiers = ['bronze', 'silver', 'gold'];
+    const validTiers = ['bronze', 'silver', 'gold', 'general', 'voucher', 'license'];
     if (!validTiers.includes(tier)) {
       return jsonError(res, 400, 'Invalid tier');
     }
 
-    // Generate code
-    const code = generateSubscriptionCode(tier, 1); // 1 hour expiration
+    // Generate code using the proper function
+    const code = generateSubscriptionCode();
+    
+    // 1 hour expiration
+    const expiryDate = new Date();
+    expiryDate.setHours(expiryDate.getHours() + 1);
 
-    // Store code in database
+    // Store code in database using correct column names
+    // client_id is optional - when null, code can be used by any client
     const result = await pool.query(
-      `INSERT INTO code_requests (code, tier, client_id, chat_id, admin_id, status, expires_at, created_at)
-       VALUES ($1, $2, $3, $4, $5, 'issued', NOW() + INTERVAL '1 hour', NOW())
-       RETURNING id, code, tier, expires_at`,
-      [code, tier, client_id, chat_id || null, admin_id]
+      `INSERT INTO code_requests (generated_code, code_tier, client_id, chat_id, payment_method, status, expiry_date, issued_at, created_at)
+       VALUES ($1, $2, $3, $4, $5, 'issued', $6, NOW(), NOW())
+       RETURNING id, generated_code, code_tier, expiry_date`,
+      [code, tier, client_id || null, chat_id || null, payment_method || 'admin', expiryDate]
     );
 
     const codeRecord = result.rows[0];
 
     res.json({
       success: true,
-      code: codeRecord.code,
-      tier: codeRecord.tier,
-      expires_at: codeRecord.expires_at,
+      code: codeRecord.generated_code,
+      tier: codeRecord.code_tier,
+      expires_at: codeRecord.expiry_date,
       message: 'Code generated successfully'
     });
   } catch (error: any) {
+    console.error('Admin issue code error:', error);
     return jsonError(res, 500, 'Code generation failed');
+  }
+};
+
+/**
+ * GET /api/codes/admin/list
+ * Admin endpoint to list all generated codes with details
+ * Includes status, tier, client info, and expiry times
+ */
+export const adminListCodes: RequestHandler = async (req, res) => {
+  try {
+    const adminUser = req.user as any;
+    
+    // Verify admin access
+    if (!adminUser || (adminUser.role !== 'admin' && adminUser.user_type !== 'admin')) {
+      return jsonError(res, 403, 'Admin access required');
+    }
+
+    const { limit = 50, offset = 0 } = req.query;
+    const limitNum = Math.min(parseInt(limit as string) || 50, 200);
+    const offsetNum = parseInt(offset as string) || 0;
+
+    // Get all codes with client info
+    const result = await pool.query(
+      `SELECT 
+        cr.id,
+        cr.generated_code,
+        cr.code_tier,
+        cr.status,
+        cr.created_at,
+        cr.expiry_date,
+        cr.issued_at,
+        cr.payment_method,
+        cr.client_id,
+        u.email as client_email,
+        u.name as client_name,
+        cr.redeemed_at,
+        cr.redeemed_by_client_id,
+        ru.email as redeemed_by_email,
+        ru.name as redeemed_by_name
+       FROM code_requests cr
+       LEFT JOIN users u ON cr.client_id = u.id
+       LEFT JOIN users ru ON cr.redeemed_by_client_id = ru.id
+       ORDER BY cr.created_at DESC
+       LIMIT $1 OFFSET $2`,
+      [limitNum, offsetNum]
+    );
+
+    res.json(result.rows);
+  } catch (error: any) {
+    console.error('Admin list codes error:', error);
+    return jsonError(res, 500, 'Failed to list codes');
   }
 };
 
@@ -462,6 +537,7 @@ router.post('/redeem', redeemCode);
 router.post('/request', requestCode);
 router.get('/my-codes', getMyCodes);
 router.get('/stats', getCodeStats);
+router.get('/admin/list', adminListCodes);
 router.post('/admin/issue', adminIssueCode);
 router.post('/cleanup', cleanupCodes);
 

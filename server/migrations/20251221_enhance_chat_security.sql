@@ -1,6 +1,8 @@
--- Chat System Security Enhancements
+-- Chat System Security Enhancements (DISABLED - tables don't exist yet)
 -- Adds payment tracking, code validation, and rate limiting
+-- This migration is skipped as the required tables haven't been created
 
+/*
 -- Add payment method to code_requests
 ALTER TABLE code_requests ADD COLUMN IF NOT EXISTS payment_method VARCHAR(50);
 -- payment_method values: 'binance', 'redotpay', 'ccp', 'manual', etc.
@@ -57,8 +59,12 @@ ALTER TABLE code_requests ADD COLUMN IF NOT EXISTS is_redeemable BOOLEAN DEFAULT
 -- Add expiry warning threshold
 ALTER TABLE code_requests ADD COLUMN IF NOT EXISTS expiry_warning_sent_at TIMESTAMP;
 
--- Update chat_messages to add rate limiting metadata
-ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS rate_limit_hits INT DEFAULT 0 IF NOT EXISTS;
+-- Update chat_messages to add rate limiting metadata (only if table exists)
+DO $$ BEGIN
+  IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'chat_messages') THEN
+    ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS rate_limit_hits INT DEFAULT 0;
+  END IF;
+END $$;
 
 -- Clean up old validation attempts monthly
 CREATE OR REPLACE FUNCTION cleanup_old_validation_attempts() RETURNS void AS $$
@@ -72,3 +78,4 @@ $$ LANGUAGE plpgsql;
 CREATE INDEX IF NOT EXISTS idx_code_requests_expiry_date ON code_requests(expiry_date);
 CREATE INDEX IF NOT EXISTS idx_code_requests_redeemed_at ON code_requests(redeemed_at);
 CREATE INDEX IF NOT EXISTS idx_code_requests_payment_confirmed ON code_requests(payment_confirmed_at);
+*/

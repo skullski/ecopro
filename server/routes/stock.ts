@@ -455,7 +455,7 @@ export const getStockHistory: RequestHandler = async (req, res) => {
         h.*,
         u.name as adjusted_by_name
       FROM client_stock_history h
-      LEFT JOIN users u ON h.created_by = u.id
+      LEFT JOIN staff u ON h.created_by = u.id
       WHERE h.stock_id = $1 AND h.client_id = $2
       ORDER BY h.created_at DESC`,
       [id, clientId]

@@ -9,7 +9,7 @@ export const getStoreProducts: RequestHandler = async (req, res) => {
   try {
     // Admins are platform users and should not manage client storefronts.
     const user = (req as any).user;
-    if (user && user.role === 'admin') return res.status(403).json({ error: 'Admins are not allowed to manage client storefronts' });
+    if (user && (user.role === 'admin' || user.user_type === 'admin')) return res.status(403).json({ error: 'Admins are not allowed to manage client storefronts' });
     const clientId = (req as any).user.id;
     const { status, category, search } = req.query;
 
@@ -55,7 +55,7 @@ export const getStoreProducts: RequestHandler = async (req, res) => {
 export const getStoreProduct: RequestHandler = async (req, res) => {
   try {
     const user = (req as any).user;
-    if (user && user.role === 'admin') return res.status(403).json({ error: 'Admins are not allowed to manage client storefronts' });
+    if (user && (user.role === 'admin' || user.user_type === 'admin')) return res.status(403).json({ error: 'Admins are not allowed to manage client storefronts' });
     const clientId = (req as any).user.id;
     const { id } = req.params;
 
@@ -80,7 +80,7 @@ export const getStoreProduct: RequestHandler = async (req, res) => {
 export const createStoreProduct: RequestHandler = async (req, res) => {
   try {
     const user = (req as any).user;
-    if (user && user.role === 'admin') return res.status(403).json({ error: 'Admins are not allowed to manage client storefronts' });
+    if (user && (user.role === 'admin' || user.user_type === 'admin')) return res.status(403).json({ error: 'Admins are not allowed to manage client storefronts' });
     const clientId = (req as any).user.id;
     const {
       title,
@@ -149,7 +149,7 @@ export const createStoreProduct: RequestHandler = async (req, res) => {
 export const updateStoreProduct: RequestHandler = async (req, res) => {
   try {
     const user = (req as any).user;
-    if (user && user.role === 'admin') return res.status(403).json({ error: 'Admins are not allowed to manage client storefronts' });
+    if (user && (user.role === 'admin' || user.user_type === 'admin')) return res.status(403).json({ error: 'Admins are not allowed to manage client storefronts' });
     const clientId = (req as any).user.id;
     const { id } = req.params;
     const updates = req.body;
@@ -215,7 +215,7 @@ export const updateStoreProduct: RequestHandler = async (req, res) => {
 export const deleteStoreProduct: RequestHandler = async (req, res) => {
   try {
     const user = (req as any).user;
-    if (user && user.role === 'admin') return res.status(403).json({ error: 'Admins are not allowed to manage client storefronts' });
+    if (user && (user.role === 'admin' || user.user_type === 'admin')) return res.status(403).json({ error: 'Admins are not allowed to manage client storefronts' });
     const clientId = (req as any).user.id;
     const { id } = req.params;
 
@@ -248,7 +248,7 @@ export const deleteStoreProduct: RequestHandler = async (req, res) => {
 export const getStoreCategories: RequestHandler = async (req, res) => {
   try {
     const user = (req as any).user;
-    if (user && user.role === 'admin') return res.status(403).json({ error: 'Admins are not allowed to manage client storefronts' });
+    if (user && (user.role === 'admin' || user.user_type === 'admin')) return res.status(403).json({ error: 'Admins are not allowed to manage client storefronts' });
     const clientId = (req as any).user.id;
 
     const result = await pool.query(
@@ -270,7 +270,7 @@ export const getStoreCategories: RequestHandler = async (req, res) => {
 export const getStoreSettings: RequestHandler = async (req, res) => {
   try {
     const user = (req as any).user;
-    if (user && user.role === 'admin') return res.status(403).json({ error: 'Admins do not have a client store' });
+    if (user && (user.role === 'admin' || user.user_type === 'admin')) return res.status(403).json({ error: 'Admins do not have a client store' });
     const clientId = (req as any).user.id;
     logStoreSettings('getStoreSettings:start', { clientId });
 
@@ -335,7 +335,7 @@ export const getStoreSettings: RequestHandler = async (req, res) => {
 export const updateStoreSettings: RequestHandler = async (req, res) => {
   try {
     const user = (req as any).user;
-    if (user && user.role === 'admin') return res.status(403).json({ error: 'Admins are not allowed to manage client storefronts' });
+    if (user && (user.role === 'admin' || user.user_type === 'admin')) return res.status(403).json({ error: 'Admins are not allowed to manage client storefronts' });
     const clientId = (req as any).user.id;
     const updates = req.body;
     // Debug: log incoming updates for easier diagnosis during development
@@ -484,7 +484,7 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
 export const getStoreStats: RequestHandler = async (req, res) => {
   try {
     const user = (req as any).user;
-    if (user && user.role === 'admin') return res.status(403).json({ error: 'Admins do not have a client store' });
+    if (user && (user.role === 'admin' || user.user_type === 'admin')) return res.status(403).json({ error: 'Admins do not have a client store' });
     const clientId = (req as any).user.id;
     const statsRes = await pool.query(
       `SELECT 
@@ -507,7 +507,7 @@ export const getStoreStats: RequestHandler = async (req, res) => {
 export const getProductShareLink: RequestHandler = async (req, res) => {
   try {
     const user = (req as any).user;
-    if (user && user.role === 'admin') return res.status(403).json({ error: 'Admins do not have a client store' });
+    if (user && (user.role === 'admin' || user.user_type === 'admin')) return res.status(403).json({ error: 'Admins do not have a client store' });
     const clientId = (req as any).user.id;
     const { id } = req.params;
 
