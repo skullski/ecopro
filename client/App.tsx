@@ -36,6 +36,7 @@ import AdminSettings from "./pages/admin/Settings";
 import AdminBilling from "./pages/admin/Billing";
 import AdminCalls from "./pages/admin/Calls";
 import AdminWasselniSettings from "./pages/admin/WasselniSettings";
+import AdminChats from "./pages/admin/Chats";
 // AdminStores removed
 // Storefront page removed
 import LogoDemo from "./pages/LogoDemo";
@@ -578,8 +579,9 @@ const App = () => (
                       </RequireStaff>
                     }
                   />
-                  {/* Platform Admin route (guarded) */}
+                  {/* Platform Admin routes (guarded) */}
                   <Route path="/platform-admin" element={<RequireAdmin><PlatformAdmin /></RequireAdmin>} />
+                  <Route path="/platform-admin/chats" element={<RequireAdmin><AdminChats /></RequireAdmin>} />
                   {/* /seller-signup removed */}
                   {/* /quick-sell removed */}
                   {/* /my-items removed */}

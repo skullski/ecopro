@@ -13,6 +13,7 @@ import {
   Shield,
   BarChart3,
   Settings,
+  MessageCircle,
   Lock,
   LogOut,
   Trash2,
@@ -28,6 +29,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { GradientCard } from '@/components/ui/GradientCard';
 import { Button } from '@/components/ui/button';
+import AdminChats from './admin/Chats';
 
 interface PlatformStats {
   totalUsers: number;
@@ -111,7 +113,7 @@ export default function PlatformAdmin() {
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stores' | 'products' | 'activity' | 'settings' | 'billing' | 'payment-failures'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stores' | 'products' | 'activity' | 'settings' | 'billing' | 'payment-failures' | 'chats'>('overview');
   const [billingMetrics, setBillingMetrics] = useState<any>(null);
   const [billingLoading, setBillingLoading] = useState(false);
   const [platformSettings, setPlatformSettings] = useState<any>(null);
@@ -641,6 +643,15 @@ export default function PlatformAdmin() {
             <AlertCircle className="w-3 sm:w-4 h-3 sm:h-4 mr-1 sm:mr-2" />
             <span className="hidden md:inline">Failures</span>
             <span className="md:hidden">F</span>
+          </Button>
+          <Button
+            variant={activeTab === 'chats' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('chats')}
+            className="whitespace-nowrap text-slate-200 text-xs sm:text-sm px-2 sm:px-3"
+          >
+            <MessageCircle className="w-3 sm:w-4 h-3 sm:h-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Chats</span>
+            <span className="sm:hidden">C</span>
           </Button>
           <Button
             variant={activeTab === 'settings' ? 'default' : 'ghost'}
@@ -1313,6 +1324,13 @@ export default function PlatformAdmin() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Chats Tab */}
+        {activeTab === 'chats' && (
+          <div className="bg-slate-800/50 backdrop-blur-md rounded-xl sm:rounded-2xl border border-slate-700/50 shadow-lg overflow-hidden">
+            <AdminChats />
           </div>
         )}
 
