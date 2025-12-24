@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bot, Save, Loader2, Phone, MessageSquare, Globe, Check, Users, Code2 } from "lucide-react";
+import { Bot, Save, Loader2, Phone, MessageSquare, Globe, Check, Users, Code2, Truck, CreditCard } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -193,29 +193,35 @@ export default function AdminWasselniSettings() {
         </div>
 
         {/* Two Bot Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
           {/* Bot Confirmation Card */}
           <div 
-            className={`bg-white dark:bg-slate-800/50 backdrop-blur rounded-xl md:rounded-2xl p-4 border-2 shadow-sm cursor-pointer transition-all ${
+            className={`relative overflow-hidden rounded-2xl p-5 cursor-pointer transition-all duration-300 ${
               activeBot === 'confirmation' 
-                ? 'border-blue-500 dark:border-blue-400' 
-                : 'border-slate-200/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-600'
+                ? 'bg-gradient-to-br from-emerald-500 to-green-600 shadow-xl shadow-emerald-500/25 scale-[1.02]' 
+                : settings.enabled
+                  ? 'bg-gradient-to-br from-emerald-500/90 to-green-600/90 shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/30 hover:scale-[1.01]'
+                  : 'bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 shadow-lg hover:shadow-xl border border-slate-300 dark:border-slate-700'
             }`}
             onClick={() => setActiveBot(activeBot === 'confirmation' ? null : 'confirmation')}
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 md:p-3 rounded-lg md:rounded-xl ${settings.enabled ? 'bg-green-50 dark:bg-green-500/10' : 'bg-slate-50 dark:bg-slate-700/50'}`}>
-                  <MessageSquare className={`h-5 md:h-6 w-5 md:w-6 ${settings.enabled ? 'text-green-600 dark:text-green-400' : 'text-slate-400'}`} />
+            {/* Decorative circles */}
+            <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/10 rounded-full" />
+            <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-white/5 rounded-full" />
+            
+            <div className="relative flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className={`p-3 rounded-xl ${settings.enabled || activeBot === 'confirmation' ? 'bg-white/20' : 'bg-slate-300/50 dark:bg-slate-700'}`}>
+                  <MessageSquare className={`h-6 w-6 ${settings.enabled || activeBot === 'confirmation' ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} />
                 </div>
                 <div>
-                  <p className="text-sm md:text-base font-semibold text-slate-900 dark:text-white">Bot Confirmation</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Order confirmations & shipping</p>
+                  <p className={`text-base font-bold ${settings.enabled || activeBot === 'confirmation' ? 'text-white' : 'text-slate-800 dark:text-white'}`}>Bot Confirmation</p>
+                  <p className={`text-sm ${settings.enabled || activeBot === 'confirmation' ? 'text-white/80' : 'text-slate-500 dark:text-slate-400'}`}>Order confirmations & shipping</p>
                 </div>
               </div>
               <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
-                <span className={`text-xs font-medium px-2 py-1 rounded-full ${settings.enabled ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'}`}>
-                  {settings.enabled ? 'Active' : 'Inactive'}
+                <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${settings.enabled ? 'bg-white/25 text-white' : 'bg-slate-300 text-slate-600 dark:bg-slate-600 dark:text-slate-300'}`}>
+                  {settings.enabled ? '● Active' : '○ Inactive'}
                 </span>
                 <Switch
                   checked={settings.enabled}
@@ -238,26 +244,32 @@ export default function AdminWasselniSettings() {
 
           {/* Bot Updates Card */}
           <div 
-            className={`bg-white dark:bg-slate-800/50 backdrop-blur rounded-xl md:rounded-2xl p-4 border-2 shadow-sm cursor-pointer transition-all ${
+            className={`relative overflow-hidden rounded-2xl p-5 cursor-pointer transition-all duration-300 ${
               activeBot === 'updates' 
-                ? 'border-blue-500 dark:border-blue-400' 
-                : 'border-slate-200/50 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-600'
+                ? 'bg-gradient-to-br from-violet-500 to-purple-600 shadow-xl shadow-violet-500/25 scale-[1.02]' 
+                : settings.updatesEnabled
+                  ? 'bg-gradient-to-br from-violet-500/90 to-purple-600/90 shadow-lg shadow-violet-500/20 hover:shadow-xl hover:shadow-violet-500/30 hover:scale-[1.01]'
+                  : 'bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 shadow-lg hover:shadow-xl border border-slate-300 dark:border-slate-700'
             }`}
             onClick={() => setActiveBot(activeBot === 'updates' ? null : 'updates')}
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 md:p-3 rounded-lg md:rounded-xl ${settings.updatesEnabled ? 'bg-purple-50 dark:bg-purple-500/10' : 'bg-slate-50 dark:bg-slate-700/50'}`}>
-                  <Users className={`h-5 md:h-6 w-5 md:w-6 ${settings.updatesEnabled ? 'text-purple-600 dark:text-purple-400' : 'text-slate-400'}`} />
+            {/* Decorative circles */}
+            <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/10 rounded-full" />
+            <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-white/5 rounded-full" />
+            
+            <div className="relative flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className={`p-3 rounded-xl ${settings.updatesEnabled || activeBot === 'updates' ? 'bg-white/20' : 'bg-slate-300/50 dark:bg-slate-700'}`}>
+                  <Users className={`h-6 w-6 ${settings.updatesEnabled || activeBot === 'updates' ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} />
                 </div>
                 <div>
-                  <p className="text-sm md:text-base font-semibold text-slate-900 dark:text-white">Bot Updates</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Send campaigns & updates</p>
+                  <p className={`text-base font-bold ${settings.updatesEnabled || activeBot === 'updates' ? 'text-white' : 'text-slate-800 dark:text-white'}`}>Bot Updates</p>
+                  <p className={`text-sm ${settings.updatesEnabled || activeBot === 'updates' ? 'text-white/80' : 'text-slate-500 dark:text-slate-400'}`}>Send campaigns & updates</p>
                 </div>
               </div>
               <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
-                <span className={`text-xs font-medium px-2 py-1 rounded-full ${settings.updatesEnabled ? 'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'}`}>
-                  {settings.updatesEnabled ? 'Active' : 'Inactive'}
+                <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${settings.updatesEnabled ? 'bg-white/25 text-white' : 'bg-slate-300 text-slate-600 dark:bg-slate-600 dark:text-slate-300'}`}>
+                  {settings.updatesEnabled ? '● Active' : '○ Inactive'}
                 </span>
                 <Switch
                   checked={settings.updatesEnabled || false}
@@ -281,14 +293,16 @@ export default function AdminWasselniSettings() {
 
         {/* Confirmation Bot Templates - Show when confirmation bot is selected */}
         {activeBot === 'confirmation' && (
-          <div className="space-y-4 mb-6">
+          <div className="space-y-4 mb-6 animate-in fade-in slide-in-from-top-2 duration-300">
             {/* Provider Selection */}
-            <div className="bg-white dark:bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
-                <Globe className="h-4 w-4" />
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-lg shadow-slate-200/50 dark:shadow-black/20">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20">
+                  <Globe className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                </div>
                 Provider
               </h3>
-              <div className="grid grid-cols-3 gap-2 mb-4">
+              <div className="grid grid-cols-3 gap-3 mb-4">
                 {[
                   { value: 'telegram', label: 'Telegram' },
                   { value: 'whatsapp_cloud', label: 'WhatsApp' },
@@ -297,10 +311,10 @@ export default function AdminWasselniSettings() {
                   <button
                     key={option.value}
                     onClick={() => updateSetting('provider', option.value)}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                    className={`px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
                       settings.provider === option.value
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                        ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-md shadow-emerald-500/30'
+                        : 'bg-slate-100 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600'
                     }`}
                   >
                     {option.label}
@@ -375,8 +389,13 @@ export default function AdminWasselniSettings() {
             </div>
 
             {/* Greeting Template */}
-            <div className="bg-white dark:bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">Greeting Message</h3>
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-lg shadow-slate-200/50 dark:shadow-black/20">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-500/20">
+                  <MessageSquare className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                </div>
+                Greeting Message
+              </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Sent when customer clicks Telegram button and presses Start</p>
               <Textarea
                 value={settings.templateGreeting || ''}
@@ -387,8 +406,13 @@ export default function AdminWasselniSettings() {
             </div>
 
             {/* Order Confirmation Template */}
-            <div className="bg-white dark:bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">Order Confirmation</h3>
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-lg shadow-slate-200/50 dark:shadow-black/20">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-green-100 dark:bg-green-500/20">
+                  <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+                </div>
+                Order Confirmation
+              </h3>
               <Textarea
                 value={settings.templateOrderConfirmation}
                 onChange={(e) => updateSetting('templateOrderConfirmation', e.target.value)}
@@ -398,8 +422,13 @@ export default function AdminWasselniSettings() {
             </div>
 
             {/* Payment Template */}
-            <div className="bg-white dark:bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">Payment Confirmation</h3>
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-lg shadow-slate-200/50 dark:shadow-black/20">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-500/20">
+                  <CreditCard className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                </div>
+                Payment Confirmation
+              </h3>
               <Textarea
                 value={settings.templatePayment}
                 onChange={(e) => updateSetting('templatePayment', e.target.value)}
@@ -409,8 +438,13 @@ export default function AdminWasselniSettings() {
             </div>
 
             {/* Shipping Template */}
-            <div className="bg-white dark:bg-slate-800/50 backdrop-blur rounded-xl p-4 border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">Shipping Notification</h3>
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-lg shadow-slate-200/50 dark:shadow-black/20">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-500/20">
+                  <Truck className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                </div>
+                Shipping Notification
+              </h3>
               <Textarea
                 value={settings.templateShipping}
                 onChange={(e) => updateSetting('templateShipping', e.target.value)}
@@ -420,18 +454,20 @@ export default function AdminWasselniSettings() {
             </div>
 
             {/* Variables Reference */}
-            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-              <div className="flex items-center gap-2 mb-3">
-                <Code2 className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-                <h4 className="font-semibold text-sm text-slate-900 dark:text-white">Available Variables</h4>
+            <div className="bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-lg shadow-slate-200/50 dark:shadow-black/20">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="p-2 rounded-lg bg-indigo-100 dark:bg-indigo-500/20">
+                  <Code2 className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                </div>
+                <h4 className="font-bold text-base text-slate-900 dark:text-white">Available Variables</h4>
               </div>
-              <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="grid grid-cols-2 gap-3 text-sm">
                 {variables.map((v) => (
-                  <div key={v.key} className="flex items-center gap-2">
-                    <code className="bg-white dark:bg-slate-700 px-2 py-1 rounded font-mono text-slate-900 dark:text-white">
+                  <div key={v.key} className="flex items-center gap-2 bg-white dark:bg-slate-800 p-2 rounded-lg border border-slate-200 dark:border-slate-700">
+                    <code className="bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded-md font-mono text-xs font-semibold">
                       {v.key}
                     </code>
-                    <span className="text-slate-500">{v.desc}</span>
+                    <span className="text-slate-600 dark:text-slate-400 text-xs">{v.desc}</span>
                   </div>
                 ))}
               </div>
@@ -441,7 +477,7 @@ export default function AdminWasselniSettings() {
 
         {/* Bot Updates - Show when updates bot is selected */}
         {activeBot === 'updates' && (
-          <div className="bg-white dark:bg-slate-800/50 backdrop-blur rounded-lg md:rounded-xl border border-slate-200/50 dark:border-slate-700/50 shadow-sm mb-6">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-lg shadow-violet-200/30 dark:shadow-black/20 mb-6 animate-in fade-in slide-in-from-top-2 duration-300">
             <CustomerBot embedded={true} />
           </div>
         )}
