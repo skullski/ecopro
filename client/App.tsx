@@ -32,7 +32,7 @@ import EnhancedDashboard from "./pages/admin/EnhancedDashboard";
 import AdminOrders from "./pages/admin/Orders";
 import AdminAnalytics from "./pages/admin/Analytics";
 // AdminProducts removed - now integrated into Store page
-import AdminSettings from "./pages/admin/Settings";
+// AdminSettings removed - merged into Profile page
 // StorePreview removed
 // OrderSuccess, AdminProducts, and top-level Billing pages were removed.
 import AdminBilling from "./pages/admin/Billing";
@@ -652,8 +652,7 @@ const App = () => (
                     {/* Addons submenu routes */}
                     <Route path="addons/google-sheets" element={<GoogleSheetsIntegration />} />
                     <Route path="analytics" element={<AdminAnalytics />} />
-                    {/* Admin store preview/stores/settings removed */}
-                    <Route path="settings" element={<AdminSettings />} />
+                    {/* Settings merged into Profile page */}
                     <Route path="staff" element={<StaffManagement />} />
                     <Route path="billing" element={<AdminBilling />} />
                     <Route path="calls" element={<AdminCalls />} />

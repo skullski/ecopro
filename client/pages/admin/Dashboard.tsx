@@ -407,7 +407,7 @@ export default function Dashboard() {
               </div>
             </Link>
 
-            <Link to="/dashboard/settings" className="block">
+            <Link to="/dashboard/profile" className="block">
               <div 
                 className="p-4 rounded-xl bg-orange-500/80 hover:bg-orange-600/80 text-white transition-all cursor-pointer group"
                 tabIndex={0}
@@ -418,8 +418,8 @@ export default function Dashboard() {
                     <Star className="w-5 h-5" />
                   </div>
                   <div>
-                    <div className="font-bold">{t("settings.title")}</div>
-                    <div className="text-xs opacity-90">{t("dashboard.storeSettings")}</div>
+                    <div className="font-bold">{t("profile.title") || "Profile"}</div>
+                    <div className="text-xs opacity-90">{t("dashboard.profileSettings") || "Account & settings"}</div>
                   </div>
                 </div>
               </div>
