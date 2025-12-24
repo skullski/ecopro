@@ -31,6 +31,7 @@ export default function Store(props: TemplateProps): JSX.Element {
   const storeName = settings.store_name || 'ElectroStore DZ';
   const logoUrl = (settings as any).store_logo || (settings as any).logo_url || '';
   const bannerUrl = settings.banner_url || 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?q=80&w=1400&auto=format&fit=crop';
+  const heroVideoUrl = settings.hero_video_url || null;
   const heroHeading = settings.template_hero_heading || 'Your Trusted Electronics Store';
   const heroSubtitle = settings.template_hero_subtitle || 'Shop smartphones, laptops, monitors, and configure your dream PC with expert-curated parts and local support.';
   const buttonText = settings.template_button_text || 'Build Your PC';
@@ -235,8 +236,9 @@ export default function Store(props: TemplateProps): JSX.Element {
         <section className="hero-wrap h-[520px] mb-10" aria-roledescription="carousel" aria-label="Featured promotions">
           {slides.map((s, idx) => {
             const isActive = idx === currentSlide;
+            const showVideo = s.type === "build" && heroVideoUrl;
             const style: React.CSSProperties = s.type === "build"
-              ? { backgroundImage: "linear-gradient(90deg, rgba(2,6,23,0.45), rgba(2,6,23,0.12))" }
+              ? { backgroundImage: showVideo ? "none" : "linear-gradient(90deg, rgba(2,6,23,0.45), rgba(2,6,23,0.12))" }
               : { backgroundImage: `url('${s.bg}')` };
             return (
               <div
@@ -249,6 +251,24 @@ export default function Store(props: TemplateProps): JSX.Element {
                 onMouseEnter={() => { paused.current = true; }}
                 onMouseLeave={() => { paused.current = false; }}
               >
+                {showVideo && (
+                  <video
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      zIndex: 0,
+                    }}
+                  >
+                    <source src={heroVideoUrl} type="video/mp4" />
+                  </video>
+                )}
                 <div className="hero-overlay" aria-hidden="true" />
                 <div className="hero-content">
                   {s.type === "build" && <span className="hero-badge">Featured</span>}

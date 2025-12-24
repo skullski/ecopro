@@ -28,6 +28,7 @@ export default function CafeTemplate(props: TemplateProps) {
   const storeCity = settings.store_city || templateStoreCity;
   const templateSinceYear = (settings as any).template_since_year || (new Date().getFullYear() - 2);
   const sincYear = (settings as any).since_year || templateSinceYear;
+  const heroVideoUrl = settings.hero_video_url || null;
 
   const heroHeading = (settings as any).template_hero_heading || 'All your makroud, kalb el louz and more — in one organized store.';
   const heroSubtitle = (settings as any).template_hero_subtitle || 'Built for 40+ different sweets, this layout keeps your trays, pieces and boxes cleanly organized so customers never feel lost.';
@@ -203,8 +204,20 @@ export default function CafeTemplate(props: TemplateProps) {
             </div>
           </div>
 
-          {/* Hero Image or Product Collage */}
-          {settings.banner_url ? (
+          {/* Hero Image/Video or Product Collage */}
+          {heroVideoUrl ? (
+            <div className="rounded-2xl overflow-hidden shadow-lg">
+              <video 
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="w-full h-[280px] md:h-[360px] object-cover"
+              >
+                <source src={heroVideoUrl} type="video/mp4" />
+              </video>
+            </div>
+          ) : settings.banner_url ? (
             <div className="rounded-2xl overflow-hidden shadow-lg">
               <img 
                 src={settings.banner_url} 

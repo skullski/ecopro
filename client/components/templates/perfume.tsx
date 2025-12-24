@@ -24,6 +24,7 @@ export default function PerfumeTemplate(props: TemplateProps) {
 
   const storeName = settings.store_name || 'Premium Scents';
   const bannerImage = settings.banner_url || 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?auto=format&fit=crop&w=1600&q=80';
+  const heroVideoUrl = settings.hero_video_url || null;
 
   const emptyTitle = settings.template_empty_title || 'No Fragrances Yet';
   const emptySubtitle = settings.template_empty_subtitle || 'Add fragrances to your store to see them displayed here.';
@@ -188,8 +189,26 @@ export default function PerfumeTemplate(props: TemplateProps) {
       {/* HERO SECTION */}
       <section
         className="relative h-screen max-h-[90vh] overflow-hidden bg-cover bg-center"
-        style={{ backgroundImage: `url(${bannerImage})` }}
+        style={{ backgroundImage: heroVideoUrl ? 'none' : `url(${bannerImage})` }}
       >
+        {heroVideoUrl && (
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              zIndex: 0,
+            }}
+          >
+            <source src={heroVideoUrl} type="video/mp4" />
+          </video>
+        )}
         <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0.9))' }}></div>
 
         <div className="absolute bottom-16 left-10 max-w-2xl pr-6">

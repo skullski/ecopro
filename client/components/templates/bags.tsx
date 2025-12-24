@@ -66,6 +66,7 @@ export default function BagsTemplate(props: TemplateProps) {
   // Template-specific settings
   const bgImage = templateSettings.template_bg_image || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=2000&q=80';
   const bgBlur = templateSettings.template_hero_bg_blur || 12;
+  const heroVideoUrl = templateSettings.hero_video_url || null;
   const heroHeading = templateSettings.template_hero_heading || 'Cold silhouettes,\ncut in leather and light.';
   const heroSubtitle = templateSettings.template_hero_subtitle || 'A focused edit of structured totes, city crossbody bags and evening silhouettes. Built in neutral materials for everyday precision.';
 
@@ -224,12 +225,25 @@ export default function BagsTemplate(props: TemplateProps) {
               boxShadow: show_product_shadows ? '0 40px 70px rgba(15, 23, 42, 0.32), 0 6px 18px rgba(15, 23, 42, 0.55)' : 'none',
               borderRadius: `${border_radius}px`,
             }}>
-              <img 
-                src={settings.banner_url || bgImage} 
-                alt="Hero bag" 
-                className={`w-full object-cover ${enable_animations ? 'hover:scale-105 transition-transform' : ''}`}
-                style={{ height: '460px', borderRadius: `${border_radius}px` }}
-              />
+              {heroVideoUrl ? (
+                <video 
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className={`w-full object-cover ${enable_animations ? 'hover:scale-105 transition-transform' : ''}`}
+                  style={{ height: '460px', borderRadius: `${border_radius}px` }}
+                >
+                  <source src={heroVideoUrl} type="video/mp4" />
+                </video>
+              ) : (
+                <img 
+                  src={settings.banner_url || bgImage} 
+                  alt="Hero bag" 
+                  className={`w-full object-cover ${enable_animations ? 'hover:scale-105 transition-transform' : ''}`}
+                  style={{ height: '460px', borderRadius: `${border_radius}px` }}
+                />
+              )}
             </div>
             {heroBag && (
               <div className="absolute left-6 bottom-6 px-4 py-3" style={{ 

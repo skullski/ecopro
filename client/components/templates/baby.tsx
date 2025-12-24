@@ -34,6 +34,7 @@ export default function BabyTemplate(props: TemplateProps) {
   const settings = (props.settings || {}) as any;
   const storeName = settings.store_name || 'BabyOS';
   const bannerUrl = settings.banner_url || 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&w=2000&q=80';
+  const heroVideoUrl = settings.hero_video_url || null;
 
   const headerSearchLabel = settings.template_header_search_label || 'Search';
   const headerCartLabel = settings.template_header_cart_label || 'Cart (0)';
@@ -251,11 +252,23 @@ export default function BabyTemplate(props: TemplateProps) {
           </div>
 
           <div className="relative z-10">
-            <img 
-              src={bannerUrl} 
-              alt={heroImageAlt} 
-              className="w-full h-96 object-cover rounded-[28px] shadow-2xl"
-            />
+            {heroVideoUrl ? (
+              <video 
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="w-full h-96 object-cover rounded-[28px] shadow-2xl"
+              >
+                <source src={heroVideoUrl} type="video/mp4" />
+              </video>
+            ) : (
+              <img 
+                src={bannerUrl} 
+                alt={heroImageAlt} 
+                className="w-full h-96 object-cover rounded-[28px] shadow-2xl"
+              />
+            )}
             {heroHighlight && (
               <div className="absolute left-5 bottom-5 bg-white/95 px-4 py-3 rounded-2xl border border-yellow-100 shadow-md">
                 <div className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">

@@ -21,6 +21,8 @@ export default function FoodTemplate(props: TemplateProps) {
     enable_animations = true,
   } = useMemo(() => universalSettings as any || {}, [universalSettings]);
 
+  const heroVideoUrl = settings.hero_video_url || null;
+
   // Helper functions to save product data and navigate
   const handleProductClick = (product: any) => {
     localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
@@ -359,11 +361,23 @@ export default function FoodTemplate(props: TemplateProps) {
               className="hero-image-mask"
               style={{ transform: `translateY(${parallaxOffset * -1}px)` }}
             >
-              <img
-                src={settings.banner_url || 'https://images.unsplash.com/photo-1553621042-f6e147245754?auto=format&fit=crop&w=1200&q=80'}
-                alt="Hero dish"
-                className="w-full h-[300px] sm:h-[340px] lg:h-[380px] object-cover"
-              />
+              {heroVideoUrl ? (
+                <video
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className="w-full h-[300px] sm:h-[340px] lg:h-[380px] object-cover"
+                >
+                  <source src={heroVideoUrl} type="video/mp4" />
+                </video>
+              ) : (
+                <img
+                  src={settings.banner_url || 'https://images.unsplash.com/photo-1553621042-f6e147245754?auto=format&fit=crop&w=1200&q=80'}
+                  alt="Hero dish"
+                  className="w-full h-[300px] sm:h-[340px] lg:h-[380px] object-cover"
+                />
+              )}
               <div className="hero-seal hidden sm:flex">
                 <span>SHI · RO · HA · NA</span>
               </div>

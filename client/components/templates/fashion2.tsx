@@ -35,6 +35,7 @@ export default function Fashion2Template(props: TemplateProps) {
   const storeName = settings.store_name || 'LineaWear';
   const storeInitials = (settings as any).store_initials || String(storeName).slice(0, 2).toUpperCase();
     const logoUrl = (settings as any).store_logo || (settings as any).logo_url || '';
+  const heroVideoUrl = settings.hero_video_url || null;
   const city = settings.store_description?.split('·')[0] || 'Algiers';
   const tagline = settings.store_description?.split('·')[1]?.trim() || 'Modern street & clean tailoring';
   const heroHeading = settings.template_hero_heading || 'Build a fashion store that feels like a campaign, but behaves like a clean, modern catalog.';
@@ -164,11 +165,23 @@ export default function Fashion2Template(props: TemplateProps) {
           <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.9fr] gap-6">
             {/* Left – Main product */}
             <div className="relative rounded-2xl overflow-hidden border border-gray-200 bg-white h-96">
-              <img
-                src={settings.banner_url || 'https://images.unsplash.com/photo-1543087903-1ac2ec7aa8c5?auto=format&fit=crop&w=1200&q=80'}
-                alt="Hero"
-                className="w-full h-full object-cover"
-              />
+              {heroVideoUrl ? (
+                <video
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className="w-full h-full object-cover"
+                >
+                  <source src={heroVideoUrl} type="video/mp4" />
+                </video>
+              ) : (
+                <img
+                  src={settings.banner_url || 'https://images.unsplash.com/photo-1543087903-1ac2ec7aa8c5?auto=format&fit=crop&w=1200&q=80'}
+                  alt="Hero"
+                  className="w-full h-full object-cover"
+                />
+              )}
               <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-4">
                 <div className="text-sm font-semibold">{products[0]?.title || 'Featured Product'}</div>
                 <div className="text-xs text-gray-300">{products[0]?.price || 'Price'} DZD</div>

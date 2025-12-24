@@ -46,6 +46,7 @@ export default function FashionTemplate(props: TemplateProps) {
 
   const storeName = settings.store_name || 'WardrobeOS';
   const bannerUrl = settings.banner_url || 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=1600&q=80';
+  const heroVideoUrl = settings.hero_video_url || null;
 
   // Template-specific settings
   const heroHeading = settings.template_hero_heading || 'Build a wardrobe that behaves like software.';
@@ -225,8 +226,26 @@ export default function FashionTemplate(props: TemplateProps) {
       {/* HERO */}
       <section
         className="hero"
-        style={{ backgroundImage: `url(${bannerUrl})` }}
+        style={{ backgroundImage: heroVideoUrl ? 'none' : `url(${bannerUrl})` }}
       >
+        {heroVideoUrl && (
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              zIndex: 0,
+            }}
+          >
+            <source src={heroVideoUrl} type="video/mp4" />
+          </video>
+        )}
         <div className="hero-overlay"></div>
         <div className="max-w-6xl mx-auto px-6 h-full flex items-end pb-14">
           <div className="max-w-lg">

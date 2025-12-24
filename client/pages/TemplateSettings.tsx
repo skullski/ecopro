@@ -285,12 +285,13 @@ const templateConfigs: Record<string, any> = {
       ...universalSections,
       {
         title: 'Fashion-Specific: Hero Section',
-        description: 'Upload hero image for your fashion store',
+        description: 'Upload hero image or video for your fashion store',
         fields: [
           { key: 'template_hero_heading', label: 'Heading', type: 'text', placeholder: 'Fashion Store' },
           { key: 'template_hero_subtitle', label: 'Subtitle', type: 'text', placeholder: 'Discover our collection' },
           { key: 'template_button_text', label: 'Button Text', type: 'text', placeholder: 'Shop Now' },
           { key: 'banner_url', label: 'Hero Banner Image', type: 'image', placeholder: 'Choose image' },
+          { key: 'hero_video_url', label: 'Hero Video (MP4) - overrides image', type: 'video', placeholder: 'Upload MP4 video' },
         ]
       },
       {
@@ -313,6 +314,7 @@ const templateConfigs: Record<string, any> = {
           { key: 'template_hero_subtitle', label: 'Subtitle', type: 'text', placeholder: 'Push your key pieces first' },
           { key: 'template_button_text', label: 'Button Text', type: 'text', placeholder: 'Shop Now' },
           { key: 'banner_url', label: 'Hero Banner Image', type: 'image', placeholder: 'Choose featured product image' },
+          { key: 'hero_video_url', label: 'Hero Video (MP4) - overrides image', type: 'video', placeholder: 'Upload MP4 video' },
         ]
       }
     ]
@@ -322,10 +324,11 @@ const templateConfigs: Record<string, any> = {
     sections: [
       ...universalSections,
       {
-        title: 'Fashion 3-Specific: Video Hero',
+        title: 'Fashion 3-Specific: Hero Section',
         description: 'Fashion3 features a video hero with yellow/dark theme (video optional)',
         fields: [
-          { key: 'template_video_url', label: 'Hero Video URL (optional)', type: 'url', placeholder: 'https://video.mp4' },
+          { key: 'banner_url', label: 'Hero Banner Image', type: 'image', placeholder: 'Choose premium hero image' },
+          { key: 'hero_video_url', label: 'Hero Video (Optional)', type: 'video', placeholder: 'Upload hero video - overrides image' },
         ]
       },
       {
@@ -366,6 +369,7 @@ const templateConfigs: Record<string, any> = {
           { key: 'template_hero_subtitle', label: 'Subtitle', type: 'text', placeholder: 'Showcase phones, headphones, gaming gear and accessories' },
           { key: 'hero_badge', label: 'Hero Badge (e.g. "2024 Latest")', type: 'text', placeholder: '2024 Latest' },
           { key: 'banner_url', label: 'Hero Banner Image', type: 'image', placeholder: 'Upload hero background' },
+          { key: 'hero_video_url', label: 'Hero Video (MP4) - overrides image', type: 'video', placeholder: 'Upload MP4 video' },
         ]
       },
       {
@@ -386,11 +390,12 @@ const templateConfigs: Record<string, any> = {
       ...universalSections,
       {
         title: 'Food-Specific: Hero Section',
-        description: 'Upload a mouth-watering hero image for your food business',
+        description: 'Upload a mouth-watering hero image or video for your food business',
         fields: [
           { key: 'template_hero_heading', label: 'Main Heading', type: 'text', placeholder: 'Premium Food Selection' },
           { key: 'template_hero_subtitle', label: 'Subtitle', type: 'text', placeholder: 'Authentic flavors from our kitchen' },
           { key: 'banner_url', label: 'Hero Banner Image', type: 'image', placeholder: 'Choose food/cafe image' },
+          { key: 'hero_video_url', label: 'Hero Video (MP4) - overrides image', type: 'video', placeholder: 'Upload MP4 video' },
         ]
       }
     ]
@@ -401,10 +406,11 @@ const templateConfigs: Record<string, any> = {
       ...universalSections,
       {
         title: 'Furniture-Specific: Hero Section',
-        description: 'Upload a beautiful furniture showroom hero image',
+        description: 'Upload a beautiful furniture showroom hero image or video',
         fields: [
           { key: 'template_hero_heading', label: 'Main Heading', type: 'text', placeholder: 'Furniture Collection' },
           { key: 'banner_url', label: 'Hero Banner Image', type: 'image', placeholder: 'Choose furniture image' },
+          { key: 'hero_video_url', label: 'Hero Video (MP4) - overrides image', type: 'video', placeholder: 'Upload MP4 video' },
         ]
       },
       {
@@ -429,10 +435,11 @@ const templateConfigs: Record<string, any> = {
       ...universalSections,
       {
         title: 'Jewelry-Specific: Hero Section',
-        description: 'Upload your luxury jewelry collection hero image',
+        description: 'Upload your luxury jewelry collection hero image or video',
         fields: [
           { key: 'template_hero_heading', label: 'Main Heading', type: 'text', placeholder: 'Luxury Jewelry Collection' },
           { key: 'banner_url', label: 'Hero Banner Image', type: 'image', placeholder: 'Upload jewelry collection image' },
+          { key: 'hero_video_url', label: 'Hero Video (MP4) - overrides image', type: 'video', placeholder: 'Upload MP4 video' },
         ]
       },
       {
@@ -457,9 +464,12 @@ const templateConfigs: Record<string, any> = {
       ...universalSections,
       {
         title: 'Perfume-Specific: Hero Section',
+        description: 'Upload a luxurious hero image or video for your perfume store',
         fields: [
           { key: 'template_hero_heading', label: 'Main Heading', type: 'text', placeholder: 'The Realms of Scent' },
           { key: 'template_hero_subtitle', label: 'Subtitle', type: 'text', placeholder: 'Discover scents that tell your story' },
+          { key: 'banner_url', label: 'Hero Banner Image', type: 'image', placeholder: 'Choose luxurious perfume image' },
+          { key: 'hero_video_url', label: 'Hero Video (Optional)', type: 'video', placeholder: 'Upload hero video - overrides image' },
         ]
       },
       {
@@ -477,10 +487,11 @@ const templateConfigs: Record<string, any> = {
       ...universalSections,
       {
         title: 'Baby-Specific: Hero Section',
-        description: 'Upload a warm, welcoming hero image for your baby store',
+        description: 'Upload a warm, welcoming hero image or video for your baby store',
         fields: [
           { key: 'template_hero_heading', label: 'Main Heading', type: 'text', placeholder: 'Baby Products' },
           { key: 'banner_url', label: 'Hero Banner Image', type: 'image', placeholder: 'Choose baby products image' },
+          { key: 'hero_video_url', label: 'Hero Video (MP4) - overrides image', type: 'video', placeholder: 'Upload MP4 video' },
         ]
       }
     ]
@@ -491,11 +502,12 @@ const templateConfigs: Record<string, any> = {
       ...universalSections,
       {
         title: 'Bags-Specific: Hero Section',
-        description: 'Upload beautiful bag collection images',
+        description: 'Upload beautiful bag collection images or video',
         fields: [
           { key: 'template_hero_heading', label: 'Main Heading', type: 'text', placeholder: 'Cold silhouettes, cut in leather and light.' },
           { key: 'template_hero_subtitle', label: 'Subtitle', type: 'text', placeholder: 'A focused edit of structured totes, city crossbody bags and evening silhouettes.' },
           { key: 'banner_url', label: 'Hero Featured Image', type: 'image', placeholder: 'Choose bag image' },
+          { key: 'hero_video_url', label: 'Hero Video (MP4) - overrides image', type: 'video', placeholder: 'Upload MP4 video' },
         ]
       },
       {
@@ -521,10 +533,11 @@ const templateConfigs: Record<string, any> = {
       ...universalSections,
       {
         title: 'Beauty-Specific: Hero Section',
-        description: 'Upload a glamorous beauty product hero image',
+        description: 'Upload a glamorous beauty product hero image or video',
         fields: [
           { key: 'template_hero_heading', label: 'Main Heading', type: 'text', placeholder: 'Find Your Perfect Shade' },
           { key: 'banner_url', label: 'Hero Banner Image', type: 'image', placeholder: 'Choose beauty products image' },
+          { key: 'hero_video_url', label: 'Hero Video (MP4) - overrides image', type: 'video', placeholder: 'Upload MP4 video' },
         ]
       },
       {
@@ -542,10 +555,11 @@ const templateConfigs: Record<string, any> = {
       ...universalSections,
       {
         title: 'Cafe-Specific: Hero Section',
-        description: 'Upload a delicious cafe/bakery hero image',
+        description: 'Upload a delicious cafe/bakery hero image or video',
         fields: [
           { key: 'template_hero_heading', label: 'Main Heading', type: 'text', placeholder: 'Artisan Bakery & Cafe' },
           { key: 'banner_url', label: 'Hero Banner Image', type: 'image', placeholder: 'Choose cafe/bakery image' },
+          { key: 'hero_video_url', label: 'Hero Video (Optional)', type: 'video', placeholder: 'Upload hero video - overrides image' },
         ]
       },
       {
@@ -569,6 +583,7 @@ const templateConfigs: Record<string, any> = {
           { key: 'template_hero_subtitle', label: 'Hero Subtitle', type: 'text', placeholder: 'Shop smartphones, laptops, monitors, and configure your dream PC' },
           { key: 'template_button_text', label: 'CTA Button Text', type: 'text', placeholder: 'Build Your PC' },
           { key: 'banner_url', label: 'Hero Background Image', type: 'image', placeholder: 'Choose hero background image' },
+          { key: 'hero_video_url', label: 'Hero Video (Optional)', type: 'video', placeholder: 'Upload hero video - overrides image' },
         ]
       },
       {
@@ -1314,6 +1329,59 @@ export default function TemplateSettingsPage() {
                             className="w-12 h-12 object-cover rounded border"
                           />
                         )}
+                      </div>
+                    )}
+                    {field.type === 'video' && (
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <Input
+                            type="file"
+                            accept="video/mp4,video/webm,video/ogg"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                if (file.size > 50 * 1024 * 1024) {
+                                  setMessage({ type: 'error', text: 'Video must be under 50MB' });
+                                  setTimeout(() => setMessage(null), 5000);
+                                  return;
+                                }
+                                try {
+                                  setMessage({ type: 'success', text: 'Uploading video...' });
+                                  const res = await uploadImage(file);
+                                  handleChange(field.key, res.url);
+                                  setMessage({ type: 'success', text: 'Video uploaded successfully' });
+                                  setTimeout(() => setMessage(null), 3000);
+                                } catch (err) {
+                                  console.error('Video upload error:', err);
+                                  const errorMsg = err instanceof Error ? err.message : 'Failed to upload video';
+                                  setMessage({ type: 'error', text: errorMsg });
+                                  setTimeout(() => setMessage(null), 5000);
+                                }
+                              }
+                            }}
+                            className={`flex-1 ${isDarkMode ? 'dark' : ''}`}
+                          />
+                          {(effectiveSettings[field.key as keyof TemplateSettings] as string) && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleChange(field.key, '')}
+                              className="text-red-500 hover:text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                        {(effectiveSettings[field.key as keyof TemplateSettings] as string) && (
+                          <video
+                            src={(effectiveSettings[field.key as keyof TemplateSettings] as string) || ''}
+                            className="w-full max-w-xs h-24 object-cover rounded border"
+                            controls
+                            muted
+                          />
+                        )}
+                        <p className="text-xs text-muted-foreground">Max 50MB. MP4/WebM recommended. Video will autoplay muted.</p>
                       </div>
                     )}
                     {['text', 'url'].includes(field.type) && (

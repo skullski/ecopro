@@ -263,6 +263,7 @@ export default function JewelryTemplate(props: TemplateProps) {
   `;
 
   const heroImage = settings.banner_url || 'https://images.unsplash.com/photo-1603561596112-0a132b757133?auto=format&fit=crop&w=1600&q=80';
+  const heroVideoUrl = settings.hero_video_url || null;
   const heroProduct = products[0];
 
   if (!products || products.length === 0) {
@@ -339,11 +340,23 @@ export default function JewelryTemplate(props: TemplateProps) {
           </div>
 
           <div className="relative">
-            <img
-              src={heroImage}
-              alt={heroImageAlt}
-              className="hero-img hero-frame"
-            />
+            {heroVideoUrl ? (
+              <video
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="hero-img hero-frame"
+              >
+                <source src={heroVideoUrl} type="video/mp4" />
+              </video>
+            ) : (
+              <img
+                src={heroImage}
+                alt={heroImageAlt}
+                className="hero-img hero-frame"
+              />
+            )}
             {heroProduct && (
               <div className="absolute bottom-4 left-4 px-4 py-3 bg-white/90 backdrop-blur-sm rounded-xl shadow-gold" style={{ borderColor: accent_color }}>
                 <div className="text-[10px] uppercase tracking-[0.18em] mb-1" style={{ color: primary_color }}>

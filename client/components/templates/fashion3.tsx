@@ -37,6 +37,7 @@ export default function Fashion3Template(props: TemplateProps) {
   const storeName = settings.store_name || 'LineaWear';
   const city = settings.store_description?.split('·')[0] || 'Algiers';
   const heroHeading = settings.template_hero_heading || 'Premium Essentials';
+  const heroVideoUrl = settings.hero_video_url || null;
 
   const storeInitials = (settings as any).store_initials || String(storeName).slice(0, 2).toUpperCase();
   const logoUrl = (settings as any).store_logo || (settings as any).logo_url || '';
@@ -168,11 +169,23 @@ export default function Fashion3Template(props: TemplateProps) {
         <div className="max-w-7xl mx-auto px-6 py-12">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             <div className="relative rounded-xl overflow-hidden h-80 border border-gray-800">
-              <img
-                src={settings.banner_url || 'https://images.unsplash.com/photo-1543087903-1ac2ec7aa8c5?auto=format&fit=crop&w=600&q=80'}
-                alt="Hero"
-                className="w-full h-full object-cover"
-              />
+              {heroVideoUrl ? (
+                <video
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className="w-full h-full object-cover"
+                >
+                  <source src={heroVideoUrl} type="video/mp4" />
+                </video>
+              ) : (
+                <img
+                  src={settings.banner_url || 'https://images.unsplash.com/photo-1543087903-1ac2ec7aa8c5?auto=format&fit=crop&w=600&q=80'}
+                  alt="Hero"
+                  className="w-full h-full object-cover"
+                />
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
               <div className="absolute bottom-0 left-0 right-0 p-6">
                 <p className="text-xs text-yellow-400 font-bold uppercase tracking-wider mb-2">{featuredCollectionLabel}</p>

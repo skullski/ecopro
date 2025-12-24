@@ -27,6 +27,7 @@ export interface StoreSettings {
   secondary_color?: string;
   template?: string;
   banner_url?: string | null;
+  hero_video_url?: string | null; // Video for hero section (overrides banner_url when set)
   currency_code?: string;
   hero_main_url?: string | null;
   hero_tile1_url?: string | null;
