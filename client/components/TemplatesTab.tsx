@@ -1,6 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface Template {
   id: string;
@@ -26,6 +35,85 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [switchOpen, setSwitchOpen] = useState(false);
+  const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
+  const [switchMode, setSwitchMode] = useState<'defaults' | 'import'>('import');
+  const [savingSwitch, setSavingSwitch] = useState(false);
+  const [selectedGroups, setSelectedGroups] = useState<Record<string, boolean>>({
+    hero_text: true,
+    hero_media: false,
+    accent: true,
+  });
+
+  const importGroups = [
+    {
+      id: 'hero_text',
+      label: 'Hero Text',
+      keys: ['template_hero_heading', 'template_hero_subtitle', 'template_button_text'],
+    },
+    {
+      id: 'accent',
+      label: 'Accent Color',
+      keys: ['template_accent_color'],
+    },
+    {
+      id: 'hero_media',
+      label: 'Hero Images',
+      keys: ['hero_main_url', 'hero_tile1_url', 'hero_tile2_url', 'store_images'],
+    },
+  ];
+
+  const computeImportKeys = () => {
+    const keys: string[] = [];
+    for (const g of importGroups) {
+      if (!selectedGroups[g.id]) continue;
+      for (const k of g.keys) keys.push(k);
+    }
+    return Array.from(new Set(keys));
+  };
+
+  const openTemplateSwitch = (templateId: string) => {
+    if ((storeSettings?.template || '') === templateId) return;
+    setPendingTemplateId(templateId);
+    setSwitchMode('import');
+    setSwitchOpen(true);
+  };
+
+  const applyTemplateSwitch = async () => {
+    if (!pendingTemplateId) return;
+    try {
+      setSavingSwitch(true);
+      const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+      const importKeys = switchMode === 'import' ? computeImportKeys() : [];
+      const res = await fetch('/api/client/store/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          __templateSwitch: {
+            toTemplate: pendingTemplateId,
+            mode: switchMode,
+            importKeys,
+          },
+        }),
+      });
+      if (!res.ok) throw new Error(`Switch failed (${res.status})`);
+      const data = await res.json();
+      setStoreSettings(() => data);
+      setSwitchOpen(false);
+      setPendingTemplateId(null);
+    } catch (e) {
+      // Fallback: switch locally so user is not blocked.
+      setStoreSettings((s: any) => ({ ...s, template: pendingTemplateId }));
+      setSwitchOpen(false);
+      setPendingTemplateId(null);
+    } finally {
+      setSavingSwitch(false);
+    }
+  };
 
   // Fallback templates in case API fails
   const FALLBACK_TEMPLATES: Template[] = [
@@ -199,6 +287,76 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
 
   return (
     <div className="space-y-3 md:space-y-4">
+      <Dialog open={switchOpen} onOpenChange={setSwitchOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Switch Template</DialogTitle>
+            <DialogDescription>
+              Choose how to carry over your settings to the new template.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="templateSwitchMode"
+                  checked={switchMode === 'defaults'}
+                  onChange={() => setSwitchMode('defaults')}
+                />
+                Start from defaults (no import)
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="templateSwitchMode"
+                  checked={switchMode === 'import'}
+                  onChange={() => setSwitchMode('import')}
+                />
+                Import selected settings
+              </label>
+            </div>
+
+            {switchMode === 'import' && (
+              <div className="space-y-2">
+                <div className="text-sm font-medium">Import groups</div>
+                <div className="space-y-2">
+                  {importGroups.map((g) => (
+                    <label key={g.id} className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={!!selectedGroups[g.id]}
+                        onChange={(e) =>
+                          setSelectedGroups((prev) => ({ ...prev, [g.id]: e.target.checked }))
+                        }
+                      />
+                      {g.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSwitchOpen(false);
+                setPendingTemplateId(null);
+              }}
+              disabled={savingSwitch}
+            >
+              Cancel
+            </Button>
+            <Button onClick={applyTemplateSwitch} disabled={savingSwitch}>
+              {savingSwitch ? 'Switching...' : 'Switch'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-slate-700 dark:to-slate-700 p-4 rounded-lg border border-purple-200 dark:border-slate-600">
         <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Choose Store Template</h3>
         <p className="text-sm text-slate-700 dark:text-slate-300">Select how your store should appear to customers. Each template is fully customizable.</p>
@@ -209,7 +367,7 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
         {templates.map((template) => (
           <button
             key={template.id}
-            onClick={() => setStoreSettings((s: any) => ({ ...s, template: template.id }))}
+            onClick={() => openTemplateSwitch(template.id)}
             className={`text-left rounded-lg border-2 transition-all overflow-hidden hover:shadow-lg ${
               storeSettings.template === template.id
                 ? 'border-blue-500 shadow-xl ring-2 ring-blue-400 ring-offset-2 dark:ring-offset-slate-900 bg-blue-50 dark:bg-slate-700'

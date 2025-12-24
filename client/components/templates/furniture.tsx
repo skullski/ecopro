@@ -20,7 +20,7 @@ export default function FurnitureTemplate(props: TemplateProps) {
   const handleBuyClick = (product: any, e?: any) => {
     if (e) e.stopPropagation();
     localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
-    navigate(`/checkout/${product.id}`);
+    navigate(`checkout/${product.id}`);
   };
   const [filters, setFilters] = useState({ category: 'all', maxPrice: 999999, subcategories: [] });
 
@@ -218,7 +218,7 @@ export default function FurnitureTemplate(props: TemplateProps) {
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
-                          navigate(`/checkout/${p.id}`);
+                          navigate(`checkout/${p.id}`);
                         }} 
                         className="flex-1 py-2 bg-gray-900 text-white text-xs rounded font-semibold hover:bg-gray-800"
                       >

@@ -1,17 +1,24 @@
 import { useState, useEffect } from "react";
-import { Bot, Save, Loader2, Phone, MessageSquare, Globe, Check, Code2 } from "lucide-react";
+import { Bot, Save, Loader2, Phone, MessageSquare, Globe, Check, Users, Code2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useTranslation } from "@/lib/i18n";
 import { useToast } from "@/hooks/use-toast";
+import CustomerBot from "../CustomerBot";
+import { getCurrentUser } from "@/lib/auth";
 
 interface BotSettings {
   enabled: boolean;
-  provider: 'whatsapp_cloud' | 'twilio_sms' | string;
+  provider: 'whatsapp_cloud' | 'telegram' | 'viber' | string;
   whatsappPhoneId: string;
   whatsappToken: string;
+  telegramBotToken?: string;
+  telegramBotUsername?: string;
+  viberAuthToken?: string;
+  viberSenderName?: string;
+  templateGreeting?: string;
   templateOrderConfirmation: string;
   templatePayment: string;
   templateShipping: string;
@@ -22,12 +29,20 @@ export default function AdminWasselniSettings() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'general' | 'whatsapp' | 'templates'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'whatsapp' | 'templates' | 'customer_bot'>('general');
+  const currentUser = getCurrentUser();
+  const isPaymentLocked = !!currentUser?.is_locked && currentUser?.lock_type === 'payment';
+  const [subscriptionLocked, setSubscriptionLocked] = useState(false);
   const [settings, setSettings] = useState<BotSettings>({
     enabled: true,
-    provider: 'whatsapp_cloud',
+    provider: 'telegram',
     whatsappPhoneId: '',
     whatsappToken: '',
+    telegramBotToken: '',
+    telegramBotUsername: '',
+    viberAuthToken: '',
+    viberSenderName: '',
+    templateGreeting: `شكراً لطلبك من {storeName} يا {customerName}!\n\n✅ فعّل الإشعارات في Telegram باش توصلك رسالة التأكيد وتتبع الطلب.`,
     templateOrderConfirmation: `السلام عليكم {customerName}! 🌟\n\nشكراً لك على طلبك من {companyName}! \n\n📦 تفاصيل الطلب:\n• المنتج: {productName}\n• السعر: {totalPrice} دج\n• العنوان: {address}\n\nهل تؤكد الطلب؟ رد ب "نعم" للتأكيد أو "لا" للإلغاء.`,
     templatePayment: `تم تأكيد طلبك #{orderId}. يرجى الدفع بـ {totalPrice} دج.`,
     templateShipping: `تم شحن طلبك #{orderId}. رقم التتبع: {trackingNumber}.`
@@ -36,6 +51,30 @@ export default function AdminWasselniSettings() {
   useEffect(() => {
     loadSettings();
   }, []);
+
+  useEffect(() => {
+    void checkSubscriptionLock();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const checkSubscriptionLock = async () => {
+    try {
+      if (isPaymentLocked) {
+        setSubscriptionLocked(true);
+        return;
+      }
+      const token = localStorage.getItem('authToken');
+      if (!token) return;
+      const res = await fetch('/api/billing/check-access', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setSubscriptionLocked(!data.hasAccess);
+    } catch {
+      // ignore
+    }
+  };
 
   const loadSettings = async () => {
     setLoading(true);
@@ -64,6 +103,16 @@ export default function AdminWasselniSettings() {
   };
 
   const handleSave = async () => {
+    // Prevent enabling bot while subscription is ended/payment-locked
+    if ((subscriptionLocked || isPaymentLocked) && settings.enabled) {
+      toast({
+        title: 'Subscription ended',
+        description: 'You must renew/unlock your account to enable the bot.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     setSaving(true);
     try {
       const token = localStorage.getItem('authToken');
@@ -82,7 +131,8 @@ export default function AdminWasselniSettings() {
           description: "Bot settings saved successfully"
         });
       } else {
-        throw new Error('Failed to save settings');
+        const errJson = await response.json().catch(() => null);
+        throw new Error(errJson?.error || 'Failed to save settings');
       }
     } catch (error) {
       console.error('Failed to save bot settings:', error);
@@ -158,7 +208,18 @@ export default function AdminWasselniSettings() {
               <span className="text-sm text-slate-600 dark:text-slate-400">{settings.enabled ? 'On' : 'Off'}</span>
               <Switch
                 checked={settings.enabled}
-                onCheckedChange={(checked) => updateSetting('enabled', checked)}
+                onCheckedChange={(checked) => {
+                  if (checked && (subscriptionLocked || isPaymentLocked)) {
+                    toast({
+                      title: 'Subscription ended',
+                      description: 'You must renew/unlock your account to enable the bot.',
+                      variant: 'destructive'
+                    });
+                    return;
+                  }
+                  updateSetting('enabled', checked);
+                }}
+                disabled={subscriptionLocked || isPaymentLocked}
               />
             </label>
           </div>
@@ -169,7 +230,8 @@ export default function AdminWasselniSettings() {
           {[
             { id: 'general' as const, label: 'General', icon: Globe },
             { id: 'whatsapp' as const, label: 'WhatsApp', icon: Phone },
-            { id: 'templates' as const, label: 'Templates', icon: MessageSquare }
+            { id: 'templates' as const, label: 'Templates', icon: MessageSquare },
+            { id: 'customer_bot' as const, label: 'Customer Bot', icon: Users }
           ].map(tab => {
             const Icon = tab.icon;
             return (
@@ -210,8 +272,9 @@ export default function AdminWasselniSettings() {
                     <Label className="text-sm sm:text-base font-medium text-slate-900 dark:text-white">Provider</Label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {[
-                        { value: 'whatsapp_cloud', label: 'WhatsApp Cloud', desc: 'Official WhatsApp Business API' },
-                        { value: 'twilio_sms', label: 'Twilio SMS', desc: 'SMS via Twilio' }
+                        { value: 'whatsapp_cloud', label: 'WhatsApp', desc: 'WhatsApp via Twilio' },
+                        { value: 'telegram', label: 'Telegram', desc: 'Telegram Bot API (requires chat id mapping)' },
+                        { value: 'viber', label: 'Viber', desc: 'Viber REST API (requires user id mapping)' }
                       ].map(option => (
                         <button
                           key={option.value}
@@ -260,6 +323,13 @@ export default function AdminWasselniSettings() {
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Customer Bot Tab */}
+          {activeTab === 'customer_bot' && (
+            <div className="bg-white dark:bg-slate-800/50 backdrop-blur rounded-lg md:rounded-xl border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
+              <CustomerBot embedded={true} />
             </div>
           )}
 
@@ -328,9 +398,99 @@ export default function AdminWasselniSettings() {
             </div>
           )}
 
+          {/* Telegram Tab (uses WhatsApp tab for creds section; keep minimal) */}
+          {activeTab === 'whatsapp' && settings.provider === 'telegram' && (
+            <div className="bg-white dark:bg-slate-800/50 backdrop-blur rounded-lg md:rounded-xl p-3 md:p-4 border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
+              <div className="space-y-2">
+                <Label className="text-sm sm:text-base font-medium text-slate-900 dark:text-white">Telegram Bot Token</Label>
+                <Input
+                  value={settings.telegramBotToken || ''}
+                  onChange={(e) => updateSetting('telegramBotToken', e.target.value)}
+                  placeholder="123456:ABCDEF..."
+                />
+                <Label className="text-sm sm:text-base font-medium text-slate-900 dark:text-white mt-3 block">Telegram Bot Username</Label>
+                <Input
+                  value={settings.telegramBotUsername || ''}
+                  onChange={(e) => updateSetting('telegramBotUsername', e.target.value)}
+                  placeholder="@YourBotUsername"
+                />
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Customers must click the Telegram button and press Start once, so we can capture the Telegram chat and send confirmation/tracking messages.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'whatsapp' && settings.provider === 'viber' && (
+            <div className="bg-white dark:bg-slate-800/50 backdrop-blur rounded-lg md:rounded-xl p-3 md:p-4 border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label className="text-sm sm:text-base font-medium text-slate-900 dark:text-white">Viber Auth Token</Label>
+                  <Input
+                    value={settings.viberAuthToken || ''}
+                    onChange={(e) => updateSetting('viberAuthToken', e.target.value)}
+                    placeholder="viber-auth-token"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm sm:text-base font-medium text-slate-900 dark:text-white">Viber Sender Name</Label>
+                  <Input
+                    value={settings.viberSenderName || ''}
+                    onChange={(e) => updateSetting('viberSenderName', e.target.value)}
+                    placeholder="EcoPro"
+                  />
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Viber requires a mapped `receiver` id per customer.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Templates Tab */}
           {activeTab === 'templates' && (
             <div className="space-y-3 md:space-y-4">
+              <div className="bg-white dark:bg-slate-800/50 backdrop-blur rounded-2xl md:rounded-2xl p-4 md:p-4 lg:p-3 border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-500/10">
+                    <Bot className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white">Greeting Message</h2>
+                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Sent when customer clicks Telegram button and presses Start</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3 md:space-y-4">
+                  <div className="space-y-3">
+                    <Label htmlFor="greetingTemplate" className="text-sm sm:text-base font-medium text-slate-900 dark:text-white">Message Template</Label>
+                    <Textarea
+                      id="greetingTemplate"
+                      value={settings.templateGreeting || ''}
+                      onChange={(e) => updateSetting('templateGreeting', e.target.value)}
+                      rows={5}
+                      className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 font-mono text-sm"
+                    />
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Variables: {'{storeName}'} {'{customerName}'} {'{orderId}'}
+                    </p>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-50/50 dark:from-blue-500/10 dark:to-blue-500/5 rounded-2xl p-4 border border-blue-200 dark:border-blue-500/20">
+                    <h4 className="font-semibold text-sm text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      Preview
+                    </h4>
+                    <div className="bg-white dark:bg-slate-900 rounded-xl p-4 whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300 font-mono border border-blue-200 dark:border-blue-500/20">
+                      {(settings.templateGreeting || '')
+                        .replace('{customerName}', 'أحمد')
+                        .replace('{storeName}', 'Your Store')
+                        .replace('{orderId}', '12345')}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div className="bg-white dark:bg-slate-800/50 backdrop-blur rounded-2xl md:rounded-2xl p-4 md:p-4 lg:p-3 border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-500/10">

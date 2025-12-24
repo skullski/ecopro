@@ -61,7 +61,7 @@ export default function JewelryTemplate(props: TemplateProps) {
   const handleBuyClick = (product: any, e?: any) => {
     if (e) e.stopPropagation();
     localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
-    navigate(`/checkout/${product.id}`);
+    navigate(`checkout/${product.id}`);
   };
 
   const SHADOW_CLASS: Record<string, string> = {
@@ -211,7 +211,7 @@ export default function JewelryTemplate(props: TemplateProps) {
     }
   `;
 
-  const heroImage = products[0]?.images?.[0] || 'https://images.unsplash.com/photo-1603561596112-0a132b757133?auto=format&fit=crop&w=1600&q=80';
+  const heroImage = settings.banner_url || 'https://images.unsplash.com/photo-1603561596112-0a132b757133?auto=format&fit=crop&w=1600&q=80';
   const heroProduct = products[0];
 
   if (!products || products.length === 0) {

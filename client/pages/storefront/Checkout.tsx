@@ -144,6 +144,7 @@ export default function Checkout() {
     type: null,
     message: '',
   });
+  const [telegramStartUrls, setTelegramStartUrls] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [formData, setFormData] = useState({
@@ -534,6 +535,28 @@ export default function Checkout() {
                   </div>
                 )}
 
+                {orderStatus.type === 'success' && telegramStartUrls.length > 0 && (
+                  <div className="p-2 sm:p-3 md:p-3 lg:p-4 rounded-lg border border-blue-200 bg-blue-50 text-blue-900 text-xs sm:text-sm">
+                    <div className="font-bold mb-2">Telegram Tracking (Optional)</div>
+                    <div className="space-y-2">
+                      {telegramStartUrls.slice(0, 3).map((url, idx) => (
+                        <a
+                          key={`${url}-${idx}`}
+                          href={url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-block px-3 py-2 rounded-lg bg-white border border-blue-200 font-bold"
+                        >
+                          Start Telegram Chat
+                        </a>
+                      ))}
+                      <div className="text-[11px] text-blue-800">
+                        Open the chat and press Start once to receive confirmation & order updates.
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex gap-1 sm:gap-1.5 md:gap-1.5 lg:gap-4 pt-1.5 sm:pt-2 md:pt-2 lg:pt-6">
                   <button
                     onClick={() => setCurrentStep(2)}
@@ -566,6 +589,7 @@ export default function Checkout() {
                         // Create an order for each cart item
                         let successCount = 0;
                         let errorMessage = '';
+                        const tgLinks: string[] = [];
                         for (const item of cart) {
                           const orderData = {
                             product_id: item.id,
@@ -591,18 +615,23 @@ export default function Checkout() {
                           if (response.ok) {
                             successCount++;
                             console.log('[Checkout] Order created with ID:', responseData.order?.id);
+                            if (responseData.telegramStartUrl) {
+                              tgLinks.push(String(responseData.telegramStartUrl));
+                            }
                           } else {
                             errorMessage = responseData.error || 'Order creation failed';
                             console.error('[Checkout] Order creation error:', errorMessage);
                           }
                         }
 
+                        setTelegramStartUrls(tgLinks);
+
                         if (successCount === cart.length) {
                           setOrderStatus({
                             type: 'success',
                             message: `✓ Order placed successfully! ${successCount} item(s) will be delivered soon.`,
                           });
-                          setTimeout(() => navigate('/'), 2000);
+                          // Stay on page so customer can optionally start Telegram tracking.
                         } else if (successCount > 0) {
                           setOrderStatus({
                             type: 'error',

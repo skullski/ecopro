@@ -1,6 +1,7 @@
 import { RequestHandler } from "express";
 import { ensureConnection } from "../utils/database";
-import { sendWhatsAppMessage } from "../utils/messaging";
+import { sendBotMessagesForOrder } from "./order-confirmation";
+import { createOrderTelegramLink } from "../utils/telegram";
 
 // Get all products for a storefront
 export const getStorefrontProducts: RequestHandler = async (req, res) => {
@@ -14,8 +15,11 @@ export const getStorefrontProducts: RequestHandler = async (req, res) => {
   try {
     const pool = await ensureConnection();
     // First try client storefronts (client_store_settings)
+    // Match by exact store_slug OR by store_name (case-insensitive, spaces/special chars removed)
     const clientCheck = await pool.query(
-      'SELECT client_id FROM client_store_settings WHERE store_slug = $1',
+      `SELECT client_id FROM client_store_settings 
+       WHERE store_slug = $1 
+          OR LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1)`,
       [storeSlug]
     );
 
@@ -41,7 +45,9 @@ export const getStorefrontProducts: RequestHandler = async (req, res) => {
 
     // Otherwise try seller storefronts (seller_store_settings) and return marketplace_products
     const sellerCheck = await pool.query(
-      'SELECT seller_id FROM seller_store_settings WHERE store_slug = $1',
+      `SELECT seller_id FROM seller_store_settings 
+       WHERE store_slug = $1 
+          OR LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1)`,
       [storeSlug]
     );
     if (sellerCheck.rows.length === 0) {
@@ -97,6 +103,7 @@ export const getStorefrontSettings: RequestHandler = async (req, res) => {
                 store_images,
                 owner_name, owner_email,
                 template_hero_heading, template_hero_subtitle, template_button_text, template_accent_color,
+                 template_settings, template_settings_by_template, global_settings,
                 store_slug
          FROM client_store_settings
          WHERE store_slug = $1 OR REPLACE(store_name, ' ', '') = $1`,
@@ -105,10 +112,10 @@ export const getStorefrontSettings: RequestHandler = async (req, res) => {
     } catch (err: any) {
       // If query fails (columns don't exist yet), try without new columns
       if (err.code === '42703') {
-        clientRes = await pool.query(
-          'SELECT store_name, store_description, store_logo, primary_color, secondary_color, template, banner_url, currency_code, NULL as hero_main_url, NULL as hero_tile1_url, NULL as hero_tile2_url, store_images, owner_name, owner_email, NULL as template_hero_heading, NULL as template_hero_subtitle, NULL as template_button_text, NULL as template_accent_color, store_slug FROM client_store_settings WHERE store_slug = $1',
-          [querySlug]
-        );
+          clientRes = await pool.query(
+            "SELECT store_name, store_description, store_logo, primary_color, secondary_color, template, banner_url, currency_code, NULL as hero_main_url, NULL as hero_tile1_url, NULL as hero_tile2_url, store_images, owner_name, owner_email, NULL as template_hero_heading, NULL as template_hero_subtitle, NULL as template_button_text, NULL as template_accent_color, NULL as template_settings, NULL as template_settings_by_template, NULL as global_settings, store_slug FROM client_store_settings WHERE store_slug = $1",
+            [querySlug]
+          );
       } else {
         throw err;
       }
@@ -179,7 +186,12 @@ export const getStorefrontSettings: RequestHandler = async (req, res) => {
       if (storeImagesArr.length === 0) storeImagesArr = null;
     }
 
+    const templateSettings = row?.template_settings && typeof row.template_settings === 'object' ? row.template_settings : {};
+    const globalSettings = row?.global_settings && typeof row.global_settings === 'object' ? row.global_settings : {};
+
     res.json({
+      ...globalSettings,
+      ...templateSettings,
       ...row,
       store_slug: storeSlug,
       banner_url: sanitize(row.banner_url),
@@ -266,6 +278,42 @@ export const getPublicProduct: RequestHandler = async (req, res) => {
   }
 };
 
+// Get single product by ID for a storefront
+export const getStorefrontProductById: RequestHandler = async (req, res) => {
+  const { storeSlug, productId } = req.params;
+
+  try {
+    const pool = await ensureConnection();
+    console.log('[getStorefrontProductById] Looking for:', { storeSlug, productId });
+    
+    // Try client store product first by ID
+    const productResult = await pool.query(
+      `SELECT 
+        p.*,
+        s.store_name,
+        s.primary_color,
+        s.secondary_color,
+        s.store_slug,
+        s.owner_name AS seller_name,
+        s.owner_email AS seller_email
+      FROM client_store_products p
+      INNER JOIN client_store_settings s ON p.client_id = s.client_id
+      WHERE s.store_slug = $1 AND p.id = $2`,
+      [storeSlug, productId]
+    );
+
+    if (productResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    const product = productResult.rows[0];
+    res.json(product);
+  } catch (error) {
+    console.error('Get storefront product by ID error:', error);
+    res.status(500).json({ error: 'Failed to fetch product' });
+  }
+};
+
 // Create order via public storefront using storeSlug
 export const createPublicStoreOrder: RequestHandler = async (req, res) => {
   const { storeSlug } = req.params as any;
@@ -283,13 +331,26 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
       customer_address,
     } = req.body;
 
-    if (!product_id || !quantity || !total_price || !customer_name) {
+    if (!product_id || !quantity || !total_price || !customer_name || !customer_phone) {
       res.status(400).json({ error: 'Missing required fields' });
       return;
     }
 
+    const normalizedPhone = String(customer_phone).replace(/\s/g, '');
+    if (!/^\+?[0-9]{7,}$/.test(normalizedPhone)) {
+      res.status(400).json({ error: 'Invalid phone number' });
+      return;
+    }
+
     console.log('[createPublicStoreOrder] About to query store settings...');
-    const cs = await pool.query('SELECT client_id, store_name FROM client_store_settings WHERE store_slug = $1', [storeSlug]);
+    // Match by exact store_slug OR normalized store_name (same as storefront loading)
+    const cs = await pool.query(
+      `SELECT client_id, store_name
+       FROM client_store_settings
+       WHERE store_slug = $1
+          OR LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1)`,
+      [storeSlug]
+    );
     console.log('[createPublicStoreOrder] Client store lookup:', cs.rows);
     
     let clientId: number | string;
@@ -302,7 +363,13 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
     } else {
       // Try seller_store_settings as fallback
       console.log('[createPublicStoreOrder] Not found in client_store_settings, trying seller_store_settings...');
-      const ss = await pool.query('SELECT seller_id, store_name FROM seller_store_settings WHERE store_slug = $1', [storeSlug]);
+      const ss = await pool.query(
+        `SELECT seller_id, store_name
+         FROM seller_store_settings
+         WHERE store_slug = $1
+            OR LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1)`,
+        [storeSlug]
+      );
       console.log('[createPublicStoreOrder] Seller store lookup:', ss.rows);
       
       if (!ss.rows.length) {
@@ -368,6 +435,14 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
     );
     console.log('[createPublicStoreOrder] Inserted order:', result.rows);
 
+    // Create Telegram deep-link for this order (optional for the customer)
+    const telegram = await createOrderTelegramLink({
+      orderId: Number(result.rows[0].id),
+      clientId: Number(clientId),
+      customerPhone: normalizedPhone,
+      customerName: String(customer_name),
+    }).catch(() => ({ startToken: '', startUrl: null } as any));
+
     // Decrease stock after successful order creation
     await pool.query(
       'UPDATE client_store_products SET stock_quantity = stock_quantity - $1 WHERE id = $2',
@@ -383,17 +458,26 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
       );
     } catch {}
 
-    // WhatsApp confirmation
-    if (customer_phone) {
+    // Fire-and-forget bot confirmation with confirmation link tied to this order
+    if (normalizedPhone) {
       const productTitle = (await pool.query('SELECT title FROM client_store_products WHERE id = $1', [product_id])).rows?.[0]?.title || 'Product';
-      const msg = `Hi ${customer_name}, your order for ${productTitle} at ${storeName} is received. Total: ${total_price}. We will contact you soon.`;
-      sendWhatsAppMessage(customer_phone, msg).catch(() => {});
+
+      sendBotMessagesForOrder(
+        result.rows[0].id,
+        Number(clientId),
+        normalizedPhone,
+        customer_name,
+        storeName,
+        productTitle,
+        total_price,
+        storeSlug
+      ).catch(() => {});
     }
 
     console.log('[createPublicStoreOrder] Order creation successful, sending response...');
     // Return only safe fields - don't expose client_id to buyers
     const { client_id, ...safeOrder } = result.rows[0];
-    res.status(201).json({ success: true, order: safeOrder });
+    res.status(201).json({ success: true, order: safeOrder, telegramStartUrl: telegram?.startUrl || null });
   } catch (error) {
     console.error('Create public store order error:', error instanceof Error ? error.message : String(error));
     console.error('Full error details:', error);

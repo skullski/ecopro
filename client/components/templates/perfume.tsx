@@ -126,7 +126,7 @@ export default function PerfumeTemplate(props: TemplateProps) {
             style={{ backgroundColor: primary_color }}
             onClick={(e) => {
               e.stopPropagation();
-              navigate(`/checkout/${p.id}`);
+              navigate(`checkout/${p.id}`);
             }}
           >
             Buy Now

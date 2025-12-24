@@ -19,7 +19,7 @@ export default function Fashion2Template(props: TemplateProps) {
   const handleBuyClick = (product: any, e?: any) => {
     if (e) e.stopPropagation();
     localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
-    navigate(`/checkout/${product.id}`);
+    navigate(`checkout/${product.id}`);
   };
 
   const { products = [], settings = {}, categories = [] } = props;
@@ -110,7 +110,7 @@ export default function Fashion2Template(props: TemplateProps) {
             {/* Left – Main product */}
             <div className="relative rounded-2xl overflow-hidden border border-gray-200 bg-white h-96">
               <img
-                src={settings.banner_url || products[0]?.images?.[0] || 'https://images.unsplash.com/photo-1543087903-1ac2ec7aa8c5?auto=format&fit=crop&w=1200&q=80'}
+                src={settings.banner_url || 'https://images.unsplash.com/photo-1543087903-1ac2ec7aa8c5?auto=format&fit=crop&w=1200&q=80'}
                 alt="Hero"
                 className="w-full h-full object-cover"
               />

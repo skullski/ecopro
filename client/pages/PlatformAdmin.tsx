@@ -191,7 +191,8 @@ function LockedAccountsManager() {
             }
           : {
               client_id: clientId,
-              reason
+              reason,
+              lock_type: 'payment'  // Tools page always locks for payment issues
             };
 
         console.log(`[${modalMode.toUpperCase()}] Sending to ${endpoint}:`, body);
@@ -1823,7 +1824,7 @@ export default function PlatformAdmin() {
                   <div>
                     <p className="text-sm text-slate-400 mb-1">Expired Codes</p>
                     <p className="text-3xl font-bold text-red-400">
-                      {paymentFailures.filter(p => p.status === 'failed' || p.status === 'expired').length}
+                      {billingMetrics?.codes_expired || 0}
                     </p>
                   </div>
                   <AlertCircle className="w-10 h-10 text-red-500/40" />

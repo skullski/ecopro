@@ -13,6 +13,7 @@ import FoodTemplate from './templates/food';
 import FurnitureTemplate from './templates/furniture';
 import JewelryTemplate from './templates/jewelry';
 import PerfumeTemplate from './templates/perfume';
+import StoreTemplate from './templates/store';
 
 // Settings Components
 import FashionSettings from '../pages/admin/TemplateSettings/FashionSettings';
@@ -27,6 +28,7 @@ import FoodSettings from '../pages/admin/TemplateSettings/FoodSettings';
 import FurnitureSettings from '../pages/admin/TemplateSettings/FurnitureSettings';
 import JewelrySettings from '../pages/admin/TemplateSettings/JewelrySettings';
 import PerfumeSettings from '../pages/admin/TemplateSettings/PerfumeSettings';
+import StoreSettings from '../pages/admin/TemplateSettings/StoreSettings';
 
 export interface TemplateMetadata {
   id: string;
@@ -146,6 +148,15 @@ export const TEMPLATES: TemplateMetadata[] = [
     preview: '/templates/perfume-preview.png',
     component: PerfumeTemplate,
     settingsComponent: PerfumeSettings,
+  },
+  {
+    id: 'store',
+    name: 'Store',
+    description: 'Futuristic neon store with carousel and product grid',
+    category: 'general',
+    preview: '/templates/store-preview.png',
+    component: StoreTemplate,
+    settingsComponent: StoreSettings,
   },
 ];
 

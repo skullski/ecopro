@@ -519,6 +519,8 @@ export const unlockUser: RequestHandler = async (req, res) => {
 export const getLockedAccounts: RequestHandler = async (_req, res) => {
   try {
     // Get ALL clients with their lock status and subscription info
+    // Note: lock_type column may not exist yet if migration hasn't run
+    // Use COALESCE to default to 'critical' if column doesn't exist
     const result = await pool.query(`
       SELECT 
         id, 
@@ -534,10 +536,34 @@ export const getLockedAccounts: RequestHandler = async (_req, res) => {
         subscription_ends_at,
         is_paid_temporarily,
         subscription_extended_until,
+        COALESCE(lock_type, 'critical') as lock_type,
         created_at
       FROM clients
       ORDER BY is_locked DESC, locked_at DESC, created_at DESC
-    `);
+    `).catch(async (err) => {
+      // If lock_type column doesn't exist yet, query without it
+      console.warn('lock_type column not found, querying without it:', err.message);
+      return pool.query(`
+        SELECT 
+          id, 
+          email, 
+          name,
+          is_locked,
+          locked_reason,
+          locked_at,
+          locked_by_admin_id,
+          unlock_reason,
+          unlocked_at,
+          unlocked_by_admin_id,
+          subscription_ends_at,
+          is_paid_temporarily,
+          subscription_extended_until,
+          'critical' as lock_type,
+          created_at
+        FROM clients
+        ORDER BY is_locked DESC, locked_at DESC, created_at DESC
+      `);
+    });
 
     res.json({ accounts: result.rows });
   } catch (err) {
@@ -595,7 +621,7 @@ export const unlockAccountWithOptions: RequestHandler = async (req, res) => {
 
       const currentClient = clientResult.rows[0];
 
-      // Prepare update fields
+      // Prepare update fields - reset lock status while preserving lock_type
       let updateFields = `
         is_locked = false,
         locked_reason = NULL,
@@ -650,9 +676,9 @@ export const unlockAccountWithOptions: RequestHandler = async (req, res) => {
 };
 
 /**
- * Lock an account manually for subscription issues
+ * Lock an account manually for subscription issues or critical reasons
  * POST /api/admin/lock-account
- * Body: { client_id, reason }
+ * Body: { client_id, reason, lock_type: 'payment' | 'critical' }
  */
 export const lockAccountManually: RequestHandler = async (req, res) => {
   try {
@@ -664,8 +690,14 @@ export const lockAccountManually: RequestHandler = async (req, res) => {
       return jsonError(res, 403, "Only admins can lock accounts");
     }
 
-    const { client_id, reason } = req.body;
-    console.log('[LOCK ACCOUNT] Request body:', { client_id, reason });
+    const { client_id, reason, lock_type = 'critical' } = req.body;
+    console.log('[LOCK ACCOUNT] Request body:', { client_id, reason, lock_type });
+
+    // Validate lock_type
+    if (!['payment', 'critical'].includes(lock_type)) {
+      console.log('[LOCK ACCOUNT] ❌ Invalid lock_type:', lock_type);
+      return jsonError(res, 400, "lock_type must be 'payment' or 'critical'");
+    }
 
     if (!client_id || !reason) {
       console.log('[LOCK ACCOUNT] ❌ Missing fields');
@@ -678,14 +710,26 @@ export const lockAccountManually: RequestHandler = async (req, res) => {
       return jsonError(res, 400, "Invalid client_id");
     }
 
-    console.log('[LOCK ACCOUNT] Locking client:', clientId, 'by admin:', adminUser.id);
-    const result = await pool.query(
+    console.log('[LOCK ACCOUNT] Locking client:', clientId, 'by admin:', adminUser.id, 'type:', lock_type);
+    
+    // Try to update with lock_type (if column exists)
+    let result = await pool.query(
       `UPDATE clients 
-       SET is_locked = true, locked_reason = $1, locked_at = NOW(), locked_by_admin_id = $2
-       WHERE id = $3
-       RETURNING id, email, name`,
-      [reason, adminUser.id, clientId]
-    );
+       SET is_locked = true, locked_reason = $1, locked_at = NOW(), locked_by_admin_id = $2, lock_type = $3
+       WHERE id = $4
+       RETURNING id, email, name, lock_type`,
+      [reason, adminUser.id, lock_type, clientId]
+    ).catch(async (err) => {
+      // If lock_type column doesn't exist, update without it
+      console.warn('[LOCK ACCOUNT] lock_type column not found, updating without it:', err.message);
+      return pool.query(
+        `UPDATE clients 
+         SET is_locked = true, locked_reason = $1, locked_at = NOW(), locked_by_admin_id = $2
+         WHERE id = $3
+         RETURNING id, email, name, 'critical' as lock_type`,
+        [reason, adminUser.id, clientId]
+      );
+    });
 
     console.log('[LOCK ACCOUNT] Query result rowCount:', result.rowCount);
     if (result.rowCount === 0) {
@@ -693,11 +737,12 @@ export const lockAccountManually: RequestHandler = async (req, res) => {
       return jsonError(res, 404, "Client not found");
     }
 
-    console.log('[LOCK ACCOUNT] ✅ Account locked successfully:', result.rows[0].email);
+    console.log('[LOCK ACCOUNT] ✅ Account locked successfully:', result.rows[0].email, 'as', lock_type);
     res.json({
       message: "Account locked successfully",
       account: result.rows[0],
-      reason
+      reason,
+      lock_type
     });
   } catch (err) {
     console.error('[LOCK ACCOUNT] ❌ Error:', err);

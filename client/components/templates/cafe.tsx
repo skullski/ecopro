@@ -24,8 +24,9 @@ export default function CafeTemplate(props: TemplateProps) {
   } = useMemo(() => universalSettings as any || {}, [universalSettings]);
 
   const storeName = settings.store_name || 'Sweet Home Dz';
-  const storeCity = settings.store_city || 'Algiers';
-  const sincYear = (settings as any).since_year || new Date().getFullYear() - 2;
+  const storeCity = settings.store_city || settings.template_store_city || 'Algiers';
+  const sincYear = (settings as any).template_since_year || (settings as any).since_year || new Date().getFullYear() - 2;
+  const heroHeading = settings.template_hero_heading;
 
   // Parse custom categories from template settings if available
   const customCategories = useMemo(() => {
@@ -112,7 +113,7 @@ export default function CafeTemplate(props: TemplateProps) {
             onClick={(e) => {
               e.stopPropagation();
               handleQuickAdd();
-              navigate(`/checkout/${product.id}`);
+              navigate(`checkout/${product.id}`);
             }}
           >
             {isBundleType ? 'Add tray to cart' : 'Quick add'}
@@ -167,9 +168,13 @@ export default function CafeTemplate(props: TemplateProps) {
             </div>
             
             <h2 className="font-serif text-4xl md:text-5xl font-bold mt-4 leading-tight" style={{ color: text_color }}>
-              All your{' '}
-              <span style={{ color: accent_color }}>makroud, kalb el louz</span> and
-              more — in one organized store.
+              {heroHeading || (
+                <>
+                  All your{' '}
+                  <span style={{ color: accent_color }}>makroud, kalb el louz</span> and
+                  more — in one organized store.
+                </>
+              )}
             </h2>
             
             <p className="text-sm mt-3 max-w-md" style={{ color: secondary_text_color }}>
@@ -194,25 +199,35 @@ export default function CafeTemplate(props: TemplateProps) {
             </div>
           </div>
 
-          {/* Hero Collage - 6 images */}
-          <div className="grid grid-cols-3 gap-3">
-            {products.slice(0, 6).map((p, idx) => (
-              <div
-                key={idx}
-                className="rounded-2xl overflow-hidden shadow-md"
-                style={{ 
-                  backgroundColor: `${secondary_text_color}20`,
-                  transform: (idx === 1 || idx === 4) ? 'translateY(0.5rem)' : 'none'
-                }}
-              >
-                <img
-                  src={p.images?.[0]}
-                  alt={p.name || p.title}
-                  className="w-full h-[90px] md:h-[120px] object-cover"
-                />
-              </div>
-            ))}
-          </div>
+          {/* Hero Image or Product Collage */}
+          {settings.banner_url ? (
+            <div className="rounded-2xl overflow-hidden shadow-lg">
+              <img 
+                src={settings.banner_url} 
+                alt="Hero" 
+                className="w-full h-[280px] md:h-[360px] object-cover"
+              />
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-3">
+              {products.slice(0, 6).map((p, idx) => (
+                <div
+                  key={idx}
+                  className="rounded-2xl overflow-hidden shadow-md"
+                  style={{ 
+                    backgroundColor: `${secondary_text_color}20`,
+                    transform: (idx === 1 || idx === 4) ? 'translateY(0.5rem)' : 'none'
+                  }}
+                >
+                  <img
+                    src={p.images?.[0]}
+                    alt={p.name || p.title}
+                    className="w-full h-[90px] md:h-[120px] object-cover"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

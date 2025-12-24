@@ -611,18 +611,27 @@ export const getPaymentMetrics: RequestHandler = async (req, res) => {
        WHERE created_at >= NOW() - INTERVAL '30 days'`
     );
 
-    // Calculate estimated MRR based on redeemed codes (assuming $7/code)
+    // Count temporarily paid clients
+    const tempPaidResult = await pool.query(
+      `SELECT COUNT(*) as temp_paid_count FROM clients 
+       WHERE is_paid_temporarily = true 
+       AND subscription_extended_until > NOW()`
+    );
+    const tempPaidCount = parseInt(tempPaidResult.rows[0]?.temp_paid_count || 0);
+
+    // Calculate estimated MRR based on active subscriptions + temporarily paid (assuming $7/code)
     const subscriptionPrice = 7; // $7 per month
     const activeCount = parseInt(subscriptionResult.rows[0]?.active_subscriptions || 0);
-    const mrr = activeCount * subscriptionPrice;
+    const mrr = (activeCount + tempPaidCount) * subscriptionPrice;
 
     const metrics = {
       mrr: mrr,
-      active_subscriptions: activeCount,
+      active_subscriptions: activeCount + tempPaidCount,  // Include temporarily paid users
       expired_count: parseInt(subscriptionResult.rows[0]?.expired_count || 0),
       trial_count: parseInt(subscriptionResult.rows[0]?.trial_count || 0),
       // Code statistics
       total_codes_issued: parseInt(codesResult.rows[0]?.total_codes || 0),
+      codes_issued: parseInt(codesResult.rows[0]?.issued_codes || 0),
       codes_redeemed: parseInt(codesResult.rows[0]?.redeemed_codes || 0),
       codes_pending: parseInt(codesResult.rows[0]?.pending_codes || 0),
       codes_expired: parseInt(codesResult.rows[0]?.expired_codes || 0),

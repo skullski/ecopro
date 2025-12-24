@@ -15,7 +15,11 @@ export interface AuthResponse {
     email: string;
     name: string;
     role: string;
+    user_type?: string;
     is_paid_client?: boolean;
+    is_locked?: boolean;
+    locked_reason?: string | null;
+    lock_type?: 'payment' | 'critical' | null;
   };
 }
 
@@ -179,7 +183,17 @@ export function isAuthenticated(): boolean {
 /**
  * Get current user from localStorage
  */
-export function getCurrentUser(): { id: string; email: string; name: string; role: string; is_paid_client?: boolean } | null {
+export function getCurrentUser(): {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  user_type?: string;
+  is_paid_client?: boolean;
+  is_locked?: boolean;
+  locked_reason?: string | null;
+  lock_type?: 'payment' | 'critical' | null;
+} | null {
   const userStr = localStorage.getItem("user");
   if (!userStr) return null;
   try {

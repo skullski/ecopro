@@ -1,14 +1,15 @@
-import twilio from "twilio";
 import { ensureConnection } from "./database";
 
+type SendResult = { success: boolean; messageId?: string; error?: string };
+
 /**
- * Send WhatsApp message via Twilio
+ * Send WhatsApp message via Twilio (kept)
  */
 export async function sendWhatsAppMessage(
   toPhoneNumber: string,
   message: string,
   mediaUrl?: string
-): Promise<{ success: boolean; messageId?: string; error?: string }> {
+): Promise<SendResult> {
   try {
     // Get Twilio credentials from environment or bot settings
     const accountSid = process.env.TWILIO_ACCOUNT_SID;
@@ -20,6 +21,7 @@ export async function sendWhatsAppMessage(
       return { success: false, error: "Twilio not configured" };
     }
 
+    const twilio = (await import('twilio')).default as any;
     const client = twilio(accountSid, authToken);
 
     const messageResponse = await client.messages.create({
@@ -39,35 +41,79 @@ export async function sendWhatsAppMessage(
 }
 
 /**
- * Send SMS message via Twilio
+ * Send Telegram message via Telegram Bot API
  */
-export async function sendSMSMessage(
-  toPhoneNumber: string,
-  message: string
-): Promise<{ success: boolean; messageId?: string; error?: string }> {
+export async function sendTelegramMessage(
+  botToken: string,
+  chatId: string,
+  message: string,
+  opts?: { reply_markup?: any; parse_mode?: 'Markdown' | 'MarkdownV2' | 'HTML' }
+): Promise<SendResult> {
   try {
-    const accountSid = process.env.TWILIO_ACCOUNT_SID;
-    const authToken = process.env.TWILIO_AUTH_TOKEN;
-    const fromPhoneNumber = process.env.TWILIO_SMS_NUMBER;
+    if (!botToken) return { success: false, error: 'Telegram bot token missing' };
+    if (!chatId) return { success: false, error: 'Telegram chat_id missing' };
 
-    if (!accountSid || !authToken || !fromPhoneNumber) {
-      console.error("Twilio SMS credentials not configured");
-      return { success: false, error: "Twilio SMS not configured" };
-    }
-
-    const client = twilio(accountSid, authToken);
-
-    const messageResponse = await client.messages.create({
-      body: message,
-      from: fromPhoneNumber,
-      to: toPhoneNumber
+    const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: message,
+        ...(opts?.parse_mode ? { parse_mode: opts.parse_mode } : {}),
+        ...(opts?.reply_markup ? { reply_markup: opts.reply_markup } : {}),
+      }),
     });
 
-    console.log(`[SMS] Message sent to ${toPhoneNumber}: ${messageResponse.sid}`);
-    return { success: true, messageId: messageResponse.sid };
+    const data: any = await resp.json().catch(() => null);
+    if (!resp.ok || !data?.ok) {
+      return { success: false, error: data?.description || `Telegram send failed (${resp.status})` };
+    }
+
+    return { success: true, messageId: String(data.result?.message_id || '') };
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
-    console.error(`[SMS] Failed to send message: ${errorMsg}`);
+    console.error(`[Telegram] Failed to send message: ${errorMsg}`);
+    return { success: false, error: errorMsg };
+  }
+}
+
+/**
+ * Send Viber message via Viber REST API
+ */
+export async function sendViberMessage(
+  authToken: string,
+  receiverId: string,
+  message: string,
+  senderName?: string
+): Promise<SendResult> {
+  try {
+    if (!authToken) return { success: false, error: 'Viber auth token missing' };
+    if (!receiverId) return { success: false, error: 'Viber receiver id missing' };
+
+    const resp = await fetch('https://chatapi.viber.com/pa/send_message', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Viber-Auth-Token': authToken,
+      },
+      body: JSON.stringify({
+        receiver: receiverId,
+        min_api_version: 7,
+        sender: { name: senderName || 'EcoPro' },
+        type: 'text',
+        text: message,
+      }),
+    });
+
+    const data: any = await resp.json().catch(() => null);
+    if (!resp.ok || data?.status !== 0) {
+      return { success: false, error: data?.status_message || `Viber send failed (${resp.status})` };
+    }
+    return { success: true, messageId: data?.message_token ? String(data.message_token) : undefined };
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error(`[Viber] Failed to send message: ${errorMsg}`);
     return { success: false, error: errorMsg };
   }
 }
@@ -128,6 +174,52 @@ export async function sendOrderConfirmationMessages(
 ): Promise<void> {
   try {
     const pool = await ensureConnection();
+
+    // Stop bot completely if subscription ended or account is payment-locked.
+    try {
+      const lockRes = await pool.query(
+        `SELECT is_locked, locked_reason, lock_type FROM clients WHERE id = $1`,
+        [clientId]
+      );
+      if (lockRes.rows.length) {
+        const row = lockRes.rows[0];
+        const lockType = row.lock_type || (typeof row.locked_reason === 'string' && /(subscription|expired|payment|trial|billing)/i.test(row.locked_reason)
+          ? 'payment'
+          : 'critical');
+        if (row.is_locked && lockType === 'payment') {
+          await pool.query(
+            `UPDATE bot_settings SET enabled = false, updated_at = NOW() WHERE client_id = $1`,
+            [clientId]
+          );
+          console.log(`[Bot] Client ${clientId} payment-locked; bot disabled`);
+          return;
+        }
+      }
+
+      const subRes = await pool.query(
+        `SELECT status, trial_ends_at, current_period_end FROM subscriptions WHERE user_id = $1`,
+        [clientId]
+      );
+      if (subRes.rows.length) {
+        const sub = subRes.rows[0];
+        const now = new Date();
+        const trialEndOk = sub.status === 'trial' && sub.trial_ends_at && now < new Date(sub.trial_ends_at);
+        const activeEndOk = sub.status === 'active' && (!sub.current_period_end || now < new Date(sub.current_period_end));
+        const hasAccess = trialEndOk || activeEndOk;
+
+        if (!hasAccess) {
+          await pool.query(
+            `UPDATE bot_settings SET enabled = false, updated_at = NOW() WHERE client_id = $1`,
+            [clientId]
+          );
+          console.log(`[Bot] Client ${clientId} subscription ended; bot disabled`);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('[Bot] Access check failed; proceeding with enabled flag only:', (err as any)?.message || err);
+    }
+
     // Get bot settings for this store owner
     const settingsResult = await pool.query(
       `SELECT * FROM bot_settings WHERE client_id = $1 AND enabled = true`,
@@ -149,42 +241,21 @@ export async function sendOrderConfirmationMessages(
       confirmationLink
     };
 
-    // Schedule WhatsApp message
-    if (settings.whatsapp_token) {
-      const whatsappMessage = replaceTemplateVariables(
+    // Telegram-only: schedule Telegram message (chat_id will be resolved by order_id at send time).
+    const provider = settings.provider || 'telegram';
+    if (provider === 'telegram' && settings.telegram_bot_token) {
+      const telegramMessage = replaceTemplateVariables(
         settings.template_order_confirmation || defaultWhatsAppTemplate(),
         templateVariables
       );
-
-      const whatsappDelayMinutes = settings.whatsapp_delay_minutes || 60;
-      const sendAt = new Date(Date.now() + whatsappDelayMinutes * 60 * 1000);
-
+      const delayMinutes = settings.telegram_delay_minutes || 60;
+      const sendAt = new Date(Date.now() + delayMinutes * 60 * 1000);
       await pool.query(
         `INSERT INTO bot_messages (order_id, client_id, customer_phone, message_type, message_content, confirmation_link, send_at)
-         VALUES ($1, $2, $3, 'whatsapp', $4, $5, $6)`,
-        [orderId, clientId, customerPhone, whatsappMessage, confirmationLink, sendAt]
+         VALUES ($1, $2, $3, 'telegram', $4, $5, $6)`,
+        [orderId, clientId, customerPhone, telegramMessage, confirmationLink, sendAt]
       );
-
-      console.log(`[Bot] WhatsApp scheduled for ${customerPhone} at ${sendAt}`);
-    }
-
-    // Schedule SMS message
-    if (settings.sms_token) {
-      const smsMessage = replaceTemplateVariables(
-        settings.template_sms || defaultSMSTemplate(),
-        templateVariables
-      );
-
-      const smsDelayMinutes = settings.sms_delay_minutes || 240; // 4 hours default
-      const sendAt = new Date(Date.now() + smsDelayMinutes * 60 * 1000);
-
-      await pool.query(
-        `INSERT INTO bot_messages (order_id, client_id, customer_phone, message_type, message_content, confirmation_link, send_at)
-         VALUES ($1, $2, $3, 'sms', $4, $5, $6)`,
-        [orderId, clientId, customerPhone, smsMessage, confirmationLink, sendAt]
-      );
-
-      console.log(`[Bot] SMS scheduled for ${customerPhone} at ${sendAt}`);
+      console.log(`[Bot] Telegram scheduled for ${customerPhone} at ${sendAt}`);
     }
   } catch (error) {
     console.error("Error scheduling bot messages:", error);
@@ -212,13 +283,6 @@ function defaultWhatsAppTemplate(): string {
 }
 
 /**
- * Default SMS template
- */
-function defaultSMSTemplate(): string {
-  return `Hello {customerName}! Your order for {productName} ({price} DZD) from {storeName} is confirmed. Please approve: {confirmationLink}`;
-}
-
-/**
  * Background job to send pending messages
  * Call this periodically (e.g., every 5 minutes)
  */
@@ -238,7 +302,7 @@ export async function processPendingMessages(): Promise<void> {
         let sendResult;
 
         if (message.message_type === "whatsapp") {
-          // Get Twilio token from bot settings
+          // Get WhatsApp token from bot settings (presence only; Twilio creds come from env)
           const settingsResult = await pool.query(
             `SELECT whatsapp_token FROM bot_settings WHERE client_id = $1`,
             [message.client_id]
@@ -250,8 +314,70 @@ export async function processPendingMessages(): Promise<void> {
               message.message_content
             );
           }
-        } else if (message.message_type === "sms") {
-          sendResult = await sendSMSMessage(message.customer_phone, message.message_content);
+        } else if (message.message_type === 'telegram') {
+          const settingsResult = await pool.query(
+            `SELECT telegram_bot_token FROM bot_settings WHERE client_id = $1`,
+            [message.client_id]
+          );
+          const token = settingsResult.rows[0]?.telegram_bot_token;
+          const chatRes = await pool.query(
+            `SELECT telegram_chat_id FROM order_telegram_chats WHERE order_id = $1 AND client_id = $2 LIMIT 1`,
+            [message.order_id, message.client_id]
+          );
+          const chatId = chatRes.rows[0]?.telegram_chat_id;
+          if (token && chatId) {
+            // If this message has a confirmation link, attach inline buttons + keep link in text.
+            let replyMarkup: any = undefined;
+            if (message.confirmation_link) {
+              const linkRes = await pool.query(
+                `SELECT start_token FROM order_telegram_links WHERE order_id = $1 AND client_id = $2 ORDER BY created_at DESC LIMIT 1`,
+                [message.order_id, message.client_id]
+              );
+              const startToken = linkRes.rows[0]?.start_token as string | undefined;
+              if (startToken) {
+                replyMarkup = {
+                  inline_keyboard: [
+                    [
+                      { text: '✅ Confirm', callback_data: `approve:${startToken}` },
+                      { text: '❌ Decline', callback_data: `decline:${startToken}` },
+                    ],
+                    [
+                      { text: '✏️ Change details', url: String(message.confirmation_link) },
+                      { text: '🔗 Open link', url: String(message.confirmation_link) },
+                    ],
+                  ],
+                };
+              }
+            }
+
+            const contentWithLink = message.confirmation_link
+              ? `${message.message_content}\n\n🔗 If buttons don’t work, open:\n${message.confirmation_link}`
+              : message.message_content;
+
+            sendResult = await sendTelegramMessage(token, chatId, contentWithLink, replyMarkup ? { reply_markup: replyMarkup } : undefined);
+          } else {
+            // Customer hasn't linked Telegram yet; retry later instead of failing.
+            await pool.query(
+              `UPDATE bot_messages SET send_at = NOW() + INTERVAL '5 minutes', error_message = $1, updated_at = NOW() WHERE id = $2`,
+              ['WAITING_FOR_TELEGRAM_CHAT', message.id]
+            );
+            continue;
+          }
+        } else if (message.message_type === 'viber') {
+          const settingsResult = await pool.query(
+            `SELECT viber_auth_token, viber_sender_name FROM bot_settings WHERE client_id = $1`,
+            [message.client_id]
+          );
+          const token = settingsResult.rows[0]?.viber_auth_token;
+          const senderName = settingsResult.rows[0]?.viber_sender_name;
+          const idRes = await pool.query(
+            `SELECT viber_user_id FROM customer_messaging_ids WHERE client_id = $1 AND customer_phone = $2`,
+            [message.client_id, message.customer_phone]
+          );
+          const receiverId = idRes.rows[0]?.viber_user_id;
+          if (token && receiverId) {
+            sendResult = await sendViberMessage(token, receiverId, message.message_content, senderName);
+          }
         }
 
         // Update message status

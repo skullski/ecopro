@@ -20,6 +20,7 @@ import { ensureConnection } from "../utils/database";
  */
 export const getClientStock: RequestHandler = async (req, res) => {
   try {
+    const pool = await ensureConnection();
     const clientId = (req as any).user?.id;
     
     if (!clientId) {
@@ -83,6 +84,7 @@ export const getClientStock: RequestHandler = async (req, res) => {
  */
 export const getStockById: RequestHandler = async (req, res) => {
   try {
+    const pool = await ensureConnection();
     const clientId = (req as any).user?.id;
     
     if (!clientId) {
@@ -114,6 +116,7 @@ export const getStockById: RequestHandler = async (req, res) => {
  */
 export const createStock: RequestHandler = async (req, res) => {
   try {
+    const pool = await ensureConnection();
     const clientId = (req as any).user?.id;
     
     if (!clientId) {
@@ -257,6 +260,7 @@ export const createStock: RequestHandler = async (req, res) => {
  */
 export const updateStock: RequestHandler = async (req, res) => {
   try {
+    const pool = await ensureConnection();
     const clientId = (req as any).user?.id;
     
     if (!clientId) {
@@ -371,6 +375,7 @@ export const updateStock: RequestHandler = async (req, res) => {
  */
 export const adjustStockQuantity: RequestHandler = async (req, res) => {
   try {
+    const pool = await ensureConnection();
     const clientId = (req as any).user?.id;
     const { id } = req.params;
     const { adjustment, reason, notes } = req.body;
@@ -437,6 +442,7 @@ export const adjustStockQuantity: RequestHandler = async (req, res) => {
  */
 export const getStockHistory: RequestHandler = async (req, res) => {
   try {
+    const pool = await ensureConnection();
     const clientId = (req as any).user?.id;
     const { id } = req.params;
 
@@ -474,6 +480,7 @@ export const getStockHistory: RequestHandler = async (req, res) => {
  */
 export const deleteStock: RequestHandler = async (req, res) => {
   try {
+    const pool = await ensureConnection();
     const clientId = (req as any).user?.id;
     
     if (!clientId) {
@@ -505,6 +512,7 @@ export const deleteStock: RequestHandler = async (req, res) => {
  */
 export const getLowStockAlerts: RequestHandler = async (req, res) => {
   try {
+    const pool = await ensureConnection();
     const clientId = (req as any).user?.id;
 
     const result = await pool.query(
@@ -532,6 +540,7 @@ export const getLowStockAlerts: RequestHandler = async (req, res) => {
  */
 export const getStockCategories: RequestHandler = async (req, res) => {
   try {
+    const pool = await ensureConnection();
     const clientId = (req as any).user?.id;
 
     const result = await pool.query(

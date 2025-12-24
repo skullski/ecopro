@@ -151,6 +151,8 @@ export default function Storefront() {
           ...incomingSettings,
           // Use the template from store settings, or default to 'classic'
           template: incomingSettings?.template || 'classic',
+          // Always ensure store_slug is available (use URL slug as fallback)
+          store_slug: incomingSettings?.store_slug || storeSlug,
         };
         setStoreSettings(newSettings);
         

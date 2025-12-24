@@ -12,6 +12,7 @@ import {
   createDefaultAdmin,
   ensureConnection,
 } from "../utils/database";
+import { logSecurityEvent, getClientIp, getGeo, computeFingerprint, parseCookie } from "../utils/security";
 
 // JWT authentication middleware
 export const requireAuth: RequestHandler = (req, res, next) => {
@@ -80,6 +81,40 @@ export const register: RequestHandler = async (req, res) => {
     });
     console.log("[REGISTER] User created:", user.id, user.email);
 
+    // Fingerprint + security log (do not log secrets)
+    try {
+      const ip = getClientIp(req as any);
+      const ua = (req.headers['user-agent'] as string | undefined) || null;
+      const geo = getGeo(req as any, ip);
+      const fpCookie = parseCookie(req as any, 'ecopro_fp');
+      const fingerprint = computeFingerprint({ ip, userAgent: ua, cookie: fpCookie });
+
+      await logSecurityEvent({
+        event_type: 'auth_register_success',
+        severity: 'info',
+        request_id: (req as any).requestId || null,
+        method: req.method,
+        path: req.path,
+        status_code: 201,
+        ip,
+        user_agent: ua,
+        fingerprint,
+        country_code: geo.country_code,
+        region: geo.region,
+        city: geo.city,
+        user_id: String(user.id),
+        user_type: user.user_type || (user.role === 'admin' ? 'admin' : 'client'),
+        role: user.role || null,
+        metadata: {
+          scope: 'auth',
+          action: 'register',
+          email: user.email,
+        },
+      });
+    } catch (e) {
+      console.warn('[REGISTER] Failed to log security event:', (e as any)?.message || e);
+    }
+
     // If user_type is 'client', also create a client record (for store owners)
     if (user.user_type === 'client') {
       try {
@@ -128,6 +163,15 @@ export const login: RequestHandler = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    const inferLockType = (dbLockType: unknown, lockedReason: unknown): 'payment' | 'critical' => {
+      if (dbLockType === 'payment' || dbLockType === 'critical') return dbLockType;
+      const reason = typeof lockedReason === 'string' ? lockedReason : '';
+      // If lock_type is missing (common when column hasn't existed / wasn't selected),
+      // infer payment lock from subscription-related reasons.
+      if (/(subscription|expired|payment|trial|billing)/i.test(reason)) return 'payment';
+      return 'critical';
+    };
+
     console.log("\n=== LOGIN ATTEMPT ===");
     console.log("Email:", email);
     console.log("Password length:", password?.length);
@@ -142,6 +186,39 @@ export const login: RequestHandler = async (req, res) => {
 
     if (!user) {
       console.log("❌ User not found");
+      // Security log: failed login attempt (no user_id)
+      try {
+        const ip = getClientIp(req as any);
+        const ua = (req.headers['user-agent'] as string | undefined) || null;
+        const geo = getGeo(req as any, ip);
+        const fpCookie = parseCookie(req as any, 'ecopro_fp');
+        const fingerprint = computeFingerprint({ ip, userAgent: ua, cookie: fpCookie });
+        await logSecurityEvent({
+          event_type: 'auth_login_failed',
+          severity: 'warn',
+          request_id: (req as any).requestId || null,
+          method: req.method,
+          path: req.path,
+          status_code: 401,
+          ip,
+          user_agent: ua,
+          fingerprint,
+          country_code: geo.country_code,
+          region: geo.region,
+          city: geo.city,
+          user_id: null,
+          user_type: null,
+          role: null,
+          metadata: {
+            scope: 'auth',
+            action: 'login',
+            reason: 'user_not_found',
+            email_present: Boolean(email),
+          },
+        });
+      } catch {
+        // ignore
+      }
       return jsonError(res, 401, "Invalid email or password");
     }
 
@@ -152,18 +229,60 @@ export const login: RequestHandler = async (req, res) => {
     
     if (!isValidPassword) {
       console.log("❌ Invalid password");
+      // Security log: failed login attempt
+      try {
+        const ip = getClientIp(req as any);
+        const ua = (req.headers['user-agent'] as string | undefined) || null;
+        const geo = getGeo(req as any, ip);
+        const fpCookie = parseCookie(req as any, 'ecopro_fp');
+        const fingerprint = computeFingerprint({ ip, userAgent: ua, cookie: fpCookie });
+        await logSecurityEvent({
+          event_type: 'auth_login_failed',
+          severity: 'warn',
+          request_id: (req as any).requestId || null,
+          method: req.method,
+          path: req.path,
+          status_code: 401,
+          ip,
+          user_agent: ua,
+          fingerprint,
+          country_code: geo.country_code,
+          region: geo.region,
+          city: geo.city,
+          user_id: String(user.id),
+          user_type: (user.user_type as any) || (user.role === 'admin' ? 'admin' : 'client'),
+          role: (user.role as any) || null,
+          metadata: {
+            scope: 'auth',
+            action: 'login',
+            reason: 'bad_password',
+          },
+        });
+      } catch {
+        // ignore
+      }
       return jsonError(res, 401, "Invalid email or password");
     }
 
     // Check if account is locked
+    // Payment locks: Allow login (blur overlay shown on dashboard)
+    // Critical locks: Prevent login entirely
     if (user.is_locked) {
-      console.log("❌ Account is locked, reason:", user.locked_reason);
-      const reason = user.locked_reason || "Account locked by administrator";
-      return res.status(403).json({ 
-        error: `Account locked: ${reason}`,
-        locked: true,
-        locked_reason: reason
-      });
+      const lockType = inferLockType((user as any).lock_type, (user as any).locked_reason);
+      console.log("❌ Account is locked, type:", lockType, "reason:", user.locked_reason);
+      
+      if (lockType === 'critical') {
+        // Critical lock - prevent login
+        const reason = user.locked_reason || "Account locked by administrator";
+        return res.status(403).json({ 
+          error: `Account locked: ${reason}`,
+          locked: true,
+          locked_reason: reason,
+          lock_type: 'critical'
+        });
+      }
+      // Payment lock - allow login (blur overlay will be shown on dashboard)
+      console.log("✅ Payment lock detected - allowing login, blur overlay will be shown");
     }
 
     console.log("✅ Login successful");
@@ -185,6 +304,9 @@ export const login: RequestHandler = async (req, res) => {
         name: user.name,
         role: user.role,
         user_type: user.user_type || (user.role === "admin" ? "admin" : "client"),
+        is_locked: !!(user as any).is_locked,
+        locked_reason: (user as any).locked_reason || null,
+        lock_type: user.is_locked ? inferLockType((user as any).lock_type, (user as any).locked_reason) : null,
       },
     });
   } catch (error) {

@@ -20,7 +20,7 @@ export default function FashionTemplate(props: TemplateProps) {
   const handleBuyClick = (product: any, e?: any) => {
     if (e) e.stopPropagation();
     localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
-    navigate(`/checkout/${product.id}`);
+    navigate(`checkout/${product.id}`);
   };
 
   const products = props.products || [];

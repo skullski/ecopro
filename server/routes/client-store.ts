@@ -322,8 +322,13 @@ export const getStoreSettings: RequestHandler = async (req, res) => {
       result.rows[0] = updated.rows[0];
     }
 
-    logStoreSettings('getStoreSettings:success', { clientId, result: result.rows[0] });
-    res.json(result.rows[0]);
+    const row = result.rows[0];
+    const templateSettings = row?.template_settings && typeof row.template_settings === 'object' ? row.template_settings : {};
+    const globalSettings = row?.global_settings && typeof row.global_settings === 'object' ? row.global_settings : {};
+    const merged = { ...globalSettings, ...templateSettings, ...row };
+
+    logStoreSettings('getStoreSettings:success', { clientId, result: merged });
+    res.json(merged);
   } catch (error) {
     console.error("Get store settings error:", error);
     logStoreSettings('getStoreSettings:error', { error: (error as any)?.message });
@@ -337,10 +342,35 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
     const user = (req as any).user;
     if (user && (user.role === 'admin' || user.user_type === 'admin')) return res.status(403).json({ error: 'Admins are not allowed to manage client storefronts' });
     const clientId = (req as any).user.id;
-    const updates = req.body;
+    const updates = req.body || {};
     // Debug: log incoming updates for easier diagnosis during development
     console.log('[updateStoreSettings] clientId=', clientId, 'payload=', JSON.stringify(updates));
     logStoreSettings('updateStoreSettings:start', { clientId, keys: Object.keys(updates), updates });
+
+    // Ensure DB has the JSON settings columns (safe to run on each update)
+    try {
+      await pool.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS template_settings JSONB NOT NULL DEFAULT '{}'::jsonb`);
+      await pool.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS template_settings_by_template JSONB NOT NULL DEFAULT '{}'::jsonb`);
+      await pool.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS global_settings JSONB NOT NULL DEFAULT '{}'::jsonb`);
+    } catch (e) {
+      console.error('Could not ensure JSON settings columns exist:', (e as any).message);
+    }
+
+    // Load current row so we can merge JSON settings and support template switching.
+    let existingRes = await pool.query('SELECT * FROM client_store_settings WHERE client_id = $1', [clientId]);
+    if (existingRes.rows.length === 0) {
+      const randomSlug = 'store-' + Math.random().toString(36).substr(2, 8);
+      existingRes = await pool.query(
+        `INSERT INTO client_store_settings (client_id, store_slug)
+         VALUES ($1, $2) RETURNING *`,
+        [clientId, randomSlug]
+      );
+    }
+    const existingRow = existingRes.rows[0];
+
+    // Reserved control payload for template switching.
+    const templateSwitch = (updates as any).__templateSwitch;
+    if ((updates as any).__templateSwitch !== undefined) delete (updates as any).__templateSwitch;
 
     // Normalize image list fields: trim whitespace, remove duplicate commas, convert empty to NULL
     const imageKeys = new Set(['banner_url', 'hero_main_url', 'hero_tile1_url', 'hero_tile2_url']);
@@ -420,18 +450,137 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
       'seller_name', 'seller_email'
     ]);
 
+    // Columns we treat as template-scoped for per-template snapshots.
+    const templateScopedCols = new Set([
+      'template_hero_heading',
+      'template_hero_subtitle',
+      'template_button_text',
+      'template_accent_color',
+      'hero_main_url',
+      'hero_tile1_url',
+      'hero_tile2_url',
+      'store_images',
+    ]);
+
+    const existingTemplate = existingRow?.template || 'fashion';
+    const existingTemplateSettings =
+      existingRow?.template_settings && typeof existingRow.template_settings === 'object'
+        ? existingRow.template_settings
+        : {};
+    const existingTemplateByTemplate =
+      existingRow?.template_settings_by_template && typeof existingRow.template_settings_by_template === 'object'
+        ? existingRow.template_settings_by_template
+        : {};
+
+    const buildTemplateSnapshot = (row: any) => {
+      const snapshot: any = {
+        ...(row?.template_settings && typeof row.template_settings === 'object' ? row.template_settings : {}),
+      };
+      for (const col of templateScopedCols) {
+        if (row && Object.prototype.hasOwnProperty.call(row, col)) snapshot[col] = row[col];
+      }
+      return snapshot;
+    };
+
+    const safeObject = (v: any) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
+
+    // Unknown keys are persisted into template_settings JSONB instead of being dropped.
+    const extraUpdates: Record<string, any> = {};
     Object.entries(updates).forEach(([key, value]) => {
       if (key === 'id' || key === 'client_id') return;
-      if (!allowedCols.has(key)) {
-        // Skip unknown/legacy keys (log for visibility)
-        console.warn('[updateStoreSettings] skipping unknown key:', key);
-        return;
+      if (key.startsWith('__')) return;
+      if (allowedCols.has(key)) return;
+      // Store any other key in JSON settings.
+      extraUpdates[key] = value;
+    });
+
+    // Prepare a column update object so we can inject computed changes (switching templates).
+    const columnUpdates: Record<string, any> = {};
+
+    // Apply any allowed column updates from payload.
+    Object.entries(updates).forEach(([key, value]) => {
+      if (key === 'id' || key === 'client_id') return;
+      if (key.startsWith('__')) return;
+      if (!allowedCols.has(key)) return;
+      columnUpdates[key] = value;
+    });
+
+    // Handle template switching (server-side, persisted immediately)
+    // Expected payload: { __templateSwitch: { toTemplate, mode: 'defaults'|'import', importKeys?: string[] } }
+    // - defaults: start with empty snapshot (template defaults)
+    // - import: start with existing target snapshot (if any) and overlay selected keys from old snapshot
+    let nextTemplateSettings: any | null = null;
+    let nextTemplateByTemplate: any | null = null;
+    if (templateSwitch && typeof templateSwitch === 'object' && typeof templateSwitch.toTemplate === 'string') {
+      const toTemplate = String(templateSwitch.toTemplate);
+      const mode = templateSwitch.mode === 'import' ? 'import' : 'defaults';
+      const importKeys: string[] = Array.isArray(templateSwitch.importKeys)
+        ? templateSwitch.importKeys.map((k: any) => String(k))
+        : [];
+
+      const oldSnapshot = buildTemplateSnapshot(existingRow);
+      const map = { ...safeObject(existingTemplateByTemplate) };
+      map[existingTemplate] = oldSnapshot;
+
+      const baseTargetSnapshot = mode === 'defaults' ? {} : { ...safeObject(map[toTemplate]) };
+      if (mode === 'import') {
+        for (const k of importKeys) {
+          if (Object.prototype.hasOwnProperty.call(oldSnapshot, k)) {
+            baseTargetSnapshot[k] = oldSnapshot[k];
+          }
+        }
       }
+
+      // Apply new template + snapshot.
+      columnUpdates.template = toTemplate;
+
+      // Template-scoped columns: set to snapshot value, or NULL on defaults.
+      for (const col of templateScopedCols) {
+        if (Object.prototype.hasOwnProperty.call(baseTargetSnapshot, col)) {
+          columnUpdates[col] = baseTargetSnapshot[col];
+        } else {
+          // Reset to default (template internal fallback) when not provided
+          columnUpdates[col] = null;
+        }
+      }
+
+      // JSON settings are snapshot minus template-scoped columns.
+      const { ...snapshotCopy } = baseTargetSnapshot;
+      for (const col of templateScopedCols) delete snapshotCopy[col];
+      nextTemplateSettings = snapshotCopy;
+
+      // Persist updated snapshot map.
+      map[toTemplate] = baseTargetSnapshot;
+      nextTemplateByTemplate = map;
+    } else {
+      // Normal save: merge extra updates into JSON template settings, and refresh per-template snapshot.
+      const mergedTemplateSettings = { ...safeObject(existingTemplateSettings), ...extraUpdates };
+      nextTemplateSettings = mergedTemplateSettings;
+
+      const snapshot = buildTemplateSnapshot({ ...existingRow, template_settings: mergedTemplateSettings, ...columnUpdates });
+      const map = { ...safeObject(existingTemplateByTemplate), [existingTemplate]: snapshot };
+      nextTemplateByTemplate = map;
+    }
+
+    // Apply computed + direct column updates
+    Object.entries(columnUpdates).forEach(([key, value]) => {
       // Always add the field to update, even if null
       fields.push(`${key} = $${paramCount}`);
       values.push(value);
       paramCount++;
     });
+
+    // Persist JSON settings columns
+    if (nextTemplateSettings != null) {
+      fields.push(`template_settings = $${paramCount}`);
+      values.push(nextTemplateSettings);
+      paramCount++;
+    }
+    if (nextTemplateByTemplate != null) {
+      fields.push(`template_settings_by_template = $${paramCount}`);
+      values.push(nextTemplateByTemplate);
+      paramCount++;
+    }
 
     if (fields.length === 0) {
       // No fields to update - still return success with current settings
@@ -439,7 +588,10 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
         'SELECT * FROM client_store_settings WHERE client_id = $1',
         [clientId]
       );
-      return res.json(result.rows[0]);
+      const row = result.rows[0];
+      const templateSettings = row?.template_settings && typeof row.template_settings === 'object' ? row.template_settings : {};
+      const globalSettings = row?.global_settings && typeof row.global_settings === 'object' ? row.global_settings : {};
+      return res.json({ ...globalSettings, ...templateSettings, ...row });
     }
 
     fields.push(`updated_at = CURRENT_TIMESTAMP`);
@@ -455,8 +607,12 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
     const result = await pool.query(queryText, values);
 
     // Debug: log the DB result so we can confirm persisted values
-    console.log('[updateStoreSettings] updatedRow=', JSON.stringify(result.rows[0]));
-    logStoreSettings('updateStoreSettings:success', { clientId, updated: result.rows[0] });
+    const updatedRow = result.rows[0];
+    console.log('[updateStoreSettings] updatedRow=', JSON.stringify(updatedRow));
+    const templateSettings = updatedRow?.template_settings && typeof updatedRow.template_settings === 'object' ? updatedRow.template_settings : {};
+    const globalSettings = updatedRow?.global_settings && typeof updatedRow.global_settings === 'object' ? updatedRow.global_settings : {};
+    const merged = { ...globalSettings, ...templateSettings, ...updatedRow };
+    logStoreSettings('updateStoreSettings:success', { clientId, updated: merged });
 
     // Audit log settings update
     const changedSettings = Object.keys(updates);
@@ -468,7 +624,7 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
     } catch (e) {
       console.error('Audit log (update_store_settings) failed:', (e as any).message);
     }
-    res.json(result.rows[0]);
+    res.json(merged);
   } catch (error) {
     console.error("Update store settings error:", error);
     logStoreSettings('updateStoreSettings:error', { error: (error as any)?.message });

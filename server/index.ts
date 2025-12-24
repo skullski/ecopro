@@ -17,22 +17,28 @@ import { createProduct as createStorefrontProduct, updateProduct as updateStoref
 import * as orderRoutes from "./routes/orders";
 import * as orderConfirmationRoutes from "./routes/order-confirmation";
 import { upload, uploadImage } from "./routes/uploads";
-import { authenticate, requireAdmin, requireClient, requireStoreOwner } from "./middleware/auth";
+import { authenticate, optionalAuthenticate, requireAdmin, requireClient, requireStoreOwner } from "./middleware/auth";
 import { requireActiveSubscription } from "./middleware/subscription-check";
 import * as adminRoutes from "./routes/admin";
 import * as dashboardRoutes from "./routes/dashboard";
 import * as botRoutes from "./routes/bot";
+import * as telegramRoutes from "./routes/telegram";
+import { trafficMiddleware } from './utils/traffic';
 import * as staffRoutes from "./routes/staff";
 import * as billingRoutes from "./routes/billing";
+import kernelRouter, { initKernel } from "./routes/kernel";
+import trapsRouter from "./routes/traps";
 import { deliveryRouter } from "./routes/delivery";
 import googleSheetsRouter from "./routes/google-sheets";
 import chatRouter from "./routes/chat";
 import codesRouter from "./routes/codes";
+import customerBotRouter from "./routes/customer-bot";
 import { authenticateStaff, requireStaffPermission, requireStaffClientAccess } from "./utils/staff-middleware";
 import { initializeDatabase, createDefaultAdmin, runPendingMigrations } from "./utils/database";
 import { handleHealth } from "./routes/health";
 import { handleDbCheck } from "./routes/db-check";
 import { hashPassword } from "./utils/auth";
+import { purgeOldSecurityEvents, securityMiddleware } from "./utils/security";
 import {
   validate,
   registerValidation,
@@ -62,12 +68,14 @@ export function createServer() {
   const masked = url.replace(/:(.*?)@/, ':****@');
   console.log('🗄️ DATABASE_URL:', masked || '(not set)');
   initializeDatabase()
-    .then(() => {
+    .then(async () => {
       if (process.env.SKIP_MIGRATIONS === 'true') {
         console.log('⏭️ SKIP_MIGRATIONS=true — skipping SQL migrations');
+        await initKernel().catch((e) => console.error('Kernel init failed:', e));
         return;
       }
-      return runPendingMigrations();
+      await runPendingMigrations();
+      await initKernel().catch((e) => console.error('Kernel init failed:', e));
     })
     .catch((err) => {
       console.error("Failed to initialize database:", err);
@@ -136,6 +144,34 @@ export function createServer() {
     })
   );
 
+  // Attach req.user when a valid token exists (without rejecting missing/invalid tokens)
+  app.use(optionalAuthenticate);
+
+  // Lightweight in-memory traffic capture (used by Kernel portal)
+  app.use(trafficMiddleware);
+
+  // Security monitoring: DZ-only hard block for unauth traffic + event logging
+  app.use(
+    securityMiddleware({
+      dzOnlyUnauth: true,
+      allowUnknownCountry: false,
+      retentionDays: 90,
+    })
+  );
+
+  // Obvious trap endpoints/pages (always 404, but logged)
+  app.use(trapsRouter);
+
+  // Enforce 90-day retention for security events
+  void purgeOldSecurityEvents(90)
+    .then((n) => {
+      if (n > 0) console.log(`[security] Purged ${n} old events`);
+    })
+    .catch(() => null);
+  setInterval(() => {
+    void purgeOldSecurityEvents(90).catch(() => null);
+  }, 6 * 60 * 60 * 1000);
+
   // NOTE: Removed duplicate express.json()/urlencoded registrations to avoid
   // early PayloadTooLargeError from default 100kb parser.
 
@@ -174,6 +210,9 @@ export function createServer() {
 
   app.get("/api/demo", handleDemo);
 
+  // Telegram webhook (public)
+  app.post('/api/telegram/webhook', telegramRoutes.telegramWebhook);
+
   // Auth routes (with rate limiting)
   app.post(
     "/api/auth/register",
@@ -191,6 +230,9 @@ export function createServer() {
   );
   app.get("/api/auth/me", authenticate, authRoutes.getCurrentUser);
   app.post("/api/auth/change-password", authenticate, authRoutes.changePassword);
+
+  // Kernel (root-only) APIs
+  app.use('/api/kernel', kernelRouter);
   
   // Admin: Search user by email
   app.get("/api/users/search", authenticate, authRoutes.searchUserByEmail);
@@ -670,6 +712,7 @@ export function createServer() {
 
   // Public store routes (no authentication required)
   app.get("/api/storefront/:storeSlug/products", publicStoreRoutes.getStorefrontProducts);
+  app.get("/api/storefront/:storeSlug/products/:productId", publicStoreRoutes.getStorefrontProductById);
   app.get("/api/storefront/:storeSlug/settings", publicStoreRoutes.getStorefrontSettings);
   app.get("/api/store/:storeSlug/:productSlug", publicStoreRoutes.getPublicProduct);
   app.post("/api/storefront/:storeSlug/orders", publicStoreRoutes.createPublicStoreOrder);
@@ -701,6 +744,9 @@ export function createServer() {
 
   // Subscription codes routes (authenticated - client/seller operations)
   app.use('/api/codes', authenticate, codesRouter);
+
+  // Customer Bot routes (authenticated - for store owners to message customers)
+  app.use('/api/customer-bot', authenticate, requireClient, customerBotRouter);
 
   // Checkout session routes (database-backed, not localStorage)
   app.post("/api/checkout/save-product", orderRoutes.saveProductForCheckout); // Public - save product for checkout

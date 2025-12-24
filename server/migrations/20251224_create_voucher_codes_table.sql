@@ -43,13 +43,13 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF NOT EXISTS tr_update_code_used_at ON voucher_codes;
+DROP TRIGGER IF EXISTS tr_update_code_used_at ON voucher_codes;
 CREATE TRIGGER tr_update_code_used_at
 BEFORE UPDATE ON voucher_codes
 FOR EACH ROW
 EXECUTE FUNCTION update_code_used_at();
 
-DROP TRIGGER IF NOT EXISTS tr_update_code_used_at_requests ON code_requests;
+DROP TRIGGER IF EXISTS tr_update_code_used_at_requests ON code_requests;
 CREATE TRIGGER tr_update_code_used_at_requests
 BEFORE UPDATE ON code_requests
 FOR EACH ROW

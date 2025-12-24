@@ -18,7 +18,7 @@ export default function BagsTemplate(props: TemplateProps) {
   const handleBuyClick = (product: any, e?: any) => {
     if (e) e.stopPropagation();
     localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
-    navigate(`/checkout/${product.id}`);
+    navigate(`checkout/${product.id}`);
   };
 
   // Get types from products or use defaults
@@ -196,7 +196,7 @@ export default function BagsTemplate(props: TemplateProps) {
               borderRadius: `${border_radius}px`,
             }}>
               <img 
-                src={heroBag?.images?.[0] || bgImage} 
+                src={settings.banner_url || bgImage} 
                 alt="Hero bag" 
                 className={`w-full object-cover ${enable_animations ? 'hover:scale-105 transition-transform' : ''}`}
                 style={{ height: '460px', borderRadius: `${border_radius}px` }}
@@ -375,7 +375,7 @@ export default function BagsTemplate(props: TemplateProps) {
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/checkout/${bag.id}`);
+                        navigate(`checkout/${bag.id}`);
                       }}
                       className="text-xs px-3 py-1 text-white font-medium transition"
                       style={{

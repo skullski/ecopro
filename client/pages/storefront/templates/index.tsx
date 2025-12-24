@@ -14,8 +14,9 @@ import BabyTemplate from '@/components/templates/baby';
 import BagsTemplate from '@/components/templates/bags';
 import BeautyTemplate from '@/components/templates/beauty';
 import CafeTemplate from '@/components/templates/cafe';
+import StoreTemplate from '@/components/templates/store';
 
-export type TemplateId = 'classic' | 'supreme' | 'maximize' | 'fullframe' | 'stockist' | 'walidstore' | 'minimal' | 'catalog' | 'fashion' | 'fashion2' | 'fashion3' | 'electronics' | 'food' | 'furniture' | 'jewelry' | 'perfume' | 'baby' | 'bags' | 'beauty' | 'cafe';
+export type TemplateId = 'classic' | 'supreme' | 'maximize' | 'fullframe' | 'stockist' | 'walidstore' | 'minimal' | 'catalog' | 'fashion' | 'fashion2' | 'fashion3' | 'electronics' | 'food' | 'furniture' | 'jewelry' | 'perfume' | 'baby' | 'bags' | 'beauty' | 'cafe' | 'store';
 
 export function RenderStorefront(t: TemplateId, props: TemplateProps) {
   console.log('[RenderStorefront] Template ID:', t);
@@ -45,6 +46,8 @@ export function RenderStorefront(t: TemplateId, props: TemplateProps) {
       return <BeautyTemplate {...props} />;
     case 'cafe':
       return <CafeTemplate {...props} />;
+    case 'store':
+      return <StoreTemplate {...props} />;
     case 'supreme':
       return <EditorialTemplate {...props} mode="supreme" />;
     case 'fullframe':

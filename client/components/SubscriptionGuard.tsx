@@ -2,6 +2,7 @@ import { useState, useEffect, ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Lock, Gift, MessageCircle, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { getCurrentUser } from '@/lib/auth';
 
 interface SubscriptionGuardProps {
   children: ReactNode;
@@ -19,6 +20,8 @@ interface SubscriptionGuardProps {
 export default function SubscriptionGuard({ children }: SubscriptionGuardProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const currentUser = getCurrentUser();
+  const isPaymentLocked = !!currentUser?.is_locked && currentUser?.lock_type === 'payment';
   const [subscriptionStatus, setSubscriptionStatus] = useState<{
     hasAccess: boolean;
     status: string;
@@ -35,6 +38,12 @@ export default function SubscriptionGuard({ children }: SubscriptionGuardProps) 
 
   const checkSubscription = async () => {
     try {
+      // Payment lock: allow login but block dashboard usage.
+      if (isPaymentLocked) {
+        setSubscriptionStatus({ hasAccess: false, status: 'payment_locked', loading: false });
+        return;
+      }
+
       const token = localStorage.getItem('authToken');
       if (!token) {
         setSubscriptionStatus({ hasAccess: true, status: 'unknown', loading: false });
@@ -66,8 +75,13 @@ export default function SubscriptionGuard({ children }: SubscriptionGuardProps) 
   const isRenewPage = location.pathname === '/renew-subscription';
   const isChatPage = location.pathname === '/chat' || location.pathname.includes('/chat');
 
+  // Payment lock: only Codes + Chat allowed
+  if (isPaymentLocked && (isCodesPage || isChatPage)) {
+    return <>{children}</>;
+  }
+
   // Don't show lock on allowed pages
-  if (isCodesPage || isRenewPage || isChatPage) {
+  if (!isPaymentLocked && (isCodesPage || isRenewPage || isChatPage)) {
     return <>{children}</>;
   }
 
@@ -81,7 +95,7 @@ export default function SubscriptionGuard({ children }: SubscriptionGuardProps) 
     return <>{children}</>;
   }
 
-  // Show locked overlay for expired subscriptions
+  // Show locked overlay for payment locks or expired subscriptions
   return (
     <div className="relative">
       {/* Original content (blurred) */}
@@ -99,8 +113,8 @@ export default function SubscriptionGuard({ children }: SubscriptionGuardProps) 
               <div className="w-24 h-24 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-amber-500/50">
                 <Lock className="w-12 h-12 text-amber-400" />
               </div>
-              <h2 className="text-2xl font-bold text-amber-300">Subscription Expired</h2>
-              <p className="text-amber-200/80 mt-2">Your subscription has ended</p>
+              <h2 className="text-2xl font-bold text-amber-300">{isPaymentLocked ? 'Payment Required' : 'Subscription Expired'}</h2>
+              <p className="text-amber-200/80 mt-2">{isPaymentLocked ? 'Your account is locked for payment' : 'Your subscription has ended'}</p>
             </div>
 
             {/* Content */}

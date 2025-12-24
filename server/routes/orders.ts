@@ -1,6 +1,8 @@
 import { Router, RequestHandler } from "express";
 import { pool } from "../utils/database";
-import { sendWhatsAppMessage } from "../utils/messaging";
+import { sendBotMessagesForOrder } from "./order-confirmation";
+import { createOrderTelegramLink } from "../utils/telegram";
+import { replaceTemplateVariables } from "../utils/bot-messaging";
 
 export const ordersRouter = Router();
 
@@ -23,8 +25,14 @@ export const createOrder: RequestHandler = async (req, res) => {
     } = req.body;
 
     // Validate required fields
-    if (!quantity || !total_price || !customer_name) {
+    if (!quantity || !total_price || !customer_name || !customer_phone) {
       res.status(400).json({ error: "Missing required fields: quantity, total_price, customer_name" });
+      return;
+    }
+
+    const normalizedPhone = String(customer_phone).replace(/\s/g, '');
+    if (!/^\+?[0-9]{7,}$/.test(normalizedPhone)) {
+      res.status(400).json({ error: 'Invalid phone number' });
       return;
     }
 
@@ -109,10 +117,19 @@ export const createOrder: RequestHandler = async (req, res) => {
       ]
     );
 
+    // Create Telegram deep-link for this order (optional for the customer)
+    const telegram = await createOrderTelegramLink({
+      orderId: Number(result.rows[0].id),
+      clientId: Number(resolvedClientId),
+      customerPhone: normalizedPhone,
+      customerName: String(customer_name),
+    }).catch(() => ({ startToken: '', startUrl: null } as any));
+
     res.status(201).json({
       success: true,
       order: result.rows[0],
-      message: 'Order created successfully'
+      message: 'Order created successfully',
+      telegramStartUrl: telegram?.startUrl || null,
     });
     // Broadcast order creation
     if (global.broadcastOrderUpdate) {
@@ -128,21 +145,34 @@ export const createOrder: RequestHandler = async (req, res) => {
       );
     } catch {}
 
-    // Fire-and-forget WhatsApp confirmation (non-blocking)
+    // Fire-and-forget bot confirmation with confirmation link tied to this order
     const order = result.rows[0];
-    const toPhone = customer_phone;
+    const toPhone = normalizedPhone;
     if (toPhone) {
-      const storeName = (await pool.query(
-        'SELECT store_name FROM client_store_settings WHERE client_id = $1 LIMIT 1',
+      const storeRow = (await pool.query(
+        'SELECT store_name, store_slug FROM client_store_settings WHERE client_id = $1 LIMIT 1',
         [resolvedClientId]
-      )).rows?.[0]?.store_name || 'EcoPro Store';
-      const productTitle = (await pool.query(
-        'SELECT title FROM store_products WHERE id = $1 LIMIT 1',
-        [product_id]
-      )).rows?.[0]?.title || 'Product';
-      const price = total_price;
-      const msg = `Hi ${customer_name}, your order for ${productTitle} at ${storeName} is received. Total: ${price}. We will contact you soon. Thank you!`;
-      sendWhatsAppMessage(toPhone, msg).catch(() => {/* swallow errors */});
+      )).rows?.[0];
+      const storeName = storeRow?.store_name || 'EcoPro Store';
+      const storeSlug = storeRow?.store_slug || store_slug;
+
+      if (storeSlug) {
+        const productTitle = (await pool.query(
+          'SELECT title FROM client_store_products WHERE id = $1 LIMIT 1',
+          [product_id]
+        )).rows?.[0]?.title || 'Product';
+
+        sendBotMessagesForOrder(
+          order.id,
+          Number(resolvedClientId),
+          toPhone,
+          customer_name,
+          storeName,
+          productTitle,
+          total_price,
+          storeSlug
+        ).catch(() => {/* swallow errors */});
+      }
     }
   } catch (error) {
     console.error("Create order error:", error);
@@ -319,6 +349,37 @@ export const updateOrderStatus: RequestHandler = async (req, res) => {
     // Broadcast order status update
     if (global.broadcastOrderUpdate) {
       global.broadcastOrderUpdate(result.rows[0]);
+    }
+
+    // Telegram tracking updates (fire-and-forget)
+    try {
+      const settingsRes = await pool.query(
+        `SELECT enabled, provider, telegram_bot_token, template_shipping
+         FROM bot_settings WHERE client_id = $1 LIMIT 1`,
+        [req.user.id]
+      );
+      const settings = settingsRes.rows[0];
+      if (settings?.enabled && settings?.provider === 'telegram' && settings?.telegram_bot_token) {
+        const orderRow = result.rows[0];
+        const shouldNotify = ['processing', 'shipped', 'delivered', 'cancelled'].includes(String(status));
+        if (shouldNotify) {
+          const msg = replaceTemplateVariables(
+            String(settings.template_shipping || 'تم تحديث حالة طلبك #{orderId}: {status}'),
+            {
+              orderId: orderRow.id,
+              status: String(status),
+              trackingNumber: '',
+            }
+          );
+          await pool.query(
+            `INSERT INTO bot_messages (order_id, client_id, customer_phone, message_type, message_content, confirmation_link, send_at)
+             VALUES ($1,$2,$3,'telegram',$4,NULL,NOW())`,
+            [orderRow.id, req.user.id, orderRow.customer_phone || '', msg]
+          );
+        }
+      }
+    } catch {
+      // ignore bot tracking failures
     }
   } catch (error) {
     console.error("Update order status error:", error);

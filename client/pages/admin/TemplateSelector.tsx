@@ -47,26 +47,26 @@ export default function TemplateSelector({
         )}
       </div>
 
-      {/* Templates Grid */}
+      {/* Templates Horizontal Scroll */}
       {TEMPLATES.length === 0 ? (
         <div className="text-center py-6 md:py-4 md:py-6 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-700">
           <p className="text-slate-600 dark:text-slate-400">No templates available yet.</p>
           <p className="text-sm text-slate-500 dark:text-slate-500 mt-2">Templates will appear here as they are added.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800">
           {TEMPLATES.map(template => (
             <button
               key={template.id}
               onClick={() => handleSelect(template.id)}
-              className={`relative group rounded-2xl overflow-hidden transition-all duration-300 ${
+              className={`relative group rounded-2xl overflow-hidden transition-all duration-300 flex-shrink-0 w-[200px] ${
                 selectedTemplate === template.id
                   ? 'ring-2 ring-indigo-500 dark:ring-indigo-400'
                   : 'hover:ring-2 hover:ring-indigo-300 dark:hover:ring-indigo-600'
               }`}
             >
               {/* Preview Image */}
-              <div className="relative h-64 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 overflow-hidden">
+              <div className="relative h-40 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 overflow-hidden">
                 {template.preview ? (
                   <img
                     src={template.preview}
@@ -84,16 +84,15 @@ export default function TemplateSelector({
 
                 {/* Selected Badge */}
                 {selectedTemplate === template.id && (
-                  <div className="absolute top-3 right-3 bg-indigo-600 dark:bg-indigo-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-                    ✓ Selected
+                  <div className="absolute top-2 right-2 bg-indigo-600 dark:bg-indigo-500 text-white p-1 rounded-full">
+                    ✓
                   </div>
                 )}
               </div>
 
               {/* Info */}
-              <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700">
-                <h3 className="font-semibold text-slate-900 dark:text-white">{template.name}</h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{template.description}</p>
+              <div className="p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700">
+                <h3 className="font-semibold text-slate-900 dark:text-white text-sm">{template.name}</h3>
               </div>
             </button>
           ))}

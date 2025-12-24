@@ -1,0 +1,698 @@
+import type { RequestHandler } from 'express';
+import { Router } from 'express';
+import { ensureConnection } from '../utils/database';
+import { generateToken } from '../utils/auth';
+import { hashKernelPassword, verifyKernelPassword, logSecurityEvent, getClientIp, getGeo, computeFingerprint, parseCookie } from '../utils/security';
+import os from 'os';
+import { getTrafficRecent, getTrafficSummary } from '../utils/traffic';
+
+const router = Router();
+
+function requireRoot(req: any, res: any, next: any) {
+  if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+  if (req.user.role !== 'root' || req.user.user_type !== 'root') return res.status(403).json({ error: 'Forbidden' });
+  return next();
+}
+
+async function ensureKernelUserExists(): Promise<void> {
+  const pool = await ensureConnection();
+  const existing = await pool.query('SELECT id FROM kernel_users LIMIT 1');
+  if (existing.rowCount && existing.rowCount > 0) return;
+
+  const envUser = (process.env.KERNEL_USERNAME || '').trim();
+  const envPass = (process.env.KERNEL_PASSWORD || '').trim();
+
+  if (envUser && envPass) {
+    await pool.query(
+      `INSERT INTO kernel_users (username, password_hash, is_active)
+       VALUES ($1, $2, true)
+       ON CONFLICT (username) DO NOTHING`,
+      [envUser, hashKernelPassword(envPass)]
+    );
+    console.log('✅ Kernel user created from env (KERNEL_USERNAME)');
+    return;
+  }
+
+  // Dev fallback: create a one-time kernel user if none exists.
+  // Do NOT do this in production.
+  if (process.env.NODE_ENV === 'production') {
+    console.warn('⚠️ No kernel user exists and env creds not set. Set KERNEL_USERNAME and KERNEL_PASSWORD.');
+    return;
+  }
+
+  const username = 'root';
+  const password = 'root-' + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+  await pool.query(
+    `INSERT INTO kernel_users (username, password_hash, is_active)
+     VALUES ($1, $2, true)
+     ON CONFLICT (username) DO NOTHING`,
+    [username, hashKernelPassword(password)]
+  );
+  console.log('🔑 DEV kernel credentials created:');
+  console.log('   username:', username);
+  console.log('   password:', password);
+}
+
+// Called from server startup
+export async function initKernel(): Promise<void> {
+  await ensureKernelUserExists();
+}
+
+export const kernelLogin: RequestHandler = async (req, res) => {
+  const { username, password } = req.body || {};
+  if (!username || !password) return res.status(400).json({ error: 'username and password required' });
+
+  const pool = await ensureConnection();
+  const row = await pool.query(
+    'SELECT id, username, password_hash, is_active FROM kernel_users WHERE username = $1',
+    [String(username)]
+  );
+
+  const ip = getClientIp(req);
+  const ua = (req.headers['user-agent'] as string | undefined) || null;
+  const geo = getGeo(req, ip);
+  const fpCookie = parseCookie(req, 'ecopro_fp');
+  const fingerprint = computeFingerprint({ ip, userAgent: ua, cookie: fpCookie });
+
+  if (!row.rows[0] || !row.rows[0].is_active) {
+    await logSecurityEvent({
+      event_type: 'auth_failed',
+      severity: 'warn',
+      method: req.method,
+      path: req.path,
+      status_code: 401,
+      ip,
+      user_agent: ua,
+      fingerprint,
+      country_code: geo.country_code,
+      region: geo.region,
+      city: geo.city,
+      metadata: { scope: 'kernel', reason: 'no_user_or_inactive', username: String(username) },
+    });
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
+
+  const ok = verifyKernelPassword(String(password), row.rows[0].password_hash);
+  if (!ok) {
+    await logSecurityEvent({
+      event_type: 'auth_failed',
+      severity: 'warn',
+      method: req.method,
+      path: req.path,
+      status_code: 401,
+      ip,
+      user_agent: ua,
+      fingerprint,
+      country_code: geo.country_code,
+      region: geo.region,
+      city: geo.city,
+      metadata: { scope: 'kernel', reason: 'bad_password', username: String(username) },
+    });
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
+
+  await pool.query('UPDATE kernel_users SET last_login_at = NOW(), updated_at = NOW() WHERE id = $1', [row.rows[0].id]);
+
+  const token = generateToken({
+    id: `kernel:${row.rows[0].id}`,
+    email: `${row.rows[0].username}@kernel`,
+    role: 'root',
+    user_type: 'root',
+  });
+
+  return res.json({
+    token,
+    user: { username: row.rows[0].username, role: 'root', user_type: 'root' },
+  });
+};
+
+export const getSecuritySummary: RequestHandler = async (req, res) => {
+  const days = Math.max(1, Math.min(90, parseInt(String(req.query.days || '7'), 10) || 7));
+  const pool = await ensureConnection();
+
+  const since = `${days} days`;
+
+  const [blockedByCountry, topIps, repeatFingerprints] = await Promise.all([
+    pool.query(
+      `SELECT COALESCE(country_code, '??') as country_code, COUNT(*)::int as count
+       FROM security_events
+       WHERE event_type = 'geo_block'
+         AND created_at > NOW() - $1::interval
+       GROUP BY 1
+       ORDER BY count DESC
+       LIMIT 20`,
+      [since]
+    ),
+    pool.query(
+      `SELECT COALESCE(ip, 'unknown') as ip, COUNT(*)::int as count
+       FROM security_events
+       WHERE created_at > NOW() - $1::interval
+       GROUP BY 1
+       ORDER BY count DESC
+       LIMIT 20`,
+      [since]
+    ),
+    pool.query(
+      `SELECT
+         COALESCE(fingerprint, 'unknown') as fingerprint,
+         MAX(ip) as ip,
+         MAX(user_agent) as user_agent,
+         COUNT(*)::int as count,
+         MAX(created_at) as last_seen
+       FROM security_events
+       WHERE created_at > NOW() - $1::interval
+       GROUP BY 1
+       ORDER BY count DESC
+       LIMIT 20`,
+      [since]
+    ),
+  ]);
+
+  res.json({
+    days,
+    blockedByCountry: blockedByCountry.rows,
+    topIps: topIps.rows,
+    repeatFingerprints: repeatFingerprints.rows,
+  });
+};
+
+export const listSecurityEvents: RequestHandler = async (req, res) => {
+  const limit = Math.max(1, Math.min(500, parseInt(String(req.query.limit || '200'), 10) || 200));
+  const pool = await ensureConnection();
+
+  const result = await pool.query(
+    `SELECT id, created_at, event_type, severity, request_id, method, path, status_code,
+            ip, user_agent, fingerprint, country_code, region, city,
+            user_id, user_type, role, metadata
+     FROM security_events
+     ORDER BY created_at DESC
+     LIMIT $1`,
+    [limit]
+  );
+
+  res.json({ events: result.rows });
+};
+
+router.post('/login', kernelLogin);
+router.get('/security/summary', requireRoot, getSecuritySummary);
+router.get('/security/events', requireRoot, listSecurityEvents);
+
+router.get('/security/me', requireRoot, async (req: any, res) => {
+  const ip = getClientIp(req);
+  const ua = (req.headers['user-agent'] as string | undefined) || null;
+  const geo = getGeo(req, ip);
+  const fpCookie = parseCookie(req, 'ecopro_fp');
+  const fingerprint = computeFingerprint({ ip, userAgent: ua, cookie: fpCookie });
+
+  let trusted: any = null;
+  try {
+    const pool = await ensureConnection();
+    if (fingerprint) {
+      const t = await pool.query(
+        `SELECT id, label, is_active, updated_at FROM security_trusted_actors WHERE fingerprint = $1 AND is_active = true LIMIT 1`,
+        [fingerprint]
+      );
+      trusted = t.rows?.[0] || null;
+    }
+  } catch {
+    trusted = null;
+  }
+
+  res.json({ ip, user_agent: ua, fingerprint, geo, trusted });
+});
+
+router.get('/security/trusted', requireRoot, async (_req, res) => {
+  try {
+    const pool = await ensureConnection();
+    const r = await pool.query(
+      `SELECT id, fingerprint, ip, label, is_active, created_at, updated_at
+       FROM security_trusted_actors
+       ORDER BY is_active DESC, updated_at DESC
+       LIMIT 500`
+    );
+    res.json({ trusted: r.rows, migrationNeeded: false });
+  } catch (e: any) {
+    const msg = String(e?.message || '');
+    if (msg.includes('security_trusted_actors') && msg.includes('does not exist')) {
+      return res.json({ trusted: [], migrationNeeded: true });
+    }
+    throw e;
+  }
+});
+
+router.post('/security/trusted', requireRoot, async (req: any, res) => {
+  const fingerprint = (req.body?.fingerprint ? String(req.body.fingerprint) : '').trim() || null;
+  const ip = (req.body?.ip ? String(req.body.ip) : '').trim() || null;
+  const label = (req.body?.label ? String(req.body.label) : '').trim() || null;
+  if (!fingerprint && !ip) return res.status(400).json({ error: 'fingerprint or ip is required' });
+
+  try {
+    const pool = await ensureConnection();
+    await pool.query(
+      `INSERT INTO security_trusted_actors (fingerprint, ip, label, is_active, created_at, updated_at)
+       VALUES ($1,$2,$3,true,NOW(),NOW())
+       ON CONFLICT (fingerprint) WHERE fingerprint IS NOT NULL
+       DO UPDATE SET ip = COALESCE(EXCLUDED.ip, security_trusted_actors.ip), label = COALESCE(EXCLUDED.label, security_trusted_actors.label), is_active = true, updated_at = NOW()`,
+      [fingerprint, ip, label]
+    );
+    if (!fingerprint && ip) {
+      await pool.query(
+        `INSERT INTO security_trusted_actors (fingerprint, ip, label, is_active, created_at, updated_at)
+         VALUES (NULL,$1,$2,true,NOW(),NOW())
+         ON CONFLICT (ip) WHERE ip IS NOT NULL
+         DO UPDATE SET label = COALESCE(EXCLUDED.label, security_trusted_actors.label), is_active = true, updated_at = NOW()`,
+        [ip, label]
+      );
+    }
+    res.json({ ok: true });
+  } catch (e: any) {
+    const msg = String(e?.message || '');
+    if (msg.includes('security_trusted_actors') && msg.includes('does not exist')) {
+      return res.status(409).json({ error: 'security_trusted_actors table missing (run migrations)' });
+    }
+    throw e;
+  }
+});
+
+router.delete('/security/trusted/:id', requireRoot, async (req, res) => {
+  const id = String(req.params.id || '').trim();
+  if (!id) return res.status(400).json({ error: 'id is required' });
+  try {
+    const pool = await ensureConnection();
+    await pool.query(`UPDATE security_trusted_actors SET is_active = false, updated_at = NOW() WHERE id = $1`, [id]);
+    res.json({ ok: true });
+  } catch (e: any) {
+    const msg = String(e?.message || '');
+    if (msg.includes('security_trusted_actors') && msg.includes('does not exist')) {
+      return res.status(409).json({ error: 'security_trusted_actors table missing (run migrations)' });
+    }
+    throw e;
+  }
+});
+
+router.get('/security/linux/watchlist', requireRoot, async (req, res) => {
+  const days = Math.max(1, Math.min(90, parseInt(String(req.query.days || '7'), 10) || 7));
+  const limit = Math.max(1, Math.min(200, parseInt(String(req.query.limit || '50'), 10) || 50));
+  const pool = await ensureConnection();
+  const since = `${days} days`;
+
+  // Never show the current kernel operator (this device) in the watchlist.
+  const requesterFingerprint = (req as any).fingerprint ? String((req as any).fingerprint) : null;
+  const requesterIp = (req as any).clientIp ? String((req as any).clientIp) : null;
+
+  // Watchlist is ONLY for suspicious actors.
+  // - Linux UA (excluding Android)
+  // - UA missing scanners
+  // But both are included ONLY when they hit high-risk event types.
+  const rows = await pool.query(
+    `WITH filtered AS (
+      SELECT
+        created_at,
+        event_type,
+        severity,
+        method,
+        path,
+        status_code,
+        ip,
+        country_code,
+        fingerprint,
+        user_agent,
+        user_id,
+        user_type,
+        role
+      FROM security_events
+      WHERE created_at > NOW() - $1::interval
+        AND event_type IN ('trap_hit','admin_forbidden','admin_unauthorized','suspicious_path','rate_limited','ip_block')
+        AND ($3::text IS NULL OR fingerprint IS DISTINCT FROM $3::text)
+        AND ($4::text IS NULL OR ip IS DISTINCT FROM $4::text)
+        AND (
+          (user_agent ILIKE '%Linux%' AND user_agent NOT ILIKE '%Android%')
+          OR (COALESCE(NULLIF(TRIM(user_agent), ''), '') = '')
+        )
+    ), agg AS (
+      SELECT
+        COALESCE(fingerprint, ip, 'unknown') as actor_key,
+        CASE
+          WHEN MAX(CASE WHEN user_agent ILIKE '%Linux%' AND user_agent NOT ILIKE '%Android%' THEN 1 ELSE 0 END) = 1 THEN 'linux'
+          ELSE 'unknown_ua'
+        END as ua_class,
+        MAX(fingerprint) as fingerprint,
+        MAX(ip) as ip,
+        MAX(country_code) as country_code,
+        MAX(user_agent) as user_agent,
+        MAX(user_id) as user_id,
+        MAX(user_type) as user_type,
+        MAX(role) as role,
+        COUNT(*)::int as total_events,
+        COUNT(*) FILTER (WHERE event_type IN ('trap_hit','admin_forbidden','admin_unauthorized','suspicious_path','rate_limited','ip_block'))::int as suspicious_events,
+        COUNT(*) FILTER (WHERE event_type = 'trap_hit')::int as trap_hits,
+        COUNT(*) FILTER (WHERE event_type = 'admin_forbidden')::int as admin_forbidden,
+        COUNT(*) FILTER (WHERE event_type = 'suspicious_path')::int as suspicious_path,
+        MAX(created_at) as last_seen,
+        MIN(created_at) as first_seen
+      FROM filtered
+      GROUP BY 1
+    ), trusted AS (
+      SELECT fingerprint, ip, label
+      FROM security_trusted_actors
+      WHERE is_active = true
+    )
+    SELECT
+      a.*,
+      t.label as trusted_label,
+      CASE WHEN t.fingerprint IS NOT NULL OR t.ip IS NOT NULL THEN true ELSE false END as is_trusted
+    FROM agg a
+    LEFT JOIN trusted t
+      ON (t.fingerprint IS NOT NULL AND t.fingerprint = a.fingerprint)
+      OR (t.ip IS NOT NULL AND t.ip = a.ip)
+    ORDER BY trap_hits DESC, admin_forbidden DESC, suspicious_events DESC, total_events DESC, last_seen DESC
+    LIMIT $2`,
+    [since, limit, requesterFingerprint, requesterIp]
+  );
+
+  res.json({
+    days,
+    actors: rows.rows.map((r) => ({
+      actor_key: r.actor_key,
+      ua_class: r.ua_class,
+      fingerprint: r.fingerprint,
+      ip: r.ip,
+      country_code: r.country_code,
+      user_agent: r.user_agent,
+      user_id: r.user_id,
+      user_type: r.user_type,
+      role: r.role,
+      total_events: r.total_events,
+      suspicious_events: r.suspicious_events,
+      trap_hits: r.trap_hits,
+      admin_forbidden: r.admin_forbidden,
+      suspicious_path: r.suspicious_path,
+      first_seen: r.first_seen,
+      last_seen: r.last_seen,
+      is_trusted: !!r.is_trusted,
+      trusted_label: r.trusted_label || null,
+      emergency: !r.is_trusted && (Number(r.trap_hits || 0) > 0 || Number(r.admin_forbidden || 0) > 0),
+    })),
+  });
+});
+
+router.get('/security/actor/events', requireRoot, async (req, res) => {
+  const fingerprint = (req.query.fingerprint ? String(req.query.fingerprint) : '').trim();
+  const ip = (req.query.ip ? String(req.query.ip) : '').trim();
+  const limit = Math.max(1, Math.min(500, parseInt(String(req.query.limit || '200'), 10) || 200));
+
+  if (!fingerprint && !ip) {
+    return res.status(400).json({ error: 'fingerprint or ip is required' });
+  }
+
+  const pool = await ensureConnection();
+
+  const where = fingerprint ? 'fingerprint = $1' : 'ip = $1';
+  const value = fingerprint || ip;
+
+  const events = await pool.query(
+    `SELECT id, created_at, event_type, severity, request_id, method, path, status_code,
+            ip, user_agent, fingerprint, country_code, region, city,
+            user_id, user_type, role, metadata
+     FROM security_events
+     WHERE ${where}
+     ORDER BY created_at DESC
+     LIMIT $2`,
+    [value, limit]
+  );
+
+  const paths = await pool.query(
+    `SELECT COALESCE(path, 'unknown') as path, COUNT(*)::int as count
+     FROM security_events
+     WHERE ${where}
+     GROUP BY 1
+     ORDER BY count DESC
+     LIMIT 20`,
+    [value]
+  );
+
+  const types = await pool.query(
+    `SELECT event_type, COUNT(*)::int as count
+     FROM security_events
+     WHERE ${where}
+     GROUP BY 1
+     ORDER BY count DESC
+     LIMIT 30`,
+    [value]
+  );
+
+  res.json({
+    fingerprint: fingerprint || null,
+    ip: ip || null,
+    topPaths: paths.rows,
+    eventTypes: types.rows,
+    events: events.rows,
+  });
+});
+
+router.get('/status', requireRoot, async (_req, res) => {
+  const isRender = Boolean(
+    process.env.RENDER ||
+      process.env.RENDER_SERVICE_ID ||
+      process.env.RENDER_EXTERNAL_URL ||
+      process.env.RENDER_INTERNAL_HOSTNAME
+  );
+  const now = new Date();
+
+  let db: any = null;
+  try {
+    const pool = await ensureConnection();
+    const r = await pool.query(
+      `SELECT
+        current_database() as database,
+        inet_server_addr()::text as server_addr,
+        inet_server_port() as server_port,
+        version() as server_version`
+    );
+    db = r.rows?.[0] || null;
+  } catch {
+    db = { error: 'db_unavailable' };
+  }
+
+  // Non-sensitive status only.
+  res.json({
+    environment: {
+      nodeEnv: process.env.NODE_ENV || 'development',
+      isRender,
+      renderServiceId: process.env.RENDER_SERVICE_ID || null,
+      renderServiceName: process.env.RENDER_SERVICE_NAME || null,
+      renderExternalUrl: process.env.RENDER_EXTERNAL_URL || null,
+    },
+    server: {
+      now: now.toISOString(),
+      hostname: os.hostname(),
+      pid: process.pid,
+      node: process.version,
+      uptimeSeconds: Math.floor(process.uptime()),
+    },
+    db,
+  });
+});
+
+router.get('/traffic/summary', requireRoot, async (req, res) => {
+  const minutes = Math.max(1, Math.min(180, parseInt(String(req.query.minutes || '15'), 10) || 15));
+  const days = Math.max(1, Math.min(30, parseInt(String(req.query.days || '7'), 10) || 7));
+  const pool = await ensureConnection().catch(() => null);
+
+  // If DB is unavailable, return empty suspicious-only view.
+  if (!pool) {
+    return res.json({ minutes, total: 0, byStatus: [], topPaths: [], topIps: [], suspiciousOnly: true });
+  }
+
+  const requesterFingerprint = (req as any).fingerprint ? String((req as any).fingerprint) : null;
+  const requesterIp = (req as any).clientIp ? String((req as any).clientIp) : null;
+  const since = `${days} days`;
+
+  const suspicious = await pool.query(
+    `WITH agg AS (
+      SELECT
+        COALESCE(fingerprint, ip, 'unknown') as actor_key,
+        MAX(fingerprint) as fingerprint,
+        MAX(ip) as ip,
+        COUNT(*) FILTER (WHERE event_type = 'trap_hit')::int as trap_hits,
+        COUNT(*) FILTER (WHERE event_type = 'auth_login_failed')::int as login_failed
+      FROM security_events
+      WHERE created_at > NOW() - $1::interval
+        AND ($2::text IS NULL OR fingerprint IS DISTINCT FROM $2::text)
+        AND ($3::text IS NULL OR ip IS DISTINCT FROM $3::text)
+      GROUP BY 1
+    )
+    SELECT fingerprint, ip
+    FROM agg
+    WHERE trap_hits > 0 OR login_failed > 5`,
+    [since, requesterFingerprint, requesterIp]
+  );
+
+  const fpSet = new Set<string>();
+  const ipSet = new Set<string>();
+  for (const r of suspicious.rows || []) {
+    if (r.fingerprint) fpSet.add(String(r.fingerprint));
+    if (r.ip) ipSet.add(String(r.ip));
+  }
+
+  const raw = getTrafficSummary(minutes);
+  const filteredRows = getTrafficRecent(1000).filter((row) => {
+    if (row.fingerprint && fpSet.has(row.fingerprint)) return true;
+    if (row.ip && ipSet.has(row.ip)) return true;
+    return false;
+  });
+
+  // Recompute summary from filtered rows within window.
+  const sinceMs = Date.now() - minutes * 60 * 1000;
+  const window = filteredRows.filter((r) => r.ts >= sinceMs);
+  const byStatusMap = new Map<number, number>();
+  const topPathsMap = new Map<string, number>();
+  const topIpsMap = new Map<string, number>();
+  for (const r of window) {
+    byStatusMap.set(r.status, (byStatusMap.get(r.status) || 0) + 1);
+    topPathsMap.set(r.path, (topPathsMap.get(r.path) || 0) + 1);
+    if (r.ip) topIpsMap.set(r.ip, (topIpsMap.get(r.ip) || 0) + 1);
+  }
+  const byStatus = Array.from(byStatusMap.entries())
+    .map(([status, count]) => ({ status, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 12);
+  const topPaths = Array.from(topPathsMap.entries())
+    .map(([path, count]) => ({ path, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 15);
+  const topIps = Array.from(topIpsMap.entries())
+    .map(([ip, count]) => ({ ip, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 15);
+
+  res.json({ minutes: raw.minutes, total: window.length, byStatus, topPaths, topIps, suspiciousOnly: true });
+});
+
+router.get('/traffic/recent', requireRoot, async (req, res) => {
+  const limit = Math.max(1, Math.min(1000, parseInt(String(req.query.limit || '200'), 10) || 200));
+  const days = Math.max(1, Math.min(30, parseInt(String(req.query.days || '7'), 10) || 7));
+  const pool = await ensureConnection().catch(() => null);
+
+  if (!pool) {
+    return res.json({ events: [], suspiciousOnly: true });
+  }
+
+  const requesterFingerprint = (req as any).fingerprint ? String((req as any).fingerprint) : null;
+  const requesterIp = (req as any).clientIp ? String((req as any).clientIp) : null;
+  const since = `${days} days`;
+
+  const suspicious = await pool.query(
+    `WITH agg AS (
+      SELECT
+        COALESCE(fingerprint, ip, 'unknown') as actor_key,
+        MAX(fingerprint) as fingerprint,
+        MAX(ip) as ip,
+        COUNT(*) FILTER (WHERE event_type = 'trap_hit')::int as trap_hits,
+        COUNT(*) FILTER (WHERE event_type = 'auth_login_failed')::int as login_failed
+      FROM security_events
+      WHERE created_at > NOW() - $1::interval
+        AND ($2::text IS NULL OR fingerprint IS DISTINCT FROM $2::text)
+        AND ($3::text IS NULL OR ip IS DISTINCT FROM $3::text)
+      GROUP BY 1
+    )
+    SELECT fingerprint, ip
+    FROM agg
+    WHERE trap_hits > 0 OR login_failed > 5`,
+    [since, requesterFingerprint, requesterIp]
+  );
+
+  const fpSet = new Set<string>();
+  const ipSet = new Set<string>();
+  for (const r of suspicious.rows || []) {
+    if (r.fingerprint) fpSet.add(String(r.fingerprint));
+    if (r.ip) ipSet.add(String(r.ip));
+  }
+
+  const filtered = getTrafficRecent(1000).filter((row) => {
+    if (row.fingerprint && fpSet.has(row.fingerprint)) return true;
+    if (row.ip && ipSet.has(row.ip)) return true;
+    return false;
+  });
+
+  res.json({ events: filtered.slice(0, limit), suspiciousOnly: true });
+});
+
+router.get('/blocks', requireRoot, async (_req, res) => {
+  try {
+    const pool = await ensureConnection();
+    const r = await pool.query(
+      `SELECT ip, reason, is_active, created_by, created_at, updated_at
+       FROM security_ip_blocks
+       ORDER BY is_active DESC, updated_at DESC
+       LIMIT 500`
+    );
+    res.json({ blocks: r.rows, migrationNeeded: false });
+  } catch (e: any) {
+    const msg = String(e?.message || '');
+    if (msg.includes('security_ip_blocks') && msg.includes('does not exist')) {
+      return res.json({ blocks: [], migrationNeeded: true });
+    }
+    throw e;
+  }
+});
+
+router.post('/blocks', requireRoot, async (req: any, res) => {
+  const ip = String(req.body?.ip || '').trim();
+  const reason = String(req.body?.reason || '').trim() || null;
+  if (!ip) return res.status(400).json({ error: 'ip is required' });
+
+  // Prevent self-block from Kernel portal request source IP.
+  const requesterIp = getClientIp(req);
+  if (requesterIp && ip === requesterIp) {
+    return res.status(400).json({ error: 'Refusing to block your current IP (self-block prevention)' });
+  }
+
+  try {
+    const pool = await ensureConnection();
+    // Prevent blocking a trusted IP
+    const t = await pool.query(
+      `SELECT 1 FROM security_trusted_actors WHERE is_active = true AND ip = $1 LIMIT 1`,
+      [ip]
+    );
+    if (t.rowCount) {
+      return res.status(409).json({ error: 'Refusing to block a trusted IP' });
+    }
+    const createdBy = req.user?.id ? String(req.user.id) : 'kernel';
+    await pool.query(
+      `INSERT INTO security_ip_blocks (ip, reason, is_active, created_by, created_at, updated_at)
+       VALUES ($1, $2, true, $3, NOW(), NOW())
+       ON CONFLICT (ip)
+       DO UPDATE SET reason = EXCLUDED.reason, is_active = true, updated_at = NOW(), created_by = EXCLUDED.created_by`,
+      [ip, reason, createdBy]
+    );
+    res.json({ ok: true });
+  } catch (e: any) {
+    const msg = String(e?.message || '');
+    if (msg.includes('security_ip_blocks') && msg.includes('does not exist')) {
+      return res.status(409).json({ error: 'security_ip_blocks table missing (run migrations)' });
+    }
+    throw e;
+  }
+});
+
+router.delete('/blocks/:ip', requireRoot, async (req, res) => {
+  const ip = String(req.params.ip || '').trim();
+  if (!ip) return res.status(400).json({ error: 'ip is required' });
+  try {
+    const pool = await ensureConnection();
+    await pool.query(
+      `UPDATE security_ip_blocks SET is_active = false, updated_at = NOW() WHERE ip = $1`,
+      [ip]
+    );
+    res.json({ ok: true });
+  } catch (e: any) {
+    const msg = String(e?.message || '');
+    if (msg.includes('security_ip_blocks') && msg.includes('does not exist')) {
+      return res.status(409).json({ error: 'security_ip_blocks table missing (run migrations)' });
+    }
+    throw e;
+  }
+});
+
+export default router;

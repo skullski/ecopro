@@ -39,20 +39,42 @@ export default function Checkout() {
         if (res.ok) setSettings(await res.json());
       });
     }
-    // Determine source: private store product via slug, else marketplace by id
+    // Determine source: check localStorage first (saved by store template), then API
     const load = async () => {
       try {
+        // Try localStorage first (set by store template when clicking Buy)
+        const cachedProduct = localStorage.getItem(`product_${productSlug}`);
+        if (cachedProduct) {
+          const p = JSON.parse(cachedProduct);
+          setProduct({ 
+            id: String(p.id), 
+            title: p.title || p.name, 
+            price: Number(p.price), 
+            imageUrl: p.images?.[0] || p.image, 
+            description: p.description ?? "" 
+          });
+          return;
+        }
+        
+        // Fall back to API
         if (storeSlug && productSlug) {
-          const res = await fetch(`/api/store/${storeSlug}/${productSlug}`);
+          // Try by slug first
+          let res = await fetch(`/api/store/${storeSlug}/${productSlug}`);
+          if (!res.ok) {
+            // Try by ID (productSlug might be numeric ID)
+            res = await fetch(`/api/storefront/${storeSlug}/products/${productSlug}`);
+          }
           if (res.ok) {
             const p = await res.json();
-            setProduct({ id: String(p.id), title: p.title, price: Number(p.price), imageUrl: p.images?.[0], description: p.description ?? "" });
+            setProduct({ id: String(p.id), title: p.title || p.name, price: Number(p.price), imageUrl: p.images?.[0], description: p.description ?? "" });
           }
         } else if (productId) {
           const p = await apiFetch<Product>(`/api/products/${productId}`);
           setProduct(p);
         }
-      } catch {}
+      } catch (e) {
+        console.error('Failed to load product:', e);
+      }
     };
     load();
   }, [productId, storeSlug, productSlug]);

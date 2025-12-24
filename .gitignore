@@ -37,3 +37,10 @@ data/
 .env.local
 .env.*.local
 .env.local
+
+# Uploaded assets (generated at runtime)
+public/uploads/
+
+# Local backups
+*.dump
+backup-*.dump

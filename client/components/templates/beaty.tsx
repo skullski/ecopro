@@ -16,7 +16,7 @@ export default function BeautyTemplate(props: TemplateProps) {
   const handleBuyClick = (product: any, e?: any) => {
     if (e) e.stopPropagation();
     localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
-    navigate(`/checkout/${product.id}`);
+    navigate(`checkout/${product.id}`);
   };
 
   const filteredProducts = products.filter((p: any) => {
@@ -82,7 +82,7 @@ export default function BeautyTemplate(props: TemplateProps) {
                   <button 
                     onClick={(e) => {
                       e.stopPropagation();
-                      navigate(`/checkout/${p.id}`);
+                      navigate(`checkout/${p.id}`);
                     }} 
                     className="flex-1 py-1 bg-pink-400 text-white text-xs rounded font-semibold hover:bg-pink-500"
                   >

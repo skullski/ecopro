@@ -5,6 +5,7 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import CodesStorePage from "./pages/CodesStorePage";
 import ChatPage from "./pages/ChatPage";
+import CustomerBot from "./pages/CustomerBot";
 import { Toaster } from "@/components/ui/toaster";
 
 import "./global.css";
@@ -21,6 +22,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Product from "./pages/Product";
 import PlatformAdmin from "./pages/PlatformAdmin";
+import Kernel from "./pages/Kernel";
 import React, { Suspense } from "react";
 // QuickSell removed
 // MyItems page removed
@@ -56,6 +58,7 @@ import Checkout from "./pages/Checkout";
 import MyStore from "./pages/MyStore";
 import StoreLayout from "./pages/StoreLayout";
 import TemplateSettings from "./pages/TemplateSettings";
+import BuildPage from "./pages/storefront/BuildPage";
 import StaffManagement from "./pages/seller/StaffManagement";
 import StaffLogin from "./pages/StaffLogin";
 import StaffDashboard from "./pages/StaffDashboard";
@@ -79,7 +82,7 @@ import GoogleSheetsIntegration from "./pages/admin/addons/GoogleSheets";
 
 // Subscription pages
 import RenewSubscription from "./pages/RenewSubscription";
-import SubscriptionGuard from "./components/SubscriptionGuard";
+import SubscriptionPageLock from "./components/SubscriptionPageLock";
 
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { I18nProvider } from "@/lib/i18n";
@@ -609,6 +612,8 @@ const App = () => (
                   <Route path="/platform-admin" element={<RequireAdmin><PlatformAdmin /></RequireAdmin>} />
                   <Route path="/platform-admin/chats" element={<RequireAdmin><AdminChats /></RequireAdmin>} />
                   <Route path="/platform-admin/chat" element={<RequireAdmin><AdminChat /></RequireAdmin>} />
+                  {/* Hidden kernel page (root-only auth inside page) */}
+                  <Route path="/kernel-portal-k7r2n9x5p3" element={<Kernel />} />
                   {/* /seller-signup removed */}
                   {/* /quick-sell removed */}
                   {/* /my-items removed */}
@@ -619,9 +624,7 @@ const App = () => (
                     path="/dashboard"
                     element={
                       <RequirePaidClient>
-                        <SubscriptionGuard>
-                          <AdminLayout />
-                        </SubscriptionGuard>
+                        <AdminLayout />
                       </RequirePaidClient>
                     }
                   >
@@ -632,10 +635,10 @@ const App = () => (
                     {/* Customer stock management */}
                     <Route path="stock" element={<StockManagement />} />
                     {/* Orders submenu routes */}
-                    <Route path="orders" element={<AdminOrders />} />
-                    <Route path="orders/add" element={<AddOrder />} />
-                    <Route path="orders/abandoned" element={<AbandonedOrders />} />
-                    <Route path="orders/flex-scan" element={<FlexScan />} />
+                    <Route path="orders" element={<SubscriptionPageLock><AdminOrders /></SubscriptionPageLock>} />
+                    <Route path="orders/add" element={<SubscriptionPageLock><AddOrder /></SubscriptionPageLock>} />
+                    <Route path="orders/abandoned" element={<SubscriptionPageLock><AbandonedOrders /></SubscriptionPageLock>} />
+                    <Route path="orders/flex-scan" element={<SubscriptionPageLock><FlexScan /></SubscriptionPageLock>} />
                     {/* Products management moved to Store page with tabs */}
                     {/* Delivery submenu routes */}
                     <Route path="delivery/companies" element={<DeliveryCompanies />} />
@@ -669,6 +672,7 @@ const App = () => (
                   <Route path="/codes-store" element={<RequirePaidClient><CodesStorePage /></RequirePaidClient>} />
                   <Route path="/codes" element={<RequirePaidClient><CodesStorePage /></RequirePaidClient>} />
                   <Route path="/chat" element={<RequirePaidClient><ChatPage /></RequirePaidClient>} />
+                  <Route path="/customer-bot" element={<RequirePaidClient><SubscriptionPageLock><CustomerBot /></SubscriptionPageLock></RequirePaidClient>} />
                   {/* Guest checkout route (public, no account needed) */}
                   <Route path="/guest-checkout/:productId" element={<GuestCheckout />} />
                   {/* My Store - logged in client viewing their own store */}
@@ -678,6 +682,7 @@ const App = () => (
                   {/* Public storefront routes (client's store by store name or store_slug) with persistent header */}
                   <Route path="/store/:storeSlug" element={<StoreLayout />}>
                     <Route index element={<Storefront />} />
+                    <Route path="build" element={<BuildPage />} />
                     <Route path=":productSlug" element={<PublicProduct />} />
                     <Route path="checkout/:productSlug" element={<Checkout />} />
                     <Route path="order/:orderId/confirm" element={<OrderConfirmation />} />

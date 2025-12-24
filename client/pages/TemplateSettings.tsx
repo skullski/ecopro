@@ -2,6 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Loader2, Save, Eye, Check, ChevronDown, Plus, Trash2, AlertCircle, CheckCircle } from 'lucide-react';
 import { getAuthToken } from '@/lib/auth';
 import { uploadImage } from '@/lib/api';
@@ -19,6 +27,7 @@ import BabyTemplate from '@/components/templates/baby';
 import BagsTemplate from '@/components/templates/bags';
 import BeautyTemplate from '@/components/templates/beauty';
 import CafeTemplate from '@/components/templates/cafe';
+import StoreTemplate from '@/components/templates/store';
 
 // Category Manager Component
 const CategoryManager = ({ categories, onChange, isDarkMode }: any) => {
@@ -107,6 +116,7 @@ const CategoryManager = ({ categories, onChange, isDarkMode }: any) => {
 interface TemplateSettings {
   store_name?: string;
   store_description?: string;
+  store_slug?: string;
   banner_url?: string;
   template_accent_color?: string;
   template_hero_heading?: string;
@@ -116,6 +126,7 @@ interface TemplateSettings {
   primary_color?: string;
   secondary_color?: string;
   template?: string;
+  template_categories?: string;
   // Template-specific
   grid_columns?: number;
   enable_dark_mode?: boolean;
@@ -525,6 +536,37 @@ const templateConfigs: Record<string, any> = {
         ]
       }
     ]
+  },
+  store: {
+    label: 'Store (Electronics)',
+    sections: [
+      ...universalSections,
+      {
+        title: 'Store-Specific: Hero Carousel',
+        description: 'Configure the hero carousel slides for your electronics store',
+        fields: [
+          { key: 'template_hero_heading', label: 'Hero Title', type: 'text', placeholder: 'Your Trusted Electronics Store' },
+          { key: 'template_hero_subtitle', label: 'Hero Subtitle', type: 'text', placeholder: 'Shop smartphones, laptops, monitors, and configure your dream PC' },
+          { key: 'template_button_text', label: 'CTA Button Text', type: 'text', placeholder: 'Build Your PC' },
+          { key: 'banner_url', label: 'Hero Background Image', type: 'image', placeholder: 'Choose hero background image' },
+        ]
+      },
+      {
+        title: 'Store-Specific: Theme Settings',
+        description: 'Neon theme and dark mode settings',
+        fields: [
+          { key: 'template_neon_color', label: 'Neon Accent Color', type: 'color', placeholder: '#00FF88' },
+          { key: 'template_default_dark', label: 'Default to Dark Mode', type: 'checkbox' },
+        ]
+      },
+      {
+        title: 'Store-Specific: Product Categories',
+        description: 'Configure product categories for filtering',
+        fields: [
+          { key: 'template_store_categories', label: 'Categories (comma-separated)', type: 'text', placeholder: 'Smartphones,Laptops,Monitors,Peripherals,Components' },
+        ]
+      }
+    ]
   }
 };
 
@@ -541,6 +583,7 @@ const templateComponents: Record<string, any> = {
   bags: BagsTemplate,
   beauty: BeautyTemplate,
   cafe: CafeTemplate,
+  store: StoreTemplate,
 };
 
 const templateList = [
@@ -556,6 +599,7 @@ const templateList = [
   { id: 'bags', label: 'Bags', preview: '/template-previews/bags.png' },
   { id: 'beauty', label: 'Beauty', preview: '/template-previews/beauty.png' },
   { id: 'cafe', label: 'Cafe', preview: '/template-previews/cafe.png' },
+  { id: 'store', label: 'Store', preview: '/template-previews/store.png' },
 ];
 
 export default function TemplateSettingsPage() {
@@ -570,6 +614,77 @@ export default function TemplateSettingsPage() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return document.documentElement.classList.contains('dark');
   });
+
+  const [switchOpen, setSwitchOpen] = useState(false);
+  const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
+  const [switchMode, setSwitchMode] = useState<'defaults' | 'import'>('import');
+  const [savingSwitch, setSavingSwitch] = useState(false);
+  const [selectedGroups, setSelectedGroups] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    universalSections.forEach((_, idx) => {
+      initial[`u_${idx}`] = true;
+    });
+    return initial;
+  });
+
+  const universalImportGroups = universalSections.map((section, idx) => ({
+    id: `u_${idx}`,
+    label: section.title,
+    keys: (section.fields || []).map((f: any) => f.key).filter(Boolean),
+  }));
+
+  const computeImportKeys = () => {
+    const keys: string[] = [];
+    for (const g of universalImportGroups) {
+      if (!selectedGroups[g.id]) continue;
+      for (const k of g.keys) keys.push(k);
+    }
+    return Array.from(new Set(keys));
+  };
+
+  const requestTemplateSwitch = (toTemplate: string) => {
+    if (toTemplate === template) return;
+    setPendingTemplateId(toTemplate);
+    setSwitchMode('import');
+    setSwitchOpen(true);
+  };
+
+  const applyTemplateSwitch = async () => {
+    if (!pendingTemplateId) return;
+    try {
+      setSavingSwitch(true);
+      const token = getAuthToken();
+      const importKeys = switchMode === 'import' ? computeImportKeys() : [];
+      const res = await fetch('/api/client/store/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          __templateSwitch: {
+            toTemplate: pendingTemplateId,
+            mode: switchMode,
+            importKeys,
+          },
+        }),
+      });
+      if (!res.ok) throw new Error(`Switch failed (${res.status})`);
+      const data = await res.json();
+      setSettings(data);
+      setTemplate(data.template || pendingTemplateId);
+      setSwitchOpen(false);
+      setPendingTemplateId(null);
+    } catch (e) {
+      // Fallback: switch locally so the user can keep editing.
+      setTemplate(pendingTemplateId);
+      setSettings((prev) => ({ ...prev, template: pendingTemplateId }));
+      setSwitchOpen(false);
+      setPendingTemplateId(null);
+    } finally {
+      setSavingSwitch(false);
+    }
+  };
 
   // Fetch current settings
   useEffect(() => {
@@ -736,6 +851,76 @@ export default function TemplateSettingsPage() {
 
   return (
     <div className={`min-h-screen transition-colors duration-200 ${isDarkMode ? 'bg-gradient-to-br from-gray-900 to-black' : 'bg-gradient-to-br from-gray-50 to-gray-100'}`}>
+      <Dialog open={switchOpen} onOpenChange={setSwitchOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Switch Template</DialogTitle>
+            <DialogDescription>
+              Choose how to carry over your settings to the new template.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="templateSwitchMode"
+                  checked={switchMode === 'defaults'}
+                  onChange={() => setSwitchMode('defaults')}
+                />
+                Start from defaults (no import)
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="templateSwitchMode"
+                  checked={switchMode === 'import'}
+                  onChange={() => setSwitchMode('import')}
+                />
+                Import selected settings
+              </label>
+            </div>
+
+            {switchMode === 'import' && (
+              <div className="space-y-2">
+                <div className="text-sm font-medium">Import groups</div>
+                <div className="max-h-64 overflow-auto space-y-2 pr-2">
+                  {universalImportGroups.map((g) => (
+                    <label key={g.id} className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={!!selectedGroups[g.id]}
+                        onChange={(e) =>
+                          setSelectedGroups((prev) => ({ ...prev, [g.id]: e.target.checked }))
+                        }
+                      />
+                      {g.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSwitchOpen(false);
+                setPendingTemplateId(null);
+              }}
+              disabled={savingSwitch}
+            >
+              Cancel
+            </Button>
+            <Button onClick={applyTemplateSwitch} disabled={savingSwitch}>
+              {savingSwitch ? 'Switching...' : 'Switch'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Improved Toast Notification */}
       {message && (
         <div className="fixed top-4 left-4 right-4 md:left-auto md:right-8 z-50 animate-in fade-in slide-in-from-top-2">
@@ -768,51 +953,106 @@ export default function TemplateSettingsPage() {
             <p className={`text-xs md:text-sm transition-colors ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Choose a design that matches your brand</p>
           </div>
           
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 md:gap-3">
-            {templateList.map((tpl) => (
-              <button
-                key={tpl.id}
-                onClick={() => {
-                  setTemplate(tpl.id);
-                  setSettings(prev => ({ ...prev, template: tpl.id }));
-                }}
-                className={`rounded-xl overflow-hidden transition-all duration-300 transform hover:scale-105 relative group ${
-                  template === tpl.id
-                    ? 'ring-4 ring-blue-500 shadow-2xl scale-105'
-                    : isDarkMode
-                    ? 'border-2 border-gray-600 hover:border-gray-500 shadow-md hover:shadow-xl'
-                    : 'border-2 border-gray-200 hover:border-gray-400 shadow-md hover:shadow-xl'
-                }`}
-              >
-                <div className="aspect-square relative">
-                  <img 
-                    src={tpl.preview} 
-                    alt={tpl.label}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className={`absolute inset-0 flex items-end justify-center pb-3 transition-all ${
+          {/* Infinite scrolling marquee */}
+          <div className="overflow-hidden relative">
+            <style>{`
+              @keyframes marquee {
+                0% { transform: translateX(0); }
+                100% { transform: translateX(-50%); }
+              }
+              .animate-marquee {
+                animation: marquee 40s linear infinite;
+              }
+              .animate-marquee:hover {
+                animation-play-state: paused;
+              }
+            `}</style>
+            <div className="flex gap-3 animate-marquee" style={{ width: 'max-content' }}>
+              {/* First set of templates */}
+              {templateList.map((tpl) => (
+                <button
+                  key={tpl.id}
+                  onClick={() => requestTemplateSwitch(tpl.id)}
+                  className={`flex-shrink-0 w-[140px] md:w-[160px] rounded-xl overflow-hidden transition-all duration-300 transform hover:scale-105 relative group ${
                     template === tpl.id
-                      ? 'bg-gradient-to-t from-black/60 to-transparent'
-                      : 'bg-gradient-to-t from-black/40 to-transparent group-hover:from-black/60'
-                  }`}>
-                    <span className={`text-center font-semibold text-sm transition-colors ${
+                      ? 'ring-4 ring-blue-500 shadow-2xl scale-105'
+                      : isDarkMode
+                      ? 'border-2 border-gray-600 hover:border-gray-500 shadow-md hover:shadow-xl'
+                      : 'border-2 border-gray-200 hover:border-gray-400 shadow-md hover:shadow-xl'
+                  }`}
+                >
+                  <div className="aspect-square relative">
+                    <img 
+                      src={tpl.preview} 
+                      alt={tpl.label}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className={`absolute inset-0 flex items-end justify-center pb-3 transition-all ${
                       template === tpl.id
-                        ? 'text-white'
-                        : 'text-white/90 group-hover:text-white'
+                        ? 'bg-gradient-to-t from-black/60 to-transparent'
+                        : 'bg-gradient-to-t from-black/40 to-transparent group-hover:from-black/60'
                     }`}>
-                      {tpl.label}
-                    </span>
-                  </div>
-                </div>
-                {template === tpl.id && (
-                  <div className="absolute top-3 right-3 z-10">
-                    <div className="bg-blue-500 text-white rounded-full p-1">
-                      <Check className="w-5 h-5" />
+                      <span className={`text-center font-semibold text-sm transition-colors ${
+                        template === tpl.id
+                          ? 'text-white'
+                          : 'text-white/90 group-hover:text-white'
+                      }`}>
+                        {tpl.label}
+                      </span>
                     </div>
                   </div>
-                )}
-              </button>
-            ))}
+                  {template === tpl.id && (
+                    <div className="absolute top-3 right-3 z-10">
+                      <div className="bg-blue-500 text-white rounded-full p-1">
+                        <Check className="w-5 h-5" />
+                      </div>
+                    </div>
+                  )}
+                </button>
+              ))}
+              {/* Duplicate set for seamless loop */}
+              {templateList.map((tpl) => (
+                <button
+                  key={`${tpl.id}-dup`}
+                  onClick={() => requestTemplateSwitch(tpl.id)}
+                  className={`flex-shrink-0 w-[140px] md:w-[160px] rounded-xl overflow-hidden transition-all duration-300 transform hover:scale-105 relative group ${
+                    template === tpl.id
+                      ? 'ring-4 ring-blue-500 shadow-2xl scale-105'
+                      : isDarkMode
+                      ? 'border-2 border-gray-600 hover:border-gray-500 shadow-md hover:shadow-xl'
+                      : 'border-2 border-gray-200 hover:border-gray-400 shadow-md hover:shadow-xl'
+                  }`}
+                >
+                  <div className="aspect-square relative">
+                    <img 
+                      src={tpl.preview} 
+                      alt={tpl.label}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className={`absolute inset-0 flex items-end justify-center pb-3 transition-all ${
+                      template === tpl.id
+                        ? 'bg-gradient-to-t from-black/60 to-transparent'
+                        : 'bg-gradient-to-t from-black/40 to-transparent group-hover:from-black/60'
+                    }`}>
+                      <span className={`text-center font-semibold text-sm transition-colors ${
+                        template === tpl.id
+                          ? 'text-white'
+                          : 'text-white/90 group-hover:text-white'
+                      }`}>
+                        {tpl.label}
+                      </span>
+                    </div>
+                  </div>
+                  {template === tpl.id && (
+                    <div className="absolute top-3 right-3 z-10">
+                      <div className="bg-blue-500 text-white rounded-full p-1">
+                        <Check className="w-5 h-5" />
+                      </div>
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>

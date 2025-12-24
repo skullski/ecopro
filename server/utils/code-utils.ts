@@ -455,12 +455,25 @@ export function getCodeStatus(codeRequest: any): {
  */
 export async function cleanupExpiredCodes(): Promise<{ cleaned: number; notified: number }> {
   try {
+    // Debug: First, check how many codes match the condition
+    const debugResult = await pool.query(
+      `SELECT COUNT(*) as count, 
+              COUNT(CASE WHEN status = 'issued' THEN 1 END) as issued_count,
+              COUNT(CASE WHEN expiry_date IS NULL THEN 1 END) as null_expiry_count,
+              COUNT(CASE WHEN expiry_date < NOW() THEN 1 END) as expired_count,
+              MIN(expiry_date) as oldest_expiry,
+              MAX(expiry_date) as newest_expiry
+       FROM code_requests 
+       WHERE status = 'issued'`
+    );
+    console.log('[Code Cleanup] Debug info:', debugResult.rows[0]);
+
     // Find expired codes that haven't been marked as expired yet
     const expiredResult = await pool.query(
       `UPDATE code_requests 
        SET status = 'expired', is_redeemable = false
        WHERE status = 'issued' AND expiry_date < NOW()
-       RETURNING id, client_id, seller_id, chat_id`
+       RETURNING id, client_id, chat_id`
     );
 
     const cleaned = expiredResult.rows.length;
@@ -472,8 +485,8 @@ export async function cleanupExpiredCodes(): Promise<{ cleaned: number; notified
         // Add system message to chat about expiration
         await pool.query(
           `INSERT INTO chat_messages (chat_id, sender_id, sender_type, message_content, message_type)
-           VALUES ($1, $2, 'system', 'Code has expired. Seller must issue a new code.', 'system')`,
-          [expiredCode.chat_id, expiredCode.seller_id]
+           VALUES ($1, $2, 'system', 'Code has expired. A new code needs to be issued.', 'system')`,
+          [expiredCode.chat_id, expiredCode.client_id]
         );
         notified++;
       } catch (error) {

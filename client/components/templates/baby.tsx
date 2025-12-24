@@ -49,7 +49,7 @@ export default function BabyTemplate(props: TemplateProps) {
     const handleBuyClick = (e: any) => {
       e.stopPropagation();
       localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
-      navigate(`/checkout/${product.id}`);
+      navigate(`checkout/${product.id}`);
     };
 
     return (

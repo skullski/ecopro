@@ -97,8 +97,8 @@ export const confirmOrder: RequestHandler = async (req, res) => {
 
       // Record confirmation
       await pool.query(
-        `INSERT INTO order_confirmations (order_id, client_id, response_type, confirmed_at)
-         VALUES ($1, $2, 'approved', NOW())`,
+        `INSERT INTO order_confirmations (order_id, client_id, response_type, confirmed_via, confirmed_at)
+         VALUES ($1, $2, 'approved', 'link', NOW())`,
         [orderId, linkResult.rows[0].client_id]
       );
 
@@ -113,8 +113,8 @@ export const confirmOrder: RequestHandler = async (req, res) => {
 
       // Record confirmation
       await pool.query(
-        `INSERT INTO order_confirmations (order_id, client_id, response_type, confirmed_at)
-         VALUES ($1, $2, 'declined', NOW())`,
+        `INSERT INTO order_confirmations (order_id, client_id, response_type, confirmed_via, confirmed_at)
+         VALUES ($1, $2, 'declined', 'link', NOW())`,
         [orderId, linkResult.rows[0].client_id]
       );
 
@@ -188,7 +188,8 @@ export async function sendBotMessagesForOrder(
   try {
     // Create confirmation link
     const confirmationToken = await createConfirmationLink(orderId, clientId);
-    const confirmationLink = `https://${storeSlug}-ecopro.com/store/${storeSlug}/order/${orderId}/confirm`;
+    const baseUrl = process.env.BASE_URL || "https://ecopro-1lbl.onrender.com";
+    const confirmationLink = `${baseUrl}/store/${storeSlug}/order/${orderId}/confirm`;
 
     // Send bot messages
     await sendOrderConfirmationMessages(

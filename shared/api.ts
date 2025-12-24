@@ -5,8 +5,8 @@ export interface JWTPayload {
   id: string; // user id
   userId?: string; // alias for compatibility
   email: string;
-  role: "user" | "admin" | "seller";
-  user_type: "admin" | "client" | "seller";
+  role: "user" | "admin" | "seller" | "root";
+  user_type: "admin" | "client" | "seller" | "root";
   // Staff authentication (completely separate from owner authentication)
   isStaff?: boolean;
   staffId?: number; // Only present if staff member

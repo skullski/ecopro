@@ -30,7 +30,7 @@ export default function FoodTemplate(props: TemplateProps) {
   const handleBuyClick = (product: any, e?: any) => {
     if (e) e.stopPropagation();
     localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
-    navigate(`/checkout/${product.id}`);
+    navigate(`checkout/${product.id}`);
   };
 
   // Add safety check for empty products - render placeholder
@@ -320,12 +320,10 @@ export default function FoodTemplate(props: TemplateProps) {
               Tokyo-inspired · Since 2024
             </p>
             <h2 className="font-serif text-[1.9rem] sm:text-[2.2rem] lg:text-[2.6rem] leading-tight mb-4">
-              Crafted with precision,
-              <br />
-              served without urgency.
+              {settings.template_hero_heading || 'Crafted with precision, served without urgency.'}
             </h2>
             <p className="text-[13px] text-[#7a7a7a] max-w-md mb-4">
-              A small, deliberate menu built on clean broths, sharp knives, and patient techniques. Every plate is designed to be noticed, not photographed and forgotten.
+              {settings.template_hero_subtitle || 'A small, deliberate menu built on clean broths, sharp knives, and patient techniques. Every plate is designed to be noticed, not photographed and forgotten.'}
             </p>
 
             <div className="flex flex-wrap items-center gap-3 mt-4">
@@ -350,7 +348,7 @@ export default function FoodTemplate(props: TemplateProps) {
               style={{ transform: `translateY(${parallaxOffset * -1}px)` }}
             >
               <img
-                src={(settings as any)?.hero_image || 'https://images.unsplash.com/photo-1553621042-f6e147245754?auto=format&fit=crop&w=1200&q=80'}
+                src={settings.banner_url || 'https://images.unsplash.com/photo-1553621042-f6e147245754?auto=format&fit=crop&w=1200&q=80'}
                 alt="Hero dish"
                 className="w-full h-[300px] sm:h-[340px] lg:h-[380px] object-cover"
               />

@@ -17,7 +17,7 @@ export default function Fashion3Template(props: TemplateProps) {
   const handleBuyClick = (product: any, e?: any) => {
     if (e) e.stopPropagation();
     localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
-    navigate(`/checkout/${product.id}`);
+    navigate(`checkout/${product.id}`);
   };
 
   const { products = [], settings = {}, categories = [] } = props;
@@ -98,7 +98,7 @@ export default function Fashion3Template(props: TemplateProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             <div className="relative rounded-xl overflow-hidden h-80 border border-gray-800">
               <img
-                src={settings.banner_url || products[0]?.images?.[0] || 'https://images.unsplash.com/photo-1543087903-1ac2ec7aa8c5?auto=format&fit=crop&w=600&q=80'}
+                src={settings.banner_url || 'https://images.unsplash.com/photo-1543087903-1ac2ec7aa8c5?auto=format&fit=crop&w=600&q=80'}
                 alt="Hero"
                 className="w-full h-full object-cover"
               />
