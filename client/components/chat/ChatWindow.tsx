@@ -43,22 +43,67 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
   const [showFileUpload, setShowFileUpload] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const prevMessagesLengthRef = useRef<number>(0);
+  const isUserScrollingRef = useRef<boolean>(false);
+  const shouldScrollRef = useRef<boolean>(true);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = (force = false) => {
+    if (force || shouldScrollRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  // Check if user is near bottom of chat
+  const isNearBottom = () => {
+    const container = messagesContainerRef.current;
+    if (!container) return true;
+    const threshold = 100; // pixels from bottom
+    return container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
+  };
+
+  // Handle scroll to detect if user is scrolling up
+  const handleScroll = () => {
+    if (isNearBottom()) {
+      isUserScrollingRef.current = false;
+      shouldScrollRef.current = true;
+    } else {
+      isUserScrollingRef.current = true;
+      shouldScrollRef.current = false;
+    }
+  };
+
+  // Handle input focus - scroll to bottom when user clicks on input
+  const handleInputFocus = () => {
+    scrollToBottom(true);
   };
 
   useEffect(() => {
     loadChat();
     loadMessages();
+    shouldScrollRef.current = true; // Scroll on initial load
     // Poll for new messages every 3 seconds for real-time feel
     const interval = setInterval(loadMessages, 3000);
     return () => clearInterval(interval);
   }, [chatId]);
 
   useEffect(() => {
-    scrollToBottom();
+    // Only auto-scroll if:
+    // 1. It's the initial load (prevMessagesLength was 0)
+    // 2. User just sent a message (new message from current user)
+    // 3. User is near the bottom of the chat
+    const isInitialLoad = prevMessagesLengthRef.current === 0 && messages.length > 0;
+    const hasNewMessages = messages.length > prevMessagesLengthRef.current;
+    
+    if (isInitialLoad) {
+      scrollToBottom(true);
+    } else if (hasNewMessages && !isUserScrollingRef.current) {
+      scrollToBottom();
+    }
+    
+    prevMessagesLengthRef.current = messages.length;
+    
     // Mark messages as read when viewing
     if (messages.length > 0) {
       markMessagesAsRead();
@@ -246,7 +291,10 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-3 md:p-6 bg-gradient-to-b from-gray-900 to-gray-950 dark:from-slate-800 dark:to-slate-900 space-y-3 md:space-y-4">
+      <div 
+        ref={messagesContainerRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto p-2 md:p-4 bg-gradient-to-b from-gray-900 to-gray-950 dark:from-slate-800 dark:to-slate-900 space-y-2 md:space-y-3">
         {error && (
           <div className="mb-4 p-3 md:p-4 bg-red-900/30 border border-red-700 rounded-xl text-red-200 text-xs md:text-sm flex items-center gap-3">
             <AlertCircle className="w-4 md:w-5 h-4 md:h-5 flex-shrink-0" />
@@ -307,6 +355,7 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
                 value={messageInput}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
+                onFocus={handleInputFocus}
                 placeholder="Type message..."
                 disabled={sending}
                 rows={1}

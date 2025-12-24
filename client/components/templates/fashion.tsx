@@ -51,11 +51,31 @@ export default function FashionTemplate(props: TemplateProps) {
   const heroHeading = settings.template_hero_heading || 'Build a wardrobe that behaves like software.';
   const heroSubtitle = settings.template_hero_subtitle || 'Fewer pieces, more combinations. Coats, trousers, and layers designed to work in any city, any season.';
   const buttonText = settings.template_button_text || 'Browse collection';
+  const heroKicker = (settings as any).template_hero_kicker || 'System wardrobes / 2025';
+
+  const navNew = (settings as any).template_nav_new || 'New';
+  const navCollections = (settings as any).template_nav_collections || 'Collections';
+  const navBuilder = (settings as any).template_nav_builder || 'Wardrobe builder';
+  const accountLabel = (settings as any).template_account_label || 'Account';
+  const navBag = (settings as any).template_nav_bag || 'Bag (0)';
+  const buyNowLabel = (settings as any).template_buy_now_label || 'Buy Now';
   const gendersList = settings.template_genders ? settings.template_genders.split(',').map((g: string) => g.trim()) : ['Women', 'Men', 'Essentials'];
+  const categoryTabs = (settings as any).template_category_tabs
+    ? String((settings as any).template_category_tabs)
+        .split(',')
+        .map((c: string) => c.trim())
+        .filter(Boolean)
+    : ['All', 'Outerwear', 'Tops', 'Bottoms', 'Footwear'];
+  const fitTabs = (settings as any).template_fit_tabs
+    ? String((settings as any).template_fit_tabs)
+        .split(',')
+        .map((f: string) => f.trim())
+        .filter(Boolean)
+    : ['All', 'Oversized', 'Relaxed', 'Regular', 'Boxy'];
   
   const genders = gendersList;
-  const categories = ['All', 'Outerwear', 'Tops', 'Bottoms', 'Footwear'];
-  const fits = ['All', 'Oversized', 'Relaxed', 'Regular', 'Boxy'];
+  const categories = categoryTabs;
+  const fits = fitTabs;
   
   // Calculate heading sizes based on multiplier
   const headingSizeMap: Record<string, { h1: string; h2: string }> = {
@@ -65,11 +85,29 @@ export default function FashionTemplate(props: TemplateProps) {
   };
   const headingSizes = headingSizeMap[heading_size_multiplier] || headingSizeMap['Large'];
 
-  const looks = [
-    { id: 'look1', title: 'Late‑night city layers', caption: 'Wool coat · relaxed trouser · canvas sneaker' },
-    { id: 'look2', title: 'Studio uniform', caption: 'Boxy tee · tapered trouser · minimal sneaker' },
-    { id: 'look3', title: 'Transit‑ready shell', caption: 'Technical shell · hoodie · soft layers' },
-  ];
+  const looks = useMemo(() => {
+    const fallback = [
+      { id: 'look1', title: 'Late‑night city layers', caption: 'Wool coat · relaxed trouser · canvas sneaker' },
+      { id: 'look2', title: 'Studio uniform', caption: 'Boxy tee · tapered trouser · minimal sneaker' },
+      { id: 'look3', title: 'Transit‑ready shell', caption: 'Technical shell · hoodie · soft layers' },
+    ];
+
+    const raw = (settings as any).template_looks_json;
+    if (!raw) return fallback;
+    try {
+      const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (!Array.isArray(parsed)) return fallback;
+      return parsed
+        .map((item: any, idx: number) => ({
+          id: item?.id || `look${idx + 1}`,
+          title: item?.title || fallback[idx]?.title || `Look ${idx + 1}`,
+          caption: item?.caption || fallback[idx]?.caption || '',
+        }))
+        .slice(0, 6);
+    } catch {
+      return fallback;
+    }
+  }, [settings]);
 
   const filteredProducts = products.filter((p: any) => {
     if (activeGender !== 'All' && p.gender !== activeGender) return false;
@@ -173,13 +211,13 @@ export default function FashionTemplate(props: TemplateProps) {
             {storeName}
           </div>
           <nav className="hidden md:flex gap-5 text-[11px]" style={{ color: secondary_text_color }}>
-            <button className={`${enable_animations ? 'hover:text-' : ''}`} style={{ color: 'inherit' }}>New</button>
-            <button className={`${enable_animations ? 'hover:text-' : ''}`} style={{ color: 'inherit' }}>Collections</button>
-            <button className={`${enable_animations ? 'hover:text-' : ''}`} style={{ color: 'inherit' }}>Wardrobe builder</button>
+            <button className={`${enable_animations ? 'hover:text-' : ''}`} style={{ color: 'inherit' }}>{navNew}</button>
+            <button className={`${enable_animations ? 'hover:text-' : ''}`} style={{ color: 'inherit' }}>{navCollections}</button>
+            <button className={`${enable_animations ? 'hover:text-' : ''}`} style={{ color: 'inherit' }}>{navBuilder}</button>
           </nav>
           <div className="flex gap-3 text-[11px]" style={{ color: secondary_text_color }}>
-            <span>Account</span>
-            <span>Bag (0)</span>
+            <span>{accountLabel}</span>
+            <span>{navBag}</span>
           </div>
         </div>
       </header>
@@ -193,7 +231,7 @@ export default function FashionTemplate(props: TemplateProps) {
         <div className="max-w-6xl mx-auto px-6 h-full flex items-end pb-14">
           <div className="max-w-lg">
             <div className="text-[11px] tracking-[0.25em] uppercase mb-2" style={{ color: secondary_text_color }}>
-              System wardrobes / 2025
+              {heroKicker}
             </div>
             <h1 className="md:text-2xl font-serif font-semibold mb-3" style={{ 
               fontSize: headingSizes.h1,
@@ -380,7 +418,7 @@ export default function FashionTemplate(props: TemplateProps) {
                       transform: 'scale(1)',
                     })}
                   >
-                    Buy Now
+                    {buyNowLabel}
                   </button>
                 </div>
               </div>
@@ -391,3 +429,61 @@ export default function FashionTemplate(props: TemplateProps) {
     </div>
   );
 }
+
+export const TEMPLATE_EDITOR_SECTIONS = [
+  {
+    title: 'Fashion: Header & Labels',
+    fields: [
+      { key: 'template_nav_new', label: 'Nav: New', type: 'text', defaultValue: 'New' },
+      { key: 'template_nav_collections', label: 'Nav: Collections', type: 'text', defaultValue: 'Collections' },
+      { key: 'template_nav_builder', label: 'Nav: Builder', type: 'text', defaultValue: 'Wardrobe builder' },
+      { key: 'template_account_label', label: 'Account Label', type: 'text', defaultValue: 'Account' },
+      { key: 'template_nav_bag', label: 'Nav: Bag', type: 'text', defaultValue: 'Bag (0)' },
+      { key: 'template_hero_kicker', label: 'Hero Kicker', type: 'text', defaultValue: 'System wardrobes / 2025' },
+      { key: 'template_buy_now_label', label: 'Buy Now Label', type: 'text', defaultValue: 'Buy Now' },
+    ],
+  },
+  {
+    title: 'Fashion: Filters',
+    fields: [
+      {
+        key: 'template_genders',
+        label: 'Gender Tabs (comma-separated)',
+        type: 'text',
+        placeholder: 'Women,Men,Essentials',
+        defaultValue: 'Women, Men, Essentials',
+      },
+      {
+        key: 'template_category_tabs',
+        label: 'Category Tabs (comma-separated)',
+        type: 'text',
+        defaultValue: 'All, Outerwear, Tops, Bottoms, Footwear',
+      },
+      {
+        key: 'template_fit_tabs',
+        label: 'Fit Tabs (comma-separated)',
+        type: 'text',
+        defaultValue: 'All, Oversized, Relaxed, Regular, Boxy',
+      },
+    ],
+  },
+  {
+    title: 'Fashion: Looks',
+    fields: [
+      {
+        key: 'template_looks_json',
+        label: 'Looks (JSON array)',
+        type: 'textarea',
+        defaultValue: JSON.stringify(
+          [
+            { id: 'look1', title: 'Late‑night city layers', caption: 'Wool coat · relaxed trouser · canvas sneaker' },
+            { id: 'look2', title: 'Studio uniform', caption: 'Boxy tee · tapered trouser · minimal sneaker' },
+            { id: 'look3', title: 'Transit‑ready shell', caption: 'Technical shell · hoodie · soft layers' },
+          ],
+          null,
+          2
+        ),
+      },
+    ],
+  },
+] as const;

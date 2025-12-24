@@ -28,6 +28,8 @@ import * as staffRoutes from "./routes/staff";
 import * as billingRoutes from "./routes/billing";
 import kernelRouter, { initKernel } from "./routes/kernel";
 import trapsRouter from "./routes/traps";
+import intelRouter from "./routes/intel";
+import { usersRouter } from "./routes/users";
 import { deliveryRouter } from "./routes/delivery";
 import googleSheetsRouter from "./routes/google-sheets";
 import chatRouter from "./routes/chat";
@@ -234,8 +236,14 @@ export function createServer() {
   // Kernel (root-only) APIs
   app.use('/api/kernel', kernelRouter);
   
+  // IP Intelligence APIs (public + admin)
+  app.use('/api/intel', intelRouter);
+  
   // Admin: Search user by email
   app.get("/api/users/search", authenticate, authRoutes.searchUserByEmail);
+
+  // Client profile APIs
+  app.use('/api/users', authenticate, usersRouter);
 
   // Public product routes
   app.get(

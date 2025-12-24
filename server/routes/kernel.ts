@@ -372,26 +372,60 @@ router.get('/security/linux/watchlist', requireRoot, async (req, res) => {
 
   res.json({
     days,
-    actors: rows.rows.map((r) => ({
-      actor_key: r.actor_key,
-      ua_class: r.ua_class,
-      fingerprint: r.fingerprint,
-      ip: r.ip,
-      country_code: r.country_code,
-      user_agent: r.user_agent,
-      user_id: r.user_id,
-      user_type: r.user_type,
-      role: r.role,
-      total_events: r.total_events,
-      suspicious_events: r.suspicious_events,
-      trap_hits: r.trap_hits,
-      admin_forbidden: r.admin_forbidden,
-      suspicious_path: r.suspicious_path,
-      first_seen: r.first_seen,
-      last_seen: r.last_seen,
-      is_trusted: !!r.is_trusted,
-      trusted_label: r.trusted_label || null,
-      emergency: !r.is_trusted && (Number(r.trap_hits || 0) > 0 || Number(r.admin_forbidden || 0) > 0),
+    actors: await Promise.all(rows.rows.map(async (r) => {
+      // Try to get IP intelligence for this actor
+      let intel: any = null;
+      if (r.ip) {
+        try {
+          const intelResult = await pool.query(
+            `SELECT country_code, isp, org, asn, is_vpn, is_proxy, is_tor, is_datacenter, 
+                    is_blacklisted, fraud_score, abuse_score, risk_level
+             FROM ip_intelligence WHERE ip = $1 LIMIT 1`,
+            [r.ip]
+          );
+          if (intelResult.rows.length > 0) {
+            intel = intelResult.rows[0];
+          }
+        } catch (e) {
+          // ip_intelligence table might not exist
+        }
+      }
+      
+      return {
+        actor_key: r.actor_key,
+        ua_class: r.ua_class,
+        fingerprint: r.fingerprint,
+        ip: r.ip,
+        country_code: intel?.country_code || r.country_code,
+        user_agent: r.user_agent,
+        user_id: r.user_id,
+        user_type: r.user_type,
+        role: r.role,
+        total_events: r.total_events,
+        suspicious_events: r.suspicious_events,
+        trap_hits: r.trap_hits,
+        admin_forbidden: r.admin_forbidden,
+        suspicious_path: r.suspicious_path,
+        first_seen: r.first_seen,
+        last_seen: r.last_seen,
+        is_trusted: !!r.is_trusted,
+        trusted_label: r.trusted_label || null,
+        emergency: !r.is_trusted && (Number(r.trap_hits || 0) > 0 || Number(r.admin_forbidden || 0) > 0),
+        // IP Intelligence data
+        intel: intel ? {
+          isp: intel.isp,
+          org: intel.org,
+          asn: intel.asn,
+          is_vpn: intel.is_vpn,
+          is_proxy: intel.is_proxy,
+          is_tor: intel.is_tor,
+          is_datacenter: intel.is_datacenter,
+          is_blacklisted: intel.is_blacklisted,
+          fraud_score: intel.fraud_score,
+          abuse_score: intel.abuse_score,
+          risk_level: intel.risk_level,
+        } : null,
+      };
     })),
   });
 });

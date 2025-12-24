@@ -13,6 +13,7 @@ import {
   ensureConnection,
 } from "../utils/database";
 import { logSecurityEvent, getClientIp, getGeo, computeFingerprint, parseCookie } from "../utils/security";
+import { checkLoginAllowed, recordFailedLogin, recordSuccessfulLogin } from "../utils/brute-force";
 
 // JWT authentication middleware
 export const requireAuth: RequestHandler = (req, res, next) => {
@@ -162,6 +163,16 @@ export const register: RequestHandler = async (req, res) => {
 export const login: RequestHandler = async (req, res) => {
   try {
     const { email, password } = req.body;
+    const ip = getClientIp(req as any);
+
+    // BRUTE FORCE CHECK: Block if too many failed attempts
+    const bruteCheck = checkLoginAllowed(ip, email);
+    if (!bruteCheck.allowed) {
+      const waitTime = bruteCheck.blockedUntil 
+        ? Math.ceil((bruteCheck.blockedUntil - Date.now()) / 1000 / 60) 
+        : 30;
+      return jsonError(res, 429, `Too many login attempts. Please try again in ${waitTime} minutes.`);
+    }
 
     const inferLockType = (dbLockType: unknown, lockedReason: unknown): 'payment' | 'critical' => {
       if (dbLockType === 'payment' || dbLockType === 'critical') return dbLockType;
@@ -186,39 +197,8 @@ export const login: RequestHandler = async (req, res) => {
 
     if (!user) {
       console.log("❌ User not found");
-      // Security log: failed login attempt (no user_id)
-      try {
-        const ip = getClientIp(req as any);
-        const ua = (req.headers['user-agent'] as string | undefined) || null;
-        const geo = getGeo(req as any, ip);
-        const fpCookie = parseCookie(req as any, 'ecopro_fp');
-        const fingerprint = computeFingerprint({ ip, userAgent: ua, cookie: fpCookie });
-        await logSecurityEvent({
-          event_type: 'auth_login_failed',
-          severity: 'warn',
-          request_id: (req as any).requestId || null,
-          method: req.method,
-          path: req.path,
-          status_code: 401,
-          ip,
-          user_agent: ua,
-          fingerprint,
-          country_code: geo.country_code,
-          region: geo.region,
-          city: geo.city,
-          user_id: null,
-          user_type: null,
-          role: null,
-          metadata: {
-            scope: 'auth',
-            action: 'login',
-            reason: 'user_not_found',
-            email_present: Boolean(email),
-          },
-        });
-      } catch {
-        // ignore
-      }
+      // Record failed login for brute force protection
+      await recordFailedLogin(req, email, 'user_not_found');
       return jsonError(res, 401, "Invalid email or password");
     }
 
@@ -229,38 +209,8 @@ export const login: RequestHandler = async (req, res) => {
     
     if (!isValidPassword) {
       console.log("❌ Invalid password");
-      // Security log: failed login attempt
-      try {
-        const ip = getClientIp(req as any);
-        const ua = (req.headers['user-agent'] as string | undefined) || null;
-        const geo = getGeo(req as any, ip);
-        const fpCookie = parseCookie(req as any, 'ecopro_fp');
-        const fingerprint = computeFingerprint({ ip, userAgent: ua, cookie: fpCookie });
-        await logSecurityEvent({
-          event_type: 'auth_login_failed',
-          severity: 'warn',
-          request_id: (req as any).requestId || null,
-          method: req.method,
-          path: req.path,
-          status_code: 401,
-          ip,
-          user_agent: ua,
-          fingerprint,
-          country_code: geo.country_code,
-          region: geo.region,
-          city: geo.city,
-          user_id: String(user.id),
-          user_type: (user.user_type as any) || (user.role === 'admin' ? 'admin' : 'client'),
-          role: (user.role as any) || null,
-          metadata: {
-            scope: 'auth',
-            action: 'login',
-            reason: 'bad_password',
-          },
-        });
-      } catch {
-        // ignore
-      }
+      // Record failed login for brute force protection
+      await recordFailedLogin(req, email, 'bad_password');
       return jsonError(res, 401, "Invalid email or password");
     }
 
@@ -273,6 +223,7 @@ export const login: RequestHandler = async (req, res) => {
       
       if (lockType === 'critical') {
         // Critical lock - prevent login
+        await recordFailedLogin(req, email, 'account_locked');
         const reason = user.locked_reason || "Account locked by administrator";
         return res.status(403).json({ 
           error: `Account locked: ${reason}`,
@@ -294,6 +245,9 @@ export const login: RequestHandler = async (req, res) => {
       role: (user.role as any) || "user",
       user_type: (user.user_type as any) || (user.role === "admin" ? "admin" : "client"),
     });
+
+    // Record successful login (clears failed attempt counters)
+    recordSuccessfulLogin(ip, email);
 
     res.json({
       message: "Login successful",

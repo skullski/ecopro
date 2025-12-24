@@ -45,22 +45,84 @@ async function trapHandler(req: any, res: any) {
   return res.status(404).send('Not found');
 }
 
-// Obvious trap URLs (UI pages)
-router.all('/trap/admin', trapHandler);
-router.all('/trap/debug', trapHandler);
-router.all('/trap/panel', trapHandler);
+// ============================================
+// HONEYPOT ENDPOINTS - Only paths NO legitimate user would EVER hit
+// Express 5 uses path-to-regexp v8+ which requires {*name} for wildcards
+// ============================================
 
-// Common probe traps (won't conflict with real routes)
+// WordPress (you don't use WordPress - 100% attacker)
 router.all('/wp-login.php', trapHandler);
 router.all('/wp-admin', trapHandler);
-router.all('/phpmyadmin', trapHandler);
-router.all('/.env', trapHandler);
-router.all('/.git', trapHandler);
+router.all('/wp-admin/{*rest}', trapHandler);
+router.all('/wp-content/{*rest}', trapHandler);
+router.all('/wp-includes/{*rest}', trapHandler);
+router.all('/xmlrpc.php', trapHandler);
 
-// Obvious API traps
-router.all('/api/trap/admin', trapHandler);
-router.all('/api/trap/debug', trapHandler);
-router.all('/api/internal/debug', trapHandler);
-router.all('/api/internal/config', trapHandler);
+// PHP admin tools (you don't use PHP)
+router.all('/phpmyadmin', trapHandler);
+router.all('/phpmyadmin/{*rest}', trapHandler);
+router.all('/pma', trapHandler);
+router.all('/adminer.php', trapHandler);
+router.all('/phpinfo.php', trapHandler);
+router.all('/info.php', trapHandler);
+
+// Hidden dot files (browsers never request these)
+router.all('/.env', trapHandler);
+router.all('/.env.local', trapHandler);
+router.all('/.env.production', trapHandler);
+router.all('/.env.backup', trapHandler);
+router.all('/.git', trapHandler);
+router.all('/.git/{*rest}', trapHandler);
+router.all('/.gitignore', trapHandler);
+router.all('/.svn', trapHandler);
+router.all('/.svn/{*rest}', trapHandler);
+router.all('/.htaccess', trapHandler);
+router.all('/.htpasswd', trapHandler);
+router.all('/.DS_Store', trapHandler);
+
+// PHP config files (you don't use PHP)
+router.all('/config.php', trapHandler);
+router.all('/config.inc.php', trapHandler);
+router.all('/wp-config.php', trapHandler);
+router.all('/configuration.php', trapHandler);
+router.all('/settings.php', trapHandler);
+router.all('/local.php', trapHandler);
+
+// AWS/Cloud credentials (attackers love these)
+router.all('/.aws/credentials', trapHandler);
+router.all('/.aws/{*rest}', trapHandler);
+
+// SSH keys (no browser ever requests these)
+router.all('/.ssh/{*rest}', trapHandler);
+router.all('/id_rsa', trapHandler);
+router.all('/id_rsa.pub', trapHandler);
+router.all('/id_dsa', trapHandler);
+
+// Apache server status (you use Node, not Apache)
+router.all('/server-status', trapHandler);
+router.all('/server-info', trapHandler);
+
+// CGI-bin (ancient attack vector, you don't have CGI)
+router.all('/cgi-bin/{*rest}', trapHandler);
+
+// Shell/command execution (obviously malicious intent)
+router.all('/shell', trapHandler);
+router.all('/cmd', trapHandler);
+router.all('/cmd.php', trapHandler);
+router.all('/c99.php', trapHandler);
+router.all('/r57.php', trapHandler);
+
+// API shell/exec (malicious intent)
+router.all('/api/shell', trapHandler);
+router.all('/api/exec', trapHandler);
+router.all('/api/cmd', trapHandler);
+router.all('/api/eval', trapHandler);
+
+// Specific known exploit paths
+router.all('/actuator', trapHandler);
+router.all('/actuator/{*rest}', trapHandler);
+router.all('/.well-known/security.txt', trapHandler);
+router.all('/telescope/requests', trapHandler);
+router.all('/elfinder/{*rest}', trapHandler);
 
 export default router;

@@ -8,10 +8,14 @@ export function useTemplateData<T = any>(): T | null {
   const [data, setData] = useState<T | null>(null);
 
   useEffect(() => {
-    const templateData = (window as any).TEMPLATE_DATA as T | undefined;
-    if (templateData) {
-      setData(templateData);
-    }
+    const read = () => {
+      const templateData = (window as any).TEMPLATE_DATA as T | undefined;
+      setData(templateData ?? null);
+    };
+
+    read();
+    window.addEventListener('template-data-updated', read);
+    return () => window.removeEventListener('template-data-updated', read);
   }, []);
 
   return data;
@@ -25,10 +29,14 @@ export function useTemplateSettings<T = any>(): T | null {
   const [settings, setSettings] = useState<T | null>(null);
 
   useEffect(() => {
-    const templateSettings = (window as any).TEMPLATE_SETTINGS as T | undefined;
-    if (templateSettings) {
-      setSettings(templateSettings);
-    }
+    const read = () => {
+      const templateSettings = (window as any).TEMPLATE_SETTINGS as T | undefined;
+      setSettings(templateSettings ?? null);
+    };
+
+    read();
+    window.addEventListener('template-settings-updated', read);
+    return () => window.removeEventListener('template-settings-updated', read);
   }, []);
 
   return settings;

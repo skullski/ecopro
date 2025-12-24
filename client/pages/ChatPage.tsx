@@ -80,7 +80,7 @@ export function ChatPage() {
   const userId = user.clientId || user.sellerId || 0;
 
   return (
-    <div className="flex flex-col md:flex-row w-full bg-gray-50 overflow-hidden fixed top-[64px] left-0 right-0" style={{ height: 'calc(100vh - 64px)' }}>
+    <div className="flex flex-col md:flex-row w-full h-full bg-gray-50 overflow-hidden">
       {/* Chat List */}
       <div className="w-full md:w-1/3 bg-white shadow-sm flex flex-col min-h-0 order-2 md:order-1 overflow-hidden">
         <ChatList

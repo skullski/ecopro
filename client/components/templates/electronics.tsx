@@ -44,6 +44,60 @@ export default function ElectronicsTemplate(props: TemplateProps) {
   const storeName = settings.store_name || 'ElectroVerse';
   const storeCity = (settings as any).store_city || 'Algiers';
   const heroBadge = (settings as any).template_hero_badge || '2025 line-up';
+  const storeInitials = (settings as any).store_initials || String(storeName).slice(0, 2).toUpperCase();
+  const logoUrl = (settings as any).store_logo || (settings as any).logo_url || '';
+
+  const headerTagline = (settings as any).template_header_tagline || 'Phones · Audio · Gaming · Accessories';
+  const headerStatus = (settings as any).template_header_status || '24/7 online';
+
+  const emptyTitle = (settings as any).template_empty_title || 'No Products Yet';
+  const emptySubtitle = (settings as any).template_empty_subtitle || 'Add some electronics to your store to see them displayed here.';
+  const emptyHint = (settings as any).template_empty_hint || 'Products will appear automatically once you add them to your store.';
+
+  const heroKickerLabel = (settings as any).template_hero_kicker_label || 'New';
+  const heroHeadingPrefix = (settings as any).template_hero_heading_prefix || 'Flagship';
+  const heroHeadingAccent = (settings as any).template_hero_heading_accent || 'performance';
+  const heroHeadingSuffix = (settings as any).template_hero_heading_suffix || 'for your entire tech store.';
+  const heroSubtitle = (settings as any).template_hero_subtitle || 'Showcase phones, headphones, gaming gear and accessories in a layout that feels engineered.';
+  const heroPrimaryCta = (settings as any).template_hero_primary_cta || 'Shop flagship';
+  const heroSecondaryCta = (settings as any).template_hero_secondary_cta || 'View full catalog';
+
+  const splitKicker = (settings as any).template_split_kicker || 'Catalog engine';
+  const splitHeadingPrefix = (settings as any).template_split_heading_prefix || 'Split hero built for';
+  const splitHeadingAccent = (settings as any).template_split_heading_accent || 'spec-driven';
+  const splitHeadingSuffix = (settings as any).template_split_heading_suffix || 'decisions.';
+  const splitSubtitle = (settings as any).template_split_subtitle || 'Show customers exactly why this product is the right choice — with specs, use cases and pricing visible up front.';
+  const splitBullet1 = (settings as any).template_split_bullet_1 || 'Tech-first copy — no unnecessary storytelling.';
+  const splitBullet2 = (settings as any).template_split_bullet_2 || 'Clear hierarchy for specs, not emotions.';
+  const splitBullet3 = (settings as any).template_split_bullet_3 || 'Layout tuned for comparison thinking.';
+  const splitProductCta = (settings as any).template_split_product_cta || 'View full specs';
+
+  const featuredKicker = (settings as any).template_featured_kicker || 'Featured products';
+  const featuredHint = (settings as any).template_featured_hint || 'Horizontal scroll';
+
+  const categoriesTitle = (settings as any).template_categories_title || 'Categories';
+  const categoriesHint = (settings as any).template_categories_hint || 'Click to filter products';
+  const categoriesAllLabel = (settings as any).template_categories_all_label || 'All products';
+
+  const bestSellersKicker = (settings as any).template_bestsellers_kicker || 'Performance ranking';
+  const bestSellersTitle = (settings as any).template_bestsellers_title || 'Best sellers';
+  const bestSellersHint = (settings as any).template_bestsellers_hint || 'Top products';
+  const topTagLabel = (settings as any).template_top_tag_label || 'TOP';
+  const viewButtonLabel = (settings as any).template_view_button_label || 'View';
+  const buyButtonLabel = (settings as any).template_buy_button_label || 'Buy';
+  const buyNowLabel = (settings as any).template_buy_now_label || 'Buy Now';
+
+  const allItemsKicker = (settings as any).template_all_items_kicker || 'All items';
+  const categoryPrefix = (settings as any).template_category_prefix || 'Category:';
+  const allProductsTitle = (settings as any).template_all_products_title || 'All products';
+
+  const footerSuffix = (settings as any).template_footer_suffix || 'Online electronics & gaming';
+  const footerLinks = (settings as any).template_footer_links
+    ? String((settings as any).template_footer_links)
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter(Boolean)
+    : ['Support', 'Warranty', 'Contact'];
   
   const headingSizeMap: Record<string, { h1: string; h2: string }> = {
     Small: { h1: '20px', h2: '16px' },
@@ -74,9 +128,9 @@ export default function ElectronicsTemplate(props: TemplateProps) {
       <div className="min-h-screen flex items-center justify-center" style={{ background: enable_dark_mode ? 'radial-gradient(circle at top, #0f172a 0, #020617 45%, #000 100%)' : secondary_color }}>
         <div className="text-center max-w-md mx-auto p-4 md:p-6">
           <div className="text-6xl mb-4">🔌</div>
-          <h1 className="text-xl md:text-2xl font-bold mb-4" style={{ color: text_color }}>No Products Yet</h1>
-          <p className="mb-6" style={{ color: secondary_text_color }}>Add some electronics to your store to see them displayed here.</p>
-          <p className="text-sm" style={{ color: secondary_text_color }}>Products will appear automatically once you add them to your store.</p>
+          <h1 className="text-xl md:text-2xl font-bold mb-4" style={{ color: text_color }}>{emptyTitle}</h1>
+          <p className="mb-6" style={{ color: secondary_text_color }}>{emptySubtitle}</p>
+          <p className="text-sm" style={{ color: secondary_text_color }}>{emptyHint}</p>
         </div>
       </div>
     );
@@ -91,16 +145,22 @@ export default function ElectronicsTemplate(props: TemplateProps) {
       <style>{dynamicStyles}</style>
       <header className="flex items-center justify-between mb-4 md:mb-6">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-slate-950 text-xs font-bold tracking-widest">EV</div>
+          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-slate-950 text-xs font-bold tracking-widest overflow-hidden">
+            {logoUrl ? (
+              <img src={logoUrl} alt={`${storeName} logo`} className="w-full h-full object-contain" />
+            ) : (
+              storeInitials
+            )}
+          </div>
           <div>
             <h1 className="text-lg sm:text-xl font-semibold tracking-tight text-gray-200">{storeName}</h1>
-            <p className="text-[11px] text-slate-400">Phones · Audio · Gaming · Accessories</p>
+            <p className="text-[11px] text-slate-400">{headerTagline}</p>
           </div>
         </div>
         <div className="hidden sm:flex items-center gap-3 text-[11px] text-slate-400">
           <span>{storeCity}</span>
           <span>·</span>
-          <span>24/7 online</span>
+          <span>{headerStatus}</span>
         </div>
       </header>
 
@@ -114,13 +174,13 @@ export default function ElectronicsTemplate(props: TemplateProps) {
             <div>
               <span className="inline-flex items-center gap-2 text-xs text-slate-200 bg-slate-900/50 px-3 py-1 rounded-full border border-slate-700">
                 <span className="w-1.5 h-1.5 rounded-full bg-lime-400" />
-                New · {heroBadge}
+                {heroKickerLabel} · {heroBadge}
               </span>
               <h2 className="mt-4 text-xl md:text-2xl sm:text-2xl md:text-xl md:text-2xl font-bold leading-tight text-gray-100">
-                Flagship <span style={{ color: accent_color }}>performance</span> for your entire tech store.
+                {heroHeadingPrefix} <span style={{ color: accent_color }}>{heroHeadingAccent}</span> {heroHeadingSuffix}
               </h2>
               <p className="mt-3 text-sm text-slate-200 max-w-md">
-                Showcase phones, headphones, gaming gear and accessories in a layout that feels engineered.
+                {heroSubtitle}
               </p>
               {products.length > 0 && (
                 <div className="mt-4 flex flex-wrap gap-3 text-[11px] text-slate-100">
@@ -131,10 +191,10 @@ export default function ElectronicsTemplate(props: TemplateProps) {
               )}
               <div className="mt-5 flex gap-2">
                 <button style={{ backgroundColor: accentColor, color: '#0f172a' }} className="px-6 py-2.5 rounded-full text-xs font-semibold uppercase tracking-wider hover:shadow-lg transition">
-                  Shop flagship
+                  {heroPrimaryCta}
                 </button>
                 <button className="px-6 py-2.5 rounded-full border border-slate-600 text-slate-200 text-xs font-semibold uppercase tracking-wider hover:bg-slate-800 transition">
-                  View full catalog
+                  {heroSecondaryCta}
                 </button>
               </div>
             </div>
@@ -174,17 +234,17 @@ export default function ElectronicsTemplate(props: TemplateProps) {
         {/* Split Hero with Second Product */}
         <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-3 md:gap-4">
           <div className="rounded-2xl p-5 sm:p-6 bg-slate-900/80 border border-slate-700">
-            <span className="text-xs uppercase tracking-widest text-slate-400">Catalog engine</span>
+            <span className="text-xs uppercase tracking-widest text-slate-400">{splitKicker}</span>
             <h3 className="mt-2 text-xl sm:text-2xl font-semibold text-gray-100">
-              Split hero built for <span style={{ color: accentColor }}>spec-driven</span> decisions.
+              {splitHeadingPrefix} <span style={{ color: accentColor }}>{splitHeadingAccent}</span> {splitHeadingSuffix}
             </h3>
             <p className="mt-2 text-sm text-slate-300 max-w-md">
-              Show customers exactly why this product is the right choice — with specs, use cases and pricing visible up front.
+              {splitSubtitle}
             </p>
             <ul className="mt-3 text-xs text-slate-400 space-y-1.5">
-              <li>• Tech-first copy — no unnecessary storytelling.</li>
-              <li>• Clear hierarchy for specs, not emotions.</li>
-              <li>• Layout tuned for comparison thinking.</li>
+              <li>• {splitBullet1}</li>
+              <li>• {splitBullet2}</li>
+              <li>• {splitBullet3}</li>
             </ul>
           </div>
 
@@ -215,7 +275,7 @@ export default function ElectronicsTemplate(props: TemplateProps) {
                   </div>
                 </div>
                 <button style={{ backgroundColor: accentColor, color: '#0f172a' }} className="px-4 py-2 rounded-full text-[11px] font-semibold uppercase tracking-wider">
-                  View full specs
+                  {splitProductCta}
                 </button>
               </>
             )}
@@ -226,8 +286,8 @@ export default function ElectronicsTemplate(props: TemplateProps) {
         {products.length > 2 && (
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs uppercase tracking-widest text-slate-400">Featured products</span>
-              <span className="text-[11px] text-slate-400">Horizontal scroll</span>
+              <span className="text-xs uppercase tracking-widest text-slate-400">{featuredKicker}</span>
+              <span className="text-[11px] text-slate-400">{featuredHint}</span>
             </div>
             <div className="flex gap-3 overflow-x-auto pb-2">
               {products.slice(2, 5).map(p => (
@@ -249,7 +309,7 @@ export default function ElectronicsTemplate(props: TemplateProps) {
                     className="w-full px-2 py-2 rounded-full bg-slate-900 text-[11px] border font-semibold transition hover:opacity-90" 
                     onClick={(e) => handleBuyClick(p, e)}
                   >
-                    Buy Now
+                    {buyNowLabel}
                   </button>
                 </div>
               ))}
@@ -261,8 +321,8 @@ export default function ElectronicsTemplate(props: TemplateProps) {
       {/* Category Filter */}
       <section className="mb-4 md:mb-6">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs uppercase tracking-widest text-slate-400">Categories</span>
-          <span className="text-[11px] text-slate-400">Click to filter products</span>
+          <span className="text-xs uppercase tracking-widest text-slate-400">{categoriesTitle}</span>
+          <span className="text-[11px] text-slate-400">{categoriesHint}</span>
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1">
           {categories.map(cat => (
@@ -276,7 +336,7 @@ export default function ElectronicsTemplate(props: TemplateProps) {
                 border: activeCategory === cat ? 'none' : '1px solid #1e293b',
               }}
             >
-              {cat === 'all' ? 'All products' : cat}
+              {cat === 'all' ? categoriesAllLabel : cat}
             </button>
           ))}
         </div>
@@ -287,17 +347,17 @@ export default function ElectronicsTemplate(props: TemplateProps) {
         <section className="mb-10">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <span className="text-xs uppercase tracking-widest text-slate-400">Performance ranking</span>
-              <h3 className="mt-1 text-xl font-semibold text-gray-100">Best sellers</h3>
+              <span className="text-xs uppercase tracking-widest text-slate-400">{bestSellersKicker}</span>
+              <h3 className="mt-1 text-xl font-semibold text-gray-100">{bestSellersTitle}</h3>
             </div>
-            <span className="text-[11px] text-slate-400 hidden sm:inline">Top products</span>
+            <span className="text-[11px] text-slate-400 hidden sm:inline">{bestSellersHint}</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             {products.slice(0, 4).map((p, idx) => (
               <div key={p.id} className="rounded-xl p-3 bg-slate-900/80 border border-slate-700 group hover:border-cyan-400 transition relative">
                 <div className="absolute top-2 left-2 px-2 py-1 rounded-full bg-slate-900/90 border border-slate-700 text-slate-300 text-[10px] uppercase tracking-wider font-semibold">
-                  #{idx + 1} <span style={{ color: accentColor }}>TOP</span>
+                  #{idx + 1} <span style={{ color: accentColor }}>{topTagLabel}</span>
                 </div>
                 <div className="overflow-hidden rounded-md mb-2">
                   <img src={p.images[0]} alt={p.title} className="w-full h-[130px] sm:h-[140px] object-cover group-hover:scale-105 transition" />
@@ -307,10 +367,10 @@ export default function ElectronicsTemplate(props: TemplateProps) {
                 <p className="text-[11px] text-slate-500 mt-1">{String((p as any).category || 'General')}</p>
                 <div className="flex gap-1 mt-2">
                   <button className="flex-1 px-2 py-1 rounded-full bg-slate-900 text-[10px] border border-slate-600 text-slate-300 hover:border-cyan-400 transition" onClick={() => handleProductClick(p)}>
-                    View
+                    {viewButtonLabel}
                   </button>
                   <button style={{ backgroundColor: accentColor, borderColor: accentColor, color: '#0f172a' }} className="flex-1 px-2 py-1 rounded-full text-[10px] border transition" onClick={(e) => handleBuyClick(p, e)}>
-                    Buy
+                    {buyButtonLabel}
                   </button>
                 </div>
               </div>
@@ -324,9 +384,9 @@ export default function ElectronicsTemplate(props: TemplateProps) {
         <div className="flex items-center justify-between mb-4">
           <div>
             <span className="text-xs uppercase tracking-widest text-slate-400">
-              {activeCategory === 'all' ? 'All items' : `Category: ${activeCategory}`}
+              {activeCategory === 'all' ? allItemsKicker : `${categoryPrefix} ${activeCategory}`}
             </span>
-            <h3 className="mt-1 text-xl font-semibold text-gray-100">{activeCategory === 'all' ? 'All products' : activeCategory}</h3>
+            <h3 className="mt-1 text-xl font-semibold text-gray-100">{activeCategory === 'all' ? allProductsTitle : activeCategory}</h3>
           </div>
           <span className="text-[11px] text-slate-400">{filteredProducts.length} items</span>
         </div>
@@ -354,7 +414,7 @@ export default function ElectronicsTemplate(props: TemplateProps) {
               <p className="text-[11px] text-slate-500 mt-1 line-clamp-1">{String((p as any).category || 'General')}</p>
               <div className="flex gap-1 mt-2">
                 <button style={{ backgroundColor: accentColor, borderColor: accentColor, color: '#0f172a' }} className="w-full px-2 py-2 rounded-full text-xs font-semibold border transition hover:opacity-90" onClick={(e) => handleBuyClick(p, e)}>
-                  Buy Now
+                  {buyNowLabel}
                 </button>
               </div>
             </div>
@@ -366,14 +426,82 @@ export default function ElectronicsTemplate(props: TemplateProps) {
         <div>
           <span>© {new Date().getFullYear()} {storeName}</span>
           <span className="hidden sm:inline"> · </span>
-          <span className="block sm:inline">{storeCity} · Online electronics & gaming</span>
+          <span className="block sm:inline">{storeCity} · {footerSuffix}</span>
         </div>
         <div className="flex gap-3">
-          <span>Support</span>
-          <span>Warranty</span>
-          <span>Contact</span>
+          {footerLinks.slice(0, 3).map((label: string) => (
+            <span key={label}>{label}</span>
+          ))}
         </div>
       </footer>
     </div>
   );
 }
+
+export const TEMPLATE_EDITOR_SECTIONS = [
+  {
+    title: 'Electronics: Header',
+    fields: [
+      { key: 'store_initials', label: 'Logo Initials', type: 'text', defaultValue: 'EV' },
+      { key: 'template_header_tagline', label: 'Header Tagline', type: 'text', defaultValue: 'Phones · Audio · Gaming · Accessories' },
+      { key: 'template_header_status', label: 'Header Status', type: 'text', defaultValue: '24/7 online' },
+    ],
+  },
+  {
+    title: 'Electronics: Empty State',
+    fields: [
+      { key: 'template_empty_title', label: 'Empty Title', type: 'text', defaultValue: 'No Products Yet' },
+      { key: 'template_empty_subtitle', label: 'Empty Subtitle', type: 'text', defaultValue: 'Add some electronics to your store to see them displayed here.' },
+      { key: 'template_empty_hint', label: 'Empty Hint', type: 'text', defaultValue: 'Products will appear automatically once you add them to your store.' },
+    ],
+  },
+  {
+    title: 'Electronics: Hero',
+    fields: [
+      { key: 'template_hero_kicker_label', label: 'Hero Kicker Label', type: 'text', defaultValue: 'New' },
+      { key: 'template_hero_badge', label: 'Hero Badge', type: 'text', defaultValue: '2025 line-up' },
+      { key: 'template_hero_heading_prefix', label: 'Hero Heading (Prefix)', type: 'text', defaultValue: 'Flagship' },
+      { key: 'template_hero_heading_accent', label: 'Hero Heading (Accent)', type: 'text', defaultValue: 'performance' },
+      { key: 'template_hero_heading_suffix', label: 'Hero Heading (Suffix)', type: 'text', defaultValue: 'for your entire tech store.' },
+      { key: 'template_hero_subtitle', label: 'Hero Subtitle', type: 'text', defaultValue: 'Showcase phones, headphones, gaming gear and accessories in a layout that feels engineered.' },
+      { key: 'template_hero_primary_cta', label: 'Hero Primary CTA', type: 'text', defaultValue: 'Shop flagship' },
+      { key: 'template_hero_secondary_cta', label: 'Hero Secondary CTA', type: 'text', defaultValue: 'View full catalog' },
+    ],
+  },
+  {
+    title: 'Electronics: Split Hero',
+    fields: [
+      { key: 'template_split_kicker', label: 'Split Kicker', type: 'text', defaultValue: 'Catalog engine' },
+      { key: 'template_split_heading_prefix', label: 'Split Heading (Prefix)', type: 'text', defaultValue: 'Split hero built for' },
+      { key: 'template_split_heading_accent', label: 'Split Heading (Accent)', type: 'text', defaultValue: 'spec-driven' },
+      { key: 'template_split_heading_suffix', label: 'Split Heading (Suffix)', type: 'text', defaultValue: 'decisions.' },
+      { key: 'template_split_subtitle', label: 'Split Subtitle', type: 'text', defaultValue: 'Show customers exactly why this product is the right choice — with specs, use cases and pricing visible up front.' },
+      { key: 'template_split_bullet_1', label: 'Split Bullet 1', type: 'text', defaultValue: 'Tech-first copy — no unnecessary storytelling.' },
+      { key: 'template_split_bullet_2', label: 'Split Bullet 2', type: 'text', defaultValue: 'Clear hierarchy for specs, not emotions.' },
+      { key: 'template_split_bullet_3', label: 'Split Bullet 3', type: 'text', defaultValue: 'Layout tuned for comparison thinking.' },
+      { key: 'template_split_product_cta', label: 'Split Product CTA', type: 'text', defaultValue: 'View full specs' },
+    ],
+  },
+  {
+    title: 'Electronics: Labels',
+    fields: [
+      { key: 'template_featured_kicker', label: 'Featured Kicker', type: 'text', defaultValue: 'Featured products' },
+      { key: 'template_featured_hint', label: 'Featured Hint', type: 'text', defaultValue: 'Horizontal scroll' },
+      { key: 'template_categories_title', label: 'Categories Title', type: 'text', defaultValue: 'Categories' },
+      { key: 'template_categories_hint', label: 'Categories Hint', type: 'text', defaultValue: 'Click to filter products' },
+      { key: 'template_categories_all_label', label: 'All Category Label', type: 'text', defaultValue: 'All products' },
+      { key: 'template_bestsellers_kicker', label: 'Best Sellers Kicker', type: 'text', defaultValue: 'Performance ranking' },
+      { key: 'template_bestsellers_title', label: 'Best Sellers Title', type: 'text', defaultValue: 'Best sellers' },
+      { key: 'template_bestsellers_hint', label: 'Best Sellers Hint', type: 'text', defaultValue: 'Top products' },
+      { key: 'template_top_tag_label', label: 'Top Tag Label', type: 'text', defaultValue: 'TOP' },
+      { key: 'template_view_button_label', label: 'View Button Label', type: 'text', defaultValue: 'View' },
+      { key: 'template_buy_button_label', label: 'Buy Button Label', type: 'text', defaultValue: 'Buy' },
+      { key: 'template_buy_now_label', label: 'Buy Now Label', type: 'text', defaultValue: 'Buy Now' },
+      { key: 'template_all_items_kicker', label: 'All Items Kicker', type: 'text', defaultValue: 'All items' },
+      { key: 'template_category_prefix', label: 'Category Prefix', type: 'text', defaultValue: 'Category:' },
+      { key: 'template_all_products_title', label: 'All Products Title', type: 'text', defaultValue: 'All products' },
+      { key: 'template_footer_suffix', label: 'Footer Suffix', type: 'text', defaultValue: 'Online electronics & gaming' },
+      { key: 'template_footer_links', label: 'Footer Links (comma-separated)', type: 'text', defaultValue: 'Support, Warranty, Contact' },
+    ],
+  },
+] as const;

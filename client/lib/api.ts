@@ -117,8 +117,14 @@ export async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     "X-User-Id": CURRENT_USER_ID,
-    ...(init?.headers || {}),
   };
+
+  if (init?.headers) {
+    const extra = new Headers(init.headers as any);
+    extra.forEach((value, key) => {
+      headers[key] = value;
+    });
+  }
 
   // Add Authorization header if token exists
   if (token) {

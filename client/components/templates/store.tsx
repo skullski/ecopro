@@ -29,10 +29,14 @@ export default function Store(props: TemplateProps): JSX.Element {
   } = useMemo(() => universalSettings as any || {}, [universalSettings]);
 
   const storeName = settings.store_name || 'ElectroStore DZ';
+  const logoUrl = (settings as any).store_logo || (settings as any).logo_url || '';
   const bannerUrl = settings.banner_url || 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?q=80&w=1400&auto=format&fit=crop';
   const heroHeading = settings.template_hero_heading || 'Your Trusted Electronics Store';
   const heroSubtitle = settings.template_hero_subtitle || 'Shop smartphones, laptops, monitors, and configure your dream PC with expert-curated parts and local support.';
   const buttonText = settings.template_button_text || 'Build Your PC';
+  const slide2Title = settings.template_slide2_title || 'Featured Collection';
+  const slide2Subtitle = settings.template_slide2_subtitle || 'High performance products for every need.';
+  const slide2CtaText = settings.template_slide2_cta_text || 'Shop Now';
   const neonColor = settings.template_neon_color || '#00f0ff';
   const currencyCode = settings.currency_code || 'DZD';
 
@@ -67,7 +71,7 @@ export default function Store(props: TemplateProps): JSX.Element {
   // Carousel - first slide is Build CTA
   const slides = [
     { id: 0, type: "build", title: heroHeading, subtitle: heroSubtitle, cta: { label: buttonText, href: "build" }, visual: bannerUrl },
-    { id: 1, type: "image", title: "Featured Collection", subtitle: "High performance products for every need.", cta: { label: "Shop Now", href: "#electronics" }, bg: bannerUrl },
+    { id: 1, type: "image", title: slide2Title, subtitle: slide2Subtitle, cta: { label: slide2CtaText, href: "#electronics" }, bg: bannerUrl },
   ];
 
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -162,9 +166,16 @@ export default function Store(props: TemplateProps): JSX.Element {
         .hero-cta:hover { transform: translateY(-4px); box-shadow: 0 18px 60px rgba(108,92,231,0.18); }
         .hero-visual { position:absolute; right:0; bottom:0; top:0; width:48%; background-position:center; background-size:cover; z-index:2; border-left:1px solid rgba(255,255,255,0.02); }
         @media (max-width:1024px) { .hero-visual { display:none; } }
-        .hero-controls { position:absolute; right:18px; bottom:18px; z-index:4; display:flex; gap:8px; }
-        .hero-dot { width:10px; height:10px; border-radius:999px; background:rgba(255,255,255,0.18); cursor:pointer; border:1px solid rgba(255,255,255,0.06); }
-        .hero-dot.active { background:var(--neon-cyan); box-shadow:0 8px 30px rgba(0,240,255,0.12); }
+        .hero-controls { position:absolute; right:18px; bottom:18px; z-index:4; display:flex; gap: var(--carousel-dot-gap, 8px); }
+        .hero-dot {
+          width: var(--carousel-dot-size, 10px);
+          height: var(--carousel-dot-size, 10px);
+          border-radius:999px;
+          background: var(--carousel-dot-color, rgba(255,255,255,0.18));
+          cursor:pointer;
+          border:1px solid var(--carousel-dot-border-color, rgba(255,255,255,0.06));
+        }
+        .hero-dot.active { background: var(--carousel-dot-active-color, var(--neon-cyan)); box-shadow:0 8px 30px rgba(0,240,255,0.12); }
         .card { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:12px; padding:12px; box-shadow:var(--card-shadow); transition: transform .18s ease; }
         .card:hover { transform: translateY(-8px); }
         .price { color: var(--neon-cyan); font-weight:800; }
@@ -177,7 +188,13 @@ export default function Store(props: TemplateProps): JSX.Element {
       <header className="sticky top-0 z-40 header-glass">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center gap-6">
           <a href="#" className="flex items-center gap-3">
-            <div className="logo-badge">{storeName.charAt(0).toUpperCase()}</div>
+            <div className="logo-badge overflow-hidden">
+              {logoUrl ? (
+                <img src={logoUrl} alt={`${storeName} logo`} className="w-full h-full object-contain" />
+              ) : (
+                storeName.charAt(0).toUpperCase()
+              )}
+            </div>
             <div>
               <div className="font-semibold">{storeName}</div>
               <div className="text-xs muted">Algeria • {currencyCode}</div>
@@ -388,3 +405,15 @@ export default function Store(props: TemplateProps): JSX.Element {
     </div>
   );
 }
+
+export const TEMPLATE_EDITOR_SECTIONS = [
+  {
+    title: 'Store: Hero Carousel (Slide 2)',
+    description: 'Make the second slide text editable (was hardcoded).',
+    fields: [
+      { key: 'template_slide2_title', label: 'Slide 2 Title', type: 'text', placeholder: 'Featured Collection' },
+      { key: 'template_slide2_subtitle', label: 'Slide 2 Subtitle', type: 'text', placeholder: 'High performance products for every need.' },
+      { key: 'template_slide2_cta_text', label: 'Slide 2 CTA Text', type: 'text', placeholder: 'Shop Now' },
+    ],
+  },
+] as const;

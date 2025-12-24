@@ -24,9 +24,19 @@ export default function CafeTemplate(props: TemplateProps) {
   } = useMemo(() => universalSettings as any || {}, [universalSettings]);
 
   const storeName = settings.store_name || 'Sweet Home Dz';
-  const storeCity = settings.store_city || settings.template_store_city || 'Algiers';
-  const sincYear = (settings as any).template_since_year || (settings as any).since_year || new Date().getFullYear() - 2;
-  const heroHeading = settings.template_hero_heading;
+  const templateStoreCity = (settings as any).template_store_city || 'Algiers';
+  const storeCity = settings.store_city || templateStoreCity;
+  const templateSinceYear = (settings as any).template_since_year || (new Date().getFullYear() - 2);
+  const sincYear = (settings as any).since_year || templateSinceYear;
+
+  const heroHeading = (settings as any).template_hero_heading || 'All your makroud, kalb el louz and more — in one organized store.';
+  const heroSubtitle = (settings as any).template_hero_subtitle || 'Built for 40+ different sweets, this layout keeps your trays, pieces and boxes cleanly organized so customers never feel lost.';
+  const heroBadge = (settings as any).template_hero_badge || 'Algerian home sweets · Online';
+  const heroPrimaryCtaText = (settings as any).template_hero_primary_cta_text || 'Shop all sweets';
+  const heroSecondaryCtaText = (settings as any).template_hero_secondary_cta_text || 'View trays & bundles';
+  const headerTagline = (settings as any).template_header_tagline || 'Homemade Algerian sweets · prepared fresh in {city}';
+  const headerSinceLabel = (settings as any).template_header_since_label || 'Since {year}';
+  const headerDeliveryLabel = (settings as any).template_header_delivery_label || 'Orders via website · Delivery & pickup';
 
   // Parse custom categories from template settings if available
   const customCategories = useMemo(() => {
@@ -146,12 +156,12 @@ export default function CafeTemplate(props: TemplateProps) {
             {storeName}
           </h1>
           <p className="text-xs mt-1 max-w-xs" style={{ color: secondary_text_color }}>
-            Homemade Algerian sweets · prepared fresh in {storeCity}
+            {String(headerTagline).replace('{city}', String(storeCity))}
           </p>
         </div>
         <div className="hidden sm:flex flex-col items-end text-[11px]" style={{ color: secondary_text_color }}>
-          <span>Since {sincYear}</span>
-          <span>Orders via website · Delivery & pickup</span>
+          <span>{String(headerSinceLabel).replace('{year}', String(sincYear))}</span>
+          <span>{headerDeliveryLabel}</span>
         </div>
       </header>
 
@@ -164,21 +174,15 @@ export default function CafeTemplate(props: TemplateProps) {
               className="inline-block rounded-full px-3 py-1.5 text-[11px] text-transform uppercase tracking-widest font-semibold mb-4"
               style={{ backgroundColor: `${primary_color}30`, color: secondary_text_color, borderRadius: '999px', border: `1px solid ${primary_color}50` }}
             >
-              Algerian home sweets · Online
+              {heroBadge}
             </div>
             
             <h2 className="font-serif text-4xl md:text-5xl font-bold mt-4 leading-tight" style={{ color: text_color }}>
-              {heroHeading || (
-                <>
-                  All your{' '}
-                  <span style={{ color: accent_color }}>makroud, kalb el louz</span> and
-                  more — in one organized store.
-                </>
-              )}
+              {heroHeading}
             </h2>
             
             <p className="text-sm mt-3 max-w-md" style={{ color: secondary_text_color }}>
-              Built for 40+ different sweets, this layout keeps your trays, pieces and boxes cleanly organized so customers never feel lost.
+              {heroSubtitle}
             </p>
             
             <div className="flex gap-2 mt-5 flex-wrap">
@@ -187,14 +191,14 @@ export default function CafeTemplate(props: TemplateProps) {
                 style={{ background: `linear-gradient(135deg, ${primary_color}, ${accent_color})`, color: text_color, borderRadius: '999px' }}
                 onClick={() => document.getElementById('all-products')?.scrollIntoView({ behavior: 'smooth' })}
               >
-                Shop all sweets
+                {heroPrimaryCtaText}
               </button>
               
               <button 
                 className="text-xs text-transform uppercase tracking-widest font-semibold py-2 px-4 rounded-full transition border"
                 style={{ borderColor: secondary_text_color, color: secondary_text_color, borderRadius: '999px', background: `rgba(255, 255, 255, 0.7)` }}
               >
-                View trays & bundles
+                {heroSecondaryCtaText}
               </button>
             </div>
           </div>
@@ -364,3 +368,24 @@ export default function CafeTemplate(props: TemplateProps) {
     </div>
   );
 }
+
+export const TEMPLATE_EDITOR_SECTIONS = [
+  {
+    title: 'Cafe: Header + Hero Copy',
+    description: 'Edit visible header/hero text without digging into code.',
+    fields: [
+      { key: 'template_store_city', label: 'City (template default)', type: 'text', placeholder: 'Algiers' },
+      { key: 'template_since_year', label: 'Since Year', type: 'number', placeholder: '2023', min: 1900, max: 2100 },
+
+      { key: 'template_header_tagline', label: 'Header Tagline', type: 'text', placeholder: 'Homemade Algerian sweets · prepared fresh in {city}' },
+      { key: 'template_header_since_label', label: 'Header Since Label', type: 'text', placeholder: 'Since {year}' },
+      { key: 'template_header_delivery_label', label: 'Header Delivery Label', type: 'text', placeholder: 'Orders via website · Delivery & pickup' },
+
+      { key: 'template_hero_badge', label: 'Hero Badge', type: 'text', placeholder: 'Algerian home sweets · Online' },
+      { key: 'template_hero_heading', label: 'Hero Heading', type: 'text' },
+      { key: 'template_hero_subtitle', label: 'Hero Subtitle', type: 'textarea' },
+      { key: 'template_hero_primary_cta_text', label: 'Hero Primary CTA', type: 'text', placeholder: 'Shop all sweets' },
+      { key: 'template_hero_secondary_cta_text', label: 'Hero Secondary CTA', type: 'text', placeholder: 'View trays & bundles' },
+    ],
+  },
+] as const;

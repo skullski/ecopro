@@ -30,11 +30,27 @@ export function generateSubscriptionCode(): string {
 }
 
 /**
+ * Normalize user input into the canonical code format.
+ * - Removes spaces/dashes/any non-alphanumeric
+ * - Uppercases
+ * - If it contains exactly 16 chars, re-inserts dashes as XXXX-XXXX-XXXX-XXXX
+ */
+export function normalizeSubscriptionCode(input: string): string {
+  const cleaned = String(input || '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '');
+
+  if (cleaned.length !== 16) return String(input || '').trim().toUpperCase();
+  return cleaned.match(/.{1,4}/g)?.join('-') || cleaned;
+}
+
+/**
  * Validate code format
  */
 export function isValidCodeFormat(code: string): boolean {
+  const normalized = normalizeSubscriptionCode(code);
   const codeRegex = /^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
-  return codeRegex.test(code.toUpperCase());
+  return codeRegex.test(normalized);
 }
 
 /**
@@ -167,8 +183,10 @@ export async function validateSubscriptionCode(
   error?: string;
 }> {
   try {
+    const normalizedCode = normalizeSubscriptionCode(code);
+
     // Format validation
-    if (!isValidCodeFormat(code)) {
+    if (!isValidCodeFormat(normalizedCode)) {
       return {
         valid: false,
         error: 'Invalid code format. Use format: XXXX-XXXX-XXXX-XXXX'
@@ -178,7 +196,7 @@ export async function validateSubscriptionCode(
     // Query database
     const result = await pool.query(
       `SELECT * FROM code_requests WHERE generated_code = $1`,
-      [code.toUpperCase()]
+      [normalizedCode.toUpperCase()]
     );
 
     if (result.rows.length === 0) {

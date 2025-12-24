@@ -2,6 +2,32 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+// CSS for flashing red animation
+const flashingStyles = `
+@keyframes flash-red {
+  0%, 100% { 
+    background-color: rgba(239, 68, 68, 0.3);
+    border-color: rgba(239, 68, 68, 0.8);
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+  }
+  50% { 
+    background-color: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.4);
+    box-shadow: 0 0 5px rgba(239, 68, 68, 0.2);
+  }
+}
+.threat-flash {
+  animation: flash-red 1s ease-in-out infinite;
+}
+.threat-row {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+  border-left: 3px solid rgb(239, 68, 68) !important;
+}
+.threat-row:hover {
+  background-color: rgba(239, 68, 68, 0.25) !important;
+}
+`;
+
 type Summary = {
   days: number;
   blockedByCountry: Array<{ country_code: string; count: number }>;
@@ -98,6 +124,20 @@ type LinuxActor = {
   is_trusted?: boolean;
   trusted_label?: string | null;
   emergency: boolean;
+  // IP Intelligence
+  intel?: {
+    isp: string | null;
+    org: string | null;
+    asn: string | null;
+    is_vpn: boolean;
+    is_proxy: boolean;
+    is_tor: boolean;
+    is_datacenter: boolean;
+    is_blacklisted: boolean;
+    fraud_score: number;
+    abuse_score: number;
+    risk_level: string;
+  } | null;
 };
 
 type ActorDetails = {
@@ -106,6 +146,43 @@ type ActorDetails = {
   topPaths: Array<{ path: string; count: number }>;
   eventTypes: Array<{ event_type: string; count: number }>;
   events: Array<SecurityEvent & { metadata?: any; request_id?: string | null; region?: string | null; city?: string | null; user_id?: string | null; user_type?: string | null; role?: string | null }>;
+};
+
+type IntelStats = {
+  days: number;
+  cache: {
+    total_cached: number;
+    vpn_count: number;
+    proxy_count: number;
+    tor_count: number;
+    blacklisted_count: number;
+    checked_today: number;
+  };
+  decisions: Array<{ decision: string; count: number }>;
+  fingerprints: {
+    total: number;
+    webrtc_leaks: number;
+    incognito_users: number;
+    unique_visitors: number;
+  };
+  risk_distribution: Array<{ risk_level: string; count: number }>;
+};
+
+type IPIntelCache = {
+  ip: string;
+  country_code: string | null;
+  isp: string | null;
+  org: string | null;
+  asn: string | null;
+  is_vpn: boolean;
+  is_proxy: boolean;
+  is_tor: boolean;
+  is_datacenter: boolean;
+  is_blacklisted: boolean;
+  fraud_score: number;
+  abuse_score: number;
+  risk_level: string;
+  last_checked_at: string;
 };
 
 const TOKEN_KEY = "kernelToken";
@@ -145,6 +222,156 @@ export default function Kernel() {
   const [openActorKey, setOpenActorKey] = React.useState<string | null>(null);
   const [actorDetails, setActorDetails] = React.useState<Record<string, ActorDetails | null>>({});
 
+  // IP Intelligence state
+  const [intelStats, setIntelStats] = React.useState<IntelStats | null>(null);
+  const [intelCache, setIntelCache] = React.useState<IPIntelCache[]>([]);
+  const [lookupIp, setLookupIp] = React.useState('');
+  const [lookupResult, setLookupResult] = React.useState<IPIntelCache | null>(null);
+  const [lookupLoading, setLookupLoading] = React.useState(false);
+
+  // Threat tracking - IPs and fingerprints flagged as threats
+  const [threatIps, setThreatIps] = React.useState<Set<string>>(new Set());
+  const [threatFingerprints, setThreatFingerprints] = React.useState<Set<string>>(new Set());
+  const [testThreatIp, setTestThreatIp] = React.useState('');
+
+  // Emergency actors - must be defined before useEffect that uses it
+  const emergencyActors = React.useMemo(() => {
+    return linuxActors.filter((a) => !a.is_trusted && ((a.trap_hits || 0) > 0 || (a.admin_forbidden || 0) > 0));
+  }, [linuxActors]);
+
+  // Compute threat sets from various sources
+  // ONLY active/new threats flash - blocked IPs are handled (no flash)
+  React.useEffect(() => {
+    const ips = new Set<string>();
+    const fps = new Set<string>();
+    
+    // Get set of blocked IPs to exclude from flashing
+    const blockedIpSet = new Set<string>();
+    blocks.forEach(b => {
+      if (b.is_active && b.ip) blockedIpSet.add(b.ip);
+    });
+    
+    // Helper: only add if NOT already blocked
+    const addIfNotBlocked = (ip: string | null | undefined) => {
+      if (ip && !blockedIpSet.has(ip)) ips.add(ip);
+    };
+    
+    // Add emergency actors (trap hits, admin forbidden) - only if NOT blocked
+    emergencyActors.forEach(a => {
+      addIfNotBlocked(a.ip);
+      if (a.fingerprint) fps.add(a.fingerprint);
+    });
+    
+    // Add blacklisted/VPN/Tor from intel cache - only if NOT blocked
+    intelCache.forEach(c => {
+      if (c.is_blacklisted || c.is_tor || c.risk_level === 'critical' || c.risk_level === 'high') {
+        addIfNotBlocked(c.ip);
+      }
+      // Non-Algeria = 100% threat (but server auto-blocks these, so they get blocked)
+      // Only flash if somehow not blocked yet
+      if (c.country_code && c.country_code !== 'DZ') {
+        addIfNotBlocked(c.ip);
+      }
+    });
+    
+    // HIGH-SEVERITY events - only if NOT blocked
+    events.forEach(ev => {
+      if (ev.severity === 'error' || ev.event_type === 'trap_hit' || ev.event_type === 'admin_forbidden') {
+        addIfNotBlocked(ev.ip);
+        if (ev.fingerprint) fps.add(ev.fingerprint);
+      }
+      // Non-Algeria events = threat (server should auto-block, but flash if not blocked yet)
+      if (ev.country_code && ev.country_code !== 'DZ') {
+        addIfNotBlocked(ev.ip);
+      }
+    });
+    
+    // Traffic from non-Algeria - flash if NOT blocked yet (server should block these)
+    traffic.forEach(t => {
+      if (t.country_code && t.country_code !== 'DZ') {
+        addIfNotBlocked(t.ip);
+      }
+    });
+    
+    // Linux actors from non-Algeria - flash if NOT blocked
+    linuxActors.forEach(a => {
+      if (a.country_code && a.country_code !== 'DZ') {
+        addIfNotBlocked(a.ip);
+      }
+    });
+    
+    setThreatIps(ips);
+    setThreatFingerprints(fps);
+  }, [emergencyActors, intelCache, blocks, events, traffic, linuxActors]);
+
+  // Track IPs pending auto-block (non-DZ IPs detected)
+  const [pendingAutoBlock, setPendingAutoBlock] = React.useState<Set<string>>(new Set());
+  
+  // Detect non-DZ IPs that need auto-blocking
+  React.useEffect(() => {
+    const toBlock = new Set<string>();
+    
+    // Get already blocked IPs
+    const blockedIpSet = new Set<string>();
+    blocks.forEach(b => {
+      if (b.ip) blockedIpSet.add(b.ip);
+    });
+    
+    // Check traffic for non-DZ IPs
+    traffic.forEach(t => {
+      if (t.ip && t.country_code && t.country_code !== 'DZ' && !blockedIpSet.has(t.ip)) {
+        toBlock.add(t.ip);
+      }
+    });
+    
+    // Check events for non-DZ IPs  
+    events.forEach(ev => {
+      if (ev.ip && ev.country_code && ev.country_code !== 'DZ' && !blockedIpSet.has(ev.ip)) {
+        toBlock.add(ev.ip);
+      }
+    });
+    
+    // Check Linux actors for non-DZ
+    linuxActors.forEach(a => {
+      if (a.ip && a.country_code && a.country_code !== 'DZ' && !blockedIpSet.has(a.ip)) {
+        toBlock.add(a.ip);
+      }
+    });
+    
+    // Check intel cache for non-DZ
+    intelCache.forEach(c => {
+      if (c.ip && c.country_code && c.country_code !== 'DZ' && !blockedIpSet.has(c.ip)) {
+        toBlock.add(c.ip);
+      }
+    });
+    
+    if (toBlock.size > 0) {
+      setPendingAutoBlock(toBlock);
+    }
+  }, [traffic, events, linuxActors, intelCache, blocks]);
+
+  // Helper to check if an IP or fingerprint is a threat
+  const isThreat = (ip?: string | null, fingerprint?: string | null): boolean => {
+    if (ip && threatIps.has(ip)) return true;
+    if (fingerprint && threatFingerprints.has(fingerprint)) return true;
+    return false;
+  };
+
+  // Test function to simulate a threat
+  const simulateThreat = () => {
+    const testIp = testThreatIp.trim() || '192.168.99.99';
+    setThreatIps(prev => new Set([...prev, testIp]));
+    setError('');
+    // Auto-remove after 30 seconds
+    setTimeout(() => {
+      setThreatIps(prev => {
+        const next = new Set(prev);
+        next.delete(testIp);
+        return next;
+      });
+    }, 30000);
+  };
+
   const myUaClass = React.useMemo(() => {
     const ua = (me?.user_agent || '').trim();
     if (!ua) return 'unknown_ua';
@@ -152,10 +379,6 @@ export default function Kernel() {
     if (/Linux/i.test(ua)) return 'linux';
     return 'other';
   }, [me?.user_agent]);
-
-  const emergencyActors = React.useMemo(() => {
-    return linuxActors.filter((a) => !a.is_trusted && ((a.trap_hits || 0) > 0 || (a.admin_forbidden || 0) > 0));
-  }, [linuxActors]);
 
   React.useEffect(() => {
     if (!token) return;
@@ -258,10 +481,50 @@ export default function Kernel() {
       setTraffic(trafficData?.events || []);
       setBlocks(blocksData?.blocks || []);
       setLinuxActors(linuxData?.actors || []);
+      
+      // Load IP Intelligence stats (separate try to not break main load)
+      try {
+        const [intelStatsRes, intelCacheRes] = await Promise.all([
+          fetch(`/api/intel/admin/stats?days=${days}`, {
+            headers: { Authorization: `Bearer ${currentToken}` },
+          }),
+          fetch(`/api/intel/admin/cache?limit=50`, {
+            headers: { Authorization: `Bearer ${currentToken}` },
+          }),
+        ]);
+        if (intelStatsRes.ok) {
+          const statsData = await intelStatsRes.json();
+          setIntelStats(statsData);
+        }
+        if (intelCacheRes.ok) {
+          const cacheData = await intelCacheRes.json();
+          setIntelCache(cacheData?.cache || []);
+        }
+      } catch {
+        // Intel endpoints may not exist yet, ignore
+      }
     } catch (e: any) {
       setError(e?.message || "Failed to load kernel data");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function lookupIpIntel() {
+    if (!token || !lookupIp.trim()) return;
+    setLookupLoading(true);
+    setLookupResult(null);
+    try {
+      const res = await fetch(`/api/intel/admin/lookup/${encodeURIComponent(lookupIp.trim())}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Lookup failed');
+      const data = await res.json();
+      setLookupResult(data);
+    } catch (e: any) {
+      setError(e?.message || 'IP lookup failed');
+    } finally {
+      setLookupLoading(false);
     }
   }
 
@@ -340,6 +603,33 @@ export default function Kernel() {
     }
   }
 
+  // AUTO-BLOCK: Immediately block any non-DZ IP detected
+  React.useEffect(() => {
+    if (!token || pendingAutoBlock.size === 0) return;
+    
+    const autoBlockAll = async () => {
+      for (const ip of pendingAutoBlock) {
+        try {
+          await fetch('/api/kernel/blocks', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ ip, reason: 'AUTO:non_dz_geo' }),
+          });
+        } catch (e) {
+          console.error('Auto-block failed for', ip, e);
+        }
+      }
+      setPendingAutoBlock(new Set());
+      // Refresh data
+      await loadAll(token);
+    };
+    
+    void autoBlockAll();
+  }, [token, pendingAutoBlock]);
+
   React.useEffect(() => {
     if (token) {
       void loadAll(token);
@@ -386,7 +676,23 @@ export default function Kernel() {
 
   return (
     <div className="min-h-[calc(100vh-64px)] bg-background text-foreground p-4">
-      <div className="max-w-6xl mx-auto">
+      {/* Inject flashing styles */}
+      <style dangerouslySetInnerHTML={{ __html: flashingStyles }} />
+      
+      {/* Global Threat Alert Banner */}
+      {(threatIps.size > 0 || threatFingerprints.size > 0) && (
+        <div className="fixed top-0 left-0 right-0 z-50 threat-flash">
+          <div className="bg-red-600 text-white text-center py-2 px-4 flex items-center justify-center gap-3">
+            <span className="text-lg">🚨</span>
+            <span className="font-bold text-sm">
+              ACTIVE THREATS DETECTED: {threatIps.size} IPs, {threatFingerprints.size} fingerprints
+            </span>
+            <span className="text-lg">🚨</span>
+          </div>
+        </div>
+      )}
+      
+      <div className={`max-w-6xl mx-auto ${(threatIps.size > 0 || threatFingerprints.size > 0) ? 'mt-10' : ''}`}>
         <div className="flex items-center justify-between gap-2 mb-4">
           <div>
             <h1 className="text-xl font-black tracking-tight">Kernel Security</h1>
@@ -423,6 +729,49 @@ export default function Kernel() {
             <Button variant="destructive" onClick={logout}>
               Logout
             </Button>
+          </div>
+        </div>
+
+        {/* Threat Test Panel */}
+        <div className="mb-4 border border-border rounded-xl bg-card p-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-semibold">🧪 Threat Simulation</span>
+              <Input
+                value={testThreatIp}
+                onChange={(e) => setTestThreatIp(e.target.value)}
+                placeholder="IP to flag (or leave empty for test IP)"
+                className="w-64 h-8 text-xs"
+              />
+              <Button 
+                variant="destructive" 
+                className="h-8 px-3 text-xs"
+                onClick={simulateThreat}
+              >
+                Simulate Threat
+              </Button>
+              {(threatIps.size > 0 || threatFingerprints.size > 0) && (
+                <Button 
+                  variant="outline" 
+                  className="h-8 px-3 text-xs border-green-500/50 text-green-400 hover:bg-green-500/10"
+                  onClick={() => {
+                    setThreatIps(new Set());
+                    setThreatFingerprints(new Set());
+                  }}
+                >
+                  ✓ Clear All Threats
+                </Button>
+              )}
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-muted-foreground">Active threats:</span>
+              <span className={`font-bold ${threatIps.size > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                {threatIps.size} IPs
+              </span>
+              <span className={`font-bold ${threatFingerprints.size > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                {threatFingerprints.size} fingerprints
+              </span>
+            </div>
           </div>
         </div>
 
@@ -579,15 +928,18 @@ export default function Kernel() {
                   </tr>
                 </thead>
                 <tbody>
-                  {traffic.map((r, idx) => (
-                    <tr key={idx} className="border-b border-border hover:bg-muted/40">
+                  {traffic.map((r, idx) => {
+                    const isThrt = isThreat(r.ip, r.fingerprint);
+                    return (
+                    <tr key={idx} className={`border-b border-border ${isThrt ? 'threat-row threat-flash' : 'hover:bg-muted/40'}`}>
                       <td className="py-2 pr-2 whitespace-nowrap text-muted-foreground">{new Date(r.ts).toLocaleString()}</td>
                       <td className="py-2 pr-2 text-foreground">{r.method}</td>
                       <td className="py-2 pr-2 text-foreground truncate max-w-[360px]" title={r.path}>{r.path}</td>
                       <td className="py-2 pr-2 text-foreground">{r.status}</td>
                       <td className="py-2 pr-2 text-foreground truncate max-w-[200px]" title={r.ip || ''}>
                         <div className="flex items-center gap-2">
-                          <span className="truncate" title={r.ip || ''}>{r.ip || ''}</span>
+                          <span className={`truncate ${isThrt ? 'text-red-400 font-bold' : ''}`} title={r.ip || ''}>{r.ip || ''}</span>
+                          {isThrt && <span className="text-[10px] px-1 py-0.5 rounded bg-red-500 text-white font-bold">THREAT</span>}
                           {me?.fingerprint && r.fingerprint && me.fingerprint === r.fingerprint && (
                             <span className="text-[10px] px-2 py-1 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-100">Mine</span>
                           )}
@@ -595,7 +947,7 @@ export default function Kernel() {
                       </td>
                       <td className="py-2 pr-2">
                         <Button
-                          variant="outline"
+                          variant={isThrt ? "destructive" : "outline"}
                           className="h-7 px-2 text-[10px]"
                           disabled={!r.ip || (!!me?.ip && r.ip === me.ip)}
                           onClick={() => r.ip && blockIpNow(r.ip, `traffic:${r.path}`)}
@@ -604,7 +956,8 @@ export default function Kernel() {
                         </Button>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                   {traffic.length === 0 && (
                     <tr>
                       <td colSpan={6} className="py-4 text-muted-foreground">No suspicious traffic captured</td>
@@ -657,11 +1010,14 @@ export default function Kernel() {
                   <th className="text-left py-2 pr-2">Last Seen</th>
                   <th className="text-left py-2 pr-2">IP</th>
                   <th className="text-left py-2 pr-2">CC</th>
+                  <th className="text-left py-2 pr-2">ISP</th>
+                  <th className="text-left py-2 pr-2">VPN</th>
+                  <th className="text-left py-2 pr-2">Proxy</th>
+                  <th className="text-left py-2 pr-2">Tor</th>
+                  <th className="text-left py-2 pr-2">Risk</th>
                   <th className="text-left py-2 pr-2">UA</th>
-                  <th className="text-left py-2 pr-2">Events</th>
-                  <th className="text-left py-2 pr-2">Suspicious</th>
                   <th className="text-left py-2 pr-2">Trap</th>
-                  <th className="text-left py-2 pr-2">Admin 403</th>
+                  <th className="text-left py-2 pr-2">403</th>
                   <th className="text-left py-2 pr-2">Action</th>
                 </tr>
               </thead>
@@ -671,7 +1027,11 @@ export default function Kernel() {
                   const emergency = a.emergency;
                   const uaMissing = (a.ua_class || 'linux') === 'unknown_ua';
                   const trusted = !!a.is_trusted;
-                  const rowClass = emergency
+                  const linuxThreat = isThreat(a.ip || '', a.fingerprint || '');
+                  const intel = a.intel;
+                  const rowClass = linuxThreat
+                    ? 'threat-row threat-flash'
+                    : emergency
                     ? 'bg-red-500/10'
                     : uaMissing
                       ? 'bg-fuchsia-500/10'
@@ -681,28 +1041,38 @@ export default function Kernel() {
                   return (
                     <React.Fragment key={a.actor_key}>
                       <tr className={`border-b border-border hover:bg-muted/40 ${rowClass}`}>
-                        <td className="py-2 pr-2 whitespace-nowrap text-muted-foreground">{new Date(a.last_seen).toLocaleString()}</td>
-                        <td className="py-2 pr-2 text-foreground truncate max-w-[180px]" title={a.ip || ''}>{a.ip || ''}</td>
-                        <td className="py-2 pr-2 text-foreground">{a.country_code || ''}</td>
+                        <td className="py-2 pr-2 whitespace-nowrap text-muted-foreground text-[10px]">{new Date(a.last_seen).toLocaleString()}</td>
+                        <td className={`py-2 pr-2 truncate max-w-[140px] text-[10px] ${linuxThreat ? 'text-red-500 font-semibold' : 'text-foreground'}`} title={a.ip || ''}>
+                          {linuxThreat && <span className="mr-1">⚠️</span>}
+                          {a.ip || ''}
+                        </td>
+                        <td className="py-2 pr-2 text-foreground text-[10px]">{a.country_code || ''}</td>
+                        <td className="py-2 pr-2 text-foreground text-[10px] truncate max-w-[100px]" title={intel?.isp || ''}>{intel?.isp || '-'}</td>
+                        <td className="py-2 pr-2 text-[10px]">{intel?.is_vpn ? '🔴' : '🟢'}</td>
+                        <td className="py-2 pr-2 text-[10px]">{intel?.is_proxy ? '🔴' : '🟢'}</td>
+                        <td className="py-2 pr-2 text-[10px]">{intel?.is_tor ? '🔴' : '🟢'}</td>
+                        <td className={`py-2 pr-2 text-[10px] ${
+                          intel?.risk_level === 'critical' ? 'text-red-400 font-bold' :
+                          intel?.risk_level === 'high' ? 'text-orange-400' :
+                          intel?.risk_level === 'medium' ? 'text-amber-400' : 'text-green-400'
+                        }`}>{intel?.risk_level || '-'}</td>
                         <td className="py-2 pr-2">
-                          <span className={`text-[10px] px-2 py-1 rounded border ${
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded border ${
                             uaMissing
                               ? 'border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-100'
                               : 'border-border bg-muted/40 text-foreground'
                           }`}>
-                            {uaMissing ? 'UA missing' : 'Linux'}
+                            {uaMissing ? 'No UA' : 'Linux'}
                           </span>
                         </td>
-                        <td className="py-2 pr-2 text-foreground">{a.total_events}</td>
-                        <td className="py-2 pr-2 text-foreground">{a.suspicious_events}</td>
-                        <td className="py-2 pr-2 text-foreground">{a.trap_hits}</td>
-                        <td className="py-2 pr-2 text-foreground">{a.admin_forbidden}</td>
+                        <td className="py-2 pr-2 text-foreground text-[10px]">{a.trap_hits}</td>
+                        <td className="py-2 pr-2 text-foreground text-[10px]">{a.admin_forbidden}</td>
                         <td className="py-2 pr-2">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1">
                             {a.ip && (
                               <Button
                                 variant={trusted ? 'outline' : (emergency ? 'destructive' : 'outline')}
-                                className="h-7 px-2 text-[10px]"
+                                className="h-6 px-2 text-[9px]"
                                 disabled={trusted || (!!me?.ip && a.ip === me.ip)}
                                 onClick={() => blockIpNow(a.ip!, emergency ? 'EMERGENCY:linux_actor' : 'linux_actor')}
                               >
@@ -710,49 +1080,91 @@ export default function Kernel() {
                               </Button>
                             )}
                             {trusted && (
-                              <span className="text-[10px] px-2 py-1 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-100">
-                                Trusted
+                              <span className="text-[9px] px-1.5 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-100">
+                                OK
                               </span>
                             )}
                             <Button
                               variant="outline"
-                              className="h-7 px-2 text-[10px]"
+                              className="h-6 px-2 text-[9px]"
                               onClick={() => {
                                 const next = isOpen ? null : a.actor_key;
                                 setOpenActorKey(next);
                                 if (!isOpen) void loadActor(a.actor_key, a.fingerprint, a.ip);
                               }}
                             >
-                              {isOpen ? 'Hide' : 'Details'}
+                              {isOpen ? '▲' : '▼'}
                             </Button>
                           </div>
                         </td>
                       </tr>
                       {isOpen && (
                         <tr className="border-b border-border">
-                          <td colSpan={9} className="py-3">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <td colSpan={12} className="py-3">
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                              {/* IP Intelligence Panel */}
                               <div className="border border-border rounded-lg p-3 bg-muted/30">
-                                <div className="text-xs font-semibold mb-2">Actor</div>
+                                <div className="text-xs font-semibold mb-2">🔍 IP Intelligence</div>
+                                {intel ? (
+                                  <div className="space-y-1 text-[10px]">
+                                    <div><span className="text-muted-foreground">IP:</span> <span className="font-mono">{a.ip}</span></div>
+                                    <div><span className="text-muted-foreground">Country:</span> {a.country_code || 'Unknown'}</div>
+                                    <div><span className="text-muted-foreground">ISP:</span> {intel.isp || 'Unknown'}</div>
+                                    <div><span className="text-muted-foreground">Org:</span> {intel.org || 'Unknown'}</div>
+                                    <div><span className="text-muted-foreground">ASN:</span> {intel.asn || 'Unknown'}</div>
+                                    <div className="pt-1 border-t border-border mt-1">
+                                      <div><span className="text-muted-foreground">VPN:</span> {intel.is_vpn ? '🔴 Yes' : '🟢 No'}</div>
+                                      <div><span className="text-muted-foreground">Proxy:</span> {intel.is_proxy ? '🔴 Yes' : '🟢 No'}</div>
+                                      <div><span className="text-muted-foreground">Tor:</span> {intel.is_tor ? '🔴 Yes' : '🟢 No'}</div>
+                                      <div><span className="text-muted-foreground">Datacenter:</span> {intel.is_datacenter ? '⚠️ Yes' : '🟢 No'}</div>
+                                      <div><span className="text-muted-foreground">Blacklisted:</span> {intel.is_blacklisted ? '🔴 Yes' : '🟢 No'}</div>
+                                    </div>
+                                    <div className="pt-1 border-t border-border mt-1">
+                                      <div><span className="text-muted-foreground">Risk Level:</span> <span className={
+                                        intel.risk_level === 'critical' ? 'text-red-400 font-bold' :
+                                        intel.risk_level === 'high' ? 'text-orange-400 font-bold' :
+                                        intel.risk_level === 'medium' ? 'text-amber-400' : 'text-green-400'
+                                      }>{intel.risk_level?.toUpperCase()}</span></div>
+                                      <div><span className="text-muted-foreground">Fraud Score:</span> {intel.fraud_score}</div>
+                                      <div><span className="text-muted-foreground">Abuse Score:</span> {intel.abuse_score}</div>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="text-[10px] text-muted-foreground">
+                                    No intel data. Use IP Lookup above to fetch.
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Actor Info Panel */}
+                              <div className="border border-border rounded-lg p-3 bg-muted/30">
+                                <div className="text-xs font-semibold mb-2">👤 Actor Info</div>
                                 <div className="text-[10px] text-muted-foreground break-words">UA: {a.user_agent || '(missing)'}</div>
                                 {a.fingerprint && <div className="text-[10px] text-muted-foreground break-words">fp: {a.fingerprint}</div>}
                                 {a.user_id && <div className="text-[10px] text-muted-foreground">user_id: {a.user_id}</div>}
                                 <div className="text-[10px] text-muted-foreground">first: {new Date(a.first_seen).toLocaleString()}</div>
                                 <div className="text-[10px] text-muted-foreground">last: {new Date(a.last_seen).toLocaleString()}</div>
+                                <div className="mt-2 pt-2 border-t border-border">
+                                  <div className="text-[10px]"><span className="text-muted-foreground">Total Events:</span> {a.total_events}</div>
+                                  <div className="text-[10px]"><span className="text-muted-foreground">Suspicious:</span> {a.suspicious_events}</div>
+                                  <div className="text-[10px]"><span className="text-muted-foreground">Trap Hits:</span> <span className={a.trap_hits > 0 ? 'text-red-400 font-bold' : ''}>{a.trap_hits}</span></div>
+                                  <div className="text-[10px]"><span className="text-muted-foreground">Admin 403:</span> <span className={a.admin_forbidden > 0 ? 'text-red-400 font-bold' : ''}>{a.admin_forbidden}</span></div>
+                                </div>
                                 {emergency && (
                                   <div className="mt-2 text-xs text-red-200 bg-red-500/10 border border-red-500/20 rounded-lg p-2">
-                                    EMERGENCY: Linux actor triggered traps/forbidden access.
+                                    🚨 EMERGENCY: Triggered traps/forbidden access!
                                   </div>
                                 )}
                               </div>
 
+                              {/* Activity Panel */}
                               <div className="border border-border rounded-lg p-3 bg-muted/30">
-                                <div className="text-xs font-semibold mb-2">What is he doing?</div>
+                                <div className="text-xs font-semibold mb-2">📊 Activity</div>
                                 <div className="text-[10px] text-muted-foreground mb-2">Top paths</div>
                                 <div className="space-y-1">
                                   {(actorDetails[a.actor_key]?.topPaths || []).slice(0, 10).map((p) => (
                                     <div key={p.path} className="flex items-center justify-between text-[10px]">
-                                      <span className="text-foreground truncate max-w-[320px]" title={p.path}>{p.path}</span>
+                                      <span className="text-foreground truncate max-w-[200px]" title={p.path}>{p.path}</span>
                                       <span className="text-foreground font-semibold">{p.count}</span>
                                     </div>
                                   ))}
@@ -776,8 +1188,9 @@ export default function Kernel() {
                                 )}
                               </div>
 
+                              {/* Recent Events Panel */}
                               <div className="border border-border rounded-lg p-3 bg-muted/30">
-                                <div className="text-xs font-semibold mb-2">Recent activity</div>
+                                <div className="text-xs font-semibold mb-2">📜 Recent Events</div>
                                 <div className="space-y-1">
                                   {(actorDetails[a.actor_key]?.events || []).slice(0, 15).map((ev) => (
                                     <div key={(ev as any).id} className={`text-[10px] border rounded px-2 py-1 ${
@@ -833,6 +1246,187 @@ export default function Kernel() {
           </div>
         </div>
 
+        {/* IP Intelligence Section */}
+        <div className="border border-border rounded-xl bg-card p-3 mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-bold">🔍 IP Intelligence</h2>
+            <span className="text-[10px] text-muted-foreground">VPN/Proxy/Tor detection • Risk scoring</span>
+          </div>
+
+          {/* Stats Grid */}
+          {intelStats && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+              <div className="border border-border rounded-lg p-2 bg-muted/30">
+                <div className="text-[10px] text-muted-foreground">Cached IPs</div>
+                <div className="text-lg font-bold text-foreground">{intelStats.cache?.total_cached || 0}</div>
+              </div>
+              <div className="border border-border rounded-lg p-2 bg-muted/30">
+                <div className="text-[10px] text-muted-foreground">VPNs Detected</div>
+                <div className="text-lg font-bold text-foreground">{intelStats.cache?.vpn_count || 0}</div>
+              </div>
+              <div className="border border-border rounded-lg p-2 bg-muted/30">
+                <div className="text-[10px] text-muted-foreground">Proxies</div>
+                <div className="text-lg font-bold text-foreground">{intelStats.cache?.proxy_count || 0}</div>
+              </div>
+              <div className="border border-border rounded-lg p-2 bg-muted/30">
+                <div className="text-[10px] text-muted-foreground">Tor Exit Nodes</div>
+                <div className="text-lg font-bold text-foreground">{intelStats.cache?.tor_count || 0}</div>
+              </div>
+              <div className="border border-border rounded-lg p-2 bg-muted/30">
+                <div className="text-[10px] text-muted-foreground">Blacklisted</div>
+                <div className="text-lg font-bold text-foreground">{intelStats.cache?.blacklisted_count || 0}</div>
+              </div>
+              <div className="border border-border rounded-lg p-2 bg-muted/30">
+                <div className="text-[10px] text-muted-foreground">Checked Today</div>
+                <div className="text-lg font-bold text-foreground">{intelStats.cache?.checked_today || 0}</div>
+              </div>
+              <div className="border border-border rounded-lg p-2 bg-muted/30">
+                <div className="text-[10px] text-muted-foreground">WebRTC Leaks</div>
+                <div className="text-lg font-bold text-foreground">{intelStats.fingerprints?.webrtc_leaks || 0}</div>
+              </div>
+              <div className="border border-border rounded-lg p-2 bg-muted/30">
+                <div className="text-[10px] text-muted-foreground">Unique Visitors</div>
+                <div className="text-lg font-bold text-foreground">{intelStats.fingerprints?.unique_visitors || 0}</div>
+              </div>
+            </div>
+          )}
+
+          {/* Risk Distribution */}
+          {intelStats?.risk_distribution && intelStats.risk_distribution.length > 0 && (
+            <div className="mb-4">
+              <div className="text-xs font-semibold mb-2">Risk Distribution</div>
+              <div className="flex flex-wrap gap-2">
+                {intelStats.risk_distribution.map((r) => (
+                  <div key={r.risk_level} className={`px-2 py-1 rounded text-xs ${
+                    r.risk_level === 'critical' ? 'bg-red-500/20 text-red-100 border border-red-500/30' :
+                    r.risk_level === 'high' ? 'bg-orange-500/20 text-orange-100 border border-orange-500/30' :
+                    r.risk_level === 'medium' ? 'bg-amber-500/20 text-amber-100 border border-amber-500/30' :
+                    r.risk_level === 'low' ? 'bg-green-500/20 text-green-100 border border-green-500/30' :
+                    'bg-muted text-muted-foreground border border-border'
+                  }`}>
+                    {r.risk_level}: {r.count}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* IP Lookup */}
+          <div className="border border-border rounded-lg p-3 bg-muted/30 mb-4">
+            <div className="text-xs font-semibold mb-2">IP Lookup</div>
+            <div className="flex gap-2">
+              <Input
+                value={lookupIp}
+                onChange={(e) => setLookupIp(e.target.value)}
+                placeholder="Enter IP address..."
+                className="flex-1 h-8 text-xs"
+                onKeyDown={(e) => e.key === 'Enter' && lookupIpIntel()}
+              />
+              <Button
+                onClick={lookupIpIntel}
+                disabled={lookupLoading || !lookupIp.trim()}
+                className="h-8 px-3 text-xs"
+              >
+                {lookupLoading ? 'Looking...' : 'Lookup'}
+              </Button>
+            </div>
+
+            {lookupResult && (
+              <div className="mt-3 border border-border rounded-lg p-3 bg-background">
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div><span className="text-muted-foreground">IP:</span> <span className="font-mono">{lookupResult.ip}</span></div>
+                  <div><span className="text-muted-foreground">Country:</span> {lookupResult.country_code || 'Unknown'}</div>
+                  <div><span className="text-muted-foreground">ISP:</span> {lookupResult.isp || 'Unknown'}</div>
+                  <div><span className="text-muted-foreground">ASN:</span> {lookupResult.asn || 'Unknown'}</div>
+                  <div><span className="text-muted-foreground">VPN:</span> {lookupResult.is_vpn ? '🔴 Yes' : '🟢 No'}</div>
+                  <div><span className="text-muted-foreground">Proxy:</span> {lookupResult.is_proxy ? '🔴 Yes' : '🟢 No'}</div>
+                  <div><span className="text-muted-foreground">Tor:</span> {lookupResult.is_tor ? '🔴 Yes' : '🟢 No'}</div>
+                  <div><span className="text-muted-foreground">Datacenter:</span> {lookupResult.is_datacenter ? '⚠️ Yes' : '🟢 No'}</div>
+                  <div><span className="text-muted-foreground">Blacklisted:</span> {lookupResult.is_blacklisted ? '🔴 Yes' : '🟢 No'}</div>
+                  <div>
+                    <span className="text-muted-foreground">Risk:</span>{' '}
+                    <span className={
+                      lookupResult.risk_level === 'critical' ? 'text-red-400 font-bold' :
+                      lookupResult.risk_level === 'high' ? 'text-orange-400 font-bold' :
+                      lookupResult.risk_level === 'medium' ? 'text-amber-400' :
+                      'text-green-400'
+                    }>
+                      {lookupResult.risk_level?.toUpperCase()}
+                    </span>
+                  </div>
+                  <div><span className="text-muted-foreground">Fraud Score:</span> {lookupResult.fraud_score}</div>
+                  <div><span className="text-muted-foreground">Abuse Score:</span> {lookupResult.abuse_score}</div>
+                </div>
+                {lookupResult.is_vpn || lookupResult.is_proxy || lookupResult.is_tor ? (
+                  <div className="mt-2">
+                    <Button
+                      variant="destructive"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => blockIpNow(lookupResult.ip, 'intel_lookup_block')}
+                    >
+                      Block This IP
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </div>
+
+          {/* Recent Cache Entries */}
+          {intelCache.length > 0 && (
+            <div>
+              <div className="text-xs font-semibold mb-2">Recent IP Intelligence Cache</div>
+              <div className="overflow-auto max-h-64">
+                <table className="w-full text-[10px]">
+                  <thead className="text-muted-foreground sticky top-0 bg-card">
+                    <tr className="border-b border-border">
+                      <th className="text-left py-1 pr-2">IP</th>
+                      <th className="text-left py-1 pr-2">Country</th>
+                      <th className="text-left py-1 pr-2">ISP</th>
+                      <th className="text-left py-1 pr-2">VPN</th>
+                      <th className="text-left py-1 pr-2">Proxy</th>
+                      <th className="text-left py-1 pr-2">Tor</th>
+                      <th className="text-left py-1 pr-2">Risk</th>
+                      <th className="text-left py-1 pr-2">Fraud</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {intelCache.map((c) => {
+                      const intelThreat = isThreat(c.ip, '') || c.risk_level === 'critical' || c.risk_level === 'high' || c.is_vpn || c.is_tor;
+                      return (
+                        <tr key={c.ip} className={`border-b border-border hover:bg-muted/40 ${intelThreat ? 'threat-row threat-flash' : ''}`}>
+                          <td className={`py-1 pr-2 font-mono ${intelThreat ? 'text-red-500 font-semibold' : ''}`}>
+                            {intelThreat && <span className="mr-1">⚠️</span>}
+                            {c.ip}
+                          </td>
+                          <td className="py-1 pr-2">{c.country_code || '-'}</td>
+                          <td className="py-1 pr-2 truncate max-w-[120px]" title={c.isp || ''}>{c.isp || '-'}</td>
+                          <td className="py-1 pr-2">{c.is_vpn ? '🔴' : '🟢'}</td>
+                          <td className="py-1 pr-2">{c.is_proxy ? '🔴' : '🟢'}</td>
+                          <td className="py-1 pr-2">{c.is_tor ? '🔴' : '🟢'}</td>
+                          <td className={`py-1 pr-2 ${
+                            c.risk_level === 'critical' ? 'text-red-400' :
+                            c.risk_level === 'high' ? 'text-orange-400' :
+                            c.risk_level === 'medium' ? 'text-amber-400' :
+                            'text-green-400'
+                          }`}>{c.risk_level}</td>
+                          <td className="py-1 pr-2">{c.fraud_score}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {!intelStats && (
+            <div className="text-xs text-muted-foreground text-center py-4">
+              IP Intelligence data not available. Configure API keys (IPINFO_TOKEN, IPQS_KEY, ABUSEIPDB_KEY) to enable.
+            </div>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
           <div className="border border-border rounded-xl bg-card p-3">
             <h2 className="text-sm font-bold mb-2">Blocked by Country</h2>
@@ -852,12 +1446,18 @@ export default function Kernel() {
           <div className="border border-border rounded-xl bg-card p-3">
             <h2 className="text-sm font-bold mb-2">Top Attacker IPs</h2>
             <div className="space-y-1">
-              {(summary?.topIps || []).slice(0, 10).map((r) => (
-                <div key={r.ip} className="flex items-center justify-between text-xs">
-                  <span className="text-foreground truncate max-w-[220px]" title={r.ip}>{r.ip}</span>
-                  <span className="text-foreground font-semibold">{r.count}</span>
-                </div>
-              ))}
+              {(summary?.topIps || []).slice(0, 10).map((r) => {
+                const attackerThreat = isThreat(r.ip, '');
+                return (
+                  <div key={r.ip} className={`flex items-center justify-between text-xs rounded px-1 ${attackerThreat ? 'threat-row threat-flash' : ''}`}>
+                    <span className={`truncate max-w-[180px] ${attackerThreat ? 'text-red-500 font-semibold' : 'text-foreground'}`} title={r.ip}>
+                      {attackerThreat && <span className="mr-1">⚠️</span>}
+                      {r.ip}
+                    </span>
+                    <span className="text-foreground font-semibold">{r.count}</span>
+                  </div>
+                );
+              })}
               {(!summary || summary.topIps.length === 0) && (
                 <div className="text-xs text-muted-foreground">No events in range</div>
               )}
@@ -867,17 +1467,23 @@ export default function Kernel() {
           <div className="border border-border rounded-xl bg-card p-3">
             <h2 className="text-sm font-bold mb-2">Repeat Fingerprints</h2>
             <div className="space-y-2">
-              {(summary?.repeatFingerprints || []).slice(0, 6).map((r) => (
-                <div key={r.fingerprint} className="text-xs border border-border rounded-lg p-2 bg-muted/30">
-                  <div className="flex items-center justify-between">
-                    <span className="text-foreground">{r.ip || "unknown"}</span>
-                    <span className="text-foreground font-semibold">{r.count}</span>
+              {(summary?.repeatFingerprints || []).slice(0, 6).map((r) => {
+                const fpThreat = isThreat(r.ip || '', r.fingerprint);
+                return (
+                  <div key={r.fingerprint} className={`text-xs border rounded-lg p-2 ${fpThreat ? 'threat-row threat-flash border-red-500/50' : 'border-border bg-muted/30'}`}>
+                    <div className="flex items-center justify-between">
+                      <span className={fpThreat ? 'text-red-500 font-semibold' : 'text-foreground'}>
+                        {fpThreat && <span className="mr-1">⚠️</span>}
+                        {r.ip || "unknown"}
+                      </span>
+                      <span className="text-foreground font-semibold">{r.count}</span>
+                    </div>
+                    <div className="mt-1 text-[10px] text-muted-foreground truncate" title={r.fingerprint}>
+                      fp: {r.fingerprint}
+                    </div>
                   </div>
-                  <div className="mt-1 text-[10px] text-muted-foreground truncate" title={r.fingerprint}>
-                    fp: {r.fingerprint}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
               {(!summary || summary.repeatFingerprints.length === 0) && (
                 <div className="text-xs text-muted-foreground">No repeats in range</div>
               )}
@@ -904,29 +1510,37 @@ export default function Kernel() {
                 </tr>
               </thead>
               <tbody>
-                {events.map((ev) => (
-                  <tr key={ev.id} className="border-b border-border hover:bg-muted/40">
-                    <td className="py-2 pr-2 whitespace-nowrap text-muted-foreground">{new Date(ev.created_at).toLocaleString()}</td>
-                    <td className="py-2 pr-2 text-foreground">{ev.event_type}</td>
-                    <td className="py-2 pr-2 text-foreground truncate max-w-[160px]" title={ev.ip || ""}>
-                      <div className="flex items-center gap-2">
-                        <span className="truncate" title={ev.ip || ''}>{ev.ip || ''}</span>
-                        {ev.ip && (
-                          <Button
-                            variant="outline"
-                            className="h-6 px-2 text-[10px]"
-                            onClick={() => blockIpNow(ev.ip!, `security_event:${ev.event_type}`)}
-                          >
-                            Block
-                          </Button>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-2 pr-2 text-foreground">{ev.country_code || ""}</td>
-                    <td className="py-2 pr-2 text-foreground truncate max-w-[360px]" title={ev.path || ""}>{ev.path || ""}</td>
-                    <td className="py-2 pr-2 text-foreground">{ev.status_code ?? ""}</td>
-                  </tr>
-                ))}
+                {events.map((ev) => {
+                  const eventThreat = isThreat(ev.ip || '', '');
+                  return (
+                    <tr key={ev.id} className={`border-b border-border hover:bg-muted/40 ${eventThreat ? 'threat-row threat-flash' : ''}`}>
+                      <td className="py-2 pr-2 whitespace-nowrap text-muted-foreground">{new Date(ev.created_at).toLocaleString()}</td>
+                      <td className="py-2 pr-2 text-foreground">
+                        <span className="flex items-center gap-2">
+                          {ev.event_type}
+                          {eventThreat && <span className="px-1.5 py-0.5 text-[10px] font-bold bg-red-600 text-white rounded">THREAT</span>}
+                        </span>
+                      </td>
+                      <td className={`py-2 pr-2 truncate max-w-[160px] ${eventThreat ? 'text-red-500 font-semibold' : 'text-foreground'}`} title={ev.ip || ""}>
+                        <div className="flex items-center gap-2">
+                          <span className="truncate" title={ev.ip || ''}>{ev.ip || ''}</span>
+                          {ev.ip && (
+                            <Button
+                              variant="outline"
+                              className="h-6 px-2 text-[10px]"
+                              onClick={() => blockIpNow(ev.ip!, `security_event:${ev.event_type}`)}
+                            >
+                              Block
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-2 pr-2 text-foreground">{ev.country_code || ""}</td>
+                      <td className="py-2 pr-2 text-foreground truncate max-w-[360px]" title={ev.path || ""}>{ev.path || ""}</td>
+                      <td className="py-2 pr-2 text-foreground">{ev.status_code ?? ""}</td>
+                    </tr>
+                  );
+                })}
                 {events.length === 0 && (
                   <tr>
                     <td colSpan={6} className="py-4 text-muted-foreground">No events yet</td>

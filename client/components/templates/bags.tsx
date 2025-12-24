@@ -5,6 +5,7 @@ import { useTemplateUniversalSettings } from '@/hooks/useTemplateUniversalSettin
 export default function BagsTemplate(props: TemplateProps) {
   const [activeType, setActiveType] = useState('All');
   const { products = [], settings = {}, formatPrice = (p: number) => `${p}`, navigate, storeSlug } = props;
+  const templateSettings = settings as any;
   
   // Read universal settings from window
   const universalSettings = useTemplateUniversalSettings() || {};
@@ -46,6 +47,7 @@ export default function BagsTemplate(props: TemplateProps) {
     enable_dark_mode = false,
     show_product_shadows = true,
     enable_animations = true,
+    store_logo = '',
     logo_url = '',
     logo_width = 120,
     show_featured_section = false,
@@ -59,11 +61,38 @@ export default function BagsTemplate(props: TemplateProps) {
     footer_contact = '',
   } = useMemo(() => universalSettings as any || {}, [universalSettings]);
 
+  const resolvedLogoUrl = (settings as any).store_logo || store_logo || logo_url || '';
+
   // Template-specific settings
-  const bgImage = (settings as any).template_bg_image || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=2000&q=80';
-  const bgBlur = (settings as any).template_hero_bg_blur || 12;
-  const heroHeading = (settings as any).template_hero_heading || 'Cold silhouettes,\ncut in leather and light.';
-  const heroSubtitle = (settings as any).template_hero_subtitle || 'A focused edit of structured totes, city crossbody bags and evening silhouettes. Built in neutral materials for everyday precision.';
+  const bgImage = templateSettings.template_bg_image || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=2000&q=80';
+  const bgBlur = templateSettings.template_hero_bg_blur || 12;
+  const heroHeading = templateSettings.template_hero_heading || 'Cold silhouettes,\ncut in leather and light.';
+  const heroSubtitle = templateSettings.template_hero_subtitle || 'A focused edit of structured totes, city crossbody bags and evening silhouettes. Built in neutral materials for everyday precision.';
+
+  const navEditorial = templateSettings.template_nav_editorial || 'Editorial';
+  const navLeather = templateSettings.template_nav_leather || 'Leather';
+  const navMaterials = templateSettings.template_nav_materials || 'Materials';
+  const navSearch = templateSettings.template_nav_search || 'Search';
+  const navBag = templateSettings.template_nav_bag || 'Bag (0)';
+
+  const heroKicker = templateSettings.template_hero_kicker || 'Bags / Editorial';
+  const highlightLabel = templateSettings.template_highlight_label || 'HIGHLIGHT PIECE';
+
+  const chapterLabel = templateSettings.template_chapter_label || 'CHAPTER I';
+  const chapterTitle = templateSettings.template_chapter_title || 'Leather silhouettes';
+  const chapterText = templateSettings.template_chapter_text || 'Structured lines in cold leather tones. Clean forms with enough volume for the city.';
+
+  const gridKicker = templateSettings.template_grid_kicker || 'PIECES';
+  const gridTitle = templateSettings.template_grid_title || 'Bags in this collection';
+  const gridCountSuffix = templateSettings.template_grid_count_suffix || 'pieces';
+
+  const buyNowLabel = templateSettings.template_buy_now_label || 'Buy Now';
+  const testimonialsTitle = templateSettings.template_testimonials_title || 'What Our Customers Say';
+  const faqTitle = templateSettings.template_faq_title || 'Frequently Asked Questions';
+  const footerAboutTitle = templateSettings.template_footer_about_title || 'About';
+  const footerContactTitle = templateSettings.template_footer_contact_title || 'Contact';
+  const footerFollowTitle = templateSettings.template_footer_follow_title || 'Follow';
+  const footerRights = templateSettings.template_footer_rights || 'All rights reserved';
 
   // Calculate heading sizes based on multiplier
   const headingSizeMap: Record<string, { h1: string; h2: string; text: string }> = {
@@ -153,9 +182,9 @@ export default function BagsTemplate(props: TemplateProps) {
       }}>
         {/* HEADER */}
         <header className="flex items-center justify-between py-6">
-          {logo_url ? (
+          {resolvedLogoUrl ? (
             <img 
-              src={logo_url} 
+              src={resolvedLogoUrl} 
               alt="Store Logo" 
               style={{ height: '40px', width: 'auto', maxWidth: `${logo_width}px` }}
               className={`${enable_animations ? 'hover:opacity-80 transition-opacity' : ''}`}
@@ -166,13 +195,13 @@ export default function BagsTemplate(props: TemplateProps) {
             </div>
           )}
           <nav className="hidden md:flex gap-7 text-xs uppercase tracking-[0.2em]" style={{ color: secondary_text_color }}>
-            <button className={`${enable_animations ? 'hover:opacity-100' : ''} transition-opacity`}>Editorial</button>
-            <button className={`${enable_animations ? 'hover:opacity-100' : ''} transition-opacity`}>Leather</button>
-            <button className={`${enable_animations ? 'hover:opacity-100' : ''} transition-opacity`}>Materials</button>
+            <button className={`${enable_animations ? 'hover:opacity-100' : ''} transition-opacity`}>{navEditorial}</button>
+            <button className={`${enable_animations ? 'hover:opacity-100' : ''} transition-opacity`}>{navLeather}</button>
+            <button className={`${enable_animations ? 'hover:opacity-100' : ''} transition-opacity`}>{navMaterials}</button>
           </nav>
           <div className="flex gap-5 text-xs uppercase tracking-[0.18em]" style={{ color: secondary_text_color }}>
-            <button className={`${enable_animations ? 'hover:opacity-100' : ''} transition-opacity`}>Search</button>
-            <button className={`${enable_animations ? 'hover:opacity-100' : ''} transition-opacity`}>Bag (0)</button>
+            <button className={`${enable_animations ? 'hover:opacity-100' : ''} transition-opacity`}>{navSearch}</button>
+            <button className={`${enable_animations ? 'hover:opacity-100' : ''} transition-opacity`}>{navBag}</button>
           </div>
         </header>
 
@@ -180,7 +209,7 @@ export default function BagsTemplate(props: TemplateProps) {
         <section className="grid md:grid-cols-[0.9fr,1.1fr] gap-10 items-end py-10" style={{ paddingLeft: `${section_padding / 2}px`, paddingRight: `${section_padding / 2}px` }}>
           <div>
             <div className="text-xs tracking-[0.24em] uppercase mb-3" style={{ color: secondary_text_color }}>
-              {heroHeading ? 'Bags / Editorial' : 'Bags / Leather · Canvas · Nylon'}
+              {heroKicker}
             </div>
             <h1 className="leading-tight mb-4 font-medium" style={{ fontSize: headingSizes.h1, color: primary_color }}>
               {heroHeading}
@@ -209,7 +238,7 @@ export default function BagsTemplate(props: TemplateProps) {
                 border: `1px solid ${secondary_color}`,
               }}>
                 <div className="text-xs tracking-[0.22em] uppercase mb-1" style={{ color: secondary_text_color }}>
-                  HIGHLIGHT PIECE
+                  {highlightLabel}
                 </div>
                 <div className="text-sm font-medium" style={{ color: primary_color }}>
                   {heroBag.title || 'Featured Bag'}
@@ -260,13 +289,13 @@ export default function BagsTemplate(props: TemplateProps) {
               <div className="w-px bg-gradient-to-b from-gray-400 to-gray-300" style={{ background: `linear-gradient(to bottom, ${primary_color}, ${secondary_text_color})` }} />
               <div>
                 <div className="text-xs tracking-[0.24em] uppercase mb-2" style={{ color: secondary_text_color }}>
-                  CHAPTER I
+                  {chapterLabel}
                 </div>
                 <h2 className="font-medium mb-3" style={{ fontSize: headingSizes.h2, color: primary_color }}>
-                  Leather silhouettes
+                  {chapterTitle}
                 </h2>
                 <p className="text-sm" style={{ color: secondary_text_color }}>
-                  Structured lines in cold leather tones. Clean forms with enough volume for the city.
+                  {chapterText}
                 </p>
               </div>
             </div>
@@ -309,7 +338,7 @@ export default function BagsTemplate(props: TemplateProps) {
                           ...(enable_animations ? { opacity: 1 } : {}),
                         }}
                       >
-                        Buy Now
+                        {buyNowLabel}
                       </button>
                     </div>
                   </div>
@@ -324,14 +353,14 @@ export default function BagsTemplate(props: TemplateProps) {
           <div className="flex items-center justify-between mb-6">
             <div>
               <div className="text-xs tracking-[0.24em] uppercase mb-1" style={{ color: secondary_text_color }}>
-                PIECES
+                {gridKicker}
               </div>
               <h2 className="text-xl font-medium" style={{ color: primary_color, fontSize: headingSizes.h2 }}>
-                Bags in this collection
+                {gridTitle}
               </h2>
             </div>
             <div className="text-xs uppercase tracking-[0.18em]" style={{ color: secondary_text_color }}>
-              {filteredProducts.length} pieces
+              {filteredProducts.length} {gridCountSuffix}
             </div>
           </div>
 
@@ -383,7 +412,7 @@ export default function BagsTemplate(props: TemplateProps) {
                         borderRadius: `${border_radius}px`,
                       }}
                     >
-                      Buy Now
+                      {buyNowLabel}
                     </button>
                   </div>
                 </div>
@@ -401,7 +430,7 @@ export default function BagsTemplate(props: TemplateProps) {
             borderBottom: `1px solid ${secondary_text_color}`,
           }}>
             <h2 className="text-center font-medium mb-8" style={{ fontSize: headingSizes.h2, color: primary_color }}>
-              What Our Customers Say
+              {testimonialsTitle}
             </h2>
             <div style={{ 
               display: 'grid',
@@ -440,7 +469,7 @@ export default function BagsTemplate(props: TemplateProps) {
             paddingRight: `${section_padding / 2}px`,
           }}>
             <h2 className="font-medium mb-8" style={{ fontSize: headingSizes.h2, color: primary_color }}>
-              Frequently Asked Questions
+              {faqTitle}
             </h2>
             <div style={{ maxWidth: '600px' }}>
               {faqList.slice(0, 5).map((faq: any, idx: number) => (
@@ -485,7 +514,7 @@ export default function BagsTemplate(props: TemplateProps) {
             {/* About */}
             {footer_about && (
               <div>
-                <h3 className="font-medium mb-3" style={{ color: primary_color }}>About</h3>
+                <h3 className="font-medium mb-3" style={{ color: primary_color }}>{footerAboutTitle}</h3>
                 <p style={{ color: secondary_text_color }}>{footer_about}</p>
               </div>
             )}
@@ -493,7 +522,7 @@ export default function BagsTemplate(props: TemplateProps) {
             {/* Contact */}
             {footer_contact && (
               <div>
-                <h3 className="font-medium mb-3" style={{ color: primary_color }}>Contact</h3>
+                <h3 className="font-medium mb-3" style={{ color: primary_color }}>{footerContactTitle}</h3>
                 <p style={{ color: secondary_text_color }}>{footer_contact}</p>
               </div>
             )}
@@ -501,7 +530,7 @@ export default function BagsTemplate(props: TemplateProps) {
             {/* Social Links */}
             {socialLinksList.length > 0 && (
               <div>
-                <h3 className="font-medium mb-3" style={{ color: primary_color }}>Follow</h3>
+                <h3 className="font-medium mb-3" style={{ color: primary_color }}>{footerFollowTitle}</h3>
                 <div className="flex gap-4">
                   {socialLinksList.map((link: any, idx: number) => (
                     <a 
@@ -528,10 +557,53 @@ export default function BagsTemplate(props: TemplateProps) {
             fontSize: '12px',
             color: secondary_text_color,
           }}>
-            <p>© {new Date().getFullYear()} {settings.store_name || 'BAGSOS'} · All rights reserved</p>
+            <p>© {new Date().getFullYear()} {settings.store_name || 'BAGSOS'} · {footerRights}</p>
           </div>
         </footer>
       </div>
     </div>
   );
 }
+
+export const TEMPLATE_EDITOR_SECTIONS = [
+  {
+    title: 'Bags: Header',
+    fields: [
+      { key: 'template_nav_editorial', label: 'Nav: Editorial', type: 'text', defaultValue: 'Editorial' },
+      { key: 'template_nav_leather', label: 'Nav: Leather', type: 'text', defaultValue: 'Leather' },
+      { key: 'template_nav_materials', label: 'Nav: Materials', type: 'text', defaultValue: 'Materials' },
+      { key: 'template_nav_search', label: 'Nav: Search', type: 'text', defaultValue: 'Search' },
+      { key: 'template_nav_bag', label: 'Nav: Bag', type: 'text', defaultValue: 'Bag (0)' },
+    ],
+  },
+  {
+    title: 'Bags: Hero & Chapter',
+    fields: [
+      { key: 'template_hero_kicker', label: 'Hero Kicker', type: 'text', defaultValue: 'Bags / Editorial' },
+      { key: 'template_highlight_label', label: 'Highlight Label', type: 'text', defaultValue: 'HIGHLIGHT PIECE' },
+      { key: 'template_chapter_label', label: 'Chapter Label', type: 'text', defaultValue: 'CHAPTER I' },
+      { key: 'template_chapter_title', label: 'Chapter Title', type: 'text', defaultValue: 'Leather silhouettes' },
+      { key: 'template_chapter_text', label: 'Chapter Text', type: 'text', defaultValue: 'Structured lines in cold leather tones. Clean forms with enough volume for the city.' },
+    ],
+  },
+  {
+    title: 'Bags: Grid & Labels',
+    fields: [
+      { key: 'template_grid_kicker', label: 'Grid Kicker', type: 'text', defaultValue: 'PIECES' },
+      { key: 'template_grid_title', label: 'Grid Title', type: 'text', defaultValue: 'Bags in this collection' },
+      { key: 'template_grid_count_suffix', label: 'Grid Count Suffix', type: 'text', defaultValue: 'pieces' },
+      { key: 'template_buy_now_label', label: 'Buy Now Label', type: 'text', defaultValue: 'Buy Now' },
+      { key: 'template_testimonials_title', label: 'Testimonials Title', type: 'text', defaultValue: 'What Our Customers Say' },
+      { key: 'template_faq_title', label: 'FAQ Title', type: 'text', defaultValue: 'Frequently Asked Questions' },
+    ],
+  },
+  {
+    title: 'Bags: Footer',
+    fields: [
+      { key: 'template_footer_about_title', label: 'Footer About Title', type: 'text', defaultValue: 'About' },
+      { key: 'template_footer_contact_title', label: 'Footer Contact Title', type: 'text', defaultValue: 'Contact' },
+      { key: 'template_footer_follow_title', label: 'Footer Follow Title', type: 'text', defaultValue: 'Follow' },
+      { key: 'template_footer_rights', label: 'Footer Rights Text', type: 'text', defaultValue: 'All rights reserved' },
+    ],
+  },
+] as const;

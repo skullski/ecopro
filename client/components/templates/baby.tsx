@@ -2,16 +2,16 @@ import React, { useState, useMemo } from 'react';
 import { TemplateProps } from '@/pages/storefront/templates/types';
 import { useTemplateUniversalSettings } from '@/hooks/useTemplateUniversalSettings';
 
-const CATEGORIES = [
-  { label: "All", icon: "✨" },
-  { label: "Toys", icon: "🧸" },
-  { label: "Clothing", icon: "👕" },
-  { label: "Feeding", icon: "🍼" },
-  { label: "Strollers", icon: "🚼" },
-  { label: "Nursery", icon: "🛏" },
-  { label: "Bath", icon: "🛁" },
-  { label: "Shoes", icon: "🧦" },
-  { label: "Gifts", icon: "🎁" },
+const DEFAULT_CATEGORIES = [
+  { label: 'All', icon: '✨' },
+  { label: 'Toys', icon: '🧸' },
+  { label: 'Clothing', icon: '👕' },
+  { label: 'Feeding', icon: '🍼' },
+  { label: 'Strollers', icon: '🚼' },
+  { label: 'Nursery', icon: '🛏' },
+  { label: 'Bath', icon: '🛁' },
+  { label: 'Shoes', icon: '🧦' },
+  { label: 'Gifts', icon: '🎁' },
 ];
 
 export default function BabyTemplate(props: TemplateProps) {
@@ -31,8 +31,69 @@ export default function BabyTemplate(props: TemplateProps) {
   } = useMemo(() => universalSettings as any || {}, [universalSettings]);
   
   const products = props.products || [];
-  const storeName = props.settings?.store_name || 'BabyOS';
-  const bannerUrl = props.settings?.banner_url || 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&w=2000&q=80';
+  const settings = (props.settings || {}) as any;
+  const storeName = settings.store_name || 'BabyOS';
+  const bannerUrl = settings.banner_url || 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&w=2000&q=80';
+
+  const headerSearchLabel = settings.template_header_search_label || 'Search';
+  const headerCartLabel = settings.template_header_cart_label || 'Cart (0)';
+
+  const heroBadgeLeft = settings.template_hero_badge_left || 'New season';
+  const heroBadgeRight = settings.template_hero_badge_right || 'Soft & Playful';
+  const heroHeading = settings.template_hero_heading || 'A soft, modern universe\nfor every little moment.';
+  const heroSubtitle =
+    settings.template_hero_subtitle ||
+    'Toys, outfits, feeding essentials, nursery finds and tiny gifts — curated for newborns and toddlers in one balanced, playful store.';
+  const ageChips = settings.template_age_chips
+    ? String(settings.template_age_chips)
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter(Boolean)
+    : ['0–6 months', '6–12 months', '1–3 years'];
+  const primaryCta = settings.template_primary_cta || 'Shop baby essentials';
+  const secondaryCta = settings.template_secondary_cta || 'View all toys';
+  const heroImageAlt = settings.template_hero_image_alt || 'Baby hero';
+  const featuredProductLabel = settings.template_featured_product_label || 'Featured product';
+
+  const browseByCategoryLabel = settings.template_browse_by_category_label || 'Browse by category';
+
+  const featuredKicker = settings.template_featured_kicker || 'Soft & snuggly picks';
+  const featuredTitle = settings.template_featured_title || 'Plush friends and warm layers.';
+  const featuredText =
+    settings.template_featured_text ||
+    'A small edit of plush toys, blankets and first outfits designed to feel soft against newborn skin. Gentle colors, cozy textures, and everyday comfort.';
+
+  const gridKicker = settings.template_grid_kicker || 'All baby products';
+  const gridTitle = settings.template_grid_title || 'Pieces in this universe';
+  const itemsSuffix = settings.template_items_suffix || 'items';
+  const emptyCategoryText = settings.template_empty_category_text || 'No items in this category';
+
+  const productBadge1 = settings.template_product_badge_1 || 'Soft';
+  const productBadge2 = settings.template_product_badge_2 || '0–6m';
+  const buyNowLabel = settings.template_buy_now_label || 'Buy Now';
+
+  const footerSuffix = settings.template_footer_suffix || 'Modern Baby Store';
+  const footerLinks = settings.template_footer_links
+    ? String(settings.template_footer_links)
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter(Boolean)
+    : ['0–6m', '6–12m', '1–3y', 'Care guide'];
+
+  const categories = useMemo(() => {
+    const raw = settings.template_categories_json;
+    if (!raw) return DEFAULT_CATEGORIES;
+    try {
+      const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (!Array.isArray(parsed)) return DEFAULT_CATEGORIES;
+      const cleaned = parsed
+        .map((c: any) => ({ label: String(c?.label || ''), icon: String(c?.icon || '') }))
+        .filter((c: any) => c.label);
+      return cleaned.length ? cleaned : DEFAULT_CATEGORIES;
+    } catch {
+      return DEFAULT_CATEGORIES;
+    }
+  }, [settings]);
   
   const filteredProducts = activeCategory === "All" 
     ? products 
@@ -66,10 +127,10 @@ export default function BabyTemplate(props: TemplateProps) {
         <div className="mt-3 space-y-2 flex flex-col flex-grow">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider" style={{ backgroundColor: `${accent_color}20`, color: accent_color }}>
-              Soft
+              {productBadge1}
             </span>
             <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider" style={{ backgroundColor: `${primary_color}20`, color: primary_color }}>
-              0–6m
+              {productBadge2}
             </span>
           </div>
           <div>
@@ -89,7 +150,7 @@ export default function BabyTemplate(props: TemplateProps) {
               className="text-[11px] uppercase tracking-wider font-semibold px-4 py-2 rounded-full transition"
               style={{ backgroundColor: primary_color, color: secondary_color }}
             >
-              Buy Now
+              {buyNowLabel}
             </button>
           </div>
         </div>
@@ -141,10 +202,10 @@ export default function BabyTemplate(props: TemplateProps) {
           </div>
           <div className="flex items-center gap-4 text-xs text-gray-500">
             <button className="uppercase tracking-[0.18em] hover:text-gray-700">
-              Search
+              {headerSearchLabel}
             </button>
             <button className="uppercase tracking-[0.18em] hover:text-gray-700">
-              Cart (0)
+              {headerCartLabel}
             </button>
           </div>
         </header>
@@ -159,27 +220,32 @@ export default function BabyTemplate(props: TemplateProps) {
 
           <div className="space-y-4 relative z-10">
             <div className="inline-flex items-center gap-2 bg-red-100 text-red-700 px-3.5 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider">
-              <span>New season</span>
+              <span>{heroBadgeLeft}</span>
               <span>•</span>
-              <span>Soft & Playful</span>
+              <span>{heroBadgeRight}</span>
             </div>
             <h1 className="text-2xl md:text-xl md:text-2xl leading-tight font-bold text-gray-900">
-              A soft, modern universe<br />for every little moment.
+              {heroHeading.split('\n').map((line: string, idx: number) => (
+                <React.Fragment key={idx}>
+                  {line}
+                  {idx < heroHeading.split('\n').length - 1 ? <br /> : null}
+                </React.Fragment>
+              ))}
             </h1>
             <p className="text-sm text-gray-600 max-w-md">
-              Toys, outfits, feeding essentials, nursery finds and tiny gifts — curated for newborns and toddlers in one balanced, playful store.
+              {heroSubtitle}
             </p>
             <div className="flex flex-wrap gap-2">
-              <span className="bg-yellow-100 text-yellow-900 px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wider">0–6 months</span>
-              <span className="bg-yellow-100 text-yellow-900 px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wider">6–12 months</span>
-              <span className="bg-yellow-100 text-yellow-900 px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wider">1–3 years</span>
+              {ageChips.slice(0, 6).map((label: string) => (
+                <span key={label} className="bg-yellow-100 text-yellow-900 px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wider">{label}</span>
+              ))}
             </div>
             <div className="flex flex-wrap gap-3 pt-2">
               <button className="px-5 py-2.5 rounded-full bg-gradient-to-r from-yellow-400 to-pink-400 text-gray-900 text-xs font-semibold uppercase tracking-wider shadow-lg hover:shadow-xl transition-shadow">
-                Shop baby essentials
+                {primaryCta}
               </button>
               <button className="text-xs uppercase tracking-wider text-blue-500 font-semibold hover:text-blue-600">
-                View all toys
+                {secondaryCta}
               </button>
             </div>
           </div>
@@ -187,13 +253,13 @@ export default function BabyTemplate(props: TemplateProps) {
           <div className="relative z-10">
             <img 
               src={bannerUrl} 
-              alt="Baby hero" 
+              alt={heroImageAlt} 
               className="w-full h-96 object-cover rounded-[28px] shadow-2xl"
             />
             {heroHighlight && (
               <div className="absolute left-5 bottom-5 bg-white/95 px-4 py-3 rounded-2xl border border-yellow-100 shadow-md">
                 <div className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">
-                  Featured product
+                  {featuredProductLabel}
                 </div>
                 <div className="text-sm font-semibold text-gray-900 mt-1">
                   {heroHighlight.title}
@@ -209,10 +275,10 @@ export default function BabyTemplate(props: TemplateProps) {
         {/* CATEGORY FILTERS */}
         <section className="mb-4 md:mb-6">
           <div className="text-xs uppercase tracking-widest text-gray-400 font-semibold mb-2">
-            Browse by category
+            {browseByCategoryLabel}
           </div>
           <div className="flex gap-3 overflow-x-auto pb-2">
-            {CATEGORIES.map((c) => (
+            {categories.map((c: any) => (
               <button
                 key={c.label}
                 onClick={() => setActiveCategory(c.label)}
@@ -234,13 +300,13 @@ export default function BabyTemplate(props: TemplateProps) {
           <div className="grid md:grid-cols-[0.9fr,1.1fr] gap-3 md:gap-4 items-center">
             <div className="space-y-3">
               <div className="text-xs uppercase tracking-widest text-gray-400 font-semibold">
-                Soft & snuggly picks
+                {featuredKicker}
               </div>
               <h2 className="text-2xl font-semibold text-gray-900">
-                Plush friends and warm layers.
+                {featuredTitle}
               </h2>
               <p className="text-sm text-gray-700 max-w-sm">
-                A small edit of plush toys, blankets and first outfits designed to feel soft against newborn skin. Gentle colors, cozy textures, and everyday comfort.
+                {featuredText}
               </p>
             </div>
             <div className="grid grid-cols-3 gap-4">
@@ -256,20 +322,20 @@ export default function BabyTemplate(props: TemplateProps) {
           <div className="flex items-center justify-between mb-5">
             <div>
               <div className="text-xs uppercase tracking-widest text-gray-400 font-semibold mb-1">
-                All baby products
+                {gridKicker}
               </div>
               <h2 className="text-2xl font-semibold text-gray-900">
-                Pieces in this universe
+                {gridTitle}
               </h2>
             </div>
             <div className="text-xs text-gray-500 uppercase tracking-wider font-semibold">
-              {filteredProducts.length} items
+              {filteredProducts.length} {itemsSuffix}
             </div>
           </div>
 
           {filteredProducts.length === 0 ? (
             <div className="text-center py-6 md:py-4 md:py-6">
-              <p className="text-gray-500">No items in this category</p>
+              <p className="text-gray-500">{emptyCategoryText}</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
@@ -284,13 +350,12 @@ export default function BabyTemplate(props: TemplateProps) {
         <footer className="text-xs text-gray-500 mt-4 md:mt-6 border-t border-gray-200 pt-4">
           <div className="flex flex-col sm:flex-row justify-between gap-3">
             <span>
-              © {new Date().getFullYear()} {storeName} · Modern Baby Store
+              © {new Date().getFullYear()} {storeName} · {footerSuffix}
             </span>
             <div className="flex gap-4">
-              <span>0–6m</span>
-              <span>6–12m</span>
-              <span>1–3y</span>
-              <span>Care guide</span>
+              {footerLinks.slice(0, 6).map((label: string) => (
+                <span key={label}>{label}</span>
+              ))}
             </div>
           </div>
         </footer>
@@ -298,3 +363,73 @@ export default function BabyTemplate(props: TemplateProps) {
     </div>
   );
 }
+
+export const TEMPLATE_EDITOR_SECTIONS = [
+  {
+    title: 'Baby: Header',
+    fields: [
+      { key: 'template_header_search_label', label: 'Header: Search Label', type: 'text', defaultValue: 'Search' },
+      { key: 'template_header_cart_label', label: 'Header: Cart Label', type: 'text', defaultValue: 'Cart (0)' },
+    ],
+  },
+  {
+    title: 'Baby: Hero',
+    fields: [
+      { key: 'template_hero_badge_left', label: 'Hero Badge Left', type: 'text', defaultValue: 'New season' },
+      { key: 'template_hero_badge_right', label: 'Hero Badge Right', type: 'text', defaultValue: 'Soft & Playful' },
+      { key: 'template_hero_heading', label: 'Hero Heading (use \\n for line breaks)', type: 'text', defaultValue: 'A soft, modern universe\nfor every little moment.' },
+      {
+        key: 'template_hero_subtitle',
+        label: 'Hero Subtitle',
+        type: 'text',
+        defaultValue:
+          'Toys, outfits, feeding essentials, nursery finds and tiny gifts — curated for newborns and toddlers in one balanced, playful store.',
+      },
+      { key: 'template_age_chips', label: 'Age Chips (comma-separated)', type: 'text', defaultValue: '0–6 months, 6–12 months, 1–3 years' },
+      { key: 'template_primary_cta', label: 'Primary CTA', type: 'text', defaultValue: 'Shop baby essentials' },
+      { key: 'template_secondary_cta', label: 'Secondary CTA', type: 'text', defaultValue: 'View all toys' },
+      { key: 'template_featured_product_label', label: 'Featured Product Label', type: 'text', defaultValue: 'Featured product' },
+      { key: 'template_hero_image_alt', label: 'Hero Image Alt', type: 'text', defaultValue: 'Baby hero' },
+    ],
+  },
+  {
+    title: 'Baby: Categories & Labels',
+    fields: [
+      { key: 'template_browse_by_category_label', label: 'Browse By Category Label', type: 'text', defaultValue: 'Browse by category' },
+      {
+        key: 'template_categories_json',
+        label: 'Categories (JSON array of {label, icon})',
+        type: 'textarea',
+        defaultValue: JSON.stringify(DEFAULT_CATEGORIES, null, 2),
+      },
+      { key: 'template_product_badge_1', label: 'Product Badge 1', type: 'text', defaultValue: 'Soft' },
+      { key: 'template_product_badge_2', label: 'Product Badge 2', type: 'text', defaultValue: '0–6m' },
+      { key: 'template_buy_now_label', label: 'Buy Now Label', type: 'text', defaultValue: 'Buy Now' },
+    ],
+  },
+  {
+    title: 'Baby: Featured & Grid',
+    fields: [
+      { key: 'template_featured_kicker', label: 'Featured Kicker', type: 'text', defaultValue: 'Soft & snuggly picks' },
+      { key: 'template_featured_title', label: 'Featured Title', type: 'text', defaultValue: 'Plush friends and warm layers.' },
+      {
+        key: 'template_featured_text',
+        label: 'Featured Text',
+        type: 'text',
+        defaultValue:
+          'A small edit of plush toys, blankets and first outfits designed to feel soft against newborn skin. Gentle colors, cozy textures, and everyday comfort.',
+      },
+      { key: 'template_grid_kicker', label: 'Grid Kicker', type: 'text', defaultValue: 'All baby products' },
+      { key: 'template_grid_title', label: 'Grid Title', type: 'text', defaultValue: 'Pieces in this universe' },
+      { key: 'template_items_suffix', label: 'Items Suffix', type: 'text', defaultValue: 'items' },
+      { key: 'template_empty_category_text', label: 'Empty Category Text', type: 'text', defaultValue: 'No items in this category' },
+    ],
+  },
+  {
+    title: 'Baby: Footer',
+    fields: [
+      { key: 'template_footer_suffix', label: 'Footer Suffix', type: 'text', defaultValue: 'Modern Baby Store' },
+      { key: 'template_footer_links', label: 'Footer Links (comma-separated)', type: 'text', defaultValue: '0–6m, 6–12m, 1–3y, Care guide' },
+    ],
+  },
+] as const;

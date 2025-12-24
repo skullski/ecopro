@@ -53,6 +53,7 @@ interface PlatformStats {
   expiredCodes: number;
   newSignupsWeek: number;
   newSignupsMonth: number;
+  totalProducts?: number;
 }
 
 interface User {

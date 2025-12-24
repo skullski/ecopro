@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,14 @@ import {
 import { Loader2, Save, Eye, Check, ChevronDown, Plus, Trash2, AlertCircle, CheckCircle } from 'lucide-react';
 import { getAuthToken } from '@/lib/auth';
 import { uploadImage } from '@/lib/api';
+import {
+  GENERATED_TEMPLATE_DEFAULTS,
+  GENERATED_TEMPLATE_FIELDS,
+  type InferredField,
+} from '@/lib/generatedTemplateSettings';
+import { setWindowTemplateSettings } from '@/lib/templateWindow';
+import { UNIVERSAL_DEFAULTS } from '@/hooks/useTemplateUniversalSettings';
+import { getTemplateEditorSections } from '@/lib/templateEditorRegistry';
 
 // Import all templates for preview
 import FashionTemplate from '@/components/templates/fashion';
@@ -114,6 +122,7 @@ const CategoryManager = ({ categories, onChange, isDarkMode }: any) => {
 };
 
 interface TemplateSettings {
+  [key: string]: any;
   store_name?: string;
   store_description?: string;
   store_slug?: string;
@@ -140,7 +149,7 @@ const universalSections = [
     title: '🎨 Branding',
     description: 'Logo, colors, and brand identity settings',
     fields: [
-      { key: 'logo_url', label: 'Store Logo', type: 'image', placeholder: 'Upload your store logo' },
+      { key: 'store_logo', label: 'Store Logo', type: 'image', placeholder: 'Upload your store logo' },
       { key: 'logo_width', label: 'Logo Width (px)', type: 'number', placeholder: '150', min: 50, max: 300 },
       { key: 'primary_color', label: 'Primary Color', type: 'color', placeholder: '#000000' },
       { key: 'secondary_color', label: 'Secondary Color', type: 'color', placeholder: '#F5F5F5' },
@@ -156,6 +165,17 @@ const universalSections = [
       { key: 'font_family', label: 'Font Family', type: 'select', options: ['Inter', 'Poppins', 'Montserrat', 'Playfair Display', 'Georgia', 'Roboto', 'Open Sans'], placeholder: 'Inter' },
       { key: 'heading_size_multiplier', label: 'Heading Size', type: 'select', options: ['Small', 'Medium', 'Large', 'Extra Large'], placeholder: 'Large' },
       { key: 'body_font_size', label: 'Body Font Size (px)', type: 'number', placeholder: '16', min: 12, max: 20 },
+    ]
+  },
+  {
+    title: '• Carousel Dots',
+    description: 'Controls for carousel indicator dots (e.g. hero sliders)',
+    fields: [
+      { key: 'carousel_dot_size', label: 'Dot Size (px)', type: 'number', placeholder: '10', min: 4, max: 18 },
+      { key: 'carousel_dot_gap', label: 'Dot Spacing (px)', type: 'number', placeholder: '8', min: 2, max: 20 },
+      { key: 'carousel_dot_color', label: 'Dot Color (inactive)', type: 'color', placeholder: '#FFFFFF' },
+      { key: 'carousel_dot_active_color', label: 'Dot Color (active)', type: 'color', placeholder: '#00F0FF' },
+      { key: 'carousel_dot_border_color', label: 'Dot Border Color', type: 'color', placeholder: '#FFFFFF' },
     ]
   },
   {
@@ -671,7 +691,7 @@ export default function TemplateSettingsPage() {
       });
       if (!res.ok) throw new Error(`Switch failed (${res.status})`);
       const data = await res.json();
-      setSettings(data);
+      setSettings(normalizeLogoSettings(data));
       setTemplate(data.template || pendingTemplateId);
       setSwitchOpen(false);
       setPendingTemplateId(null);
@@ -725,7 +745,7 @@ export default function TemplateSettingsPage() {
       });
       if (res.ok) {
         const data = await res.json();
-        setSettings(data);
+        setSettings(normalizeLogoSettings(data));
         setTemplate(data.template || 'fashion');
       } else {
         console.error('Failed to fetch settings:', res.status, res.statusText);
@@ -772,11 +792,38 @@ export default function TemplateSettingsPage() {
   };
 
   const handleChange = (key: string, value: any) => {
-    setSettings(prev => ({
-      ...prev,
-      [key]: value
-    }));
+    setSettings(prev => {
+      if (key === 'store_logo' || key === 'logo_url') {
+        const v = value;
+        return {
+          ...prev,
+          store_logo: v,
+          logo_url: v,
+        };
+      }
+
+      return {
+        ...prev,
+        [key]: value
+      };
+    });
   };
+
+  const effectiveSettings = useMemo(() => {
+    const generatedDefaults = (GENERATED_TEMPLATE_DEFAULTS as any)[template] || {};
+    const resolvedLogo = (settings as any)?.store_logo ?? (settings as any)?.logo_url;
+    return {
+      ...UNIVERSAL_DEFAULTS,
+      ...generatedDefaults,
+      ...settings,
+      // Backward-compatible aliasing for templates still reading `logo_url`
+      ...(resolvedLogo != null ? { store_logo: resolvedLogo, logo_url: resolvedLogo } : {}),
+    };
+  }, [settings, template]);
+
+  useEffect(() => {
+    setWindowTemplateSettings(effectiveSettings);
+  }, [effectiveSettings]);
 
   // Validation helper
   const validateSettings = () => {
@@ -820,7 +867,7 @@ export default function TemplateSettingsPage() {
       
       if (res.ok) {
         const data = await res.json();
-        setSettings(data);
+        setSettings(normalizeLogoSettings(data));
         setMessage({ type: 'success', text: '✅ Settings saved successfully!' });
         // Auto-clear after 4 seconds
         setTimeout(() => setMessage(null), 4000);
@@ -836,6 +883,52 @@ export default function TemplateSettingsPage() {
     }
   };
 
+  const baseConfig = templateConfigs[template] || templateConfigs.fashion;
+  const config = useMemo(() => {
+    const knownKeys = new Set<string>();
+    for (const section of baseConfig.sections || []) {
+      for (const field of section.fields || []) {
+        if (field?.key) knownKeys.add(field.key);
+      }
+    }
+
+    // Treat logo keys as aliases so we don't show duplicates in the auto-detected section.
+    if (knownKeys.has('store_logo')) knownKeys.add('logo_url');
+    if (knownKeys.has('logo_url')) knownKeys.add('store_logo');
+
+    const templateProvidedSections = getTemplateEditorSections(template) || [];
+
+    const inferred = ((GENERATED_TEMPLATE_FIELDS as any)[template] || []) as InferredField[];
+    const inferredFields = inferred
+      .filter((f) => f?.key && !knownKeys.has(f.key))
+      .map((f) => ({
+        key: f.key,
+        label: f.label,
+        type: f.type === 'json' ? 'textarea' : f.type,
+        placeholder:
+          typeof f.defaultValue === 'string'
+            ? f.defaultValue
+            : f.type === 'json'
+              ? '[]'
+              : undefined,
+      }));
+
+    if (!inferredFields.length && !templateProvidedSections.length) return baseConfig;
+
+    return {
+      ...baseConfig,
+      sections: [
+        ...(baseConfig.sections || []),
+        ...templateProvidedSections,
+        {
+          title: '🧩 Auto-detected',
+          description: 'Detected from template code to match preview defaults.',
+          fields: inferredFields,
+        },
+      ],
+    };
+  }, [baseConfig, template]);
+
   if (loading) {
     return (
       <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-black' : 'bg-gray-50'}`}>
@@ -846,8 +939,6 @@ export default function TemplateSettingsPage() {
       </div>
     );
   }
-
-  const config = templateConfigs[template] || templateConfigs.fashion;
 
   return (
     <div className={`min-h-screen transition-colors duration-200 ${isDarkMode ? 'bg-gradient-to-br from-gray-900 to-black' : 'bg-gradient-to-br from-gray-50 to-gray-100'}`}>
@@ -1082,7 +1173,7 @@ export default function TemplateSettingsPage() {
               <div>
                 <label className={`block text-sm font-medium mb-1 transition-colors ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Store Name</label>
                 <Input
-                  value={settings.store_name || ''}
+                  value={effectiveSettings.store_name || ''}
                   onChange={(e) => handleChange('store_name', e.target.value)}
                   placeholder="My Store"
                 />
@@ -1092,7 +1183,7 @@ export default function TemplateSettingsPage() {
               <div>
                 <label className={`block text-sm font-medium mb-1 transition-colors ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Currency Code</label>
                 <Input
-                  value={settings.currency_code || 'USD'}
+                  value={effectiveSettings.currency_code || 'USD'}
                   onChange={(e) => handleChange('currency_code', e.target.value)}
                   placeholder="USD"
                 />
@@ -1125,12 +1216,12 @@ export default function TemplateSettingsPage() {
                       <div className="flex gap-2">
                         <input
                           type="color"
-                          value={(settings[field.key as keyof TemplateSettings] as string) || '#000000'}
+                          value={(effectiveSettings[field.key as keyof TemplateSettings] as string) || '#000000'}
                           onChange={(e) => handleChange(field.key, e.target.value)}
                           className={`w-12 h-10 rounded cursor-pointer transition-colors ${isDarkMode ? 'border border-gray-600' : 'border border-gray-300'}`}
                         />
                         <Input
-                          value={(settings[field.key as keyof TemplateSettings] as string) || ''}
+                          value={(effectiveSettings[field.key as keyof TemplateSettings] as string) || ''}
                           onChange={(e) => handleChange(field.key, e.target.value)}
                           placeholder="#000000"
                           className={isDarkMode ? 'dark' : ''}
@@ -1140,15 +1231,32 @@ export default function TemplateSettingsPage() {
                     {field.type === 'checkbox' && (
                       <input
                         type="checkbox"
-                        checked={!!settings[field.key as keyof TemplateSettings]}
+                        checked={!!effectiveSettings[field.key as keyof TemplateSettings]}
                         onChange={(e) => handleChange(field.key, e.target.checked)}
                         className="w-4 h-4"
                       />
                     )}
+                    {field.type === 'select' && (
+                      <select
+                        value={(effectiveSettings[field.key as keyof TemplateSettings] as string) || field.placeholder || ''}
+                        onChange={(e) => handleChange(field.key, e.target.value)}
+                        className={`w-full h-10 px-3 rounded-md text-sm transition-colors ${
+                          isDarkMode
+                            ? 'bg-gray-700 border border-gray-600 text-white'
+                            : 'bg-white border border-gray-300 text-gray-900'
+                        }`}
+                      >
+                        {(field.options || []).map((opt: string) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                     {field.type === 'number' && (
                       <Input
                         type="number"
-                        value={settings[field.key as keyof TemplateSettings] || field.placeholder || ''}
+                        value={(effectiveSettings[field.key as keyof TemplateSettings] ?? field.placeholder ?? '') as any}
                         onChange={(e) => handleChange(field.key, parseInt(e.target.value))}
                         min={field.min}
                         max={field.max}
@@ -1160,13 +1268,13 @@ export default function TemplateSettingsPage() {
                       <>
                         {field.key === 'template_categories' ? (
                           <CategoryManager 
-                            categories={settings.template_categories} 
+                            categories={effectiveSettings.template_categories} 
                             onChange={(cats) => handleChange('template_categories', cats)}
                             isDarkMode={isDarkMode}
                           />
                         ) : (
                           <textarea
-                            value={(settings[field.key as keyof TemplateSettings] as string) || ''}
+                            value={(effectiveSettings[field.key as keyof TemplateSettings] as string) || ''}
                             onChange={(e) => handleChange(field.key, e.target.value)}
                             placeholder={field.placeholder}
                             className={`w-full p-2 rounded text-sm font-mono resize-vertical min-h-24 transition-colors ${isDarkMode ? 'bg-gray-700 border border-gray-600 text-white' : 'bg-white border border-gray-300 text-gray-900'}`}
@@ -1199,9 +1307,9 @@ export default function TemplateSettingsPage() {
                           }}
                           className={`flex-1 ${isDarkMode ? 'dark' : ''}`}
                         />
-                        {(settings[field.key as keyof TemplateSettings] as string) && (
+                        {(effectiveSettings[field.key as keyof TemplateSettings] as string) && (
                           <img
-                            src={(settings[field.key as keyof TemplateSettings] as string) || ''}
+                            src={(effectiveSettings[field.key as keyof TemplateSettings] as string) || ''}
                             alt="preview"
                             className="w-12 h-12 object-cover rounded border"
                           />
@@ -1211,7 +1319,7 @@ export default function TemplateSettingsPage() {
                     {['text', 'url'].includes(field.type) && (
                       <Input
                         type={field.type}
-                        value={(settings[field.key as keyof TemplateSettings] as string) || ''}
+                        value={(effectiveSettings[field.key as keyof TemplateSettings] as string) || ''}
                         onChange={(e) => handleChange(field.key, e.target.value)}
                         placeholder={field.placeholder}
                         className={isDarkMode ? 'dark' : ''}
@@ -1233,12 +1341,12 @@ export default function TemplateSettingsPage() {
               {templateComponents[template] ? (
                 React.createElement(templateComponents[template], {
                   products: products.length > 0 ? products : [],
-                  settings: settings,
-                  formatPrice: (price: number) => `${price} ${settings.currency_code || 'DZD'}`,
+                  settings: effectiveSettings,
+                  formatPrice: (price: number) => `${price} ${effectiveSettings.currency_code || 'DZD'}`,
                   categories: [...new Set(products.map(p => p.category || 'Uncategorized'))],
                   filters: {},
                   navigate: () => {},
-                  storeSlug: settings.store_slug || 'preview'
+                  storeSlug: effectiveSettings.store_slug || 'preview'
                 })
               ) : (
                 <div className={`p-3 md:p-4 text-center transition-colors ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Template not found</div>
@@ -1275,12 +1383,12 @@ export default function TemplateSettingsPage() {
                           <div className="flex gap-2">
                             <input
                               type="color"
-                              value={(settings[field.key as keyof TemplateSettings] as string) || '#000000'}
+                              value={(effectiveSettings[field.key as keyof TemplateSettings] as string) || '#000000'}
                               onChange={(e) => handleChange(field.key, e.target.value)}
                               className={`w-12 h-10 rounded cursor-pointer transition-colors ${isDarkMode ? 'border border-gray-600' : 'border border-gray-300'}`}
                             />
                             <Input
-                              value={(settings[field.key as keyof TemplateSettings] as string) || ''}
+                              value={(effectiveSettings[field.key as keyof TemplateSettings] as string) || ''}
                               onChange={(e) => handleChange(field.key, e.target.value)}
                               placeholder="#000000"
                               className={isDarkMode ? 'dark' : ''}
@@ -1290,15 +1398,32 @@ export default function TemplateSettingsPage() {
                         {field.type === 'checkbox' && (
                           <input
                             type="checkbox"
-                            checked={!!settings[field.key as keyof TemplateSettings]}
+                            checked={!!effectiveSettings[field.key as keyof TemplateSettings]}
                             onChange={(e) => handleChange(field.key, e.target.checked)}
                             className="w-4 h-4"
                           />
                         )}
+                        {field.type === 'select' && (
+                          <select
+                            value={(effectiveSettings[field.key as keyof TemplateSettings] as string) || field.placeholder || ''}
+                            onChange={(e) => handleChange(field.key, e.target.value)}
+                            className={`w-full h-10 px-3 rounded-md text-sm transition-colors ${
+                              isDarkMode
+                                ? 'bg-gray-700 border border-gray-600 text-white'
+                                : 'bg-white border border-gray-300 text-gray-900'
+                            }`}
+                          >
+                            {(field.options || []).map((opt: string) => (
+                              <option key={opt} value={opt}>
+                                {opt}
+                              </option>
+                            ))}
+                          </select>
+                        )}
                         {field.type === 'number' && (
                           <Input
                             type="number"
-                            value={settings[field.key as keyof TemplateSettings] || field.placeholder || ''}
+                            value={(effectiveSettings[field.key as keyof TemplateSettings] ?? field.placeholder ?? '') as any}
                             onChange={(e) => handleChange(field.key, parseInt(e.target.value))}
                             min={field.min}
                             max={field.max}
@@ -1310,13 +1435,13 @@ export default function TemplateSettingsPage() {
                           <>
                             {field.key === 'template_categories' ? (
                               <CategoryManager 
-                                categories={settings.template_categories} 
+                                categories={effectiveSettings.template_categories} 
                                 onChange={(cats) => handleChange('template_categories', cats)}
                                 isDarkMode={isDarkMode}
                               />
                             ) : (
                               <textarea
-                                value={(settings[field.key as keyof TemplateSettings] as string) || ''}
+                                value={(effectiveSettings[field.key as keyof TemplateSettings] as string) || ''}
                                 onChange={(e) => handleChange(field.key, e.target.value)}
                                 placeholder={field.placeholder}
                                 className={`w-full p-2 rounded text-sm font-mono resize-vertical min-h-24 transition-colors ${isDarkMode ? 'bg-gray-700 border border-gray-600 text-white' : 'bg-white border border-gray-300 text-gray-900'}`}
@@ -1349,9 +1474,9 @@ export default function TemplateSettingsPage() {
                               }}
                               className={`flex-1 ${isDarkMode ? 'dark' : ''}`}
                             />
-                            {(settings[field.key as keyof TemplateSettings] as string) && (
+                            {(effectiveSettings[field.key as keyof TemplateSettings] as string) && (
                               <img
-                                src={(settings[field.key as keyof TemplateSettings] as string) || ''}
+                                src={(effectiveSettings[field.key as keyof TemplateSettings] as string) || ''}
                                 alt="preview"
                                 className="w-12 h-12 object-cover rounded border"
                               />
@@ -1361,7 +1486,7 @@ export default function TemplateSettingsPage() {
                         {['text', 'url'].includes(field.type) && (
                           <Input
                             type={field.type}
-                            value={(settings[field.key as keyof TemplateSettings] as string) || ''}
+                            value={(effectiveSettings[field.key as keyof TemplateSettings] as string) || ''}
                             onChange={(e) => handleChange(field.key, e.target.value)}
                             placeholder={field.placeholder}
                             className={isDarkMode ? 'dark' : ''}
@@ -1415,4 +1540,16 @@ export default function TemplateSettingsPage() {
       </div>
     </div>
   );
+}
+
+function normalizeLogoSettings(input: any): TemplateSettings {
+  const src: any = input && typeof input === 'object' ? input : {};
+  const logo = src.store_logo ?? src.logo_url;
+  if (logo == null || String(logo).trim().length === 0) return { ...src };
+
+  return {
+    ...src,
+    store_logo: src.store_logo ?? logo,
+    logo_url: src.logo_url ?? logo,
+  };
 }

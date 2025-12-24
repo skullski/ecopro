@@ -3,6 +3,8 @@ import jwt from 'jsonwebtoken';
 import { ensureConnection } from '../utils/database';
 import { hashPassword, generateSecurePassword, comparePassword } from '../utils/auth';
 import { StaffMember, ActivityLog } from '@shared/staff';
+import { checkLoginAllowed, recordFailedLogin, recordSuccessfulLogin } from '../utils/brute-force';
+import { getClientIp } from '../utils/security';
 
 /**
  * CRITICAL SECURITY NOTE:
@@ -475,9 +477,19 @@ export const staffLogin: RequestHandler = async (req, res) => {
   try {
     const pool = await ensureConnection();
     const { username, password } = req.body;
+    const ip = getClientIp(req as any);
 
     if (!username || !password) {
       return res.status(400).json({ error: 'Username and password required' });
+    }
+
+    // BRUTE FORCE CHECK
+    const bruteCheck = checkLoginAllowed(ip, username);
+    if (!bruteCheck.allowed) {
+      const waitTime = bruteCheck.blockedUntil 
+        ? Math.ceil((bruteCheck.blockedUntil - Date.now()) / 1000 / 60) 
+        : 30;
+      return res.status(429).json({ error: `Too many login attempts. Please try again in ${waitTime} minutes.` });
     }
 
     console.log(`[Staff] Login attempt for username: ${username}`);
@@ -494,6 +506,7 @@ export const staffLogin: RequestHandler = async (req, res) => {
 
     if (result.rows.length === 0) {
       console.log(`[Staff] No staff found with username: ${username}`);
+      await recordFailedLogin(req, username, 'user_not_found');
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -503,13 +516,18 @@ export const staffLogin: RequestHandler = async (req, res) => {
     const passwordMatch = await comparePassword(password, staffMember.password);
     if (!passwordMatch) {
       console.log(`[Staff] Password mismatch for staff ${staffMember.id}`);
+      await recordFailedLogin(req, username, 'bad_password');
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     // Check status
     if (staffMember.status === 'inactive' || staffMember.status === 'suspended') {
+      await recordFailedLogin(req, username, 'account_locked');
       return res.status(403).json({ error: 'Your account has been deactivated' });
     }
+
+    // Successful login - clear failed attempts
+    recordSuccessfulLogin(ip, username);
 
     // Get client info for display
     const clientResult = await pool.query(

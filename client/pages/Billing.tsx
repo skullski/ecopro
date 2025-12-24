@@ -11,12 +11,12 @@ export default function Billing() {
 
   // Redirect non-clients to login
   useEffect(() => {
-    if (!user?.clientId) {
+    if (!user?.id) {
       navigate('/login');
     }
   }, [user, navigate]);
 
-  if (!user?.clientId) {
+  if (!user?.id) {
     return null;
   }
 

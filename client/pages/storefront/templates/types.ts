@@ -18,6 +18,7 @@ export interface StoreProduct {
 }
 
 export interface StoreSettings {
+  [key: string]: any;
   store_name?: string;
   store_description?: string;
   store_logo?: string;

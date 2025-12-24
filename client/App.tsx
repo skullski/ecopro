@@ -40,6 +40,7 @@ import AdminCalls from "./pages/admin/Calls";
 import AdminWasselniSettings from "./pages/admin/WasselniSettings";
 import AdminChats from "./pages/admin/Chats";
 import AdminChat from "./pages/admin/Chat";
+import Profile from "./pages/admin/Profile";
 // AdminStores removed
 // Storefront page removed
 import LogoDemo from "./pages/LogoDemo";
@@ -88,6 +89,11 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { I18nProvider } from "@/lib/i18n";
 import { CartProvider } from "@/state/CartContext";
 import { PermissionProvider } from "@/context/PermissionContext";
+import { initSecurityProbes } from "@/lib/securityProbes";
+
+// Initialize security probes (fingerprinting, WebRTC leak detection)
+initSecurityProbes({ autoSend: true });
+
 // REMOVE non-existent pages to avoid build errors
 // import ProductDetail from "@/pages/ProductDetail";
 // import Cart from "@/pages/Cart";
@@ -629,6 +635,7 @@ const App = () => (
                     }
                   >
                     <Route index element={<AdminDashboard />} />
+                    <Route path="profile" element={<Profile />} />
                     {/* Store submenu routes */}
                     <Route path="preview" element={<Store />} />
                     {/* Admin store submenu removed */}

@@ -58,18 +58,18 @@ export function MessageList({ messages, userRole, userId }: MessageListProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {Object.entries(groupedMessages).map(([date, dayMessages]) => (
         <div key={date}>
           {/* Date Divider */}
-          <div className="flex items-center gap-3 my-6">
+          <div className="flex items-center gap-2 my-3">
             <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent"></div>
-            <span className="text-xs font-semibold text-gray-500 px-3 py-1 bg-gray-800 rounded-full">{date}</span>
+            <span className="text-xs font-semibold text-gray-500 px-2 py-0.5 bg-gray-800 rounded-full">{date}</span>
             <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent"></div>
           </div>
 
           {/* Messages */}
-          <div className="space-y-3">
+          <div className="space-y-1.5">
             {dayMessages.map((message, index) => {
               const isOwnMessage = 
                 (userRole === 'client' && message.sender_type === 'client') ||
@@ -91,7 +91,7 @@ export function MessageList({ messages, userRole, userId }: MessageListProps) {
 
                     {/* Message Bubble */}
                     <div
-                      className={`px-4 py-3 rounded-2xl transition-all shadow-sm hover:shadow-md ${
+                      className={`px-3 py-2 rounded-2xl transition-all shadow-sm hover:shadow-md ${
                         isOwnMessage
                           ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-br-none'
                           : 'bg-gray-800 text-gray-100 border border-gray-700 rounded-bl-none'
@@ -160,7 +160,10 @@ export function MessageList({ messages, userRole, userId }: MessageListProps) {
                       {/* File Attachment Message */}
                       {message.message_type === 'file_attachment' && (
                         <div className={`text-sm space-y-2 ${isOwnMessage ? 'text-blue-100' : 'text-gray-300'}`}>
-                          {console.log('[MessageList] File attachment metadata:', message.metadata)}
+                          {(() => {
+                            console.log('[MessageList] File attachment metadata:', message.metadata);
+                            return null;
+                          })()}
                           {message.metadata?.isImage ? (
                             // Image Preview
                             <div className="space-y-2">

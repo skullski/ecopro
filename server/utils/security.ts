@@ -11,6 +11,8 @@ export type SecurityEventType =
   | 'admin_forbidden'
   | 'admin_unauthorized'
   | 'auth_failed'
+  | 'auth_login_failed'
+  | 'brute_force_attack'
   | 'suspicious_path'
   | 'rate_limited'
   | 'error';

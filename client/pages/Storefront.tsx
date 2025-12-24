@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { useTranslation } from '@/lib/i18n';
 import { RenderStorefront } from './storefront/templates';
 import { storeNameToSlug } from '@/utils/storeUrl';
+import UniversalStyleInjector from '@/components/storefront/UniversalStyleInjector';
+import { setWindowTemplateSettings } from '@/lib/templateWindow';
 
 interface StoreProduct {
   id: number;
@@ -178,6 +180,11 @@ export default function Storefront() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storeSlug]);
 
+  // Keep window.TEMPLATE_SETTINGS in sync so templates using hooks reflect current settings.
+  useEffect(() => {
+    setWindowTemplateSettings(storeSettings);
+  }, [storeSettings]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
@@ -213,6 +220,7 @@ export default function Storefront() {
 
   return (
     <>
+      <UniversalStyleInjector />
       {/* Active template badge for quick visibility */}
       <div className="fixed top-20 right-4 z-40">
         <div className="inline-flex items-center gap-2 rounded-full border bg-card/80 backdrop-blur px-3 py-1 text-xs shadow-sm">

@@ -25,6 +25,7 @@ export default function FurnitureTemplate(props: TemplateProps) {
   const [filters, setFilters] = useState({ category: 'all', maxPrice: 999999, subcategories: [] });
 
   const { products = [], settings = {}, categories = [] } = props;
+  const templateSettings = settings as any;
   
   // Extract universal settings with defaults
   const {
@@ -66,7 +67,60 @@ export default function FurnitureTemplate(props: TemplateProps) {
     button { ${enable_animations ? 'transition: all 0.3s ease;' : ''} border-radius: var(--border-radius); }
   `;
   
-  const storeName = settings.store_name || 'RoomGrid';
+  const storeName = templateSettings.store_name || 'RoomGrid';
+  const storeInitials = templateSettings.store_initials || String(storeName).slice(0, 2).toUpperCase();
+  const logoUrl = templateSettings.store_logo || templateSettings.logo_url || '';
+
+  const floatingCartLabel = templateSettings.template_floating_cart_label || 'Cart';
+  const headerTagline = templateSettings.template_header_tagline || 'Furniture · Decor · Storage · Lighting';
+  const searchPlaceholder = templateSettings.template_search_placeholder || 'Search furniture...';
+  const wishlistLabel = templateSettings.template_wishlist_label || 'Wishlist';
+  const compareLabel = templateSettings.template_compare_label || 'Compare';
+  const cartLabel = templateSettings.template_cart_label || 'Cart';
+
+  const navRoomsLabel = templateSettings.template_nav_rooms_label || 'Shop by Room';
+  const roomMenu = templateSettings.template_room_menu
+    ? String(templateSettings.template_room_menu)
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter(Boolean)
+    : ['Living Room', 'Bedroom', 'Office', 'Dining'];
+
+  const heroHeading = templateSettings.template_hero_heading || 'Furniture Collection';
+  const heroSubtitle = templateSettings.template_hero_subtitle || 'Modern, timeless pieces for every room';
+
+  const filtersTitle = templateSettings.template_filters_title || 'Filters';
+  const priceLabel = templateSettings.template_price_label || 'Price';
+  const priceUpToLabel = templateSettings.template_price_upto_label || 'Up to';
+  const categoryLabel = templateSettings.template_category_label || 'Category';
+  const categoryOptions = templateSettings.template_category_options
+    ? String(templateSettings.template_category_options)
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter(Boolean)
+    : ['All', 'Living Room', 'Bedroom', 'Office', 'Dining'];
+
+  const itemsLabel = templateSettings.template_items_label || 'Items';
+  const wishlistedLabel = templateSettings.template_wishlisted_label || 'Wishlisted';
+  const comparingLabel = templateSettings.template_comparing_label || 'Comparing';
+
+  const sortFeatured = templateSettings.template_sort_featured || 'Featured';
+  const sortPriceLowHigh = templateSettings.template_sort_price_low_high || 'Price Low-High';
+  const sortPriceHighLow = templateSettings.template_sort_price_high_low || 'Price High-Low';
+  const sortNewest = templateSettings.template_sort_newest || 'Newest';
+
+  const buyNowLabel = templateSettings.template_buy_now_label || 'Buy Now';
+  const loadMoreLabel = templateSettings.template_load_more_label || 'Load More';
+
+  const footerColumns = templateSettings.template_footer_columns
+    ? String(templateSettings.template_footer_columns)
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter(Boolean)
+    : ['About', 'Support', 'Legal', 'Social'];
+  const footerLink1 = templateSettings.template_footer_link_1 || 'Link 1';
+  const footerLink2 = templateSettings.template_footer_link_2 || 'Link 2';
+  const footerYear = templateSettings.template_footer_year || String(new Date().getFullYear());
 
   const filteredProducts = products.slice(0, visibleCount);
   const canLoadMore = visibleCount < products.length;
@@ -85,7 +139,8 @@ export default function FurnitureTemplate(props: TemplateProps) {
       {/* Floating Cart */}
       <div className="fixed bottom-6 right-6 z-40">
         <button style={{ backgroundColor: primary_color, color: secondary_color }} className="rounded-full font-semibold px-5 py-3 flex items-center gap-2 shadow-lg">
-          Cart <span style={{ backgroundColor: secondary_color, color: primary_color }} className="w-6 h-6 rounded-full text-xs flex items-center justify-center font-bold">{cartCount}</span>
+          {floatingCartLabel}{' '}
+          <span style={{ backgroundColor: secondary_color, color: primary_color }} className="w-6 h-6 rounded-full text-xs flex items-center justify-center font-bold">{cartCount}</span>
         </button>
       </div>
 
@@ -94,26 +149,32 @@ export default function FurnitureTemplate(props: TemplateProps) {
         <div className="max-w-6xl mx-auto px-6 py-3">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
-              <div style={{ backgroundColor: primary_color, color: secondary_color }} className="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold">RG</div>
+              <div style={{ backgroundColor: primary_color, color: secondary_color }} className="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold overflow-hidden">
+                {logoUrl ? (
+                  <img src={logoUrl} alt={`${storeName} logo`} className="w-full h-full object-contain" />
+                ) : (
+                  storeInitials
+                )}
+              </div>
               <div>
                 <h1 className="text-sm font-semibold" style={{ color: text_color }}>{storeName}</h1>
-                <p className="text-xs" style={{ color: secondary_text_color }}>Furniture · Decor · Storage · Lighting</p>
+                <p className="text-xs" style={{ color: secondary_text_color }}>{headerTagline}</p>
               </div>
             </div>
-            <input type="text" placeholder="Search furniture..." className="hidden md:block flex-1 mx-6 text-sm border rounded-full px-4 py-2" style={{ borderColor: secondary_text_color, backgroundColor: secondary_color, color: text_color }} />
+            <input type="text" placeholder={searchPlaceholder} className="hidden md:block flex-1 mx-6 text-sm border rounded-full px-4 py-2" style={{ borderColor: secondary_text_color, backgroundColor: secondary_color, color: text_color }} />
             <div className="flex items-center gap-3 md:gap-4 text-xs" style={{ color: secondary_text_color }}>
-              <div>Wishlist {wishlist.length}</div>
-              <div>Compare {compareList.length}</div>
-              <div>Cart {cartCount}</div>
+              <div>{wishlistLabel} {wishlist.length}</div>
+              <div>{compareLabel} {compareList.length}</div>
+              <div>{cartLabel} {cartCount}</div>
             </div>
           </div>
 
           {/* Navigation + Mega Menu */}
           <div className="flex items-center gap-4 text-sm py-2 border-t" style={{ borderTopColor: secondary_text_color }}>
             <div className="relative group">
-              <button style={{ color: text_color }}>Shop by Room ▾</button>
+              <button style={{ color: text_color }}>{navRoomsLabel} ▾</button>
               <div className="absolute left-0 hidden group-hover:block w-80 bg-white border rounded-lg shadow-lg p-4 z-50" style={{ borderColor: secondary_text_color, backgroundColor: secondary_color }}>
-                {['Living Room', 'Bedroom', 'Office', 'Dining'].map((cat) => (
+                {roomMenu.map((cat: string) => (
                   <div key={cat} onClick={() => setActiveCategory(cat.toLowerCase())} className="px-3 py-2 hover:bg-gray-100 rounded cursor-pointer text-sm" style={{ color: text_color }}>
                     {cat}
                   </div>
@@ -127,8 +188,8 @@ export default function FurnitureTemplate(props: TemplateProps) {
       {/* Hero Banner */}
       <section className="py-6 md:py-4 md:py-6" style={{ backgroundColor: secondary_text_color, color: secondary_color }}>
         <div className="max-w-6xl mx-auto px-6">
-          <h2 className="font-serif text-xl md:text-2xl font-semibold mb-3" style={{ fontSize: headingSizes.h2, color: text_color }}>{settings.template_hero_heading || 'Furniture Collection'}</h2>
-          <p style={{ color: secondary_text_color }}>Modern, timeless pieces for every room</p>
+          <h2 className="font-serif text-xl md:text-2xl font-semibold mb-3" style={{ fontSize: headingSizes.h2, color: text_color }}>{heroHeading}</h2>
+          <p style={{ color: secondary_text_color }}>{heroSubtitle}</p>
         </div>
       </section>
 
@@ -137,11 +198,11 @@ export default function FurnitureTemplate(props: TemplateProps) {
         <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4 md:gap-3 md:gap-4">
           {/* Filters Sidebar */}
           <aside className="bg-white rounded-lg border border-gray-200 p-4 h-fit">
-            <h3 className="text-sm font-semibold mb-4 text-gray-900">Filters</h3>
+            <h3 className="text-sm font-semibold mb-4 text-gray-900">{filtersTitle}</h3>
 
             {/* Price Filter */}
             <div className="mb-6">
-              <label className="text-xs font-bold text-gray-700 uppercase block mb-2">Price</label>
+              <label className="text-xs font-bold text-gray-700 uppercase block mb-2">{priceLabel}</label>
               <input
                 type="range"
                 min="0"
@@ -150,14 +211,14 @@ export default function FurnitureTemplate(props: TemplateProps) {
                 onChange={(e) => setFilters({ ...filters, maxPrice: Number(e.target.value) })}
                 className="w-full"
               />
-              <div className="text-xs text-gray-600 mt-2">Up to {filters.maxPrice} DZD</div>
+              <div className="text-xs text-gray-600 mt-2">{priceUpToLabel} {filters.maxPrice} DZD</div>
             </div>
 
             {/* Category Filter */}
             <div>
-              <label className="text-xs font-bold text-gray-700 uppercase block mb-2">Category</label>
+              <label className="text-xs font-bold text-gray-700 uppercase block mb-2">{categoryLabel}</label>
               <div className="space-y-2">
-                {['All', 'Living Room', 'Bedroom', 'Office', 'Dining'].map((cat) => (
+                {categoryOptions.map((cat: string) => (
                   <label key={cat} className="flex items-center gap-2 text-sm cursor-pointer">
                     <input type="checkbox" className="w-4 h-4" />
                     <span>{cat}</span>
@@ -171,14 +232,14 @@ export default function FurnitureTemplate(props: TemplateProps) {
           <section>
             <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">{filteredProducts.length} Items</h3>
-                <p className="text-xs text-gray-600">{wishlist.length} Wishlisted · {compareList.length} Comparing</p>
+                <h3 className="text-lg font-semibold text-gray-900">{filteredProducts.length} {itemsLabel}</h3>
+                <p className="text-xs text-gray-600">{wishlist.length} {wishlistedLabel} · {compareList.length} {comparingLabel}</p>
               </div>
               <select className="text-xs border border-gray-300 rounded-full px-3 py-2 bg-white">
-                <option>Featured</option>
-                <option>Price Low-High</option>
-                <option>Price High-Low</option>
-                <option>Newest</option>
+                <option>{sortFeatured}</option>
+                <option>{sortPriceLowHigh}</option>
+                <option>{sortPriceHighLow}</option>
+                <option>{sortNewest}</option>
               </select>
             </div>
 
@@ -222,7 +283,7 @@ export default function FurnitureTemplate(props: TemplateProps) {
                         }} 
                         className="flex-1 py-2 bg-gray-900 text-white text-xs rounded font-semibold hover:bg-gray-800"
                       >
-                        Buy Now
+                        {buyNowLabel}
                       </button>
                     </div>
                   </div>
@@ -233,7 +294,7 @@ export default function FurnitureTemplate(props: TemplateProps) {
             {canLoadMore && (
               <div className="mt-4 md:mt-6 text-center">
                 <button onClick={() => setVisibleCount(c => c + 8)} className="px-6 py-3 border border-gray-300 rounded-full text-gray-700 hover:border-gray-900 font-semibold text-sm">
-                  Load More
+                  {loadMoreLabel}
                 </button>
               </div>
             )}
@@ -245,19 +306,71 @@ export default function FurnitureTemplate(props: TemplateProps) {
       <footer className="border-t border-gray-200 mt-6 md:mt-4 md:mt-6 py-4 md:py-6 bg-white">
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid md:grid-cols-4 gap-4 md:gap-3 md:gap-4 mb-4 md:mb-6">
-            {['About', 'Support', 'Legal', 'Social'].map((col) => (
+            {footerColumns.slice(0, 4).map((col: string) => (
               <div key={col}>
                 <h4 className="font-semibold text-gray-900 mb-3">{col}</h4>
                 <ul className="text-sm text-gray-600 space-y-2">
-                  <li><a href="#" className="hover:text-gray-900">Link 1</a></li>
-                  <li><a href="#" className="hover:text-gray-900">Link 2</a></li>
+                  <li><a href="#" className="hover:text-gray-900">{footerLink1}</a></li>
+                  <li><a href="#" className="hover:text-gray-900">{footerLink2}</a></li>
                 </ul>
               </div>
             ))}
           </div>
-          <p className="text-xs text-gray-600 text-center">&copy; 2024 {storeName}</p>
+          <p className="text-xs text-gray-600 text-center">&copy; {footerYear} {storeName}</p>
         </div>
       </footer>
     </div>
   );
 }
+
+export const TEMPLATE_EDITOR_SECTIONS = [
+  {
+    title: 'Furniture: Header',
+    fields: [
+      { key: 'store_initials', label: 'Logo Initials', type: 'text', defaultValue: 'RG' },
+      { key: 'template_floating_cart_label', label: 'Floating Cart Label', type: 'text', defaultValue: 'Cart' },
+      { key: 'template_header_tagline', label: 'Header Tagline', type: 'text', defaultValue: 'Furniture · Decor · Storage · Lighting' },
+      { key: 'template_search_placeholder', label: 'Search Placeholder', type: 'text', defaultValue: 'Search furniture...' },
+      { key: 'template_wishlist_label', label: 'Wishlist Label', type: 'text', defaultValue: 'Wishlist' },
+      { key: 'template_compare_label', label: 'Compare Label', type: 'text', defaultValue: 'Compare' },
+      { key: 'template_cart_label', label: 'Cart Label', type: 'text', defaultValue: 'Cart' },
+      { key: 'template_nav_rooms_label', label: 'Rooms Menu Label', type: 'text', defaultValue: 'Shop by Room' },
+      { key: 'template_room_menu', label: 'Rooms Menu Items (comma-separated)', type: 'text', defaultValue: 'Living Room, Bedroom, Office, Dining' },
+    ],
+  },
+  {
+    title: 'Furniture: Hero',
+    fields: [
+      { key: 'template_hero_heading', label: 'Hero Heading', type: 'text', defaultValue: 'Furniture Collection' },
+      { key: 'template_hero_subtitle', label: 'Hero Subtitle', type: 'text', defaultValue: 'Modern, timeless pieces for every room' },
+    ],
+  },
+  {
+    title: 'Furniture: Filters & Labels',
+    fields: [
+      { key: 'template_filters_title', label: 'Filters Title', type: 'text', defaultValue: 'Filters' },
+      { key: 'template_price_label', label: 'Price Label', type: 'text', defaultValue: 'Price' },
+      { key: 'template_price_upto_label', label: 'Price Up To Label', type: 'text', defaultValue: 'Up to' },
+      { key: 'template_category_label', label: 'Category Label', type: 'text', defaultValue: 'Category' },
+      { key: 'template_category_options', label: 'Category Options (comma-separated)', type: 'text', defaultValue: 'All, Living Room, Bedroom, Office, Dining' },
+      { key: 'template_items_label', label: 'Items Label', type: 'text', defaultValue: 'Items' },
+      { key: 'template_wishlisted_label', label: 'Wishlisted Label', type: 'text', defaultValue: 'Wishlisted' },
+      { key: 'template_comparing_label', label: 'Comparing Label', type: 'text', defaultValue: 'Comparing' },
+      { key: 'template_sort_featured', label: 'Sort: Featured', type: 'text', defaultValue: 'Featured' },
+      { key: 'template_sort_price_low_high', label: 'Sort: Price Low-High', type: 'text', defaultValue: 'Price Low-High' },
+      { key: 'template_sort_price_high_low', label: 'Sort: Price High-Low', type: 'text', defaultValue: 'Price High-Low' },
+      { key: 'template_sort_newest', label: 'Sort: Newest', type: 'text', defaultValue: 'Newest' },
+      { key: 'template_buy_now_label', label: 'Buy Now Label', type: 'text', defaultValue: 'Buy Now' },
+      { key: 'template_load_more_label', label: 'Load More Label', type: 'text', defaultValue: 'Load More' },
+    ],
+  },
+  {
+    title: 'Furniture: Footer',
+    fields: [
+      { key: 'template_footer_columns', label: 'Footer Columns (comma-separated)', type: 'text', defaultValue: 'About, Support, Legal, Social' },
+      { key: 'template_footer_link_1', label: 'Footer Link 1 Label', type: 'text', defaultValue: 'Link 1' },
+      { key: 'template_footer_link_2', label: 'Footer Link 2 Label', type: 'text', defaultValue: 'Link 2' },
+      { key: 'template_footer_year', label: 'Footer Year', type: 'text', defaultValue: String(new Date().getFullYear()) },
+    ],
+  },
+] as const;

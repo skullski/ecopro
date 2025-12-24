@@ -18,6 +18,22 @@ import {
 
 const router = Router();
 
+function resolveClientIdFromUser(user: any): number | null {
+  const direct = user?.clientId;
+  if (direct != null) {
+    const n = Number(direct);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  // Many client JWTs use `id` only (no `clientId`).
+  if (user?.user_type === 'client') {
+    const n = Number(user?.id);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  return null;
+}
+
 /**
  * POST /api/codes/validate
  * Validate a subscription code without redeeming it
@@ -50,8 +66,9 @@ export const validateCode: RequestHandler = async (req, res) => {
  */
 export const redeemCode: RequestHandler = async (req, res) => {
   try {
-    const userId = (req.user as any)?.id;
-    const clientId = (req.user as any)?.clientId;
+    const user = req.user as any;
+    const userId = user?.id;
+    const clientId = resolveClientIdFromUser(user);
 
     if (!clientId) {
       return jsonError(res, 401, 'Only clients can redeem codes');
@@ -110,7 +127,8 @@ export const redeemCode: RequestHandler = async (req, res) => {
  */
 export const requestCode: RequestHandler = async (req, res) => {
   try {
-    const clientId = (req.user as any)?.clientId;
+    const user = req.user as any;
+    const clientId = resolveClientIdFromUser(user);
 
     if (!clientId) {
       return jsonError(res, 401, 'Only clients can request codes');

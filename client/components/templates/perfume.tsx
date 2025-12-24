@@ -25,6 +25,39 @@ export default function PerfumeTemplate(props: TemplateProps) {
   const storeName = settings.store_name || 'Premium Scents';
   const bannerImage = settings.banner_url || 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?auto=format&fit=crop&w=1600&q=80';
 
+  const emptyTitle = settings.template_empty_title || 'No Fragrances Yet';
+  const emptySubtitle = settings.template_empty_subtitle || 'Add fragrances to your store to see them displayed here.';
+  const emptyHint = settings.template_empty_hint || 'Products will appear automatically once you add them to your store.';
+
+  const heroHeading = settings.template_hero_heading || 'A New Way to Experience Scent';
+  const heroSubtitle =
+    settings.template_hero_subtitle ||
+    'Three realms. One universe. Discover fragrances crafted for mood, presence, and identity.';
+
+  const editorial1Title = settings.template_editorial_1_title || 'Realm I — Noir Extrait';
+  const editorial1Text =
+    settings.template_editorial_1_text ||
+    'Built for night-heavy rooms. Amber, smoke, and vanilla crafted to leave a trail of warmth and mystery.';
+  const editorial2Title = settings.template_editorial_2_title || 'Realm II — Golden Luxe';
+  const editorial2Text =
+    settings.template_editorial_2_text ||
+    'Bright, structured, and modern. Neroli, citrus, and musk for clean daytime presence.';
+  const editorial3Title = settings.template_editorial_3_title || 'Realm III — Dreamscape';
+  const editorial3Text =
+    settings.template_editorial_3_text ||
+    'Minimal, airy, and skin-like. Soft musks and woods that feel like a second skin.';
+
+  const filterAllLabel = settings.template_filter_all_label || 'All';
+  const filterDarkLabel = settings.template_filter_dark_label || 'Noir';
+  const filterGoldLabel = settings.template_filter_gold_label || 'Gold';
+  const filterDreamLabel = settings.template_filter_dream_label || 'Dream';
+
+  const featuredTitle = settings.template_featured_title || 'Featured';
+  const exploreMoreTitle = settings.template_explore_more_title || 'Explore More';
+  const allScentsTitle = settings.template_all_scents_title || 'All Scents';
+  const buyNowLabel = settings.template_buy_now_label || 'Buy Now';
+  const footerRights = settings.template_footer_rights || 'All rights reserved.';
+
   // Parse custom categories from template settings if available
   const customCategories = useMemo(() => {
     try {
@@ -129,7 +162,7 @@ export default function PerfumeTemplate(props: TemplateProps) {
               navigate(`checkout/${p.id}`);
             }}
           >
-            Buy Now
+            {buyNowLabel}
           </button>
         </div>
       </div>
@@ -142,9 +175,9 @@ export default function PerfumeTemplate(props: TemplateProps) {
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: secondary_color }}>
         <div className="text-center max-w-md mx-auto p-4 md:p-6">
           <div className="text-6xl mb-4">🧴</div>
-          <h1 className="text-xl md:text-2xl font-serif font-bold mb-4" style={{ color: text_color }}>No Fragrances Yet</h1>
-          <p className="mb-6" style={{ color: secondary_text_color }}>Add fragrances to your store to see them displayed here.</p>
-          <p className="text-sm" style={{ color: secondary_text_color }}>Products will appear automatically once you add them to your store.</p>
+          <h1 className="text-xl md:text-2xl font-serif font-bold mb-4" style={{ color: text_color }}>{emptyTitle}</h1>
+          <p className="mb-6" style={{ color: secondary_text_color }}>{emptySubtitle}</p>
+          <p className="text-sm" style={{ color: secondary_text_color }}>{emptyHint}</p>
         </div>
       </div>
     );
@@ -161,10 +194,10 @@ export default function PerfumeTemplate(props: TemplateProps) {
 
         <div className="absolute bottom-16 left-10 max-w-2xl pr-6">
           <h1 className="text-5xl md:text-6xl font-serif font-semibold mb-3" style={{ color: text_color }}>
-            A New Way to Experience Scent
+            {heroHeading}
           </h1>
           <p className="text-base md:text-lg" style={{ color: secondary_text_color }}>
-            Three realms. One universe. Discover fragrances crafted for mood, presence, and identity.
+            {heroSubtitle}
           </p>
         </div>
       </section>
@@ -176,10 +209,10 @@ export default function PerfumeTemplate(props: TemplateProps) {
           <img src={bannerImage} alt="Realm I" className="rounded-xl opacity-80" />
           <div>
             <h2 className="text-3xl font-serif mb-3" style={{ color: '#fef3c7' }}>
-              Realm I — Noir Extrait
+              {editorial1Title}
             </h2>
             <p className="text-base leading-relaxed" style={{ color: secondary_text_color }}>
-              Built for night-heavy rooms. Amber, smoke, and vanilla crafted to leave a trail of warmth and mystery.
+              {editorial1Text}
             </p>
           </div>
         </div>
@@ -188,10 +221,10 @@ export default function PerfumeTemplate(props: TemplateProps) {
         <div className="grid md:grid-cols-2 gap-10 items-center">
           <div>
             <h2 className="text-3xl font-serif mb-3" style={{ color: '#fef08a' }}>
-              Realm II — Golden Luxe
+              {editorial2Title}
             </h2>
             <p className="text-base leading-relaxed" style={{ color: secondary_text_color }}>
-              Bright, structured, and modern. Neroli, citrus, and musk for clean daytime presence.
+              {editorial2Text}
             </p>
           </div>
           <img src={bannerImage} alt="Realm II" className="rounded-xl opacity-80" />
@@ -202,10 +235,10 @@ export default function PerfumeTemplate(props: TemplateProps) {
           <img src={bannerImage} alt="Realm III" className="rounded-xl opacity-80" />
           <div>
             <h2 className="text-3xl font-serif mb-3" style={{ color: '#bae6fd' }}>
-              Realm III — Dreamscape
+              {editorial3Title}
             </h2>
             <p className="text-base leading-relaxed" style={{ color: secondary_text_color }}>
-              Minimal, airy, and skin-like. Soft musks and woods that feel like a second skin.
+              {editorial3Text}
             </p>
           </div>
         </div>
@@ -215,10 +248,10 @@ export default function PerfumeTemplate(props: TemplateProps) {
       <section className="max-w-6xl mx-auto px-6 mb-8">
         <div className="flex gap-3 flex-wrap">
           {[
-            ['all', 'All'],
-            ['dark', 'Noir'],
-            ['gold', 'Gold'],
-            ['art', 'Dream'],
+            ['all', filterAllLabel],
+            ['dark', filterDarkLabel],
+            ['gold', filterGoldLabel],
+            ['art', filterDreamLabel],
           ].map(([v, label]) => (
             <button
               key={v}
@@ -237,7 +270,7 @@ export default function PerfumeTemplate(props: TemplateProps) {
 
       {/* FEATURED ROW */}
       <section className="max-w-6xl mx-auto px-6 mb-16">
-        <h2 className="text-2xl font-serif mb-6">Featured</h2>
+        <h2 className="text-2xl font-serif mb-6">{featuredTitle}</h2>
         <div className="grid md:grid-cols-2 gap-6">
           {filtered.slice(0, 2).map((p) => (
             <ProductCard key={p.id} p={p} />
@@ -247,7 +280,7 @@ export default function PerfumeTemplate(props: TemplateProps) {
 
       {/* CAROUSEL */}
       <section className="max-w-6xl mx-auto px-6 mb-16">
-        <h2 className="text-2xl font-serif mb-6">Explore More</h2>
+        <h2 className="text-2xl font-serif mb-6">{exploreMoreTitle}</h2>
         <div className="flex gap-6 overflow-x-auto pb-4" style={{ scrollSnapType: 'x mandatory' }}>
           {filtered.map((p) => (
             <div key={p.id} style={{ scrollSnapAlign: 'start' }} className="min-w-[280px]">
@@ -259,7 +292,7 @@ export default function PerfumeTemplate(props: TemplateProps) {
 
       {/* GRID */}
       <section className="max-w-6xl mx-auto px-6 pb-20">
-        <h2 className="text-2xl font-serif mb-6">All Scents</h2>
+        <h2 className="text-2xl font-serif mb-6">{allScentsTitle}</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
           {filtered.map((p) => (
             <ProductCard key={p.id} p={p} />
@@ -270,9 +303,72 @@ export default function PerfumeTemplate(props: TemplateProps) {
       {/* FOOTER */}
       <footer className="border-t py-8" style={{ borderColor: `${primary_color}30` }}>
         <div className="max-w-6xl mx-auto px-6 text-center text-sm" style={{ color: secondary_text_color }}>
-          <p>&copy; {new Date().getFullYear()} {storeName}. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} {storeName}. {footerRights}</p>
         </div>
       </footer>
     </div>
   );
 }
+
+export const TEMPLATE_EDITOR_SECTIONS = [
+  {
+    title: 'Perfume: Empty State',
+    fields: [
+      { key: 'template_empty_title', label: 'Empty Title', type: 'text', defaultValue: 'No Fragrances Yet' },
+      { key: 'template_empty_subtitle', label: 'Empty Subtitle', type: 'text', defaultValue: 'Add fragrances to your store to see them displayed here.' },
+      { key: 'template_empty_hint', label: 'Empty Hint', type: 'text', defaultValue: 'Products will appear automatically once you add them to your store.' },
+    ],
+  },
+  {
+    title: 'Perfume: Hero',
+    fields: [
+      { key: 'template_hero_heading', label: 'Hero Heading', type: 'text', defaultValue: 'A New Way to Experience Scent' },
+      {
+        key: 'template_hero_subtitle',
+        label: 'Hero Subtitle',
+        type: 'text',
+        defaultValue: 'Three realms. One universe. Discover fragrances crafted for mood, presence, and identity.',
+      },
+    ],
+  },
+  {
+    title: 'Perfume: Editorial Blocks',
+    fields: [
+      { key: 'template_editorial_1_title', label: 'Editorial 1 Title', type: 'text', defaultValue: 'Realm I — Noir Extrait' },
+      {
+        key: 'template_editorial_1_text',
+        label: 'Editorial 1 Text',
+        type: 'text',
+        defaultValue: 'Built for night-heavy rooms. Amber, smoke, and vanilla crafted to leave a trail of warmth and mystery.',
+      },
+      { key: 'template_editorial_2_title', label: 'Editorial 2 Title', type: 'text', defaultValue: 'Realm II — Golden Luxe' },
+      {
+        key: 'template_editorial_2_text',
+        label: 'Editorial 2 Text',
+        type: 'text',
+        defaultValue: 'Bright, structured, and modern. Neroli, citrus, and musk for clean daytime presence.',
+      },
+      { key: 'template_editorial_3_title', label: 'Editorial 3 Title', type: 'text', defaultValue: 'Realm III — Dreamscape' },
+      {
+        key: 'template_editorial_3_text',
+        label: 'Editorial 3 Text',
+        type: 'text',
+        defaultValue: 'Minimal, airy, and skin-like. Soft musks and woods that feel like a second skin.',
+      },
+    ],
+  },
+  {
+    title: 'Perfume: Filters & Labels',
+    fields: [
+      { key: 'template_filter_all_label', label: 'Filter Label (All)', type: 'text', defaultValue: 'All' },
+      { key: 'template_filter_dark_label', label: 'Filter Label (Dark)', type: 'text', defaultValue: 'Noir' },
+      { key: 'template_filter_gold_label', label: 'Filter Label (Gold)', type: 'text', defaultValue: 'Gold' },
+      { key: 'template_filter_dream_label', label: 'Filter Label (Dream)', type: 'text', defaultValue: 'Dream' },
+      { key: 'template_featured_title', label: 'Featured Title', type: 'text', defaultValue: 'Featured' },
+      { key: 'template_explore_more_title', label: 'Explore More Title', type: 'text', defaultValue: 'Explore More' },
+      { key: 'template_all_scents_title', label: 'All Scents Title', type: 'text', defaultValue: 'All Scents' },
+      { key: 'template_buy_now_label', label: 'Buy Now Label', type: 'text', defaultValue: 'Buy Now' },
+      { key: 'template_footer_rights', label: 'Footer Rights Text', type: 'text', defaultValue: 'All rights reserved.' },
+    ],
+  },
+] as const;

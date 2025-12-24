@@ -7,6 +7,8 @@ export default function Layout({ children }: PropsWithChildren) {
   const location = useLocation();
   const isStorefrontPage = location.pathname.startsWith('/store/');
   const isAdminChat = location.pathname === '/platform-admin/chats' || location.pathname === '/platform-admin/chat';
+  const isChatPage = location.pathname === '/chat';
+  const isFullScreenChat = isAdminChat || isChatPage;
 
   if (isStorefrontPage) {
     // Do not show platform header/footer on public storefront pages
@@ -18,12 +20,12 @@ export default function Layout({ children }: PropsWithChildren) {
   }
 
   return (
-    <div className={isAdminChat ? "flex flex-col h-screen" : "min-h-screen flex flex-col"}>
+    <div className={isFullScreenChat ? "flex flex-col h-screen overflow-hidden" : "min-h-screen flex flex-col"}>
       <Header />
-      <main className={isAdminChat ? "flex-1 overflow-hidden" : "flex-1"}>
+      <main className={isFullScreenChat ? "flex-1 overflow-hidden" : "flex-1"}>
         {children}
       </main>
-      {!isAdminChat && <Footer />}
+      {!isFullScreenChat && <Footer />}
     </div>
   );
 }

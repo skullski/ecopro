@@ -22,7 +22,8 @@
     "test": "vitest --run",
     "format.fix": "prettier --write .",
     "typecheck": "tsc",
-    "migrate:rehash-passwords": "tsx server/scripts/rehash-passwords.ts"
+    "migrate:rehash-passwords": "tsx server/scripts/rehash-passwords.ts",
+    "extract:template-settings": "tsx scripts/extract-template-settings.ts"
   },
   "dependencies": {
     "argon2": "^0.44.0",

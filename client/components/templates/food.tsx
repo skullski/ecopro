@@ -67,23 +67,35 @@ export default function FoodTemplate(props: TemplateProps) {
 
   const journey = [
     {
-      label: 'Start',
-      title: 'A quiet opening',
-      text: 'Clean, saline, and light dishes to reset the palate before anything louder appears.',
-      image: 'https://images.unsplash.com/photo-1544022613-8b31f5be2acb?auto=format&fit=crop&w=900&q=80'
+      label: (settings as any).template_journey_1_label || 'Start',
+      title: (settings as any).template_journey_1_title || 'A quiet opening',
+      text:
+        (settings as any).template_journey_1_text ||
+        'Clean, saline, and light dishes to reset the palate before anything louder appears.',
+      image:
+        (settings as any).template_journey_1_image ||
+        'https://images.unsplash.com/photo-1544022613-8b31f5be2acb?auto=format&fit=crop&w=900&q=80',
     },
     {
-      label: 'Middle',
-      title: 'Depth & texture',
-      text: 'Warmer bowls, richer cuts, and the moment where the room starts to slow down.',
-      image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=900&q=80'
+      label: (settings as any).template_journey_2_label || 'Middle',
+      title: (settings as any).template_journey_2_title || 'Depth & texture',
+      text:
+        (settings as any).template_journey_2_text ||
+        'Warmer bowls, richer cuts, and the moment where the room starts to slow down.',
+      image:
+        (settings as any).template_journey_2_image ||
+        'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=900&q=80',
     },
     {
-      label: 'Finish',
-      title: 'A small ending',
-      text: 'Soft sweetness, temperature contrast, and citrus notes to clear everything away.',
-      image: 'https://images.unsplash.com/photo-1534353473418-4cfa6c56fd38?auto=format&fit=crop&w=900&q=80'
-    }
+      label: (settings as any).template_journey_3_label || 'Finish',
+      title: (settings as any).template_journey_3_title || 'A small ending',
+      text:
+        (settings as any).template_journey_3_text ||
+        'Soft sweetness, temperature contrast, and citrus notes to clear everything away.',
+      image:
+        (settings as any).template_journey_3_image ||
+        'https://images.unsplash.com/photo-1534353473418-4cfa6c56fd38?auto=format&fit=crop&w=900&q=80',
+    },
   ];
 
   const parallaxOffset = Math.min(scrollY * 0.06, 18);
@@ -671,3 +683,26 @@ export default function FoodTemplate(props: TemplateProps) {
     </div>
   );
 }
+
+export const TEMPLATE_EDITOR_SECTIONS = [
+  {
+    title: 'Food: Journey Section',
+    description: 'Edit the 3-step journey content (label/title/text/image).',
+    fields: [
+      { key: 'template_journey_1_label', label: 'Step 1 Label', type: 'text', placeholder: 'Start' },
+      { key: 'template_journey_1_title', label: 'Step 1 Title', type: 'text', placeholder: 'A quiet opening' },
+      { key: 'template_journey_1_text', label: 'Step 1 Text', type: 'textarea' },
+      { key: 'template_journey_1_image', label: 'Step 1 Image', type: 'url', placeholder: 'https://...' },
+
+      { key: 'template_journey_2_label', label: 'Step 2 Label', type: 'text', placeholder: 'Middle' },
+      { key: 'template_journey_2_title', label: 'Step 2 Title', type: 'text', placeholder: 'Depth & texture' },
+      { key: 'template_journey_2_text', label: 'Step 2 Text', type: 'textarea' },
+      { key: 'template_journey_2_image', label: 'Step 2 Image', type: 'url', placeholder: 'https://...' },
+
+      { key: 'template_journey_3_label', label: 'Step 3 Label', type: 'text', placeholder: 'Finish' },
+      { key: 'template_journey_3_title', label: 'Step 3 Title', type: 'text', placeholder: 'A small ending' },
+      { key: 'template_journey_3_text', label: 'Step 3 Text', type: 'textarea' },
+      { key: 'template_journey_3_image', label: 'Step 3 Image', type: 'url', placeholder: 'https://...' },
+    ],
+  },
+] as const;

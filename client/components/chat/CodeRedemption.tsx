@@ -6,7 +6,7 @@
 
 import React, { useState } from 'react';
 import { Lock, CheckCircle, AlertCircle, Loader } from 'lucide-react';
-import { apiFetch } from '@/lib/api';
+import { getAuthToken } from '@/lib/auth';
 
 interface CodeRedemptionProps {
   onSuccess?: (subscription: any) => void;
@@ -19,7 +19,7 @@ export function CodeRedemption({ onSuccess, onError, showInline = false }: CodeR
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [attemptsRemaining, setAttemptsRemaining] = useState(5);
+  const [attemptsRemaining, setAttemptsRemaining] = useState(3);
   const [rateLimitReset, setRateLimitReset] = useState(0);
 
   const handleRedeemCode = async (e: React.FormEvent) => {
@@ -33,24 +33,32 @@ export function CodeRedemption({ onSuccess, onError, showInline = false }: CodeR
         throw new Error('Please enter a code');
       }
 
-      const response = await apiFetch<any>('/api/codes/redeem', {
+      const token = getAuthToken();
+      const res = await fetch('/api/codes/redeem', {
         method: 'POST',
-        body: JSON.stringify({ code: code.trim().toUpperCase() })
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ code: code.trim().toUpperCase() }),
       });
 
-      if (response.error) {
-        setError(response.error);
-        setAttemptsRemaining(response.attemptsRemaining || 5);
-        if (response.resetIn) {
-          setRateLimitReset(response.resetIn);
+      const data = await res.json().catch(() => ({} as any));
+
+      if (!res.ok || data?.error) {
+        const msg = data?.error || data?.message || 'Failed to redeem code';
+        setError(msg);
+        setAttemptsRemaining(typeof data?.attemptsRemaining === 'number' ? data.attemptsRemaining : 3);
+        if (typeof data?.resetIn === 'number') {
+          setRateLimitReset(data.resetIn);
         }
-        onError?.(response.error);
+        onError?.(msg);
       } else {
         setSuccess(true);
         setCode('');
-        setAttemptsRemaining(5);
+        setAttemptsRemaining(3);
         setRateLimitReset(0);
-        onSuccess?.(response.subscription);
+        onSuccess?.(data.subscription);
 
         // Show success for 5 seconds then fade
         setTimeout(() => setSuccess(false), 5000);
@@ -65,18 +73,10 @@ export function CodeRedemption({ onSuccess, onError, showInline = false }: CodeR
   };
 
   const handleFormatCode = (value: string) => {
-    // Auto-format code as user types: XXXX-XXXX-XXXX-XXXX
-    const cleaned = value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
-    let formatted = '';
-
-    for (let i = 0; i < cleaned.length; i++) {
-      if (i > 0 && i % 4 === 0 && cleaned[i] !== '-') {
-        formatted += '-';
-      }
-      formatted += cleaned[i];
-    }
-
-    setCode(formatted.slice(0, 19)); // Max length with hyphens
+    // Normalize input (supports pasting with spaces/dashes) into XXXX-XXXX-XXXX-XXXX.
+    const cleaned = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16);
+    const formatted = cleaned.match(/.{1,4}/g)?.join('-') || cleaned;
+    setCode(formatted);
   };
 
   if (showInline) {
@@ -112,7 +112,7 @@ export function CodeRedemption({ onSuccess, onError, showInline = false }: CodeR
                 <p className="font-medium">{error}</p>
                 {attemptsRemaining < 5 && (
                   <p className="text-xs mt-1">
-                    Attempts remaining: {attemptsRemaining}/5
+                    Attempts remaining: {attemptsRemaining}/3
                   </p>
                 )}
               </div>

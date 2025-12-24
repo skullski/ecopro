@@ -68,16 +68,116 @@ export default function BeautyTemplate(props: TemplateProps) {
     h2 { font-size: ${headingSizes.h2}; }
     button { ${enable_animations ? 'transition: all 0.3s ease;' : ''} border-radius: var(--border-radius); }
   `;
-  const shades = [
+
+  const storeName = settings.store_name || 'BloomSkin';
+  const storeInitials = (settings as any).store_initials || String(storeName).substring(0, 2).toUpperCase();
+  const logoUrl = (settings as any).store_logo || (settings as any).logo_url || '';
+  const headerTagline = (settings as any).template_header_tagline || 'Skin · Color · Rituals · K‑beauty · Clinical';
+  const bagLabel = (settings as any).template_bag_label || 'Bag';
+  const wishlistLabel = (settings as any).template_wishlist_label || 'Wishlist';
+  const searchPlaceholder = (settings as any).template_search_placeholder || 'Search serums, tints, cleansers...';
+
+  const heroBadge = (settings as any).template_hero_badge || 'Beauty store · Full options';
+  const heroHeading = settings.template_hero_heading || 'A clean, modern beauty store built around routines, concerns and shades';
+  const heroSubtitle = settings.template_hero_subtitle || 'Filter by skin concern, routine time, product type and price. Wishlist your favorites and explore base shades.';
+  const heroPrimaryCta = (settings as any).template_hero_primary_cta || 'Explore products';
+  const heroSecondaryCta = (settings as any).template_hero_secondary_cta || 'Browse routines';
+
+  const shadeFinderLabel = (settings as any).template_shade_finder_label || 'Shade finder';
+  const shadeFinderProductName = (settings as any).template_shade_finder_product_name || 'Skin Veil Tint';
+  const shadeFinderInstruction = (settings as any).template_shade_finder_instruction || 'Tap a shade to preview the tint and details.';
+  const shadeFinderDetailsLine = (settings as any).template_shade_finder_details_line ||
+    'Skin Veil Tint · Shade 01 · Light neutral with soft yellow undertone. · 4200 DZD';
+  const shadeProductAlt = (settings as any).template_shade_product_alt || 'Shade product';
+
+  const filtersTitle = (settings as any).template_filters_title || 'Filters';
+  const routineTitle = (settings as any).template_routine_title || 'Routine';
+  const concernTitle = (settings as any).template_concern_title || 'Skin concern';
+  const typeTitle = (settings as any).template_type_title || 'Product type';
+  const priceTitle = (settings as any).template_price_title || 'Price (max)';
+  const priceAny = (settings as any).template_price_any || 'Any';
+  const price4000 = (settings as any).template_price_4000 || 'Up to 4,000 DZD';
+  const price8000 = (settings as any).template_price_8000 || 'Up to 8,000 DZD';
+  const price12000 = (settings as any).template_price_12000 || 'Up to 12,000 DZD';
+
+  const topKickerAll = (settings as any).template_top_kicker_all || 'All products';
+  const topKickerFiltered = (settings as any).template_top_kicker_filtered || 'Filtered selection';
+  const catalogTitle = (settings as any).template_catalog_title || 'Catalog';
+  const itemsSuffix = (settings as any).template_items_suffix || 'items';
+  const wishlistSuffix = (settings as any).template_wishlist_suffix || 'Wishlist:';
+
+  const productFallbackCategory = (settings as any).template_product_fallback_category || 'Product';
+  const buyNowLabel = (settings as any).template_buy_now_label || 'Buy Now';
+
+  const ingredientsKicker = (settings as any).template_ingredients_kicker || 'Ingredients';
+  const glossaryTitle = (settings as any).template_glossary_title || 'Glossary';
+
+  const footerSuffix = (settings as any).template_footer_suffix || 'Beauty & skincare store';
+  const footerLinks = (settings as any).template_footer_links
+    ? String((settings as any).template_footer_links)
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter(Boolean)
+    : ['Ingredients', 'Routines', 'Customer care'];
+
+  const quickViewCloseLabel = (settings as any).template_quickview_close_label || 'Close';
+  const quickViewDetailsSuffix = (settings as any).template_quickview_details_suffix || 'Details';
+  const quickViewReviewsText = (settings as any).template_quickview_reviews_text || '(5 reviews)';
+  const quickViewDescriptionFallback = (settings as any).template_quickview_description_fallback || 'Premium beauty product for your skincare routine.';
+  const quickViewViewDetailsLabel = (settings as any).template_quickview_view_details_label || 'View Details';
+
+  const defaultShades: Array<{ id: string; hex: string }> = [
     { id: 's1', hex: '#fbe4d5' },
     { id: 's2', hex: '#f4c7a1' },
     { id: 's3', hex: '#e7a76c' },
     { id: 's4', hex: '#c78453' },
-    { id: 's5', hex: '#8a5a3d' }
+    { id: 's5', hex: '#8a5a3d' },
   ];
+  let shades: Array<{ id: string; hex: string }> = defaultShades;
+  const shadesJson = (settings as any).template_shades_json;
+  if (shadesJson) {
+    try {
+      const parsed = JSON.parse(String(shadesJson));
+      if (Array.isArray(parsed)) shades = parsed;
+    } catch {
+      shades = defaultShades;
+    }
+  }
 
-  const concerns = ['Acne', 'Sensitivity', 'Dryness', 'Oiliness', 'Aging'];
-  const routines = ['Morning', 'Evening'];
+  const concerns = (settings.template_concerns
+    ? String(settings.template_concerns)
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter(Boolean)
+    : ['Acne', 'Sensitivity', 'Dryness', 'Oiliness', 'Aging']) as string[];
+  const routines = ((settings as any).template_routines
+    ? String((settings as any).template_routines)
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter(Boolean)
+    : ['Morning', 'Evening']) as string[];
+  const productTypes = ((settings as any).template_product_types
+    ? String((settings as any).template_product_types)
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter(Boolean)
+    : ['All', 'clinical', 'premium', 'luxury', 'kbeauty']) as string[];
+
+  const defaultIngredientCards = [
+    { title: 'Niacinamide', meta: '(10%)', description: 'Reduces blemishes, controls oil, refines pores.' },
+    { title: 'Hyaluronic Acid', meta: '(2%)', description: 'Multi-weight hydration for different skin layers.' },
+    { title: 'Retinol', meta: '(0.2%)', description: 'Supports texture, fine lines and cell turnover.' },
+  ];
+  let ingredientCards = defaultIngredientCards;
+  const ingredientCardsJson = (settings as any).template_ingredients_cards_json;
+  if (ingredientCardsJson) {
+    try {
+      const parsed = JSON.parse(String(ingredientCardsJson));
+      if (Array.isArray(parsed)) ingredientCards = parsed;
+    } catch {
+      ingredientCards = defaultIngredientCards;
+    }
+  }
 
   const filteredProducts = products.filter((p: any) => {
     const bySearch = search ? p.title?.toLowerCase().includes(search.toLowerCase()) : true;
@@ -105,7 +205,7 @@ export default function BeautyTemplate(props: TemplateProps) {
           style={{ backgroundColor: primary_color, color: secondary_color }}
           className="rounded-full px-3 py-1.5 flex items-center gap-2 shadow-lg text-[11px] font-medium"
         >
-          <span>Bag</span>
+          <span>{bagLabel}</span>
           <span
             style={{ backgroundColor: accent_color, color: secondary_color }}
             className="w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold"
@@ -120,17 +220,21 @@ export default function BeautyTemplate(props: TemplateProps) {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div
-              className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-semibold tracking-[0.16em]"
+              className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-semibold tracking-[0.16em] overflow-hidden"
               style={{ backgroundColor: primary_color, color: secondary_color }}
             >
-              {settings.store_name ? settings.store_name.substring(0, 2).toUpperCase() : 'BS'}
+              {logoUrl ? (
+                <img src={logoUrl} alt={`${storeName} logo`} className="w-full h-full object-contain" />
+              ) : (
+                storeInitials
+              )}
             </div>
             <div>
               <div className="font-serif text-lg font-semibold leading-tight" style={{ color: text_color }}>
-                {settings.store_name || 'BloomSkin'}
+                {storeName}
               </div>
               <div className="text-[11px]" style={{ color: secondary_text_color }}>
-                Skin · Color · Rituals · K‑beauty · Clinical
+                {headerTagline}
               </div>
             </div>
           </div>
@@ -140,7 +244,7 @@ export default function BeautyTemplate(props: TemplateProps) {
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search serums, tints, cleansers..."
+              placeholder={searchPlaceholder}
               className="w-full text-sm rounded-full px-3 py-1.5 focus:outline-none border"
               style={{
                 borderColor: secondary_text_color,
@@ -152,7 +256,7 @@ export default function BeautyTemplate(props: TemplateProps) {
 
           <div className="flex items-center gap-3 text-[11px]" style={{ color: secondary_text_color }}>
             <div className="hidden sm:flex items-center gap-1">
-              <span>Wishlist</span>
+              <span>{wishlistLabel}</span>
               <span className="px-2 py-0.5 rounded-full" style={{ backgroundColor: accent_color, color: secondary_color }}>
                 {wishlist.length}
               </span>
@@ -175,26 +279,26 @@ export default function BeautyTemplate(props: TemplateProps) {
               className="inline-block rounded-full px-3 py-1 text-[11px] font-medium tracking-[0.16em] uppercase"
               style={{ backgroundColor: '#fee2e2', color: '#b91c1c' }}
             >
-              Beauty store · Full options
+              {heroBadge}
             </span>
             <h2 className="font-serif text-xl md:text-2xl sm:text-2xl md:text-xl md:text-2xl font-semibold mt-4 leading-tight">
-              {settings.template_hero_heading || 'A clean, modern beauty store built around routines, concerns and shades'}
+              {heroHeading}
             </h2>
             <p className="text-sm mt-3" style={{ color: '#6b7280' }}>
-              {settings.template_hero_subtitle || 'Filter by skin concern, routine time, product type and price. Wishlist your favorites and explore base shades.'}
+              {heroSubtitle}
             </p>
             <div className="mt-5 flex flex-wrap justify-center gap-2">
               <button
                 className="rounded-full px-4 py-2 text-xs font-semibold tracking-[0.14em] uppercase"
                 style={{ backgroundColor: '#111827', color: '#f9fafb' }}
               >
-                Explore products
+                {heroPrimaryCta}
               </button>
               <button
                 className="rounded-full px-4 py-2 text-xs font-semibold tracking-[0.14em] uppercase border"
                 style={{ borderColor: '#fecaca', backgroundColor: '#fff7f7', color: '#b91c1c' }}
               >
-                Browse routines
+                {heroSecondaryCta}
               </button>
             </div>
           </div>
@@ -203,11 +307,11 @@ export default function BeautyTemplate(props: TemplateProps) {
           <div className="rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row gap-4 items-start sm:items-center border" style={{ backgroundColor: '#ffffff', borderColor: '#f3d5dd' }}>
             <div className="flex-1">
               <div className="text-[11px] tracking-[0.16em] uppercase mb-1" style={{ color: '#9f7a85' }}>
-                Shade finder
+                {shadeFinderLabel}
               </div>
-              <div className="font-serif text-lg font-semibold">Skin Veil Tint</div>
+              <div className="font-serif text-lg font-semibold">{shadeFinderProductName}</div>
               <div className="text-[12px] mt-1 mb-2" style={{ color: '#6b7280' }}>
-                Tap a shade to preview the tint and details.
+                {shadeFinderInstruction}
               </div>
               <div className="flex gap-2 flex-wrap mb-2">
                 {shades.map(sh => (
@@ -224,13 +328,13 @@ export default function BeautyTemplate(props: TemplateProps) {
                 ))}
               </div>
               <div className="text-[12px]" style={{ color: '#4b5563' }}>
-                <span className="font-semibold">Skin Veil Tint · Shade 01</span> · Light neutral with soft yellow undertone. · 4200 DZD
+                {shadeFinderDetailsLine}
               </div>
             </div>
             <div className="w-full sm:w-40 rounded-2xl overflow-hidden border" style={{ borderColor: '#f3d5dd', backgroundColor: '#fff7fb' }}>
               <img
                 src={products[0]?.images?.[0] || 'https://images.unsplash.com/photo-1585386959984-a4155223f3f8?auto=format&fit=crop&w=900&q=80'}
-                alt="Shade product"
+                alt={shadeProductAlt}
                 className="w-full object-cover"
                 style={{ height: '128px' }}
               />
@@ -244,14 +348,14 @@ export default function BeautyTemplate(props: TemplateProps) {
         <div className="grid grid-cols-1 md:grid-cols-[240px_minmax(0,1fr)] gap-3 md:gap-4">
           {/* FILTERS */}
           <aside className="rounded-2xl border p-4 h-fit" style={{ backgroundColor: '#ffffff', borderColor: '#fce7f3' }}>
-            <div className="text-sm font-semibold mb-3">Filters</div>
+            <div className="text-sm font-semibold mb-3">{filtersTitle}</div>
 
             <div className="mb-4">
               <div className="text-[11px] tracking-[0.16em] uppercase mb-1" style={{ color: '#9f7a85' }}>
-                Routine
+                {routineTitle}
               </div>
               <div className="flex flex-wrap gap-2 text-[11px]">
-                {['All', 'Morning', 'Evening'].map(r => (
+                {['All', ...routines].map(r => (
                   <button
                     key={r}
                     onClick={() => setRoutine(r)}
@@ -270,7 +374,7 @@ export default function BeautyTemplate(props: TemplateProps) {
 
             <div className="mb-4">
               <div className="text-[11px] tracking-[0.16em] uppercase mb-1" style={{ color: '#9f7a85' }}>
-                Skin concern
+                {concernTitle}
               </div>
               <div className="flex flex-wrap gap-2 text-[11px]">
                 {['All', ...concerns].map(c => (
@@ -292,10 +396,10 @@ export default function BeautyTemplate(props: TemplateProps) {
 
             <div className="mb-4">
               <div className="text-[11px] tracking-[0.16em] uppercase mb-1" style={{ color: '#9f7a85' }}>
-                Product type
+                {typeTitle}
               </div>
               <div className="flex flex-wrap gap-2 text-[11px]">
-                {['All', 'clinical', 'premium', 'luxury', 'kbeauty'].map(t => (
+                {productTypes.map(t => (
                   <button
                     key={t}
                     onClick={() => setTypeFilter(t)}
@@ -306,7 +410,7 @@ export default function BeautyTemplate(props: TemplateProps) {
                       borderColor: typeFilter === t ? '#111827' : '#f3d5dd'
                     }}
                   >
-                    {t === 'All' ? 'All' : t}
+                    {t}
                   </button>
                 ))}
               </div>
@@ -314,7 +418,7 @@ export default function BeautyTemplate(props: TemplateProps) {
 
             <div>
               <div className="text-[11px] tracking-[0.16em] uppercase mb-1" style={{ color: '#9f7a85' }}>
-                Price (max)
+                {priceTitle}
               </div>
               <select
                 className="w-full text-xs rounded-md px-2 py-1.5 border"
@@ -326,10 +430,10 @@ export default function BeautyTemplate(props: TemplateProps) {
                 value={maxPrice}
                 onChange={e => setMaxPrice(Number(e.target.value))}
               >
-                <option value={999999}>Any</option>
-                <option value={4000}>Up to 4,000 DZD</option>
-                <option value={8000}>Up to 8,000 DZD</option>
-                <option value={12000}>Up to 12,000 DZD</option>
+                <option value={999999}>{priceAny}</option>
+                <option value={4000}>{price4000}</option>
+                <option value={8000}>{price8000}</option>
+                <option value={12000}>{price12000}</option>
               </select>
             </div>
           </aside>
@@ -340,12 +444,12 @@ export default function BeautyTemplate(props: TemplateProps) {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
               <div>
                 <div className="text-[11px] tracking-[0.16em] uppercase" style={{ color: '#9f7a85' }}>
-                  {routine === 'All' && concern === 'All' && typeFilter === 'All' ? 'All products' : 'Filtered selection'}
+                  {routine === 'All' && concern === 'All' && typeFilter === 'All' ? topKickerAll : topKickerFiltered}
                 </div>
-                <h3 className="font-serif text-lg font-semibold mt-1">Catalog</h3>
+                <h3 className="font-serif text-lg font-semibold mt-1">{catalogTitle}</h3>
               </div>
               <div className="text-[11px]" style={{ color: '#9f7a85' }}>
-                {filteredProducts.length} items · Wishlist: {wishlist.length}
+                {filteredProducts.length} {itemsSuffix} · {wishlistSuffix} {wishlist.length}
               </div>
             </div>
 
@@ -393,7 +497,7 @@ export default function BeautyTemplate(props: TemplateProps) {
                       {p.title}
                     </div>
                     <div className="text-[11px] mt-1" style={{ color: '#9f7a85' }}>
-                      {p.category || 'Product'} · {p.price}
+                      {p.category || productFallbackCategory} · {p.price}
                     </div>
                     <div className="flex items-center justify-between mt-auto pt-2">
                       <div className="text-xs" style={{ color: '#7b4351' }}>
@@ -407,7 +511,7 @@ export default function BeautyTemplate(props: TemplateProps) {
                         className="text-[11px] px-3 py-1 rounded-full font-semibold text-white"
                         style={{ backgroundColor: '#111827' }}
                       >
-                        Buy Now
+                        {buyNowLabel}
                       </button>
                     </div>
                   </div>
@@ -420,36 +524,21 @@ export default function BeautyTemplate(props: TemplateProps) {
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <span className="text-[11px] tracking-[0.16em] uppercase" style={{ color: '#9f7a85' }}>
-                    Ingredients
+                    {ingredientsKicker}
                   </span>
-                  <h4 className="font-serif text-base font-semibold mt-1">Glossary</h4>
+                  <h4 className="font-serif text-base font-semibold mt-1">{glossaryTitle}</h4>
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-[12px]">
-                <div className="rounded-xl border p-3" style={{ backgroundColor: '#fff8fb', borderColor: '#fce7f3' }}>
-                  <div className="font-semibold mb-1" style={{ color: '#7b4351' }}>
-                    Niacinamide <span className="text-[10px]">(10%)</span>
+                {ingredientCards.slice(0, 6).map((card: any) => (
+                  <div key={String(card?.title || '')} className="rounded-xl border p-3" style={{ backgroundColor: '#fff8fb', borderColor: '#fce7f3' }}>
+                    <div className="font-semibold mb-1" style={{ color: '#7b4351' }}>
+                      {String(card?.title || '')}{' '}
+                      {card?.meta ? <span className="text-[10px]">{String(card.meta)}</span> : null}
+                    </div>
+                    <div style={{ color: '#6b7280' }}>{String(card?.description || '')}</div>
                   </div>
-                  <div style={{ color: '#6b7280' }}>
-                    Reduces blemishes, controls oil, refines pores.
-                  </div>
-                </div>
-                <div className="rounded-xl border p-3" style={{ backgroundColor: '#fff8fb', borderColor: '#fce7f3' }}>
-                  <div className="font-semibold mb-1" style={{ color: '#7b4351' }}>
-                    Hyaluronic Acid <span className="text-[10px]">(2%)</span>
-                  </div>
-                  <div style={{ color: '#6b7280' }}>
-                    Multi-weight hydration for different skin layers.
-                  </div>
-                </div>
-                <div className="rounded-xl border p-3" style={{ backgroundColor: '#fff8fb', borderColor: '#fce7f3' }}>
-                  <div className="font-semibold mb-1" style={{ color: '#7b4351' }}>
-                    Retinol <span className="text-[10px]">(0.2%)</span>
-                  </div>
-                  <div style={{ color: '#6b7280' }}>
-                    Supports texture, fine lines and cell turnover.
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
           </section>
@@ -460,12 +549,12 @@ export default function BeautyTemplate(props: TemplateProps) {
       <footer className="border-t" style={{ borderTopColor: '#fce7f3', backgroundColor: '#ffffff' }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-5 text-[11px] flex flex-col sm:flex-row gap-2 sm:justify-between" style={{ color: '#9f7a85' }}>
           <span>
-            © {new Date().getFullYear()} {settings.store_name || 'BloomSkin'} · Beauty & skincare store
+            © {new Date().getFullYear()} {storeName} · {footerSuffix}
           </span>
           <div className="flex gap-3">
-            <span>Ingredients</span>
-            <span>Routines</span>
-            <span>Customer care</span>
+            {footerLinks.slice(0, 5).map((label: string) => (
+              <span key={label}>{label}</span>
+            ))}
           </div>
         </div>
       </footer>
@@ -487,7 +576,7 @@ export default function BeautyTemplate(props: TemplateProps) {
                 className="text-xs text-gray-500"
                 onClick={() => setQuickViewProduct(null)}
               >
-                Close
+                {quickViewCloseLabel}
               </button>
             </div>
             <div className="rounded-xl overflow-hidden border mb-3" style={{ borderColor: '#fce7f3' }}>
@@ -499,16 +588,16 @@ export default function BeautyTemplate(props: TemplateProps) {
               />
             </div>
             <div className="text-[11px] mb-2" style={{ color: '#9f7a85' }}>
-              {quickViewProduct.category || 'Product'} · Details
+              {quickViewProduct.category || productFallbackCategory} · {quickViewDetailsSuffix}
             </div>
             <div className="text-[12px] mb-2" style={{ color: '#111827' }}>
               {formatPrice(quickViewProduct.price)} DZD
             </div>
             <div className="text-[12px] mb-3" style={{ color: '#f59e0b' }}>
-              ★★★★★ <span style={{ color: '#9ca3af' }}>(5 reviews)</span>
+              ★★★★★ <span style={{ color: '#9ca3af' }}>{quickViewReviewsText}</span>
             </div>
             <p className="text-[11px] mb-3" style={{ color: '#6b7280' }}>
-              {quickViewProduct.description || 'Premium beauty product for your skincare routine.'}
+              {quickViewProduct.description || quickViewDescriptionFallback}
             </p>
             <div className="flex gap-2">
               <button
@@ -519,7 +608,7 @@ export default function BeautyTemplate(props: TemplateProps) {
                   navigate(quickViewProduct.slug && quickViewProduct.slug.length > 0 ? `/store/${storeSlug}/${quickViewProduct.slug}` : `/product/${quickViewProduct.id}`);
                 }}
               >
-                View Details
+                {quickViewViewDetailsLabel}
               </button>
               <button
                 className="flex-1 py-2 rounded-full text-[11px] font-semibold tracking-[0.14em] uppercase"
@@ -529,7 +618,7 @@ export default function BeautyTemplate(props: TemplateProps) {
                   navigate(`checkout/${quickViewProduct.id}`);
                 }}
               >
-                Buy Now
+                {buyNowLabel}
               </button>
             </div>
           </div>
@@ -538,3 +627,129 @@ export default function BeautyTemplate(props: TemplateProps) {
     </div>
   );
 }
+
+export const TEMPLATE_EDITOR_SECTIONS = [
+  {
+    title: 'Beauty: Header',
+    fields: [
+      { key: 'store_initials', label: 'Logo Initials', type: 'text', defaultValue: 'BS' },
+      { key: 'template_header_tagline', label: 'Header Tagline', type: 'text', defaultValue: 'Skin · Color · Rituals · K‑beauty · Clinical' },
+      { key: 'template_search_placeholder', label: 'Search Placeholder', type: 'text', defaultValue: 'Search serums, tints, cleansers...' },
+      { key: 'template_wishlist_label', label: 'Wishlist Label', type: 'text', defaultValue: 'Wishlist' },
+      { key: 'template_bag_label', label: 'Bag Label', type: 'text', defaultValue: 'Bag' },
+    ],
+  },
+  {
+    title: 'Beauty: Hero',
+    fields: [
+      { key: 'template_hero_badge', label: 'Hero Badge', type: 'text', defaultValue: 'Beauty store · Full options' },
+      {
+        key: 'template_hero_heading',
+        label: 'Hero Heading',
+        type: 'text',
+        defaultValue: 'A clean, modern beauty store built around routines, concerns and shades',
+      },
+      {
+        key: 'template_hero_subtitle',
+        label: 'Hero Subtitle',
+        type: 'text',
+        defaultValue: 'Filter by skin concern, routine time, product type and price. Wishlist your favorites and explore base shades.',
+      },
+      { key: 'template_hero_primary_cta', label: 'Primary CTA', type: 'text', defaultValue: 'Explore products' },
+      { key: 'template_hero_secondary_cta', label: 'Secondary CTA', type: 'text', defaultValue: 'Browse routines' },
+    ],
+  },
+  {
+    title: 'Beauty: Shade Finder',
+    fields: [
+      { key: 'template_shade_finder_label', label: 'Shade Finder Label', type: 'text', defaultValue: 'Shade finder' },
+      { key: 'template_shade_finder_product_name', label: 'Shade Product Name', type: 'text', defaultValue: 'Skin Veil Tint' },
+      { key: 'template_shade_finder_instruction', label: 'Shade Instruction', type: 'text', defaultValue: 'Tap a shade to preview the tint and details.' },
+      {
+        key: 'template_shade_finder_details_line',
+        label: 'Shade Details Line',
+        type: 'text',
+        defaultValue: 'Skin Veil Tint · Shade 01 · Light neutral with soft yellow undertone. · 4200 DZD',
+      },
+      { key: 'template_shade_product_alt', label: 'Shade Image Alt', type: 'text', defaultValue: 'Shade product' },
+      {
+        key: 'template_shades_json',
+        label: 'Shades JSON',
+        type: 'textarea',
+        defaultValue: JSON.stringify(
+          [
+            { id: 's1', hex: '#fbe4d5' },
+            { id: 's2', hex: '#f4c7a1' },
+            { id: 's3', hex: '#e7a76c' },
+            { id: 's4', hex: '#c78453' },
+            { id: 's5', hex: '#8a5a3d' },
+          ],
+          null,
+          2
+        ),
+      },
+    ],
+  },
+  {
+    title: 'Beauty: Filters & Catalog',
+    fields: [
+      { key: 'template_filters_title', label: 'Filters Title', type: 'text', defaultValue: 'Filters' },
+      { key: 'template_routine_title', label: 'Routine Title', type: 'text', defaultValue: 'Routine' },
+      { key: 'template_concern_title', label: 'Concern Title', type: 'text', defaultValue: 'Skin concern' },
+      { key: 'template_type_title', label: 'Type Title', type: 'text', defaultValue: 'Product type' },
+      { key: 'template_price_title', label: 'Price Title', type: 'text', defaultValue: 'Price (max)' },
+      { key: 'template_routines', label: 'Routines (comma-separated)', type: 'text', defaultValue: 'Morning, Evening' },
+      { key: 'template_concerns', label: 'Concerns (comma-separated)', type: 'text', defaultValue: 'Acne, Sensitivity, Dryness, Oiliness, Aging' },
+      { key: 'template_product_types', label: 'Product Types (comma-separated)', type: 'text', defaultValue: 'All, clinical, premium, luxury, kbeauty' },
+      { key: 'template_price_any', label: 'Price Option: Any', type: 'text', defaultValue: 'Any' },
+      { key: 'template_price_4000', label: 'Price Option: 4,000', type: 'text', defaultValue: 'Up to 4,000 DZD' },
+      { key: 'template_price_8000', label: 'Price Option: 8,000', type: 'text', defaultValue: 'Up to 8,000 DZD' },
+      { key: 'template_price_12000', label: 'Price Option: 12,000', type: 'text', defaultValue: 'Up to 12,000 DZD' },
+      { key: 'template_top_kicker_all', label: 'Top Kicker (All)', type: 'text', defaultValue: 'All products' },
+      { key: 'template_top_kicker_filtered', label: 'Top Kicker (Filtered)', type: 'text', defaultValue: 'Filtered selection' },
+      { key: 'template_catalog_title', label: 'Catalog Title', type: 'text', defaultValue: 'Catalog' },
+      { key: 'template_items_suffix', label: 'Items Suffix', type: 'text', defaultValue: 'items' },
+      { key: 'template_wishlist_suffix', label: 'Wishlist Suffix', type: 'text', defaultValue: 'Wishlist:' },
+      { key: 'template_product_fallback_category', label: 'Fallback Category', type: 'text', defaultValue: 'Product' },
+      { key: 'template_buy_now_label', label: 'Buy Now Label', type: 'text', defaultValue: 'Buy Now' },
+    ],
+  },
+  {
+    title: 'Beauty: Ingredients',
+    fields: [
+      { key: 'template_ingredients_kicker', label: 'Ingredients Kicker', type: 'text', defaultValue: 'Ingredients' },
+      { key: 'template_glossary_title', label: 'Glossary Title', type: 'text', defaultValue: 'Glossary' },
+      {
+        key: 'template_ingredients_cards_json',
+        label: 'Ingredient Cards JSON',
+        type: 'textarea',
+        defaultValue: JSON.stringify(
+          [
+            { title: 'Niacinamide', meta: '(10%)', description: 'Reduces blemishes, controls oil, refines pores.' },
+            { title: 'Hyaluronic Acid', meta: '(2%)', description: 'Multi-weight hydration for different skin layers.' },
+            { title: 'Retinol', meta: '(0.2%)', description: 'Supports texture, fine lines and cell turnover.' },
+          ],
+          null,
+          2
+        ),
+      },
+    ],
+  },
+  {
+    title: 'Beauty: Footer & Quick View',
+    fields: [
+      { key: 'template_footer_suffix', label: 'Footer Suffix', type: 'text', defaultValue: 'Beauty & skincare store' },
+      { key: 'template_footer_links', label: 'Footer Links (comma-separated)', type: 'text', defaultValue: 'Ingredients, Routines, Customer care' },
+      { key: 'template_quickview_close_label', label: 'Quick View: Close', type: 'text', defaultValue: 'Close' },
+      { key: 'template_quickview_details_suffix', label: 'Quick View: Details Suffix', type: 'text', defaultValue: 'Details' },
+      { key: 'template_quickview_reviews_text', label: 'Quick View: Reviews Text', type: 'text', defaultValue: '(5 reviews)' },
+      {
+        key: 'template_quickview_description_fallback',
+        label: 'Quick View: Description Fallback',
+        type: 'text',
+        defaultValue: 'Premium beauty product for your skincare routine.',
+      },
+      { key: 'template_quickview_view_details_label', label: 'Quick View: View Details', type: 'text', defaultValue: 'View Details' },
+    ],
+  },
+] as const;

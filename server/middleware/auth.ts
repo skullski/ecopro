@@ -24,8 +24,10 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
       return;
     }
 
-    const decoded = verifyToken(token);
-    req.user = decoded;
+    const decoded: any = verifyToken(token);
+    const role = decoded?.role;
+    const normalizedRole = role === 'admin' || role === 'user' || role === 'seller' || role === 'root' ? role : 'user';
+    req.user = { ...decoded, role: normalizedRole } as JWTPayload;
     next();
   } catch (error) {
     res.status(401).json({ error: "Invalid or expired token" });
@@ -50,8 +52,10 @@ export function optionalAuthenticate(req: Request, res: Response, next: NextFunc
     const token = extractToken(req.headers.authorization);
     
     if (token) {
-      const decoded = verifyToken(token);
-      req.user = decoded;
+      const decoded: any = verifyToken(token);
+      const role = decoded?.role;
+      const normalizedRole = role === 'admin' || role === 'user' || role === 'seller' || role === 'root' ? role : 'user';
+      req.user = { ...decoded, role: normalizedRole } as JWTPayload;
     }
   } catch (error) {
     // Token invalid but we don't reject the request

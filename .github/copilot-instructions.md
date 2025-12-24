@@ -1,4 +1,5 @@
 # GitHub Copilot Instructions for EcoPro Platform
+1 you read every file inside docks file before you start working 
 
 **IMPORTANT: Before starting ANY coding task, read these files first:**
 
