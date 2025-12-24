@@ -76,9 +76,22 @@ export default function RenewSubscription() {
         setSuccess(true);
         setSubscriptionInfo(data.subscription);
         
+        // Refresh user data in localStorage to clear any lock flags
+        try {
+          const meRes = await fetch('/api/auth/me', {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (meRes.ok) {
+            const userData = await meRes.json();
+            localStorage.setItem('user', JSON.stringify(userData));
+          }
+        } catch (e) {
+          console.error('Failed to refresh user data:', e);
+        }
+        
         // Redirect to dashboard after short delay
         setTimeout(() => {
-          navigate('/dashboard');
+          window.location.href = '/dashboard'; // Full reload to refresh all components
         }, 2000);
       } else {
         setError(data.error || 'Failed to redeem code. Please try again.');

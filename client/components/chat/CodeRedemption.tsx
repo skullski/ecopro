@@ -58,10 +58,26 @@ export function CodeRedemption({ onSuccess, onError, showInline = false }: CodeR
         setCode('');
         setAttemptsRemaining(3);
         setRateLimitReset(0);
+        
+        // Refresh user data in localStorage to clear any lock flags
+        try {
+          const meRes = await fetch('/api/auth/me', {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (meRes.ok) {
+            const userData = await meRes.json();
+            localStorage.setItem('user', JSON.stringify(userData));
+          }
+        } catch (e) {
+          console.error('Failed to refresh user data:', e);
+        }
+        
         onSuccess?.(data.subscription);
 
-        // Show success for 5 seconds then fade
-        setTimeout(() => setSuccess(false), 5000);
+        // Force page reload after 2 seconds to refresh all subscription checks
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
       }
     } catch (err: any) {
       const errorMsg = err.message || 'Failed to redeem code';
