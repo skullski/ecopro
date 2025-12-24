@@ -242,30 +242,30 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
 
   if (loading) {
     return (
-      <div className={embedded ? "bg-transparent flex items-center justify-center p-8" : "bg-gray-50 flex items-center justify-center p-8"} dir="rtl">
+      <div className={embedded ? "bg-transparent flex items-center justify-center p-8" : "bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-8"} dir="rtl">
         <div className="flex items-center gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-          <span className="text-gray-600">جاري التحميل...</span>
+          <span className="text-gray-600 dark:text-gray-300">جاري التحميل...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={embedded ? "bg-transparent" : "bg-gray-50 min-h-screen"} dir="rtl">
+    <div className={embedded ? "bg-transparent" : "bg-gray-50 dark:bg-slate-900 min-h-screen"} dir="rtl">
       <div className={embedded ? "px-4 py-4" : "max-w-7xl mx-auto px-4 py-8"}>
         {!embedded && (
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <MessageSquare className="w-8 h-8 text-green-600" />
               <div>
-                <h1 className="text-xl font-bold text-gray-900">بوت تحديثات العملاء</h1>
-                <p className="text-sm text-gray-600">أرسل رسائل مخصصة لعملائك</p>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">بوت تحديثات العملاء</h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400">أرسل رسائل مخصصة لعملائك</p>
               </div>
             </div>
             <button
               onClick={() => navigate("/dashboard")}
-              className="px-3 py-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50"
+              className="px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-800 dark:text-white"
             >
               رجوع
             </button>
@@ -273,7 +273,7 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
         )}
 
         {loadError && (
-          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-800 text-sm">
+          <div className="mb-4 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/30 p-3 text-amber-800 dark:text-amber-200 text-sm">
             {loadError}
           </div>
         )}
@@ -284,17 +284,17 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
             {Object.entries(SEGMENT_LABELS).map(([key, { label, icon: Icon, color }]) => (
               <div
                 key={key}
-                className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:border-gray-200 transition-colors"
+                className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-slate-700 hover:border-gray-200 dark:hover:border-slate-600 transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg bg-gray-50 ${color}`}>
+                  <div className={`p-2 rounded-lg bg-gray-50 dark:bg-slate-700 ${color}`}>
                     <Icon className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-gray-800">
+                    <p className="text-2xl font-bold text-gray-800 dark:text-white">
                       {(segments || EMPTY_SEGMENTS)[key as keyof CustomerSegment]}
                     </p>
-                    <p className="text-sm text-gray-500">{label}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
                   </div>
                 </div>
               </div>
@@ -304,7 +304,7 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
 
         {/* Actions */}
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-gray-800">الحملات</h2>
+          <h2 className="text-xl font-bold text-gray-800 dark:text-white">الحملات</h2>
           <button
             onClick={() => setShowComposer(true)}
             className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
@@ -317,20 +317,20 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
         {/* Campaign Composer Modal */}
         {showComposer && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-6">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-6">
               <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold text-gray-800">إنشاء حملة جديدة</h3>
+                <h3 className="text-xl font-bold text-gray-800 dark:text-white">إنشاء حملة جديدة</h3>
                 <button
                   onClick={() => setShowComposer(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
                 >
-                  <XCircle className="w-6 h-6 text-gray-400" />
+                  <XCircle className="w-6 h-6 text-gray-400 dark:text-gray-500" />
                 </button>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     اسم الحملة
                   </label>
                   <input
@@ -338,18 +338,18 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
                     value={campaignName}
                     onChange={(e) => setCampaignName(e.target.value)}
                     placeholder="مثال: عرض خاص لعملاء VIP"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     الفئة المستهدفة
                   </label>
                   <select
                     value={targetSegment}
                     onChange={(e) => setTargetSegment(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                   >
                     {Object.entries(SEGMENT_LABELS).map(([key, { label }]) => (
                       <option key={key} value={key}>
@@ -360,7 +360,7 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     الرسالة
                   </label>
                   <textarea
@@ -368,9 +368,9 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
                     onChange={(e) => setCampaignMessage(e.target.value)}
                     placeholder={`مرحباً {name}،\n\nنود إعلامك بـ...`}
                     rows={5}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                    className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     استخدم {"{name}"} لإدراج اسم العميل تلقائياً
                   </p>
                 </div>
@@ -379,7 +379,7 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowComposer(false)}
-                  className="flex-1 px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-3 border border-gray-200 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors text-gray-800 dark:text-white"
                 >
                   إلغاء
                 </button>
@@ -408,14 +408,14 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
         {/* Logs Modal */}
         {showLogs && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
-              <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-                <h3 className="text-xl font-bold text-gray-800">سجل الإرسال</h3>
+            <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+              <div className="p-6 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-800 dark:text-white">سجل الإرسال</h3>
                 <button
                   onClick={() => setShowLogs(null)}
-                  className="p-2 hover:bg-gray-100 rounded-lg"
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
                 >
-                  <XCircle className="w-6 h-6 text-gray-400" />
+                  <XCircle className="w-6 h-6 text-gray-400 dark:text-gray-500" />
                 </button>
               </div>
               <div className="p-6 overflow-y-auto max-h-[60vh]">
@@ -424,7 +424,7 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
                     <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
                   </div>
                 ) : logs.length === 0 ? (
-                  <p className="text-center text-gray-500 py-8">لا توجد سجلات</p>
+                  <p className="text-center text-gray-500 dark:text-gray-400 py-8">لا توجد سجلات</p>
                 ) : (
                   <div className="space-y-3">
                     {logs.map((log) => (
@@ -432,16 +432,16 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
                         key={log.id}
                         className={`p-4 rounded-lg border ${
                           log.status === "sent"
-                            ? "bg-green-50 border-green-200"
-                            : "bg-red-50 border-red-200"
+                            ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                            : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
                         }`}
                       >
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="font-medium text-gray-800">
+                            <p className="font-medium text-gray-800 dark:text-white">
                               {log.customer_name || "عميل"}
                             </p>
-                            <p className="text-sm text-gray-500">{log.customer_phone}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{log.customer_phone}</p>
                           </div>
                           <div className="text-left">
                             <span
@@ -479,10 +479,10 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
 
         {/* Campaigns List */}
         {campaigns.length === 0 ? (
-          <div className="bg-white rounded-2xl p-12 text-center shadow-sm border border-gray-100">
-            <MessageSquare className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-gray-800 mb-2">لا توجد حملات</h3>
-            <p className="text-gray-500 mb-6">ابدأ بإنشاء حملتك الأولى للتواصل مع عملائك</p>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-12 text-center shadow-sm border border-gray-100 dark:border-slate-700">
+            <MessageSquare className="w-16 h-16 text-gray-300 dark:text-slate-600 mx-auto mb-4" />
+            <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">لا توجد حملات</h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">ابدأ بإنشاء حملتك الأولى للتواصل مع عملائك</p>
             <button
               onClick={() => setShowComposer(true)}
               className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
@@ -496,19 +496,19 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
             {campaigns.map((campaign) => (
               <div
                 key={campaign.id}
-                className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:border-gray-200 transition-colors"
+                className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-slate-700 hover:border-gray-200 dark:hover:border-slate-600 transition-colors"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-bold text-gray-800">{campaign.name}</h3>
+                      <h3 className="text-lg font-bold text-gray-800 dark:text-white">{campaign.name}</h3>
                       <span
                         className={`px-2 py-1 rounded-full text-xs font-medium ${
                           campaign.status === "sent"
-                            ? "bg-green-100 text-green-700"
+                            ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
                             : campaign.status === "sending"
-                            ? "bg-blue-100 text-blue-700"
-                            : "bg-gray-100 text-gray-700"
+                            ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
+                            : "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300"
                         }`}
                       >
                         {campaign.status === "sent"
@@ -519,11 +519,11 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
                       </span>
                     </div>
 
-                    <p className="text-gray-600 mb-3 whitespace-pre-wrap line-clamp-2">
+                    <p className="text-gray-600 dark:text-gray-300 mb-3 whitespace-pre-wrap line-clamp-2">
                       {campaign.message}
                     </p>
 
-                    <div className="flex items-center gap-4 text-sm text-gray-500">
+                    <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
                       <span className="flex items-center gap-1">
                         {(() => {
                           const seg = SEGMENT_LABELS[campaign.target_category];
@@ -555,7 +555,7 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
                     {campaign.status === "sent" && (
                       <button
                         onClick={() => viewLogs(campaign.id)}
-                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
                         title="عرض السجل"
                       >
                         <Eye className="w-5 h-5" />
@@ -582,7 +582,7 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
                         </button>
                         <button
                           onClick={() => deleteCampaign(campaign.id)}
-                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                           title="حذف"
                         >
                           <Trash2 className="w-5 h-5" />
