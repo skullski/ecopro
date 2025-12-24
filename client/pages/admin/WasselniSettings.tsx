@@ -29,7 +29,7 @@ export default function AdminWasselniSettings() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'general' | 'whatsapp' | 'templates' | 'customer_bot'>('general');
+  const [activeTab, setActiveTab] = useState<'confirmation_bot' | 'updates_bot' | 'whatsapp' | 'general'>('confirmation_bot');
   const currentUser = getCurrentUser();
   const isPaymentLocked = !!currentUser?.is_locked && currentUser?.lock_type === 'payment';
   const [subscriptionLocked, setSubscriptionLocked] = useState(false);
@@ -228,10 +228,10 @@ export default function AdminWasselniSettings() {
         {/* Tab Navigation */}
         <div className="flex gap-2 mb-6 overflow-x-auto">
           {[
-            { id: 'general' as const, label: 'General', icon: Globe },
+            { id: 'confirmation_bot' as const, label: 'Bot Confirmation', icon: MessageSquare },
+            { id: 'updates_bot' as const, label: 'Bot Updates', icon: Users },
             { id: 'whatsapp' as const, label: 'WhatsApp', icon: Phone },
-            { id: 'templates' as const, label: 'Templates', icon: MessageSquare },
-            { id: 'customer_bot' as const, label: 'Customer Bot', icon: Users }
+            { id: 'general' as const, label: 'General', icon: Globe }
           ].map(tab => {
             const Icon = tab.icon;
             return (
@@ -326,8 +326,8 @@ export default function AdminWasselniSettings() {
             </div>
           )}
 
-          {/* Customer Bot Tab */}
-          {activeTab === 'customer_bot' && (
+          {/* Bot Updates Tab (was Customer Bot) */}
+          {activeTab === 'updates_bot' && (
             <div className="bg-white dark:bg-slate-800/50 backdrop-blur rounded-lg md:rounded-xl border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
               <CustomerBot embedded={true} />
             </div>
@@ -447,8 +447,8 @@ export default function AdminWasselniSettings() {
             </div>
           )}
 
-          {/* Templates Tab */}
-          {activeTab === 'templates' && (
+          {/* Bot Confirmation Tab (was Templates) */}
+          {activeTab === 'confirmation_bot' && (
             <div className="space-y-3 md:space-y-4">
               <div className="bg-white dark:bg-slate-800/50 backdrop-blur rounded-2xl md:rounded-2xl p-4 md:p-4 lg:p-3 border border-slate-200/50 dark:border-slate-700/50 shadow-sm">
                 <div className="flex items-center gap-3 mb-6">
