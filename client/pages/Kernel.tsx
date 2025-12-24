@@ -603,6 +603,78 @@ export default function Kernel() {
     }
   }
 
+  // Clear security events functions
+  async function clearAllEvents() {
+    if (!token) return;
+    if (!confirm('Are you sure you want to delete ALL security events? This cannot be undone.')) return;
+    setError('');
+    try {
+      const res = await fetch('/api/kernel/security/events?confirm=yes', {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || 'Failed to clear events');
+      alert(`Cleared ${data.deleted || 0} events`);
+      await loadAll(token);
+    } catch (e: any) {
+      setError(e?.message || 'Failed to clear events');
+    }
+  }
+
+  async function clearLocalhostEvents() {
+    if (!token) return;
+    setError('');
+    try {
+      const res = await fetch('/api/kernel/security/events/localhost', {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || 'Failed to clear localhost events');
+      alert(`Cleared ${data.deleted || 0} localhost events`);
+      await loadAll(token);
+    } catch (e: any) {
+      setError(e?.message || 'Failed to clear localhost events');
+    }
+  }
+
+  async function clearEventsByIp(ip: string) {
+    if (!token || !ip) return;
+    if (!confirm(`Delete all events for IP: ${ip}?`)) return;
+    setError('');
+    try {
+      const res = await fetch(`/api/kernel/security/events/ip/${encodeURIComponent(ip)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || 'Failed to clear events');
+      alert(`Cleared ${data.deleted || 0} events for ${ip}`);
+      await loadAll(token);
+    } catch (e: any) {
+      setError(e?.message || 'Failed to clear events');
+    }
+  }
+
+  async function clearEventsByFingerprint(fp: string) {
+    if (!token || !fp) return;
+    if (!confirm(`Delete all events for fingerprint: ${fp.slice(0, 20)}...?`)) return;
+    setError('');
+    try {
+      const res = await fetch(`/api/kernel/security/events/fingerprint/${encodeURIComponent(fp)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || 'Failed to clear events');
+      alert(`Cleared ${data.deleted || 0} events`);
+      await loadAll(token);
+    } catch (e: any) {
+      setError(e?.message || 'Failed to clear events');
+    }
+  }
+
   // AUTO-BLOCK: Immediately block any non-DZ IP detected
   React.useEffect(() => {
     if (!token || pendingAutoBlock.size === 0) return;
@@ -1439,11 +1511,21 @@ export default function Kernel() {
                 const attackerThreat = isThreat(r.ip, '');
                 return (
                   <div key={r.ip} className={`flex items-center justify-between text-xs rounded px-1 ${attackerThreat ? 'threat-row threat-flash' : ''}`}>
-                    <span className={`truncate max-w-[180px] ${attackerThreat ? 'text-red-500 font-semibold' : 'text-foreground'}`} title={r.ip}>
+                    <span className={`truncate max-w-[120px] ${attackerThreat ? 'text-red-500 font-semibold' : 'text-foreground'}`} title={r.ip}>
                       {attackerThreat && <span className="mr-1">⚠️</span>}
                       {r.ip}
                     </span>
-                    <span className="text-foreground font-semibold">{r.count}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-foreground font-semibold">{r.count}</span>
+                      <Button
+                        variant="ghost"
+                        className="h-5 w-5 p-0 text-[10px] text-muted-foreground hover:text-red-500"
+                        onClick={() => clearEventsByIp(r.ip)}
+                        title="Clear events for this IP"
+                      >
+                        ✕
+                      </Button>
+                    </div>
                   </div>
                 );
               })}
@@ -1465,7 +1547,17 @@ export default function Kernel() {
                         {fpThreat && <span className="mr-1">⚠️</span>}
                         {r.ip || "unknown"}
                       </span>
-                      <span className="text-foreground font-semibold">{r.count}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-foreground font-semibold">{r.count}</span>
+                        <Button
+                          variant="ghost"
+                          className="h-5 w-5 p-0 text-[10px] text-muted-foreground hover:text-red-500"
+                          onClick={() => clearEventsByFingerprint(r.fingerprint)}
+                          title="Clear events for this fingerprint"
+                        >
+                          ✕
+                        </Button>
+                      </div>
                     </div>
                     <div className="mt-1 text-[10px] text-muted-foreground truncate" title={r.fingerprint}>
                       fp: {r.fingerprint}
@@ -1483,7 +1575,23 @@ export default function Kernel() {
         <div className="border border-border rounded-xl bg-card p-3">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-sm font-bold">Recent Events</h2>
-            <span className="text-[10px] text-muted-foreground">last 200</span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                className="h-6 px-2 text-[10px]"
+                onClick={clearLocalhostEvents}
+              >
+                🧹 Clear Localhost
+              </Button>
+              <Button
+                variant="outline"
+                className="h-6 px-2 text-[10px] text-red-500 hover:text-red-600"
+                onClick={clearAllEvents}
+              >
+                🗑️ Clear All
+              </Button>
+              <span className="text-[10px] text-muted-foreground">last 200</span>
+            </div>
           </div>
 
           <div className="overflow-auto">

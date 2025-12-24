@@ -147,6 +147,7 @@ export const getSecuritySummary: RequestHandler = async (req, res) => {
       `SELECT COALESCE(ip, 'unknown') as ip, COUNT(*)::int as count
        FROM security_events
        WHERE created_at > NOW() - $1::interval
+         AND ip NOT IN ('127.0.0.1', '::1', 'localhost', '')
        GROUP BY 1
        ORDER BY count DESC
        LIMIT 20`,
@@ -161,6 +162,7 @@ export const getSecuritySummary: RequestHandler = async (req, res) => {
          MAX(created_at) as last_seen
        FROM security_events
        WHERE created_at > NOW() - $1::interval
+         AND ip NOT IN ('127.0.0.1', '::1', 'localhost', '')
        GROUP BY 1
        ORDER BY count DESC
        LIMIT 20`,
@@ -178,13 +180,17 @@ export const getSecuritySummary: RequestHandler = async (req, res) => {
 
 export const listSecurityEvents: RequestHandler = async (req, res) => {
   const limit = Math.max(1, Math.min(500, parseInt(String(req.query.limit || '200'), 10) || 200));
+  const includeLocalhost = req.query.includeLocalhost === 'true';
   const pool = await ensureConnection();
 
+  const localhostFilter = includeLocalhost ? '' : "AND ip NOT IN ('127.0.0.1', '::1', 'localhost', '')";
+  
   const result = await pool.query(
     `SELECT id, created_at, event_type, severity, request_id, method, path, status_code,
             ip, user_agent, fingerprint, country_code, region, city,
             user_id, user_type, role, metadata
      FROM security_events
+     WHERE 1=1 ${localhostFilter}
      ORDER BY created_at DESC
      LIMIT $1`,
     [limit]
@@ -726,6 +732,66 @@ router.delete('/blocks/:ip', requireRoot, async (req, res) => {
       return res.status(409).json({ error: 'security_ip_blocks table missing (run migrations)' });
     }
     throw e;
+  }
+});
+
+// ==================== SECURITY EVENTS MANAGEMENT ====================
+
+// Clear all security events
+router.delete('/security/events', requireRoot, async (req, res) => {
+  const { confirm } = req.query;
+  if (confirm !== 'yes') {
+    return res.status(400).json({ error: 'Add ?confirm=yes to delete all events' });
+  }
+  try {
+    const pool = await ensureConnection();
+    const result = await pool.query('DELETE FROM security_events');
+    res.json({ ok: true, deleted: result.rowCount });
+  } catch (e: any) {
+    console.error('Error clearing security events:', e);
+    res.status(500).json({ error: 'Failed to clear events' });
+  }
+});
+
+// Clear security events by IP
+router.delete('/security/events/ip/:ip', requireRoot, async (req, res) => {
+  const ip = decodeURIComponent(String(req.params.ip || '').trim());
+  if (!ip) return res.status(400).json({ error: 'ip is required' });
+  try {
+    const pool = await ensureConnection();
+    const result = await pool.query('DELETE FROM security_events WHERE ip = $1', [ip]);
+    res.json({ ok: true, deleted: result.rowCount });
+  } catch (e: any) {
+    console.error('Error clearing security events by IP:', e);
+    res.status(500).json({ error: 'Failed to clear events' });
+  }
+});
+
+// Clear security events by fingerprint
+router.delete('/security/events/fingerprint/:fp', requireRoot, async (req, res) => {
+  const fingerprint = decodeURIComponent(String(req.params.fp || '').trim());
+  if (!fingerprint) return res.status(400).json({ error: 'fingerprint is required' });
+  try {
+    const pool = await ensureConnection();
+    const result = await pool.query('DELETE FROM security_events WHERE fingerprint = $1', [fingerprint]);
+    res.json({ ok: true, deleted: result.rowCount });
+  } catch (e: any) {
+    console.error('Error clearing security events by fingerprint:', e);
+    res.status(500).json({ error: 'Failed to clear events' });
+  }
+});
+
+// Clear localhost/development events
+router.delete('/security/events/localhost', requireRoot, async (_req, res) => {
+  try {
+    const pool = await ensureConnection();
+    const result = await pool.query(
+      `DELETE FROM security_events WHERE ip IN ('127.0.0.1', '::1', 'localhost', '')`
+    );
+    res.json({ ok: true, deleted: result.rowCount });
+  } catch (e: any) {
+    console.error('Error clearing localhost events:', e);
+    res.status(500).json({ error: 'Failed to clear localhost events' });
   }
 });
 
