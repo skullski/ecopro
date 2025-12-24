@@ -1,7 +1,7 @@
 -- Custom order statuses for clients
 CREATE TABLE IF NOT EXISTS order_statuses (
   id SERIAL PRIMARY KEY,
-  client_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  client_id INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
   name VARCHAR(100) NOT NULL,
   color VARCHAR(50) DEFAULT '#6b7280',
   icon VARCHAR(50) DEFAULT '●',
