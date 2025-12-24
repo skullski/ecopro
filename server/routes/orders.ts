@@ -326,8 +326,22 @@ export const updateOrderStatus: RequestHandler = async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
 
-    const validStatuses = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'];
-    if (!validStatuses.includes(status)) {
+    // Built-in valid statuses
+    const builtInStatuses = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'];
+    
+    // Check if status is a built-in status OR a custom status for this client
+    let isValidStatus = builtInStatuses.includes(status);
+    
+    if (!isValidStatus) {
+      // Check custom statuses in the database
+      const customStatusCheck = await pool.query(
+        'SELECT id FROM order_statuses WHERE client_id = $1 AND name = $2',
+        [req.user.id, status]
+      );
+      isValidStatus = customStatusCheck.rows.length > 0;
+    }
+    
+    if (!isValidStatus) {
       res.status(400).json({ error: "Invalid status" });
       return;
     }
