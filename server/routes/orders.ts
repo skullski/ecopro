@@ -387,3 +387,151 @@ export const updateOrderStatus: RequestHandler = async (req, res) => {
   }
 };
 
+/**
+ * Get custom order statuses for a client
+ * GET /api/client/order-statuses
+ */
+export const getOrderStatuses: RequestHandler = async (req, res) => {
+  try {
+    const clientId = (req as any).user?.id;
+    if (!clientId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const result = await pool.query(
+      `SELECT id, name, color, icon, sort_order, is_default 
+       FROM order_statuses 
+       WHERE client_id = $1 
+       ORDER BY sort_order ASC, id ASC`,
+      [clientId]
+    );
+
+    // If no custom statuses exist, return default statuses
+    if (result.rows.length === 0) {
+      const defaultStatuses = [
+        { id: 'pending', name: 'قيد الانتظار', color: '#eab308', icon: '●', sort_order: 0, is_default: true },
+        { id: 'confirmed', name: 'مؤكد', color: '#22c55e', icon: '✓', sort_order: 1, is_default: true },
+        { id: 'processing', name: 'قيد المعالجة', color: '#3b82f6', icon: '◐', sort_order: 2, is_default: true },
+        { id: 'shipped', name: 'تم الشحن', color: '#8b5cf6', icon: '📦', sort_order: 3, is_default: true },
+        { id: 'delivered', name: 'تم التوصيل', color: '#10b981', icon: '✓', sort_order: 4, is_default: true },
+        { id: 'cancelled', name: 'ملغي', color: '#ef4444', icon: '✕', sort_order: 5, is_default: true },
+      ];
+      res.json(defaultStatuses);
+      return;
+    }
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Get order statuses error:", error);
+    res.status(500).json({ error: "Failed to fetch order statuses" });
+  }
+};
+
+/**
+ * Create a custom order status
+ * POST /api/client/order-statuses
+ */
+export const createOrderStatus: RequestHandler = async (req, res) => {
+  try {
+    const clientId = (req as any).user?.id;
+    if (!clientId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const { name, color, icon } = req.body;
+    if (!name) {
+      res.status(400).json({ error: "Status name is required" });
+      return;
+    }
+
+    // Get max sort_order
+    const maxOrder = await pool.query(
+      'SELECT COALESCE(MAX(sort_order), -1) as max_order FROM order_statuses WHERE client_id = $1',
+      [clientId]
+    );
+
+    const result = await pool.query(
+      `INSERT INTO order_statuses (client_id, name, color, icon, sort_order)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, name, color, icon, sort_order, is_default`,
+      [clientId, name, color || '#6b7280', icon || '●', (maxOrder.rows[0].max_order || 0) + 1]
+    );
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error("Create order status error:", error);
+    res.status(500).json({ error: "Failed to create order status" });
+  }
+};
+
+/**
+ * Update a custom order status
+ * PATCH /api/client/order-statuses/:id
+ */
+export const updateOrderStatus: RequestHandler = async (req, res) => {
+  try {
+    const clientId = (req as any).user?.id;
+    const statusId = req.params.id;
+    if (!clientId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const { name, color, icon, sort_order } = req.body;
+
+    const result = await pool.query(
+      `UPDATE order_statuses 
+       SET name = COALESCE($1, name),
+           color = COALESCE($2, color),
+           icon = COALESCE($3, icon),
+           sort_order = COALESCE($4, sort_order),
+           updated_at = NOW()
+       WHERE id = $5 AND client_id = $6
+       RETURNING id, name, color, icon, sort_order, is_default`,
+      [name, color, icon, sort_order, statusId, clientId]
+    );
+
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: "Status not found" });
+      return;
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error("Update order status error:", error);
+    res.status(500).json({ error: "Failed to update order status" });
+  }
+};
+
+/**
+ * Delete a custom order status
+ * DELETE /api/client/order-statuses/:id
+ */
+export const deleteOrderStatus: RequestHandler = async (req, res) => {
+  try {
+    const clientId = (req as any).user?.id;
+    const statusId = req.params.id;
+    if (!clientId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const result = await pool.query(
+      'DELETE FROM order_statuses WHERE id = $1 AND client_id = $2 AND is_default = FALSE RETURNING id',
+      [statusId, clientId]
+    );
+
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: "Status not found or cannot delete default status" });
+      return;
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Delete order status error:", error);
+    res.status(500).json({ error: "Failed to delete order status" });
+  }
+};
+

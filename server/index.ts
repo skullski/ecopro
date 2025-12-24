@@ -734,6 +734,12 @@ export function createServer() {
   // Order routes
   app.post("/api/orders/create", orderRoutes.createOrder); // Public - buyers can create orders
   app.get("/api/client/orders", authenticate, requireClient, orderRoutes.getClientOrders);
+  
+  // Order statuses routes (authenticated - client only)
+  app.get("/api/client/order-statuses", authenticate, requireClient, orderRoutes.getOrderStatuses);
+  app.post("/api/client/order-statuses", authenticate, requireClient, orderRoutes.createOrderStatus);
+  app.patch("/api/client/order-statuses/:id", authenticate, requireClient, orderRoutes.updateOrderStatus as any);
+  app.delete("/api/client/order-statuses/:id", authenticate, requireClient, orderRoutes.deleteOrderStatus as any);
 
   // Order confirmation routes (public - no auth required)
   app.get("/api/storefront/:storeSlug/order/:orderId", orderConfirmationRoutes.getOrderForConfirmation);

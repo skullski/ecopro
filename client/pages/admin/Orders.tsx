@@ -1,7 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { MoreHorizontal, Download, Filter, ShoppingBag, TrendingUp, Plus } from "lucide-react";
+import { MoreHorizontal, Download, Filter, ShoppingBag, TrendingUp, Plus, Settings, X, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "@/lib/i18n";
+
+interface OrderStatus {
+  id: string | number;
+  name: string;
+  color: string;
+  icon: string;
+  sort_order: number;
+  is_default: boolean;
+}
 
 export default function OrdersAdmin() {
   const { t, locale } = useTranslation();
@@ -11,8 +20,13 @@ export default function OrdersAdmin() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddOrder, setShowAddOrder] = useState(false);
+  const [showStatusManager, setShowStatusManager] = useState(false);
+  const [customStatuses, setCustomStatuses] = useState<OrderStatus[]>([]);
+  const [newStatusName, setNewStatusName] = useState('');
+  const [newStatusColor, setNewStatusColor] = useState('#6b7280');
+  const [newStatusIcon, setNewStatusIcon] = useState('●');
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
-  const [filterTab, setFilterTab] = useState<'all' | 'pending' | 'confirmed' | 'archived'>('all');
+  const [filterTab, setFilterTab] = useState<string>('all');
   const [timeUpdate, setTimeUpdate] = useState<number>(0); // For triggering time updates
   const [newOrder, setNewOrder] = useState({
     customer_name: '',
@@ -56,21 +70,98 @@ export default function OrdersAdmin() {
 
   // Filter orders based on selected tab
   const getFilteredOrders = () => {
-    switch (filterTab) {
-      case 'pending':
-        return orders.filter(o => o.status === 'pending');
-      case 'confirmed':
-        return orders.filter(o => o.status === 'confirmed');
-      case 'archived':
-        return orders.filter(o => o.status === 'failed' || o.status === 'cancelled');
-      case 'all':
-      default:
-        return orders;
+    if (filterTab === 'all') return orders;
+    if (filterTab === 'archived') {
+      return orders.filter(o => o.status === 'failed' || o.status === 'cancelled');
     }
+    return orders.filter(o => o.status === filterTab);
+  };
+
+  // Load custom statuses
+  const loadStatuses = async () => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const res = await fetch('/api/client/order-statuses', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCustomStatuses(data);
+      }
+    } catch (error) {
+      console.error('Failed to load statuses:', error);
+    }
+  };
+
+  // Add new custom status
+  const handleAddStatus = async () => {
+    if (!newStatusName.trim()) return;
+    try {
+      const token = localStorage.getItem('authToken');
+      const res = await fetch('/api/client/order-statuses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: newStatusName,
+          color: newStatusColor,
+          icon: newStatusIcon
+        })
+      });
+      if (res.ok) {
+        await loadStatuses();
+        setNewStatusName('');
+        setNewStatusColor('#6b7280');
+        setNewStatusIcon('●');
+      }
+    } catch (error) {
+      console.error('Failed to add status:', error);
+    }
+  };
+
+  // Delete custom status
+  const handleDeleteStatus = async (statusId: string | number) => {
+    try {
+      const token = localStorage.getItem('authToken');
+      const res = await fetch(`/api/client/order-statuses/${statusId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        await loadStatuses();
+      }
+    } catch (error) {
+      console.error('Failed to delete status:', error);
+    }
+  };
+
+  // Get status display info
+  const getStatusDisplay = (statusKey: string) => {
+    const status = customStatuses.find(s => 
+      s.name === statusKey || String(s.id) === statusKey
+    );
+    if (status) {
+      return { name: status.name, color: status.color, icon: status.icon };
+    }
+    // Fallback to built-in statuses
+    const builtIn: Record<string, { name: string; color: string; icon: string }> = {
+      pending: { name: t('orders.status.pending') || 'قيد الانتظار', color: '#eab308', icon: '●' },
+      confirmed: { name: t('orders.status.confirmed') || 'مؤكد', color: '#22c55e', icon: '✓' },
+      processing: { name: 'قيد المعالجة', color: '#3b82f6', icon: '◐' },
+      shipped: { name: 'تم الشحن', color: '#8b5cf6', icon: '📦' },
+      delivered: { name: 'تم التوصيل', color: '#10b981', icon: '✓' },
+      cancelled: { name: 'ملغي', color: '#ef4444', icon: '✕' },
+      failed: { name: t('orders.status.failed') || 'فشل', color: '#ef4444', icon: '✕' },
+      followup: { name: t('orders.status.followup') || 'متابعة', color: '#3b82f6', icon: '●' },
+    };
+    return builtIn[statusKey] || { name: statusKey, color: '#6b7280', icon: '●' };
   };
 
   useEffect(()=>{
     loadOrders();
+    loadStatuses();
   },[]);
 
   const [updatingOrderId, setUpdatingOrderId] = useState<number | null>(null);
@@ -313,6 +404,12 @@ export default function OrdersAdmin() {
               >
                 <Plus className="h-4 w-4"/> {t('orders.addOrder') || 'Add Order'}
               </button>
+              <button 
+                onClick={() => setShowStatusManager(true)}
+                className="inline-flex items-center gap-1 rounded border border-purple-500/30 bg-purple-500/10 text-purple-600 px-3 py-2 text-sm font-bold hover:bg-purple-500/20 transition-colors h-9"
+              >
+                <Settings className="h-4 w-4"/> الحالات
+              </button>
               <button className="inline-flex items-center gap-1 rounded border border-primary/30 bg-background px-3 py-2 text-sm font-bold hover:bg-primary/10 transition-colors h-9">
                 <Download className="h-4 w-4"/> {t('orders.download')}
               </button>
@@ -335,26 +432,23 @@ export default function OrdersAdmin() {
           >
             الكل ({orders.length})
           </button>
-          <button
-            onClick={() => setFilterTab('pending')}
-            className={`px-4 py-2 rounded text-sm font-bold transition-colors h-9 ${
-              filterTab === 'pending'
-                ? 'bg-yellow-500 text-white'
-                : 'bg-background text-foreground hover:bg-yellow-500/10'
-            }`}
-          >
-            قيد الانتظار ({orders.filter(o => o.status === 'pending').length})
-          </button>
-          <button
-            onClick={() => setFilterTab('confirmed')}
-            className={`px-4 py-2 rounded text-sm font-bold transition-colors h-9 ${
-              filterTab === 'confirmed'
-                ? 'bg-green-500 text-white'
-                : 'bg-background text-foreground hover:bg-green-500/10'
-            }`}
-          >
-            مؤكدة ({orders.filter(o => o.status === 'confirmed').length})
-          </button>
+          {customStatuses.map(status => (
+            <button
+              key={status.id}
+              onClick={() => setFilterTab(String(status.name))}
+              style={{ 
+                backgroundColor: filterTab === status.name ? status.color : undefined,
+                borderColor: status.color 
+              }}
+              className={`px-4 py-2 rounded text-sm font-bold transition-colors h-9 border ${
+                filterTab === status.name
+                  ? 'text-white'
+                  : 'bg-background text-foreground hover:opacity-80'
+              }`}
+            >
+              {status.icon} {status.name} ({orders.filter(o => o.status === status.name || o.status === String(status.id)).length})
+            </button>
+          ))}
           <button
             onClick={() => setFilterTab('archived')}
             className={`px-3 py-1 rounded text-xs font-medium transition-colors h-7 ${
@@ -446,57 +540,43 @@ export default function OrdersAdmin() {
                       </span>
                     </td>
                     <td className="whitespace-nowrap p-2 text-right">
-                      {o.status === 'confirmed' && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-green-500/20 to-green-500/10 px-3 py-1 text-sm font-bold text-green-600 border border-green-500/30">
-                          ● {t('orders.status.confirmed')}
-                        </span>
-                      )}
-                      {o.status === 'pending' && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-yellow-500/20 to-yellow-500/10 px-3 py-1 text-sm font-bold text-yellow-600 border border-yellow-500/30">
-                          ● {t('orders.status.pending')}
-                        </span>
-                      )}
-                      {o.status === 'failed' && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-red-500/20 to-red-500/10 px-3 py-1 text-sm font-bold text-red-600 border border-red-500/30">
-                          ● {t('orders.status.failed')}
-                        </span>
-                      )}
-                      {o.status === 'followup' && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-blue-500/20 to-blue-500/10 px-3 py-1 text-sm font-bold text-blue-600 border border-blue-500/30">
-                          ● {t('orders.status.followup')}
-                        </span>
-                      )}
+                      {(() => {
+                        const statusInfo = getStatusDisplay(o.status);
+                        return (
+                          <span 
+                            className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-bold border"
+                            style={{ 
+                              backgroundColor: `${statusInfo.color}20`,
+                              borderColor: `${statusInfo.color}50`,
+                              color: statusInfo.color 
+                            }}
+                          >
+                            {statusInfo.icon} {statusInfo.name}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="whitespace-nowrap p-2 text-right text-muted-foreground text-sm" key={`time-${o.id}-${timeUpdate}`}>{getTimeStr(Math.floor((Date.now() - new Date(o.created_at).getTime()) / 60000))}</td>
                     <td className="p-2 text-right flex items-center justify-end gap-1">
-                      {o.status === 'confirmed' && (
-                        <>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setStatus(o.id, 'shipped');
-                            }}
-                            disabled={updatingOrderId === o.id}
-                            className="text-xs px-2 py-1 rounded bg-blue-500/20 text-blue-600 hover:bg-blue-500/30 disabled:opacity-50 transition"
-                            title="Mark as shipped"
-                          >
-                            📦
-                          </button>
-                        </>
-                      )}
-                      {o.status === 'shipped' && (
+                      {/* Quick status change buttons */}
+                      {customStatuses.slice(0, 3).map(status => (
                         <button
+                          key={status.id}
                           onClick={(e) => {
                             e.stopPropagation();
-                            setStatus(o.id, 'delivered');
+                            setStatus(o.id, status.name);
                           }}
-                          disabled={updatingOrderId === o.id}
-                          className="text-xs px-2 py-1 rounded bg-green-500/20 text-green-600 hover:bg-green-500/30 disabled:opacity-50 transition"
-                          title="Mark as delivered"
+                          disabled={updatingOrderId === o.id || o.status === status.name}
+                          className="text-xs px-2 py-1 rounded disabled:opacity-30 transition"
+                          style={{ 
+                            backgroundColor: `${status.color}20`,
+                            color: status.color 
+                          }}
+                          title={status.name}
                         >
-                          ✓
+                          {status.icon}
                         </button>
-                      )}
+                      ))}
                       <span className="text-xs text-muted-foreground">
                         {expandedOrderId === o.id ? '▼' : '▶'}
                       </span>
@@ -534,25 +614,27 @@ export default function OrdersAdmin() {
                             </div>
                           </div>
 
-                          {/* Actions */}
+                          {/* Actions - Custom Statuses */}
                           <div className="flex flex-wrap gap-2">
-                            <button 
-                              onClick={() => setStatus(o.id, 'confirmed')} 
-                              className="inline-flex items-center rounded bg-gradient-to-r from-green-500 to-green-600 px-3 py-2 text-sm font-bold text-white hover:from-green-600 hover:to-green-700 transition-colors shadow h-9"
-                            >
-                              ✓ تأكيد الطلب
-                            </button>
+                            {customStatuses.map(status => (
+                              <button 
+                                key={status.id}
+                                onClick={() => setStatus(o.id, status.name)} 
+                                disabled={o.status === status.name}
+                                className="inline-flex items-center rounded px-3 py-2 text-sm font-bold transition-colors shadow h-9 disabled:opacity-30"
+                                style={{ 
+                                  backgroundColor: status.color,
+                                  color: 'white'
+                                }}
+                              >
+                                {status.icon} {status.name}
+                              </button>
+                            ))}
                             <button 
                               onClick={() => setStatus(o.id, 'cancelled')} 
                               className="inline-flex items-center rounded bg-gradient-to-r from-red-500 to-red-600 px-3 py-2 text-sm font-bold text-white hover:from-red-600 hover:to-red-700 transition-colors shadow h-9"
                             >
                               ✕ إلغاء الطلب
-                            </button>
-                            <button 
-                              onClick={() => setStatus(o.id, 'processing')} 
-                              className="inline-flex items-center rounded border border-blue-500/50 px-3 py-2 text-sm font-bold text-blue-600 hover:bg-blue-500/10 transition-colors h-9"
-                            >
-                              ◯ متابعة
                             </button>
                           </div>
                         </div>
@@ -661,6 +743,95 @@ export default function OrdersAdmin() {
                 className="flex-1 px-3 py-2 rounded bg-gradient-to-r from-green-500 to-green-600 text-white text-sm font-bold hover:from-green-600 hover:to-green-700 transition-colors shadow h-9"
               >
                 إضافة الطلب
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Status Manager Modal */}
+      {showStatusManager && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2">
+          <div className="bg-card rounded-lg border border-primary/20 shadow-xl max-w-md w-full p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold">إدارة حالات الطلبات</h2>
+              <button 
+                onClick={() => setShowStatusManager(false)}
+                className="p-1 rounded hover:bg-muted"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            {/* Existing Statuses */}
+            <div className="space-y-2">
+              <h3 className="text-sm font-bold text-muted-foreground">الحالات الحالية</h3>
+              {customStatuses.map(status => (
+                <div 
+                  key={status.id}
+                  className="flex items-center justify-between p-2 rounded border border-border/50 bg-background"
+                >
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-6 h-6 rounded flex items-center justify-center text-white text-sm"
+                      style={{ backgroundColor: status.color }}
+                    >
+                      {status.icon}
+                    </div>
+                    <span className="font-bold">{status.name}</span>
+                  </div>
+                  {!status.is_default && (
+                    <button
+                      onClick={() => handleDeleteStatus(status.id)}
+                      className="p-1 rounded hover:bg-red-500/20 text-red-500"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Add New Status */}
+            <div className="space-y-3 pt-3 border-t border-border/50">
+              <h3 className="text-sm font-bold text-muted-foreground">إضافة حالة جديدة</h3>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newStatusName}
+                  onChange={(e) => setNewStatusName(e.target.value)}
+                  className="flex-1 px-3 py-2 rounded border border-border/50 bg-background focus:outline-none focus:ring-1 focus:ring-primary text-sm"
+                  placeholder="اسم الحالة"
+                />
+                <input
+                  type="color"
+                  value={newStatusColor}
+                  onChange={(e) => setNewStatusColor(e.target.value)}
+                  className="w-10 h-10 rounded border border-border/50 cursor-pointer"
+                />
+                <select
+                  value={newStatusIcon}
+                  onChange={(e) => setNewStatusIcon(e.target.value)}
+                  className="px-2 py-2 rounded border border-border/50 bg-background text-sm"
+                >
+                  <option value="●">●</option>
+                  <option value="✓">✓</option>
+                  <option value="✕">✕</option>
+                  <option value="◐">◐</option>
+                  <option value="📦">📦</option>
+                  <option value="🚚">🚚</option>
+                  <option value="⏳">⏳</option>
+                  <option value="💰">💰</option>
+                  <option value="📞">📞</option>
+                  <option value="🔄">🔄</option>
+                </select>
+              </div>
+              <button
+                onClick={handleAddStatus}
+                disabled={!newStatusName.trim()}
+                className="w-full px-3 py-2 rounded bg-gradient-to-r from-purple-500 to-purple-600 text-white text-sm font-bold hover:from-purple-600 hover:to-purple-700 transition-colors shadow disabled:opacity-50"
+              >
+                <Plus className="h-4 w-4 inline mr-1" /> إضافة الحالة
               </button>
             </div>
           </div>

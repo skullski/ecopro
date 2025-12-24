@@ -55,9 +55,9 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-2 dark:bg-black">
+    <div className="space-y-3 dark:bg-black">
       {/* Top Stats Bar */}
-      <div className="grid gap-1.5 grid-cols-4">
+      <div className="grid gap-2 grid-cols-4">
         <GradientCard
           title={t("dashboard.totalOrders")}
           value={loading ? "..." : stats.orders}
@@ -116,10 +116,10 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-          <div className="p-3">
+          <div className="p-4">
             {/* Chart Placeholder with softer bars */}
             <div 
-              className="h-32 flex items-end justify-between gap-0.5"
+              className="h-36 flex items-end justify-between gap-1"
               role="img"
               aria-label="Bar chart showing monthly sales trends with values ranging from 45% to 95%"
             >
@@ -155,9 +155,9 @@ export default function Dashboard() {
             <h3 className="text-base font-bold">{t("dashboard.orderStatus")}</h3>
             <p className="text-xs text-muted-soft">{t("dashboard.orderDistribution")}</p>
           </div>
-          <div className="p-3">
+          <div className="p-4">
             {/* Donut Chart Placeholder */}
-            <div className="relative w-28 h-28 mx-auto mb-3">
+            <div className="relative w-32 h-32 mx-auto mb-4">
               <svg 
                 className="w-full h-full" 
                 viewBox="0 0 100 100"
@@ -219,8 +219,8 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between p-2 rounded-lg bg-card dark:bg-gray-800/80">
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-card dark:bg-gray-800/80">
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full bg-green-400/70"></div>
                   <span className="text-sm font-medium">{t("dashboard.completedOrders")}</span>
@@ -228,7 +228,7 @@ export default function Dashboard() {
                 <span className="text-sm font-bold">{stats.completedOrders}</span>
               </div>
               
-              <div className="flex items-center justify-between p-2 rounded-lg bg-card dark:bg-gray-800/80">
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-card dark:bg-gray-800/80">
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full bg-orange-400/70"></div>
                   <span className="text-sm font-medium">{t("dashboard.pendingOrders")}</span>
@@ -236,7 +236,7 @@ export default function Dashboard() {
                 <span className="text-sm font-bold">{stats.pendingOrders}</span>
               </div>
 
-              <div className="flex items-center justify-between p-2 rounded-lg bg-card dark:bg-gray-800/80">
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-card dark:bg-gray-800/80">
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full bg-red-400/70"></div>
                   <span className="text-sm font-medium">{t("dashboard.cancelledOrders")}</span>
@@ -252,12 +252,12 @@ export default function Dashboard() {
       </div>
 
       {/* Quick Stats - Horizontal Layout */}
-      <div className="grid gap-2 md:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-3">
         <Card className="bg-panel dark:bg-gray-900 dark:border-gray-700">
-          <div className="p-3">
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20">
-                <DollarSign className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+          <div className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-emerald-100 dark:bg-emerald-500/20">
+                <DollarSign className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
                 <p className="text-sm text-muted-soft">{t("dashboard.avgOrderValue") || "Avg Order Value"}</p>
@@ -270,10 +270,10 @@ export default function Dashboard() {
         </Card>
 
         <Card className="bg-panel dark:bg-gray-900 dark:border-gray-700">
-          <div className="p-3">
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-500/20">
-                <TrendingUp className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+          <div className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-blue-100 dark:bg-blue-500/20">
+                <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
                 <p className="text-sm text-muted-soft">{t("dashboard.successRate") || "Success Rate"}</p>
@@ -286,10 +286,10 @@ export default function Dashboard() {
         </Card>
 
         <Card className="bg-panel dark:bg-gray-900 dark:border-gray-700">
-          <div className="p-3">
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-500/20">
-                <BarChart3 className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+          <div className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-purple-100 dark:bg-purple-500/20">
+                <BarChart3 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
                 <p className="text-sm text-muted-soft">{t("dashboard.conversionRate") || "Conversion Rate"}</p>
