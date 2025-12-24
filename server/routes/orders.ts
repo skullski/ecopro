@@ -470,7 +470,7 @@ export const createOrderStatus: RequestHandler = async (req, res) => {
  * Update a custom order status
  * PATCH /api/client/order-statuses/:id
  */
-export const updateOrderStatus: RequestHandler = async (req, res) => {
+export const updateCustomOrderStatus: RequestHandler = async (req, res) => {
   try {
     const clientId = (req as any).user?.id;
     const statusId = req.params.id;

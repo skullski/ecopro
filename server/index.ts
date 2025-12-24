@@ -738,7 +738,7 @@ export function createServer() {
   // Order statuses routes (authenticated - client only)
   app.get("/api/client/order-statuses", authenticate, requireClient, orderRoutes.getOrderStatuses);
   app.post("/api/client/order-statuses", authenticate, requireClient, orderRoutes.createOrderStatus);
-  app.patch("/api/client/order-statuses/:id", authenticate, requireClient, orderRoutes.updateOrderStatus as any);
+  app.patch("/api/client/order-statuses/:id", authenticate, requireClient, orderRoutes.updateCustomOrderStatus as any);
   app.delete("/api/client/order-statuses/:id", authenticate, requireClient, orderRoutes.deleteOrderStatus as any);
 
   // Order confirmation routes (public - no auth required)
