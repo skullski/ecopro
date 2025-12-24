@@ -896,17 +896,6 @@ export default function Kernel() {
             )}
           </div>
 
-          <div className="border border-border rounded-xl bg-card p-3">
-            <h2 className="text-sm font-bold mb-2">Manual IP Block</h2>
-            <div className="space-y-2">
-              <Input value={blockIp} onChange={(e) => setBlockIp(e.target.value)} placeholder="IP address" />
-              <Input value={blockReason} onChange={(e) => setBlockReason(e.target.value)} placeholder="Reason (optional)" />
-              <Button className="w-full" disabled={!blockIp || loading} onClick={() => blockIpNow(blockIp, blockReason)}>
-                Block IP
-              </Button>
-              <div className="text-[10px] text-muted-foreground">Blocks are enforced globally (API + pages).</div>
-            </div>
-          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
@@ -1548,6 +1537,19 @@ export default function Kernel() {
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+
+        {/* Manual IP Block - at bottom */}
+        <div className="border border-border rounded-xl bg-card p-3 max-w-md">
+          <h2 className="text-sm font-bold mb-2">Manual IP Block</h2>
+          <div className="space-y-2">
+            <Input value={blockIp} onChange={(e) => setBlockIp(e.target.value)} placeholder="IP address" />
+            <Input value={blockReason} onChange={(e) => setBlockReason(e.target.value)} placeholder="Reason (optional)" />
+            <Button className="w-full" disabled={!blockIp || loading} onClick={() => blockIpNow(blockIp, blockReason)}>
+              Block IP
+            </Button>
+            <div className="text-[10px] text-muted-foreground">Blocks are enforced globally (API + pages).</div>
           </div>
         </div>
       </div>

@@ -154,13 +154,20 @@ export const updateStoreProduct: RequestHandler = async (req, res) => {
     const { id } = req.params;
     const updates = req.body;
 
+    // Whitelist of allowed columns to update
+    const allowedColumns = [
+      'title', 'description', 'price', 'original_price', 'images',
+      'category', 'stock_quantity', 'status', 'is_featured', 'metadata'
+    ];
+
     // Build dynamic update query
     const fields: string[] = [];
     const values: any[] = [];
     let paramCount = 1;
 
     Object.entries(updates).forEach(([key, value]) => {
-      if (key !== "id" && key !== "client_id" && key !== "slug" && key !== "created_at") {
+      // Only allow whitelisted columns
+      if (allowedColumns.includes(key)) {
         fields.push(`${key} = $${paramCount}`);
         // For arrays (like images), ensure proper formatting
         if (Array.isArray(value)) {
