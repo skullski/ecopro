@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { 
   Package, ShoppingCart, DollarSign, Plus, ArrowRight,
-  Clock, CheckCircle, AlertCircle, Users, Star, BarChart3
+  Clock, CheckCircle, AlertCircle, Users, Star, BarChart3, TrendingUp, Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -260,6 +260,50 @@ export default function Dashboard() {
             </div>
           </div>
         </Card>
+
+        {/* Quick Stats - Analytics Metrics */}
+        <Card className="bg-panel dark:bg-gray-900 dark:border-gray-700">
+          <div className="p-4 border-b border-subtle dark:border-gray-800">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-500/20">
+                <Zap className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold">{t("dashboard.quickStats") || "Quick Stats"}</h3>
+                <p className="text-xs text-muted-soft">{t("dashboard.keyMetrics") || "Key performance metrics"}</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-4 space-y-4">
+            <div className="pb-4 border-b border-subtle dark:border-gray-700">
+              <div className="flex items-center gap-2 mb-1">
+                <DollarSign className="w-4 h-4 text-emerald-500" />
+                <p className="text-sm text-muted-soft">{t("dashboard.avgOrderValue") || "Avg Order Value"}</p>
+              </div>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white">
+                ${stats.orders > 0 ? (stats.revenue / stats.orders).toFixed(2) : '0.00'}
+              </p>
+            </div>
+            <div className="pb-4 border-b border-subtle dark:border-gray-700">
+              <div className="flex items-center gap-2 mb-1">
+                <TrendingUp className="w-4 h-4 text-blue-500" />
+                <p className="text-sm text-muted-soft">{t("dashboard.successRate") || "Success Rate"}</p>
+              </div>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white">
+                {stats.orders > 0 ? Math.round((stats.completedOrders / stats.orders) * 100) : 0}%
+              </p>
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <BarChart3 className="w-4 h-4 text-purple-500" />
+                <p className="text-sm text-muted-soft">{t("dashboard.conversionRate") || "Conversion Rate"}</p>
+              </div>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white">
+                {stats.visitors > 0 ? Math.round((stats.orders / stats.visitors) * 100) : 0}%
+              </p>
+            </div>
+          </div>
+        </Card>
       </div>
 
       {/* Recent Orders & Quick Actions */}
@@ -389,7 +433,7 @@ export default function Dashboard() {
               </div>
             </Link>
 
-            <Link to="/dashboard/analytics" className="block">
+            <Link to="/dashboard/customers" className="block">
               <div 
                 className="p-4 rounded-xl bg-purple-500/80 hover:bg-purple-600/80 text-white transition-all cursor-pointer group"
                 tabIndex={0}
@@ -397,11 +441,11 @@ export default function Dashboard() {
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <BarChart3 className="w-5 h-5" />
+                    <Users className="w-5 h-5" />
                   </div>
                   <div>
-                    <div className="font-bold">{t("analytics.title")}</div>
-                    <div className="text-xs opacity-90">{t("dashboard.viewStats")}</div>
+                    <div className="font-bold">{t("customers.title") || "Customers"}</div>
+                    <div className="text-xs opacity-90">{t("dashboard.manageCustomers") || "Manage customers"}</div>
                   </div>
                 </div>
               </div>

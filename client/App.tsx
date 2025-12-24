@@ -30,7 +30,7 @@ import AdminLayout from "./pages/admin/Layout";
 import AdminDashboard from "./pages/admin/Dashboard";
 import EnhancedDashboard from "./pages/admin/EnhancedDashboard";
 import AdminOrders from "./pages/admin/Orders";
-import AdminAnalytics from "./pages/admin/Analytics";
+// AdminAnalytics removed - merged into Dashboard
 // AdminProducts removed - now integrated into Store page
 // AdminSettings removed - merged into Profile page
 // StorePreview removed
@@ -651,7 +651,7 @@ const App = () => (
                     <Route path="delivery/companies" element={<DeliveryCompanies />} />
                     {/* Addons submenu routes */}
                     <Route path="addons/google-sheets" element={<GoogleSheetsIntegration />} />
-                    <Route path="analytics" element={<AdminAnalytics />} />
+                    {/* Analytics merged into Dashboard */}
                     {/* Settings merged into Profile page */}
                     <Route path="staff" element={<StaffManagement />} />
                     <Route path="billing" element={<AdminBilling />} />
