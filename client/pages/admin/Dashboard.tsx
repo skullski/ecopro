@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { 
-  Package, ShoppingCart, DollarSign, BarChart3, TrendingUp
+  Package, ShoppingCart, DollarSign, BarChart3, TrendingUp, Users
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { useTranslation } from "@/lib/i18n";
@@ -25,6 +25,7 @@ export default function Dashboard() {
     completedOrders: 0,
     visitors: 0
   });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadDashboardData();
@@ -44,9 +45,11 @@ export default function Dashboard() {
       if (statsRes.ok) {
         const statsData = await statsRes.json();
         setStats(statsData);
+        setLoading(false);
       }
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
+      setLoading(false);
     }
   };
 
