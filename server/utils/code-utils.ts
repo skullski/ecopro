@@ -371,14 +371,13 @@ export async function redeemSubscriptionCode(
         [subscriptionId]
       );
 
-      // Unlock account if it was locked due to subscription expiry
-      // Only unlock if the lock reason contains 'subscription' or 'expired' or 'payment'
+      // Unlock account if it was locked - always unlock after successful code redemption
+      // This handles any lock reason since the user proved they have a valid code
       await client.query(
         `UPDATE clients 
          SET is_locked = false, locked_reason = NULL, locked_at = NULL, locked_by_admin_id = NULL
          WHERE id = $1 
-         AND is_locked = true 
-         AND (locked_reason ILIKE '%subscription%' OR locked_reason ILIKE '%expired%' OR locked_reason ILIKE '%payment%' OR locked_reason ILIKE '%trial%')`,
+         AND is_locked = true`,
         [clientId]
       );
 
