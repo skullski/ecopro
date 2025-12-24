@@ -297,8 +297,6 @@ export default function Dashboard() {
           </div>
         </Card>
       </div>
-
-      {/* Marketplace seller list removed for client dashboard */
     </div>
   );
 }
