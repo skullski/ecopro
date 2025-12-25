@@ -640,3 +640,4 @@ export const getProductWithStoreInfo: RequestHandler = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch product' });
   }
 };
+// trigger rebuild
