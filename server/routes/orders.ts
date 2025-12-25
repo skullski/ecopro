@@ -427,7 +427,7 @@ export const getOrderStatuses: RequestHandler = async (req, res) => {
     }
 
     const result = await pool.query(
-      `SELECT id, name, color, icon, sort_order, is_default, counts_as_revenue 
+      `SELECT id, name, key, color, icon, sort_order, is_default, counts_as_revenue 
        FROM order_statuses 
        WHERE client_id = $1 
        ORDER BY sort_order ASC, id ASC`,
@@ -437,12 +437,12 @@ export const getOrderStatuses: RequestHandler = async (req, res) => {
     // If no custom statuses exist, return default statuses
     if (result.rows.length === 0) {
       const defaultStatuses = [
-        { id: 'pending', name: 'قيد الانتظار', color: '#eab308', icon: '●', sort_order: 0, is_default: true, counts_as_revenue: false },
-        { id: 'confirmed', name: 'مؤكد', color: '#22c55e', icon: '✓', sort_order: 1, is_default: true, counts_as_revenue: false },
-        { id: 'processing', name: 'قيد المعالجة', color: '#3b82f6', icon: '◐', sort_order: 2, is_default: true, counts_as_revenue: false },
-        { id: 'shipped', name: 'تم الشحن', color: '#8b5cf6', icon: '📦', sort_order: 3, is_default: true, counts_as_revenue: false },
-        { id: 'delivered', name: 'تم التوصيل', color: '#10b981', icon: '✓', sort_order: 4, is_default: true, counts_as_revenue: true },
-        { id: 'cancelled', name: 'ملغي', color: '#ef4444', icon: '✕', sort_order: 5, is_default: true, counts_as_revenue: false },
+        { id: 'pending', name: 'قيد الانتظار', key: 'pending', color: '#eab308', icon: '●', sort_order: 0, is_default: true, counts_as_revenue: false },
+        { id: 'confirmed', name: 'مؤكد', key: 'confirmed', color: '#22c55e', icon: '✓', sort_order: 1, is_default: true, counts_as_revenue: false },
+        { id: 'processing', name: 'قيد المعالجة', key: 'processing', color: '#3b82f6', icon: '◐', sort_order: 2, is_default: true, counts_as_revenue: false },
+        { id: 'shipped', name: 'تم الشحن', key: 'shipped', color: '#8b5cf6', icon: '📦', sort_order: 3, is_default: true, counts_as_revenue: false },
+        { id: 'delivered', name: 'تم التوصيل', key: 'delivered', color: '#10b981', icon: '✓', sort_order: 4, is_default: true, counts_as_revenue: true },
+        { id: 'cancelled', name: 'ملغي', key: 'cancelled', color: '#ef4444', icon: '✕', sort_order: 5, is_default: true, counts_as_revenue: false },
       ];
       res.json(defaultStatuses);
       return;
@@ -467,7 +467,7 @@ export const createOrderStatus: RequestHandler = async (req, res) => {
       return;
     }
 
-    const { name, color, icon, counts_as_revenue } = req.body;
+    const { name, key, color, icon, counts_as_revenue } = req.body;
     const trimmedName = name?.trim();
     if (!trimmedName) {
       res.status(400).json({ error: "Status name is required" });
@@ -481,10 +481,10 @@ export const createOrderStatus: RequestHandler = async (req, res) => {
     );
 
     const result = await pool.query(
-      `INSERT INTO order_statuses (client_id, name, color, icon, sort_order, counts_as_revenue)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id, name, color, icon, sort_order, is_default, counts_as_revenue`,
-      [clientId, trimmedName, color || '#6b7280', icon || '●', (maxOrder.rows[0].max_order || 0) + 1, counts_as_revenue || false]
+      `INSERT INTO order_statuses (client_id, name, key, color, icon, sort_order, counts_as_revenue)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING id, name, key, color, icon, sort_order, is_default, counts_as_revenue`,
+      [clientId, trimmedName, key || null, color || '#6b7280', icon || '●', (maxOrder.rows[0].max_order || 0) + 1, counts_as_revenue || false]
     );
 
     res.json(result.rows[0]);

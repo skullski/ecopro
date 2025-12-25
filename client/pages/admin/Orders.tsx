@@ -6,6 +6,7 @@ import { useTranslation } from "@/lib/i18n";
 interface OrderStatus {
   id: string | number;
   name: string;
+  key?: string; // English key like 'confirmed', 'completed'
   color: string;
   icon: string;
   sort_order: number;
@@ -75,6 +76,16 @@ export default function OrdersAdmin() {
     if (filterTab === 'all') return orders;
     if (filterTab === 'archived') {
       return orders.filter(o => o.status === 'failed' || o.status === 'cancelled');
+    }
+    // Find the status to get its key for matching
+    const selectedStatus = customStatuses.find(s => s.name === filterTab || s.key === filterTab);
+    if (selectedStatus) {
+      // Match by key, name, or id
+      return orders.filter(o => 
+        o.status === selectedStatus.key || 
+        o.status === selectedStatus.name || 
+        o.status === String(selectedStatus.id)
+      );
     }
     return orders.filter(o => o.status === filterTab);
   };
@@ -459,7 +470,7 @@ export default function OrdersAdmin() {
                   : 'bg-background text-foreground hover:opacity-80'
               }`}
             >
-              {status.icon} {status.name} ({orders.filter(o => o.status === status.name || o.status === String(status.id)).length})
+              {status.icon} {status.name} ({orders.filter(o => o.status === status.key || o.status === status.name || o.status === String(status.id)).length})
             </button>
           ))}
           <button
