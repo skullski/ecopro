@@ -855,11 +855,11 @@ export default function Store() {
             </Button>
           </div>
         ) : viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 md:gap-3">
             {filteredProducts.map((product) => (
               <div
                 key={product.id}
-                className="bg-card rounded-xl border overflow-hidden hover:shadow-lg transition-all"
+                className="bg-card rounded-lg border overflow-hidden hover:shadow-lg transition-all"
               >
                 {/* Image */}
                 <div className="relative aspect-square bg-muted">
@@ -871,16 +871,16 @@ export default function Store() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <ImageIcon className="w-16 h-16 text-muted-foreground opacity-20" />
+                      <ImageIcon className="w-10 h-10 text-muted-foreground opacity-20" />
                     </div>
                   )}
                   {product.is_featured && (
-                    <Badge className="absolute top-2 left-2 bg-yellow-500">
-                      <Star className="w-3 h-3 mr-1" />
+                    <Badge className="absolute top-1.5 left-1.5 bg-yellow-500 text-[10px] px-1.5 py-0.5">
+                      <Star className="w-2.5 h-2.5 mr-0.5" />
                       Featured
                     </Badge>
                   )}
-                  <Badge className="absolute top-2 right-2" variant={
+                  <Badge className="absolute top-1.5 right-1.5 text-[10px] px-1.5 py-0.5" variant={
                     product.status === 'active' ? 'default' :
                     product.status === 'draft' ? 'secondary' : 'outline'
                   }>
@@ -889,27 +889,27 @@ export default function Store() {
                   
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-lg font-bold text-primary">
+                      <span className="text-sm font-bold text-primary">
                         ${product.price}
                       </span>
                       {product.original_price && (
-                        <span className="text-sm text-muted-foreground line-through ml-2">
+                        <span className="text-xs text-muted-foreground line-through ml-1">
                           ${product.original_price}
                         </span>
                       )}
                     </div>
-                    <Badge variant="outline" className="text-xs">
-                      <Eye className="w-3 h-3 mr-1" />
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">
+                      <Eye className="w-2.5 h-2.5 mr-0.5" />
                       {product.views}
                     </Badge>
                   </div>
 
                   {/* Actions */}
-                  <div className="flex gap-2 pt-2 border-t">
+                  <div className="flex gap-1.5 pt-1.5 border-t">
                     <Button
                       size="sm"
                       variant="outline"
-                      className="flex-1"
+                      className="flex-1 h-7 text-xs px-2"
                       onClick={() => handleGetShareLink(product)}
                     >
                       <Share2 className="w-3 h-3 mr-1" />
@@ -918,6 +918,7 @@ export default function Store() {
                     <Button
                       size="sm"
                       variant="outline"
+                      className="h-7 w-7 p-0"
                       onClick={() => openEditModal(product)}
                     >
                       <Edit className="w-3 h-3" />
@@ -925,6 +926,7 @@ export default function Store() {
                     <Button
                       size="sm"
                       variant="outline"
+                      className="h-7 w-7 p-0"
                       onClick={() => openDeleteDialog(product)}
                     >
                       <Trash2 className="w-3 h-3 text-red-500" />

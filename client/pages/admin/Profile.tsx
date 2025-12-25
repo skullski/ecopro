@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Gift, Lock, MessageCircle, Save, Shield, User, Settings, Database, CreditCard } from 'lucide-react';
 import { setAuthToken } from '@/lib/auth';
+import { useTheme } from '@/contexts/ThemeContext';
 
 type SubscriptionRow = {
   tier?: string | null;
@@ -45,6 +46,7 @@ function formatDate(input?: string | null): string {
 export default function Profile() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { theme } = useTheme();
 
   const [loading, setLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
@@ -77,6 +79,45 @@ export default function Profile() {
     stripeKey: '',
     supabaseUrl: '',
   });
+
+  // Make main content area and sidebar transparent so wallpaper shows through
+  useEffect(() => {
+    // Add data attribute to body for CSS targeting
+    document.body.setAttribute('data-profile-wallpaper', 'true');
+    
+    // Make main content transparent
+    const mainEl = document.querySelector('main');
+    if (mainEl) {
+      mainEl.style.background = 'transparent';
+    }
+
+    // Find and make sidebar transparent - target the actual sidebar content div
+    const sidebarContentDiv = document.querySelector('.flex.flex-col.h-full.pt-20') as HTMLElement;
+    if (sidebarContentDiv) {
+      sidebarContentDiv.style.setProperty('background-color', 'rgba(15, 23, 42, 0.7)', 'important');
+      sidebarContentDiv.style.setProperty('backdrop-filter', 'blur(16px)', 'important');
+    }
+    
+    // Also target parent aside element
+    const asideEl = document.querySelector('aside') as HTMLElement;
+    if (asideEl) {
+      asideEl.style.setProperty('background', 'transparent', 'important');
+    }
+
+    return () => {
+      document.body.removeAttribute('data-profile-wallpaper');
+      if (mainEl) {
+        mainEl.style.background = '';
+      }
+      if (sidebarContentDiv) {
+        sidebarContentDiv.style.removeProperty('background-color');
+        sidebarContentDiv.style.removeProperty('backdrop-filter');
+      }
+      if (asideEl) {
+        asideEl.style.removeProperty('background');
+      }
+    };
+  }, []);
 
   React.useEffect(() => {
     void load();
@@ -209,127 +250,146 @@ export default function Profile() {
   const trialEnds = profile?.subscription?.trial_ends_at || null;
   const periodEnds = profile?.subscription?.current_period_end || null;
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Profile</h1>
-          <p className="text-muted-foreground">Manage your account details and subscription</p>
-        </div>
-      </div>
+  // Get wallpaper based on theme
+  const wallpaper = theme === 'dark' 
+    ? '/uploads/Copilot_20251225_043138.png' 
+    : '/uploads/lightmode.png';
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Account */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="w-5 h-5" />
-              Account
+  return (
+    <>
+      {/* Full-screen background that extends under sidebar */}
+      <div 
+        className="fixed inset-0 pointer-events-none z-0"
+        style={{
+          backgroundImage: `url(${wallpaper})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      />
+      
+      <div className="space-y-3 max-w-4xl min-h-screen p-4 -m-4 relative z-10">
+        <div className="flex items-center justify-between backdrop-blur-md bg-white/60 dark:bg-background/50 rounded-lg p-3 border border-white/30 dark:border-slate-700/50">
+          <div>
+            <h1 className="text-xl font-bold">Profile</h1>
+            <p className="text-muted-foreground text-sm">Manage your account details and subscription</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          {/* Account */}
+          <Card className="p-0 backdrop-blur-md bg-white/60 dark:bg-card/70 border-white/30 dark:border-slate-700/50">
+            <CardHeader className="p-3 pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <User className="w-4 h-4" />
+                Account
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input id="name" value={form.name} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} />
+          <CardContent className="space-y-3 p-3 pt-0">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label htmlFor="name" className="text-xs">Name</Label>
+                <Input id="name" className="h-8" value={form.name} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" value={form.email} onChange={(e) => setForm((s) => ({ ...s, email: e.target.value }))} />
+              <div className="space-y-1">
+                <Label htmlFor="email" className="text-xs">Email</Label>
+                <Input id="email" className="h-8" value={form.email} onChange={(e) => setForm((s) => ({ ...s, email: e.target.value }))} />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone / WhatsApp</Label>
-                <Input id="phone" value={form.phone} onChange={(e) => setForm((s) => ({ ...s, phone: e.target.value }))} />
+              <div className="space-y-1">
+                <Label htmlFor="phone" className="text-xs">Phone / WhatsApp</Label>
+                <Input id="phone" className="h-8" value={form.phone} onChange={(e) => setForm((s) => ({ ...s, phone: e.target.value }))} />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="business_name">Business / Store Name</Label>
+              <div className="space-y-1">
+                <Label htmlFor="business_name" className="text-xs">Business / Store Name</Label>
                 <Input
                   id="business_name"
+                  className="h-8"
                   value={form.business_name}
                   onChange={(e) => setForm((s) => ({ ...s, business_name: e.target.value }))}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="country">Country</Label>
-                <Input id="country" value={form.country} onChange={(e) => setForm((s) => ({ ...s, country: e.target.value }))} />
+              <div className="space-y-1">
+                <Label htmlFor="country" className="text-xs">Country</Label>
+                <Input id="country" className="h-8" value={form.country} onChange={(e) => setForm((s) => ({ ...s, country: e.target.value }))} />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="city">City</Label>
-                <Input id="city" value={form.city} onChange={(e) => setForm((s) => ({ ...s, city: e.target.value }))} />
+              <div className="space-y-1">
+                <Label htmlFor="city" className="text-xs">City</Label>
+                <Input id="city" className="h-8" value={form.city} onChange={(e) => setForm((s) => ({ ...s, city: e.target.value }))} />
               </div>
             </div>
 
-            <Button onClick={onSave} disabled={saving || loading} className="w-full">
-              <Save className="w-4 h-4 mr-2" />
+            <Button onClick={onSave} disabled={saving || loading} className="w-full h-8" size="sm">
+              <Save className="w-3 h-3 mr-1" />
               {saving ? 'Saving...' : 'Save Changes'}
             </Button>
 
-            {loading && <div className="text-sm text-muted-foreground">Loading...</div>}
+            {loading && <div className="text-xs text-muted-foreground">Loading...</div>}
           </CardContent>
         </Card>
 
         {/* Subscription (copy lock-card colors) */}
-        <div className="rounded-3xl overflow-hidden border border-slate-700/50 shadow-2xl bg-slate-900/95 backdrop-blur-md">
-          <div className="bg-gradient-to-r from-amber-500/30 to-orange-500/30 p-8 text-center border-b border-amber-500/30">
-            <div className="w-20 h-20 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-amber-500/50">
-              <Lock className="w-10 h-10 text-amber-400" />
+        <div className="rounded-xl overflow-hidden border border-slate-700/50 shadow-lg bg-slate-900/95 backdrop-blur-md">
+          <div className="bg-gradient-to-r from-amber-500/30 to-orange-500/30 p-4 text-center border-b border-amber-500/30">
+            <div className="w-12 h-12 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-2 border border-amber-500/50">
+              <Lock className="w-6 h-6 text-amber-400" />
             </div>
-            <h2 className="text-2xl font-bold text-amber-300">Subscription</h2>
-            <p className="text-amber-200/80 mt-2">Status and renewal</p>
+            <h2 className="text-lg font-bold text-amber-300">Subscription</h2>
+            <p className="text-amber-200/80 text-xs mt-1">Status and renewal</p>
           </div>
 
-          <div className="p-6 space-y-4">
-            <div className="flex items-center justify-between">
+          <div className="p-3 space-y-2">
+            <div className="flex items-center justify-between text-sm">
               <span className="text-slate-300">Status</span>
-              <Badge className={hasAccess ? 'bg-emerald-600/20 text-emerald-200 border border-emerald-500/30' : 'bg-amber-600/20 text-amber-200 border border-amber-500/30'}>
+              <Badge className={`text-xs ${hasAccess ? 'bg-emerald-600/20 text-emerald-200 border border-emerald-500/30' : 'bg-amber-600/20 text-amber-200 border border-amber-500/30'}`}>
                 {subStatus}
               </Badge>
             </div>
 
             {typeof access?.daysLeft === 'number' && (
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between text-sm">
                 <span className="text-slate-300">Days left</span>
                 <span className="text-slate-100 font-semibold">{access.daysLeft}</span>
               </div>
             )}
 
             {(trialEnds || periodEnds) && (
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between text-sm">
                 <span className="text-slate-300">Renewal / Trial ends</span>
                 <span className="text-slate-100 font-semibold">{formatDate(periodEnds || trialEnds)}</span>
               </div>
             )}
 
             {profile?.is_locked && (
-              <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
-                <p className="text-sm text-slate-300">
+              <div className="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50">
+                <p className="text-xs text-slate-300">
                   <span className="font-semibold">Locked:</span> {profile.lock_type || 'locked'}
                 </p>
-                {profile.locked_reason && <p className="text-sm text-slate-400 mt-1">{profile.locked_reason}</p>}
+                {profile.locked_reason && <p className="text-xs text-slate-400 mt-1">{profile.locked_reason}</p>}
               </div>
             )}
 
-            <div className="space-y-3">
+            <div className="space-y-2">
               <Button
                 onClick={() => navigate('/codes')}
-                className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white h-12 text-lg font-semibold"
+                className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white h-9 font-semibold"
+                size="sm"
               >
-                <Gift className="w-5 h-5 mr-2" />
+                <Gift className="w-4 h-4 mr-1" />
                 Enter Voucher Code
               </Button>
 
               <Button
                 onClick={() => navigate('/chat')}
                 variant="outline"
-                className="w-full border-slate-600 text-slate-300 hover:bg-slate-800 h-11"
+                className="w-full border-slate-600 text-slate-300 hover:bg-slate-800 h-8"
+                size="sm"
               >
-                <MessageCircle className="w-5 h-5 mr-2" />
+                <MessageCircle className="w-4 h-4 mr-1" />
                 Contact Support
               </Button>
             </div>
 
-            <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
-              <p className="text-sm text-slate-400 text-center">
+            <div className="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50">
+              <p className="text-xs text-slate-400 text-center">
                 Use a voucher code to unlock Orders and Bot.
               </p>
             </div>
@@ -338,38 +398,41 @@ export default function Profile() {
       </div>
 
       {/* Security */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="w-5 h-5" />
+      <Card className="p-0 backdrop-blur-md bg-white/60 dark:bg-card/70 border-white/30 dark:border-slate-700/50">
+        <CardHeader className="p-3 pb-2">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Shield className="w-4 h-4" />
             Security
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="currentPassword">Current Password</Label>
+        <CardContent className="space-y-3 p-3 pt-0">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <div className="space-y-1">
+              <Label htmlFor="currentPassword" className="text-xs">Current Password</Label>
               <Input
                 id="currentPassword"
                 type="password"
+                className="h-8"
                 value={pw.currentPassword}
                 onChange={(e) => setPw((s) => ({ ...s, currentPassword: e.target.value }))}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="newPassword">New Password</Label>
+            <div className="space-y-1">
+              <Label htmlFor="newPassword" className="text-xs">New Password</Label>
               <Input
                 id="newPassword"
                 type="password"
+                className="h-8"
                 value={pw.newPassword}
                 onChange={(e) => setPw((s) => ({ ...s, newPassword: e.target.value }))}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmNewPassword">Confirm New Password</Label>
+            <div className="space-y-1">
+              <Label htmlFor="confirmNewPassword" className="text-xs">Confirm New Password</Label>
               <Input
                 id="confirmNewPassword"
                 type="password"
+                className="h-8"
                 value={pw.confirmNewPassword}
                 onChange={(e) => setPw((s) => ({ ...s, confirmNewPassword: e.target.value }))}
               />
@@ -377,8 +440,8 @@ export default function Profile() {
           </div>
 
           <div className="flex items-center justify-between">
-            <div className="text-sm text-muted-foreground">Password changes require your current password.</div>
-            <Button onClick={onChangePassword} disabled={changingPassword}>
+            <div className="text-xs text-muted-foreground">Password changes require your current password.</div>
+            <Button onClick={onChangePassword} disabled={changingPassword} size="sm" className="h-8">
               {changingPassword ? 'Updating...' : 'Change Password'}
             </Button>
           </div>
@@ -386,23 +449,23 @@ export default function Profile() {
       </Card>
 
       {/* Support */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MessageCircle className="w-5 h-5" />
+      <Card className="p-0 backdrop-blur-md bg-white/60 dark:bg-card/70 border-white/30 dark:border-slate-700/50">
+        <CardHeader className="p-3 pb-2">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <MessageCircle className="w-4 h-4" />
             Support
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="text-sm text-muted-foreground">
+        <CardContent className="space-y-2 p-3 pt-0">
+          <div className="text-xs text-muted-foreground">
             Need help with your subscription, voucher codes, or account?
           </div>
           <Separator />
-          <div className="flex gap-3 flex-col sm:flex-row">
-            <Button onClick={() => navigate('/chat')} className="sm:w-auto w-full">
+          <div className="flex gap-2 flex-col sm:flex-row">
+            <Button onClick={() => navigate('/chat')} className="sm:w-auto w-full h-8" size="sm">
               Contact Support
             </Button>
-            <Button variant="outline" onClick={() => navigate('/codes')} className="sm:w-auto w-full">
+            <Button variant="outline" onClick={() => navigate('/codes')} className="sm:w-auto w-full h-8" size="sm">
               Voucher Codes
             </Button>
           </div>
@@ -410,49 +473,51 @@ export default function Profile() {
       </Card>
 
       {/* Integrations */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Settings className="w-5 h-5" />
+      <Card className="p-0 backdrop-blur-md bg-white/60 dark:bg-card/70 border-white/30 dark:border-slate-700/50">
+        <CardHeader className="p-3 pb-2">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Settings className="w-4 h-4" />
             Integrations
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="text-sm text-muted-foreground mb-4">
+        <CardContent className="space-y-3 p-3 pt-0">
+          <div className="text-xs text-muted-foreground mb-2">
             Configure external service integrations for your store.
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="rounded-xl border bg-card p-4 space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div className="rounded-lg border bg-card p-2 space-y-2">
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-500/20">
-                  <CreditCard className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                <div className="p-1.5 rounded-lg bg-purple-100 dark:bg-purple-500/20">
+                  <CreditCard className="w-3 h-3 text-purple-600 dark:text-purple-400" />
                 </div>
                 <div>
-                  <h4 className="font-semibold">Stripe</h4>
+                  <h4 className="font-semibold text-sm">Stripe</h4>
                   <p className="text-xs text-muted-foreground">Payment processing</p>
                 </div>
               </div>
               <Input 
                 placeholder="Stripe Secret Key" 
                 type="password"
+                className="h-8"
                 value={integrations.stripeKey} 
                 onChange={(e) => setIntegrations(s => ({ ...s, stripeKey: e.target.value }))} 
               />
             </div>
             
-            <div className="rounded-xl border bg-card p-4 space-y-3">
+            <div className="rounded-lg border bg-card p-2 space-y-2">
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-green-100 dark:bg-green-500/20">
-                  <Database className="w-4 h-4 text-green-600 dark:text-green-400" />
+                <div className="p-1.5 rounded-lg bg-green-100 dark:bg-green-500/20">
+                  <Database className="w-3 h-3 text-green-600 dark:text-green-400" />
                 </div>
                 <div>
-                  <h4 className="font-semibold">Supabase</h4>
+                  <h4 className="font-semibold text-sm">Supabase</h4>
                   <p className="text-xs text-muted-foreground">Database & storage</p>
                 </div>
               </div>
               <Input 
                 placeholder="Supabase URL" 
+                className="h-8"
                 value={integrations.supabaseUrl} 
                 onChange={(e) => setIntegrations(s => ({ ...s, supabaseUrl: e.target.value }))} 
               />
@@ -465,9 +530,10 @@ export default function Profile() {
               toast({ title: 'Saved', description: 'Integration settings saved locally' });
             }} 
             variant="outline"
-            className="w-full"
+            className="w-full h-8"
+            size="sm"
           >
-            <Save className="w-4 h-4 mr-2" />
+            <Save className="w-3 h-3 mr-1" />
             Save Integrations
           </Button>
           
@@ -476,6 +542,7 @@ export default function Profile() {
           </p>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </>
   );
 }

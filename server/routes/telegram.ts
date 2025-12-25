@@ -1,6 +1,32 @@
 import type { RequestHandler } from 'express';
 import { ensureConnection } from '../utils/database';
 import { replaceTemplateVariables, sendTelegramMessage } from '../utils/bot-messaging';
+import crypto from 'crypto';
+
+// Temporary endpoint to set webhook secret for testing
+export const setWebhookSecret: RequestHandler = async (req, res) => {
+  try {
+    const { storeSlug, secret } = req.body;
+    if (!storeSlug || !secret) {
+      return res.status(400).json({ error: 'storeSlug and secret required' });
+    }
+    const pool = await ensureConnection();
+    const result = await pool.query(
+      `UPDATE bot_settings SET telegram_webhook_secret = $1, updated_at = NOW()
+       WHERE client_id = (SELECT client_id FROM client_store_settings WHERE store_slug = $2 OR LOWER(store_name) = LOWER($2) LIMIT 1)
+       RETURNING client_id`,
+      [secret, storeSlug]
+    );
+    if (result.rows.length) {
+      res.json({ ok: true, clientId: result.rows[0].client_id });
+    } else {
+      res.status(404).json({ error: 'Store not found or no bot settings' });
+    }
+  } catch (error) {
+    console.error('[setWebhookSecret] error:', error);
+    res.status(500).json({ error: 'Failed' });
+  }
+};
 
 async function answerCallbackQuery(opts: { botToken: string; callbackQueryId: string; text?: string }): Promise<void> {
   try {
@@ -35,6 +61,149 @@ function parseStartPayload(text: string | undefined | null): string | null {
   if (!payload) return null;
   return payload.trim();
 }
+
+/**
+ * Get Telegram bot link for a store (public endpoint)
+ * Used by checkout page to show "Connect with Telegram" button
+ */
+export const getTelegramBotLink: RequestHandler = async (req, res) => {
+  try {
+    const { storeSlug } = req.params;
+    const { phone } = req.query;
+    
+    if (!storeSlug) {
+      return res.status(400).json({ error: 'Store slug required' });
+    }
+    
+    const pool = await ensureConnection();
+    
+    // Get client_id from store slug OR store name (for backwards compatibility)
+    const storeRes = await pool.query(
+      `SELECT client_id, store_name, store_slug FROM client_store_settings 
+       WHERE store_slug = $1 OR LOWER(store_name) = LOWER($1) 
+       LIMIT 1`,
+      [storeSlug]
+    );
+    
+    if (!storeRes.rows.length) {
+      return res.status(404).json({ error: 'Store not found' });
+    }
+    
+    const clientId = storeRes.rows[0].client_id;
+    const storeName = storeRes.rows[0].store_name;
+    const actualStoreSlug = storeRes.rows[0].store_slug;
+    
+    // Get bot settings
+    const botRes = await pool.query(
+      `SELECT enabled, provider, telegram_bot_username 
+       FROM bot_settings 
+       WHERE client_id = $1 AND enabled = true AND provider = 'telegram'
+       LIMIT 1`,
+      [clientId]
+    );
+    
+    if (!botRes.rows.length || !botRes.rows[0].telegram_bot_username) {
+      return res.json({ 
+        enabled: false, 
+        message: 'Telegram not configured for this store' 
+      });
+    }
+    
+    const botUsername = botRes.rows[0].telegram_bot_username.replace(/^@/, '');
+    
+    // Generate a pre-connect token based on phone (if provided)
+    let startToken = '';
+    let botUrl = `https://t.me/${botUsername}`;
+    
+    if (phone) {
+      // Normalize phone
+      const normalizedPhone = String(phone).replace(/\D/g, '');
+      if (normalizedPhone.length >= 9) {
+        // Generate unique token for this phone + store combo
+        startToken = crypto.createHash('sha256')
+          .update(`${clientId}:${normalizedPhone}:preconnect`)
+          .digest('hex')
+          .substring(0, 32);
+        
+        // Store the pre-connect mapping
+        await pool.query(
+          `INSERT INTO customer_preconnect_tokens (client_id, customer_phone, token, created_at, expires_at)
+           VALUES ($1, $2, $3, NOW(), NOW() + INTERVAL '24 hours')
+           ON CONFLICT (client_id, customer_phone) 
+           DO UPDATE SET token = $3, created_at = NOW(), expires_at = NOW() + INTERVAL '24 hours'`,
+          [clientId, normalizedPhone, startToken]
+        );
+        
+        botUrl = `https://t.me/${botUsername}?start=${startToken}`;
+      }
+    }
+    
+    res.json({
+      enabled: true,
+      botUsername,
+      botUrl,
+      storeName,
+      instructions: {
+        ar: 'اضغط على الزر لفتح Telegram وابدأ محادثة مع البوت. بعدها ارجع هنا لإتمام الطلب وستصلك رسالة تأكيد فورية!',
+        en: 'Click the button to open Telegram and start a chat with the bot. Then come back here to place your order and you\'ll receive instant confirmation!'
+      }
+    });
+  } catch (error) {
+    console.error('[getTelegramBotLink] error:', error);
+    res.status(500).json({ error: 'Failed to get bot link' });
+  }
+};
+
+/**
+ * Check if customer has connected their Telegram (public endpoint)
+ */
+export const checkTelegramConnection: RequestHandler = async (req, res) => {
+  try {
+    const { storeSlug } = req.params;
+    const { phone } = req.query;
+    
+    if (!storeSlug || !phone) {
+      return res.status(400).json({ connected: false });
+    }
+    
+    const normalizedPhone = String(phone).replace(/\D/g, '');
+    if (normalizedPhone.length < 9) {
+      return res.json({ connected: false });
+    }
+    
+    const pool = await ensureConnection();
+    
+    // Get client_id from store slug OR store name
+    const storeRes = await pool.query(
+      `SELECT client_id FROM client_store_settings 
+       WHERE store_slug = $1 OR LOWER(store_name) = LOWER($1) 
+       LIMIT 1`,
+      [storeSlug]
+    );
+    
+    if (!storeRes.rows.length) {
+      return res.json({ connected: false });
+    }
+    
+    const clientId = storeRes.rows[0].client_id;
+    
+    // Check if we have a telegram_chat_id for this phone
+    const chatRes = await pool.query(
+      `SELECT telegram_chat_id FROM customer_messaging_ids 
+       WHERE client_id = $1 AND customer_phone = $2 AND telegram_chat_id IS NOT NULL
+       LIMIT 1`,
+      [clientId, normalizedPhone]
+    );
+    
+    res.json({ 
+      connected: chatRes.rows.length > 0,
+      chatId: chatRes.rows[0]?.telegram_chat_id || null
+    });
+  } catch (error) {
+    console.error('[checkTelegramConnection] error:', error);
+    res.json({ connected: false });
+  }
+};
 
 export const telegramWebhook: RequestHandler = async (req, res) => {
   // Telegram expects fast response.
@@ -157,6 +326,49 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
       return res.status(200).json({ ok: true });
     }
 
+    // First try: Check if this is a preconnect token (customer connecting BEFORE placing order)
+    const preconnectRes = await pool.query(
+      `SELECT customer_phone FROM customer_preconnect_tokens
+       WHERE token = $1 AND client_id = $2 AND expires_at > NOW()
+       LIMIT 1`,
+      [startToken, clientId]
+    );
+
+    if (preconnectRes.rows.length) {
+      // This is a preconnect - customer is connecting before placing order
+      const customerPhone = String(preconnectRes.rows[0].customer_phone);
+      
+      // Save the phone->chat mapping
+      await pool.query(
+        `INSERT INTO customer_messaging_ids (client_id, customer_phone, telegram_chat_id, created_at, updated_at)
+         VALUES ($1,$2,$3,NOW(),NOW())
+         ON CONFLICT (client_id, customer_phone)
+         DO UPDATE SET telegram_chat_id = EXCLUDED.telegram_chat_id, updated_at = NOW()`,
+        [clientId, customerPhone, chatId]
+      );
+      
+      // Mark token as used
+      await pool.query(
+        `UPDATE customer_preconnect_tokens SET used_at = NOW() WHERE token = $1`,
+        [startToken]
+      );
+      
+      // Get store name
+      const storeRes = await pool.query(
+        `SELECT store_name FROM client_store_settings WHERE client_id = $1 LIMIT 1`,
+        [clientId]
+      );
+      const storeName = String(storeRes.rows[0]?.store_name || 'المتجر');
+      
+      // Send welcome message
+      await sendTelegramMessage(botToken, chatId, 
+        `مرحباً بك في ${storeName}! 🎉\n\n✅ تم ربط حسابك بنجاح.\n\nيمكنك الآن العودة لصفحة الطلب وإتمام عملية الشراء.\nسنرسل لك تأكيد الطلب هنا مباشرة! 📦`
+      );
+      
+      return res.status(200).json({ ok: true });
+    }
+
+    // Second try: Check if this is an order-specific token (after order placed)
     const linkRes = await pool.query(
       `SELECT order_id, customer_phone, customer_name
        FROM order_telegram_links

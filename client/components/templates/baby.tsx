@@ -105,13 +105,17 @@ export default function BabyTemplate(props: TemplateProps) {
   const ProductCard = ({ product }: { product: any }) => {
     const handleProductClick = () => {
       localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
-      navigate(`/product/${product.id}`);
+      localStorage.setItem('currentStoreSlug', storeSlug || '');
+      const slug = product.slug || product.id;
+      navigate(storeSlug ? `/store/${storeSlug}/${slug}` : `/product/${product.id}`);
     };
 
     const handleBuyClick = (e: any) => {
       e.stopPropagation();
       localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
-      navigate(`checkout/${product.id}`);
+      localStorage.setItem('currentStoreSlug', storeSlug || '');
+      const slug = product.slug || product.id;
+      navigate(storeSlug ? `/store/${storeSlug}/${slug}` : `/product/${product.id}`);
     };
 
     return (

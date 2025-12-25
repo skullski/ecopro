@@ -106,13 +106,15 @@ export default function JewelryTemplate(props: TemplateProps) {
 
   const handleProductClick = (product: any) => {
     localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
-    navigate(`/product/${product.id}`);
+    const slug = product.slug || product.id;
+    navigate(storeSlug ? `/store/${storeSlug}/${slug}` : `/product/${product.id}`);
   };
 
   const handleBuyClick = (product: any, e?: any) => {
     if (e) e.stopPropagation();
     localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
-    navigate(`checkout/${product.id}`);
+    const slug = product.slug || product.id;
+    navigate(storeSlug ? `/store/${storeSlug}/${slug}` : `/product/${product.id}`);
   };
 
   const SHADOW_CLASS: Record<string, string> = {

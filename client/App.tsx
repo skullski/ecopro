@@ -35,7 +35,7 @@ import AdminOrders from "./pages/admin/Orders";
 // AdminSettings removed - merged into Profile page
 // StorePreview removed
 // OrderSuccess, AdminProducts, and top-level Billing pages were removed.
-import AdminBilling from "./pages/admin/Billing";
+// AdminBilling removed - billing page removed from dashboard
 import AdminCalls from "./pages/admin/Calls";
 import AdminWasselniSettings from "./pages/admin/WasselniSettings";
 import AdminChats from "./pages/admin/Chats";
@@ -64,6 +64,7 @@ import StaffManagement from "./pages/seller/StaffManagement";
 import StaffLogin from "./pages/StaffLogin";
 import StaffDashboard from "./pages/StaffDashboard";
 import ProductDetail from "./pages/storefront/ProductDetail";
+import ProductCheckout from "./pages/storefront/ProductCheckout";
 import StorefrontCheckout from "./pages/storefront/Checkout";
 import OrderConfirmation from "./pages/storefront/OrderConfirmation";
 import AccountLocked from "./pages/AccountLocked";
@@ -594,7 +595,7 @@ const App = () => (
                 <CartProvider>
                 <Routes>
                   <Route path="/" element={<Index />} />
-                  <Route path="/product/:id" element={<ProductDetail />} />
+                  <Route path="/product/:id" element={<ProductCheckout />} />
                   <Route path="/login" element={<GuardPlatformAuthPages><Login /></GuardPlatformAuthPages>} />
                   <Route path="/signup" element={<GuardPlatformAuthPages><Signup /></GuardPlatformAuthPages>} />
                   {/* Staff routes */}
@@ -654,7 +655,6 @@ const App = () => (
                     {/* Analytics merged into Dashboard */}
                     {/* Settings merged into Profile page */}
                     <Route path="staff" element={<StaffManagement />} />
-                    <Route path="billing" element={<AdminBilling />} />
                     <Route path="calls" element={<AdminCalls />} />
                     <Route path="wasselni-settings" element={<AdminWasselniSettings />} />
                   </Route>
@@ -689,14 +689,14 @@ const App = () => (
                   <Route path="/store/:storeSlug" element={<StoreLayout />}>
                     <Route index element={<Storefront />} />
                     <Route path="build" element={<BuildPage />} />
-                    <Route path=":productSlug" element={<PublicProduct />} />
-                    <Route path="checkout/:productSlug" element={<Checkout />} />
+                    <Route path=":productSlug" element={<ProductCheckout />} />
+                    <Route path="checkout/:productSlug" element={<ProductCheckout />} />
                     <Route path="order/:orderId/confirm" element={<OrderConfirmation />} />
                   </Route>
                   {/* REMOVE duplicate/non-existent custom routes */}
                   {/* <Route path="/product/:id" element={<ProductDetail />} /> */}
                   {/* <Route path="/cart" element={<Cart />} /> */}
-                  <Route path="/checkout/:productId" element={<StorefrontCheckout />} />
+                  <Route path="/checkout/:productId" element={<ProductCheckout />} />
                   {/* <Route path="/chat/:conversationId" element={<Chat />} /> */}
                   {/* <Route path="/seller" element={<SellerDashboard />} /> */}
                   {/* <Route path="/buyer-info" element={<BuyerInfo />} /> */}

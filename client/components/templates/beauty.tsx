@@ -14,13 +14,17 @@ export default function BeautyTemplate(props: TemplateProps) {
   // Helper functions to save product data and navigate
   const handleProductClick = (product: any) => {
     localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
-    navigate(`/product/${product.id}`);
+    localStorage.setItem('currentStoreSlug', storeSlug || '');
+    const slug = product.slug || product.id;
+    navigate(storeSlug ? `/store/${storeSlug}/${slug}` : `/product/${product.id}`);
   };
 
   const handleBuyClick = (product: any, e?: any) => {
     if (e) e.stopPropagation();
     localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
-    navigate(`checkout/${product.id}`);
+    localStorage.setItem('currentStoreSlug', storeSlug || '');
+    const slug = product.slug || product.id;
+    navigate(storeSlug ? `/store/${storeSlug}/${slug}` : `/product/${product.id}`);
   };
   const [typeFilter, setTypeFilter] = useState('All');
   const [maxPrice, setMaxPrice] = useState(999999);
@@ -506,7 +510,8 @@ export default function BeautyTemplate(props: TemplateProps) {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          navigate(`checkout/${p.id}`);
+                          const slug = p.slug || p.id;
+                          navigate(storeSlug ? `/store/${storeSlug}/${slug}` : `/product/${p.id}`);
                         }}
                         className="text-[11px] px-3 py-1 rounded-full font-semibold text-white"
                         style={{ backgroundColor: '#111827' }}
@@ -614,8 +619,10 @@ export default function BeautyTemplate(props: TemplateProps) {
                 className="flex-1 py-2 rounded-full text-[11px] font-semibold tracking-[0.14em] uppercase"
                 style={{ backgroundColor: '#111827', color: '#f9fafb' }}
                 onClick={() => {
+                  const product = quickViewProduct;
                   setQuickViewProduct(null);
-                  navigate(`checkout/${quickViewProduct.id}`);
+                  const slug = product.slug || product.id;
+                  navigate(storeSlug ? `/store/${storeSlug}/${slug}` : `/product/${product.id}`);
                 }}
               >
                 {buyNowLabel}

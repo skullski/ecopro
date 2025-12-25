@@ -14,13 +14,17 @@ export default function FashionTemplate(props: TemplateProps) {
   // Helper functions to save product data and navigate
   const handleProductClick = (product: any) => {
     localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
-    navigate(`/product/${product.id}`);
+    localStorage.setItem('currentStoreSlug', storeSlug || '');
+    const slug = product.slug || product.id;
+    navigate(storeSlug ? `/store/${storeSlug}/${slug}` : `/product/${product.id}`);
   };
 
   const handleBuyClick = (product: any, e?: any) => {
     if (e) e.stopPropagation();
     localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
-    navigate(`checkout/${product.id}`);
+    localStorage.setItem('currentStoreSlug', storeSlug || '');
+    const slug = product.slug || product.id;
+    navigate(storeSlug ? `/store/${storeSlug}/${slug}` : `/product/${product.id}`);
   };
 
   const products = props.products || [];

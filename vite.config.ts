@@ -6,7 +6,6 @@ import path from "path";
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
-    allowedHosts: ['sasha-undenoted-punishingly.ngrok-free.dev'],
     port: 5173,
     proxy: {
       '/api': {

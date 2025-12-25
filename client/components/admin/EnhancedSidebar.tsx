@@ -75,7 +75,6 @@ const menuItems: MenuItem[] = [
     icon: <Bot className="w-5 h-5" />,
   },
   { titleKey: "sidebar.staff", path: "/dashboard/staff", icon: <Users className="w-5 h-5" /> },
-  { titleKey: "sidebar.billing", path: "/dashboard/billing", icon: <CreditCard className="w-5 h-5" /> },
 ];
 
 export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {}) {
@@ -242,28 +241,49 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
           </div>
         )}
         
-        {/* Toggle button for desktop (collapse/expand) */}
-        <button
-          onClick={() => handleCollapse(!collapsed)}
-          className="hidden lg:flex items-center justify-center p-2.5 rounded-lg transition-all border duration-200"
-          style={{
-            borderColor: SIDEBAR_THEMES[activeTheme].border,
-            color: SIDEBAR_THEMES[activeTheme].accent,
-            backgroundColor: `${SIDEBAR_THEMES[activeTheme].accent}10`,
-          }}
-          title={collapsed ? t("sidebar.expandMenu") : t("sidebar.collapseMenu")}
-        >
-          <Menu className="w-5 h-5" />
-        </button>
-        
-        {/* Close button for mobile drawer */}
-        <button
-          onClick={() => setMobileOpen(false)}
-          className="lg:hidden p-2 rounded-lg transition-all"
-          style={{ color: SIDEBAR_THEMES[activeTheme].accent }}
-        >
-          <X className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Theme toggle button */}
+          <button
+            onClick={() => setThemeCustomizationEnabled(!themeCustomizationEnabled)}
+            className={cn(
+              "relative w-9 h-5 rounded-full transition-all duration-300 flex-shrink-0",
+              themeCustomizationEnabled 
+                ? "bg-green-500 shadow-md shadow-green-500/50" 
+                : "bg-gray-500"
+            )}
+            title={themeCustomizationEnabled ? "Disable theme" : "Enable theme"}
+          >
+            <div
+              className={cn(
+                "absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-all duration-300 shadow-sm",
+                themeCustomizationEnabled && "translate-x-4"
+              )}
+            />
+          </button>
+          
+          {/* Toggle button for desktop (collapse/expand) */}
+          <button
+            onClick={() => handleCollapse(!collapsed)}
+            className="hidden lg:flex items-center justify-center p-2.5 rounded-lg transition-all border duration-200"
+            style={{
+              borderColor: SIDEBAR_THEMES[activeTheme].border,
+              color: SIDEBAR_THEMES[activeTheme].accent,
+              backgroundColor: `${SIDEBAR_THEMES[activeTheme].accent}10`,
+            }}
+            title={collapsed ? t("sidebar.expandMenu") : t("sidebar.collapseMenu")}
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          
+          {/* Close button for mobile drawer */}
+          <button
+            onClick={() => setMobileOpen(false)}
+            className="lg:hidden p-2 rounded-lg transition-all"
+            style={{ color: SIDEBAR_THEMES[activeTheme].accent }}
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {/* Navigation */}
@@ -277,30 +297,6 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
           style={{
             borderColor: SIDEBAR_THEMES[activeTheme].border,
           }}>
-          
-          {/* Theme Customization Toggle */}
-          <div className="flex items-center justify-between px-2">
-            <span className="font-semibold uppercase tracking-wide" style={{ color: SIDEBAR_THEMES[activeTheme].text, fontSize: '11px' }}>
-              {t("sidebar.customizeColor") || "Theme"}
-            </span>
-            <button
-              onClick={() => setThemeCustomizationEnabled(!themeCustomizationEnabled)}
-              className={cn(
-                "relative w-10 h-5 rounded-full transition-all duration-300 flex-shrink-0",
-                themeCustomizationEnabled 
-                  ? "bg-green-500 shadow-lg shadow-green-500/50" 
-                  : "bg-gray-400"
-              )}
-              title={themeCustomizationEnabled ? "Disable theme" : "Enable theme"}
-            >
-              <div
-                className={cn(
-                  "absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-all duration-300 shadow-md",
-                  themeCustomizationEnabled && "translate-x-5"
-                )}
-              />
-            </button>
-          </div>
           
           {/* Color Picker Button - Only visible when enabled */}
           {themeCustomizationEnabled && (

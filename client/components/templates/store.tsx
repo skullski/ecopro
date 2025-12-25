@@ -44,14 +44,15 @@ export default function Store(props: TemplateProps): JSX.Element {
   // Helper functions for navigation
   const handleProductClick = (product: any) => {
     localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
-    navigate(`/product/${product.id}`);
+    const slug = product.slug || product.id;
+    navigate(storeSlug ? `/store/${storeSlug}/${slug}` : `/product/${product.id}`);
   };
 
   const handleBuyClick = (product: any, e?: any) => {
     if (e) e.stopPropagation();
     localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
-    // Navigate to store checkout with proper path
-    navigate(`checkout/${product.id}`);
+    const slug = product.slug || product.id;
+    navigate(storeSlug ? `/store/${storeSlug}/${slug}` : `/product/${product.id}`);
   };
 
   // Theme

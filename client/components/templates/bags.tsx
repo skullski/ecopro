@@ -13,13 +13,17 @@ export default function BagsTemplate(props: TemplateProps) {
   // Helper functions to save product data and navigate
   const handleProductClick = (product: any) => {
     localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
-    navigate(`/product/${product.id}`);
+    localStorage.setItem('currentStoreSlug', storeSlug || '');
+    const slug = product.slug || product.id;
+    navigate(storeSlug ? `/store/${storeSlug}/${slug}` : `/product/${product.id}`);
   };
 
   const handleBuyClick = (product: any, e?: any) => {
     if (e) e.stopPropagation();
     localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
-    navigate(`checkout/${product.id}`);
+    localStorage.setItem('currentStoreSlug', storeSlug || '');
+    const slug = product.slug || product.id;
+    navigate(storeSlug ? `/store/${storeSlug}/${slug}` : `/product/${product.id}`);
   };
 
   // Get types from products or use defaults
@@ -418,7 +422,8 @@ export default function BagsTemplate(props: TemplateProps) {
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`checkout/${bag.id}`);
+                        const slug = bag.slug || bag.id;
+                        navigate(storeSlug ? `/store/${storeSlug}/${slug}` : `/product/${bag.id}`);
                       }}
                       className="text-xs px-3 py-1 text-white font-medium transition"
                       style={{

@@ -17,13 +17,17 @@ export default function BeautyTemplate(props: TemplateProps) {
   // Helper functions to save product data and navigate
   const handleProductClick = (product: any) => {
     localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
-    navigate(`/product/${product.id}`);
+    localStorage.setItem('currentStoreSlug', storeSlug || '');
+    const slug = product.slug || product.id;
+    navigate(storeSlug ? `/store/${storeSlug}/${slug}` : `/product/${product.id}`);
   };
 
   const handleBuyClick = (product: any, e?: any) => {
     if (e) e.stopPropagation();
     localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
-    navigate(`checkout/${product.id}`);
+    localStorage.setItem('currentStoreSlug', storeSlug || '');
+    const slug = product.slug || product.id;
+    navigate(storeSlug ? `/store/${storeSlug}/${slug}` : `/product/${product.id}`);
   };
 
   const filteredProducts = products.filter((p: any) => {
@@ -90,7 +94,8 @@ export default function BeautyTemplate(props: TemplateProps) {
                   <button 
                     onClick={(e) => {
                       e.stopPropagation();
-                      navigate(`checkout/${p.id}`);
+                      const slug = p.slug || p.id;
+                      navigate(storeSlug ? `/store/${storeSlug}/${slug}` : `/product/${p.id}`);
                     }} 
                     className="flex-1 py-1 bg-pink-400 text-white text-xs rounded font-semibold hover:bg-pink-500"
                   >

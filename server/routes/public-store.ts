@@ -2,6 +2,7 @@ import { RequestHandler } from "express";
 import { ensureConnection } from "../utils/database";
 import { sendBotMessagesForOrder } from "./order-confirmation";
 import { createOrderTelegramLink } from "../utils/telegram";
+import { sendTelegramMessage, replaceTemplateVariables } from "../utils/bot-messaging";
 
 // Get all products for a storefront
 export const getStorefrontProducts: RequestHandler = async (req, res) => {
@@ -462,16 +463,68 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
     if (normalizedPhone) {
       const productTitle = (await pool.query('SELECT title FROM client_store_products WHERE id = $1', [product_id])).rows?.[0]?.title || 'Product';
 
-      sendBotMessagesForOrder(
-        result.rows[0].id,
-        Number(clientId),
-        normalizedPhone,
-        customer_name,
-        storeName,
-        productTitle,
-        total_price,
-        storeSlug
-      ).catch(() => {});
+      // Check if customer has pre-connected via Telegram
+      const preConnectRes = await pool.query(
+        `SELECT telegram_chat_id FROM customer_messaging_ids 
+         WHERE client_id = $1 AND customer_phone = $2 AND telegram_chat_id IS NOT NULL
+         LIMIT 1`,
+        [clientId, normalizedPhone]
+      );
+
+      if (preConnectRes.rows.length > 0) {
+        // Customer is pre-connected! Send immediate notification
+        const chatId = preConnectRes.rows[0].telegram_chat_id;
+        
+        // Get bot settings
+        const botRes = await pool.query(
+          `SELECT telegram_bot_token, template_order_confirmation 
+           FROM bot_settings 
+           WHERE client_id = $1 AND enabled = true AND provider = 'telegram'
+           LIMIT 1`,
+          [clientId]
+        );
+
+        if (botRes.rows.length > 0 && botRes.rows[0].telegram_bot_token) {
+          const botToken = botRes.rows[0].telegram_bot_token;
+          const template = botRes.rows[0].template_order_confirmation || 
+            'شكراً لطلبك يا {customerName}! 🎉\n\n📦 تفاصيل طلبك:\n• المنتج: {productName}\n• السعر: {price} دج\n• رقم الطلب: #{orderId}\n\n✅ تم استلام طلبك وسنتواصل معك قريباً للتأكيد.\n\n🚚 سيتم التوصيل خلال 2-5 أيام';
+          
+          const message = replaceTemplateVariables(template, {
+            customerName: customer_name,
+            productName: productTitle,
+            price: total_price,
+            orderId: result.rows[0].id,
+            storeName: storeName,
+          });
+
+          // Send immediate Telegram message
+          sendTelegramMessage(botToken, chatId, message).catch((err) => {
+            console.error('[createPublicStoreOrder] Failed to send Telegram notification:', err);
+          });
+
+          // Also create the order-telegram link for future use
+          await pool.query(
+            `INSERT INTO order_telegram_chats (order_id, client_id, telegram_chat_id, created_at)
+             VALUES ($1, $2, $3, NOW())
+             ON CONFLICT (order_id) DO UPDATE SET telegram_chat_id = EXCLUDED.telegram_chat_id`,
+            [result.rows[0].id, clientId, chatId]
+          );
+
+          console.log(`[createPublicStoreOrder] Sent immediate Telegram notification to chat ${chatId}`);
+        }
+      } else {
+        // Customer not pre-connected, use the scheduled bot message flow
+        sendBotMessagesForOrder(
+          result.rows[0].id,
+          Number(clientId),
+          normalizedPhone,
+          customer_name,
+          storeName,
+          productTitle,
+          total_price,
+          storeSlug
+        ).catch(() => {});
+      }
     }
 
     console.log('[createPublicStoreOrder] Order creation successful, sending response...');
@@ -484,5 +537,54 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
     if (!res.headersSent) {
       res.status(500).json({ error: 'Failed to create order', details: error instanceof Error ? error.message : String(error) });
     }
+  }
+};
+
+// Get product by ID or slug with store info (for Telegram integration)
+export const getProductWithStoreInfo: RequestHandler = async (req, res) => {
+  const { productId } = req.params;
+
+  try {
+    const pool = await ensureConnection();
+    
+    // Determine if it's an ID (numeric) or slug (string with letters/hyphens)
+    const isNumericId = /^\d+$/.test(productId);
+    
+    // Try client store product first - search by ID or slug
+    const result = await pool.query(
+      `SELECT 
+        p.id, p.title, p.description, p.price, p.original_price,
+        p.images, p.category, p.stock_quantity, p.slug, p.status,
+        s.store_name, s.store_slug, s.primary_color, s.template_accent_color
+      FROM client_store_products p
+      INNER JOIN client_store_settings s ON p.client_id = s.client_id
+      WHERE ${isNumericId ? 'p.id = $1' : 'p.slug = $1'}`,
+      [productId]
+    );
+
+    if (result.rows.length > 0) {
+      return res.json(result.rows[0]);
+    }
+
+    // Try marketplace product - search by ID or slug
+    const mResult = await pool.query(
+      `SELECT 
+        p.id, p.title, p.description, p.price, p.original_price,
+        p.images, p.category, p.stock, p.slug, p.status,
+        ss.store_name, ss.store_slug, ss.primary_color
+      FROM marketplace_products p
+      INNER JOIN seller_store_settings ss ON p.seller_id = ss.seller_id
+      WHERE ${isNumericId ? 'p.id = $1' : 'p.slug = $1'}`,
+      [productId]
+    );
+
+    if (mResult.rows.length > 0) {
+      return res.json(mResult.rows[0]);
+    }
+
+    res.status(404).json({ error: 'Product not found' });
+  } catch (error) {
+    console.error('Get product with store info error:', error);
+    res.status(500).json({ error: 'Failed to fetch product' });
   }
 };

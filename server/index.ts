@@ -214,6 +214,11 @@ export function createServer() {
 
   // Telegram webhook (public)
   app.post('/api/telegram/webhook', telegramRoutes.telegramWebhook);
+  
+  // Telegram public endpoints for customer pre-connection
+  app.get('/api/telegram/bot-link/:storeSlug', telegramRoutes.getTelegramBotLink);
+  app.get('/api/telegram/check-connection/:storeSlug', telegramRoutes.checkTelegramConnection);
+  app.post('/api/telegram/set-webhook-secret', telegramRoutes.setWebhookSecret); // Temporary for testing
 
   // Auth routes (with rate limiting)
   app.post(
@@ -339,6 +344,14 @@ export function createServer() {
     authenticate,
     apiLimiter,
     dashboardRoutes.getDashboardStats
+  );
+
+  // Dashboard rich analytics (authenticated users)
+  app.get(
+    "/api/dashboard/analytics",
+    authenticate,
+    apiLimiter,
+    dashboardRoutes.getDashboardAnalytics
   );
 
   // Bot settings routes (authenticated clients)
@@ -723,6 +736,7 @@ export function createServer() {
   app.get("/api/storefront/:storeSlug/products/:productId", publicStoreRoutes.getStorefrontProductById);
   app.get("/api/storefront/:storeSlug/settings", publicStoreRoutes.getStorefrontSettings);
   app.get("/api/store/:storeSlug/:productSlug", publicStoreRoutes.getPublicProduct);
+  app.get("/api/product-info/:productId", publicStoreRoutes.getProductWithStoreInfo);
   app.post("/api/storefront/:storeSlug/orders", publicStoreRoutes.createPublicStoreOrder);
 
   // Private store product management (seller/client must be authenticated)

@@ -10,6 +10,7 @@ interface OrderStatus {
   icon: string;
   sort_order: number;
   is_default: boolean;
+  counts_as_revenue?: boolean;
 }
 
 export default function OrdersAdmin() {
@@ -25,6 +26,7 @@ export default function OrdersAdmin() {
   const [newStatusName, setNewStatusName] = useState('');
   const [newStatusColor, setNewStatusColor] = useState('#6b7280');
   const [newStatusIcon, setNewStatusIcon] = useState('●');
+  const [newStatusCountsAsRevenue, setNewStatusCountsAsRevenue] = useState(false);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [filterTab, setFilterTab] = useState<string>('all');
   const [timeUpdate, setTimeUpdate] = useState<number>(0); // For triggering time updates
@@ -107,7 +109,8 @@ export default function OrdersAdmin() {
         body: JSON.stringify({
           name: newStatusName,
           color: newStatusColor,
-          icon: newStatusIcon
+          icon: newStatusIcon,
+          counts_as_revenue: newStatusCountsAsRevenue
         })
       });
       if (res.ok) {
@@ -115,6 +118,7 @@ export default function OrdersAdmin() {
         setNewStatusName('');
         setNewStatusColor('#6b7280');
         setNewStatusIcon('●');
+        setNewStatusCountsAsRevenue(false);
       }
     } catch (error) {
       console.error('Failed to add status:', error);
@@ -242,9 +246,7 @@ export default function OrdersAdmin() {
         id: `ORD-${String(order.id).padStart(3, '0')}`,
         customer: order.customer_name,
         total: order.total_price,
-        status: order.status === 'confirmed' ? 'confirmed' : 
-                order.status === 'cancelled' ? 'failed' :
-                order.status === 'pending' ? 'pending' : 'pending',
+        status: order.status, // Keep the actual status from database
         created_at: order.created_at,
         time: getTimeStr(Math.floor((Date.now() - new Date(order.created_at).getTime()) / 60000)),
         product_title: order.product_title,
@@ -376,7 +378,18 @@ export default function OrdersAdmin() {
             <div>
               <div className="text-sm font-semibold text-muted-foreground">الإيرادات</div>
               <div className="text-xl font-bold bg-gradient-to-r from-accent to-orange-500 bg-clip-text text-transparent">
-                {orders.reduce((sum, o) => sum + (Number(o.total) || 0), 0).toLocaleString()} دج
+                {orders
+                  .filter(o => {
+                    // Get statuses that count as revenue
+                    const revenueStatuses = customStatuses
+                      .filter(s => s.counts_as_revenue)
+                      .map(s => s.name);
+                    // Also include built-in 'delivered' status
+                    revenueStatuses.push('delivered');
+                    return revenueStatuses.includes(o.status);
+                  })
+                  .reduce((sum, o) => sum + (Number(o.total) || 0), 0)
+                  .toLocaleString()} دج
               </div>
             </div>
           </div>
@@ -779,6 +792,9 @@ export default function OrdersAdmin() {
                       {status.icon}
                     </div>
                     <span className="font-bold">{status.name}</span>
+                    {status.counts_as_revenue && (
+                      <span className="text-xs bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded">💰 إيراد</span>
+                    )}
                   </div>
                   {!status.is_default && (
                     <button
@@ -826,6 +842,15 @@ export default function OrdersAdmin() {
                   <option value="🔄">🔄</option>
                 </select>
               </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={newStatusCountsAsRevenue}
+                  onChange={(e) => setNewStatusCountsAsRevenue(e.target.checked)}
+                  className="w-4 h-4 rounded border-border accent-green-500"
+                />
+                <span className="text-sm">💰 احتساب كإيراد (الطلبات بهذه الحالة تُحسب في الإيرادات)</span>
+              </label>
               <button
                 onClick={handleAddStatus}
                 disabled={!newStatusName.trim()}

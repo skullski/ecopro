@@ -124,7 +124,8 @@ export default function CafeTemplate(props: TemplateProps) {
             onClick={(e) => {
               e.stopPropagation();
               handleQuickAdd();
-              navigate(`checkout/${product.id}`);
+              const slug = product.slug || product.id;
+              navigate(storeSlug ? `/store/${storeSlug}/${slug}` : `/product/${product.id}`);
             }}
           >
             {isBundleType ? 'Add tray to cart' : 'Quick add'}

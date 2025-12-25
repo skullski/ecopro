@@ -160,7 +160,8 @@ export default function PerfumeTemplate(props: TemplateProps) {
             style={{ backgroundColor: primary_color }}
             onClick={(e) => {
               e.stopPropagation();
-              navigate(`checkout/${p.id}`);
+              const slug = p.slug || p.id;
+              navigate(storeSlug ? `/store/${storeSlug}/${slug}` : `/product/${p.id}`);
             }}
           >
             {buyNowLabel}

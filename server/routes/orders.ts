@@ -324,7 +324,15 @@ export const updateOrderStatus: RequestHandler = async (req, res) => {
     }
 
     const { id } = req.params;
-    const { status } = req.body;
+    const { status: rawStatus } = req.body;
+    const status = rawStatus?.trim();
+    
+    if (!status) {
+      res.status(400).json({ error: "Status is required" });
+      return;
+    }
+    
+    console.log('[updateOrderStatus] User:', req.user.id, 'Order:', id, 'Status:', status);
 
     // Built-in valid statuses
     const builtInStatuses = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'];
@@ -334,14 +342,17 @@ export const updateOrderStatus: RequestHandler = async (req, res) => {
     
     if (!isValidStatus) {
       // Check custom statuses in the database
+      console.log('[updateOrderStatus] Checking custom status for client_id:', req.user.id, 'status:', status);
       const customStatusCheck = await pool.query(
         'SELECT id FROM order_statuses WHERE client_id = $1 AND name = $2',
         [req.user.id, status]
       );
+      console.log('[updateOrderStatus] Custom status query result:', customStatusCheck.rows);
       isValidStatus = customStatusCheck.rows.length > 0;
     }
     
     if (!isValidStatus) {
+      console.log('[updateOrderStatus] Invalid status rejected');
       res.status(400).json({ error: "Invalid status" });
       return;
     }
@@ -353,6 +364,8 @@ export const updateOrderStatus: RequestHandler = async (req, res) => {
        RETURNING *`,
       [status, id, req.user.id]
     );
+    
+    console.log('[updateOrderStatus] Update result rows:', result.rows.length);
 
     if (result.rows.length === 0) {
       res.status(404).json({ error: "Order not found" });
@@ -414,7 +427,7 @@ export const getOrderStatuses: RequestHandler = async (req, res) => {
     }
 
     const result = await pool.query(
-      `SELECT id, name, color, icon, sort_order, is_default 
+      `SELECT id, name, color, icon, sort_order, is_default, counts_as_revenue 
        FROM order_statuses 
        WHERE client_id = $1 
        ORDER BY sort_order ASC, id ASC`,
@@ -424,12 +437,12 @@ export const getOrderStatuses: RequestHandler = async (req, res) => {
     // If no custom statuses exist, return default statuses
     if (result.rows.length === 0) {
       const defaultStatuses = [
-        { id: 'pending', name: 'قيد الانتظار', color: '#eab308', icon: '●', sort_order: 0, is_default: true },
-        { id: 'confirmed', name: 'مؤكد', color: '#22c55e', icon: '✓', sort_order: 1, is_default: true },
-        { id: 'processing', name: 'قيد المعالجة', color: '#3b82f6', icon: '◐', sort_order: 2, is_default: true },
-        { id: 'shipped', name: 'تم الشحن', color: '#8b5cf6', icon: '📦', sort_order: 3, is_default: true },
-        { id: 'delivered', name: 'تم التوصيل', color: '#10b981', icon: '✓', sort_order: 4, is_default: true },
-        { id: 'cancelled', name: 'ملغي', color: '#ef4444', icon: '✕', sort_order: 5, is_default: true },
+        { id: 'pending', name: 'قيد الانتظار', color: '#eab308', icon: '●', sort_order: 0, is_default: true, counts_as_revenue: false },
+        { id: 'confirmed', name: 'مؤكد', color: '#22c55e', icon: '✓', sort_order: 1, is_default: true, counts_as_revenue: false },
+        { id: 'processing', name: 'قيد المعالجة', color: '#3b82f6', icon: '◐', sort_order: 2, is_default: true, counts_as_revenue: false },
+        { id: 'shipped', name: 'تم الشحن', color: '#8b5cf6', icon: '📦', sort_order: 3, is_default: true, counts_as_revenue: false },
+        { id: 'delivered', name: 'تم التوصيل', color: '#10b981', icon: '✓', sort_order: 4, is_default: true, counts_as_revenue: true },
+        { id: 'cancelled', name: 'ملغي', color: '#ef4444', icon: '✕', sort_order: 5, is_default: true, counts_as_revenue: false },
       ];
       res.json(defaultStatuses);
       return;
@@ -454,8 +467,9 @@ export const createOrderStatus: RequestHandler = async (req, res) => {
       return;
     }
 
-    const { name, color, icon } = req.body;
-    if (!name) {
+    const { name, color, icon, counts_as_revenue } = req.body;
+    const trimmedName = name?.trim();
+    if (!trimmedName) {
       res.status(400).json({ error: "Status name is required" });
       return;
     }
@@ -467,10 +481,10 @@ export const createOrderStatus: RequestHandler = async (req, res) => {
     );
 
     const result = await pool.query(
-      `INSERT INTO order_statuses (client_id, name, color, icon, sort_order)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, name, color, icon, sort_order, is_default`,
-      [clientId, name, color || '#6b7280', icon || '●', (maxOrder.rows[0].max_order || 0) + 1]
+      `INSERT INTO order_statuses (client_id, name, color, icon, sort_order, counts_as_revenue)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, name, color, icon, sort_order, is_default, counts_as_revenue`,
+      [clientId, trimmedName, color || '#6b7280', icon || '●', (maxOrder.rows[0].max_order || 0) + 1, counts_as_revenue || false]
     );
 
     res.json(result.rows[0]);
@@ -493,7 +507,7 @@ export const updateCustomOrderStatus: RequestHandler = async (req, res) => {
       return;
     }
 
-    const { name, color, icon, sort_order } = req.body;
+    const { name, color, icon, sort_order, counts_as_revenue } = req.body;
 
     const result = await pool.query(
       `UPDATE order_statuses 
@@ -501,10 +515,11 @@ export const updateCustomOrderStatus: RequestHandler = async (req, res) => {
            color = COALESCE($2, color),
            icon = COALESCE($3, icon),
            sort_order = COALESCE($4, sort_order),
+           counts_as_revenue = COALESCE($5, counts_as_revenue),
            updated_at = NOW()
-       WHERE id = $5 AND client_id = $6
-       RETURNING id, name, color, icon, sort_order, is_default`,
-      [name, color, icon, sort_order, statusId, clientId]
+       WHERE id = $6 AND client_id = $7
+       RETURNING id, name, color, icon, sort_order, is_default, counts_as_revenue`,
+      [name, color, icon, sort_order, counts_as_revenue, statusId, clientId]
     );
 
     if (result.rows.length === 0) {
