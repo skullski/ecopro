@@ -400,378 +400,182 @@ export default function ProductCheckout() {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="pt-14 pb-6 lg:pt-12 lg:pb-4">
-        <div className="max-w-5xl mx-auto px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start lg:items-stretch">
+      {/* Main Content - Compact 2 Column Layout */}
+      <div className="pt-14 pb-4 lg:pt-14 min-h-screen">
+        <div className="max-w-5xl mx-auto px-3">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             
-            {/* Left Column - Image on top, Details below */}
-            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-4 border border-white/10 h-full flex flex-col">
-              {/* On laptop: image + details side-by-side to reduce height */}
-              <div className="flex flex-col lg:flex-row lg:gap-4 lg:items-stretch flex-1 min-h-0">
-                {/* Image + thumbnails */}
-                <div className="lg:flex-[7] lg:min-w-0 flex flex-col min-h-0">
-                  {/* Image Section - Fixed aspect ratio */}
-                  <div className="relative aspect-[4/3] lg:aspect-auto lg:flex-1 lg:min-h-0 rounded-xl overflow-hidden bg-gradient-to-br from-white/10 to-white/5 border border-white/10 mb-3">
-                    <img
-                      src={productImages[activeImageIndex]}
-                      alt={productName}
-                      className="w-full h-full object-cover"
-                    />
-                    
-                    {/* Badge */}
-                    {product.category && (
-                      <span 
-                        className="absolute top-2 left-2 px-2 py-1 rounded-full text-xs font-bold text-white shadow-lg"
-                        style={{ backgroundColor: accentColor }}
-                      >
-                        {product.category}
-                      </span>
-                    )}
+            {/* Left Column - Product Image + Quick Info */}
+            <div className="flex flex-col">
+              {/* Image */}
+              <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-gradient-to-br from-white/10 to-white/5 border border-white/10">
+                <img
+                  src={productImages[activeImageIndex]}
+                  alt={productName}
+                  className="w-full h-full object-cover"
+                />
+                
+                {product.category && (
+                  <span 
+                    className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold text-white"
+                    style={{ backgroundColor: accentColor }}
+                  >
+                    {product.category}
+                  </span>
+                )}
 
-                    {/* Image Navigation */}
-                    {productImages.length > 1 && (
-                      <>
-                        <button
-                          onClick={() => setActiveImageIndex(i => (i > 0 ? i - 1 : productImages.length - 1))}
-                          className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/50 text-white hover:bg-black/70 transition-all"
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => setActiveImageIndex(i => (i < productImages.length - 1 ? i + 1 : 0))}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/50 text-white hover:bg-black/70 transition-all"
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </button>
-                      </>
-                    )}
-                  </div>
-                  
-                  {/* Thumbnails */}
-                  {productImages.length > 1 && (
-                    <div className="flex gap-2 mb-3 overflow-x-auto">
-                      {productImages.map((img, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => setActiveImageIndex(idx)}
-                          className={`flex-shrink-0 w-12 h-12 rounded overflow-hidden border-2 transition-all ${
-                            idx === activeImageIndex 
-                              ? 'border-white' 
-                              : 'border-white/10 hover:border-white/30'
-                          }`}
-                        >
-                          <img src={img} alt="" className="w-full h-full object-cover" />
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Product Details */}
-                <div className="lg:flex-[3] lg:min-w-0 flex flex-col min-h-0">
-                <div>
-                  {/* Title & Price Row */}
-                  <div className="flex items-start justify-between gap-3 mb-2">
-                    <div>
-                      <h1 className="text-lg font-bold text-white leading-tight">{productName}</h1>
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="flex items-center">
-                          {[...Array(5)].map((_, i) => (
-                            <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
-                          ))}
-                        </div>
-                        <span className="text-white/50 text-xs">(128 تقييم)</span>
-                      </div>
-                    </div>
+                {productImages.length > 1 && (
+                  <>
                     <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(window.location.href);
-                        alert('تم نسخ الرابط!');
-                      }}
-                      className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-all flex-shrink-0"
+                      onClick={() => setActiveImageIndex(i => (i > 0 ? i - 1 : productImages.length - 1))}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-black/50 text-white"
                     >
-                      <Share2 className="w-4 h-4" />
+                      <ChevronLeft className="w-4 h-4" />
                     </button>
-                  </div>
-
-                  {/* Price */}
-                  <div className="flex items-end gap-2 mb-3">
-                    <span 
-                      className="text-2xl font-bold"
-                      style={{ color: accentColor }}
+                    <button
+                      onClick={() => setActiveImageIndex(i => (i < productImages.length - 1 ? i + 1 : 0))}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-black/50 text-white"
                     >
-                      {productPrice.toLocaleString()}
-                    </span>
-                    <span className="text-white/50 text-sm mb-1">دج</span>
-                  </div>
-
-                  {/* Stats */}
-                  <div className="grid grid-cols-3 gap-2 p-2 rounded-lg bg-white/5 border border-white/10 mb-3">
-                    <div className="text-center">
-                      <p className="text-sm font-bold text-white">{Math.floor(Math.random() * 5000) + 500}</p>
-                      <p className="text-white/50 text-[10px]">مشاهدة</p>
-                    </div>
-                    <div className="text-center border-x border-white/10">
-                      <p className="text-sm font-bold text-white">{Math.floor(Math.random() * 200) + 50}</p>
-                      <p className="text-white/50 text-[10px]">تم البيع</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-sm font-bold text-green-400">{inStock ? 'متوفر' : 'نفذ'}</p>
-                      <p className="text-white/50 text-[10px]">المخزون</p>
-                    </div>
-                  </div>
-
-                  {/* Quantity Selector */}
-                  {inStock && (
-                    <div className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/10">
-                      <span className="text-white font-medium text-sm">الكمية</span>
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                          className="w-8 h-8 rounded bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all"
-                        >
-                          <Minus className="w-4 h-4" />
-                        </button>
-                        <span className="text-lg font-bold text-white w-6 text-center">{quantity}</span>
-                        <button
-                          onClick={() => setQuantity(q => q + 1)}
-                          className="w-8 h-8 rounded bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
+              </div>
+              
+              {/* Product Info Bar */}
+              <div className="mt-3 p-3 bg-white/5 rounded-xl border border-white/10">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <h1 className="text-base font-bold text-white truncate">{productName}</h1>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <div className="flex">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />
+                        ))}
                       </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Total & Trust Badges Row */}
-                <div className="flex items-center justify-between pt-3 mt-auto">
-                  <div className="flex gap-2">
-                    <div className="bg-white/5 rounded-lg p-1.5 text-center border border-white/10">
-                      <Truck className="w-4 h-4 text-blue-400 mx-auto" />
-                      <p className="text-white/70 text-[8px] mt-0.5">توصيل</p>
-                    </div>
-                    <div className="bg-white/5 rounded-lg p-1.5 text-center border border-white/10">
-                      <Shield className="w-4 h-4 text-green-400 mx-auto" />
-                      <p className="text-white/70 text-[8px] mt-0.5">ضمان</p>
-                    </div>
-                    <div className="bg-white/5 rounded-lg p-1.5 text-center border border-white/10">
-                      <CreditCard className="w-4 h-4 text-amber-400 mx-auto" />
-                      <p className="text-white/70 text-[8px] mt-0.5">دفع</p>
+                      <span className="text-white/40 text-[10px]">(128)</span>
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className="text-white/50 text-xs">المجموع:</span>
-                    <p className="text-xl font-bold text-white">{totalPrice.toLocaleString()} دج</p>
+                    <p className="text-xl font-bold" style={{ color: accentColor }}>{productPrice.toLocaleString()}</p>
+                    <p className="text-white/50 text-[10px]">دج</p>
                   </div>
                 </div>
-              </div>
+                
+                {/* Quantity + Stock in one row */}
+                <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/10">
+                  <div className="flex items-center gap-2">
+                    <span className="text-white/60 text-xs">الكمية:</span>
+                    <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="w-6 h-6 rounded bg-white/10 text-white flex items-center justify-center">
+                      <Minus className="w-3 h-3" />
+                    </button>
+                    <span className="text-white font-bold w-4 text-center text-sm">{quantity}</span>
+                    <button onClick={() => setQuantity(q => q + 1)} className="w-6 h-6 rounded bg-white/10 text-white flex items-center justify-center">
+                      <Plus className="w-3 h-3" />
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-xs font-medium ${inStock ? 'text-green-400' : 'text-red-400'}`}>
+                      {inStock ? '✓ متوفر' : '✗ نفذ'}
+                    </span>
+                    <span className="text-white font-bold text-sm">{totalPrice.toLocaleString()} دج</span>
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* Right Column - Checkout Form */}
-            <div className="lg:sticky lg:top-16">
+            <div>
               <div 
                 id="checkout-section"
-                className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-2xl p-4 border border-white/20"
+                className="bg-white/5 backdrop-blur rounded-xl p-3 border border-white/10"
               >
-                <div className="flex items-center gap-2 mb-3">
-                  <div 
-                    className="w-8 h-8 rounded-lg flex items-center justify-center"
-                    style={{ backgroundColor: accentColor }}
-                  >
-                    <Truck className="w-4 h-4 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-sm font-bold text-white">معلومات التوصيل</h2>
-                    <p className="text-white/50 text-[10px]">أدخل بياناتك لإتمام الطلب</p>
-                  </div>
-                </div>
-
-                {/* Payment Notice */}
-                <div className="bg-gradient-to-r from-emerald-500/20 to-green-500/10 rounded-lg p-2 mb-3 border border-emerald-500/30">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded bg-emerald-500/20 flex items-center justify-center">
-                      <CreditCard className="w-3 h-3 text-emerald-400" />
-                    </div>
-                    <div>
-                      <p className="text-emerald-300 font-bold text-xs">الدفع عند الاستلام</p>
-                    </div>
+                    <Truck className="w-4 h-4" style={{ color: accentColor }} />
+                    <span className="text-white font-bold text-sm">معلومات التوصيل</span>
                   </div>
+                  <span className="text-emerald-400 text-[10px] font-medium bg-emerald-500/10 px-2 py-0.5 rounded">💵 الدفع عند الاستلام</span>
                 </div>
 
-                {/* Form Fields - Single column for narrow layout */}
-                <div className="space-y-2">
-                  <div>
-                    <label className="block text-white/70 text-[10px] mb-0.5">الاسم الكامل *</label>
-                    <input
-                      type="text"
-                      placeholder="أدخل اسمك"
-                      value={formData.fullName}
-                      onChange={(e) => setFormData(f => ({ ...f, fullName: e.target.value }))}
-                      className="w-full px-2 py-1.5 rounded-lg bg-white/10 border border-white/20 text-white text-xs placeholder:text-white/30 focus:outline-none focus:border-white/40 transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-white/70 text-[10px] mb-0.5">رقم الهاتف *</label>
-                    <input
-                      type="tel"
-                      placeholder="05XX XXX XXX"
-                      value={formData.phone}
-                      onChange={(e) => setFormData(f => ({ ...f, phone: e.target.value }))}
-                      className="w-full px-2 py-1.5 rounded-lg bg-white/10 border border-white/20 text-white text-xs placeholder:text-white/30 focus:outline-none focus:border-white/40 transition-all"
-                      dir="ltr"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-white/70 text-[10px] mb-0.5">المدينة *</label>
-                    <input
-                      type="text"
-                      placeholder="الجزائر، وهران..."
-                      value={formData.city}
-                      onChange={(e) => setFormData(f => ({ ...f, city: e.target.value }))}
-                      className="w-full px-2 py-1.5 rounded-lg bg-white/10 border border-white/20 text-white text-xs placeholder:text-white/30 focus:outline-none focus:border-white/40 transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-white/70 text-[10px] mb-0.5">العنوان *</label>
-                    <input
-                      type="text"
-                      placeholder="الشارع، رقم البناية..."
-                      value={formData.address}
-                      onChange={(e) => setFormData(f => ({ ...f, address: e.target.value }))}
-                      className="w-full px-2 py-1.5 rounded-lg bg-white/10 border border-white/20 text-white text-xs placeholder:text-white/30 focus:outline-none focus:border-white/40 transition-all"
-                    />
-                  </div>
+                {/* Form - 2x2 Grid */}
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <input
+                    type="text"
+                    placeholder="الاسم الكامل *"
+                    value={formData.fullName}
+                    onChange={(e) => setFormData(f => ({ ...f, fullName: e.target.value }))}
+                    className="px-2 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-xs placeholder:text-white/40 focus:outline-none focus:border-white/40"
+                  />
+                  <input
+                    type="tel"
+                    placeholder="رقم الهاتف *"
+                    value={formData.phone}
+                    onChange={(e) => setFormData(f => ({ ...f, phone: e.target.value }))}
+                    className="px-2 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-xs placeholder:text-white/40 focus:outline-none focus:border-white/40"
+                    dir="ltr"
+                  />
+                  <input
+                    type="text"
+                    placeholder="المدينة *"
+                    value={formData.city}
+                    onChange={(e) => setFormData(f => ({ ...f, city: e.target.value }))}
+                    className="px-2 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-xs placeholder:text-white/40 focus:outline-none focus:border-white/40"
+                  />
+                  <input
+                    type="text"
+                    placeholder="العنوان *"
+                    value={formData.address}
+                    onChange={(e) => setFormData(f => ({ ...f, address: e.target.value }))}
+                    className="px-2 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-xs placeholder:text-white/40 focus:outline-none focus:border-white/40"
+                  />
                 </div>
 
-                {/* Telegram Connect Section */}
+                {/* Telegram Connect - Compact */}
                 {telegramBotInfo?.enabled && (
-                  <div className="mt-3 p-3 rounded-xl bg-gradient-to-r from-blue-500/20 to-cyan-500/10 border border-blue-500/30">
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center flex-shrink-0">
-                        <Send className="w-5 h-5 text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="text-white font-bold text-sm">تتبع الطلب عبر Telegram</h3>
-                          {telegramConnected && (
-                            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 text-[10px] font-medium">
-                              <CheckCircle2 className="w-3 h-3" />
-                              متصل
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-white/60 text-[10px] mb-2">
-                          {telegramConnected 
-                            ? 'تم ربط حسابك! ستصلك رسالة تأكيد فور إتمام الطلب 📦'
-                            : 'اربط حسابك لاستلام تأكيد الطلب وتتبع الشحنة مباشرة على Telegram'
-                          }
-                        </p>
-                        
-                        {!telegramConnected && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={handleConnectTelegram}
-                              disabled={!formData.phone || formData.phone.replace(/\D/g, '').length < 9}
-                              className="w-full py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              <Send className="w-4 h-4" />
-                              ابدأ محادثة مع البوت
-                            </button>
-                            <p className="text-white/40 text-[9px] mt-1.5 text-center">
-                              {formData.phone && formData.phone.replace(/\D/g, '').length >= 9
-                                ? '👆 اضغط لفتح Telegram، ثم اضغط "Start" وارجع هنا'
-                                : '👆 أدخل رقم هاتفك أولاً ثم اضغط هنا'
-                              }
-                            </p>
-                          </>
-                        )}
-                        
-                        {checkingConnection && (
-                          <p className="text-blue-400 text-[10px] mt-1 flex items-center gap-1">
-                            <span className="w-3 h-3 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin" />
-                            جاري التحقق...
-                          </p>
+                  <div className="mb-3 p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Send className="w-4 h-4 text-blue-400" />
+                        <span className="text-white text-xs font-medium">تتبع عبر Telegram</span>
+                        {telegramConnected && (
+                          <span className="text-green-400 text-[10px]">✓ متصل</span>
                         )}
                       </div>
+                      {!telegramConnected && (
+                        <button
+                          type="button"
+                          onClick={handleConnectTelegram}
+                          disabled={!formData.phone || formData.phone.replace(/\D/g, '').length < 9}
+                          className="px-3 py-1 rounded bg-blue-500 text-white text-[10px] font-bold disabled:opacity-50"
+                        >
+                          ربط
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
 
-                {/* Order Summary - Compact */}
-                <div className="mt-3 p-2 rounded-lg bg-white/5 border border-white/10">
-                  <div className="flex items-center gap-2 mb-2">
-                    <img
-                      src={productImage}
-                      alt={productName}
-                      className="w-10 h-10 rounded object-cover"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white font-medium text-xs truncate">{productName}</p>
-                      <p className="text-white/50 text-[10px]">{quantity}x {productPrice.toLocaleString()}</p>
-                    </div>
-                  </div>
-                  <div className="flex justify-between text-white font-bold text-sm border-t border-white/10 pt-2">
-                    <span>الإجمالي</span>
-                    <span style={{ color: accentColor }}>{totalPrice.toLocaleString()} دج</span>
-                  </div>
-                </div>
-
-                {/* Submit Button */}
+                {/* Submit */}
                 <button
                   onClick={handleSubmitOrder}
                   disabled={isSubmitting || !inStock}
-                  className="w-full mt-3 py-2.5 rounded-lg font-bold text-white text-sm flex items-center justify-center gap-2 transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ 
-                    backgroundColor: accentColor,
-                    boxShadow: `0 4px 20px -4px ${accentColor}80`
-                  }}
+                  className="w-full py-3 rounded-lg font-bold text-white text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                  style={{ backgroundColor: accentColor }}
                 >
                   {isSubmitting ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      جاري...
-                    </>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   ) : (
                     <>
                       <ShoppingBag className="w-4 h-4" />
-                      {inStock ? 'تأكيد الطلب' : 'نفذت الكمية'}
+                      تأكيد الطلب • {totalPrice.toLocaleString()} دج
                     </>
                   )}
                 </button>
-
-                {/* Security Note */}
-                <p className="text-center text-white/40 text-[8px] mt-2 flex items-center justify-center gap-1">
-                  <Shield className="w-2.5 h-2.5" />
-                  معلوماتك محمية
-                </p>
               </div>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Bottom CTA Bar (Mobile) */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-slate-900/95 backdrop-blur-xl border-t border-white/10 p-4">
-        <div className="flex items-center gap-4">
-          <div className="flex-1">
-            <p className="text-white/50 text-sm">المجموع</p>
-            <p className="text-xl font-bold text-white">{totalPrice.toLocaleString()} دج</p>
-          </div>
-          <button
-            onClick={() => document.getElementById('checkout-section')?.scrollIntoView({ behavior: 'smooth' })}
-            disabled={!inStock}
-            className={`px-8 py-3 rounded-xl font-bold flex items-center gap-2 transition-all ${
-              inStock ? 'text-white' : 'bg-slate-700 text-slate-400 cursor-not-allowed'
-            }`}
-            style={inStock ? { backgroundColor: accentColor } : {}}
-          >
-            <ShoppingBag className="w-5 h-5" />
-            اطلب الآن
-          </button>
         </div>
       </div>
     </div>
