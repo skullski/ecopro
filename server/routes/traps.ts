@@ -50,6 +50,9 @@ async function trapHandler(req: any, res: any) {
 // Express 5 uses path-to-regexp v8+ which requires {*name} for wildcards
 // ============================================
 
+// robots.txt - honeypot! Only bots/hackers look for this to find hidden paths
+router.all('/robots.txt', trapHandler);
+
 // WordPress (you don't use WordPress - 100% attacker)
 router.all('/wp-login.php', trapHandler);
 router.all('/wp-admin', trapHandler);
