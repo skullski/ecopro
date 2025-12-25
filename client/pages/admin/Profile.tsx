@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
@@ -7,8 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Gift, Lock, MessageCircle, Save, Shield, User, Settings, Database, CreditCard } from 'lucide-react';
-import { setAuthToken } from '@/lib/auth';
+import { Gift, Lock, MessageCircle, Save, Shield, User, Settings, Database, CreditCard, CheckCircle, AlertCircle, Loader, Ticket } from 'lucide-react';
+import { setAuthToken, getAuthToken } from '@/lib/auth';
 import { useTheme } from '@/contexts/ThemeContext';
 
 type SubscriptionRow = {
@@ -79,6 +79,79 @@ export default function Profile() {
     stripeKey: '',
     supabaseUrl: '',
   });
+
+  // Voucher code redemption state
+  const [voucherCode, setVoucherCode] = useState('');
+  const [voucherLoading, setVoucherLoading] = useState(false);
+  const [voucherError, setVoucherError] = useState<string | null>(null);
+  const [voucherSuccess, setVoucherSuccess] = useState(false);
+  const [attemptsRemaining, setAttemptsRemaining] = useState(3);
+
+  const handleFormatVoucherCode = (value: string) => {
+    // Normalize input (supports pasting with spaces/dashes) into XXXX-XXXX-XXXX-XXXX.
+    const cleaned = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16);
+    const formatted = cleaned.match(/.{1,4}/g)?.join('-') || cleaned;
+    setVoucherCode(formatted);
+  };
+
+  const handleRedeemVoucher = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setVoucherError(null);
+    setVoucherSuccess(false);
+    setVoucherLoading(true);
+
+    try {
+      if (!voucherCode.trim()) {
+        throw new Error('Please enter a code');
+      }
+
+      const token = getAuthToken();
+      const res = await fetch('/api/codes/redeem', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ code: voucherCode.trim().toUpperCase() }),
+      });
+
+      const data = await res.json().catch(() => ({} as any));
+
+      if (!res.ok || data?.error) {
+        const msg = data?.error || data?.message || 'Failed to redeem code';
+        setVoucherError(msg);
+        setAttemptsRemaining(typeof data?.attemptsRemaining === 'number' ? data.attemptsRemaining : 3);
+      } else {
+        setVoucherSuccess(true);
+        setVoucherCode('');
+        setAttemptsRemaining(3);
+        
+        toast({ title: 'Success!', description: 'Your subscription has been activated.' });
+        
+        // Refresh user data
+        try {
+          const meRes = await fetch('/api/auth/me', {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (meRes.ok) {
+            const userData = await meRes.json();
+            localStorage.setItem('user', JSON.stringify(userData));
+          }
+        } catch (e) {
+          console.error('Failed to refresh user data:', e);
+        }
+
+        // Reload data and page after 2 seconds
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      }
+    } catch (err: any) {
+      setVoucherError(err.message || 'Failed to redeem code');
+    } finally {
+      setVoucherLoading(false);
+    }
+  };
 
   // Make main content area and sidebar transparent so wallpaper shows through
   useEffect(() => {
@@ -367,32 +440,76 @@ export default function Profile() {
               </div>
             )}
 
-            <div className="space-y-2">
-              <Button
-                onClick={() => navigate('/codes')}
-                className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white h-9 font-semibold"
-                size="sm"
-              >
-                <Gift className="w-4 h-4 mr-1" />
-                Enter Voucher Code
-              </Button>
+            {/* Voucher Code Redemption - Inline */}
+            <div className="bg-slate-800/60 rounded-lg p-3 border border-slate-700/50 space-y-3">
+              <div className="flex items-center gap-2">
+                <Ticket className="w-4 h-4 text-cyan-400" />
+                <span className="text-sm font-semibold text-white">Redeem Voucher Code</span>
+              </div>
 
-              <Button
-                onClick={() => navigate('/chat')}
-                variant="outline"
-                className="w-full border-slate-600 text-slate-300 hover:bg-slate-800 h-8"
-                size="sm"
-              >
-                <MessageCircle className="w-4 h-4 mr-1" />
-                Contact Support
-              </Button>
-            </div>
+              {voucherSuccess ? (
+                <div className="flex items-center gap-2 p-2 bg-green-500/20 border border-green-500/30 rounded-lg">
+                  <CheckCircle className="w-4 h-4 text-green-400" />
+                  <span className="text-sm text-green-300">Code redeemed! Reloading...</span>
+                </div>
+              ) : (
+                <form onSubmit={handleRedeemVoucher} className="space-y-2">
+                  <Input
+                    type="text"
+                    value={voucherCode}
+                    onChange={(e) => handleFormatVoucherCode(e.target.value)}
+                    placeholder="XXXX-XXXX-XXXX-XXXX"
+                    disabled={voucherLoading}
+                    className="h-9 bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-500 font-mono text-center"
+                  />
 
-            <div className="bg-slate-800/50 rounded-lg p-2 border border-slate-700/50">
-              <p className="text-xs text-slate-400 text-center">
-                Use a voucher code to unlock Orders and Bot.
+                  {voucherError && (
+                    <div className="flex items-start gap-2 p-2 bg-red-500/20 border border-red-500/30 rounded-lg">
+                      <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+                      <div className="text-xs">
+                        <p className="text-red-300">{voucherError}</p>
+                        {attemptsRemaining < 3 && (
+                          <p className="text-red-400/70 mt-0.5">Attempts: {attemptsRemaining}/3</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <Button
+                    type="submit"
+                    disabled={voucherLoading || !voucherCode}
+                    className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white h-9 font-semibold"
+                    size="sm"
+                  >
+                    {voucherLoading ? (
+                      <>
+                        <Loader className="w-4 h-4 mr-1 animate-spin" />
+                        Redeeming...
+                      </>
+                    ) : (
+                      <>
+                        <Gift className="w-4 h-4 mr-1" />
+                        Redeem Code
+                      </>
+                    )}
+                  </Button>
+                </form>
+              )}
+
+              <p className="text-xs text-slate-500 text-center">
+                Code format: XXXX-XXXX-XXXX-XXXX
               </p>
             </div>
+
+            <Button
+              onClick={() => navigate('/chat')}
+              variant="outline"
+              className="w-full border-slate-600 text-slate-300 hover:bg-slate-800 h-8"
+              size="sm"
+            >
+              <MessageCircle className="w-4 h-4 mr-1" />
+              Need a code? Contact Support
+            </Button>
           </div>
         </div>
       </div>
@@ -458,15 +575,12 @@ export default function Profile() {
         </CardHeader>
         <CardContent className="space-y-2 p-3 pt-0">
           <div className="text-xs text-muted-foreground">
-            Need help with your subscription, voucher codes, or account?
+            Need help with your subscription or account?
           </div>
           <Separator />
           <div className="flex gap-2 flex-col sm:flex-row">
             <Button onClick={() => navigate('/chat')} className="sm:w-auto w-full h-8" size="sm">
               Contact Support
-            </Button>
-            <Button variant="outline" onClick={() => navigate('/codes')} className="sm:w-auto w-full h-8" size="sm">
-              Voucher Codes
             </Button>
           </div>
         </CardContent>

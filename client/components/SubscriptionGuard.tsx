@@ -70,18 +70,18 @@ export default function SubscriptionGuard({ children }: SubscriptionGuardProps) 
     }
   };
 
-  // Allow access to codes page even if expired
-  const isCodesPage = location.pathname === '/codes' || location.pathname === '/dashboard/codes';
+  // Allow access to pricing page even if expired
+  const isPricingPage = location.pathname === '/pricing' || location.pathname === '/codes' || location.pathname === '/dashboard/codes';
   const isRenewPage = location.pathname === '/renew-subscription';
   const isChatPage = location.pathname === '/chat' || location.pathname.includes('/chat');
 
-  // Payment lock: only Codes + Chat allowed
-  if (isPaymentLocked && (isCodesPage || isChatPage)) {
+  // Payment lock: only Pricing + Chat allowed
+  if (isPaymentLocked && (isPricingPage || isChatPage)) {
     return <>{children}</>;
   }
 
   // Don't show lock on allowed pages
-  if (!isPaymentLocked && (isCodesPage || isRenewPage || isChatPage)) {
+  if (!isPaymentLocked && (isPricingPage || isRenewPage || isChatPage)) {
     return <>{children}</>;
   }
 
@@ -126,11 +126,11 @@ export default function SubscriptionGuard({ children }: SubscriptionGuardProps) 
               {/* Action Buttons */}
               <div className="space-y-3">
                 <Button
-                  onClick={() => navigate('/codes')}
+                  onClick={() => navigate('/pricing')}
                   className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white h-12 text-lg font-semibold"
                 >
                   <Gift className="w-5 h-5 mr-2" />
-                  Enter Voucher Code
+                  Get Subscription Code
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
 

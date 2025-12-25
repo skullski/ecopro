@@ -259,7 +259,7 @@ export default function Dashboard() {
       {/* Main Content Grid */}
       <div className="grid gap-3 lg:grid-cols-3">
         {/* Sales Chart - Takes 2 columns */}
-        <Card className="lg:col-span-2 p-3 sm:p-4 border-0 shadow-lg dark:bg-slate-900/50">
+        <Card className="lg:col-span-2 p-3 sm:p-4 shadow-lg bg-white dark:bg-slate-800/90 border border-gray-200 dark:border-slate-700">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500 text-white">
@@ -307,7 +307,7 @@ export default function Dashboard() {
         </Card>
 
         {/* Order Status Breakdown */}
-        <Card className="p-3 sm:p-4 border-0 shadow-lg dark:bg-slate-900/50">
+        <Card className="p-3 sm:p-4 shadow-lg bg-white dark:bg-slate-800/90 border border-gray-200 dark:border-slate-700">
           <div className="flex items-center gap-2 mb-3">
             <div className="p-2 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 text-white">
               <Target className="w-4 h-4" />
@@ -348,7 +348,7 @@ export default function Dashboard() {
       {/* Second Row */}
       <div className="grid gap-3 lg:grid-cols-3">
         {/* Top Products */}
-        <Card className="p-3 sm:p-4 border-0 shadow-lg dark:bg-slate-900/50">
+        <Card className="p-3 sm:p-4 shadow-lg bg-white dark:bg-slate-800/90 border border-gray-200 dark:border-slate-700">
           <div className="flex items-center gap-2 mb-3">
             <div className="p-2 rounded-lg bg-gradient-to-br from-yellow-500 to-orange-500 text-white">
               <Crown className="w-4 h-4" />
@@ -391,7 +391,7 @@ export default function Dashboard() {
         </Card>
 
         {/* Recent Orders */}
-        <Card className="p-3 sm:p-4 border-0 shadow-lg dark:bg-slate-900/50">
+        <Card className="p-3 sm:p-4 shadow-lg bg-white dark:bg-slate-800/90 border border-gray-200 dark:border-slate-700">
           <div className="flex items-center gap-2 mb-3">
             <div className="p-2 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 text-white">
               <Clock className="w-4 h-4" />
@@ -425,7 +425,7 @@ export default function Dashboard() {
         </Card>
 
         {/* Orders by City */}
-        <Card className="p-3 sm:p-4 border-0 shadow-lg dark:bg-slate-900/50">
+        <Card className="p-3 sm:p-4 shadow-lg bg-white dark:bg-slate-800/90 border border-gray-200 dark:border-slate-700">
           <div className="flex items-center gap-2 mb-3">
             <div className="p-2 rounded-lg bg-gradient-to-br from-pink-500 to-rose-500 text-white">
               <MapPin className="w-4 h-4" />
@@ -465,7 +465,7 @@ export default function Dashboard() {
 
       {/* Quick Stats Row - Enhanced */}
       <div className="grid gap-2 sm:gap-3 grid-cols-2 lg:grid-cols-4">
-        <Card className="p-2.5 sm:p-3 border-0 shadow-lg dark:bg-slate-900/50 hover:shadow-xl transition-shadow">
+        <Card className="p-2.5 sm:p-3 shadow-lg bg-white dark:bg-slate-800/90 border border-gray-200 dark:border-slate-700 hover:shadow-xl transition-shadow">
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="p-2 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 dark:from-cyan-500/30 dark:to-blue-500/30">
               <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-600 dark:text-cyan-400" />
@@ -479,7 +479,7 @@ export default function Dashboard() {
           </div>
         </Card>
 
-        <Card className="p-2.5 sm:p-3 border-0 shadow-lg dark:bg-slate-900/50 hover:shadow-xl transition-shadow">
+        <Card className="p-2.5 sm:p-3 shadow-lg bg-white dark:bg-slate-800/90 border border-gray-200 dark:border-slate-700 hover:shadow-xl transition-shadow">
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="p-2 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 dark:from-green-500/30 dark:to-emerald-500/30">
               <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 dark:text-green-400" />
@@ -493,7 +493,7 @@ export default function Dashboard() {
           </div>
         </Card>
 
-        <Card className="p-2.5 sm:p-3 border-0 shadow-lg dark:bg-slate-900/50 hover:shadow-xl transition-shadow">
+        <Card className="p-2.5 sm:p-3 shadow-lg bg-white dark:bg-slate-800/90 border border-gray-200 dark:border-slate-700 hover:shadow-xl transition-shadow">
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="p-2 rounded-lg bg-gradient-to-br from-amber-500/20 to-orange-500/20 dark:from-amber-500/30 dark:to-orange-500/30">
               <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 dark:text-amber-400" />
@@ -505,7 +505,7 @@ export default function Dashboard() {
           </div>
         </Card>
 
-        <Card className="p-2.5 sm:p-3 border-0 shadow-lg dark:bg-slate-900/50 hover:shadow-xl transition-shadow">
+        <Card className="p-2.5 sm:p-3 shadow-lg bg-white dark:bg-slate-800/90 border border-gray-200 dark:border-slate-700 hover:shadow-xl transition-shadow">
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="p-2 rounded-lg bg-gradient-to-br from-rose-500/20 to-pink-500/20 dark:from-rose-500/30 dark:to-pink-500/30">
               <Users className="w-4 h-4 sm:w-5 sm:h-5 text-rose-600 dark:text-rose-400" />

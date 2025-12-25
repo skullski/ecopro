@@ -3,7 +3,6 @@ import Pricing from "./pages/Pricing";
 import SubscriptionTiers from "./pages/SubscriptionTiers";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
-import CodesStorePage from "./pages/CodesStorePage";
 import ChatPage from "./pages/ChatPage";
 import CustomerBot from "./pages/CustomerBot";
 import { Toaster } from "@/components/ui/toaster";
@@ -675,8 +674,8 @@ const App = () => (
                   <Route path="/pricing/tiers" element={<SubscriptionTiers />} />
                   <Route path="/about" element={<About />} />
                   <Route path="/contact" element={<Contact />} />
-                  <Route path="/codes-store" element={<RequirePaidClient><CodesStorePage /></RequirePaidClient>} />
-                  <Route path="/codes" element={<RequirePaidClient><CodesStorePage /></RequirePaidClient>} />
+                  <Route path="/codes-store" element={<Navigate to="/pricing" replace />} />
+                  <Route path="/codes" element={<Navigate to="/pricing" replace />} />
                   <Route path="/chat" element={<RequirePaidClient><ChatPage /></RequirePaidClient>} />
                   <Route path="/customer-bot" element={<RequirePaidClient><SubscriptionPageLock><CustomerBot /></SubscriptionPageLock></RequirePaidClient>} />
                   {/* Guest checkout route (public, no account needed) */}

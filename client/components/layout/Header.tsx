@@ -76,12 +76,6 @@ export default function Header() {
               {user && isClient && (
                 <>
                   <Link 
-                    to="/codes-store" 
-                    className="px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold text-accent hover:bg-accent/10 transition-all border border-accent/20"
-                  >
-                    💎 Codes
-                  </Link>
-                  <Link 
                     to="/dashboard/preview" 
                     className="px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold text-accent hover:bg-accent/10 transition-all border border-accent/20"
                   >

@@ -134,7 +134,7 @@ function LockedAccountsManager() {
   const [action, setAction] = useState<'extend' | 'mark_paid'>('extend');
   const [extendDays, setExtendDays] = useState(30);
   const [processing, setProcessing] = useState(false);
-  const [filterStatus, setFilterStatus] = useState<'all' | 'locked' | 'unlocked'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'locked' | 'unlocked' | 'hackers'>('all');
 
   useEffect(() => {
     fetchAllAccounts();
@@ -160,13 +160,15 @@ function LockedAccountsManager() {
 
   const filteredAccounts = allAccounts.filter(acc => {
     if (filterStatus === 'all') return true;
-    if (filterStatus === 'locked') return acc.is_locked;
+    if (filterStatus === 'locked') return acc.is_locked && !acc.locked_reason?.includes('HONEYPOT');
     if (filterStatus === 'unlocked') return !acc.is_locked;
+    if (filterStatus === 'hackers') return acc.locked_reason?.includes('HONEYPOT');
     return true;
   });
 
-  const lockedCount = allAccounts.filter(a => a.is_locked).length;
+  const lockedCount = allAccounts.filter(a => a.is_locked && !a.locked_reason?.includes('HONEYPOT')).length;
   const unlockedCount = allAccounts.filter(a => !a.is_locked).length;
+  const hackerCount = allAccounts.filter(a => a.locked_reason?.includes('HONEYPOT')).length;
 
   async function handleProcess() {
     if (selectedAccounts.length === 0) {
@@ -273,7 +275,7 @@ function LockedAccountsManager() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4">
           <div className="text-sm text-slate-400">Total Accounts</div>
           <div className="text-3xl font-bold text-white mt-2">{allAccounts.length}</div>
@@ -286,6 +288,10 @@ function LockedAccountsManager() {
           <div className="text-sm text-green-300">Active Accounts</div>
           <div className="text-3xl font-bold text-green-400 mt-2">{unlockedCount}</div>
         </div>
+        <div className={`rounded-xl border p-4 ${hackerCount > 0 ? 'bg-orange-500/20 border-orange-500/50 animate-pulse' : 'bg-slate-800/50 border-slate-700/50'}`}>
+          <div className="text-sm text-orange-300">🚨 Hackers Caught</div>
+          <div className={`text-3xl font-bold mt-2 ${hackerCount > 0 ? 'text-orange-400' : 'text-slate-500'}`}>{hackerCount}</div>
+        </div>
         <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4">
           <div className="text-sm text-slate-400">Selected</div>
           <div className="text-3xl font-bold text-cyan-400 mt-2">{selectedAccounts.length}</div>
@@ -293,7 +299,7 @@ function LockedAccountsManager() {
       </div>
 
       {/* Filter Buttons */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <button
           onClick={() => setFilterStatus('all')}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
@@ -323,6 +329,16 @@ function LockedAccountsManager() {
           }`}
         >
           Active ({unlockedCount})
+        </button>
+        <button
+          onClick={() => setFilterStatus('hackers')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            filterStatus === 'hackers'
+              ? 'bg-orange-600 text-white animate-pulse'
+              : 'bg-slate-700/50 text-slate-300 hover:bg-orange-600/50'
+          }`}
+        >
+          🚨 Hackers ({hackerCount})
         </button>
       </div>
 
@@ -389,16 +405,20 @@ function LockedAccountsManager() {
                         ? 'No accounts found'
                         : filterStatus === 'locked'
                         ? 'No locked accounts'
+                        : filterStatus === 'hackers'
+                        ? '✅ No hackers caught yet'
                         : 'No active accounts'}
                     </p>
                   </td>
                 </tr>
               ) : (
-                filteredAccounts.map(account => (
+                filteredAccounts.map(account => {
+                  const isHoneypot = account.locked_reason?.includes('HONEYPOT');
+                  return (
                   <tr
                     key={account.id}
                     className={`border-b border-slate-700/20 hover:bg-slate-900/30 transition-colors ${
-                      account.is_locked ? 'bg-red-500/5' : 'bg-green-500/5'
+                      isHoneypot ? 'bg-orange-500/10' : account.is_locked ? 'bg-red-500/5' : 'bg-green-500/5'
                     }`}
                   >
                     <td className="px-6 py-4">
@@ -410,9 +430,13 @@ function LockedAccountsManager() {
                       />
                     </td>
                     <td className="px-6 py-4">
-                      <Badge className={account.is_locked ? 'bg-red-600' : 'bg-green-600'}>
-                        {account.is_locked ? 'Locked' : 'Active'}
-                      </Badge>
+                      {isHoneypot ? (
+                        <Badge className="bg-orange-600 animate-pulse">🚨 HACKER</Badge>
+                      ) : (
+                        <Badge className={account.is_locked ? 'bg-red-600' : 'bg-green-600'}>
+                          {account.is_locked ? 'Locked' : 'Active'}
+                        </Badge>
+                      )}
                       {account.is_paid_temporarily && <Badge className="bg-blue-600 ml-2">Paid Temp</Badge>}
                     </td>
                     <td className="px-6 py-4 text-sm text-white font-mono">{account.email}</td>
@@ -430,7 +454,8 @@ function LockedAccountsManager() {
                         : new Date(account.created_at).toLocaleDateString()}
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>

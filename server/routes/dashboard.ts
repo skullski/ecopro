@@ -13,8 +13,8 @@ export const getDashboardStats: RequestHandler = async (req, res) => {
       [clientId]
     );
     const revenueStatuses = revenueStatusesRes.rows.map(r => r.name);
-    // Also include built-in 'delivered' status for revenue calculation
-    revenueStatuses.push('delivered');
+    // Include built-in English and Arabic statuses for revenue calculation
+    revenueStatuses.push('delivered', 'completed', 'مكتملة', 'مؤكدة', 'تم التسليم', 'confirmed');
     
     const [productsRes, ordersRes, revenueRes, pendingRes, completedRes] = await Promise.all([
       pool.query(
@@ -81,7 +81,8 @@ export const getDashboardAnalytics: RequestHandler = async (req, res) => {
       [clientId]
     );
     const revenueStatuses = revenueStatusesRes.rows.map(r => r.name);
-    revenueStatuses.push('delivered');
+    // Include built-in English and Arabic statuses for revenue calculation
+    revenueStatuses.push('delivered', 'completed', 'مكتملة', 'مؤكدة', 'تم التسليم', 'confirmed');
 
     // Get all custom statuses for breakdown
     const customStatusesRes = await pool.query(
@@ -89,17 +90,17 @@ export const getDashboardAnalytics: RequestHandler = async (req, res) => {
       [clientId]
     );
 
-    // Daily revenue for last 30 days
+    // Daily revenue for last 30 days (show all orders revenue regardless of status)
     const dailyRevenueRes = await pool.query(
       `SELECT 
         DATE(created_at) as date,
         COUNT(*)::int as orders,
-        COALESCE(SUM(CASE WHEN status = ANY($2) THEN total_price ELSE 0 END), 0)::float as revenue
+        COALESCE(SUM(total_price), 0)::float as revenue
        FROM store_orders 
        WHERE client_id = $1 AND created_at >= NOW() - INTERVAL '30 days'
        GROUP BY DATE(created_at)
        ORDER BY date ASC`,
-      [clientId, revenueStatuses]
+      [clientId]
     );
 
     // Today vs Yesterday comparison

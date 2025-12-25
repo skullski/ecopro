@@ -12,6 +12,10 @@ export default defineConfig(({ mode }) => ({
         target: 'http://localhost:8080',
         changeOrigin: true,
       },
+      '/robots.txt': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
     },
     fs: {
        allow: [
