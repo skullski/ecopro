@@ -13,8 +13,8 @@ export const getDashboardStats: RequestHandler = async (req, res) => {
       [clientId]
     );
     const revenueStatuses = revenueStatusesRes.rows.map(r => r.name);
-    // Include built-in English and Arabic statuses for revenue calculation
-    revenueStatuses.push('delivered', 'completed', 'مكتملة', 'مؤكدة', 'تم التسليم', 'confirmed');
+    // Include built-in statuses for revenue calculation (English only)
+    revenueStatuses.push('delivered', 'completed', 'confirmed');
     
     const [productsRes, ordersRes, revenueRes, pendingRes, completedRes] = await Promise.all([
       pool.query(
@@ -81,8 +81,8 @@ export const getDashboardAnalytics: RequestHandler = async (req, res) => {
       [clientId]
     );
     const revenueStatuses = revenueStatusesRes.rows.map(r => r.name);
-    // Include built-in English and Arabic statuses for revenue calculation
-    revenueStatuses.push('delivered', 'completed', 'مكتملة', 'مؤكدة', 'تم التسليم', 'confirmed');
+    // Include built-in statuses for revenue calculation (English only)
+    revenueStatuses.push('delivered', 'completed', 'confirmed');
 
     // Get all custom statuses for breakdown
     const customStatusesRes = await pool.query(
