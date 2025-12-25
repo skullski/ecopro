@@ -477,7 +477,7 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
         
         // Get bot settings
         const botRes = await pool.query(
-          `SELECT telegram_bot_token, template_order_confirmation 
+          `SELECT telegram_bot_token, template_instant_order, template_pin_instructions 
            FROM bot_settings 
            WHERE client_id = $1 AND enabled = true AND provider = 'telegram'
            LIMIT 1`,
@@ -487,25 +487,25 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
         if (botRes.rows.length > 0 && botRes.rows[0].telegram_bot_token) {
           const botToken = botRes.rows[0].telegram_bot_token;
           
-          // Detailed order confirmation message
-          const orderMessage = `🎉 شكراً لك يا ${customer_name}!
+          // Default instant order template
+          const defaultInstantOrder = `🎉 شكراً لك يا {customerName}!
 
 تم استلام طلبك بنجاح ✅
 
 ━━━━━━━━━━━━━━━━
 📦 تفاصيل الطلب
 ━━━━━━━━━━━━━━━━
-🔢 رقم الطلب: #${result.rows[0].id}
-📱 المنتج: ${productTitle}
-💰 السعر: ${total_price.toLocaleString()} دج
-📍 الكمية: ${quantity}
+🔢 رقم الطلب: #{orderId}
+📱 المنتج: {productName}
+💰 السعر: {totalPrice} دج
+📍 الكمية: {quantity}
 
 ━━━━━━━━━━━━━━━━
 👤 معلومات التوصيل
 ━━━━━━━━━━━━━━━━
-📛 الاسم: ${customer_name}
-📞 الهاتف: ${customer_phone || normalizedPhone}
-🏠 العنوان: ${customer_address || 'غير محدد'}
+📛 الاسم: {customerName}
+📞 الهاتف: {customerPhone}
+🏠 العنوان: {address}
 
 ━━━━━━━━━━━━━━━━
 🚚 حالة الطلب: قيد المعالجة
@@ -513,23 +513,38 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
 
 سنتواصل معك قريباً للتأكيد 📞
 
-⭐ من ${storeName}`;
+⭐ من {storeName}`;
+
+          const defaultPinInstructions = `📌 نصيحة مهمة:
+
+اضغط مطولاً على الرسالة السابقة واختر "تثبيت" (Pin) لتتبع طلبك بسهولة!
+
+🔔 تأكد من:
+• تفعيل الإشعارات للبوت
+• عدم كتم صوت المحادثة
+• ستصلك تحديثات حالة الطلب هنا مباشرة`;
+
+          const instantOrderTemplate = botRes.rows[0].template_instant_order || defaultInstantOrder;
+          const pinInstructionsTemplate = botRes.rows[0].template_pin_instructions || defaultPinInstructions;
+          
+          // Replace variables
+          const orderMessage = replaceTemplateVariables(instantOrderTemplate, {
+            customerName: customer_name,
+            productName: productTitle,
+            totalPrice: total_price.toLocaleString(),
+            quantity: quantity,
+            orderId: result.rows[0].id,
+            customerPhone: customer_phone || normalizedPhone,
+            address: customer_address || 'غير محدد',
+            storeName: storeName,
+          });
 
           // Send order confirmation
           const msgResult = await sendTelegramMessage(botToken, chatId, orderMessage);
           
           // Send pinning instruction as separate message
           if (msgResult.success) {
-            await sendTelegramMessage(botToken, chatId, 
-              `📌 نصيحة مهمة:
-              
-اضغط مطولاً على الرسالة السابقة واختر "تثبيت" (Pin) لتتبع طلبك بسهولة!
-
-🔔 تأكد من:
-• تفعيل الإشعارات للبوت
-• عدم كتم صوت المحادثة
-• ستصلك تحديثات حالة الطلب هنا مباشرة`
-            );
+            await sendTelegramMessage(botToken, chatId, pinInstructionsTemplate);
           }
 
           // Also create the order-telegram link for future use

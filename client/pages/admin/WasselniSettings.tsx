@@ -21,6 +21,8 @@ interface BotSettings {
   viberAuthToken?: string;
   viberSenderName?: string;
   templateGreeting?: string;
+  templateInstantOrder?: string;
+  templatePinInstructions?: string;
   templateOrderConfirmation: string;
   templatePayment: string;
   templateShipping: string;
@@ -47,6 +49,8 @@ export default function AdminWasselniSettings() {
     viberAuthToken: '',
     viberSenderName: '',
     templateGreeting: `شكراً لطلبك من {storeName} يا {customerName}!\n\n✅ فعّل الإشعارات في Telegram باش توصلك رسالة التأكيد وتتبع الطلب.`,
+    templateInstantOrder: `🎉 شكراً لك يا {customerName}!\n\nتم استلام طلبك بنجاح ✅\n\n━━━━━━━━━━━━━━━━\n📦 تفاصيل الطلب\n━━━━━━━━━━━━━━━━\n🔢 رقم الطلب: #{orderId}\n📱 المنتج: {productName}\n💰 السعر: {totalPrice} دج\n📍 الكمية: {quantity}\n\n━━━━━━━━━━━━━━━━\n👤 معلومات التوصيل\n━━━━━━━━━━━━━━━━\n📛 الاسم: {customerName}\n📞 الهاتف: {customerPhone}\n🏠 العنوان: {address}\n\n━━━━━━━━━━━━━━━━\n🚚 حالة الطلب: قيد المعالجة\n━━━━━━━━━━━━━━━━\n\nسنتواصل معك قريباً للتأكيد 📞\n\n⭐ من {storeName}`,
+    templatePinInstructions: `📌 نصيحة مهمة:\n\nاضغط مطولاً على الرسالة السابقة واختر "تثبيت" (Pin) لتتبع طلبك بسهولة!\n\n🔔 تأكد من:\n• تفعيل الإشعارات للبوت\n• عدم كتم صوت المحادثة\n• ستصلك تحديثات حالة الطلب هنا مباشرة`,
     templateOrderConfirmation: `السلام عليكم {customerName}! 🌟\n\nشكراً لك على طلبك من {companyName}! \n\n📦 تفاصيل الطلب:\n• المنتج: {productName}\n• السعر: {totalPrice} دج\n• العنوان: {address}\n\nهل تؤكد الطلب؟ رد ب "نعم" للتأكيد أو "لا" للإلغاء.`,
     templatePayment: `تم تأكيد طلبك #{orderId}. يرجى الدفع بـ {totalPrice} دج.`,
     templateShipping: `تم شحن طلبك #{orderId}. رقم التتبع: {trackingNumber}.`
@@ -455,14 +459,49 @@ export default function AdminWasselniSettings() {
               />
             </div>
 
+            {/* Instant Order Notification - NEW */}
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-emerald-200 dark:border-emerald-700 shadow-lg shadow-emerald-200/50 dark:shadow-black/20">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20">
+                  <Package className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                📦 Instant Order Notification
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Sent IMMEDIATELY when customer places an order (with full order details)</p>
+              <Textarea
+                value={settings.templateInstantOrder || ''}
+                onChange={(e) => updateSetting('templateInstantOrder', e.target.value)}
+                rows={12}
+                className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-xl text-sm font-mono"
+              />
+            </div>
+
+            {/* Pin Instructions - NEW */}
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-amber-200 dark:border-amber-700 shadow-lg shadow-amber-200/50 dark:shadow-black/20">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-500/20">
+                  <MapPin className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                </div>
+                📌 Pin Instructions
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Sent after order notification - tells customer to pin message and enable notifications</p>
+              <Textarea
+                value={settings.templatePinInstructions || ''}
+                onChange={(e) => updateSetting('templatePinInstructions', e.target.value)}
+                rows={6}
+                className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-xl text-sm font-mono"
+              />
+            </div>
+
             {/* Order Confirmation Template */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-lg shadow-slate-200/50 dark:shadow-black/20">
               <h3 className="text-base font-bold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
                 <div className="p-2 rounded-lg bg-green-100 dark:bg-green-500/20">
                   <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
                 </div>
-                Order Confirmation
+                Order Confirmation (Scheduled)
               </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Scheduled message with confirm/decline buttons (for non-pre-connected users)</p>
               <Textarea
                 value={settings.templateOrderConfirmation}
                 onChange={(e) => updateSetting('templateOrderConfirmation', e.target.value)}
