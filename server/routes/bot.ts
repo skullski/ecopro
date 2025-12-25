@@ -97,6 +97,8 @@ export const getBotSettings: RequestHandler = async (req, res) => {
 
     const response = {
       enabled: effectiveEnabled,
+      updatesEnabled: !!settings.updates_enabled,
+      trackingEnabled: !!settings.tracking_enabled,
       provider: settings.provider || 'telegram',
       whatsappPhoneId: settings.whatsapp_phone_id,
       whatsappToken: settings.whatsapp_token,
@@ -128,6 +130,8 @@ export const updateBotSettings: RequestHandler = async (req, res) => {
 
     const {
       enabled,
+      updatesEnabled,
+      trackingEnabled,
       provider,
       whatsappPhoneId,
       whatsappToken,
@@ -165,15 +169,17 @@ export const updateBotSettings: RequestHandler = async (req, res) => {
       // Insert new settings
       await pool.query(
         `INSERT INTO bot_settings (
-          client_id, enabled, provider, whatsapp_phone_id, whatsapp_token,
+          client_id, enabled, updates_enabled, tracking_enabled, provider, whatsapp_phone_id, whatsapp_token,
           telegram_bot_token, viber_auth_token, viber_sender_name,
           telegram_bot_username, telegram_webhook_secret,
           template_greeting, template_order_confirmation, template_payment, template_shipping,
           created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())`,
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW())`,
         [
           clientId,
           enabled ?? true,
+          updatesEnabled ?? false,
+          trackingEnabled ?? false,
           effectiveProvider,
           whatsappPhoneId ?? null,
           whatsappToken ?? null,
@@ -193,22 +199,26 @@ export const updateBotSettings: RequestHandler = async (req, res) => {
       await pool.query(
         `UPDATE bot_settings SET
           enabled = $2,
-          provider = $3,
-          whatsapp_phone_id = $4,
-          whatsapp_token = $5,
-          telegram_bot_token = $6,
-          viber_auth_token = $7,
-          viber_sender_name = $8,
-          telegram_bot_username = $9,
-          template_greeting = $10,
-          template_order_confirmation = $11,
-          template_payment = $12,
-          template_shipping = $13,
+          updates_enabled = $3,
+          tracking_enabled = $4,
+          provider = $5,
+          whatsapp_phone_id = $6,
+          whatsapp_token = $7,
+          telegram_bot_token = $8,
+          viber_auth_token = $9,
+          viber_sender_name = $10,
+          telegram_bot_username = $11,
+          template_greeting = $12,
+          template_order_confirmation = $13,
+          template_payment = $14,
+          template_shipping = $15,
           updated_at = NOW()
         WHERE client_id = $1`,
         [
           clientId,
           enabled ?? true,
+          updatesEnabled ?? false,
+          trackingEnabled ?? false,
           effectiveProvider,
           whatsappPhoneId ?? null,
           whatsappToken ?? null,
