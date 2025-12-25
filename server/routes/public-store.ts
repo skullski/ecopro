@@ -464,16 +464,19 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
       const productTitle = (await pool.query('SELECT title FROM client_store_products WHERE id = $1', [product_id])).rows?.[0]?.title || 'Product';
 
       // Check if customer has pre-connected via Telegram
+      console.log('[createPublicStoreOrder] Checking pre-connect for phone:', normalizedPhone, 'client:', clientId);
       const preConnectRes = await pool.query(
         `SELECT telegram_chat_id FROM customer_messaging_ids 
          WHERE client_id = $1 AND customer_phone = $2 AND telegram_chat_id IS NOT NULL
          LIMIT 1`,
         [clientId, normalizedPhone]
       );
+      console.log('[createPublicStoreOrder] Pre-connect result:', preConnectRes.rows);
 
       if (preConnectRes.rows.length > 0) {
         // Customer is pre-connected! Send immediate notification
         const chatId = preConnectRes.rows[0].telegram_chat_id;
+        console.log('[createPublicStoreOrder] Customer is pre-connected, chat_id:', chatId);
         
         // Get bot settings
         const botRes = await pool.query(
@@ -483,9 +486,11 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
            LIMIT 1`,
           [clientId]
         );
+        console.log('[createPublicStoreOrder] Bot settings found:', botRes.rows.length > 0);
 
         if (botRes.rows.length > 0 && botRes.rows[0].telegram_bot_token) {
           const botToken = botRes.rows[0].telegram_bot_token;
+          console.log('[createPublicStoreOrder] Sending Telegram message to chat:', chatId);
           
           // Default instant order template
           const defaultInstantOrder = `🎉 شكراً لك يا {customerName}!
@@ -541,10 +546,12 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
 
           // Send order confirmation
           const msgResult = await sendTelegramMessage(botToken, chatId, orderMessage);
+          console.log('[createPublicStoreOrder] Telegram send result:', msgResult);
           
           // Send pinning instruction as separate message
           if (msgResult.success) {
-            await sendTelegramMessage(botToken, chatId, pinInstructionsTemplate);
+            const pinResult = await sendTelegramMessage(botToken, chatId, pinInstructionsTemplate);
+            console.log('[createPublicStoreOrder] Pin instructions send result:', pinResult);
           }
 
           // Also create the order-telegram link for future use
