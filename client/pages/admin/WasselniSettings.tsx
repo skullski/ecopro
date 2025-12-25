@@ -18,6 +18,7 @@ interface BotSettings {
   whatsappToken: string;
   telegramBotToken?: string;
   telegramBotUsername?: string;
+  telegramDelayMinutes?: number;
   viberAuthToken?: string;
   viberSenderName?: string;
   templateGreeting?: string;
@@ -46,6 +47,7 @@ export default function AdminWasselniSettings() {
     whatsappToken: '',
     telegramBotToken: '',
     telegramBotUsername: '',
+    telegramDelayMinutes: 5,
     viberAuthToken: '',
     viberSenderName: '',
     templateGreeting: `شكراً لطلبك من {storeName} يا {customerName}!\n\n✅ فعّل الإشعارات في Telegram باش توصلك رسالة التأكيد وتتبع الطلب.`,
@@ -494,14 +496,35 @@ export default function AdminWasselniSettings() {
             </div>
 
             {/* Order Confirmation Template */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-lg shadow-slate-200/50 dark:shadow-black/20">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-green-200 dark:border-green-700 shadow-lg shadow-green-200/50 dark:shadow-black/20">
               <h3 className="text-base font-bold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
                 <div className="p-2 rounded-lg bg-green-100 dark:bg-green-500/20">
                   <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
                 </div>
-                Order Confirmation (Scheduled)
+                ⏱️ Order Confirmation (Scheduled with Buttons)
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Scheduled message with confirm/decline buttons (for non-pre-connected users)</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">This message with ✅ Confirm / ❌ Cancel buttons is sent AFTER the delay time</p>
+              
+              {/* Delay Setting */}
+              <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
+                <Label className="text-sm font-semibold text-green-800 dark:text-green-300 mb-2 block">
+                  ⏰ Confirmation Delay (minutes)
+                </Label>
+                <div className="flex items-center gap-3">
+                  <Input
+                    type="number"
+                    min={1}
+                    max={60}
+                    value={settings.telegramDelayMinutes || 5}
+                    onChange={(e) => updateSetting('telegramDelayMinutes', parseInt(e.target.value) || 5)}
+                    className="w-24 bg-white dark:bg-slate-800 border-green-300 dark:border-green-700"
+                  />
+                  <span className="text-xs text-green-700 dark:text-green-400">
+                    Send confirmation buttons {settings.telegramDelayMinutes || 5} minutes after order
+                  </span>
+                </div>
+              </div>
+              
               <Textarea
                 value={settings.templateOrderConfirmation}
                 onChange={(e) => updateSetting('templateOrderConfirmation', e.target.value)}

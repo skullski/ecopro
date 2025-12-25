@@ -1,5 +1,6 @@
 import { createServer } from "./index";
 import { initializeDatabase, createDefaultAdmin } from "./utils/database";
+import { startScheduledMessageWorker, stopScheduledMessageWorker } from "./utils/scheduled-messages";
 import * as bcrypt from "bcrypt";
 
 async function startServer() {
@@ -45,16 +46,21 @@ async function startServer() {
       console.log(`📱 Frontend: http://localhost:${port}`);
       console.log(`🔧 API: http://localhost:${port}/api`);
       console.log(`📊 Dashboard: http://localhost:${port}/dashboard\n`);
+      
+      // Start the scheduled message worker
+      startScheduledMessageWorker();
     });
 
     // Graceful shutdown
     process.on("SIGTERM", () => {
       console.log("🛑 Received SIGTERM, shutting down gracefully");
+      stopScheduledMessageWorker();
       process.exit(0);
     });
 
     process.on("SIGINT", () => {
       console.log("🛑 Received SIGINT, shutting down gracefully");
+      stopScheduledMessageWorker();
       process.exit(0);
     });
   } catch (error) {

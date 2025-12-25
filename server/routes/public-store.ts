@@ -480,7 +480,8 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
         
         // Get bot settings
         const botRes = await pool.query(
-          `SELECT telegram_bot_token, template_instant_order, template_pin_instructions 
+          `SELECT telegram_bot_token, template_instant_order, template_pin_instructions, 
+                  telegram_delay_minutes, template_order_confirmation
            FROM bot_settings 
            WHERE client_id = $1 AND enabled = true AND provider = 'telegram'
            LIMIT 1`,
@@ -544,21 +545,10 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
             storeName: storeName,
           });
 
-          // Send order confirmation with confirm/cancel buttons
+          // Send instant order notification (NO buttons - just info)
           const orderId = result.rows[0].id;
-          const confirmCallback = `confirm_order_${orderId}_${clientId}`;
-          const cancelCallback = `cancel_order_${orderId}_${clientId}`;
           
-          const msgResult = await sendTelegramMessage(botToken, chatId, orderMessage, {
-            reply_markup: {
-              inline_keyboard: [
-                [
-                  { text: '✅ تأكيد الطلب', callback_data: confirmCallback },
-                  { text: '❌ إلغاء الطلب', callback_data: cancelCallback }
-                ]
-              ]
-            }
-          });
+          const msgResult = await sendTelegramMessage(botToken, chatId, orderMessage);
           console.log('[createPublicStoreOrder] Telegram send result:', msgResult);
           
           // Send pinning instruction as separate message
@@ -566,6 +556,42 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
             const pinResult = await sendTelegramMessage(botToken, chatId, pinInstructionsTemplate);
             console.log('[createPublicStoreOrder] Pin instructions send result:', pinResult);
           }
+          
+          // Schedule confirmation message with buttons after delay
+          const delayMinutes = botRes.rows[0].telegram_delay_minutes || 5; // default 5 minutes
+          const scheduledTime = new Date(Date.now() + delayMinutes * 60 * 1000);
+          
+          // Get confirmation template
+          const defaultConfirmationTemplate = `السلام عليكم {customerName}! 🌟
+
+هل تؤكد طلبك من {storeName}?
+
+📦 المنتج: {productName}
+💰 السعر: {totalPrice} دج
+📍 العنوان: {address}
+
+اضغط على أحد الأزرار للتأكيد أو الإلغاء:`;
+          const confirmationTemplate = botRes.rows[0].template_order_confirmation || defaultConfirmationTemplate;
+          
+          const confirmationMessage = replaceTemplateVariables(confirmationTemplate, {
+            customerName: customer_name,
+            productName: productTitle,
+            totalPrice: String(total_price),
+            quantity: quantity,
+            orderId: orderId,
+            customerPhone: customer_phone || normalizedPhone,
+            address: customer_address || 'غير محدد',
+            storeName: storeName,
+          });
+          
+          // Insert into scheduled_messages table
+          await pool.query(
+            `INSERT INTO scheduled_messages 
+             (client_id, order_id, telegram_chat_id, message_content, message_type, scheduled_at, status)
+             VALUES ($1, $2, $3, $4, $5, $6, 'pending')`,
+            [clientId, orderId, chatId, confirmationMessage, 'order_confirmation', scheduledTime]
+          );
+          console.log(`[createPublicStoreOrder] Scheduled confirmation message for ${delayMinutes} minutes later`);
 
           // Also create the order-telegram link for future use
           await pool.query(
