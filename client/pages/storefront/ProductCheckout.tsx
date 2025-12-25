@@ -400,80 +400,78 @@ export default function ProductCheckout() {
         </div>
       </div>
 
-      {/* Main Content - Single Column */}
-      <div className="pt-16 px-4">
-        <div className="max-w-md mx-auto space-y-3">
+      {/* Main Content - Wide Single Column, No Scroll */}
+      <div className="pt-16 px-4 h-[calc(100vh-64px)] overflow-hidden">
+        <div className="max-w-4xl mx-auto h-full flex gap-4">
           
-          {/* Product Image */}
-          <div className="relative aspect-square rounded-xl overflow-hidden">
-            <img src={productImages[activeImageIndex]} alt={productName} className="w-full h-full object-cover" />
-            {productImages.length > 1 && (
-              <>
-                <button onClick={() => setActiveImageIndex(i => (i > 0 ? i - 1 : productImages.length - 1))} className="absolute left-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-black/50 text-white">
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button onClick={() => setActiveImageIndex(i => (i < productImages.length - 1 ? i + 1 : 0))} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-black/50 text-white">
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </>
-            )}
-          </div>
-
-          {/* Product Info */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-white font-bold">{productName}</h1>
-              <div className="flex items-center gap-1">
-                {[...Array(5)].map((_, i) => <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />)}
-                <span className="text-white/40 text-xs">(128)</span>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-xl font-bold" style={{ color: accentColor }}>{productPrice.toLocaleString()}</p>
-              <p className="text-white/50 text-xs">دج</p>
-            </div>
-          </div>
-
-          {/* Quantity */}
-          <div className="flex items-center justify-between py-2 border-y border-white/10">
-            <div className="flex items-center gap-2">
-              <span className="text-white/60 text-sm">الكمية:</span>
-              <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="w-7 h-7 rounded bg-white/10 text-white flex items-center justify-center"><Minus className="w-4 h-4" /></button>
-              <span className="text-white font-bold w-6 text-center">{quantity}</span>
-              <button onClick={() => setQuantity(q => q + 1)} className="w-7 h-7 rounded bg-white/10 text-white flex items-center justify-center"><Plus className="w-4 h-4" /></button>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className={`text-sm ${inStock ? 'text-green-400' : 'text-red-400'}`}>{inStock ? '✓ متوفر' : '✗ نفذ'}</span>
-              <span className="text-white font-bold">{totalPrice.toLocaleString()} دج</span>
-            </div>
-          </div>
-
-          {/* Form */}
-          <div className="grid grid-cols-2 gap-2">
-            <input type="text" placeholder="الاسم الكامل *" value={formData.fullName} onChange={(e) => setFormData(f => ({ ...f, fullName: e.target.value }))} className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm placeholder:text-white/40 focus:outline-none" />
-            <input type="tel" placeholder="رقم الهاتف *" value={formData.phone} onChange={(e) => setFormData(f => ({ ...f, phone: e.target.value }))} className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm placeholder:text-white/40 focus:outline-none" dir="ltr" />
-            <input type="text" placeholder="المدينة *" value={formData.city} onChange={(e) => setFormData(f => ({ ...f, city: e.target.value }))} className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm placeholder:text-white/40 focus:outline-none" />
-            <input type="text" placeholder="العنوان *" value={formData.address} onChange={(e) => setFormData(f => ({ ...f, address: e.target.value }))} className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm placeholder:text-white/40 focus:outline-none" />
-          </div>
-
-          {/* Telegram */}
-          {telegramBotInfo?.enabled && (
-            <div className="flex items-center justify-between p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
-              <div className="flex items-center gap-2">
-                <Send className="w-4 h-4 text-blue-400" />
-                <span className="text-white text-sm">تتبع عبر Telegram</span>
-                {telegramConnected && <span className="text-green-400 text-xs">✓</span>}
-              </div>
-              {!telegramConnected && (
-                <button onClick={handleConnectTelegram} disabled={!formData.phone || formData.phone.replace(/\D/g, '').length < 9} className="px-3 py-1 rounded bg-blue-500 text-white text-xs font-bold disabled:opacity-50">ربط</button>
+          {/* Left - Image */}
+          <div className="w-1/2 h-full flex items-center">
+            <div className="relative w-full aspect-square rounded-xl overflow-hidden">
+              <img src={productImages[activeImageIndex]} alt={productName} className="w-full h-full object-cover" />
+              {productImages.length > 1 && (
+                <>
+                  <button onClick={() => setActiveImageIndex(i => (i > 0 ? i - 1 : productImages.length - 1))} className="absolute left-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-black/50 text-white"><ChevronLeft className="w-4 h-4" /></button>
+                  <button onClick={() => setActiveImageIndex(i => (i < productImages.length - 1 ? i + 1 : 0))} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-black/50 text-white"><ChevronRight className="w-4 h-4" /></button>
+                </>
               )}
             </div>
-          )}
+          </div>
 
-          {/* Submit */}
-          <button onClick={handleSubmitOrder} disabled={isSubmitting || !inStock} className="w-full py-3 rounded-lg font-bold text-white flex items-center justify-center gap-2 disabled:opacity-50" style={{ backgroundColor: accentColor }}>
-            {isSubmitting ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><ShoppingBag className="w-4 h-4" />تأكيد الطلب • {totalPrice.toLocaleString()} دج</>}
-          </button>
+          {/* Right - Info + Form */}
+          <div className="w-1/2 flex flex-col justify-center gap-3">
+            {/* Product Info */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-white font-bold text-lg">{productName}</h1>
+                <div className="flex items-center gap-1">
+                  {[...Array(5)].map((_, i) => <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />)}
+                  <span className="text-white/40 text-xs">(128)</span>
+                </div>
+              </div>
+              <p className="text-2xl font-bold" style={{ color: accentColor }}>{productPrice.toLocaleString()} دج</p>
+            </div>
+
+            {/* Quantity */}
+            <div className="flex items-center justify-between py-2 border-y border-white/10">
+              <div className="flex items-center gap-2">
+                <span className="text-white/60 text-sm">الكمية:</span>
+                <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="w-7 h-7 rounded bg-white/10 text-white flex items-center justify-center"><Minus className="w-4 h-4" /></button>
+                <span className="text-white font-bold w-6 text-center">{quantity}</span>
+                <button onClick={() => setQuantity(q => q + 1)} className="w-7 h-7 rounded bg-white/10 text-white flex items-center justify-center"><Plus className="w-4 h-4" /></button>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`text-sm ${inStock ? 'text-green-400' : 'text-red-400'}`}>{inStock ? '✓ متوفر' : '✗ نفذ'}</span>
+                <span className="text-white font-bold">{totalPrice.toLocaleString()} دج</span>
+              </div>
+            </div>
+
+            {/* Form - 2x2 */}
+            <div className="grid grid-cols-2 gap-2">
+              <input type="text" placeholder="الاسم الكامل *" value={formData.fullName} onChange={(e) => setFormData(f => ({ ...f, fullName: e.target.value }))} className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm placeholder:text-white/40 focus:outline-none" />
+              <input type="tel" placeholder="رقم الهاتف *" value={formData.phone} onChange={(e) => setFormData(f => ({ ...f, phone: e.target.value }))} className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm placeholder:text-white/40 focus:outline-none" dir="ltr" />
+              <input type="text" placeholder="المدينة *" value={formData.city} onChange={(e) => setFormData(f => ({ ...f, city: e.target.value }))} className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm placeholder:text-white/40 focus:outline-none" />
+              <input type="text" placeholder="العنوان *" value={formData.address} onChange={(e) => setFormData(f => ({ ...f, address: e.target.value }))} className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm placeholder:text-white/40 focus:outline-none" />
+            </div>
+
+            {/* Telegram */}
+            {telegramBotInfo?.enabled && (
+              <div className="flex items-center justify-between p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                <div className="flex items-center gap-2">
+                  <Send className="w-4 h-4 text-blue-400" />
+                  <span className="text-white text-sm">تتبع عبر Telegram</span>
+                  {telegramConnected && <span className="text-green-400 text-xs">✓</span>}
+                </div>
+                {!telegramConnected && (
+                  <button onClick={handleConnectTelegram} disabled={!formData.phone || formData.phone.replace(/\D/g, '').length < 9} className="px-3 py-1 rounded bg-blue-500 text-white text-xs font-bold disabled:opacity-50">ربط</button>
+                )}
+              </div>
+            )}
+
+            {/* Submit */}
+            <button onClick={handleSubmitOrder} disabled={isSubmitting || !inStock} className="w-full py-3 rounded-lg font-bold text-white flex items-center justify-center gap-2 disabled:opacity-50" style={{ backgroundColor: accentColor }}>
+              {isSubmitting ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><ShoppingBag className="w-4 h-4" />تأكيد الطلب • {totalPrice.toLocaleString()} دج</>}
+            </button>
+          </div>
 
         </div>
       </div>
