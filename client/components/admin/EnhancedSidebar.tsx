@@ -343,42 +343,6 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
               )}
             </div>
           )}
-
-          {/* User Section with unique card design */}
-          <div className="rounded-lg p-2 border transition-all duration-200"
-            style={{
-              backgroundColor: `${SIDEBAR_THEMES[activeTheme].accent}10`,
-              borderColor: SIDEBAR_THEMES[activeTheme].border,
-              lineHeight: '1.1',
-            }}>
-            <div className="relative flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-200" 
-                style={{
-                  backgroundColor: SIDEBAR_THEMES[activeTheme].accent,
-                  color: SIDEBAR_THEMES[activeTheme].bg,
-                  fontSize: '11px',
-                }}>
-                WW
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold truncate transition-colors duration-200" 
-                  style={{ 
-                    color: SIDEBAR_THEMES[activeTheme].accent,
-                    fontSize: '13px',
-                  }}>
-                  SAHL
-                </div>
-                <div className="truncate transition-colors duration-200"
-                  style={{
-                    fontSize: '11px',
-                    color: SIDEBAR_THEMES[activeTheme].text,
-                    opacity: 0.7,
-                  }}>
-                  sahlsupport@gmail.com
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       )}
     </div>
