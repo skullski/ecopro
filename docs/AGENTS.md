@@ -157,31 +157,54 @@ These answers define how the platform works. Read them before building anything.
 
 ## Communication & Status
 
-10. **Notifications - Automated Bot System** ✅ IMPLEMENTED
-    - Platform has a BOT that sends WhatsApp + SMS messages to customers
-    - Store owner configures delays in bot settings (e.g., WhatsApp after 1 hour, SMS after 4 hours)
-    - Store owner provides WhatsApp credentials (Twilio WhatsApp API)
-    - Store owner can CUSTOMIZE message templates (with variables: {customerName}, {storeName}, {productName}, {price}, etc)
-    - Bot is optional - store owner enables/disables it
-    - Messages contain confirmation links: `https://storename-ecopro.com/store/store-slug/order/ABC123/confirm`
-    - Message includes: customer name, store name, product name, price, and confirmation link
-    - Confirmation page shows: all product info + buttons (Approve, Decline, Change Details)
-    - Customer can EDIT ANY order details from "Change Details" before approving
-    - Confirmation link expires after 48 hours
-    - After customer responds to both messages (WhatsApp + SMS) → order status auto-updates to confirmed/declined
-    - If customer declines → order moves to "archived/cancelled" after 24 hours in Orders page
-    - If customer doesn't respond within 24 hours → order moves to "pending orders" place (awaiting response)
-    - Store owner sees orders in dashboard in real-time (Orders page)
-    - SMS integration: Structure ready, server under development
+10. **Notifications - Telegram Bot System** ✅ IMPLEMENTED
+    - Platform uses Telegram Bot for customer notifications (WhatsApp/SMS deprecated)
+    - **Bot**: @SahlaOrdersBot
+    - **Webhook**: https://ecopro-1lbl.onrender.com/api/telegram/webhook
+    
+    **Pre-Connect Flow (Customer connects BEFORE placing order):**
+    1. Customer enters phone number on checkout page
+    2. Customer clicks "ربط" (Connect) button
+    3. Opens Telegram with bot link containing pre-connect token
+    4. Customer presses /start in Telegram
+    5. Bot sends greeting message (customizable template)
+    6. Customer returns to checkout page → "متصل" (Connected) shown
+    7. Customer places order → Bot sends instant order notification
+    
+    **Message Templates (customizable in Bot Settings):**
+    - **Greeting Message**: Sent when customer first connects via /start
+    - **Instant Order Notification**: Sent immediately when order is placed (full order details)
+    - **Pin Instructions**: Sent after order notification (tells customer to pin message & enable notifications)
+    - **Order Confirmation**: Scheduled message with confirm/decline buttons (for non-pre-connected users)
+    - **Payment Confirmation**: Sent when payment is confirmed
+    - **Shipping Notification**: Sent when order is shipped (includes tracking number)
+    
+    **Template Variables:**
+    - {customerName} - Customer's name
+    - {orderId} - Order number
+    - {productName} - Product title
+    - {totalPrice} - Total price
+    - {quantity} - Order quantity
+    - {customerPhone} - Customer's phone
+    - {address} - Delivery address
+    - {storeName} - Store name
+    - {trackingNumber} - Shipping tracking number
+    
+    **Database Tables:**
+    - `bot_settings` - Store owner's bot configuration (token, templates, enabled flags)
+    - `customer_messaging_ids` - Phone-to-Telegram-chat mapping
+    - `customer_preconnect_tokens` - Pre-connect tokens for linking
+    - `order_telegram_chats` - Order-specific Telegram chat bindings
+    - `order_telegram_links` - Order-specific deep links
     
     **Implementation Files:**
-    - `server/utils/bot-messaging.ts` - Twilio integration, message scheduling, template variables
-    - `server/routes/order-confirmation.ts` - Confirmation page endpoints
-    - `client/pages/storefront/OrderConfirmation.tsx` - Confirmation UI (Approve/Decline/Change)
-    - `server/migrations/20251219_bot_message_tracking.sql` - Database tables for messages and confirmations
-    - Background jobs:
-      - Bot message sender runs every 5 minutes
-      - Order cleanup runs every 1 hour (archives declined orders, cleans up expired links)
+    - `server/routes/telegram.ts` - Webhook handler, pre-connect endpoints
+    - `server/routes/public-store.ts` - Order creation with instant Telegram notification
+    - `server/routes/bot.ts` - Bot settings API
+    - `server/utils/bot-messaging.ts` - Telegram message sending
+    - `server/utils/telegram.ts` - Telegram utilities (webhook registration, token generation)
+    - `client/pages/storefront/ProductCheckout.tsx` - Pre-connect UI on checkout page
+    - `client/pages/admin/WasselniSettings.tsx` - Bot settings page (templates, provider config)
 
 11. **Product Templates**
     - Templates (jewelry, electronics, etc) are just UI/styling
