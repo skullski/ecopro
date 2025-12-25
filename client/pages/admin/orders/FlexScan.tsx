@@ -8,13 +8,13 @@ export default function FlexScan() {
         <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
           Flex Scan
         </h1>
-        <p className="text-muted-foreground mt-2">تحليل ذكي للطلبات والمبيعات</p>
+        <p className="text-muted-foreground mt-2">Smart analysis of orders and sales</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="border-2 border-blue-500/20">
           <CardHeader className="pb-3">
-            <CardDescription>معدل نجاح الطلبات</CardDescription>
+            <CardDescription>Order success rate</CardDescription>
             <CardTitle className="text-xl md:text-2xl text-blue-600">87%</CardTitle>
           </CardHeader>
           <CardContent>
@@ -24,8 +24,8 @@ export default function FlexScan() {
 
         <Card className="border-2 border-green-500/20">
           <CardHeader className="pb-3">
-            <CardDescription>متوسط قيمة الطلب</CardDescription>
-            <CardTitle className="text-2xl text-green-600">3,420 دج</CardTitle>
+            <CardDescription>Average order value</CardDescription>
+            <CardTitle className="text-2xl text-green-600">3,420 DZD</CardTitle>
           </CardHeader>
           <CardContent>
             <Package className="w-8 h-8 text-green-500/30" />
@@ -34,7 +34,7 @@ export default function FlexScan() {
 
         <Card className="border-2 border-purple-500/20">
           <CardHeader className="pb-3">
-            <CardDescription>أوقات الذروة</CardDescription>
+            <CardDescription>Peak times</CardDescription>
             <CardTitle className="text-2xl text-purple-600">14:00-17:00</CardTitle>
           </CardHeader>
           <CardContent>
@@ -45,14 +45,14 @@ export default function FlexScan() {
 
       <Card className="border-2 border-primary/20">
         <CardHeader>
-          <CardTitle>تحليل الأداء</CardTitle>
-          <CardDescription>إحصائيات متقدمة عن أداء متجرك</CardDescription>
+          <CardTitle>Performance analysis</CardTitle>
+          <CardDescription>Advanced statistics about your store performance</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <div className="p-4 bg-gradient-to-r from-blue-500/5 to-blue-500/10 rounded-lg border border-blue-500/20">
               <div className="flex justify-between items-center mb-2">
-                <span className="font-medium">معدل إلغاء الطلبات</span>
+                <span className="font-medium">Order cancellation rate</span>
                 <span className="font-bold text-blue-600">8.5%</span>
               </div>
               <div className="w-full bg-blue-500/20 rounded-full h-2">
@@ -62,7 +62,7 @@ export default function FlexScan() {
 
             <div className="p-4 bg-gradient-to-r from-green-500/5 to-green-500/10 rounded-lg border border-green-500/20">
               <div className="flex justify-between items-center mb-2">
-                <span className="font-medium">معدل إعادة الطلب</span>
+                <span className="font-medium">Repeat order rate</span>
                 <span className="font-bold text-green-600">34%</span>
               </div>
               <div className="w-full bg-green-500/20 rounded-full h-2">
@@ -72,7 +72,7 @@ export default function FlexScan() {
 
             <div className="p-4 bg-gradient-to-r from-purple-500/5 to-purple-500/10 rounded-lg border border-purple-500/20">
               <div className="flex justify-between items-center mb-2">
-                <span className="font-medium">رضا العملاء</span>
+                <span className="font-medium">Customer satisfaction</span>
                 <span className="font-bold text-purple-600">92%</span>
               </div>
               <div className="w-full bg-purple-500/20 rounded-full h-2">
@@ -85,22 +85,22 @@ export default function FlexScan() {
 
       <Card className="border-2 border-accent/20">
         <CardHeader>
-          <CardTitle>توصيات الذكاء الاصطناعي</CardTitle>
-          <CardDescription>نصائح لتحسين الأداء</CardDescription>
+          <CardTitle>AI recommendations</CardTitle>
+          <CardDescription>Tips for improving performance</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             <div className="p-4 bg-muted/50 rounded-lg">
-              <p className="font-medium mb-1">⚡ زيادة المخزون</p>
-              <p className="text-sm text-muted-foreground">المنتج "سماعات لاسلكية" مطلوب بكثرة. فكر في زيادة المخزون.</p>
+              <p className="font-medium mb-1">⚡ Increase stock</p>
+              <p className="text-sm text-muted-foreground">The product "Wireless Headphones" is in high demand. Consider increasing stock.</p>
             </div>
             <div className="p-4 bg-muted/50 rounded-lg">
-              <p className="font-medium mb-1">📈 وقت ذروة الطلبات</p>
-              <p className="text-sm text-muted-foreground">أغلب الطلبات بين 14:00-17:00. خصص موارد إضافية في هذا الوقت.</p>
+              <p className="font-medium mb-1">📈 Peak order time</p>
+              <p className="text-sm text-muted-foreground">Most orders between 14:00-17:00. Allocate extra resources at this time.</p>
             </div>
             <div className="p-4 bg-muted/50 rounded-lg">
-              <p className="font-medium mb-1">🎯 استهداف العملاء</p>
-              <p className="text-sm text-muted-foreground">34% من عملائك يعيدون الطلب. قدم لهم عروض خاصة.</p>
+              <p className="font-medium mb-1">🎯 Customer targeting</p>
+              <p className="text-sm text-muted-foreground">34% of your customers repeat orders. Offer them special deals.</p>
             </div>
           </div>
         </CardContent>

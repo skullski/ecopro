@@ -207,12 +207,12 @@ export const getDashboardAnalytics: RequestHandler = async (req, res) => {
     // Orders by city
     const cityBreakdownRes = await pool.query(
       `SELECT 
-        COALESCE(NULLIF(TRIM(shipping_city), ''), 'غير محدد') as city,
+        COALESCE(NULLIF(TRIM(shipping_city), ''), 'Not specified') as city,
         COUNT(*)::int as count,
         COALESCE(SUM(total_price), 0)::float as revenue
        FROM store_orders 
        WHERE client_id = $1
-       GROUP BY COALESCE(NULLIF(TRIM(shipping_city), ''), 'غير محدد')
+       GROUP BY COALESCE(NULLIF(TRIM(shipping_city), ''), 'Not specified')
        ORDER BY count DESC
        LIMIT 10`,
       [clientId]

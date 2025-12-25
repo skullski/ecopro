@@ -494,41 +494,41 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
           console.log('[createPublicStoreOrder] Sending Telegram message to chat:', chatId);
           
           // Default instant order template
-          const defaultInstantOrder = `🎉 شكراً لك يا {customerName}!
+          const defaultInstantOrder = `🎉 Thank you, {customerName}!
 
-تم استلام طلبك بنجاح ✅
-
-━━━━━━━━━━━━━━━━
-📦 تفاصيل الطلب
-━━━━━━━━━━━━━━━━
-🔢 رقم الطلب: #{orderId}
-📱 المنتج: {productName}
-💰 السعر: {totalPrice} دج
-📍 الكمية: {quantity}
+Your order has been received successfully ✅
 
 ━━━━━━━━━━━━━━━━
-👤 معلومات التوصيل
+📦 Order Details
 ━━━━━━━━━━━━━━━━
-📛 الاسم: {customerName}
-📞 الهاتف: {customerPhone}
-🏠 العنوان: {address}
+🔢 Order ID: #{orderId}
+📱 Product: {productName}
+💰 Price: {totalPrice} DZD
+📍 Quantity: {quantity}
 
 ━━━━━━━━━━━━━━━━
-🚚 حالة الطلب: قيد المعالجة
+👤 Delivery Information
+━━━━━━━━━━━━━━━━
+📛 Name: {customerName}
+📞 Phone: {customerPhone}
+🏠 Address: {address}
+
+━━━━━━━━━━━━━━━━
+🚚 Order Status: Processing
 ━━━━━━━━━━━━━━━━
 
-سنتواصل معك قريباً للتأكيد 📞
+We will contact you soon for confirmation 📞
 
-⭐ من {storeName}`;
+⭐ From {storeName}`;
 
-          const defaultPinInstructions = `📌 نصيحة مهمة:
+          const defaultPinInstructions = `📌 Important tip:
 
-اضغط مطولاً على الرسالة السابقة واختر "تثبيت" (Pin) لتتبع طلبك بسهولة!
+Long press on the previous message and select "Pin" to easily track your order!
 
-🔔 تأكد من:
-• تفعيل الإشعارات للبوت
-• عدم كتم صوت المحادثة
-• ستصلك تحديثات حالة الطلب هنا مباشرة`;
+🔔 Make sure to:
+• Enable notifications for the bot
+• Don't mute the conversation
+• You will receive order status updates here directly`;
 
           const instantOrderTemplate = botRes.rows[0].template_instant_order || defaultInstantOrder;
           const pinInstructionsTemplate = botRes.rows[0].template_pin_instructions || defaultPinInstructions;
@@ -541,7 +541,7 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
             quantity: quantity,
             orderId: result.rows[0].id,
             customerPhone: customer_phone || normalizedPhone,
-            address: customer_address || 'غير محدد',
+            address: customer_address || 'Not specified',
             storeName: storeName,
           });
 
@@ -562,15 +562,15 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
           const scheduledTime = new Date(Date.now() + delayMinutes * 60 * 1000);
           
           // Get confirmation template
-          const defaultConfirmationTemplate = `السلام عليكم {customerName}! 🌟
+          const defaultConfirmationTemplate = `Hello {customerName}! 🌟
 
-هل تؤكد طلبك من {storeName}?
+Do you confirm your order from {storeName}?
 
-📦 المنتج: {productName}
-💰 السعر: {totalPrice} دج
-📍 العنوان: {address}
+📦 Product: {productName}
+💰 Price: {totalPrice} DZD
+📍 Address: {address}
 
-اضغط على أحد الأزرار للتأكيد أو الإلغاء:`;
+Press one of the buttons to confirm or cancel:`;
           const confirmationTemplate = botRes.rows[0].template_order_confirmation || defaultConfirmationTemplate;
           
           const confirmationMessage = replaceTemplateVariables(confirmationTemplate, {
@@ -580,7 +580,7 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
             quantity: quantity,
             orderId: orderId,
             customerPhone: customer_phone || normalizedPhone,
-            address: customer_address || 'غير محدد',
+            address: customer_address || 'Not specified',
             storeName: storeName,
           });
           

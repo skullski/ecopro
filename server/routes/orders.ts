@@ -391,7 +391,7 @@ export const updateOrderStatus: RequestHandler = async (req, res) => {
         const shouldNotify = ['processing', 'shipped', 'delivered', 'cancelled'].includes(String(status));
         if (shouldNotify) {
           const msg = replaceTemplateVariables(
-            String(settings.template_shipping || 'تم تحديث حالة طلبك #{orderId}: {status}'),
+            String(settings.template_shipping || 'Order #{orderId} status updated: {status}'),
             {
               orderId: orderRow.id,
               status: String(status),
@@ -437,12 +437,12 @@ export const getOrderStatuses: RequestHandler = async (req, res) => {
     // If no custom statuses exist, return default statuses
     if (result.rows.length === 0) {
       const defaultStatuses = [
-        { id: 'pending', name: 'قيد الانتظار', key: 'pending', color: '#eab308', icon: '●', sort_order: 0, is_default: true, counts_as_revenue: false },
-        { id: 'confirmed', name: 'مؤكد', key: 'confirmed', color: '#22c55e', icon: '✓', sort_order: 1, is_default: true, counts_as_revenue: false },
-        { id: 'processing', name: 'قيد المعالجة', key: 'processing', color: '#3b82f6', icon: '◐', sort_order: 2, is_default: true, counts_as_revenue: false },
-        { id: 'shipped', name: 'تم الشحن', key: 'shipped', color: '#8b5cf6', icon: '📦', sort_order: 3, is_default: true, counts_as_revenue: false },
-        { id: 'delivered', name: 'تم التوصيل', key: 'delivered', color: '#10b981', icon: '✓', sort_order: 4, is_default: true, counts_as_revenue: true },
-        { id: 'cancelled', name: 'ملغي', key: 'cancelled', color: '#ef4444', icon: '✕', sort_order: 5, is_default: true, counts_as_revenue: false },
+        { id: 'pending', name: 'Pending', key: 'pending', color: '#eab308', icon: '●', sort_order: 0, is_default: true, counts_as_revenue: false },
+        { id: 'confirmed', name: 'Confirmed', key: 'confirmed', color: '#22c55e', icon: '✓', sort_order: 1, is_default: true, counts_as_revenue: false },
+        { id: 'processing', name: 'Processing', key: 'processing', color: '#3b82f6', icon: '◐', sort_order: 2, is_default: true, counts_as_revenue: false },
+        { id: 'shipped', name: 'Shipped', key: 'shipped', color: '#8b5cf6', icon: '📦', sort_order: 3, is_default: true, counts_as_revenue: false },
+        { id: 'delivered', name: 'Delivered', key: 'delivered', color: '#10b981', icon: '✓', sort_order: 4, is_default: true, counts_as_revenue: true },
+        { id: 'cancelled', name: 'Cancelled', key: 'cancelled', color: '#ef4444', icon: '✕', sort_order: 5, is_default: true, counts_as_revenue: false },
       ];
       res.json(defaultStatuses);
       return;

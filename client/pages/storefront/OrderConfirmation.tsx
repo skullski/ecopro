@@ -138,7 +138,7 @@ export default function OrderConfirmation() {
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-6">
-          <h1 className="text-2xl md:text-xl md:text-2xl lg:text-lg md:text-xl md:text-2xl font-bold text-gray-800 mb-1">تأكيد الطلب</h1>
+          <h1 className="text-2xl md:text-xl md:text-2xl lg:text-lg md:text-xl md:text-2xl font-bold text-gray-800 mb-1">Order Confirmation</h1>
           <p className="text-xs md:text-sm text-gray-600">Order #{order.id}</p>
         </div>
 

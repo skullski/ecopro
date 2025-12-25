@@ -46,11 +46,11 @@ interface MessageLog {
 }
 
 const SEGMENT_LABELS: Record<string, { label: string; icon: React.ElementType; color: string }> = {
-  all: { label: "جميع العملاء", icon: Users, color: "text-blue-500" },
-  completed: { label: "طلبات مكتملة", icon: CheckCircle, color: "text-green-500" },
-  cancelled: { label: "طلبات ملغاة", icon: XCircle, color: "text-red-500" },
-  pending: { label: "طلبات معلقة", icon: Clock, color: "text-yellow-500" },
-  failed_delivery: { label: "توصيل فاشل", icon: AlertTriangle, color: "text-orange-500" },
+  all: { label: "All Customers", icon: Users, color: "text-blue-500" },
+  completed: { label: "Completed Orders", icon: CheckCircle, color: "text-green-500" },
+  cancelled: { label: "Cancelled Orders", icon: XCircle, color: "text-red-500" },
+  pending: { label: "Pending Orders", icon: Clock, color: "text-yellow-500" },
+  failed_delivery: { label: "Failed Delivery", icon: AlertTriangle, color: "text-orange-500" },
 };
 
 const EMPTY_SEGMENTS: CustomerSegment = {
@@ -96,7 +96,7 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
       if (!token) {
         setSegments(EMPTY_SEGMENTS);
         setCampaigns([]);
-        setLoadError("لا يوجد توكن تسجيل دخول. الرجاء تسجيل الدخول من جديد.");
+        setLoadError("No login token found. Please log in again.");
         return;
       }
 
@@ -114,7 +114,7 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
         setSegments(segData);
       } else {
         setSegments(EMPTY_SEGMENTS);
-        setLoadError("فشل تحميل إحصائيات العملاء.");
+        setLoadError("Failed to load customer statistics.");
       }
 
       if (campaignsRes.ok) {
@@ -122,13 +122,13 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
         setCampaigns(campData);
       } else {
         setCampaigns([]);
-        setLoadError((prev) => prev || "فشل تحميل الحملات.");
+        setLoadError((prev) => prev || "Failed to load campaigns.");
       }
     } catch (error) {
       console.error("Error fetching data:", error);
       setSegments(EMPTY_SEGMENTS);
       setCampaigns([]);
-      setLoadError("تعذر الاتصال بالخادم. تأكد أن السيرفر يعمل.");
+      setLoadError("Could not connect to server. Make sure the server is running.");
     } finally {
       setLoading(false);
     }
@@ -136,7 +136,7 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
 
   const createCampaign = async () => {
     if (!campaignName.trim() || !campaignMessage.trim()) {
-      alert("الرجاء إدخال اسم الحملة والرسالة");
+      alert("Please enter campaign name and message");
       return;
     }
 
@@ -165,18 +165,18 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
         setShowComposer(false);
       } else {
         const err = await res.json();
-        alert(err.error || "فشل في إنشاء الحملة");
+        alert(err.error || "Failed to create campaign");
       }
     } catch (error) {
       console.error("Error creating campaign:", error);
-      alert("حدث خطأ أثناء إنشاء الحملة");
+      alert("An error occurred while creating the campaign");
     } finally {
       setCreating(false);
     }
   };
 
   const sendCampaign = async (campaignId: number) => {
-    if (!confirm("هل أنت متأكد من إرسال هذه الحملة؟")) {
+    if (!confirm("Are you sure you want to send this campaign?")) {
       return;
     }
 
@@ -189,21 +189,21 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
 
       const data = await res.json();
       if (res.ok) {
-        alert(`تم إرسال الحملة!\nنجح: ${data.sent}\nفشل: ${data.failed}`);
+        alert(`Campaign sent!\nSucceeded: ${data.sent}\nFailed: ${data.failed}`);
         fetchData(); // Refresh campaigns
       } else {
-        alert(data.error || "فشل في إرسال الحملة");
+        alert(data.error || "Failed to send campaign");
       }
     } catch (error) {
       console.error("Error sending campaign:", error);
-      alert("حدث خطأ أثناء إرسال الحملة");
+      alert("An error occurred while sending the campaign");
     } finally {
       setSendingCampaign(null);
     }
   };
 
   const deleteCampaign = async (campaignId: number) => {
-    if (!confirm("هل أنت متأكد من حذف هذه الحملة؟")) {
+    if (!confirm("Are you sure you want to delete this campaign?")) {
       return;
     }
 
@@ -245,7 +245,7 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
       <div className={embedded ? "bg-transparent flex items-center justify-center p-8" : "bg-gray-50 dark:bg-slate-900 flex items-center justify-center p-8"} dir="rtl">
         <div className="flex items-center gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-          <span className="text-gray-600 dark:text-gray-300">جاري التحميل...</span>
+          <span className="text-gray-600 dark:text-gray-300">Loading...</span>
         </div>
       </div>
     );
@@ -259,15 +259,15 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
             <div className="flex items-center gap-3">
               <MessageSquare className="w-8 h-8 text-green-600" />
               <div>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">بوت تحديثات العملاء</h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400">أرسل رسائل مخصصة لعملائك</p>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">Customer Updates Bot</h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Send custom messages to your customers</p>
               </div>
             </div>
             <button
               onClick={() => navigate("/dashboard")}
               className="px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-800 dark:text-white"
             >
-              رجوع
+              Back
             </button>
           </div>
         )}
@@ -304,13 +304,13 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
 
         {/* Actions */}
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-gray-800 dark:text-white">الحملات</h2>
+          <h2 className="text-xl font-bold text-gray-800 dark:text-white">Campaigns</h2>
           <button
             onClick={() => setShowComposer(true)}
             className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
           >
             <Plus className="w-5 h-5" />
-            حملة جديدة
+            New Campaign
           </button>
         </div>
 
@@ -319,7 +319,7 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-6">
               <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold text-gray-800 dark:text-white">إنشاء حملة جديدة</h3>
+                <h3 className="text-xl font-bold text-gray-800 dark:text-white">Create New Campaign</h3>
                 <button
                   onClick={() => setShowComposer(false)}
                   className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
@@ -331,20 +331,20 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    اسم الحملة
+                    Campaign Name
                   </label>
                   <input
                     type="text"
                     value={campaignName}
                     onChange={(e) => setCampaignName(e.target.value)}
-                    placeholder="مثال: عرض خاص لعملاء VIP"
+                    placeholder="Example: Special offer for VIP customers"
                     className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    الفئة المستهدفة
+                    Target Segment
                   </label>
                   <select
                     value={targetSegment}
@@ -353,7 +353,7 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
                   >
                     {Object.entries(SEGMENT_LABELS).map(([key, { label }]) => (
                       <option key={key} value={key}>
-                        {label} ({segments?.[key as keyof CustomerSegment] || 0} عميل)
+                        {label} ({segments?.[key as keyof CustomerSegment] || 0} customers)
                       </option>
                     ))}
                   </select>
@@ -361,17 +361,17 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    الرسالة
+                    Message
                   </label>
                   <textarea
                     value={campaignMessage}
                     onChange={(e) => setCampaignMessage(e.target.value)}
-                    placeholder={`مرحباً {name}،\n\nنود إعلامك بـ...`}
+                    placeholder={`Hello {name},\n\nWe'd like to inform you...`}
                     rows={5}
                     className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    استخدم {"{name}"} لإدراج اسم العميل تلقائياً
+                    Use {"{"}name{"}"}  to automatically insert customer name
                   </p>
                 </div>
               </div>
@@ -381,7 +381,7 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
                   onClick={() => setShowComposer(false)}
                   className="flex-1 px-4 py-3 border border-gray-200 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors text-gray-800 dark:text-white"
                 >
-                  إلغاء
+                  Cancel
                 </button>
                 <button
                   onClick={createCampaign}
@@ -391,12 +391,12 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
                   {creating ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      جاري الإنشاء...
+                      Creating...
                     </>
                   ) : (
                     <>
                       <Plus className="w-5 h-5" />
-                      إنشاء الحملة
+                      Create Campaign
                     </>
                   )}
                 </button>
@@ -410,7 +410,7 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white dark:bg-slate-800 rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
               <div className="p-6 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
-                <h3 className="text-xl font-bold text-gray-800 dark:text-white">سجل الإرسال</h3>
+                <h3 className="text-xl font-bold text-gray-800 dark:text-white">Send Log</h3>
                 <button
                   onClick={() => setShowLogs(null)}
                   className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg"
@@ -424,7 +424,7 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
                     <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
                   </div>
                 ) : logs.length === 0 ? (
-                  <p className="text-center text-gray-500 dark:text-gray-400 py-8">لا توجد سجلات</p>
+                  <p className="text-center text-gray-500 dark:text-gray-400 py-8">No records</p>
                 ) : (
                   <div className="space-y-3">
                     {logs.map((log) => (
@@ -439,7 +439,7 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="font-medium text-gray-800 dark:text-white">
-                              {log.customer_name || "عميل"}
+                              {log.customer_name || "Customer"}
                             </p>
                             <p className="text-sm text-gray-500 dark:text-gray-400">{log.customer_phone}</p>
                           </div>
@@ -454,12 +454,12 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
                               {log.status === "sent" ? (
                                 <>
                                   <CheckCircle className="w-3 h-3" />
-                                  تم الإرسال
+                                  Sent
                                 </>
                               ) : (
                                 <>
                                   <XCircle className="w-3 h-3" />
-                                  فشل
+                                  Failed
                                 </>
                               )}
                             </span>
@@ -481,14 +481,14 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
         {campaigns.length === 0 ? (
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-12 text-center shadow-sm border border-gray-100 dark:border-slate-700">
             <MessageSquare className="w-16 h-16 text-gray-300 dark:text-slate-600 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">لا توجد حملات</h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-6">ابدأ بإنشاء حملتك الأولى للتواصل مع عملائك</p>
+            <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">No Campaigns</h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">Start by creating your first campaign to communicate with your customers</p>
             <button
               onClick={() => setShowComposer(true)}
               className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
             >
               <Plus className="w-5 h-5" />
-              إنشاء حملة
+              Create Campaign
             </button>
           </div>
         ) : (
@@ -512,10 +512,10 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
                         }`}
                       >
                         {campaign.status === "sent"
-                          ? "تم الإرسال"
+                          ? "Sent"
                           : campaign.status === "sending"
-                          ? "جاري الإرسال"
-                          : "مسودة"}
+                          ? "Sending"
+                          : "Draft"}
                       </span>
                     </div>
 
@@ -538,10 +538,10 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
                       </span>
                       {campaign.status === "sent" && (
                         <>
-                          <span>المستلمون: {campaign.recipients_count}</span>
-                          <span className="text-green-600">نجح: {campaign.sent_count}</span>
+                          <span>Recipients: {campaign.recipients_count}</span>
+                          <span className="text-green-600">Succeeded: {campaign.sent_count}</span>
                           {campaign.failed_count > 0 && (
-                            <span className="text-red-600">فشل: {campaign.failed_count}</span>
+                            <span className="text-red-600">Failed: {campaign.failed_count}</span>
                           )}
                         </>
                       )}
@@ -556,7 +556,7 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
                       <button
                         onClick={() => viewLogs(campaign.id)}
                         className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
-                        title="عرض السجل"
+                        title="View log"
                       >
                         <Eye className="w-5 h-5" />
                       </button>
@@ -571,19 +571,19 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
                           {sendingCampaign === campaign.id ? (
                             <>
                               <Loader2 className="w-4 h-4 animate-spin" />
-                              جاري الإرسال...
+                              Sending...
                             </>
                           ) : (
                             <>
                               <Send className="w-4 h-4" />
-                              إرسال
+                              Send
                             </>
                           )}
                         </button>
                         <button
                           onClick={() => deleteCampaign(campaign.id)}
                           className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                          title="حذف"
+                          title="Delete"
                         >
                           <Trash2 className="w-5 h-5" />
                         </button>

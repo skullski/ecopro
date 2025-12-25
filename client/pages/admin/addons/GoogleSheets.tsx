@@ -21,33 +21,33 @@ export default function GoogleSheetsIntegration() {
         <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
           Google Sheets
         </h1>
-        <p className="text-muted-foreground mt-2">ربط متجرك مع Google Sheets لتصدير البيانات تلقائياً</p>
+        <p className="text-muted-foreground mt-2">Connect your store with Google Sheets to export data automatically</p>
       </div>
 
       <Card className="border-2 border-green-500/20 bg-green-500/5">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileSpreadsheet className="w-5 h-5 text-green-600" />
-            حول الربط مع Google Sheets
+            About Google Sheets Integration
           </CardTitle>
-          <CardDescription>ما يمكنك فعله بهذه الميزة</CardDescription>
+          <CardDescription>What you can do with this feature</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-            <p className="text-sm font-medium mb-1">📊 تصدير الطلبات تلقائياً</p>
-            <p className="text-sm text-muted-foreground">جميع الطلبات الجديدة تُضاف تلقائياً إلى Google Sheet</p>
+            <p className="text-sm font-medium mb-1">📊 Export Orders Automatically</p>
+            <p className="text-sm text-muted-foreground">All new orders are automatically added to Google Sheet</p>
           </div>
           <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg">
-            <p className="text-sm font-medium mb-1">📦 تصدير المنتجات</p>
-            <p className="text-sm text-muted-foreground">قائمة المنتجات مع الأسعار والمخزون</p>
+            <p className="text-sm font-medium mb-1">📦 Export Products</p>
+            <p className="text-sm text-muted-foreground">Product list with prices and stock</p>
           </div>
           <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
-            <p className="text-sm font-medium mb-1">👥 قائمة العملاء</p>
-            <p className="text-sm text-muted-foreground">معلومات العملاء ورقم الهاتف والعنوان</p>
+            <p className="text-sm font-medium mb-1">👥 Customer List</p>
+            <p className="text-sm text-muted-foreground">Customer info, phone and address</p>
           </div>
           <div className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg">
-            <p className="text-sm font-medium mb-1">📈 الإحصائيات اليومية</p>
-            <p className="text-sm text-muted-foreground">المبيعات، الأرباح، عدد الطلبات</p>
+            <p className="text-sm font-medium mb-1">📈 Daily Statistics</p>
+            <p className="text-sm text-muted-foreground">Sales, profits, order count</p>
           </div>
         </CardContent>
       </Card>
@@ -57,40 +57,40 @@ export default function GoogleSheetsIntegration() {
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Key className="w-5 h-5 text-primary" />
-              إعدادات الربط
+              Connection Settings
             </div>
             {connected && (
               <div className="flex items-center gap-2 text-green-600 text-sm">
                 <CheckCircle2 className="w-4 h-4" />
-                متصل
+                Connected
               </div>
             )}
           </CardTitle>
-          <CardDescription>قم بربط حساب Google الخاص بك</CardDescription>
+          <CardDescription>Connect your Google account</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
             <div className="text-sm">
-              <p className="font-medium text-yellow-700 dark:text-yellow-600 mb-1">كيفية الحصول على API Credentials</p>
+              <p className="font-medium text-yellow-700 dark:text-yellow-600 mb-1">How to get API Credentials</p>
               <ol className="text-muted-foreground space-y-1 list-decimal list-inside">
-                <li>انتقل إلى <a href="https://console.cloud.google.com" target="_blank" className="text-primary underline">Google Cloud Console</a></li>
-                <li>أنشئ مشروع جديد أو اختر مشروع موجود</li>
-                <li>فعّل Google Sheets API</li>
-                <li>أنشئ Service Account وقم بتنزيل ملف JSON</li>
-                <li>شارك Google Sheet مع البريد الإلكتروني للـ Service Account</li>
+                <li>Go to <a href="https://console.cloud.google.com" target="_blank" className="text-primary underline">Google Cloud Console</a></li>
+                <li>Create a new project or select an existing one</li>
+                <li>Enable Google Sheets API</li>
+                <li>Create a Service Account and download the JSON file</li>
+                <li>Share Google Sheet with the Service Account email</li>
               </ol>
             </div>
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-2 block">معرف Google Sheet (Spreadsheet ID)</label>
+            <label className="text-sm font-medium mb-2 block">Google Sheet ID (Spreadsheet ID)</label>
             <Input 
               placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
               defaultValue={connected ? "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms" : ""}
             />
             <p className="text-xs text-muted-foreground mt-1">
-              يمكنك إيجاده في رابط Google Sheet: docs.google.com/spreadsheets/d/<span className="text-primary font-mono">SPREADSHEET_ID</span>/edit
+              You can find it in the Google Sheet URL: docs.google.com/spreadsheets/d/<span className="text-primary font-mono">SPREADSHEET_ID</span>/edit
             </p>
           </div>
 
@@ -110,7 +110,7 @@ export default function GoogleSheetsIntegration() {
               placeholder='{"type": "service_account", "project_id": "...", "private_key": "..."}'
             />
             <p className="text-xs text-muted-foreground mt-1">
-              انسخ محتوى ملف JSON الذي قمت بتنزيله من Google Cloud Console
+              Copy the contents of the JSON file you downloaded from Google Cloud Console
             </p>
           </div>
 
@@ -119,10 +119,10 @@ export default function GoogleSheetsIntegration() {
               className="flex-1 bg-gradient-to-r from-green-500 to-green-600"
               onClick={() => setConnected(!connected)}
             >
-              {connected ? "تحديث الاتصال" : "ربط مع Google Sheets"}
+              {connected ? "Update Connection" : "Connect with Google Sheets"}
             </Button>
             <Button variant="outline" className="flex-1">
-              اختبار الاتصال
+              Test Connection
             </Button>
           </div>
         </CardContent>
@@ -134,23 +134,23 @@ export default function GoogleSheetsIntegration() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Download className="w-5 h-5 text-accent" />
-                البيانات المراد تصديرها
+                Data to Export
               </CardTitle>
-              <CardDescription>اختر البيانات التي تريد مزامنتها</CardDescription>
+              <CardDescription>Choose the data you want to sync</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {[
-                { name: "الطلبات الجديدة", sheet: "Orders", enabled: true },
-                { name: "المنتجات", sheet: "Products", enabled: true },
-                { name: "العملاء", sheet: "Customers", enabled: false },
-                { name: "المخزون", sheet: "Inventory", enabled: true },
-                { name: "الإحصائيات اليومية", sheet: "Analytics", enabled: false },
-                { name: "الطلبات الملغاة", sheet: "Cancelled", enabled: false },
+                { name: "New Orders", sheet: "Orders", enabled: true },
+                { name: "Products", sheet: "Products", enabled: true },
+                { name: "Customers", sheet: "Customers", enabled: false },
+                { name: "Inventory", sheet: "Inventory", enabled: true },
+                { name: "Daily Statistics", sheet: "Analytics", enabled: false },
+                { name: "Cancelled Orders", sheet: "Cancelled", enabled: false },
               ].map((item, idx) => (
                 <div key={idx} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                   <div>
                     <p className="font-medium">{item.name}</p>
-                    <p className="text-sm text-muted-foreground">ورقة: {item.sheet}</p>
+                    <p className="text-sm text-muted-foreground">Sheet: {item.sheet}</p>
                   </div>
                   <input type="checkbox" className="w-5 h-5" defaultChecked={item.enabled} />
                 </div>
@@ -163,7 +163,7 @@ export default function GoogleSheetsIntegration() {
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <RefreshCw className="w-5 h-5 text-purple-500" />
-                  المزامنة
+                  Sync
                 </div>
                 <Button 
                   size="sm" 
@@ -174,52 +174,52 @@ export default function GoogleSheetsIntegration() {
                   {syncing ? (
                     <>
                       <RefreshCw className="w-4 h-4 ml-2 animate-spin" />
-                      جاري المزامنة...
+                      Syncing...
                     </>
                   ) : (
                     <>
                       <RefreshCw className="w-4 h-4 ml-2" />
-                      مزامنة الآن
+                      Sync Now
                     </>
                   )}
                 </Button>
               </CardTitle>
-              <CardDescription>خيارات المزامنة التلقائية</CardDescription>
+              <CardDescription>Auto-sync options</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                 <div>
-                  <p className="font-medium">مزامنة تلقائية</p>
-                  <p className="text-sm text-muted-foreground">المزامنة عند إضافة طلب جديد</p>
+                  <p className="font-medium">Auto Sync</p>
+                  <p className="text-sm text-muted-foreground">Sync when a new order is added</p>
                 </div>
                 <input type="checkbox" className="w-5 h-5" defaultChecked />
               </div>
 
               <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                 <div>
-                  <p className="font-medium">مزامنة المنتجات</p>
-                  <p className="text-sm text-muted-foreground">تحديث قائمة المنتجات يومياً</p>
+                  <p className="font-medium">Product Sync</p>
+                  <p className="text-sm text-muted-foreground">Update product list daily</p>
                 </div>
                 <input type="checkbox" className="w-5 h-5" defaultChecked />
               </div>
 
               <div className="p-4 bg-gradient-to-r from-green-500/10 to-green-500/5 rounded-lg border border-green-500/20">
                 <div className="flex items-center justify-between mb-3">
-                  <p className="font-medium text-green-700 dark:text-green-600">آخر مزامنة</p>
-                  <span className="text-sm text-muted-foreground">منذ 5 دقائق</span>
+                  <p className="font-medium text-green-700 dark:text-green-600">Last Sync</p>
+                  <span className="text-sm text-muted-foreground">5 minutes ago</span>
                 </div>
                 <div className="grid grid-cols-3 gap-3 text-center">
                   <div>
                     <p className="text-2xl font-bold text-green-600">248</p>
-                    <p className="text-xs text-muted-foreground">طلبات</p>
+                    <p className="text-xs text-muted-foreground">Orders</p>
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-green-600">86</p>
-                    <p className="text-xs text-muted-foreground">منتجات</p>
+                    <p className="text-xs text-muted-foreground">products</p>
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-green-600">142</p>
-                    <p className="text-xs text-muted-foreground">عملاء</p>
+                    <p className="text-xs text-muted-foreground">customers</p>
                   </div>
                 </div>
               </div>
@@ -228,7 +228,7 @@ export default function GoogleSheetsIntegration() {
 
           <Card className="border-2 border-blue-500/20">
             <CardHeader>
-              <CardTitle>رابط مباشر للـ Google Sheet</CardTitle>
+              <CardTitle>Direct Link to Google Sheet</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex gap-2">
@@ -238,7 +238,7 @@ export default function GoogleSheetsIntegration() {
                   className="font-mono text-sm"
                 />
                 <Button variant="outline">
-                  فتح
+                  Open
                 </Button>
               </div>
             </CardContent>

@@ -13,7 +13,7 @@ export default function CustomerLogin(){
     const customers = JSON.parse(localStorage.getItem('customers')||'[]');
     let cust = customers.find((c:any)=> c.email === email && c.storeId === id);
     if(!cust){
-      alert('لم نجد هذا المستخدم، يمكنك التسجيل أولاً');
+      alert('User not found, you can register first');
       return;
     }
     localStorage.setItem('customer_session', JSON.stringify({ email, storeId: id }));
@@ -23,12 +23,12 @@ export default function CustomerLogin(){
   return (
     <section className="container mx-auto py-20">
       <div className="mx-auto max-w-md rounded-lg border bg-card p-6">
-        <h3 className="text-lg font-bold mb-4">دخول زبون المتجر</h3>
+        <h3 className="text-lg font-bold mb-4">Store Customer Login</h3>
         <form onSubmit={handleLogin} className="grid gap-3">
-          <input value={email} onChange={(e)=>setEmail(e.target.value)} placeholder="البريد الإلكتروني" className="rounded-md border bg-background px-3 py-2" />
+          <input value={email} onChange={(e)=>setEmail(e.target.value)} placeholder="Email" className="rounded-md border bg-background px-3 py-2" />
           <div className="flex items-center gap-2">
-            <Button type="submit">دخول</Button>
-            <Button variant="ghost" onClick={()=>navigate(`/shop/${id}/signup`)}>إنشاء حساب</Button>
+            <Button type="submit">Login</Button>
+            <Button variant="ghost" onClick={()=>navigate(`/shop/${id}/signup`)}>Create Account</Button>
           </div>
         </form>
       </div>

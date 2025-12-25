@@ -230,12 +230,12 @@ export default function ProductCheckout() {
 
   const handleSubmitOrder = async () => {
     if (!formData.fullName || !formData.phone || !formData.city || !formData.address) {
-      alert('يرجى ملء جميع الحقول المطلوبة');
+      alert('Please fill in all required fields');
       return;
     }
 
     if (!product?.id) {
-      alert('خطأ في المنتج');
+      alert('Product error');
       return;
     }
 
@@ -275,7 +275,7 @@ export default function ProductCheckout() {
       }
     } catch (error) {
       console.error('Order submission error:', error);
-      alert('حدث خطأ أثناء إرسال الطلب. يرجى المحاولة مرة أخرى.');
+      alert('An error occurred while submitting the order. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -286,7 +286,7 @@ export default function ProductCheckout() {
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-white/20 border-t-white rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-white/70">جاري التحميل...</p>
+          <p className="text-white/70">Loading...</p>
         </div>
       </div>
     );
@@ -297,9 +297,9 @@ export default function ProductCheckout() {
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
         <div className="text-center text-white">
           <Package className="w-16 h-16 mx-auto mb-4 opacity-50" />
-          <h2 className="text-xl font-bold mb-2">المنتج غير موجود</h2>
+          <h2 className="text-xl font-bold mb-2">Product not found</h2>
           <button onClick={() => navigate(-1)} className="text-blue-400 hover:underline">
-            العودة للخلف
+            Go back
           </button>
         </div>
       </div>
@@ -310,7 +310,7 @@ export default function ProductCheckout() {
   const productImages = product.images || [productImage];
   const productPrice = product.price || 0;
   const productName = product.title || product.name || 'Product';
-  const productDesc = product.description || 'منتج عالي الجودة';
+  const productDesc = product.description || 'High quality product';
   const inStock = (product.stock_quantity ?? 10) > 0;
   const totalPrice = productPrice * quantity;
 
@@ -323,14 +323,14 @@ export default function ProductCheckout() {
             <div className="w-20 h-20 bg-gradient-to-br from-emerald-400 to-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-emerald-500/30">
               <Check className="w-10 h-10 text-white" />
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2">تم الطلب بنجاح! 🎉</h1>
+            <h1 className="text-3xl font-bold text-white mb-2">Order Placed Successfully! 🎉</h1>
             <p className="text-white/70 mb-6">
-              شكراً لك! سيتم التواصل معك قريباً لتأكيد طلبك
+              Thank you! We will contact you soon to confirm your order
             </p>
             
             {orderId && (
               <div className="bg-white/10 rounded-xl p-4 mb-6">
-                <p className="text-white/60 text-sm mb-1">رقم الطلب</p>
+                <p className="text-white/60 text-sm mb-1">Order Number</p>
                 <p className="text-2xl font-bold text-white">#{orderId}</p>
               </div>
             )}
@@ -341,8 +341,8 @@ export default function ProductCheckout() {
                 <span>x{quantity}</span>
               </div>
               <div className="flex justify-between text-white font-bold text-lg border-t border-white/10 pt-2 mt-2">
-                <span>المجموع</span>
-                <span>{totalPrice.toLocaleString()} دج</span>
+                <span>Total</span>
+                <span>{totalPrice.toLocaleString()} DZD</span>
               </div>
             </div>
 
@@ -354,7 +354,7 @@ export default function ProductCheckout() {
                 className="flex items-center justify-center gap-2 w-full py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold mb-4 transition-all"
               >
                 <MessageCircle className="w-5 h-5" />
-                تتبع عبر تليجرام
+                Track via Telegram
               </a>
             )}
 
@@ -362,7 +362,7 @@ export default function ProductCheckout() {
               onClick={() => navigate('/')}
               className="w-full py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold transition-all"
             >
-              العودة للمتجر
+              Return to Store
             </button>
           </div>
         </div>
@@ -386,7 +386,7 @@ export default function ProductCheckout() {
             {settings.logo_url && (
               <img src={settings.logo_url} alt="" className="w-8 h-8 rounded-lg" />
             )}
-            <span className="font-bold text-white">{settings.store_name || 'المتجر'}</span>
+            <span className="font-bold text-white">{settings.store_name || 'Store'}</span>
           </div>
           
           <button
@@ -428,29 +428,29 @@ export default function ProductCheckout() {
                   <span className="text-white/40 text-xs">(128)</span>
                 </div>
               </div>
-              <p className="text-2xl font-bold" style={{ color: accentColor }}>{productPrice.toLocaleString()} دج</p>
+              <p className="text-2xl font-bold" style={{ color: accentColor }}>{productPrice.toLocaleString()} DZD</p>
             </div>
 
             {/* Quantity */}
             <div className="flex items-center justify-between py-2 border-y border-white/10">
               <div className="flex items-center gap-2">
-                <span className="text-white/60 text-sm">الكمية:</span>
+                <span className="text-white/60 text-sm">Quantity:</span>
                 <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="w-7 h-7 rounded bg-white/10 text-white flex items-center justify-center"><Minus className="w-4 h-4" /></button>
                 <span className="text-white font-bold w-6 text-center">{quantity}</span>
                 <button onClick={() => setQuantity(q => q + 1)} className="w-7 h-7 rounded bg-white/10 text-white flex items-center justify-center"><Plus className="w-4 h-4" /></button>
               </div>
               <div className="flex items-center gap-2">
-                <span className={`text-sm ${inStock ? 'text-green-400' : 'text-red-400'}`}>{inStock ? '✓ متوفر' : '✗ نفذ'}</span>
-                <span className="text-white font-bold">{totalPrice.toLocaleString()} دج</span>
+                <span className={`text-sm ${inStock ? 'text-green-400' : 'text-red-400'}`}>{inStock ? '✓ In Stock' : '✗ Out of Stock'}</span>
+                <span className="text-white font-bold">{totalPrice.toLocaleString()} DZD</span>
               </div>
             </div>
 
             {/* Form - 2x2 */}
             <div className="grid grid-cols-2 gap-2">
-              <input type="text" placeholder="الاسم الكامل *" value={formData.fullName} onChange={(e) => setFormData(f => ({ ...f, fullName: e.target.value }))} className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm placeholder:text-white/40 focus:outline-none" />
-              <input type="tel" placeholder="رقم الهاتف *" value={formData.phone} onChange={(e) => setFormData(f => ({ ...f, phone: e.target.value }))} className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm placeholder:text-white/40 focus:outline-none" dir="ltr" />
-              <input type="text" placeholder="المدينة *" value={formData.city} onChange={(e) => setFormData(f => ({ ...f, city: e.target.value }))} className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm placeholder:text-white/40 focus:outline-none" />
-              <input type="text" placeholder="العنوان *" value={formData.address} onChange={(e) => setFormData(f => ({ ...f, address: e.target.value }))} className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm placeholder:text-white/40 focus:outline-none" />
+              <input type="text" placeholder="Full Name *" value={formData.fullName} onChange={(e) => setFormData(f => ({ ...f, fullName: e.target.value }))} className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm placeholder:text-white/40 focus:outline-none" />
+              <input type="tel" placeholder="Phone Number *" value={formData.phone} onChange={(e) => setFormData(f => ({ ...f, phone: e.target.value }))} className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm placeholder:text-white/40 focus:outline-none" dir="ltr" />
+              <input type="text" placeholder="City *" value={formData.city} onChange={(e) => setFormData(f => ({ ...f, city: e.target.value }))} className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm placeholder:text-white/40 focus:outline-none" />
+              <input type="text" placeholder="Address *" value={formData.address} onChange={(e) => setFormData(f => ({ ...f, address: e.target.value }))} className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm placeholder:text-white/40 focus:outline-none" />
             </div>
 
             {/* Telegram */}
@@ -458,18 +458,18 @@ export default function ProductCheckout() {
               <div className="flex items-center justify-between p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
                 <div className="flex items-center gap-2">
                   <Send className="w-4 h-4 text-blue-400" />
-                  <span className="text-white text-sm">تتبع عبر Telegram</span>
+                  <span className="text-white text-sm">Track via Telegram</span>
                   {telegramConnected && <span className="text-green-400 text-xs">✓</span>}
                 </div>
                 {!telegramConnected && (
-                  <button onClick={handleConnectTelegram} disabled={!formData.phone || formData.phone.replace(/\D/g, '').length < 9} className="px-3 py-1 rounded bg-blue-500 text-white text-xs font-bold disabled:opacity-50">ربط</button>
+                  <button onClick={handleConnectTelegram} disabled={!formData.phone || formData.phone.replace(/\D/g, '').length < 9} className="px-3 py-1 rounded bg-blue-500 text-white text-xs font-bold disabled:opacity-50">Connect</button>
                 )}
               </div>
             )}
 
             {/* Submit */}
             <button onClick={handleSubmitOrder} disabled={isSubmitting || !inStock} className="w-full py-3 rounded-lg font-bold text-white flex items-center justify-center gap-2 disabled:opacity-50" style={{ backgroundColor: accentColor }}>
-              {isSubmitting ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><ShoppingBag className="w-4 h-4" />تأكيد الطلب • {totalPrice.toLocaleString()} دج</>}
+              {isSubmitting ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><ShoppingBag className="w-4 h-4" />Confirm Order • {totalPrice.toLocaleString()} DZD</>}
             </button>
           </div>
 

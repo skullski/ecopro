@@ -3,16 +3,16 @@ import { Truck, Package, Clock } from "lucide-react";
 
 export default function WasselniOrders() {
   const wasselniOrders = [
-    { id: "WN001", customer: "أحمد محمد", status: "قيد التوصيل", total: "3,500 دج", driver: "كريم العربي" },
-    { id: "WN002", customer: "فاطمة الزهراء", status: "تم التسليم", total: "2,800 دج", driver: "يوسف بن علي" },
-    { id: "WN003", customer: "محمد الأمين", status: "في الانتظار", total: "4,200 دج", driver: "غير محدد" },
+    { id: "WN001", customer: "Ahmed Mohammed", status: "In Delivery", total: "3,500 DZD", driver: "Karim Larbi" },
+    { id: "WN002", customer: "Fatima Zahra", status: "Delivered", total: "2,800 DZD", driver: "Youssef Ben Ali" },
+    { id: "WN003", customer: "Mohamed Amine", status: "Pending", total: "4,200 DZD", driver: "Not specified" },
   ];
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "قيد التوصيل": return "bg-blue-500/10 text-blue-600 border-blue-500/20";
-      case "تم التسليم": return "bg-green-500/10 text-green-600 border-green-500/20";
-      case "في الانتظار": return "bg-yellow-500/10 text-yellow-600 border-yellow-500/20";
+      case "In Delivery": return "bg-blue-500/10 text-blue-600 border-blue-500/20";
+      case "Delivered": return "bg-green-500/10 text-green-600 border-green-500/20";
+      case "Pending": return "bg-yellow-500/10 text-yellow-600 border-yellow-500/20";
       default: return "bg-gray-500/10 text-gray-600 border-gray-500/20";
     }
   };
@@ -21,15 +21,15 @@ export default function WasselniOrders() {
     <div className="space-y-3 md:space-y-4">
       <div>
         <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-          واش نوَجَّد ؟
+          What to prepare?
         </h1>
-        <p className="text-muted-foreground mt-2">متابعة طلبات التوصيل مع واصلني</p>
+        <p className="text-muted-foreground mt-2">Track delivery orders with Wasselni</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="border-2 border-blue-500/20">
           <CardHeader className="pb-3">
-            <CardDescription>قيد التوصيل</CardDescription>
+            <CardDescription>In Delivery</CardDescription>
             <CardTitle className="text-xl md:text-2xl text-blue-600">12</CardTitle>
           </CardHeader>
           <CardContent>
@@ -39,7 +39,7 @@ export default function WasselniOrders() {
 
         <Card className="border-2 border-green-500/20">
           <CardHeader className="pb-3">
-            <CardDescription>تم التسليم اليوم</CardDescription>
+            <CardDescription>Delivered Today</CardDescription>
             <CardTitle className="text-xl md:text-2xl text-green-600">28</CardTitle>
           </CardHeader>
           <CardContent>
@@ -49,7 +49,7 @@ export default function WasselniOrders() {
 
         <Card className="border-2 border-yellow-500/20">
           <CardHeader className="pb-3">
-            <CardDescription>في الانتظار</CardDescription>
+            <CardDescription>Pending</CardDescription>
             <CardTitle className="text-xl md:text-2xl text-yellow-600">5</CardTitle>
           </CardHeader>
           <CardContent>
@@ -60,8 +60,8 @@ export default function WasselniOrders() {
 
       <Card className="border-2 border-primary/20">
         <CardHeader>
-          <CardTitle>طلبات واصلني</CardTitle>
-          <CardDescription>الطلبات المرتبطة بخدمة التوصيل واصلني</CardDescription>
+          <CardTitle>Wasselni Orders</CardTitle>
+          <CardDescription>Orders linked to Wasselni delivery service</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
@@ -75,8 +75,8 @@ export default function WasselniOrders() {
                         {order.status}
                       </span>
                     </div>
-                    <p className="text-sm text-muted-foreground">العميل: {order.customer}</p>
-                    <p className="text-sm text-muted-foreground">السائق: {order.driver}</p>
+                    <p className="text-sm text-muted-foreground">Customer: {order.customer}</p>
+                    <p className="text-sm text-muted-foreground">Driver: {order.driver}</p>
                   </div>
                   <div className="text-left">
                     <p className="font-bold text-lg">{order.total}</p>

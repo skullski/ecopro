@@ -76,10 +76,10 @@ export const getBotSettings: RequestHandler = async (req, res) => {
         telegramBotUsername: '',
         viberAuthToken: '',
         viberSenderName: '',
-        templateGreeting: `شكراً لطلبك من {storeName} يا {customerName}!\n\n✅ فعّل الإشعارات في Telegram باش توصلك رسالة التأكيد وتتبع الطلب.`,
-        templateOrderConfirmation: `السلام عليكم {customerName}! 🌟\n\nشكراً لك على طلبك من {companyName}! \n\n📦 تفاصيل الطلب:\n• المنتج: {productName}\n• السعر: {totalPrice} دج\n• العنوان: {address}\n\nهل تؤكد الطلب؟ رد ب "نعم" للتأكيد أو "لا" للإلغاء.`,
-        templatePayment: `تم تأكيد طلبك #{orderId}. يرجى الدفع بـ {totalPrice} دج.`,
-        templateShipping: `تم شحن طلبك #{orderId}. رقم التتبع: {trackingNumber}.`
+        templateGreeting: `Thank you for ordering from {storeName}, {customerName}!\n\n✅ Enable notifications on Telegram to receive order confirmation and tracking updates.`,
+        templateOrderConfirmation: `Hello {customerName}! 🌟\n\nThank you for your order from {companyName}! \n\n📦 Order Details:\n• Product: {productName}\n• Price: {totalPrice} DZD\n• Address: {address}\n\nDo you confirm the order? Reply "Yes" to confirm or "No" to cancel.`,
+        templatePayment: `Your order #{orderId} has been confirmed. Please pay {totalPrice} DZD.`,
+        templateShipping: `Your order #{orderId} has been shipped. Tracking number: {trackingNumber}.`
       });
     }
 

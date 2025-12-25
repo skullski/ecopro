@@ -29,10 +29,10 @@ export default function DeliveryCompanies() {
       id: "zr-express",
       name: "ZR Express",
       logo: "/delivery-logos/ZR-Express-1.webp",
-      description: "توصيل سريع وموثوق في جميع الولايات",
+      description: "Fast and reliable delivery in all provinces",
       apiFields: [
-        { label: "API Key", placeholder: "أدخل API Key", field: "apiKey" },
-        { label: "Client ID", placeholder: "أدخل Client ID", field: "clientId" },
+        { label: "API Key", placeholder: "Enter API Key", field: "apiKey" },
+        { label: "Client ID", placeholder: "Enter Client ID", field: "clientId" },
       ],
       enabled: false,
     },
@@ -40,10 +40,10 @@ export default function DeliveryCompanies() {
       id: "procolis",
       name: "Procolis",
       logo: "/delivery-logos/prologis-logo-png_seeklogo-311359.webp",
-      description: "شريكك الموثوق للتوصيل السريع",
+      description: "Your trusted partner for fast delivery",
       apiFields: [
-        { label: "API Token", placeholder: "أدخل API Token", field: "apiToken" },
-        { label: "Store ID", placeholder: "أدخل Store ID", field: "storeId" },
+        { label: "API Token", placeholder: "Enter API Token", field: "apiToken" },
+        { label: "Store ID", placeholder: "Enter Store ID", field: "storeId" },
       ],
       enabled: false,
     },
@@ -51,10 +51,10 @@ export default function DeliveryCompanies() {
       id: "ecf-express",
       name: "ECF Express",
       logo: "/delivery-logos/ecf-logo-png_seeklogo-45349.webp",
-      description: "توصيل فعال وسريع في الجزائر",
+      description: "Effective and fast delivery in Algeria",
       apiFields: [
-        { label: "API Token", placeholder: "أدخل API Token", field: "apiToken" },
-        { label: "Merchant ID", placeholder: "أدخل Merchant ID", field: "merchantId" },
+        { label: "API Token", placeholder: "Enter API Token", field: "apiToken" },
+        { label: "Merchant ID", placeholder: "Enter Merchant ID", field: "merchantId" },
       ],
       enabled: false,
     },
@@ -62,11 +62,11 @@ export default function DeliveryCompanies() {
       id: "baridiMob",
       name: "BaridiMob",
       logo: "/delivery-logos/baridimob-logo-png_seeklogo-445029.webp",
-      description: "خدمة بريد الجزائر للدفع والتوصيل",
+      description: "Algeria Post payment and delivery service",
       apiFields: [
-        { label: "Merchant ID", placeholder: "أدخل Merchant ID", field: "merchantId" },
-        { label: "Terminal ID", placeholder: "أدخل Terminal ID", field: "terminalId" },
-        { label: "API Key", placeholder: "أدخل API Key", field: "apiKey" },
+        { label: "Merchant ID", placeholder: "Enter Merchant ID", field: "merchantId" },
+        { label: "Terminal ID", placeholder: "Enter Terminal ID", field: "terminalId" },
+        { label: "API Key", placeholder: "Enter API Key", field: "apiKey" },
       ],
       enabled: false,
     },
@@ -74,10 +74,10 @@ export default function DeliveryCompanies() {
       id: "algerie-poste",
       name: "Algérie Poste",
       logo: "/delivery-logos/poste-algerie-logo-png_seeklogo-272140.webp",
-      description: "بريد الجزائر - خدمة التوصيل الوطنية",
+      description: "Algeria Post - National delivery service",
       apiFields: [
-        { label: "Code Client", placeholder: "أدخل Code Client", field: "clientCode" },
-        { label: "Clé API", placeholder: "أدخل Clé API", field: "apiKey" },
+        { label: "Code Client", placeholder: "Enter Code Client", field: "clientCode" },
+        { label: "Clé API", placeholder: "Enter Clé API", field: "apiKey" },
       ],
       enabled: false,
     },
@@ -85,10 +85,10 @@ export default function DeliveryCompanies() {
       id: "yalidine",
       name: "Yalidine",
       logo: "/delivery-logos/da7c3e116870469.60dcd939c8198.webp",
-      description: "خدمة توصيل سريعة تغطي كل الوطن",
+      description: "Fast delivery service covering the whole country",
       apiFields: [
-        { label: "API Token", placeholder: "أدخل API Token الخاص بك", field: "apiToken" },
-        { label: "API ID", placeholder: "أدخل API ID", field: "apiId" },
+        { label: "API Token", placeholder: "Enter your API Token", field: "apiToken" },
+        { label: "API ID", placeholder: "Enter API ID", field: "apiId" },
       ],
       enabled: false,
     },
@@ -96,10 +96,10 @@ export default function DeliveryCompanies() {
       id: "mars-express",
       name: "Mars Express",
       logo: "/delivery-logos/mars-first-frontier-slogan-print-260nw-1787784659.jpg",
-      description: "توصيل سريع متخصص في الجزائر العاصمة والضواحي",
+      description: "Fast delivery specialized in Algiers and suburbs",
       apiFields: [
-        { label: "API Token", placeholder: "أدخل API Token", field: "apiToken" },
-        { label: "Business ID", placeholder: "أدخل Business ID", field: "businessId" },
+        { label: "API Token", placeholder: "Enter API Token", field: "apiToken" },
+        { label: "Business ID", placeholder: "Enter Business ID", field: "businessId" },
       ],
       enabled: false,
     },
@@ -107,10 +107,10 @@ export default function DeliveryCompanies() {
       id: "tiba",
       name: "Tiba",
       logo: "/delivery-logos/random.webp",
-      description: "خدمات الشحن واللوجستيات مع المستودعات",
+      description: "Shipping and logistics services with warehouses",
       apiFields: [
-        { label: "Account Number", placeholder: "أدخل رقم الحساب", field: "accountNumber" },
-        { label: "API Key", placeholder: "أدخل API Key", field: "apiKey" },
+        { label: "Account Number", placeholder: "Enter Account Number", field: "accountNumber" },
+        { label: "API Key", placeholder: "Enter API Key", field: "apiKey" },
       ],
       enabled: false,
     },
@@ -118,10 +118,10 @@ export default function DeliveryCompanies() {
       id: "zrara-express",
       name: "Zrara Express",
       logo: "/delivery-logos/ZARA_Present.jpg",
-      description: "خدمة توصيل إقليمية متخصصة في الولايات الشمالية",
+      description: "Regional delivery service specialized in northern provinces",
       apiFields: [
-        { label: "API Token", placeholder: "أدخل API Token", field: "apiToken" },
-        { label: "Region Code", placeholder: "أدخل رمز المنطقة", field: "regionCode" },
+        { label: "API Token", placeholder: "Enter API Token", field: "apiToken" },
+        { label: "Region Code", placeholder: "Enter Region Code", field: "regionCode" },
       ],
       enabled: false,
     },
@@ -129,10 +129,10 @@ export default function DeliveryCompanies() {
       id: "speed-dz",
       name: "Speed DZ",
       logo: "/delivery-logos/dz-logo-letter-speed-meter-racing-style-initial-monogram-design-black-background-speedometer-238210696.webp",
-      description: "توصيل سريع متخصص في التوصيل داخل المدن",
+      description: "Fast delivery specialized in intra-city delivery",
       apiFields: [
-        { label: "API Token", placeholder: "أدخل API Token", field: "apiToken" },
-        { label: "Merchant ID", placeholder: "أدخل Merchant ID", field: "merchantId" },
+        { label: "API Token", placeholder: "Enter API Token", field: "apiToken" },
+        { label: "Merchant ID", placeholder: "Enter Merchant ID", field: "merchantId" },
       ],
       enabled: false,
     },
@@ -140,10 +140,10 @@ export default function DeliveryCompanies() {
       id: "khadamaty",
       name: "Khadamaty Delivery",
       logo: "/delivery-logos/service_apres_vente_khadamaty_ar.webp",
-      description: "خدمة توصيل محلية للطرود الصغيرة والطعام",
+      description: "Local delivery service for small parcels and food",
       apiFields: [
-        { label: "Business Key", placeholder: "أدخل مفتاح النشاط", field: "businessKey" },
-        { label: "Contact Number", placeholder: "أدخل رقم الاتصال", field: "contactNumber" },
+        { label: "Business Key", placeholder: "Enter Business Key", field: "businessKey" },
+        { label: "Contact Number", placeholder: "Enter Contact Number", field: "contactNumber" },
       ],
       enabled: false,
     },
@@ -151,10 +151,10 @@ export default function DeliveryCompanies() {
       id: "eddelivery-dz",
       name: "Eddelivery DZ",
       logo: "/delivery-logos/fast-delivery-logo-template-free-vector.webp",
-      description: "منصة لوجستية متكاملة مع تتبع في الوقت الفعلي",
+      description: "Integrated logistics platform with real-time tracking",
       apiFields: [
-        { label: "API Key", placeholder: "أدخل API Key", field: "apiKey" },
-        { label: "Seller ID", placeholder: "أدخل معرّف البائع", field: "sellerId" },
+        { label: "API Key", placeholder: "Enter API Key", field: "apiKey" },
+        { label: "Seller ID", placeholder: "Enter Seller ID", field: "sellerId" },
       ],
       enabled: false,
     },
@@ -162,10 +162,10 @@ export default function DeliveryCompanies() {
       id: "poste-express",
       name: "Poste Express",
       logo: "/delivery-logos/poste-algerie-logo-png_seeklogo-272140.webp",
-      description: "خدمة بريد الجزائر للشحنات السريعة",
+      description: "Algeria Post express shipping service",
       apiFields: [
-        { label: "Account Code", placeholder: "أدخل رمز الحساب", field: "accountCode" },
-        { label: "API Token", placeholder: "أدخل API Token", field: "apiToken" },
+        { label: "Account Code", placeholder: "Enter Account Code", field: "accountCode" },
+        { label: "API Token", placeholder: "Enter API Token", field: "apiToken" },
       ],
       enabled: false,
     },
@@ -173,24 +173,24 @@ export default function DeliveryCompanies() {
       id: "rapidex",
       name: "Rapidex",
       logo: "/delivery-logos/fast-delivery-logo-template-free-vector.webp",
-      description: "خدمة الشحن السريع بين المدن والنقل الداخلي",
+      description: "Express inter-city shipping and internal transport",
       apiFields: [
-        { label: "API Token", placeholder: "أدخل API Token", field: "apiToken" },
-        { label: "Company Code", placeholder: "أدخل رمز الشركة", field: "companyCode" },
+        { label: "API Token", placeholder: "Enter API Token", field: "apiToken" },
+        { label: "Company Code", placeholder: "Enter Company Code", field: "companyCode" },
       ],
       enabled: false,
     },
     {
       id: "custom",
-      name: "شركة توصيل مخصصة",
+      name: "Custom Delivery Company",
       logo: "🔧",
-      description: "أضف شركة التوصيل الخاصة بك",
+      description: "Add your own delivery company",
       apiFields: [
-        { label: "اسم الشركة", placeholder: "أدخل اسم الشركة", field: "companyName" },
-        { label: "رقم الهاتف", placeholder: "أدخل رقم الهاتف", field: "phone" },
-        { label: "البريد الإلكتروني", placeholder: "أدخل البريد الإلكتروني", field: "email" },
+        { label: "Company Name", placeholder: "Enter Company Name", field: "companyName" },
+        { label: "Phone Number", placeholder: "Enter Phone Number", field: "phone" },
+        { label: "Email", placeholder: "Enter Email", field: "email" },
         { label: "API Endpoint", placeholder: "https://api.company.com", field: "apiEndpoint" },
-        { label: "API Key", placeholder: "أدخل API Key", field: "apiKey" },
+        { label: "API Key", placeholder: "Enter API Key", field: "apiKey" },
       ],
       enabled: false,
     },
@@ -232,9 +232,9 @@ export default function DeliveryCompanies() {
           </div>
           <div>
             <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-              شركات التوصيل
+              Delivery Companies
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">اختر شركة التوصيل وقم بإعداد الربط لتمكين خدمات التوصيل</p>
+            <p className="text-sm text-muted-foreground mt-1">Choose a delivery company and set up the connection to enable delivery services</p>
           </div>
         </div>
       </div>
@@ -288,7 +288,7 @@ export default function DeliveryCompanies() {
               {/* Status Indicator */}
               {company.enabled && (
                 <div className="text-xs text-emerald-700 dark:text-emerald-300 font-medium px-2 py-0.5 bg-emerald-100/60 dark:bg-emerald-900/40 rounded-full">
-                  مفعل ✓
+                  Active ✓
                 </div>
               )}
             </CardContent>
@@ -349,7 +349,7 @@ export default function DeliveryCompanies() {
               <div className="flex gap-2.5">
                 <Key className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                 <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
-                  احصل على بيانات الوصول (API credentials) من لوحة تحكم شركة التوصيل الخاصة بك
+                  Get API credentials from your delivery company dashboard
                 </p>
               </div>
             </div>
@@ -369,7 +369,7 @@ export default function DeliveryCompanies() {
                 className="hover:bg-destructive/90"
               >
                 <X className="w-4 h-4 mr-1.5" />
-                تعطيل
+                Disable
               </Button>
             )}
             <Button 
@@ -378,7 +378,7 @@ export default function DeliveryCompanies() {
               onClick={() => setShowConfigDialog(false)}
               className="border-border/60 hover:bg-muted/50"
             >
-              إلغاء
+              Cancel
             </Button>
             <Button 
               size="sm"
@@ -386,7 +386,7 @@ export default function DeliveryCompanies() {
               className="bg-gradient-to-r from-primary to-accent hover:shadow-lg"
             >
               <CheckCircle2 className="w-4 h-4 mr-1.5" />
-              حفظ وتفعيل
+              Save and Activate
             </Button>
           </DialogFooter>
         </DialogContent>

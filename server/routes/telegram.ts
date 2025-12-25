@@ -156,7 +156,7 @@ export const getTelegramBotLink: RequestHandler = async (req, res) => {
       botUrl,
       storeName,
       instructions: {
-        ar: 'اضغط على الزر لفتح Telegram وابدأ محادثة مع البوت. بعدها ارجع هنا لإتمام الطلب وستصلك رسالة تأكيد فورية!',
+        ar: 'Click the button to open Telegram and start a chat with the bot. Then come back here to place your order and you\'ll receive instant confirmation!',
         en: 'Click the button to open Telegram and start a chat with the bot. Then come back here to place your order and you\'ll receive instant confirmation!'
       }
     });
@@ -277,10 +277,10 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
                ON CONFLICT DO NOTHING`,
               [orderId, clientId]
             );
-            await answerCallbackQuery({ botToken, callbackQueryId: callbackId, text: 'تم التأكيد ✅' });
-            await sendTelegramMessage(botToken, chatId, '✅ تم تأكيد طلبك بنجاح!\n\nسنتواصل معك قريباً لترتيب التوصيل. شكراً لثقتك! 🙏');
+            await answerCallbackQuery({ botToken, callbackQueryId: callbackId, text: 'Confirmed ✅' });
+            await sendTelegramMessage(botToken, chatId, '✅ Your order has been confirmed!\n\nWe will contact you soon to arrange delivery. Thank you for your trust! 🙏');
           } else {
-            await answerCallbackQuery({ botToken, callbackQueryId: callbackId, text: 'تم معالجته مسبقاً' });
+            await answerCallbackQuery({ botToken, callbackQueryId: callbackId, text: 'Already processed' });
           }
         }
 
@@ -298,10 +298,10 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
                ON CONFLICT DO NOTHING`,
               [orderId, clientId]
             );
-            await answerCallbackQuery({ botToken, callbackQueryId: callbackId, text: 'تم الإلغاء ❌' });
-            await sendTelegramMessage(botToken, chatId, '❌ تم إلغاء الطلب.\n\nإذا غيرت رأيك، يمكنك الطلب مرة أخرى من المتجر.');
+            await answerCallbackQuery({ botToken, callbackQueryId: callbackId, text: 'Cancelled ❌' });
+            await sendTelegramMessage(botToken, chatId, '❌ Order cancelled.\n\nIf you change your mind, you can order again from the store.');
           } else {
-            await answerCallbackQuery({ botToken, callbackQueryId: callbackId, text: 'تم معالجته مسبقاً' });
+            await answerCallbackQuery({ botToken, callbackQueryId: callbackId, text: 'Already processed' });
           }
         }
 
@@ -353,7 +353,7 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
             [orderId, clientId]
           );
           await answerCallbackQuery({ botToken, callbackQueryId: callbackId, text: 'Confirmed' });
-          await sendTelegramMessage(botToken, chatId, '✅ تم تأكيد الطلب. شكراً لك!');
+          await sendTelegramMessage(botToken, chatId, '✅ Order confirmed. Thank you!');
         } else {
           await answerCallbackQuery({ botToken, callbackQueryId: callbackId, text: 'Already processed' });
         }
@@ -373,7 +373,7 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
             [orderId, clientId]
           );
           await answerCallbackQuery({ botToken, callbackQueryId: callbackId, text: 'Declined' });
-          await sendTelegramMessage(botToken, chatId, '❌ تم إلغاء الطلب.');
+          await sendTelegramMessage(botToken, chatId, '❌ Order cancelled.');
         } else {
           await answerCallbackQuery({ botToken, callbackQueryId: callbackId, text: 'Already processed' });
         }
@@ -427,11 +427,11 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
         `SELECT store_name FROM client_store_settings WHERE client_id = $1 LIMIT 1`,
         [clientId]
       );
-      const storeName = String(storeRes.rows[0]?.store_name || 'المتجر');
+      const storeName = String(storeRes.rows[0]?.store_name || 'Store');
       
       // Send welcome message
       await sendTelegramMessage(botToken, chatId, 
-        `مرحباً بك في ${storeName}! 🎉\n\n✅ تم ربط حسابك بنجاح.\n\nيمكنك الآن العودة لصفحة الطلب وإتمام عملية الشراء.\nسنرسل لك تأكيد الطلب هنا مباشرة! 📦`
+        `Welcome to ${storeName}! 🎉\n\n✅ Your account has been linked successfully.\n\nYou can now go back to the order page and complete your purchase.\nWe will send you order confirmation directly here! 📦`
       );
       
       return res.status(200).json({ ok: true });
@@ -447,7 +447,7 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
     );
 
     if (!linkRes.rows.length) {
-      await sendTelegramMessage(botToken, chatId, 'الرابط غير صالح أو منتهي. رجاءً ارجع لصفحة الطلب واضغط زر Telegram مرة أخرى.');
+      await sendTelegramMessage(botToken, chatId, 'The link is invalid or expired. Please go back to the order page and click the Telegram button again.');
       return res.status(200).json({ ok: true });
     }
 
@@ -484,7 +484,7 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
     const storeName = String(storeRes.rows[0]?.store_name || 'EcoPro Store');
 
     const greeting = replaceTemplateVariables(
-      greetingTemplate || 'شكراً لطلبك من {storeName} يا {customerName}!\n\n✅ فعّل الإشعارات في Telegram باش توصلك رسالة التأكيد وتتبع الطلب.',
+      greetingTemplate || 'Thank you for ordering from {storeName}, {customerName}!\n\n✅ Enable notifications on Telegram to receive order confirmation and tracking updates.',
       { storeName, customerName, orderId }
     );
 

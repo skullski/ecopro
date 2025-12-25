@@ -99,9 +99,9 @@ export default function Dashboard() {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 60) return `منذ ${diffMins} دقيقة`;
-    if (diffHours < 24) return `منذ ${diffHours} ساعة`;
-    return `منذ ${diffDays} يوم`;
+    if (diffMins < 60) return `${diffMins} mins ago`;
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    return `${diffDays} days ago`;
   };
 
   const getStatusColor = (status: string) => {
@@ -129,9 +129,9 @@ export default function Dashboard() {
   // Get greeting based on time
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return '☀️ صباح الخير';
-    if (hour < 18) return '🌤️ مساء الخير';
-    return '🌙 مساء الخير';
+    if (hour < 12) return '☀️ Good Morning';
+    if (hour < 18) return '🌤️ Good Afternoon';
+    return '🌙 Good Evening';
   };
 
   return (
@@ -142,13 +142,13 @@ export default function Dashboard() {
         <div className="relative z-10 flex items-center justify-between">
           <div>
             <p className="text-white/80 text-xs sm:text-sm">{getGreeting()}</p>
-            <h1 className="text-lg sm:text-xl font-bold">لوحة التحكم</h1>
-            <p className="text-white/70 text-xs sm:text-sm">إليك ملخص أداء متجرك</p>
+            <h1 className="text-lg sm:text-xl font-bold">Dashboard</h1>
+            <p className="text-white/70 text-xs sm:text-sm">Here's your store performance summary</p>
           </div>
           <div className="hidden md:flex items-center gap-2">
             <div className="text-right">
-              <p className="text-white/70 text-xs">إجمالي الإيرادات</p>
-              <p className="text-lg sm:text-xl font-bold">{stats.revenue.toLocaleString()} دج</p>
+              <p className="text-white/70 text-xs">Total Revenue</p>
+              <p className="text-lg sm:text-xl font-bold">{stats.revenue.toLocaleString()} DZD</p>
             </div>
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-white/20 backdrop-blur flex items-center justify-center">
               <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -164,9 +164,9 @@ export default function Dashboard() {
       <div className="flex flex-wrap items-center justify-between gap-1">
         <div className="flex items-center gap-0.5 sm:gap-1 bg-muted/50 p-0.5 rounded-lg">
           {[
-            { key: 'today', label: 'اليوم', icon: Zap },
-            { key: 'thisWeek', label: 'هذا الأسبوع', icon: Activity },
-            { key: 'thisMonth', label: 'هذا الشهر', icon: BarChart3 },
+            { key: 'today', label: 'Today', icon: Zap },
+            { key: 'thisWeek', label: 'This Week', icon: Activity },
+            { key: 'thisMonth', label: 'This Month', icon: BarChart3 },
           ].map(period => (
             <button
               key={period.key}
@@ -183,7 +183,7 @@ export default function Dashboard() {
           ))}
         </div>
         <div className="text-xs text-muted-foreground">
-          آخر تحديث: {new Date().toLocaleTimeString('ar-EG')}
+          Last updated: {new Date().toLocaleTimeString('en-US')}
         </div>
       </div>
 
@@ -204,7 +204,7 @@ export default function Dashboard() {
               )}
             </div>
             <p className="text-xl sm:text-2xl font-bold">{loading ? '...' : currentComparison?.orders || stats.orders}</p>
-            <p className="text-white/70 text-xs sm:text-sm">الطلبات</p>
+            <p className="text-white/70 text-xs sm:text-sm">Orders</p>
           </div>
         </Card>
 
@@ -223,7 +223,7 @@ export default function Dashboard() {
               )}
             </div>
             <p className="text-xl sm:text-2xl font-bold">{loading ? '...' : `${(currentComparison?.revenue || 0).toLocaleString()}`}</p>
-            <p className="text-white/70 text-xs sm:text-sm">الإيرادات (دج)</p>
+            <p className="text-white/70 text-xs sm:text-sm">Revenue (DZD)</p>
           </div>
         </Card>
 
@@ -234,10 +234,10 @@ export default function Dashboard() {
               <div className="p-0.5 rounded bg-white/20 backdrop-blur">
                 <Eye className="w-3 h-3" />
               </div>
-              <div className="text-xs bg-white/20 px-1 py-0.5 rounded-full">مباشر</div>
+              <div className="text-xs bg-white/20 px-1 py-0.5 rounded-full">Live</div>
             </div>
             <p className="text-xl sm:text-2xl font-bold">{loading ? '...' : stats.visitors.toLocaleString()}</p>
-            <p className="text-white/70 text-xs sm:text-sm">المشاهدات</p>
+            <p className="text-white/70 text-xs sm:text-sm">Views</p>
           </div>
         </Card>
 
@@ -251,7 +251,7 @@ export default function Dashboard() {
               <Flame className="w-3 h-3 text-yellow-200" />
             </div>
             <p className="text-xl sm:text-2xl font-bold">{loading ? '...' : stats.products}</p>
-            <p className="text-white/70 text-xs sm:text-sm">المنتجات</p>
+            <p className="text-white/70 text-xs sm:text-sm">Products</p>
           </div>
         </Card>
       </div>
@@ -266,15 +266,15 @@ export default function Dashboard() {
                 <BarChart3 className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="font-bold text-sm sm:text-base">إيرادات آخر 12 يوم</h3>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">الإيرادات اليومية</p>
+                <h3 className="font-bold text-sm sm:text-base">Revenue Last 12 Days</h3>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">Daily revenue</p>
               </div>
             </div>
             <div className="text-left bg-gradient-to-r from-emerald-500/10 to-green-500/10 px-2 sm:px-3 py-1.5 rounded-lg border border-emerald-500/20">
               <p className="text-sm sm:text-lg font-bold text-emerald-600 dark:text-emerald-400">
-                {chartData.reduce((sum, d) => sum + d.revenue, 0).toLocaleString()} دج
+                {chartData.reduce((sum, d) => sum + d.revenue, 0).toLocaleString()} DZD
               </p>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">إجمالي الفترة</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Period total</p>
             </div>
           </div>
           
@@ -287,8 +287,8 @@ export default function Dashboard() {
                     style={{ height: `${Math.max((day.revenue / maxRevenue) * 100, 6)}px` }}
                   />
                   <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] px-2 py-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap z-10 shadow-xl">
-                    <p className="font-bold">{day.revenue.toLocaleString()} دج</p>
-                    <p className="text-white/70">{day.orders} طلب</p>
+                    <p className="font-bold">{day.revenue.toLocaleString()} DZD</p>
+                    <p className="text-white/70">{day.orders} orders</p>
                   </div>
                 </div>
                 <span className="text-[10px] sm:text-xs text-muted-foreground font-medium">
@@ -299,7 +299,7 @@ export default function Dashboard() {
               <div className="flex-1 flex items-center justify-center text-muted-foreground">
                 <div className="text-center">
                   <BarChart3 className="w-8 h-8 mx-auto mb-1.5 opacity-20" />
-                  <p className="text-sm">لا توجد بيانات</p>
+                  <p className="text-sm">No data available</p>
                 </div>
               </div>
             )}
@@ -312,7 +312,7 @@ export default function Dashboard() {
             <div className="p-2 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 text-white">
               <Target className="w-4 h-4" />
             </div>
-            <h3 className="font-bold text-sm sm:text-base">توزيع الحالات</h3>
+            <h3 className="font-bold text-sm sm:text-base">Status Distribution</h3>
           </div>
           <div className="space-y-2">
             {analytics?.statusBreakdown?.slice(0, 6).map((item, i) => {
@@ -339,7 +339,7 @@ export default function Dashboard() {
                 </div>
               );
             }) || (
-              <p className="text-xs text-muted-foreground text-center py-6">لا توجد بيانات</p>
+              <p className="text-xs text-muted-foreground text-center py-6">No data available</p>
             )}
           </div>
         </Card>
@@ -353,7 +353,7 @@ export default function Dashboard() {
             <div className="p-2 rounded-lg bg-gradient-to-br from-yellow-500 to-orange-500 text-white">
               <Crown className="w-4 h-4" />
             </div>
-            <h3 className="font-bold text-sm sm:text-base">أفضل المنتجات</h3>
+            <h3 className="font-bold text-sm sm:text-base">Top Products</h3>
           </div>
           <div className="space-y-2">
             {analytics?.topProducts?.slice(0, 5).map((product, i) => (
@@ -380,12 +380,12 @@ export default function Dashboard() {
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium truncate group-hover:text-primary transition-colors">{product.title}</p>
                   <p className="text-[10px] text-muted-foreground">
-                    {product.total_orders} طلب • <span className="text-emerald-600 dark:text-emerald-400 font-medium">{product.total_revenue.toLocaleString()} دج</span>
+                    {product.total_orders} orders • <span className="text-emerald-600 dark:text-emerald-400 font-medium">{product.total_revenue.toLocaleString()} DZD</span>
                   </p>
                 </div>
               </div>
             )) || (
-              <p className="text-xs text-muted-foreground text-center py-6">لا توجد منتجات</p>
+              <p className="text-xs text-muted-foreground text-center py-6">No products</p>
             )}
           </div>
         </Card>
@@ -396,7 +396,7 @@ export default function Dashboard() {
             <div className="p-2 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 text-white">
               <Clock className="w-4 h-4" />
             </div>
-            <h3 className="font-bold text-sm sm:text-base">آخر الطلبات</h3>
+            <h3 className="font-bold text-sm sm:text-base">Recent Orders</h3>
           </div>
           <div className="space-y-1.5">
             {analytics?.recentOrders?.slice(0, 5).map((order) => (
@@ -409,7 +409,7 @@ export default function Dashboard() {
                   </p>
                 </div>
                 <div className="text-left">
-                  <p className="text-xs font-bold">{order.total_price} دج</p>
+                  <p className="text-xs font-bold">{order.total_price} DZD</p>
                   <div 
                     className="text-[10px] px-1.5 py-0.5 rounded-full text-white inline-block shadow-sm"
                     style={{ backgroundColor: getStatusColor(order.status) }}
@@ -419,7 +419,7 @@ export default function Dashboard() {
                 </div>
               </div>
             )) || (
-              <p className="text-xs text-muted-foreground text-center py-6">لا توجد طلبات</p>
+              <p className="text-xs text-muted-foreground text-center py-6">No orders</p>
             )}
           </div>
         </Card>
@@ -430,7 +430,7 @@ export default function Dashboard() {
             <div className="p-2 rounded-lg bg-gradient-to-br from-pink-500 to-rose-500 text-white">
               <MapPin className="w-4 h-4" />
             </div>
-            <h3 className="font-bold text-sm sm:text-base">الطلبات حسب المدينة</h3>
+            <h3 className="font-bold text-sm sm:text-base">Orders by City</h3>
           </div>
           <div className="space-y-2">
             {analytics?.cityBreakdown?.slice(0, 6).map((city, i) => {
@@ -444,7 +444,7 @@ export default function Dashboard() {
                       {city.city}
                     </span>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] text-muted-foreground">{city.revenue.toLocaleString()} دج</span>
+                      <span className="text-[10px] text-muted-foreground">{city.revenue.toLocaleString()} DZD</span>
                       <span className="font-bold bg-primary/10 px-1.5 py-0.5 rounded-full text-[10px]">{city.count}</span>
                     </div>
                   </div>
@@ -457,7 +457,7 @@ export default function Dashboard() {
                 </div>
               );
             }) || (
-              <p className="text-xs text-muted-foreground text-center py-6">لا توجد بيانات</p>
+              <p className="text-xs text-muted-foreground text-center py-6">No data available</p>
             )}
           </div>
         </Card>
@@ -471,9 +471,9 @@ export default function Dashboard() {
               <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-600 dark:text-cyan-400" />
             </div>
             <div>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">متوسط قيمة الطلب</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Average Order Value</p>
               <p className="text-sm sm:text-lg font-bold">
-                {stats.orders > 0 ? Math.round(stats.revenue / stats.orders).toLocaleString() : 0} <span className="text-xs font-normal text-muted-foreground">دج</span>
+                {stats.orders > 0 ? Math.round(stats.revenue / stats.orders).toLocaleString() : 0} <span className="text-xs font-normal text-muted-foreground">DZD</span>
               </p>
             </div>
           </div>
@@ -485,7 +485,7 @@ export default function Dashboard() {
               <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 dark:text-green-400" />
             </div>
             <div>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">نسبة النجاح</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Success Rate</p>
               <p className="text-sm sm:text-lg font-bold">
                 {stats.orders > 0 ? Math.round((stats.completedOrders / stats.orders) * 100) : 0}<span className="text-xs font-normal text-muted-foreground">%</span>
               </p>
@@ -499,7 +499,7 @@ export default function Dashboard() {
               <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 dark:text-amber-400" />
             </div>
             <div>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">طلبات معلقة</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Pending Orders</p>
               <p className="text-sm sm:text-lg font-bold">{stats.pendingOrders}</p>
             </div>
           </div>
@@ -511,7 +511,7 @@ export default function Dashboard() {
               <Users className="w-4 h-4 sm:w-5 sm:h-5 text-rose-600 dark:text-rose-400" />
             </div>
             <div>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">معدل التحويل</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Conversion Rate</p>
               <p className="text-sm sm:text-lg font-bold">
                 {stats.visitors > 0 ? ((stats.orders / stats.visitors) * 100).toFixed(1) : 0}<span className="text-xs font-normal text-muted-foreground">%</span>
               </p>

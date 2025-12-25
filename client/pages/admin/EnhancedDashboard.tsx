@@ -33,7 +33,7 @@ export default function EnhancedDashboard() {
 
   const stats = [
     { 
-      title: "الزيارات", 
+      title: "Visits", 
       value: "1", 
       icon: <Eye className="w-6 h-6" style={{ color: '#1d4ed8' }} />, 
       gradient: "from-blue-500 to-cyan-500",
@@ -45,8 +45,8 @@ export default function EnhancedDashboard() {
       cardBorder: "border-blue-500/30"
     },
     { 
-      title: "الأرباح", 
-      value: "0 دج", 
+      title: "Revenue", 
+      value: "0 DZD", 
       icon: <DollarSign className="w-6 h-6" style={{ color: '#15803d' }} />, 
       gradient: "from-green-500 to-emerald-500",
       iconBg: "bg-green-200 dark:bg-green-500/20",
@@ -57,7 +57,7 @@ export default function EnhancedDashboard() {
       cardBorder: "border-green-500/30"
     },
     { 
-      title: "المنتجات المتاحة", 
+      title: "Available Products", 
       value: "0", 
       icon: <Tag className="w-6 h-6" style={{ color: '#7e22ce' }} />, 
       gradient: "from-purple-500 to-pink-500",
@@ -69,7 +69,7 @@ export default function EnhancedDashboard() {
       cardBorder: "border-purple-500/30"
     },
     { 
-      title: "الطلبات الجديدة", 
+      title: "New Orders", 
       value: "0", 
       icon: <ShoppingCart className="w-6 h-6" style={{ color: '#c2410c' }} />, 
       gradient: "from-orange-500 to-red-500",
@@ -83,19 +83,19 @@ export default function EnhancedDashboard() {
   ];
 
   const quickStats = [
-    { label: "الطلبات", value: "15 / 0", status: "success" },
-    { label: "البيكسلات", value: "1 / 0", status: "success" },
-    { label: "كاتالوغات الإعلانات", value: "0 / 0", status: "error" },
-    { label: "دومينات مخصصة", value: "0 / 0", status: "error" },
-    { label: "غُشّال المتجر", value: "1 / 1", status: "error" },
+    { label: "Orders", value: "15 / 0", status: "success" },
+    { label: "Pixels", value: "1 / 0", status: "success" },
+    { label: "Ad Catalogs", value: "0 / 0", status: "error" },
+    { label: "Custom Domains", value: "0 / 0", status: "error" },
+    { label: "Store Hustle", value: "1 / 1", status: "error" },
   ];
 
   const setupSteps = [
-    { title: "أضف شعار المتجر", completed: true },
-    { title: "أضف منتجات", completed: false },
-    { title: "حدد أسعار وولايات التوصيل", completed: false },
-    { title: "اربط حسابك على Telegram لتلقي إشعارات الطلبات الجديدة", completed: false },
-    { title: "أضف وسائل الاتصال لزبائنك", completed: false },
+    { title: "Add Store Logo", completed: true },
+    { title: "Add Products", completed: false },
+    { title: "Set Delivery Prices and Regions", completed: false },
+    { title: "Link your Telegram account to receive new order notifications", completed: false },
+    { title: "Add contact methods for your customers", completed: false },
   ];
 
   const completedSteps = setupSteps.filter(s => s.completed).length;
@@ -113,24 +113,24 @@ export default function EnhancedDashboard() {
             <div className="text-center md:text-right">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/20 to-accent/20 border border-primary/30 mb-4">
                 <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                <span className="text-sm font-medium">متصل الآن</span>
+                <span className="text-sm font-medium">Online Now</span>
               </div>
               <h1 className="text-xl md:text-2xl md:text-2xl md:text-xl md:text-2xl font-bold mb-2">
                 <span className="bg-gradient-to-l from-primary via-accent to-purple-600 bg-clip-text text-transparent">
-                  أهلاً وسهلاً، Walid
+                  Welcome, Walid
                 </span>
               </h1>
-              <p className="text-muted-foreground text-lg">جاهز لتحقيق مبيعات اليوم؟</p>
+              <p className="text-muted-foreground text-lg">Ready to make sales today?</p>
             </div>
             
             <div className="flex items-center gap-3">
               <Button className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-lg">
                 <Tag className="w-4 h-4 ml-2" />
-                إضافة منتج جديد
+                Add New Product
               </Button>
               <Button variant="outline" className="border-2">
                 <Eye className="w-4 h-4 ml-2" />
-                معاينة المتجر
+                Preview Store
               </Button>
             </div>
           </div>
@@ -171,11 +171,11 @@ export default function EnhancedDashboard() {
             <div className="relative z-10">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-500/10 border border-yellow-500/20 mb-4">
                 <span className="text-2xl">⏰</span>
-                <span className="text-sm font-medium text-yellow-600 dark:text-yellow-400">فترة تجريبية</span>
+                <span className="text-sm font-medium text-yellow-600 dark:text-yellow-400">Trial Period</span>
               </div>
-              <h3 className="font-bold text-xl mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">إستهلاكك الإشتراك</h3>
+              <h3 className="font-bold text-xl mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Your Subscription Usage</h3>
             <p className="text-sm text-muted-foreground mb-6">
-              الشهر الحالي: 06 نوفمبر 2025 15:52 - 08 نوفمبر 2025 15:52
+              Current Month: Nov 06, 2025 15:52 - Nov 08, 2025 15:52
             </p>
 
             {/* Countdown */}
@@ -185,7 +185,7 @@ export default function EnhancedDashboard() {
                   <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-orange-500 rounded-xl blur opacity-50"></div>
                   <div className="relative bg-gradient-to-br from-red-500 to-orange-500 text-white rounded-xl p-4 min-w-[80px]">
                     <div className="text-xl md:text-2xl font-bold">{String(timeLeft.days).padStart(2, '0')}</div>
-                    <div className="text-xs font-medium mt-1">يوم</div>
+                    <div className="text-xs font-medium mt-1">Day</div>
                   </div>
                 </div>
                 <span className="text-xl md:text-2xl font-bold text-muted-foreground">:</span>
@@ -193,7 +193,7 @@ export default function EnhancedDashboard() {
                   <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl blur opacity-50"></div>
                   <div className="relative bg-gradient-to-br from-blue-500 to-cyan-500 text-white rounded-xl p-4 min-w-[80px]">
                     <div className="text-xl md:text-2xl font-bold">{String(timeLeft.hours).padStart(2, '0')}</div>
-                    <div className="text-xs font-medium mt-1">ساعة</div>
+                    <div className="text-xs font-medium mt-1">Hour</div>
                   </div>
                 </div>
                 <span className="text-xl md:text-2xl font-bold text-muted-foreground">:</span>
@@ -201,7 +201,7 @@ export default function EnhancedDashboard() {
                   <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl blur opacity-50"></div>
                   <div className="relative bg-gradient-to-br from-purple-500 to-pink-500 text-white rounded-xl p-4 min-w-[80px]">
                     <div className="text-xl md:text-2xl font-bold">{String(timeLeft.minutes).padStart(2, '0')}</div>
-                    <div className="text-xs font-medium mt-1">دقيقة</div>
+                    <div className="text-xs font-medium mt-1">Minute</div>
                   </div>
                 </div>
                 <span className="text-xl md:text-2xl font-bold text-muted-foreground">:</span>
@@ -209,7 +209,7 @@ export default function EnhancedDashboard() {
                   <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl blur opacity-50"></div>
                   <div className="relative bg-gradient-to-br from-green-500 to-emerald-500 text-white rounded-xl p-4 min-w-[80px]">
                     <div className="text-xl md:text-2xl font-bold">{String(timeLeft.seconds).padStart(2, '0')}</div>
-                    <div className="text-xs font-medium mt-1">ثانية</div>
+                    <div className="text-xs font-medium mt-1">Second</div>
                   </div>
                 </div>
               </div>
@@ -217,19 +217,19 @@ export default function EnhancedDashboard() {
 
             <p className="text-sm text-red-500 font-medium mb-6 flex items-center justify-center gap-2">
               <span className="text-xl">⚠️</span>
-              الفترة التجريبية المجانية الخاصة بك تنتهي بعد:
+              Your free trial period ends in:
             </p>
 
             <Button size="lg" className="w-full max-w-md bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-lg hover:shadow-xl transition-all">
               <span className="text-lg">✨</span>
-              اخبر اشتراكك الآن
+              Upgrade Your Subscription Now
             </Button>
             </div>
 
             {/* Details Link */}
             <button className="flex items-center justify-center gap-2 w-full mt-4 text-sm text-primary hover:underline">
               <ChevronLeft className="w-4 h-4" />
-              الإطلاع على التفاصيل
+              View Details
             </button>
           </div>
 
@@ -237,7 +237,7 @@ export default function EnhancedDashboard() {
           <div>
             <h3 className="font-bold text-xl mb-6 flex items-center gap-2">
               <span className="text-2xl">📊</span>
-              نظرة عامة
+              Overview
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
               {stats.map((stat, index) => (
@@ -269,7 +269,7 @@ export default function EnhancedDashboard() {
           <div className="rounded-2xl border-2 border-teal-300 dark:border-gray-800 bg-gradient-to-br from-cyan-50 via-teal-50 to-emerald-50 dark:from-black dark:via-black dark:to-black p-6 shadow-2xl">
             <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
               <span className="text-xl">📈</span>
-              إحصائيات سريعة
+              Quick Stats
             </h3>
             <div className="space-y-2">
               {quickStats.map((stat, index) => (
@@ -300,7 +300,7 @@ export default function EnhancedDashboard() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-lg flex items-center gap-2">
                 <span className="text-xl">✅</span>
-                أكمل تحضير متجرك
+                Complete Your Store Setup
               </h3>
               <div className="px-3 py-1 rounded-full bg-accent/20 text-accent text-xs font-bold">
                 {completedSteps}/{totalSteps}
@@ -355,7 +355,7 @@ export default function EnhancedDashboard() {
               <div className="text-2xl md:text-xl md:text-2xl mb-3 animate-bounce">📱</div>
               <h3 className="font-bold text-lg mb-3 flex items-center justify-center gap-2">
                 <span className="text-xl">🚀</span>
-                تطبيقاتنا
+                Our Apps
               </h3>
               <div className="text-xl md:text-2xl md:text-2xl md:text-xl md:text-2xl font-bold mb-4 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
                 CALL VERIFICATION
@@ -366,22 +366,22 @@ export default function EnhancedDashboard() {
                 </span>
               </div>
               <p className="text-sm text-muted-foreground mb-6">
-                امسح وتتبع منتجاتك بسهولة
+                Scan and track your products easily
               </p>
               <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg hover:shadow-xl transition-all group">
                 <Download className="w-4 h-4 ml-2 group-hover:animate-bounce" />
-                حمّل التطبيق الآن
+                Download the App Now
               </Button>
               
               {/* App features */}
               <div className="mt-6 space-y-2 text-xs text-muted-foreground">
                 <div className="flex items-center justify-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                  <span>متوفر على Android و iOS</span>
+                  <span>Available on Android and iOS</span>
                 </div>
                 <div className="flex items-center justify-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                  <span>مجاني 100%</span>
+                  <span>100% Free</span>
                 </div>
               </div>
             </div>

@@ -267,19 +267,19 @@ export async function sendOrderConfirmationMessages(
  * Default WhatsApp template
  */
 function defaultWhatsAppTemplate(): string {
-  return `السلام عليكم {customerName}! 🌟
+  return `Hello {customerName}! 🌟
 
-شكراً لك على طلبك من {storeName}! 
+Thank you for your order from {storeName}! 
 
-📦 تفاصيل الطلب:
-• المنتج: {productName}
-• السعر: {price} دج
-• رقم الطلب: {orderId}
+📦 Order Details:
+• Product: {productName}
+• Price: {price} DZD
+• Order ID: {orderId}
 
-يرجى تأكيد طلبك من خلال الرابط أدناه:
+Please confirm your order through the link below:
 {confirmationLink}
 
-شكراً لك! 🎉`;
+Thank you! 🎉`;
 }
 
 /**

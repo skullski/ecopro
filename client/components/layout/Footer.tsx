@@ -11,9 +11,9 @@ export default function Footer() {
         <div className="flex flex-col items-center justify-between gap-2 md:flex-row">
           <p className="text-xs text-muted-foreground">{text}</p>
           <nav className="flex items-center gap-2 sm:gap-3 text-xs">
-            <a href="/#مزايا" className="text-foreground/60 hover:text-foreground transition-colors">المزايا</a>
-            <a href="/#البنية" className="text-foreground/60 hover:text-foreground transition-colors">البنية</a>
-            <a href="/#الأسعار" className="text-foreground/60 hover:text-foreground transition-colors">الأسعار</a>
+            <a href="/#features" className="text-foreground/60 hover:text-foreground transition-colors">Features</a>
+            <a href="/#architecture" className="text-foreground/60 hover:text-foreground transition-colors">Architecture</a>
+            <a href="/#pricing" className="text-foreground/60 hover:text-foreground transition-colors">Pricing</a>
           </nav>
         </div>
       </div>

@@ -52,12 +52,12 @@ export default function AdminWasselniSettings() {
     autoExpireHours: 24,
     viberAuthToken: '',
     viberSenderName: '',
-    templateGreeting: `شكراً لطلبك من {storeName} يا {customerName}!\n\n✅ فعّل الإشعارات في Telegram باش توصلك رسالة التأكيد وتتبع الطلب.`,
-    templateInstantOrder: `🎉 شكراً لك يا {customerName}!\n\nتم استلام طلبك بنجاح ✅\n\n━━━━━━━━━━━━━━━━\n📦 تفاصيل الطلب\n━━━━━━━━━━━━━━━━\n🔢 رقم الطلب: #{orderId}\n📱 المنتج: {productName}\n💰 السعر: {totalPrice} دج\n📍 الكمية: {quantity}\n\n━━━━━━━━━━━━━━━━\n👤 معلومات التوصيل\n━━━━━━━━━━━━━━━━\n📛 الاسم: {customerName}\n📞 الهاتف: {customerPhone}\n🏠 العنوان: {address}\n\n━━━━━━━━━━━━━━━━\n🚚 حالة الطلب: قيد المعالجة\n━━━━━━━━━━━━━━━━\n\nسنتواصل معك قريباً للتأكيد 📞\n\n⭐ من {storeName}`,
-    templatePinInstructions: `📌 نصيحة مهمة:\n\nاضغط مطولاً على الرسالة السابقة واختر "تثبيت" (Pin) لتتبع طلبك بسهولة!\n\n🔔 تأكد من:\n• تفعيل الإشعارات للبوت\n• عدم كتم صوت المحادثة\n• ستصلك تحديثات حالة الطلب هنا مباشرة`,
-    templateOrderConfirmation: `السلام عليكم {customerName}! 🌟\n\nشكراً لك على طلبك من {companyName}! \n\n📦 تفاصيل الطلب:\n• المنتج: {productName}\n• السعر: {totalPrice} دج\n• العنوان: {address}\n\nهل تؤكد الطلب؟ رد ب "نعم" للتأكيد أو "لا" للإلغاء.`,
-    templatePayment: `تم تأكيد طلبك #{orderId}. يرجى الدفع بـ {totalPrice} دج.`,
-    templateShipping: `تم شحن طلبك #{orderId}. رقم التتبع: {trackingNumber}.`
+    templateGreeting: `Thank you for ordering from {storeName}, {customerName}!\n\n✅ Enable notifications on Telegram to receive order confirmation and tracking updates.`,
+    templateInstantOrder: `🎉 Thank you, {customerName}!\n\nYour order has been received successfully ✅\n\n━━━━━━━━━━━━━━━━\n📦 Order Details\n━━━━━━━━━━━━━━━━\n🔢 Order ID: #{orderId}\n📱 Product: {productName}\n💰 Price: {totalPrice} DZD\n📍 Quantity: {quantity}\n\n━━━━━━━━━━━━━━━━\n👤 Delivery Information\n━━━━━━━━━━━━━━━━\n📛 Name: {customerName}\n📞 Phone: {customerPhone}\n🏠 Address: {address}\n\n━━━━━━━━━━━━━━━━\n🚚 Order Status: Processing\n━━━━━━━━━━━━━━━━\n\nWe will contact you soon for confirmation 📞\n\n⭐ From {storeName}`,
+    templatePinInstructions: `📌 Important tip:\n\nLong press on the previous message and select "Pin" to easily track your order!\n\n🔔 Make sure to:\n• Enable notifications for the bot\n• Don't mute the conversation\n• You will receive order status updates here directly`,
+    templateOrderConfirmation: `Hello {customerName}! 🌟\n\nThank you for your order from {companyName}! \n\n📦 Order Details:\n• Product: {productName}\n• Price: {totalPrice} DZD\n• Address: {address}\n\nDo you confirm the order? Reply "Yes" to confirm or "No" to cancel.`,
+    templatePayment: `Your order #{orderId} has been confirmed. Please pay {totalPrice} DZD.`,
+    templateShipping: `Your order #{orderId} has been shipped. Tracking number: {trackingNumber}.`
   });
 
   useEffect(() => {
@@ -686,7 +686,7 @@ export default function AdminWasselniSettings() {
                     Order Shipped
                   </Label>
                   <Textarea
-                    value={(settings as any).templateTrackingShipped || `📦 مرحباً {customerName}!\n\nتم شحن طلبك #{orderId}.\n🚚 شركة التوصيل: {deliveryCompany}\n📍 رقم التتبع: {trackingNumber}\n\nيمكنك تتبع طلبك من هنا: {trackingUrl}`}
+                    value={(settings as any).templateTrackingShipped || `📦 Hello {customerName}!\n\nYour order #{orderId} has been shipped.\n🚚 Delivery Company: {deliveryCompany}\n📍 Tracking Number: {trackingNumber}\n\nYou can track your order here: {trackingUrl}`}
                     onChange={(e) => updateSetting('templateTrackingShipped' as any, e.target.value)}
                     rows={4}
                     className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-xl text-sm"
@@ -700,7 +700,7 @@ export default function AdminWasselniSettings() {
                     Out for Delivery
                   </Label>
                   <Textarea
-                    value={(settings as any).templateTrackingOutForDelivery || `🚛 {customerName}, طلبك في الطريق!\n\nطلبك #{orderId} خرج للتوصيل.\n📍 متوقع الوصول: {estimatedTime}\n📞 سيتصل بك السائق قريباً.\n\nتأكد من توفرك لاستلام الطلب!`}
+                    value={(settings as any).templateTrackingOutForDelivery || `🚛 {customerName}, your order is on its way!\n\nYour order #{orderId} is out for delivery.\n📍 Estimated arrival: {estimatedTime}\n📞 The driver will contact you soon.\n\nMake sure you're available to receive the order!`}
                     onChange={(e) => updateSetting('templateTrackingOutForDelivery' as any, e.target.value)}
                     rows={4}
                     className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-xl text-sm"
@@ -714,7 +714,7 @@ export default function AdminWasselniSettings() {
                     Delivered
                   </Label>
                   <Textarea
-                    value={(settings as any).templateTrackingDelivered || `✅ تم التوصيل بنجاح!\n\nمرحباً {customerName},\nتم توصيل طلبك #{orderId} بنجاح.\n\n🙏 شكراً لتسوقك معنا!\n⭐ نتمنى أن تنال المنتجات إعجابك.\n\nللاستفسارات: {supportPhone}`}
+                    value={(settings as any).templateTrackingDelivered || `✅ Successfully Delivered!\n\nHello {customerName},\nYour order #{orderId} has been delivered successfully.\n\n🙏 Thank you for shopping with us!\n⭐ We hope you enjoy your products.\n\nFor inquiries: {supportPhone}`}
                     onChange={(e) => updateSetting('templateTrackingDelivered' as any, e.target.value)}
                     rows={4}
                     className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-xl text-sm"
@@ -728,7 +728,7 @@ export default function AdminWasselniSettings() {
                     Delivery Failed
                   </Label>
                   <Textarea
-                    value={(settings as any).templateTrackingFailed || `⚠️ تعذر التوصيل\n\nمرحباً {customerName},\nلم نتمكن من توصيل طلبك #{orderId}.\n\nالسبب: {failureReason}\n\n📞 يرجى التواصل معنا لإعادة جدولة التوصيل: {supportPhone}`}
+                    value={(settings as any).templateTrackingFailed || `⚠️ Delivery Failed\n\nHello {customerName},\nWe were unable to deliver your order #{orderId}.\n\nReason: {failureReason}\n\n📞 Please contact us to reschedule delivery: {supportPhone}`}
                     onChange={(e) => updateSetting('templateTrackingFailed' as any, e.target.value)}
                     rows={4}
                     className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-xl text-sm"

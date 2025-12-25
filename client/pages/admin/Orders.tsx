@@ -42,9 +42,9 @@ export default function OrdersAdmin() {
 
   const customerNames = {
     ar: [
-      'أحمد محمد', 'فاطمة علي', 'محمود سارة', 'ليلى حسن', 'سليم عمر',
-      'نور الدين', 'زينب أحمد', 'كريم حسين', 'سارة مصطفى', 'ياسر محمود',
-      'رانيا خالد', 'عمر فاروق', 'منى سعيد', 'طارق جمال', 'هدى كمال'
+      'Ahmed Mohammed', 'Fatima Ali', 'Mahmoud Sara', 'Layla Hassan', 'Salim Omar',
+      'Noureddine', 'Zeinab Ahmed', 'Karim Hussein', 'Sara Mostafa', 'Yasser Mahmoud',
+      'Rania Khaled', 'Omar Farouk', 'Mona Saeed', 'Tarek Gamal', 'Huda Kamal'
     ],
     en: [
       'Ahmed Mohamed', 'Fatima Ali', 'Mahmoud Sarah', 'Leila Hassan', 'Salim Omar',
@@ -162,14 +162,14 @@ export default function OrdersAdmin() {
     }
     // Fallback to built-in statuses
     const builtIn: Record<string, { name: string; color: string; icon: string }> = {
-      pending: { name: t('orders.status.pending') || 'قيد الانتظار', color: '#eab308', icon: '●' },
-      confirmed: { name: t('orders.status.confirmed') || 'مؤكد', color: '#22c55e', icon: '✓' },
-      processing: { name: 'قيد المعالجة', color: '#3b82f6', icon: '◐' },
-      shipped: { name: 'تم الشحن', color: '#8b5cf6', icon: '📦' },
-      delivered: { name: 'تم التوصيل', color: '#10b981', icon: '✓' },
-      cancelled: { name: 'ملغي', color: '#ef4444', icon: '✕' },
-      failed: { name: t('orders.status.failed') || 'فشل', color: '#ef4444', icon: '✕' },
-      followup: { name: t('orders.status.followup') || 'متابعة', color: '#3b82f6', icon: '●' },
+      pending: { name: t('orders.status.pending') || 'Pending', color: '#eab308', icon: '●' },
+      confirmed: { name: t('orders.status.confirmed') || 'Confirmed', color: '#22c55e', icon: '✓' },
+      processing: { name: 'Processing', color: '#3b82f6', icon: '◐' },
+      shipped: { name: 'Shipped', color: '#8b5cf6', icon: '📦' },
+      delivered: { name: 'Delivered', color: '#10b981', icon: '✓' },
+      cancelled: { name: 'Cancelled', color: '#ef4444', icon: '✕' },
+      failed: { name: t('orders.status.failed') || 'Failed', color: '#ef4444', icon: '✕' },
+      followup: { name: t('orders.status.followup') || 'Follow-up', color: '#3b82f6', icon: '●' },
     };
     return builtIn[statusKey] || { name: statusKey, color: '#6b7280', icon: '●' };
   };
@@ -365,7 +365,7 @@ export default function OrdersAdmin() {
               <ShoppingBag className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <div className="text-sm font-semibold text-muted-foreground">إجمالي الطلبات</div>
+              <div className="text-sm font-semibold text-muted-foreground">Total Orders</div>
               <div className="text-2xl font-bold">{orders.length}</div>
             </div>
           </div>
@@ -376,7 +376,7 @@ export default function OrdersAdmin() {
               <TrendingUp className="h-4 w-4 text-accent" />
             </div>
             <div>
-              <div className="text-sm font-semibold text-muted-foreground">الطلبات المؤكدة</div>
+              <div className="text-sm font-semibold text-muted-foreground">Confirmed Orders</div>
               <div className="text-2xl font-bold">{orders.filter(o => o.status === 'confirmed').length}</div>
             </div>
           </div>
@@ -387,7 +387,7 @@ export default function OrdersAdmin() {
               <span className="text-lg">💰</span>
             </div>
             <div>
-              <div className="text-sm font-semibold text-muted-foreground">الإيرادات</div>
+              <div className="text-sm font-semibold text-muted-foreground">Revenue</div>
               <div className="text-xl font-bold bg-gradient-to-r from-accent to-orange-500 bg-clip-text text-transparent">
                 {orders
                   .filter(o => {
@@ -400,7 +400,7 @@ export default function OrdersAdmin() {
                     return revenueStatuses.includes(o.status);
                   })
                   .reduce((sum, o) => sum + (Number(o.total) || 0), 0)
-                  .toLocaleString()} دج
+                  .toLocaleString()} DZD
               </div>
             </div>
           </div>
@@ -432,7 +432,7 @@ export default function OrdersAdmin() {
                 onClick={() => setShowStatusManager(true)}
                 className="inline-flex items-center gap-1 rounded border border-purple-500/30 bg-purple-500/10 text-purple-600 px-3 py-2 text-sm font-bold hover:bg-purple-500/20 transition-colors h-9"
               >
-                <Settings className="h-4 w-4"/> الحالات
+                <Settings className="h-4 w-4"/> Statuses
               </button>
               <button className="inline-flex items-center gap-1 rounded border border-primary/30 bg-background px-3 py-2 text-sm font-bold hover:bg-primary/10 transition-colors h-9">
                 <Download className="h-4 w-4"/> {t('orders.download')}
@@ -454,7 +454,7 @@ export default function OrdersAdmin() {
                 : 'bg-background text-foreground hover:bg-primary/10'
             }`}
           >
-            الكل ({orders.length})
+            All ({orders.length})
           </button>
           {customStatuses.map(status => (
             <button
@@ -481,7 +481,7 @@ export default function OrdersAdmin() {
                 : 'bg-background text-foreground hover:bg-gray-500/10'
             }`}
           >
-            مؤرشفة ({orders.filter(o => o.status === 'failed' || o.status === 'cancelled').length})
+            Archived ({orders.filter(o => o.status === 'failed' || o.status === 'cancelled').length})
           </button>
         </div>
 
@@ -492,7 +492,7 @@ export default function OrdersAdmin() {
               <div className="inline-flex items-center justify-center">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
               </div>
-              <p className="mt-1 md:mt-2 text-muted-foreground text-xs">جاري تحميل الطلبات...</p>
+              <p className="mt-1 md:mt-2 text-muted-foreground text-xs">Loading orders...</p>
             </div>
           )}
 
@@ -500,14 +500,14 @@ export default function OrdersAdmin() {
           {error && !isLoading && (
             <div className="p-3 md:p-3 text-center">
               <div className="rounded bg-red-500/10 border border-red-500/30 p-2 md:p-3 mb-2">
-                <p className="text-red-600 font-semibold text-xs">⚠️ خطأ</p>
+                <p className="text-red-600 font-semibold text-xs">⚠️ Error</p>
                 <p className="text-red-600 text-xs mt-1">{error}</p>
               </div>
               <button
                 onClick={() => loadOrders()}
                 className="inline-flex items-center gap-1 rounded bg-primary text-white px-2 py-1 text-xs font-medium hover:bg-primary/90 transition-colors h-8"
               >
-                إعادة المحاولة
+                Retry
               </button>
             </div>
           )}
@@ -516,13 +516,13 @@ export default function OrdersAdmin() {
           {!isLoading && !error && orders.length === 0 && (
             <div className="p-6 md:p-8 text-center">
               <div className="text-lg mb-2">📭</div>
-              <p className="text-xs md:text-sm font-semibold text-muted-foreground mb-1">لا توجد طلبات</p>
-              <p className="text-xs text-muted-foreground mb-2">لم يتم تلقي أي طلبات حتى الآن</p>
+              <p className="text-xs md:text-sm font-semibold text-muted-foreground mb-1">No orders</p>
+              <p className="text-xs text-muted-foreground mb-2">No orders received yet</p>
               <button
                 onClick={() => setShowAddOrder(true)}
                 className="inline-flex items-center gap-1 rounded bg-green-500 text-white px-2 py-1 text-xs font-medium hover:bg-green-600 transition-colors h-8"
               >
-                <Plus className="h-3 w-3"/> إضافة طلب جديد
+                <Plus className="h-3 w-3"/> Add new order
               </button>
             </div>
           )}
@@ -531,8 +531,8 @@ export default function OrdersAdmin() {
           {!isLoading && !error && orders.length > 0 && getFilteredOrders().length === 0 && (
             <div className="p-6 md:p-8 text-center">
               <div className="text-lg mb-2">🔍</div>
-              <p className="text-xs md:text-sm font-semibold text-muted-foreground mb-1">لا توجد طلبات في هذه الفئة</p>
-              <p className="text-xs text-muted-foreground">جرب تغيير الفلتر</p>
+              <p className="text-xs md:text-sm font-semibold text-muted-foreground mb-1">No orders in this category</p>
+              <p className="text-xs text-muted-foreground">Try changing the filter</p>
             </div>
           )}
 
@@ -560,7 +560,7 @@ export default function OrdersAdmin() {
                     <td className="whitespace-nowrap p-2 text-right text-sm font-semibold">{o.customer}</td>
                     <td className="whitespace-nowrap p-2 text-right">
                       <span className="font-bold bg-gradient-to-r from-accent to-orange-500 bg-clip-text text-transparent text-sm">
-                        {o.total} دج
+                        {o.total} DZD
                       </span>
                     </td>
                     <td className="whitespace-nowrap p-2 text-right">
@@ -613,28 +613,28 @@ export default function OrdersAdmin() {
                           {/* Order Details Grid */}
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                             <div className="bg-background rounded p-2 border border-border/50">
-                              <div className="text-sm font-semibold text-muted-foreground mb-0.5">رقم الطلب</div>
+                              <div className="text-sm font-semibold text-muted-foreground mb-0.5">Order Number</div>
                               <div className="font-bold text-sm">{o.id}</div>
                             </div>
                             <div className="bg-background rounded p-2 border border-border/50">
-                              <div className="text-sm font-semibold text-muted-foreground mb-0.5">اسم العميل</div>
+                              <div className="text-sm font-semibold text-muted-foreground mb-0.5">Customer Name</div>
                               <div className="font-bold text-sm">{o.customer}</div>
                             </div>
                             <div className="bg-background rounded p-2 border border-border/50">
-                              <div className="text-sm font-semibold text-muted-foreground mb-0.5">رقم الهاتف</div>
-                              <div className="font-bold text-sm">{o.phone || 'غير متوفر'}</div>
+                              <div className="text-sm font-semibold text-muted-foreground mb-0.5">Phone Number</div>
+                              <div className="font-bold text-sm">{o.phone || 'Not available'}</div>
                             </div>
                             <div className="bg-background rounded p-2 border border-border/50">
-                              <div className="text-sm font-semibold text-muted-foreground mb-0.5">البريد الإلكتروني</div>
-                              <div className="font-bold text-sm">{o.email || 'غير متوفر'}</div>
+                              <div className="text-sm font-semibold text-muted-foreground mb-0.5">Email</div>
+                              <div className="font-bold text-sm">{o.email || 'Not available'}</div>
                             </div>
                             <div className="bg-background rounded p-2 border border-border/50">
-                              <div className="text-sm font-semibold text-muted-foreground mb-0.5">العنوان</div>
-                              <div className="font-bold text-sm">{o.address || 'غير متوفر'}</div>
+                              <div className="text-sm font-semibold text-muted-foreground mb-0.5">Address</div>
+                              <div className="font-bold text-sm">{o.address || 'Not available'}</div>
                             </div>
                             <div className="bg-background rounded p-2 border border-border/50">
-                              <div className="text-sm font-semibold text-muted-foreground mb-0.5">المنتج</div>
-                              <div className="font-bold text-sm">{o.product_title || 'غير متوفر'}</div>
+                              <div className="text-sm font-semibold text-muted-foreground mb-0.5">Product</div>
+                              <div className="font-bold text-sm">{o.product_title || 'Not available'}</div>
                             </div>
                           </div>
 
@@ -658,7 +658,7 @@ export default function OrdersAdmin() {
                               onClick={() => setStatus(o.id, 'cancelled')} 
                               className="inline-flex items-center rounded bg-gradient-to-r from-red-500 to-red-600 px-3 py-2 text-sm font-bold text-white hover:from-red-600 hover:to-red-700 transition-colors shadow h-9"
                             >
-                              ✕ إلغاء الطلب
+                              ✕ Cancel Order
                             </button>
                           </div>
                         </div>
@@ -697,21 +697,21 @@ export default function OrdersAdmin() {
       {showAddOrder && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2">
           <div className="bg-card rounded-lg border border-primary/20 shadow-xl max-w-xs w-full p-3 space-y-2">
-            <h2 className="text-lg font-bold">إضافة طلب جديد</h2>
+            <h2 className="text-lg font-bold">Add New Order</h2>
             
             <div>
-              <label className="text-sm font-bold">اسم العميل *</label>
+              <label className="text-sm font-bold">Customer Name *</label>
               <input
                 type="text"
                 value={newOrder.customer_name}
                 onChange={(e) => setNewOrder({...newOrder, customer_name: e.target.value})}
                 className="w-full mt-0.5 px-2 py-1 rounded border border-border/50 bg-background focus:outline-none focus:ring-1 focus:ring-primary h-9 text-sm"
-                placeholder="أدخل اسم العميل"
+                placeholder="Enter customer name"
               />
             </div>
 
             <div>
-              <label className="text-sm font-bold">رقم الهاتف</label>
+              <label className="text-sm font-bold">Phone Number</label>
               <input
                 type="tel"
                 value={newOrder.customer_phone}
@@ -722,7 +722,7 @@ export default function OrdersAdmin() {
             </div>
 
             <div>
-              <label className="text-sm font-bold">البريد الإلكتروني</label>
+              <label className="text-sm font-bold">Email</label>
               <input
                 type="email"
                 value={newOrder.customer_email}
@@ -733,18 +733,18 @@ export default function OrdersAdmin() {
             </div>
 
             <div>
-              <label className="text-sm font-bold">العنوان</label>
+              <label className="text-sm font-bold">Address</label>
               <input
                 type="text"
                 value={newOrder.customer_address}
                 onChange={(e) => setNewOrder({...newOrder, customer_address: e.target.value})}
                 className="w-full mt-0.5 px-2 py-1 rounded border border-border/50 bg-background focus:outline-none focus:ring-1 focus:ring-primary h-9 text-sm"
-                placeholder="أدخل العنوان"
+                placeholder="Enter address"
               />
             </div>
 
             <div>
-              <label className="text-sm font-bold">المجموع *</label>
+              <label className="text-sm font-bold">Total *</label>
               <input
                 type="number"
                 value={newOrder.total_price}
@@ -760,13 +760,13 @@ export default function OrdersAdmin() {
                 onClick={() => setShowAddOrder(false)}
                 className="flex-1 px-3 py-2 rounded border border-primary/30 hover:bg-primary/10 transition-colors text-sm h-9 font-bold"
               >
-                إلغاء
+                Cancel
               </button>
               <button
                 onClick={handleAddOrder}
                 className="flex-1 px-3 py-2 rounded bg-gradient-to-r from-green-500 to-green-600 text-white text-sm font-bold hover:from-green-600 hover:to-green-700 transition-colors shadow h-9"
               >
-                إضافة الطلب
+                Add Order
               </button>
             </div>
           </div>
@@ -778,7 +778,7 @@ export default function OrdersAdmin() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2">
           <div className="bg-card rounded-lg border border-primary/20 shadow-xl max-w-md w-full p-4 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold">إدارة حالات الطلبات</h2>
+              <h2 className="text-lg font-bold">Manage Order Statuses</h2>
               <button 
                 onClick={() => setShowStatusManager(false)}
                 className="p-1 rounded hover:bg-muted"
@@ -789,7 +789,7 @@ export default function OrdersAdmin() {
             
             {/* Existing Statuses */}
             <div className="space-y-2">
-              <h3 className="text-sm font-bold text-muted-foreground">الحالات الحالية</h3>
+              <h3 className="text-sm font-bold text-muted-foreground">Current Statuses</h3>
               {customStatuses.map(status => (
                 <div 
                   key={status.id}
@@ -804,7 +804,7 @@ export default function OrdersAdmin() {
                     </div>
                     <span className="font-bold">{status.name}</span>
                     {status.counts_as_revenue && (
-                      <span className="text-xs bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded">💰 إيراد</span>
+                      <span className="text-xs bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded">💰 Revenue</span>
                     )}
                   </div>
                   {!status.is_default && (
@@ -821,14 +821,14 @@ export default function OrdersAdmin() {
 
             {/* Add New Status */}
             <div className="space-y-3 pt-3 border-t border-border/50">
-              <h3 className="text-sm font-bold text-muted-foreground">إضافة حالة جديدة</h3>
+              <h3 className="text-sm font-bold text-muted-foreground">Add New Status</h3>
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={newStatusName}
                   onChange={(e) => setNewStatusName(e.target.value)}
                   className="flex-1 px-3 py-2 rounded border border-border/50 bg-background focus:outline-none focus:ring-1 focus:ring-primary text-sm"
-                  placeholder="اسم الحالة"
+                  placeholder="Status name"
                 />
                 <input
                   type="color"
@@ -860,14 +860,14 @@ export default function OrdersAdmin() {
                   onChange={(e) => setNewStatusCountsAsRevenue(e.target.checked)}
                   className="w-4 h-4 rounded border-border accent-green-500"
                 />
-                <span className="text-sm">💰 احتساب كإيراد (الطلبات بهذه الحالة تُحسب في الإيرادات)</span>
+                <span className="text-sm">💰 Count as revenue (orders with this status count toward revenue)</span>
               </label>
               <button
                 onClick={handleAddStatus}
                 disabled={!newStatusName.trim()}
                 className="w-full px-3 py-2 rounded bg-gradient-to-r from-purple-500 to-purple-600 text-white text-sm font-bold hover:from-purple-600 hover:to-purple-700 transition-colors shadow disabled:opacity-50"
               >
-                <Plus className="h-4 w-4 inline mr-1" /> إضافة الحالة
+                <Plus className="h-4 w-4 inline mr-1" /> Add Status
               </button>
             </div>
           </div>

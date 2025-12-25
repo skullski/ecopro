@@ -49,7 +49,7 @@ export default function Header() {
                 <span className="text-base sm:text-lg font-black text-foreground drop-shadow bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                   {t("brand")}
                 </span>
-                <div className="text-[9px] text-foreground/70 font-semibold -mt-0.5">منصة التجارة</div>
+                <div className="text-[9px] text-foreground/70 font-semibold -mt-0.5">E-commerce Platform</div>
               </div>
             </Link>
 
@@ -124,7 +124,7 @@ export default function Header() {
               {/* Theme Toggle */}
               <button 
                 onClick={toggle} 
-                aria-label="تبديل الوضع"
+                aria-label="Toggle Theme"
                 className="p-1.5 rounded-md border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-all"
               >
                 {theme === "dark" ? (
@@ -193,7 +193,7 @@ export default function Header() {
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="lg:hidden p-1.5 rounded-md border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-all"
-                aria-label="القائمة"
+                aria-label="Menu"
               >
                 {mobileMenuOpen ? (
                   <X className="w-5 h-5" />

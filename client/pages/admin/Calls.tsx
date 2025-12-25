@@ -37,30 +37,30 @@ export default function CallsAdmin(){
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-4">قائمة المكالمات</h2>
+      <h2 className="text-2xl font-bold mb-4">Call List</h2>
       <div className="rounded-lg border bg-card p-4 mb-4">
-        <h3 className="font-bold">جدولة مكالمة جديدة</h3>
+        <h3 className="font-bold">Schedule New Call</h3>
         <div className="mt-2 grid gap-2 max-w-md">
           <input 
-            placeholder="اسم الزبون" 
+            placeholder="Customer Name" 
             value={customer} 
             onChange={(e)=>setCustomer(e.target.value)} 
             className="rounded-md border bg-background px-3 py-2" 
           />
           <input 
-            placeholder="اسم المنتج" 
+            placeholder="Product Name" 
             value={product} 
             onChange={(e)=>setProduct(e.target.value)} 
             className="rounded-md border bg-background px-3 py-2" 
           />
           <div className="flex items-center gap-2">
-            <button onClick={queueCall} className="rounded-md bg-primary px-4 py-2 text-primary-foreground">جدولة</button>
+            <button onClick={queueCall} className="rounded-md bg-primary px-4 py-2 text-primary-foreground">Schedule</button>
           </div>
         </div>
       </div>
 
       <div>
-        {!calls.length && <div className="text-muted-foreground">لا توجد مكالمات مجدولة حالياً</div>}
+        {!calls.length && <div className="text-muted-foreground">No scheduled calls at the moment</div>}
         <div className="mt-4 space-y-3">
           {calls.map(c=> (
             <div key={c.id} className="rounded-md border bg-card p-3 flex items-center justify-between">
@@ -69,8 +69,8 @@ export default function CallsAdmin(){
                 <div className="text-sm text-muted-foreground">{c.status}</div>
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={()=>simulateCall(c.id)} className="rounded-md border bg-background hover:bg-muted px-3 py-1 text-sm">محاكاة المكالمة</button>
-                <button onClick={()=>remove(c.id)} className="rounded-md border bg-background hover:bg-muted px-3 py-1 text-sm">حذف</button>
+                <button onClick={()=>simulateCall(c.id)} className="rounded-md border bg-background hover:bg-muted px-3 py-1 text-sm">Simulate Call</button>
+                <button onClick={()=>remove(c.id)} className="rounded-md border bg-background hover:bg-muted px-3 py-1 text-sm">Delete</button>
               </div>
             </div>
           ))}

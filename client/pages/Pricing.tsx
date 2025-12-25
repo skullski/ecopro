@@ -28,7 +28,7 @@ const PLANS = [
     id: 'pro',
     name: 'Professional',
     description: 'For growing businesses',
-    price: '2,500 دج',
+    price: '2,500 DZD',
     priceSub: 'or $10/month',
     icon: Rocket,
     color: 'from-indigo-600 to-cyan-600',
