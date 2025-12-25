@@ -486,21 +486,51 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
 
         if (botRes.rows.length > 0 && botRes.rows[0].telegram_bot_token) {
           const botToken = botRes.rows[0].telegram_bot_token;
-          const template = botRes.rows[0].template_order_confirmation || 
-            'شكراً لطلبك يا {customerName}! 🎉\n\n📦 تفاصيل طلبك:\n• المنتج: {productName}\n• السعر: {price} دج\n• رقم الطلب: #{orderId}\n\n✅ تم استلام طلبك وسنتواصل معك قريباً للتأكيد.\n\n🚚 سيتم التوصيل خلال 2-5 أيام';
           
-          const message = replaceTemplateVariables(template, {
-            customerName: customer_name,
-            productName: productTitle,
-            price: total_price,
-            orderId: result.rows[0].id,
-            storeName: storeName,
-          });
+          // Detailed order confirmation message
+          const orderMessage = `🎉 شكراً لك يا ${customer_name}!
 
-          // Send immediate Telegram message
-          sendTelegramMessage(botToken, chatId, message).catch((err) => {
-            console.error('[createPublicStoreOrder] Failed to send Telegram notification:', err);
-          });
+تم استلام طلبك بنجاح ✅
+
+━━━━━━━━━━━━━━━━
+📦 تفاصيل الطلب
+━━━━━━━━━━━━━━━━
+🔢 رقم الطلب: #${result.rows[0].id}
+📱 المنتج: ${productTitle}
+💰 السعر: ${total_price.toLocaleString()} دج
+📍 الكمية: ${quantity}
+
+━━━━━━━━━━━━━━━━
+👤 معلومات التوصيل
+━━━━━━━━━━━━━━━━
+📛 الاسم: ${customer_name}
+📞 الهاتف: ${customer_phone || normalizedPhone}
+🏠 العنوان: ${customer_address || 'غير محدد'}
+
+━━━━━━━━━━━━━━━━
+🚚 حالة الطلب: قيد المعالجة
+━━━━━━━━━━━━━━━━
+
+سنتواصل معك قريباً للتأكيد 📞
+
+⭐ من ${storeName}`;
+
+          // Send order confirmation
+          const msgResult = await sendTelegramMessage(botToken, chatId, orderMessage);
+          
+          // Send pinning instruction as separate message
+          if (msgResult.success) {
+            await sendTelegramMessage(botToken, chatId, 
+              `📌 نصيحة مهمة:
+              
+اضغط مطولاً على الرسالة السابقة واختر "تثبيت" (Pin) لتتبع طلبك بسهولة!
+
+🔔 تأكد من:
+• تفعيل الإشعارات للبوت
+• عدم كتم صوت المحادثة
+• ستصلك تحديثات حالة الطلب هنا مباشرة`
+            );
+          }
 
           // Also create the order-telegram link for future use
           await pool.query(
