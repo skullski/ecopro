@@ -515,8 +515,24 @@ export default function AdminWasselniSettings() {
                     type="number"
                     min={1}
                     max={60}
-                    value={settings.telegramDelayMinutes || 5}
-                    onChange={(e) => updateSetting('telegramDelayMinutes', parseInt(e.target.value) || 5)}
+                    value={settings.telegramDelayMinutes ?? ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '') {
+                        updateSetting('telegramDelayMinutes', undefined);
+                      } else {
+                        const num = parseInt(val);
+                        if (!isNaN(num) && num >= 1 && num <= 60) {
+                          updateSetting('telegramDelayMinutes', num);
+                        }
+                      }
+                    }}
+                    onBlur={(e) => {
+                      // Set default on blur if empty
+                      if (!settings.telegramDelayMinutes) {
+                        updateSetting('telegramDelayMinutes', 5);
+                      }
+                    }}
                     className="w-24 bg-white dark:bg-slate-800 border-green-300 dark:border-green-700"
                   />
                   <span className="text-xs text-green-700 dark:text-green-400">
