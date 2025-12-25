@@ -52,6 +52,18 @@ function parseCallback(data: string | undefined | null): { action: 'approve' | '
   return null;
 }
 
+// Parse simple callback format: confirm_order_ID_CLIENTID or cancel_order_ID_CLIENTID
+function parseSimpleCallback(data: string | undefined | null): { action: 'confirm' | 'cancel'; orderId: number; clientId: number } | null {
+  if (!data) return null;
+  const match = data.match(/^(confirm|cancel)_order_(\d+)_(\d+)$/);
+  if (!match) return null;
+  return {
+    action: match[1] as 'confirm' | 'cancel',
+    orderId: parseInt(match[2], 10),
+    clientId: parseInt(match[3], 10)
+  };
+}
+
 function parseStartPayload(text: string | undefined | null): string | null {
   if (!text) return null;
   const trimmed = text.trim();
@@ -240,6 +252,63 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
       const chatId = cb?.message?.chat?.id != null ? String(cb.message.chat.id) : null;
       const data = cb?.data as string | undefined;
 
+      // Try simple callback format first (confirm_order_ID_CLIENTID)
+      const simpleCallback = parseSimpleCallback(data);
+      if (simpleCallback && callbackId && chatId) {
+        const { action, orderId, clientId: cbClientId } = simpleCallback;
+        
+        // Verify this callback is for the correct store
+        if (cbClientId !== clientId) {
+          await answerCallbackQuery({ botToken, callbackQueryId: callbackId, text: 'Invalid request' });
+          return res.status(200).json({ ok: true });
+        }
+
+        if (action === 'confirm') {
+          const upd = await pool.query(
+            `UPDATE store_orders SET status = 'confirmed', updated_at = NOW()
+             WHERE id = $1 AND client_id = $2 AND status IN ('pending')
+             RETURNING id`,
+            [orderId, clientId]
+          );
+          if (upd.rows.length) {
+            await pool.query(
+              `INSERT INTO order_confirmations (order_id, client_id, response_type, confirmed_via, confirmed_at)
+               VALUES ($1, $2, 'approved', 'telegram', NOW())
+               ON CONFLICT DO NOTHING`,
+              [orderId, clientId]
+            );
+            await answerCallbackQuery({ botToken, callbackQueryId: callbackId, text: 'تم التأكيد ✅' });
+            await sendTelegramMessage(botToken, chatId, '✅ تم تأكيد طلبك بنجاح!\n\nسنتواصل معك قريباً لترتيب التوصيل. شكراً لثقتك! 🙏');
+          } else {
+            await answerCallbackQuery({ botToken, callbackQueryId: callbackId, text: 'تم معالجته مسبقاً' });
+          }
+        }
+
+        if (action === 'cancel') {
+          const upd = await pool.query(
+            `UPDATE store_orders SET status = 'cancelled', updated_at = NOW()
+             WHERE id = $1 AND client_id = $2 AND status IN ('pending')
+             RETURNING id`,
+            [orderId, clientId]
+          );
+          if (upd.rows.length) {
+            await pool.query(
+              `INSERT INTO order_confirmations (order_id, client_id, response_type, confirmed_via, confirmed_at)
+               VALUES ($1, $2, 'declined', 'telegram', NOW())
+               ON CONFLICT DO NOTHING`,
+              [orderId, clientId]
+            );
+            await answerCallbackQuery({ botToken, callbackQueryId: callbackId, text: 'تم الإلغاء ❌' });
+            await sendTelegramMessage(botToken, chatId, '❌ تم إلغاء الطلب.\n\nإذا غيرت رأيك، يمكنك الطلب مرة أخرى من المتجر.');
+          } else {
+            await answerCallbackQuery({ botToken, callbackQueryId: callbackId, text: 'تم معالجته مسبقاً' });
+          }
+        }
+
+        return res.status(200).json({ ok: true });
+      }
+
+      // Fall back to old callback format (approve:token or decline:token)
       const parsed = parseCallback(data);
       if (!callbackId || !chatId || !parsed) {
         if (callbackId) await answerCallbackQuery({ botToken, callbackQueryId: callbackId, text: 'Invalid action' });

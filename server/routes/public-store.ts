@@ -544,8 +544,21 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
             storeName: storeName,
           });
 
-          // Send order confirmation
-          const msgResult = await sendTelegramMessage(botToken, chatId, orderMessage);
+          // Send order confirmation with confirm/cancel buttons
+          const orderId = result.rows[0].id;
+          const confirmCallback = `confirm_order_${orderId}_${clientId}`;
+          const cancelCallback = `cancel_order_${orderId}_${clientId}`;
+          
+          const msgResult = await sendTelegramMessage(botToken, chatId, orderMessage, {
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  { text: '✅ تأكيد الطلب', callback_data: confirmCallback },
+                  { text: '❌ إلغاء الطلب', callback_data: cancelCallback }
+                ]
+              ]
+            }
+          });
           console.log('[createPublicStoreOrder] Telegram send result:', msgResult);
           
           // Send pinning instruction as separate message
