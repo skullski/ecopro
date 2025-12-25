@@ -19,6 +19,7 @@ interface BotSettings {
   telegramBotToken?: string;
   telegramBotUsername?: string;
   telegramDelayMinutes?: number;
+  autoExpireHours?: number;
   viberAuthToken?: string;
   viberSenderName?: string;
   templateGreeting?: string;
@@ -48,6 +49,7 @@ export default function AdminWasselniSettings() {
     telegramBotToken: '',
     telegramBotUsername: '',
     telegramDelayMinutes: 5,
+    autoExpireHours: 24,
     viberAuthToken: '',
     viberSenderName: '',
     templateGreeting: `شكراً لطلبك من {storeName} يا {customerName}!\n\n✅ فعّل الإشعارات في Telegram باش توصلك رسالة التأكيد وتتبع الطلب.`,
@@ -536,6 +538,43 @@ export default function AdminWasselniSettings() {
                   />
                   <span className="text-xs text-green-700 dark:text-green-400">
                     Send confirmation buttons {settings.telegramDelayMinutes || 5} minutes after order
+                  </span>
+                </div>
+              </div>
+              
+              {/* Auto-Expire Setting */}
+              <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
+                <Label className="text-sm font-semibold text-red-800 dark:text-red-300 mb-2 block">
+                  ⏱️ Auto-Expire to "Didn't Pickup" (hours)
+                </Label>
+                <p className="text-xs text-red-600 dark:text-red-400 mb-2">
+                  If buyer doesn't respond and order is still pending, auto-change to "didn't pickup"
+                </p>
+                <div className="flex items-center gap-3">
+                  <Input
+                    type="number"
+                    min={1}
+                    value={settings.autoExpireHours ?? ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '') {
+                        updateSetting('autoExpireHours', undefined);
+                      } else {
+                        const num = parseInt(val);
+                        if (!isNaN(num) && num >= 1) {
+                          updateSetting('autoExpireHours', num);
+                        }
+                      }
+                    }}
+                    onBlur={() => {
+                      if (!settings.autoExpireHours) {
+                        updateSetting('autoExpireHours', 24);
+                      }
+                    }}
+                    className="w-24 bg-white dark:bg-slate-800 border-red-300 dark:border-red-700"
+                  />
+                  <span className="text-xs text-red-700 dark:text-red-400">
+                    Auto-expire after {settings.autoExpireHours || 24} hours if no response
                   </span>
                 </div>
               </div>

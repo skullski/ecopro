@@ -107,9 +107,70 @@ export async function processScheduledMessages(): Promise<void> {
 }
 
 /**
+ * Process expired orders - auto-change to "didnt_pickup" if:
+ * - Order is still "pending"
+ * - Confirmation message was sent more than X hours ago
+ * - Owner hasn't changed the status
+ */
+export async function processExpiredOrders(): Promise<void> {
+  try {
+    const pool = await ensureConnection();
+    
+    // Get all clients with their auto_expire_hours settings
+    const clientsResult = await pool.query(
+      `SELECT client_id, auto_expire_hours 
+       FROM bot_settings 
+       WHERE enabled = true AND auto_expire_hours IS NOT NULL AND auto_expire_hours > 0`
+    );
+    
+    if (clientsResult.rows.length === 0) {
+      return;
+    }
+    
+    for (const client of clientsResult.rows) {
+      const expireHours = client.auto_expire_hours || 24;
+      
+      // Find orders that:
+      // 1. Belong to this client
+      // 2. Are still "pending"
+      // 3. Have a confirmation message that was sent more than X hours ago
+      const expiredOrders = await pool.query(
+        `SELECT so.id, so.customer_name, sm.sent_at
+         FROM store_orders so
+         INNER JOIN scheduled_messages sm ON so.id = sm.order_id
+         WHERE so.client_id = $1
+           AND so.status = 'pending'
+           AND sm.status = 'sent'
+           AND sm.message_type = 'order_confirmation'
+           AND sm.sent_at < NOW() - INTERVAL '1 hour' * $2`,
+        [client.client_id, expireHours]
+      );
+      
+      if (expiredOrders.rows.length > 0) {
+        console.log(`[AutoExpire] Found ${expiredOrders.rows.length} expired orders for client ${client.client_id}`);
+        
+        for (const order of expiredOrders.rows) {
+          // Update order status to "didnt_pickup"
+          await pool.query(
+            `UPDATE store_orders SET status = 'didnt_pickup', updated_at = NOW() WHERE id = $1`,
+            [order.id]
+          );
+          console.log(`[AutoExpire] Order ${order.id} auto-expired to didnt_pickup (no response after ${expireHours}h)`);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('[AutoExpire] Error processing expired orders:', error);
+  }
+}
+
+/**
  * Start the scheduled message worker
  * Runs every 30 seconds to check for messages to send
+ * Also checks for expired orders every 5 minutes
  */
+let expireCheckCounter = 0;
+
 export function startScheduledMessageWorker(): void {
   if (workerInterval) {
     console.log('[ScheduledMessages] Worker already running');
@@ -120,10 +181,18 @@ export function startScheduledMessageWorker(): void {
   
   // Run immediately on start
   processScheduledMessages().catch(console.error);
+  processExpiredOrders().catch(console.error);
   
   // Then run every 30 seconds
   workerInterval = setInterval(() => {
     processScheduledMessages().catch(console.error);
+    
+    // Check for expired orders every 10 intervals (5 minutes)
+    expireCheckCounter++;
+    if (expireCheckCounter >= 10) {
+      expireCheckCounter = 0;
+      processExpiredOrders().catch(console.error);
+    }
   }, 30 * 1000);
 }
 
