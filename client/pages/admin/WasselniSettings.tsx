@@ -514,7 +514,6 @@ export default function AdminWasselniSettings() {
                   <Input
                     type="number"
                     min={1}
-                    max={60}
                     value={settings.telegramDelayMinutes ?? ''}
                     onChange={(e) => {
                       const val = e.target.value;
@@ -522,7 +521,7 @@ export default function AdminWasselniSettings() {
                         updateSetting('telegramDelayMinutes', undefined);
                       } else {
                         const num = parseInt(val);
-                        if (!isNaN(num) && num >= 1 && num <= 60) {
+                        if (!isNaN(num) && num >= 1) {
                           updateSetting('telegramDelayMinutes', num);
                         }
                       }
