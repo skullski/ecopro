@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /platform-admin/
+
+# Security: Don't reveal admin paths
+# Just block crawlers from API and admin areas
