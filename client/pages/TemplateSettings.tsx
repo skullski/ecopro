@@ -953,6 +953,19 @@ export default function TemplateSettingsPage() {
     };
   }, [baseConfig, template]);
 
+  const basicSections = useMemo(() => {
+    const sections = (config.sections || []) as any[];
+    const keywords = ['Branding', 'Header', 'Categories', 'Theme', 'Layout', 'Typography', 'Footer'];
+    return sections
+      .filter((s) => {
+        const title = String(s?.title || '');
+        if (!title) return false;
+        if (title.includes('Auto-detected')) return false;
+        return keywords.some((k) => title.includes(k));
+      })
+      .slice(0, 8);
+  }, [config.sections]);
+
   if (loading) {
     return (
       <div className={`min-h-screen flex items-center justify-center ${isDarkMode ? 'bg-black' : 'bg-gray-50'}`}>
@@ -1244,153 +1257,113 @@ export default function TemplateSettingsPage() {
           )}
         </div>
 
-        {/* Template-Specific Sections - Left Half */}
-        {config.sections?.slice(0, Math.ceil(config.sections.length / 2)).map((section: any, idx: number) => (
-          <div key={idx} className={`border rounded-lg overflow-hidden transition-colors ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-            <button
-              onClick={() => setExpandedSections(prev => ({ ...prev, [idx]: !prev[idx] }))}
-              className={`w-full px-2 md:px-3 py-2 font-semibold text-left flex items-center justify-between transition-colors ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-50 hover:bg-gray-100 text-gray-900'}`}
-            >
-              <div className="text-left">
-                <h3 className="text-base">{section.title}</h3>
-                {section.description && (
-                  <p className={`text-xs font-normal mt-0 transition-colors ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{section.description}</p>
-                )}
-              </div>
-              <ChevronDown className={`w-5 h-5 transform transition-transform ${expandedSections[idx] ? 'rotate-180' : ''}`} />
-            </button>
-            {expandedSections[idx] && (
-              <div className={`p-2 md:p-3 space-y-2 md:space-y-3 transition-colors ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                {section.fields?.map((field: any) => (
-                  <div key={field.key}>
-                    <label className={`block text-sm font-medium mb-1 transition-colors ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>{field.label}</label>
-                    {field.type === 'color' && (
-                      <div className="flex gap-2">
-                        <input
-                          type="color"
-                          value={(effectiveSettings[field.key as keyof TemplateSettings] as string) || '#000000'}
-                          onChange={(e) => handleChange(field.key, e.target.value)}
-                          className={`w-12 h-10 rounded cursor-pointer transition-colors ${isDarkMode ? 'border border-gray-600' : 'border border-gray-300'}`}
-                        />
-                        <Input
-                          value={(effectiveSettings[field.key as keyof TemplateSettings] as string) || ''}
-                          onChange={(e) => handleChange(field.key, e.target.value)}
-                          placeholder="#000000"
-                          className={isDarkMode ? 'dark' : ''}
-                        />
-                      </div>
-                    )}
-                    {field.type === 'checkbox' && (
-                      <input
-                        type="checkbox"
-                        checked={!!effectiveSettings[field.key as keyof TemplateSettings]}
-                        onChange={(e) => handleChange(field.key, e.target.checked)}
-                        className="w-4 h-4"
-                      />
-                    )}
-                    {field.type === 'select' && (
-                      <select
-                        value={(effectiveSettings[field.key as keyof TemplateSettings] as string) || field.placeholder || ''}
-                        onChange={(e) => handleChange(field.key, e.target.value)}
-                        className={`w-full h-10 px-3 rounded-md text-sm transition-colors ${
-                          isDarkMode
-                            ? 'bg-gray-700 border border-gray-600 text-white'
-                            : 'bg-white border border-gray-300 text-gray-900'
-                        }`}
-                      >
-                        {(field.options || []).map((opt: string) => (
-                          <option key={opt} value={opt}>
-                            {opt}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                    {field.type === 'number' && (
-                      <Input
-                        type="number"
-                        value={(effectiveSettings[field.key as keyof TemplateSettings] ?? field.placeholder ?? '') as any}
-                        onChange={(e) => handleChange(field.key, parseInt(e.target.value))}
-                        min={field.min}
-                        max={field.max}
-                        placeholder={field.placeholder}
-                        className={isDarkMode ? 'dark' : ''}
-                      />
-                    )}
-                    {field.type === 'textarea' && (
-                      <>
-                        {field.key === 'template_categories' ? (
-                          <CategoryManager 
-                            categories={effectiveSettings.template_categories} 
-                            onChange={(cats) => handleChange('template_categories', cats)}
-                            isDarkMode={isDarkMode}
+        {/* Template Sections (Basic only for now) */}
+        {basicSections.map((section: any, idx: number) => {
+          const key = `basic_${idx}`;
+          return (
+            <div key={key} className={`border rounded-lg overflow-hidden transition-colors ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+              <button
+                onClick={() => setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }))}
+                className={`w-full px-2 md:px-3 py-2 font-semibold text-left flex items-center justify-between transition-colors ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-50 hover:bg-gray-100 text-gray-900'}`}
+              >
+                <div className="text-left">
+                  <h3 className="text-base">{section.title}</h3>
+                  {section.description && (
+                    <p className={`text-xs font-normal mt-0 transition-colors ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{section.description}</p>
+                  )}
+                </div>
+                <ChevronDown className={`w-5 h-5 transform transition-transform ${expandedSections[key] ? 'rotate-180' : ''}`} />
+              </button>
+              {expandedSections[key] && (
+                <div className={`p-2 md:p-3 space-y-2 md:space-y-3 transition-colors ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+                  {section.fields?.map((field: any) => (
+                    <div key={field.key}>
+                      <label className={`block text-sm font-medium mb-1 transition-colors ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>{field.label}</label>
+                      {field.type === 'color' && (
+                        <div className="flex gap-2">
+                          <input
+                            type="color"
+                            value={(effectiveSettings[field.key as keyof TemplateSettings] as string) || '#000000'}
+                            onChange={(e) => handleChange(field.key, e.target.value)}
+                            className={`w-12 h-10 rounded cursor-pointer transition-colors ${isDarkMode ? 'border border-gray-600' : 'border border-gray-300'}`}
                           />
-                        ) : (
-                          <textarea
+                          <Input
                             value={(effectiveSettings[field.key as keyof TemplateSettings] as string) || ''}
                             onChange={(e) => handleChange(field.key, e.target.value)}
-                            placeholder={field.placeholder}
-                            className={`w-full p-2 rounded text-sm font-mono resize-vertical min-h-24 transition-colors ${isDarkMode ? 'bg-gray-700 border border-gray-600 text-white' : 'bg-white border border-gray-300 text-gray-900'}`}
+                            placeholder="#000000"
+                            className={isDarkMode ? 'dark' : ''}
                           />
-                        )}
-                      </>
-                    )}
-                    {field.type === 'image' && (
-                      <div className="flex gap-2">
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              try {
-                                console.log('Uploading file:', file.name, file.size);
-                                const res = await uploadImage(file);
-                                console.log('Upload response:', res);
-                                handleChange(field.key, res.url);
-                                setMessage({ type: 'success', text: 'Image uploaded successfully' });
-                                setTimeout(() => setMessage(null), 3000);
-                              } catch (err) {
-                                console.error('Upload error:', err);
-                                const errorMsg = err instanceof Error ? err.message : 'Failed to upload image';
-                                setMessage({ type: 'error', text: errorMsg });
-                                setTimeout(() => setMessage(null), 5000);
-                              }
-                            }
-                          }}
-                          className={`flex-1 ${isDarkMode ? 'dark' : ''}`}
+                        </div>
+                      )}
+                      {field.type === 'checkbox' && (
+                        <input
+                          type="checkbox"
+                          checked={!!effectiveSettings[field.key as keyof TemplateSettings]}
+                          onChange={(e) => handleChange(field.key, e.target.checked)}
+                          className="w-4 h-4"
                         />
-                        {(effectiveSettings[field.key as keyof TemplateSettings] as string) && (
-                          <img
-                            src={(effectiveSettings[field.key as keyof TemplateSettings] as string) || ''}
-                            alt="preview"
-                            className="w-12 h-12 object-cover rounded border"
-                          />
-                        )}
-                      </div>
-                    )}
-                    {field.type === 'video' && (
-                      <div className="space-y-2">
+                      )}
+                      {field.type === 'select' && (
+                        <select
+                          value={(effectiveSettings[field.key as keyof TemplateSettings] as string) || field.placeholder || ''}
+                          onChange={(e) => handleChange(field.key, e.target.value)}
+                          className={`w-full h-10 px-3 rounded-md text-sm transition-colors ${
+                            isDarkMode
+                              ? 'bg-gray-700 border border-gray-600 text-white'
+                              : 'bg-white border border-gray-300 text-gray-900'
+                          }`}
+                        >
+                          {(field.options || []).map((opt: string) => (
+                            <option key={opt} value={opt}>
+                              {opt}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      {field.type === 'number' && (
+                        <Input
+                          type="number"
+                          value={(effectiveSettings[field.key as keyof TemplateSettings] ?? field.placeholder ?? '') as any}
+                          onChange={(e) => handleChange(field.key, parseInt(e.target.value))}
+                          min={field.min}
+                          max={field.max}
+                          placeholder={field.placeholder}
+                          className={isDarkMode ? 'dark' : ''}
+                        />
+                      )}
+                      {field.type === 'textarea' && (
+                        <>
+                          {field.key === 'template_categories' ? (
+                            <CategoryManager
+                              categories={effectiveSettings.template_categories}
+                              onChange={(cats) => handleChange('template_categories', cats)}
+                              isDarkMode={isDarkMode}
+                            />
+                          ) : (
+                            <textarea
+                              value={(effectiveSettings[field.key as keyof TemplateSettings] as string) || ''}
+                              onChange={(e) => handleChange(field.key, e.target.value)}
+                              placeholder={field.placeholder}
+                              className={`w-full p-2 rounded text-sm font-mono resize-vertical min-h-24 transition-colors ${isDarkMode ? 'bg-gray-700 border border-gray-600 text-white' : 'bg-white border border-gray-300 text-gray-900'}`}
+                            />
+                          )}
+                        </>
+                      )}
+                      {field.type === 'image' && (
                         <div className="flex gap-2">
                           <Input
                             type="file"
-                            accept="video/mp4,video/webm,video/ogg"
+                            accept="image/*"
                             onChange={async (e) => {
                               const file = e.target.files?.[0];
                               if (file) {
-                                if (file.size > 50 * 1024 * 1024) {
-                                  setMessage({ type: 'error', text: 'Video must be under 50MB' });
-                                  setTimeout(() => setMessage(null), 5000);
-                                  return;
-                                }
                                 try {
-                                  setMessage({ type: 'success', text: 'Uploading video...' });
                                   const res = await uploadImage(file);
                                   handleChange(field.key, res.url);
-                                  setMessage({ type: 'success', text: 'Video uploaded successfully' });
+                                  setMessage({ type: 'success', text: 'Image uploaded successfully' });
                                   setTimeout(() => setMessage(null), 3000);
                                 } catch (err) {
-                                  console.error('Video upload error:', err);
-                                  const errorMsg = err instanceof Error ? err.message : 'Failed to upload video';
+                                  const errorMsg = err instanceof Error ? err.message : 'Failed to upload image';
                                   setMessage({ type: 'error', text: errorMsg });
                                   setTimeout(() => setMessage(null), 5000);
                                 }
@@ -1399,50 +1372,37 @@ export default function TemplateSettingsPage() {
                             className={`flex-1 ${isDarkMode ? 'dark' : ''}`}
                           />
                           {(effectiveSettings[field.key as keyof TemplateSettings] as string) && (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleChange(field.key, '')}
-                              className="text-red-500 hover:text-red-600"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            <img
+                              src={(effectiveSettings[field.key as keyof TemplateSettings] as string) || ''}
+                              alt="preview"
+                              className="w-12 h-12 object-cover rounded border"
+                            />
                           )}
                         </div>
-                        {(effectiveSettings[field.key as keyof TemplateSettings] as string) && (
-                          <video
-                            src={(effectiveSettings[field.key as keyof TemplateSettings] as string) || ''}
-                            className="w-full max-w-xs h-24 object-cover rounded border"
-                            controls
-                            muted
-                          />
-                        )}
-                        <p className="text-xs text-muted-foreground">Max 50MB. MP4/WebM recommended. Video will autoplay muted.</p>
-                      </div>
-                    )}
-                    {['text', 'url'].includes(field.type) && (
-                      <Input
-                        type={field.type}
-                        value={(effectiveSettings[field.key as keyof TemplateSettings] as string) || ''}
-                        onChange={(e) => handleChange(field.key, e.target.value)}
-                        placeholder={field.placeholder}
-                        className={isDarkMode ? 'dark' : ''}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+                      )}
+                      {['text', 'url'].includes(field.type) && (
+                        <Input
+                          type={field.type}
+                          value={(effectiveSettings[field.key as keyof TemplateSettings] as string) || ''}
+                          onChange={(e) => handleChange(field.key, e.target.value)}
+                          placeholder={field.placeholder}
+                          className={isDarkMode ? 'dark' : ''}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
         </div>
 
         {/* Center Column - Preview */}
         <div className="lg:col-span-3">
           <div className="sticky top-2 space-y-2">
             <h3 className={`font-bold text-base md:text-lg transition-colors ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Template Preview</h3>
-            <div className={`border rounded-lg overflow-hidden transition-colors ${isDarkMode ? 'bg-black border-gray-700' : 'bg-white border-gray-200'}`}>
+            <div className={`border rounded-lg overflow-hidden transition-colors ${isDarkMode ? 'bg-black border-gray-700' : 'bg-white border-gray-200'} max-h-[520px]`}> 
               {templateComponents[template] ? (
                 React.createElement(templateComponents[template], {
                   products: products.length > 0 ? products : [],
@@ -1460,152 +1420,8 @@ export default function TemplateSettingsPage() {
           </div>
         </div>
 
-        {/* Right Column - Settings (Second Half) + Actions */}
+        {/* Right Column - Actions */}
         <div className="lg:col-span-1 space-y-2">
-          {/* Template-Specific Sections - Right Half */}
-          {config.sections?.slice(Math.ceil(config.sections.length / 2)).map((section: any, idx: number) => {
-            const actualIdx = Math.ceil(config.sections.length / 2) + idx;
-            return (
-              <div key={actualIdx} className={`border rounded-lg overflow-hidden transition-colors ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                <button
-                  onClick={() => setExpandedSections(prev => ({ ...prev, [actualIdx]: !prev[actualIdx] }))}
-                  className={`w-full px-2 md:px-3 py-2 font-semibold text-left flex items-center justify-between transition-colors ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-50 hover:bg-gray-100 text-gray-900'}`}
-                >
-                  <div className="text-left">
-                    <h3 className="text-base">{section.title}</h3>
-                    {section.description && (
-                      <p className={`text-xs font-normal mt-0 transition-colors ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{section.description}</p>
-                    )}
-                  </div>
-                  <ChevronDown className={`w-5 h-5 transform transition-transform ${expandedSections[actualIdx] ? 'rotate-180' : ''}`} />
-                </button>
-                {expandedSections[actualIdx] && (
-                  <div className={`p-2 md:p-3 space-y-2 md:space-y-3 transition-colors ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                    {section.fields?.map((field: any) => (
-                      <div key={field.key}>
-                        <label className={`block text-sm font-medium mb-1 transition-colors ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>{field.label}</label>
-                        {field.type === 'color' && (
-                          <div className="flex gap-2">
-                            <input
-                              type="color"
-                              value={(effectiveSettings[field.key as keyof TemplateSettings] as string) || '#000000'}
-                              onChange={(e) => handleChange(field.key, e.target.value)}
-                              className={`w-12 h-10 rounded cursor-pointer transition-colors ${isDarkMode ? 'border border-gray-600' : 'border border-gray-300'}`}
-                            />
-                            <Input
-                              value={(effectiveSettings[field.key as keyof TemplateSettings] as string) || ''}
-                              onChange={(e) => handleChange(field.key, e.target.value)}
-                              placeholder="#000000"
-                              className={isDarkMode ? 'dark' : ''}
-                            />
-                          </div>
-                        )}
-                        {field.type === 'checkbox' && (
-                          <input
-                            type="checkbox"
-                            checked={!!effectiveSettings[field.key as keyof TemplateSettings]}
-                            onChange={(e) => handleChange(field.key, e.target.checked)}
-                            className="w-4 h-4"
-                          />
-                        )}
-                        {field.type === 'select' && (
-                          <select
-                            value={(effectiveSettings[field.key as keyof TemplateSettings] as string) || field.placeholder || ''}
-                            onChange={(e) => handleChange(field.key, e.target.value)}
-                            className={`w-full h-10 px-3 rounded-md text-sm transition-colors ${
-                              isDarkMode
-                                ? 'bg-gray-700 border border-gray-600 text-white'
-                                : 'bg-white border border-gray-300 text-gray-900'
-                            }`}
-                          >
-                            {(field.options || []).map((opt: string) => (
-                              <option key={opt} value={opt}>
-                                {opt}
-                              </option>
-                            ))}
-                          </select>
-                        )}
-                        {field.type === 'number' && (
-                          <Input
-                            type="number"
-                            value={(effectiveSettings[field.key as keyof TemplateSettings] ?? field.placeholder ?? '') as any}
-                            onChange={(e) => handleChange(field.key, parseInt(e.target.value))}
-                            min={field.min}
-                            max={field.max}
-                            placeholder={field.placeholder}
-                            className={isDarkMode ? 'dark' : ''}
-                          />
-                        )}
-                        {field.type === 'textarea' && (
-                          <>
-                            {field.key === 'template_categories' ? (
-                              <CategoryManager 
-                                categories={effectiveSettings.template_categories} 
-                                onChange={(cats) => handleChange('template_categories', cats)}
-                                isDarkMode={isDarkMode}
-                              />
-                            ) : (
-                              <textarea
-                                value={(effectiveSettings[field.key as keyof TemplateSettings] as string) || ''}
-                                onChange={(e) => handleChange(field.key, e.target.value)}
-                                placeholder={field.placeholder}
-                                className={`w-full p-2 rounded text-sm font-mono resize-vertical min-h-24 transition-colors ${isDarkMode ? 'bg-gray-700 border border-gray-600 text-white' : 'bg-white border border-gray-300 text-gray-900'}`}
-                              />
-                            )}
-                          </>
-                        )}
-                        {field.type === 'image' && (
-                          <div className="flex gap-2">
-                            <Input
-                              type="file"
-                              accept="image/*"
-                              onChange={async (e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  try {
-                                    console.log('Uploading file:', file.name, file.size);
-                                    const res = await uploadImage(file);
-                                    console.log('Upload response:', res);
-                                    handleChange(field.key, res.url);
-                                    setMessage({ type: 'success', text: 'Image uploaded successfully' });
-                                    setTimeout(() => setMessage(null), 3000);
-                                  } catch (err) {
-                                    console.error('Upload error:', err);
-                                    const errorMsg = err instanceof Error ? err.message : 'Failed to upload image';
-                                    setMessage({ type: 'error', text: errorMsg });
-                                    setTimeout(() => setMessage(null), 5000);
-                                  }
-                                }
-                              }}
-                              className={`flex-1 ${isDarkMode ? 'dark' : ''}`}
-                            />
-                            {(effectiveSettings[field.key as keyof TemplateSettings] as string) && (
-                              <img
-                                src={(effectiveSettings[field.key as keyof TemplateSettings] as string) || ''}
-                                alt="preview"
-                                className="w-12 h-12 object-cover rounded border"
-                              />
-                            )}
-                          </div>
-                        )}
-                        {['text', 'url'].includes(field.type) && (
-                          <Input
-                            type={field.type}
-                            value={(effectiveSettings[field.key as keyof TemplateSettings] as string) || ''}
-                            onChange={(e) => handleChange(field.key, e.target.value)}
-                            placeholder={field.placeholder}
-                            className={isDarkMode ? 'dark' : ''}
-                          />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-
-          {/* Action Buttons */}
           <div className={`border rounded-lg overflow-hidden transition-colors ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
             <button
               onClick={() => setExpandedSections(prev => ({ ...prev, actions: !prev.actions }))}
@@ -1618,21 +1434,12 @@ export default function TemplateSettingsPage() {
             </button>
             {expandedSections.actions && (
               <div className={`p-2 md:p-3 space-y-2 md:space-y-3 transition-colors ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-                {/* Action Buttons */}
                 <div className="flex gap-2 pt-2 md:pt-3 flex-col">
-                  <Button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="w-full gap-2"
-                  >
+                  <Button onClick={handleSave} disabled={saving} className="w-full gap-2">
                     {saving ? <Loader2 className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4" />}
                     Save Changes
                   </Button>
-                  <Button
-                    onClick={() => setShowPreview(!showPreview)}
-                    variant="outline"
-                    className="w-full gap-2"
-                  >
+                  <Button onClick={() => setShowPreview(!showPreview)} variant="outline" className="w-full gap-2">
                     <Eye className="w-4 h-4" />
                     Preview
                   </Button>
