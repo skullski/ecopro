@@ -649,7 +649,7 @@ const App = () => (
                     <Route path="orders/add" element={<SubscriptionPageLock><AddOrder /></SubscriptionPageLock>} />
                     <Route path="orders/abandoned" element={<SubscriptionPageLock><AbandonedOrders /></SubscriptionPageLock>} />
                     <Route path="orders/flex-scan" element={<SubscriptionPageLock><FlexScan /></SubscriptionPageLock>} />
-                    {/* Products management moved to Store page with tabs */}
+                    {/* Products management moved to Store page */}
                     {/* Delivery submenu routes */}
                     <Route path="delivery/companies" element={<DeliveryCompanies />} />
                     {/* Addons submenu routes */}
