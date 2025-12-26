@@ -679,7 +679,7 @@ export default function TemplateSettingsPage() {
 
   const previewCategories = useMemo(() => {
     const cats = Array.from(new Set(previewProducts.map((p: any) => p.category).filter(Boolean)));
-    return cats.map((c) => ({ id: String(c).toLowerCase().replace(/\s+/g, '-'), name: String(c) }));
+    return cats.map((c) => String(c));
   }, [previewProducts]);
   const [templatesCollapsed, setTemplatesCollapsed] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
