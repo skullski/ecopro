@@ -102,19 +102,30 @@ router.get('/customers/:segment', async (req: Request, res: Response) => {
         return res.status(400).json({ error: 'Invalid segment' });
     }
 
+    // Use DISTINCT ON to get the latest order per customer, plus a window count.
+    // (Avoid aggregates here; DISTINCT ON + aggregate causes GROUP BY errors.)
     const result = await pool.query(`
-      SELECT DISTINCT ON (customer_phone)
-        customer_phone, 
-        customer_name, 
+      SELECT
+        customer_phone,
+        customer_name,
         customer_email,
-        MAX(created_at) as last_order_date,
-        COUNT(*) OVER (PARTITION BY customer_phone) as order_count
-      FROM store_orders 
-      WHERE client_id = $1 
-        AND customer_phone IS NOT NULL 
-        AND customer_phone != ''
-        ${whereClause}
-      ORDER BY customer_phone, created_at DESC
+        created_at as last_order_date,
+        order_count
+      FROM (
+        SELECT DISTINCT ON (customer_phone)
+          customer_phone,
+          customer_name,
+          customer_email,
+          created_at,
+          COUNT(*) OVER (PARTITION BY customer_phone) as order_count
+        FROM store_orders
+        WHERE client_id = $1
+          AND customer_phone IS NOT NULL
+          AND customer_phone != ''
+          ${whereClause}
+        ORDER BY customer_phone, created_at DESC
+      ) t
+      ORDER BY last_order_date DESC
       LIMIT 500
     `, [clientId]);
 
@@ -366,7 +377,7 @@ router.post('/campaigns/:id/send', async (req: Request, res: Response) => {
 // Delete a campaign
 router.delete('/campaigns/:id', async (req: Request, res: Response) => {
   try {
-    const clientId = (req as any).user?.clientId;
+    const clientId = (req as any).user?.id;
     if (!clientId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
