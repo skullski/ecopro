@@ -100,6 +100,19 @@ export default function BabyTemplate(props: TemplateProps) {
     ? products 
     : products.filter((p: any) => p.category === activeCategory);
 
+  if (!products || products.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: secondary_color, color: text_color, fontFamily: font_family }}>
+        <div className="text-center max-w-md mx-auto p-4 md:p-6">
+          <div className="text-6xl mb-4">🍼</div>
+          <h1 className="text-xl md:text-2xl font-semibold mb-3">No Products Yet</h1>
+          <p className="mb-2" style={{ color: secondary_text_color }}>Add baby items to your store to see them displayed here.</p>
+          <p className="text-sm" style={{ color: secondary_text_color }}>Products will appear automatically once you add them.</p>
+        </div>
+      </div>
+    );
+  }
+
   const heroHighlight = products[0];
 
   const ProductCard = ({ product }: { product: any }) => {

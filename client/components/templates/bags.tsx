@@ -33,8 +33,6 @@ export default function BagsTemplate(props: TemplateProps) {
     ? products 
     : products.filter((p: any) => p.category === activeType);
 
-  const heroBag = products[0];
-
   // Extract universal settings with defaults
   const {
     primary_color = '#1F2937',
@@ -66,6 +64,21 @@ export default function BagsTemplate(props: TemplateProps) {
   } = useMemo(() => universalSettings as any || {}, [universalSettings]);
 
   const resolvedLogoUrl = (settings as any).store_logo || store_logo || logo_url || '';
+
+  if (!products || products.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: secondary_color, color: text_color, fontFamily: font_family }}>
+        <div className="text-center max-w-md mx-auto p-4 md:p-6">
+          <div className="text-6xl mb-4">👜</div>
+          <h1 className="text-xl md:text-2xl font-semibold mb-3">No Products Yet</h1>
+          <p className="mb-2" style={{ color: secondary_text_color }}>Add products to your store to see them displayed here.</p>
+          <p className="text-sm" style={{ color: secondary_text_color }}>Products will appear automatically once you add them.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const heroBag = products[0];
 
   // Template-specific settings
   const bgImage = templateSettings.template_bg_image || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=2000&q=80';

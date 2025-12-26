@@ -40,6 +40,20 @@ export default function Fashion2Template(props: TemplateProps) {
   const storeInitials = (settings as any).store_initials || String(storeName).slice(0, 2).toUpperCase();
     const logoUrl = (settings as any).store_logo || (settings as any).logo_url || '';
   const heroVideoUrl = settings.hero_video_url || null;
+
+  if (!products || products.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: secondary_color, color: text_color }}>
+        <div className="text-center max-w-md mx-auto p-4 md:p-6">
+          <div className="text-6xl mb-4">👕</div>
+          <h1 className="text-xl md:text-2xl font-semibold mb-3">No Products Yet</h1>
+          <p className="mb-2" style={{ color: secondary_text_color }}>Add products to your store to see them displayed here.</p>
+          <p className="text-sm" style={{ color: secondary_text_color }}>Products will appear automatically once you add them.</p>
+        </div>
+      </div>
+    );
+  }
+
   const city = settings.store_description?.split('·')[0] || 'Algiers';
   const tagline = settings.store_description?.split('·')[1]?.trim() || 'Modern street & clean tailoring';
   const heroHeading = settings.template_hero_heading || 'Build a fashion store that feels like a campaign, but behaves like a clean, modern catalog.';

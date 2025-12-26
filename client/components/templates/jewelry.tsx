@@ -266,7 +266,6 @@ export default function JewelryTemplate(props: TemplateProps) {
 
   const heroImage = settings.banner_url || 'https://images.unsplash.com/photo-1603561596112-0a132b757133?auto=format&fit=crop&w=1600&q=80';
   const heroVideoUrl = settings.hero_video_url || null;
-  const heroProduct = products[0];
 
   if (!products || products.length === 0) {
     return (
@@ -280,6 +279,8 @@ export default function JewelryTemplate(props: TemplateProps) {
       </div>
     );
   }
+
+  const heroProduct = products[0];
 
   return (
     <div className="min-h-screen bg-white" style={{ color: text_color }}>

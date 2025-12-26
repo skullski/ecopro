@@ -955,7 +955,7 @@ export default function TemplateSettingsPage() {
 
   const basicSections = useMemo(() => {
     const sections = (config.sections || []) as any[];
-    const keywords = ['Branding', 'Header', 'Categories', 'Theme', 'Layout', 'Typography', 'Footer'];
+    const keywords = ['Branding', 'Categories', 'Theme', 'Layout', 'Typography'];
     return sections
       .filter((s) => {
         const title = String(s?.title || '');
@@ -1402,13 +1402,14 @@ export default function TemplateSettingsPage() {
         <div className="lg:col-span-3">
           <div className="sticky top-2 space-y-2">
             <h3 className={`font-bold text-base md:text-lg transition-colors ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Template Preview</h3>
-            <div className={`border rounded-lg overflow-hidden transition-colors ${isDarkMode ? 'bg-black border-gray-700' : 'bg-white border-gray-200'} max-h-[520px]`}> 
+            <div className={`border rounded-lg overflow-hidden transition-colors ${isDarkMode ? 'bg-black border-gray-700' : 'bg-white border-gray-200'} max-h-[780px]`}>
               {templateComponents[template] ? (
                 React.createElement(templateComponents[template], {
-                  products: products.length > 0 ? products : [],
+                  // Keep preview clean: show template without live products for now.
+                  products: [],
                   settings: effectiveSettings,
                   formatPrice: (price: number) => `${price} ${effectiveSettings.currency_code || 'DZD'}`,
-                  categories: [...new Set(products.map(p => p.category || 'Uncategorized'))],
+                  categories: [],
                   filters: {},
                   navigate: () => {},
                   storeSlug: effectiveSettings.store_slug || 'preview'
