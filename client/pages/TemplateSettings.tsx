@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Loader2, Save, Eye, Check, ChevronDown, Plus, Trash2, AlertCircle, CheckCircle } from 'lucide-react';
+import { Loader2, Save, Eye, Check, ChevronDown, ChevronUp, Plus, Trash2, AlertCircle, CheckCircle } from 'lucide-react';
 import { getAuthToken } from '@/lib/auth';
 import { uploadImage } from '@/lib/api';
 import {
@@ -646,6 +646,7 @@ export default function TemplateSettingsPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [products, setProducts] = useState<any[]>([]);
+  const [templatesCollapsed, setTemplatesCollapsed] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return document.documentElement.classList.contains('dark');
   });
@@ -1054,112 +1055,131 @@ export default function TemplateSettingsPage() {
       {/* Full-width Template Selector Section */}
       <div className={`w-full border-b transition-colors duration-200 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
         <div className="max-w-7xl mx-auto px-3 md:px-4 py-2 md:py-3">
-          <div className="mb-2 md:mb-3">
-            <h2 className={`text-base md:text-lg font-bold mb-1 transition-colors ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Select Your Template</h2>
-            <p className={`text-xs md:text-sm transition-colors ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Choose a design that matches your brand</p>
+          <div className="mb-2 md:mb-3 flex items-start justify-between gap-3">
+            <div>
+              <h2 className={`text-base md:text-lg font-bold mb-1 transition-colors ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Select Your Template</h2>
+              <p className={`text-xs md:text-sm transition-colors ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Choose a design that matches your brand</p>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => setTemplatesCollapsed((v) => !v)}
+              aria-label={templatesCollapsed ? 'Show templates' : 'Hide templates'}
+            >
+              {templatesCollapsed ? (
+                <ChevronDown className="w-5 h-5" />
+              ) : (
+                <ChevronUp className="w-5 h-5" />
+              )}
+            </Button>
           </div>
           
-          {/* Infinite scrolling marquee */}
-          <div className="overflow-hidden relative">
-            <style>{`
-              @keyframes marquee {
-                0% { transform: translateX(0); }
-                100% { transform: translateX(-50%); }
-              }
-              .animate-marquee {
-                animation: marquee 40s linear infinite;
-              }
-              .animate-marquee:hover {
-                animation-play-state: paused;
-              }
-            `}</style>
-            <div className="flex gap-3 animate-marquee" style={{ width: 'max-content' }}>
-              {/* First set of templates */}
-              {templateList.map((tpl) => (
-                <button
-                  key={tpl.id}
-                  onClick={() => requestTemplateSwitch(tpl.id)}
-                  className={`flex-shrink-0 w-[140px] md:w-[160px] rounded-xl overflow-hidden transition-all duration-300 transform hover:scale-105 relative group ${
-                    template === tpl.id
-                      ? 'ring-4 ring-blue-500 shadow-2xl scale-105'
-                      : isDarkMode
-                      ? 'border-2 border-gray-600 hover:border-gray-500 shadow-md hover:shadow-xl'
-                      : 'border-2 border-gray-200 hover:border-gray-400 shadow-md hover:shadow-xl'
-                  }`}
-                >
-                  <div className="aspect-square relative">
-                    <img 
-                      src={tpl.preview} 
-                      alt={tpl.label}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className={`absolute inset-0 flex items-end justify-center pb-3 transition-all ${
-                      template === tpl.id
-                        ? 'bg-gradient-to-t from-black/60 to-transparent'
-                        : 'bg-gradient-to-t from-black/40 to-transparent group-hover:from-black/60'
-                    }`}>
-                      <span className={`text-center font-semibold text-sm transition-colors ${
+          {!templatesCollapsed && (
+            <>
+              {/* Infinite scrolling marquee */}
+              <div className="overflow-hidden relative">
+                <style>{`
+                  @keyframes marquee {
+                    0% { transform: translateX(0); }
+                    100% { transform: translateX(-50%); }
+                  }
+                  .animate-marquee {
+                    animation: marquee 40s linear infinite;
+                  }
+                  .animate-marquee:hover {
+                    animation-play-state: paused;
+                  }
+                `}</style>
+                <div className="flex gap-3 animate-marquee" style={{ width: 'max-content' }}>
+                  {/* First set of templates */}
+                  {templateList.map((tpl) => (
+                    <button
+                      key={tpl.id}
+                      onClick={() => requestTemplateSwitch(tpl.id)}
+                      className={`flex-shrink-0 w-[140px] md:w-[160px] rounded-xl overflow-hidden transition-all duration-300 transform hover:scale-105 relative group ${
                         template === tpl.id
-                          ? 'text-white'
-                          : 'text-white/90 group-hover:text-white'
-                      }`}>
-                        {tpl.label}
-                      </span>
-                    </div>
-                  </div>
-                  {template === tpl.id && (
-                    <div className="absolute top-3 right-3 z-10">
-                      <div className="bg-blue-500 text-white rounded-full p-1">
-                        <Check className="w-5 h-5" />
+                          ? 'ring-4 ring-blue-500 shadow-2xl scale-105'
+                          : isDarkMode
+                          ? 'border-2 border-gray-600 hover:border-gray-500 shadow-md hover:shadow-xl'
+                          : 'border-2 border-gray-200 hover:border-gray-400 shadow-md hover:shadow-xl'
+                      }`}
+                    >
+                      <div className="aspect-square relative">
+                        <img 
+                          src={tpl.preview} 
+                          alt={tpl.label}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className={`absolute inset-0 flex items-end justify-center pb-3 transition-all ${
+                          template === tpl.id
+                            ? 'bg-gradient-to-t from-black/60 to-transparent'
+                            : 'bg-gradient-to-t from-black/40 to-transparent group-hover:from-black/60'
+                        }`}>
+                          <span className={`text-center font-semibold text-sm transition-colors ${
+                            template === tpl.id
+                              ? 'text-white'
+                              : 'text-white/90 group-hover:text-white'
+                          }`}>
+                            {tpl.label}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </button>
-              ))}
-              {/* Duplicate set for seamless loop */}
-              {templateList.map((tpl) => (
-                <button
-                  key={`${tpl.id}-dup`}
-                  onClick={() => requestTemplateSwitch(tpl.id)}
-                  className={`flex-shrink-0 w-[140px] md:w-[160px] rounded-xl overflow-hidden transition-all duration-300 transform hover:scale-105 relative group ${
-                    template === tpl.id
-                      ? 'ring-4 ring-blue-500 shadow-2xl scale-105'
-                      : isDarkMode
-                      ? 'border-2 border-gray-600 hover:border-gray-500 shadow-md hover:shadow-xl'
-                      : 'border-2 border-gray-200 hover:border-gray-400 shadow-md hover:shadow-xl'
-                  }`}
-                >
-                  <div className="aspect-square relative">
-                    <img 
-                      src={tpl.preview} 
-                      alt={tpl.label}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className={`absolute inset-0 flex items-end justify-center pb-3 transition-all ${
-                      template === tpl.id
-                        ? 'bg-gradient-to-t from-black/60 to-transparent'
-                        : 'bg-gradient-to-t from-black/40 to-transparent group-hover:from-black/60'
-                    }`}>
-                      <span className={`text-center font-semibold text-sm transition-colors ${
+                      {template === tpl.id && (
+                        <div className="absolute top-3 right-3 z-10">
+                          <div className="bg-blue-500 text-white rounded-full p-1">
+                            <Check className="w-5 h-5" />
+                          </div>
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                  {/* Duplicate set for seamless loop */}
+                  {templateList.map((tpl) => (
+                    <button
+                      key={`${tpl.id}-dup`}
+                      onClick={() => requestTemplateSwitch(tpl.id)}
+                      className={`flex-shrink-0 w-[140px] md:w-[160px] rounded-xl overflow-hidden transition-all duration-300 transform hover:scale-105 relative group ${
                         template === tpl.id
-                          ? 'text-white'
-                          : 'text-white/90 group-hover:text-white'
-                      }`}>
-                        {tpl.label}
-                      </span>
-                    </div>
-                  </div>
-                  {template === tpl.id && (
-                    <div className="absolute top-3 right-3 z-10">
-                      <div className="bg-blue-500 text-white rounded-full p-1">
-                        <Check className="w-5 h-5" />
+                          ? 'ring-4 ring-blue-500 shadow-2xl scale-105'
+                          : isDarkMode
+                          ? 'border-2 border-gray-600 hover:border-gray-500 shadow-md hover:shadow-xl'
+                          : 'border-2 border-gray-200 hover:border-gray-400 shadow-md hover:shadow-xl'
+                      }`}
+                    >
+                      <div className="aspect-square relative">
+                        <img 
+                          src={tpl.preview} 
+                          alt={tpl.label}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className={`absolute inset-0 flex items-end justify-center pb-3 transition-all ${
+                          template === tpl.id
+                            ? 'bg-gradient-to-t from-black/60 to-transparent'
+                            : 'bg-gradient-to-t from-black/40 to-transparent group-hover:from-black/60'
+                        }`}>
+                          <span className={`text-center font-semibold text-sm transition-colors ${
+                            template === tpl.id
+                              ? 'text-white'
+                              : 'text-white/90 group-hover:text-white'
+                          }`}>
+                            {tpl.label}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
+                      {template === tpl.id && (
+                        <div className="absolute top-3 right-3 z-10">
+                          <div className="bg-blue-500 text-white rounded-full p-1">
+                            <Check className="w-5 h-5" />
+                          </div>
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
