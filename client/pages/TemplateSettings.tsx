@@ -657,6 +657,30 @@ export default function TemplateSettingsPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [products, setProducts] = useState<any[]>([]);
+  const previewProducts = useMemo(() => {
+    const placeholderImages = [
+      'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=1200&q=80',
+    ];
+
+    // Preview should never depend on real store products.
+    // We pass placeholders so templates render their full layout even when a store has 0 products.
+    return [
+      { id: 'preview-1', title: 'Sample Product 1', price: 12900, description: 'Preview item', category: 'Category A', images: [placeholderImages[0]], slug: 'sample-product-1' },
+      { id: 'preview-2', title: 'Sample Product 2', price: 7900, description: 'Preview item', category: 'Category A', images: [placeholderImages[1]], slug: 'sample-product-2' },
+      { id: 'preview-3', title: 'Sample Product 3', price: 15900, description: 'Preview item', category: 'Category B', images: [placeholderImages[2]], slug: 'sample-product-3' },
+      { id: 'preview-4', title: 'Sample Product 4', price: 9900, description: 'Preview item', category: 'Category B', images: [placeholderImages[3]], slug: 'sample-product-4' },
+      { id: 'preview-5', title: 'Sample Product 5', price: 18900, description: 'Preview item', category: 'Category C', images: [placeholderImages[0]], slug: 'sample-product-5' },
+      { id: 'preview-6', title: 'Sample Product 6', price: 5900, description: 'Preview item', category: 'Category C', images: [placeholderImages[1]], slug: 'sample-product-6' },
+    ];
+  }, []);
+
+  const previewCategories = useMemo(() => {
+    const cats = Array.from(new Set(previewProducts.map((p: any) => p.category).filter(Boolean)));
+    return cats.map((c) => ({ id: String(c).toLowerCase().replace(/\s+/g, '-'), name: String(c) }));
+  }, [previewProducts]);
   const [templatesCollapsed, setTemplatesCollapsed] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return document.documentElement.classList.contains('dark');
@@ -1405,11 +1429,11 @@ export default function TemplateSettingsPage() {
             <div className={`border rounded-lg overflow-hidden transition-colors ${isDarkMode ? 'bg-black border-gray-700' : 'bg-white border-gray-200'} max-h-[780px]`}>
               {templateComponents[template] ? (
                 React.createElement(templateComponents[template], {
-                  // Keep preview clean: show template without live products for now.
-                  products: [],
+                  // Preview-only placeholders (never real products).
+                  products: previewProducts,
                   settings: effectiveSettings,
                   formatPrice: (price: number) => `${price} ${effectiveSettings.currency_code || 'DZD'}`,
-                  categories: [],
+                  categories: previewCategories,
                   filters: {},
                   navigate: () => {},
                   storeSlug: effectiveSettings.store_slug || 'preview'
