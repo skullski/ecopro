@@ -657,34 +657,12 @@ export default function TemplateSettingsPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [products, setProducts] = useState<any[]>([]);
-  const previewProducts = useMemo(() => {
-    const placeholderImages = [
-      'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=1200&q=80',
-    ];
-
-    // Preview should never depend on real store products.
-    // We pass placeholders so templates render their full layout even when a store has 0 products.
-    return [
-      { id: 'preview-1', title: 'Sample Product 1', price: 12900, description: 'Preview item', category: 'Category A', images: [placeholderImages[0]], slug: 'sample-product-1' },
-      { id: 'preview-2', title: 'Sample Product 2', price: 7900, description: 'Preview item', category: 'Category A', images: [placeholderImages[1]], slug: 'sample-product-2' },
-      { id: 'preview-3', title: 'Sample Product 3', price: 15900, description: 'Preview item', category: 'Category B', images: [placeholderImages[2]], slug: 'sample-product-3' },
-      { id: 'preview-4', title: 'Sample Product 4', price: 9900, description: 'Preview item', category: 'Category B', images: [placeholderImages[3]], slug: 'sample-product-4' },
-      { id: 'preview-5', title: 'Sample Product 5', price: 18900, description: 'Preview item', category: 'Category C', images: [placeholderImages[0]], slug: 'sample-product-5' },
-      { id: 'preview-6', title: 'Sample Product 6', price: 5900, description: 'Preview item', category: 'Category C', images: [placeholderImages[1]], slug: 'sample-product-6' },
-    ];
-  }, []);
-
-  const previewCategories = useMemo(() => {
-    const cats = Array.from(new Set(previewProducts.map((p: any) => p.category).filter(Boolean)));
-    return cats.map((c) => ({ id: String(c).toLowerCase().replace(/\s+/g, '-'), name: String(c) }));
-  }, [previewProducts]);
   const [templatesCollapsed, setTemplatesCollapsed] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return document.documentElement.classList.contains('dark');
   });
+
+  const PREVIEW_SCALE = 0.85;
 
   const [switchOpen, setSwitchOpen] = useState(false);
   const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
@@ -1100,7 +1078,12 @@ export default function TemplateSettingsPage() {
       {/* Full-width Template Selector Section */}
       <div className={`w-full border-b transition-colors duration-200 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
         <div className="max-w-7xl mx-auto px-3 md:px-4 py-2 md:py-3">
-          <div className="mb-2 md:mb-3">
+          <div
+            className={`overflow-hidden transition-all duration-300 ease-in-out ${
+              templatesCollapsed ? 'max-h-0 opacity-0 mb-0 pointer-events-none' : 'max-h-24 opacity-100 mb-2 md:mb-3'
+            }`}
+            aria-hidden={templatesCollapsed}
+          >
             <h2 className={`text-base md:text-lg font-bold mb-1 transition-colors ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Select Your Template</h2>
             <p className={`text-xs md:text-sm transition-colors ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Choose a design that matches your brand</p>
           </div>
@@ -1426,21 +1409,25 @@ export default function TemplateSettingsPage() {
         <div className="lg:col-span-3">
           <div className="sticky top-2 space-y-2">
             <h3 className={`font-bold text-base md:text-lg transition-colors ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Template Preview</h3>
-            <div className={`border rounded-lg overflow-hidden transition-colors ${isDarkMode ? 'bg-black border-gray-700' : 'bg-white border-gray-200'} max-h-[780px]`}>
-              {templateComponents[template] ? (
-                React.createElement(templateComponents[template], {
-                  // Preview-only placeholders (never real products).
-                  products: previewProducts,
-                  settings: effectiveSettings,
-                  formatPrice: (price: number) => `${price} ${effectiveSettings.currency_code || 'DZD'}`,
-                  categories: previewCategories,
-                  filters: {},
-                  navigate: () => {},
-                  storeSlug: effectiveSettings.store_slug || 'preview'
-                })
-              ) : (
-                <div className={`p-3 md:p-4 text-center transition-colors ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Template not found</div>
-              )}
+            <div className={`border rounded-lg overflow-hidden transition-colors ${isDarkMode ? 'bg-black border-gray-700' : 'bg-white border-gray-200'} max-h-[780px] overflow-auto`}>
+              <div style={{ transform: `scale(${PREVIEW_SCALE})`, transformOrigin: 'top left', width: `calc(100% / ${PREVIEW_SCALE})` }}>
+                {templateComponents[template] ? (
+                  React.createElement(templateComponents[template], {
+                    // Preview should never use real products; also keep the footer/layout visible.
+                    previewMode: true,
+                    hideProducts: true,
+                    products: [],
+                    settings: effectiveSettings,
+                    formatPrice: (price: number) => `${price} ${effectiveSettings.currency_code || 'DZD'}`,
+                    categories: [],
+                    filters: {},
+                    navigate: () => {},
+                    storeSlug: effectiveSettings.store_slug || 'preview'
+                  })
+                ) : (
+                  <div className={`p-3 md:p-4 text-center transition-colors ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Template not found</div>
+                )}
+              </div>
             </div>
           </div>
         </div>

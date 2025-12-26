@@ -23,6 +23,10 @@ export default function ElectronicsTemplate(props: TemplateProps) {
 
   const products = props.products || [];
   const settings = props.settings || {};
+
+  const previewMode = Boolean((props as any).previewMode);
+  const hideProducts = Boolean((props as any).hideProducts);
+  const hasProducts = Array.isArray(products) && products.length > 0;
   
   // Extract universal settings with defaults
   const {
@@ -124,8 +128,9 @@ export default function ElectronicsTemplate(props: TemplateProps) {
     button { ${enable_animations ? 'transition: all 0.3s ease;' : ''} border-radius: var(--border-radius); }
   `;
 
-  // Render empty state if no products
-  if (!products || products.length === 0) {
+  // Public storefront: show empty state when there are no products.
+  // Template Settings preview: keep rendering the full layout (footer included).
+  if (!hasProducts && !previewMode) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: enable_dark_mode ? 'radial-gradient(circle at top, #0f172a 0, #020617 45%, #000 100%)' : secondary_color }}>
         <div className="text-center max-w-md mx-auto p-4 md:p-6">
@@ -139,8 +144,9 @@ export default function ElectronicsTemplate(props: TemplateProps) {
   }
 
   // Extract categories from products
-  const categories = ['all', ...new Set(products.map((p: any) => p.category))];
-  const filteredProducts = activeCategory === 'all' ? products : products.filter((p: any) => p.category === activeCategory);
+  const safeProducts = hideProducts ? [] : products;
+  const categories = ['all', ...new Set(safeProducts.map((p: any) => p.category))];
+  const filteredProducts = activeCategory === 'all' ? safeProducts : safeProducts.filter((p: any) => p.category === activeCategory);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-4 md:py-6 relative" style={{ background: enable_dark_mode ? 'radial-gradient(circle at top, #0f172a 0, #020617 45%, #000 100%)' : secondary_color }}>

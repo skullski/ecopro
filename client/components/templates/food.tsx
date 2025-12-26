@@ -23,6 +23,10 @@ export default function FoodTemplate(props: TemplateProps) {
 
   const heroVideoUrl = settings.hero_video_url || null;
 
+  const previewMode = Boolean((props as any).previewMode);
+  const hideProducts = Boolean((props as any).hideProducts);
+  const hasProducts = Array.isArray(products) && products.length > 0;
+
   // Helper functions to save product data and navigate
   const handleProductClick = (product: any) => {
     localStorage.setItem(`product_${product.id}`, JSON.stringify(product));
@@ -37,8 +41,9 @@ export default function FoodTemplate(props: TemplateProps) {
     navigate(storeSlug ? `/store/${storeSlug}/${slug}` : `/product/${product.id}`);
   };
 
-  // Add safety check for empty products - render placeholder
-  if (!products || products.length === 0) {
+  // Public storefront: show empty state when there are no products.
+  // Template Settings preview: keep rendering the full layout (footer included).
+  if (!hasProducts && !previewMode) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: secondary_color }}>
         <div className="text-center max-w-md mx-auto p-4 md:p-6">
@@ -57,17 +62,17 @@ export default function FoodTemplate(props: TemplateProps) {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const featured = products.slice(0, 3);
+  const featured = hideProducts ? [] : products.slice(0, 3);
   const categories: Record<string, any[]> = {};
-  products.forEach((p: any) => {
+  (hideProducts ? [] : products).forEach((p: any) => {
     const cat = p.category || 'Menu';
     if (!categories[cat]) categories[cat] = [];
     categories[cat].push(p);
   });
 
   const allCategoryNames = ['All', ...Object.keys(categories)];
-  const filteredHighlights = activeCategory === 'All' ? products : products.filter((p: any) => (p.category || 'Menu') === activeCategory);
-  const seasonal = products[3] || products[0];
+  const filteredHighlights = hideProducts ? [] : (activeCategory === 'All' ? products : products.filter((p: any) => (p.category || 'Menu') === activeCategory));
+  const seasonal = hideProducts ? null : (products[3] || products[0]);
 
   const journey = [
     {

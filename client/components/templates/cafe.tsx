@@ -62,20 +62,25 @@ export default function CafeTemplate(props: TemplateProps) {
     categoryList = ['all', ...new Set(products.map((p: any) => p.category || 'Menu'))];
   }
 
-  const filtered = activeCategory === 'all' ? products : products.filter((p: any) => (p.category || 'Menu') === activeCategory);
+  const previewMode = Boolean((props as any).previewMode);
+  const hideProducts = Boolean((props as any).hideProducts);
+  const hasProducts = Array.isArray(products) && products.length > 0;
+
+  const filtered = hideProducts ? [] : (activeCategory === 'all' ? products : products.filter((p: any) => (p.category || 'Menu') === activeCategory));
 
   // Get best sellers (first 4 products by default)
-  const bestSellers = products.slice(0, 4);
+  const bestSellers = hideProducts ? [] : products.slice(0, 4);
   
   // Get bundle products (products with type = 'bundle' or marked as bundles)
-  const bundles = products.filter((p: any) => p.product_type === 'bundle' || p.type === 'bundle').slice(0, 3);
+  const bundles = hideProducts ? [] : products.filter((p: any) => p.product_type === 'bundle' || p.type === 'bundle').slice(0, 3);
 
   const handleQuickAdd = () => {
     setCartCount(c => c + 1);
   };
 
-  // Render empty state
-  if (!products || products.length === 0) {
+  // Public storefront: show empty state when there are no products.
+  // Template Settings preview: keep rendering the full layout (footer included).
+  if (!hasProducts && !previewMode) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: secondary_color }}>
         <div className="text-center max-w-md mx-auto p-4 md:p-6">

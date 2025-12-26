@@ -6,6 +6,10 @@ export default function BagsTemplate(props: TemplateProps) {
   const [activeType, setActiveType] = useState('All');
   const { products = [], settings = {}, formatPrice = (p: number) => `${p}`, navigate, storeSlug } = props;
   const templateSettings = settings as any;
+
+  const previewMode = Boolean((props as any).previewMode);
+  const hideProducts = Boolean((props as any).hideProducts);
+  const hasProducts = Array.isArray(products) && products.length > 0;
   
   // Read universal settings from window
   const universalSettings = useTemplateUniversalSettings() || {};
@@ -27,11 +31,13 @@ export default function BagsTemplate(props: TemplateProps) {
   };
 
   // Get types from products or use defaults
-  const types = ['All', ...new Set(products.map((p: any) => p.category).filter(Boolean))];
+  const safeProducts = hideProducts ? [] : products;
+
+  const types = ['All', ...new Set(safeProducts.map((p: any) => p.category).filter(Boolean))];
   
   const filteredProducts = activeType === 'All' 
-    ? products 
-    : products.filter((p: any) => p.category === activeType);
+    ? safeProducts 
+    : safeProducts.filter((p: any) => p.category === activeType);
 
   // Extract universal settings with defaults
   const {
@@ -65,7 +71,7 @@ export default function BagsTemplate(props: TemplateProps) {
 
   const resolvedLogoUrl = (settings as any).store_logo || store_logo || logo_url || '';
 
-  if (!products || products.length === 0) {
+  if (!hasProducts && !previewMode) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: secondary_color, color: text_color, fontFamily: font_family }}>
         <div className="text-center max-w-md mx-auto p-4 md:p-6">
@@ -78,7 +84,7 @@ export default function BagsTemplate(props: TemplateProps) {
     );
   }
 
-  const heroBag = products[0];
+  const heroBag = safeProducts[0];
 
   // Template-specific settings
   const bgImage = templateSettings.template_bg_image || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=2000&q=80';

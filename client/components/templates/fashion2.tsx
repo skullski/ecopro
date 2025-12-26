@@ -27,6 +27,10 @@ export default function Fashion2Template(props: TemplateProps) {
   };
 
   const { products = [], settings = {}, categories = [] } = props;
+
+  const previewMode = Boolean((props as any).previewMode);
+  const hideProducts = Boolean((props as any).hideProducts);
+  const hasProducts = Array.isArray(products) && products.length > 0;
   
   // Extract universal settings with defaults
   const {
@@ -41,7 +45,7 @@ export default function Fashion2Template(props: TemplateProps) {
     const logoUrl = (settings as any).store_logo || (settings as any).logo_url || '';
   const heroVideoUrl = settings.hero_video_url || null;
 
-  if (!products || products.length === 0) {
+  if (!hasProducts && !previewMode) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: secondary_color, color: text_color }}>
         <div className="text-center max-w-md mx-auto p-4 md:p-6">
@@ -53,6 +57,8 @@ export default function Fashion2Template(props: TemplateProps) {
       </div>
     );
   }
+
+  const safeProducts = hideProducts ? [] : products;
 
   const city = settings.store_description?.split('·')[0] || 'Algiers';
   const tagline = settings.store_description?.split('·')[1]?.trim() || 'Modern street & clean tailoring';
@@ -110,7 +116,7 @@ export default function Fashion2Template(props: TemplateProps) {
     : ['All', 'XS', 'S', 'M', 'L', 'XL']) as string[];
   const categoryList = ['All', ...categories.filter(c => c).slice(0, 5)];
 
-  const filteredProducts = products.filter((p: any) => {
+  const filteredProducts = safeProducts.filter((p: any) => {
     const search = props.searchQuery?.toLowerCase() || '';
     const matchesSearch = !search || p.title?.toLowerCase().includes(search);
     const matchesCategory = props.categoryFilter === 'all' || p.category === props.categoryFilter;
@@ -201,16 +207,24 @@ export default function Fashion2Template(props: TemplateProps) {
                 />
               )}
               <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-4">
-                <div className="text-sm font-semibold">{products[0]?.title || 'Featured Product'}</div>
-                <div className="text-xs text-gray-300">{products[0]?.price || 'Price'} DZD</div>
-                <button onClick={() => handleBuyClick(products[0])} className="mt-2 text-xs py-1 px-3 rounded-full bg-white text-black font-semibold">{heroProductCta}</button>
+                <div className="text-sm font-semibold">{safeProducts[0]?.title || 'Featured Product'}</div>
+                <div className="text-xs text-gray-300">{safeProducts[0]?.price || 'Price'} DZD</div>
+                <button
+                  onClick={() => {
+                    if (!safeProducts[0]) return;
+                    handleBuyClick(safeProducts[0]);
+                  }}
+                  className="mt-2 text-xs py-1 px-3 rounded-full bg-white text-black font-semibold"
+                >
+                  {heroProductCta}
+                </button>
               </div>
               <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black text-white text-xs uppercase tracking-widest">{dropLabel}</div>
             </div>
 
             {/* Right – Two smaller products */}
             <div className="flex flex-col gap-4">
-              {products.slice(1, 3).map((p: any) => (
+              {safeProducts.slice(1, 3).map((p: any) => (
                 <div key={p.id} className="relative rounded-2xl overflow-hidden border border-gray-200 bg-white h-44">
                   <img src={p.images?.[0] || 'https://via.placeholder.com/400'} alt={p.title} className="w-full h-full object-cover" />
                   <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-3">

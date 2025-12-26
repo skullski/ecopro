@@ -26,6 +26,10 @@ export default function PerfumeTemplate(props: TemplateProps) {
   const bannerImage = settings.banner_url || 'https://images.unsplash.com/photo-1523293182086-7651a899d37f?auto=format&fit=crop&w=1600&q=80';
   const heroVideoUrl = settings.hero_video_url || null;
 
+  const previewMode = Boolean((props as any).previewMode);
+  const hideProducts = Boolean((props as any).hideProducts);
+  const hasProducts = Array.isArray(products) && products.length > 0;
+
   const emptyTitle = settings.template_empty_title || 'No Fragrances Yet';
   const emptySubtitle = settings.template_empty_subtitle || 'Add fragrances to your store to see them displayed here.';
   const emptyHint = settings.template_empty_hint || 'Products will appear automatically once you add them to your store.';
@@ -171,8 +175,9 @@ export default function PerfumeTemplate(props: TemplateProps) {
     );
   };
 
-  // Render empty state
-  if (!products || products.length === 0) {
+  // Public storefront: show empty state when there are no products.
+  // Template Settings preview: keep rendering the full layout (footer included).
+  if (!hasProducts && !previewMode) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: secondary_color }}>
         <div className="text-center max-w-md mx-auto p-4 md:p-6">

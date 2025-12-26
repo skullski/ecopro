@@ -31,6 +31,10 @@ export default function BabyTemplate(props: TemplateProps) {
   } = useMemo(() => universalSettings as any || {}, [universalSettings]);
   
   const products = props.products || [];
+  const previewMode = Boolean((props as any).previewMode);
+  const hideProducts = Boolean((props as any).hideProducts);
+  const hasProducts = Array.isArray(products) && products.length > 0;
+  const safeProducts = hideProducts ? [] : products;
   const settings = (props.settings || {}) as any;
   const storeName = settings.store_name || 'BabyOS';
   const bannerUrl = settings.banner_url || 'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&w=2000&q=80';
@@ -96,11 +100,13 @@ export default function BabyTemplate(props: TemplateProps) {
     }
   }, [settings]);
   
-  const filteredProducts = activeCategory === "All" 
-    ? products 
-    : products.filter((p: any) => p.category === activeCategory);
+  const filteredProducts = hideProducts
+    ? []
+    : (activeCategory === "All" 
+      ? products 
+      : products.filter((p: any) => p.category === activeCategory));
 
-  if (!products || products.length === 0) {
+  if (!hasProducts && !previewMode) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: secondary_color, color: text_color, fontFamily: font_family }}>
         <div className="text-center max-w-md mx-auto p-4 md:p-6">
@@ -113,7 +119,7 @@ export default function BabyTemplate(props: TemplateProps) {
     );
   }
 
-  const heroHighlight = products[0];
+  const heroHighlight = safeProducts[0];
 
   const ProductCard = ({ product }: { product: any }) => {
     const handleProductClick = () => {
