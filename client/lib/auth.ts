@@ -32,7 +32,7 @@ export interface ApiError {
  * Get stored auth token
  */
 export function getAuthToken(): string | null {
-  return localStorage.getItem("authToken");
+  return localStorage.getItem("authToken") || localStorage.getItem("token");
 }
 
 /**

@@ -10,7 +10,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Loader2, Save, Eye, Check, ChevronDown, ChevronUp, Plus, Trash2, AlertCircle, CheckCircle } from 'lucide-react';
+import {
+  Loader2,
+  Save,
+  Eye,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Plus,
+  Trash2,
+  AlertCircle,
+  CheckCircle,
+} from 'lucide-react';
 import { getAuthToken } from '@/lib/auth';
 import { uploadImage } from '@/lib/api';
 import {
@@ -747,8 +758,6 @@ export default function TemplateSettingsPage() {
       if (!token) {
         console.error('No auth token found');
         setMessage({ type: 'error', text: 'Please log in to access template settings' });
-        // Redirect to login
-        window.location.href = '/login';
         return;
       }
       
@@ -767,7 +776,6 @@ export default function TemplateSettingsPage() {
         console.error('Failed to fetch settings:', res.status, res.statusText);
         if (res.status === 401) {
           setMessage({ type: 'error', text: 'Session expired. Please log in again' });
-          window.location.href = '/login';
         } else {
           setMessage({ type: 'error', text: 'Failed to load settings' });
         }
@@ -1055,30 +1063,40 @@ export default function TemplateSettingsPage() {
       {/* Full-width Template Selector Section */}
       <div className={`w-full border-b transition-colors duration-200 ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
         <div className="max-w-7xl mx-auto px-3 md:px-4 py-2 md:py-3">
-          <div className="mb-2 md:mb-3 flex items-start justify-between gap-3">
-            <div>
-              <h2 className={`text-base md:text-lg font-bold mb-1 transition-colors ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Select Your Template</h2>
-              <p className={`text-xs md:text-sm transition-colors ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Choose a design that matches your brand</p>
-            </div>
+          <div className="mb-2 md:mb-3">
+            <h2 className={`text-base md:text-lg font-bold mb-1 transition-colors ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Select Your Template</h2>
+            <p className={`text-xs md:text-sm transition-colors ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>Choose a design that matches your brand</p>
+          </div>
+
+          {/* Centered overlay arrow (does not push templates down) */}
+          <div className="relative h-0">
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               size="icon"
+              className="absolute left-1/2 -translate-x-1/2 -top-8 md:-top-9 h-14 w-14 md:h-16 md:w-16 rounded-full border-2 bg-background"
               onClick={() => setTemplatesCollapsed((v) => !v)}
               aria-label={templatesCollapsed ? 'Show templates' : 'Hide templates'}
+              title={templatesCollapsed ? 'Show templates' : 'Hide templates'}
             >
               {templatesCollapsed ? (
-                <ChevronDown className="w-5 h-5" />
+                <ChevronDown className="w-10 h-10" strokeWidth={3} />
               ) : (
-                <ChevronUp className="w-5 h-5" />
+                <ChevronUp className="w-10 h-10" strokeWidth={3} />
               )}
             </Button>
           </div>
           
-          {!templatesCollapsed && (
-            <>
-              {/* Infinite scrolling marquee */}
-              <div className="overflow-hidden relative">
+          <div
+            className={`overflow-hidden transition-all duration-300 ease-in-out ${
+              templatesCollapsed
+                ? 'max-h-0 opacity-0 -translate-y-4'
+                : 'max-h-[260px] opacity-100 translate-y-0'
+            }`}
+            aria-hidden={templatesCollapsed}
+          >
+            {/* Infinite scrolling marquee */}
+            <div className="overflow-hidden relative">
                 <style>{`
                   @keyframes marquee {
                     0% { transform: translateX(0); }
@@ -1178,8 +1196,7 @@ export default function TemplateSettingsPage() {
                   ))}
                 </div>
               </div>
-            </>
-          )}
+          </div>
         </div>
       </div>
 
