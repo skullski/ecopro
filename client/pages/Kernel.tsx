@@ -87,6 +87,7 @@ type TrafficRow = {
   path: string;
   status: number;
   ip: string | null;
+  country_code: string | null;
   user_agent: string | null;
   fingerprint: string | null;
   user_id: string | null;

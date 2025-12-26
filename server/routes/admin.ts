@@ -33,7 +33,7 @@ export const listUsers: RequestHandler = async (_req, res) => {
   try {
     const { pool } = await import("../utils/database");
     
-    // Get from both admins and clients tables with is_locked status
+    // Get from both admins and clients tables with is_blocked and is_locked status
     const result = await pool.query(`
       SELECT 
         id, 
@@ -42,9 +42,10 @@ export const listUsers: RequestHandler = async (_req, res) => {
         role, 
         'admin' as user_type, 
         created_at,
+        COALESCE(is_blocked, false) as is_blocked,
+        blocked_reason,
         COALESCE(is_locked, false) as is_locked,
-        locked_reason,
-        locked_at
+        locked_reason
       FROM admins
       UNION ALL
       SELECT 
@@ -54,9 +55,10 @@ export const listUsers: RequestHandler = async (_req, res) => {
         role, 
         'client' as user_type, 
         created_at,
+        COALESCE(is_blocked, false) as is_blocked,
+        blocked_reason,
         COALESCE(is_locked, false) as is_locked,
-        locked_reason,
-        locked_at
+        locked_reason
       FROM clients
       ORDER BY created_at DESC
     `);
@@ -417,7 +419,8 @@ export const unflagProduct: RequestHandler = async (req, res) => {
     return jsonError(res, 500, "Failed to unflag product");
   }
 };
-// Lock a user account (prevent login)
+// Block a user account (prevent login entirely - admin action)
+// Uses is_blocked field - different from is_locked (subscription)
 export const lockUser: RequestHandler = async (req, res) => {
   try {
     const { id } = req.params as { id: string };
@@ -446,21 +449,23 @@ export const lockUser: RequestHandler = async (req, res) => {
     // Protect the default admin account
     const userEmail = userRes.rows[0].email;
     if (userEmail === 'admin@ecopro.com') {
-      return jsonError(res, 400, 'Cannot lock the default admin account');
+      return jsonError(res, 400, 'Cannot block the default admin account');
     }
 
     const adminId = (req as any).user?.id ? parseInt((req as any).user.id, 10) : null;
+    const blockReason = reason || 'Account blocked by admin';
 
-    // Try locking in admins table first, then clients
+    // Try blocking in admins table first, then clients
+    // Uses is_blocked (admin block) NOT is_locked (subscription lock)
     let result = await pool.query(
-      `UPDATE admins SET is_locked = true, locked_reason = $1, locked_at = NOW(), locked_by_admin_id = $2 WHERE id = $3`,
-      [reason || 'Account locked by admin', adminId, userId]
-    );
+      `UPDATE admins SET is_blocked = true, blocked_reason = $1, blocked_at = NOW(), blocked_by_admin_id = $2 WHERE id = $3`,
+      [blockReason, adminId, userId]
+    ).catch(() => ({ rowCount: 0 }));
 
     if (result.rowCount === 0) {
       result = await pool.query(
-        `UPDATE clients SET is_locked = true, locked_reason = $1, locked_at = NOW(), locked_by_admin_id = $2 WHERE id = $3`,
-        [reason || 'Account locked by admin', adminId, userId]
+        `UPDATE clients SET is_blocked = true, blocked_reason = $1, blocked_at = NOW(), blocked_by_admin_id = $2 WHERE id = $3`,
+        [blockReason, adminId, userId]
       );
     }
 
@@ -468,14 +473,15 @@ export const lockUser: RequestHandler = async (req, res) => {
       return jsonError(res, 404, "User not found");
     }
 
-    res.json({ message: "User account locked successfully" });
+    res.json({ message: "User account blocked successfully" });
   } catch (err) {
-    console.error('Lock user error:', err);
-    return jsonError(res, 500, "Failed to lock user account");
+    console.error('Block user error:', err);
+    return jsonError(res, 500, "Failed to block user account");
   }
 };
 
-// Unlock a user account (allow login again)
+// Unblock a user account (allow login again)
+// Clears is_blocked field - different from is_locked (subscription)
 export const unlockUser: RequestHandler = async (req, res) => {
   try {
     const { id } = req.params as { id: string };
@@ -489,15 +495,16 @@ export const unlockUser: RequestHandler = async (req, res) => {
       return jsonError(res, 400, "Invalid user ID");
     }
 
-    // Try unlocking in admins table first, then clients
+    // Try unblocking in admins table first, then clients
+    // Clears is_blocked (admin block) NOT is_locked (subscription lock)
     let result = await pool.query(
-      `UPDATE admins SET is_locked = false, locked_reason = NULL, locked_at = NULL, locked_by_admin_id = NULL WHERE id = $1`,
+      `UPDATE admins SET is_blocked = false, blocked_reason = NULL, blocked_at = NULL, blocked_by_admin_id = NULL WHERE id = $1`,
       [userId]
-    );
+    ).catch(() => ({ rowCount: 0 }));
 
     if (result.rowCount === 0) {
       result = await pool.query(
-        `UPDATE clients SET is_locked = false, locked_reason = NULL, locked_at = NULL, locked_by_admin_id = NULL WHERE id = $1`,
+        `UPDATE clients SET is_blocked = false, blocked_reason = NULL, blocked_at = NULL, blocked_by_admin_id = NULL WHERE id = $1`,
         [userId]
       );
     }
@@ -506,10 +513,10 @@ export const unlockUser: RequestHandler = async (req, res) => {
       return jsonError(res, 404, "User not found");
     }
 
-    res.json({ message: "User account unlocked successfully" });
+    res.json({ message: "User account unblocked successfully" });
   } catch (err) {
-    console.error('Unlock user error:', err);
-    return jsonError(res, 500, "Failed to unlock user account");
+    console.error('Unblock user error:', err);
+    return jsonError(res, 500, "Failed to unblock user account");
   }
 };
 

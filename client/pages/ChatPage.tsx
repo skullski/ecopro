@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ChatList, ChatWindow } from '../components/chat';
+import { apiFetch } from '@/lib/api';
 
 interface User {
   id: number;
@@ -15,6 +16,7 @@ export function ChatPage() {
   const [user, setUser] = useState<User | null>(null);
   const [selectedChatId, setSelectedChatId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [creatingChat, setCreatingChat] = useState(false);
 
   useEffect(() => {
     // Get user info from token
@@ -55,10 +57,41 @@ export function ChatPage() {
     setLoading(false);
   }, []);
 
-  if (loading) {
+  // Auto-create admin chat for clients
+  useEffect(() => {
+    const autoCreateChat = async () => {
+      if (!user || user.role !== 'client' || !user.clientId) return;
+      
+      setCreatingChat(true);
+      try {
+        // Try to create/get admin chat
+        const response = await apiFetch<any>('/api/chat/create-admin-chat', {
+          method: 'POST',
+          body: JSON.stringify({ tier: 'bronze' })
+        });
+        
+        if (response.chat?.id) {
+          setSelectedChatId(response.chat.id);
+        }
+      } catch (err) {
+        console.error('Failed to create admin chat:', err);
+      } finally {
+        setCreatingChat(false);
+      }
+    };
+
+    if (user && user.role === 'client') {
+      autoCreateChat();
+    }
+  }, [user]);
+
+  if (loading || creatingChat) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-50 overflow-hidden">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">{creatingChat ? 'Connecting to support...' : 'Loading...'}</p>
+        </div>
       </div>
     );
   }

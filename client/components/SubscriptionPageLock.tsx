@@ -2,7 +2,6 @@ import { ReactNode, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowRight, Gift, Lock, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getCurrentUser } from '@/lib/auth';
 
 interface SubscriptionPageLockProps {
   children: ReactNode;
@@ -19,7 +18,6 @@ interface SubscriptionPageLockProps {
 export default function SubscriptionPageLock({ children }: SubscriptionPageLockProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const currentUser = getCurrentUser();
 
   const [locked, setLocked] = useState<{ locked: boolean; loading: boolean }>({
     locked: false,
@@ -39,11 +37,26 @@ export default function SubscriptionPageLock({ children }: SubscriptionPageLockP
         return;
       }
 
-      // Explicit payment lock flag (admin tools can set this)
-      const isPaymentLocked = !!currentUser?.is_locked && currentUser?.lock_type === 'payment';
-      if (isPaymentLocked) {
-        setLocked({ locked: true, loading: false });
-        return;
+      // First, fetch fresh user data from the server to check is_locked status
+      const meRes = await fetch('/api/auth/me', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (meRes.ok) {
+        const userData = await meRes.json();
+        // Update localStorage with fresh user data
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const parsedUser = JSON.parse(storedUser);
+          const updatedUser = { ...parsedUser, is_locked: userData.is_locked, locked_reason: userData.locked_reason };
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+        }
+        
+        // If user is locked (subscription issue), show the lock
+        if (userData.is_locked) {
+          setLocked({ locked: true, loading: false });
+          return;
+        }
       }
 
       // Subscription ended
@@ -67,6 +80,9 @@ export default function SubscriptionPageLock({ children }: SubscriptionPageLockP
     return <>{children}</>;
   }
 
+  // Check if on bot/wasselni page to show bot-specific message
+  const isBotPage = location.pathname.includes('wasselni') || location.pathname.includes('customer-bot') || location.pathname.includes('bot');
+
   return (
     <div className="relative">
       <div className="filter blur-sm brightness-75 pointer-events-none select-none">{children}</div>
@@ -79,12 +95,17 @@ export default function SubscriptionPageLock({ children }: SubscriptionPageLockP
                 <Lock className="w-12 h-12 text-amber-400" />
               </div>
               <h2 className="text-2xl font-bold text-amber-300">Subscription Ended</h2>
-              <p className="text-amber-200/80 mt-2">This page requires an active subscription</p>
+              <p className="text-amber-200/80 mt-2">
+                {isBotPage ? 'All bots are disabled' : 'This page requires an active subscription'}
+              </p>
             </div>
 
             <div className="p-6 space-y-4">
               <p className="text-slate-300 text-center">
-                Your month ended. To unlock Orders and Bot, enter a voucher code or contact support.
+                {isBotPage 
+                  ? 'Your bots will not work until you renew your subscription. Enter a voucher code or contact support to restore your service.'
+                  : 'Your month ended. To unlock Orders and Bot, enter a voucher code or contact support.'
+                }
               </p>
 
               <div className="space-y-3">
@@ -109,7 +130,10 @@ export default function SubscriptionPageLock({ children }: SubscriptionPageLockP
 
               <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
                 <p className="text-sm text-slate-400 text-center">
-                  Support can issue a code or unlock your account after renewal.
+                  {isBotPage 
+                    ? 'All bot messages and order confirmations are paused until your subscription is renewed.'
+                    : 'Support can issue a code or unlock your account after renewal.'
+                  }
                 </p>
               </div>
             </div>

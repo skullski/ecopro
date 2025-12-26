@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { 
   Plus, Search, Filter, PackageX, Package, AlertTriangle, 
   TrendingDown, TrendingUp, Edit, Trash2, History, Download,
-  BarChart3, RefreshCw
+  BarChart3, RefreshCw, Tag, X, Check
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,6 +34,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 
 interface StockItem {
   id: number;
@@ -66,10 +71,20 @@ interface StockHistory {
   adjusted_by_name?: string;
 }
 
+interface StockCategory {
+  id: number;
+  name: string;
+  color: string;
+  icon: string;
+  product_count: number;
+  created_at: string;
+}
+
 export default function StockManagement() {
   const [stock, setStock] = useState<StockItem[]>([]);
   const [filteredStock, setFilteredStock] = useState<StockItem[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
+  const [allCategories, setAllCategories] = useState<StockCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -82,6 +97,7 @@ export default function StockManagement() {
   const [showAdjustModal, setShowAdjustModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
   
   // Selected item
   const [selectedItem, setSelectedItem] = useState<StockItem | null>(null);
@@ -95,6 +111,13 @@ export default function StockManagement() {
     reason: 'adjustment',
     notes: '',
   });
+
+  // Category form state
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryColor, setNewCategoryColor] = useState('#3b82f6');
+  const [newCategoryIcon, setNewCategoryIcon] = useState('📦');
+  const [categoryPopoverOpen, setCategoryPopoverOpen] = useState(false);
+  const [creatingCategory, setCreatingCategory] = useState(false);
 
   const [lowStockCount, setLowStockCount] = useState(0);
   const [totalValue, setTotalValue] = useState(0);
@@ -155,10 +178,77 @@ export default function StockManagement() {
       });
       if (res.ok) {
         const data = await res.json();
-        setCategories(data.map((c: any) => c.category));
+        setCategories(data.map((c: any) => c.category).filter(Boolean));
+      }
+      
+      // Also load all categories with details
+      const allRes = await fetch('/api/client/stock/categories/all', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (allRes.ok) {
+        const allData = await allRes.json();
+        setAllCategories(allData);
       }
     } catch (error) {
       console.error('Failed to load categories:', error);
+    }
+  };
+
+  const createCategory = async () => {
+    if (!newCategoryName.trim()) return;
+    
+    setCreatingCategory(true);
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const res = await fetch('/api/client/stock/categories', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: newCategoryName.trim(),
+          color: newCategoryColor,
+          icon: newCategoryIcon
+        })
+      });
+      
+      if (res.ok) {
+        const newCategory = await res.json();
+        setAllCategories([...allCategories, { ...newCategory, product_count: 0 }]);
+        setCategories([...categories, newCategory.name]);
+        setFormData({ ...formData, category: newCategory.name });
+        setNewCategoryName('');
+        setCategoryPopoverOpen(false);
+      } else {
+        const error = await res.json();
+        alert(error.error || 'Failed to create category');
+      }
+    } catch (error) {
+      console.error('Failed to create category:', error);
+      alert('Failed to create category');
+    } finally {
+      setCreatingCategory(false);
+    }
+  };
+
+  const deleteCategory = async (categoryId: number) => {
+    if (!confirm('Delete this category? Products will have their category removed.')) return;
+    
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+      const res = await fetch(`/api/client/stock/categories/${categoryId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (res.ok) {
+        setAllCategories(allCategories.filter(c => c.id !== categoryId));
+        loadCategories();
+        loadStock();
+      }
+    } catch (error) {
+      console.error('Failed to delete category:', error);
     }
   };
 
@@ -530,6 +620,14 @@ export default function StockManagement() {
           <div className="flex gap-1 md:gap-2">
             <Button 
               variant="outline" 
+              onClick={() => setShowCategoryModal(true)}
+              className="border-primary/30 hover:bg-primary/10 transition-all gap-1 text-sm font-bold py-2 px-3 h-9"
+            >
+              <Tag className="w-3 h-3 md:w-4 md:h-4" />
+              <span className="hidden sm:inline">Categories</span>
+            </Button>
+            <Button 
+              variant="outline" 
               onClick={exportToCSV}
               className="border-primary/30 hover:bg-primary/10 transition-all gap-1 text-sm font-bold py-2 px-3 h-9"
             >
@@ -665,17 +763,17 @@ export default function StockManagement() {
         {/* Stock Table */}
         <div className="bg-gradient-to-br from-background to-primary/5 dark:from-slate-900/50 dark:to-slate-800/30 rounded border border-primary/20 overflow-hidden shadow">
           <div className="overflow-x-auto">
-            <table className="w-full text-base font-semibold">
+            <table className="w-full text-base font-semibold table-fixed">
               <thead className="bg-gradient-to-r from-primary/15 to-purple-600/15 dark:from-primary/10 dark:to-purple-600/10 border-b border-primary/20">
                 <tr>
-                <th className="text-left p-2 md:p-3 font-bold text-primary dark:text-primary/90 text-base">Product</th>
-                <th className="text-left p-2 md:p-3 font-bold text-primary dark:text-primary/90 text-base">SKU</th>
-                <th className="text-left p-2 md:p-3 font-bold text-primary dark:text-primary/90 text-base">Category</th>
-                <th className="text-right p-2 md:p-3 font-bold text-primary dark:text-primary/90 text-base">Qty</th>
-                <th className="text-right p-2 md:p-3 font-bold text-primary dark:text-primary/90 text-base">Price</th>
-                <th className="text-right p-2 md:p-3 font-bold text-primary dark:text-primary/90 text-base">Location</th>
-                <th className="text-right p-2 md:p-3 font-bold text-primary dark:text-primary/90 text-base">Actions</th>
-                  <th className="text-right p-2 md:p-3 font-semibold text-primary dark:text-primary/90">Actions</th>
+                  <th className="text-left p-2 font-bold text-primary dark:text-primary/90 text-sm whitespace-nowrap w-[180px]">Product</th>
+                  <th className="text-center p-2 font-bold text-primary dark:text-primary/90 text-sm whitespace-nowrap w-[60px]">SKU</th>
+                  <th className="text-center p-2 font-bold text-primary dark:text-primary/90 text-sm whitespace-nowrap w-[80px]">Category</th>
+                  <th className="text-center p-2 font-bold text-primary dark:text-primary/90 text-sm whitespace-nowrap w-[70px]">Qty</th>
+                  <th className="text-right p-2 font-bold text-primary dark:text-primary/90 text-sm whitespace-nowrap w-[70px]">Price</th>
+                  <th className="text-center p-2 font-bold text-primary dark:text-primary/90 text-sm whitespace-nowrap w-[70px]">Location</th>
+                  <th className="text-center p-2 font-bold text-primary dark:text-primary/90 text-sm whitespace-nowrap w-[50px]">Status</th>
+                  <th className="text-right p-2 font-bold text-primary dark:text-primary/90 text-sm whitespace-nowrap w-[140px]">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -693,10 +791,10 @@ export default function StockManagement() {
                 ) : (
                   filteredStock.map(item => (
                     <tr key={item.id} className="border-b border-primary/10 hover:bg-primary/10 dark:hover:bg-primary/5 transition-colors">
-                      <td className="p-2 md:p-3">
+                      <td className="p-2">
                         <div className="flex items-center gap-2">
                           {item.images?.[0] ? (
-                            <div className="w-12 h-12 rounded-md overflow-hidden flex-shrink-0">
+                            <div className="w-10 h-10 rounded-md overflow-hidden flex-shrink-0">
                               <img
                                 src={item.images[0]}
                                 alt={item.name}
@@ -704,81 +802,77 @@ export default function StockManagement() {
                               />
                             </div>
                           ) : (
-                            <div className="w-12 h-12 rounded-md bg-muted/40 flex items-center justify-center flex-shrink-0 text-xs text-muted-foreground">
+                            <div className="w-10 h-10 rounded-md bg-muted/40 flex items-center justify-center flex-shrink-0 text-xs text-muted-foreground">
                               📦
                             </div>
                           )}
-                          <div>
-                            <p className="font-bold text-base truncate">{item.name}</p>
+                          <div className="min-w-0">
+                            <p className="font-bold text-sm truncate max-w-[100px]">{item.name}</p>
                             {item.is_low_stock && (
-                              <Badge className="mt-0.5 bg-orange-500/20 text-orange-600 dark:text-orange-400 border-orange-500/30 text-xs py-0">
-                                <AlertTriangle className="w-2 h-2 md:w-3 md:h-3 mr-1" />
+                              <Badge className="bg-orange-500/20 text-orange-600 dark:text-orange-400 border-orange-500/30 text-[10px] py-0 px-1">
+                                <AlertTriangle className="w-2 h-2 mr-0.5" />
                                 Low
                               </Badge>
                             )}
                           </div>
                         </div>
                       </td>
-                      <td className="p-2 md:p-3 text-muted-foreground text-sm font-mono">{item.sku || '-'}</td>
-                      <td className="p-2 md:p-3">
+                      <td className="p-2 text-center text-muted-foreground text-xs font-mono">{item.sku || '-'}</td>
+                      <td className="p-2 text-center">
                         {item.category && (
-                          <Badge variant="outline" className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30 text-xs py-0">{item.category}</Badge>
+                          <Badge variant="outline" className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30 text-[10px] py-0 px-1">{item.category}</Badge>
                         )}
                       </td>
-                      <td className="p-2 md:p-3 text-right font-semibold">
+                      <td className="p-2 text-center font-semibold text-sm">
                         <span className={item.is_low_stock ? 'text-orange-600 dark:text-orange-400' : 'text-emerald-600 dark:text-emerald-400'}>
                           {item.quantity}
                         </span>
-                        <span className="text-xs text-muted-foreground ml-1 block md:inline">
-                          /{item.reorder_level}
+                        <span className="text-[10px] text-muted-foreground">/{item.reorder_level}</span>
+                      </td>
+                      <td className="p-2 text-right font-medium text-sm">
+                        {item.unit_price ? `$${Number(item.unit_price).toFixed(0)}` : '-'}
+                      </td>
+                      <td className="p-2 text-center text-muted-foreground text-xs">{item.location || '-'}</td>
+                      <td className="p-2 text-center">
+                        <span className="text-sm">
+                          {item.status === 'active' ? '✅' : item.status === 'out_of_stock' ? '❌' : '⏸️'}
                         </span>
                       </td>
-                      <td className="p-2 md:p-3 text-right font-medium text-sm">
-                        {item.unit_price ? `$${Number(item.unit_price).toFixed(2)}` : '-'}
-                      </td>
-                      <td className="p-2 md:p-3 text-muted-foreground text-sm truncate">{item.location || '-'}</td>
-                      <td className="p-2 md:p-3">
-                        <Badge 
-                          className={`text-xs py-0 ${
-                            item.status === 'active' ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' :
-                            item.status === 'out_of_stock' ? 'bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/30' :
-                            'bg-gray-500/20 text-gray-600 dark:text-gray-400 border-gray-500/30'
-                          }`}
-                        >
-                          {item.status === 'active' ? '✅' : item.status === 'out_of_stock' ? '❌' : '⏸️'}
-                        </Badge>
-                      </td>
-                      <td className="p-4">
-                        <div className="flex justify-end gap-2">
+                      <td className="p-2 md:p-3 sticky right-0 bg-background dark:bg-slate-900">
+                        <div className="flex justify-end gap-1">
                           <Button
-                            size="sm"
+                            size="icon"
                             variant="ghost"
                             onClick={() => openAdjustModal(item)}
                             title="Adjust Quantity"
+                            className="h-8 w-8"
                           >
                             <TrendingUp className="w-4 h-4" />
                           </Button>
                           <Button
-                            size="sm"
+                            size="icon"
                             variant="ghost"
                             onClick={() => openHistoryModal(item)}
                             title="View History"
+                            className="h-8 w-8"
                           >
                             <History className="w-4 h-4" />
                           </Button>
                           <Button
-                            size="sm"
+                            size="icon"
                             variant="ghost"
                             onClick={() => openEditModal(item)}
                             title="Edit"
+                            className="h-8 w-8"
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
                           <Button
-                            size="sm"
+                            size="icon"
                             variant="ghost"
                             onClick={() => openDeleteDialog(item)}
                             title="Delete"
+                            className="h-8 w-8"
                           >
                             <Trash2 className="w-4 h-4 text-red-500" />
                           </Button>
@@ -861,14 +955,119 @@ export default function StockManagement() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
                   <div className="space-y-1">
-                    <Label htmlFor="category" className="text-base font-bold">Category</Label>
-                    <Input
-                      id="category"
-                      value={formData.category || ''}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      placeholder="e.g., Electronics"
-                      className="border-blue-500/30 focus:border-blue-500/60 transition-colors h-9 text-base"
-                    />
+                    <Label htmlFor="category" className="text-base font-bold flex items-center gap-2">
+                      <Tag className="w-4 h-4" /> Category
+                    </Label>
+                    <Popover open={categoryPopoverOpen} onOpenChange={setCategoryPopoverOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          className="w-full justify-between border-blue-500/30 hover:border-blue-500/60 h-9 text-base font-normal"
+                        >
+                          {formData.category || "Select category..."}
+                          <Tag className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[280px] p-0" align="start">
+                        <div className="p-2 border-b">
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="New category name..."
+                              value={newCategoryName}
+                              onChange={(e) => setNewCategoryName(e.target.value)}
+                              className="h-8 text-sm"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  createCategory();
+                                }
+                              }}
+                            />
+                            <Button 
+                              size="sm" 
+                              onClick={createCategory}
+                              disabled={!newCategoryName.trim() || creatingCategory}
+                              className="h-8 px-2"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="max-h-[200px] overflow-y-auto p-1">
+                          {allCategories.length === 0 && categories.length === 0 ? (
+                            <p className="text-sm text-muted-foreground p-2 text-center">
+                              No categories yet. Create one above!
+                            </p>
+                          ) : (
+                            <>
+                              {/* Show from allCategories first if available */}
+                              {allCategories.map((cat) => (
+                                <div
+                                  key={cat.id}
+                                  className={`flex items-center justify-between p-2 rounded cursor-pointer hover:bg-primary/10 ${
+                                    formData.category === cat.name ? 'bg-primary/20' : ''
+                                  }`}
+                                  onClick={() => {
+                                    setFormData({ ...formData, category: cat.name });
+                                    setCategoryPopoverOpen(false);
+                                  }}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span>{cat.icon}</span>
+                                    <span className="text-sm font-medium">{cat.name}</span>
+                                    <Badge variant="secondary" className="text-xs">
+                                      {cat.product_count}
+                                    </Badge>
+                                  </div>
+                                  {formData.category === cat.name && (
+                                    <Check className="w-4 h-4 text-primary" />
+                                  )}
+                                </div>
+                              ))}
+                              {/* Show categories from products not in allCategories */}
+                              {categories
+                                .filter(c => !allCategories.some(ac => ac.name === c))
+                                .map((cat) => (
+                                  <div
+                                    key={cat}
+                                    className={`flex items-center justify-between p-2 rounded cursor-pointer hover:bg-primary/10 ${
+                                      formData.category === cat ? 'bg-primary/20' : ''
+                                    }`}
+                                    onClick={() => {
+                                      setFormData({ ...formData, category: cat });
+                                      setCategoryPopoverOpen(false);
+                                    }}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <span>📦</span>
+                                      <span className="text-sm font-medium">{cat}</span>
+                                    </div>
+                                    {formData.category === cat && (
+                                      <Check className="w-4 h-4 text-primary" />
+                                    )}
+                                  </div>
+                                ))}
+                            </>
+                          )}
+                        </div>
+                        {formData.category && (
+                          <div className="border-t p-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="w-full text-muted-foreground"
+                              onClick={() => {
+                                setFormData({ ...formData, category: '' });
+                                setCategoryPopoverOpen(false);
+                              }}
+                            >
+                              <X className="w-4 h-4 mr-2" /> Clear category
+                            </Button>
+                          </div>
+                        )}
+                      </PopoverContent>
+                    </Popover>
                   </div>
 
                   <div className="space-y-1">
@@ -1202,6 +1401,92 @@ export default function StockManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Category Management Modal */}
+      <Dialog open={showCategoryModal} onOpenChange={setShowCategoryModal}>
+        <DialogContent className="max-w-md bg-gradient-to-br from-background via-background to-primary/5 dark:from-slate-950 dark:to-slate-900/30">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent flex items-center gap-2">
+              <Tag className="w-5 h-5 text-primary" /> Manage Categories
+            </DialogTitle>
+            <DialogDescription>
+              Create and manage categories for your stock items
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Create new category */}
+            <div className="space-y-2">
+              <Label className="font-bold">Create New Category</Label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Category name..."
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  className="flex-1"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      createCategory();
+                    }
+                  }}
+                />
+                <Button 
+                  onClick={createCategory}
+                  disabled={!newCategoryName.trim() || creatingCategory}
+                  className="bg-primary"
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add
+                </Button>
+              </div>
+            </div>
+
+            {/* Categories list */}
+            <div className="space-y-2">
+              <Label className="font-bold">Your Categories ({allCategories.length})</Label>
+              <div className="max-h-[300px] overflow-y-auto space-y-2">
+                {allCategories.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No categories yet. Create one above!
+                  </p>
+                ) : (
+                  allCategories.map((cat) => (
+                    <div
+                      key={cat.id}
+                      className="flex items-center justify-between p-3 rounded-lg border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">{cat.icon}</span>
+                        <div>
+                          <p className="font-medium">{cat.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {cat.product_count} product{cat.product_count !== 1 ? 's' : ''}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => deleteCategory(cat.id)}
+                        className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCategoryModal(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

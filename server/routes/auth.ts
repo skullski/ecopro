@@ -214,26 +214,23 @@ export const login: RequestHandler = async (req, res) => {
       return jsonError(res, 401, "Invalid email or password");
     }
 
-    // Check if account is locked
-    // Payment locks: Allow login (blur overlay shown on dashboard)
-    // Critical locks: Prevent login entirely
+    // Check if account is BLOCKED (admin action - cannot login at all)
+    if ((user as any).is_blocked) {
+      console.log("❌ Account is BLOCKED by admin, reason:", (user as any).blocked_reason);
+      await recordFailedLogin(req, email, 'account_blocked');
+      const reason = (user as any).blocked_reason || "Account blocked by administrator";
+      return res.status(403).json({ 
+        error: `Account blocked: ${reason}`,
+        blocked: true,
+        blocked_reason: reason
+      });
+    }
+
+    // Check if account is LOCKED (subscription issue - can login but restricted)
+    // Payment/subscription locks allow login, blur overlay will be shown on restricted pages
     if (user.is_locked) {
-      const lockType = inferLockType((user as any).lock_type, (user as any).locked_reason);
-      console.log("❌ Account is locked, type:", lockType, "reason:", user.locked_reason);
-      
-      if (lockType === 'critical') {
-        // Critical lock - prevent login
-        await recordFailedLogin(req, email, 'account_locked');
-        const reason = user.locked_reason || "Account locked by administrator";
-        return res.status(403).json({ 
-          error: `Account locked: ${reason}`,
-          locked: true,
-          locked_reason: reason,
-          lock_type: 'critical'
-        });
-      }
-      // Payment lock - allow login (blur overlay will be shown on dashboard)
-      console.log("✅ Payment lock detected - allowing login, blur overlay will be shown");
+      console.log("⚠️ Account is LOCKED (subscription), reason:", user.locked_reason);
+      console.log("✅ Allowing login - blur overlay will be shown on Orders/Bot pages");
     }
 
     console.log("✅ Login successful");
@@ -258,9 +255,10 @@ export const login: RequestHandler = async (req, res) => {
         name: user.name,
         role: user.role,
         user_type: user.user_type || (user.role === "admin" ? "admin" : "client"),
+        is_blocked: !!(user as any).is_blocked,
+        blocked_reason: (user as any).blocked_reason || null,
         is_locked: !!(user as any).is_locked,
         locked_reason: (user as any).locked_reason || null,
-        lock_type: user.is_locked ? inferLockType((user as any).lock_type, (user as any).locked_reason) : null,
       },
     });
   } catch (error) {
@@ -289,6 +287,8 @@ export const getCurrentUser: RequestHandler = async (req, res) => {
       email: user.email,
       name: user.name,
       role: user.role as "user" | "admin",
+      is_locked: !!(user as any).is_locked,
+      locked_reason: (user as any).locked_reason || null,
     });
   } catch (error) {
     console.error("Get current user error:", error);

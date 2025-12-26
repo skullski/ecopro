@@ -286,7 +286,7 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
 
         if (action === 'cancel') {
           const upd = await pool.query(
-            `UPDATE store_orders SET status = 'cancelled', updated_at = NOW()
+            `UPDATE store_orders SET status = 'declined', updated_at = NOW()
              WHERE id = $1 AND client_id = $2 AND status IN ('pending')
              RETURNING id`,
             [orderId, clientId]
@@ -299,7 +299,7 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
               [orderId, clientId]
             );
             await answerCallbackQuery({ botToken, callbackQueryId: callbackId, text: 'Cancelled ❌' });
-            await sendTelegramMessage(botToken, chatId, '❌ Order cancelled.\n\nIf you change your mind, you can order again from the store.');
+            await sendTelegramMessage(botToken, chatId, '❌ Order declined.\n\nIf you change your mind, you can order again from the store.');
           } else {
             await answerCallbackQuery({ botToken, callbackQueryId: callbackId, text: 'Already processed' });
           }
@@ -429,10 +429,24 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
       );
       const storeName = String(storeRes.rows[0]?.store_name || 'Store');
       
-      // Send welcome message
-      await sendTelegramMessage(botToken, chatId, 
-        `Welcome to ${storeName}! 🎉\n\n✅ Your account has been linked successfully.\n\nYou can now go back to the order page and complete your purchase.\nWe will send you order confirmation directly here! 📦`
+      // Send "bot connected" message (configurable via template_greeting)
+      const defaultConnect = `Welcome to {storeName}! 🎉
+
+✅ Your Telegram has been linked successfully.
+
+You can now go back to the order page and complete your purchase.
+We will send you order confirmation directly here! 📦`;
+
+      const connectMsg = replaceTemplateVariables(
+        String(greetingTemplate || defaultConnect),
+        {
+          storeName,
+          customerName: 'Customer',
+          orderId: 0,
+        }
       );
+
+      await sendTelegramMessage(botToken, chatId, connectMsg);
       
       return res.status(200).json({ ok: true });
     }

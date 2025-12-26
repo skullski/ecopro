@@ -321,7 +321,7 @@
 html.dark body[data-profile-wallpaper="true"] aside,
 html.dark body[data-profile-wallpaper="true"] aside > div,
 html.dark body[data-profile-wallpaper="true"] .flex.flex-col.h-full.pt-20 {
-  background-color: rgba(15, 23, 42, 0.65) !important;
+  background-color: rgba(15, 23, 42, 0.2) !important;
   backdrop-filter: blur(16px) !important;
   -webkit-backdrop-filter: blur(16px) !important;
 }
@@ -330,7 +330,7 @@ html.dark body[data-profile-wallpaper="true"] .flex.flex-col.h-full.pt-20 {
 html:not(.dark) body[data-profile-wallpaper="true"] aside,
 html:not(.dark) body[data-profile-wallpaper="true"] aside > div,
 html:not(.dark) body[data-profile-wallpaper="true"] .flex.flex-col.h-full.pt-20 {
-  background-color: rgba(255, 255, 255, 0.5) !important;
+  background-color: rgba(255, 255, 255, 0.2) !important;
   backdrop-filter: blur(16px) !important;
   -webkit-backdrop-filter: blur(16px) !important;
 }
@@ -345,9 +345,15 @@ html:not(.dark) body[data-profile-wallpaper="true"] aside .border-t {
   border-color: rgba(0, 0, 0, 0.1) !important;
 }
 
-/* Profile page wallpaper - make cards transparent (light mode) */
-html:not(.dark) body[data-profile-wallpaper="true"] .backdrop-blur-md {
-  background-color: rgba(255, 255, 255, 0.6) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
+/* Profile page wallpaper - glass panels (explicit opt-in class) */
+html:not(.dark) body[data-profile-wallpaper="true"] .profile-glass {
+  background-color: rgba(255, 255, 255, 0.5) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+}
+
+html.dark body[data-profile-wallpaper="true"] .profile-glass {
+  background-color: rgba(15, 23, 42, 0.5) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
 }

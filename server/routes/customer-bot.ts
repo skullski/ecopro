@@ -1,13 +1,14 @@
 import { Router, Request, Response } from 'express';
 import { ensureConnection } from '../utils/database';
 import { sendWhatsAppMessage } from '../utils/messaging';
+import { sendTelegramMessage } from '../utils/bot-messaging';
 
 const router = Router();
 
 // Get customer segments counts for the dashboard
 router.get('/segments', async (req: Request, res: Response) => {
   try {
-    const clientId = (req as any).user?.clientId;
+    const clientId = (req as any).user?.id;
     if (!clientId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -34,7 +35,7 @@ router.get('/segments', async (req: Request, res: Response) => {
       pool.query(`
         SELECT COUNT(DISTINCT customer_phone) as count 
         FROM store_orders 
-        WHERE client_id = $1 AND status = 'cancelled' AND customer_phone IS NOT NULL AND customer_phone != ''
+        WHERE client_id = $1 AND status IN ('cancelled','declined') AND customer_phone IS NOT NULL AND customer_phone != ''
       `, [clientId]),
       
       // Pending orders
@@ -48,7 +49,10 @@ router.get('/segments', async (req: Request, res: Response) => {
       pool.query(`
         SELECT COUNT(DISTINCT customer_phone) as count 
         FROM store_orders 
-        WHERE client_id = $1 AND (status = 'returned' OR status = 'failed' OR delivery_status = 'failed') 
+        WHERE client_id = $1 AND (
+          status IN ('returned','failed','didnt_pickup','delivery_failed')
+          OR delivery_status = 'failed'
+        )
         AND customer_phone IS NOT NULL AND customer_phone != ''
       `, [clientId]),
     ]);
@@ -69,7 +73,7 @@ router.get('/segments', async (req: Request, res: Response) => {
 // Get customers by segment
 router.get('/customers/:segment', async (req: Request, res: Response) => {
   try {
-    const clientId = (req as any).user?.clientId;
+    const clientId = (req as any).user?.id;
     if (!clientId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -86,13 +90,13 @@ router.get('/customers/:segment', async (req: Request, res: Response) => {
         whereClause = "AND status = 'delivered'";
         break;
       case 'cancelled':
-        whereClause = "AND status = 'cancelled'";
+        whereClause = "AND status IN ('cancelled','declined')";
         break;
       case 'pending':
         whereClause = "AND status = 'pending'";
         break;
       case 'failed_delivery':
-        whereClause = "AND (status = 'returned' OR status = 'failed' OR delivery_status = 'failed')";
+        whereClause = "AND (status IN ('returned','failed','didnt_pickup','delivery_failed') OR delivery_status = 'failed')";
         break;
       default:
         return res.status(400).json({ error: 'Invalid segment' });
@@ -124,7 +128,7 @@ router.get('/customers/:segment', async (req: Request, res: Response) => {
 // Get all campaigns for the store owner
 router.get('/campaigns', async (req: Request, res: Response) => {
   try {
-    const clientId = (req as any).user?.clientId;
+    const clientId = (req as any).user?.id;
     if (!clientId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -147,23 +151,42 @@ router.get('/campaigns', async (req: Request, res: Response) => {
 // Create a new campaign
 router.post('/campaigns', async (req: Request, res: Response) => {
   try {
-    const clientId = (req as any).user?.clientId;
+    const clientId = (req as any).user?.id;
     if (!clientId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const { name, message, target_category, channel = 'whatsapp' } = req.body;
+    const { name, message, target_category, channel } = req.body;
 
     if (!name || !message || !target_category) {
       return res.status(400).json({ error: 'Missing required fields: name, message, target_category' });
     }
 
     const pool = await ensureConnection();
+
+    // Default channel to the store's configured provider (keeps UX "easy")
+    const settingsRes = await pool.query(
+      `SELECT provider, updates_enabled
+       FROM bot_settings
+       WHERE client_id = $1
+       LIMIT 1`,
+      [clientId]
+    );
+    const provider = String(settingsRes.rows[0]?.provider || 'telegram');
+    const updatesEnabled = !!settingsRes.rows[0]?.updates_enabled;
+    if (!updatesEnabled) {
+      return res.status(400).json({ error: 'Updates bot is disabled in settings' });
+    }
+
+    const requestedChannel = channel ? String(channel) : provider;
+    // Backwards compatibility: UI uses "whatsapp" but backend expects WhatsApp Cloud.
+    const normalizedChannel = requestedChannel === 'whatsapp' ? 'whatsapp_cloud' : requestedChannel;
+
     const result = await pool.query(`
       INSERT INTO message_campaigns (client_id, name, message, target_category, channel, status)
       VALUES ($1, $2, $3, $4, $5, 'draft')
       RETURNING *
-    `, [clientId, name, message, target_category, channel]);
+    `, [clientId, name, message, target_category, normalizedChannel]);
 
     res.json(result.rows[0]);
   } catch (error) {
@@ -175,7 +198,7 @@ router.post('/campaigns', async (req: Request, res: Response) => {
 // Send a campaign
 router.post('/campaigns/:id/send', async (req: Request, res: Response) => {
   try {
-    const clientId = (req as any).user?.clientId;
+    const clientId = (req as any).user?.id;
     if (!clientId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
@@ -206,13 +229,13 @@ router.post('/campaigns/:id/send', async (req: Request, res: Response) => {
         whereClause = "AND status = 'delivered'";
         break;
       case 'cancelled':
-        whereClause = "AND status = 'cancelled'";
+        whereClause = "AND status IN ('cancelled','declined')";
         break;
       case 'pending':
         whereClause = "AND status = 'pending'";
         break;
       case 'failed_delivery':
-        whereClause = "AND (status = 'returned' OR status = 'failed' OR delivery_status = 'failed')";
+        whereClause = "AND (status IN ('returned','failed','didnt_pickup','delivery_failed') OR delivery_status = 'failed')";
         break;
       default:
         whereClause = '';
@@ -244,6 +267,19 @@ router.post('/campaigns/:id/send', async (req: Request, res: Response) => {
       ['sending', customers.length, id]
     );
 
+    // Load bot settings for channel dispatch
+    const botSettingsRes = await pool.query(
+      `SELECT updates_enabled, provider, whatsapp_phone_id, whatsapp_token, telegram_bot_token
+       FROM bot_settings
+       WHERE client_id = $1
+       LIMIT 1`,
+      [clientId]
+    );
+    const botSettings = botSettingsRes.rows[0];
+    if (!botSettings?.updates_enabled) {
+      return res.status(400).json({ error: 'Updates bot is disabled in settings' });
+    }
+
     // Send messages to each customer
     let sentCount = 0;
     let failedCount = 0;
@@ -255,11 +291,35 @@ router.post('/campaigns/:id/send', async (req: Request, res: Response) => {
           .replace(/{name}/gi, customer.customer_name || 'Valued Customer')
           .replace(/{phone}/gi, customer.customer_phone || '');
 
-        if (campaign.channel === 'whatsapp') {
-          // Send WhatsApp message
-          await sendWhatsAppMessage(customer.customer_phone, personalizedMessage);
+        const channel = String(campaign.channel || botSettings?.provider || 'telegram');
+
+        if (channel === 'whatsapp_cloud' || channel === 'whatsapp') {
+          if (!botSettings?.whatsapp_token || !botSettings?.whatsapp_phone_id) {
+            throw new Error('WhatsApp Cloud credentials missing in bot settings');
+          }
+          await sendWhatsAppMessage(customer.customer_phone, personalizedMessage, {
+            token: String(botSettings.whatsapp_token),
+            phoneId: String(botSettings.whatsapp_phone_id),
+          });
+        } else if (channel === 'telegram') {
+          if (!botSettings?.telegram_bot_token) {
+            throw new Error('Telegram bot token missing in bot settings');
+          }
+          const chatRes = await pool.query(
+            `SELECT telegram_chat_id
+             FROM customer_messaging_ids
+             WHERE client_id = $1 AND customer_phone = $2 AND telegram_chat_id IS NOT NULL
+             LIMIT 1`,
+            [clientId, String(customer.customer_phone || '').replace(/\D/g, '')]
+          );
+          const chatId = chatRes.rows[0]?.telegram_chat_id;
+          if (!chatId) {
+            throw new Error('Customer not connected on Telegram');
+          }
+          await sendTelegramMessage(String(botSettings.telegram_bot_token), String(chatId), personalizedMessage);
+        } else {
+          throw new Error(`Unsupported channel: ${channel}`);
         }
-        // TODO: Add SMS and email channels
 
         // Log success
         await pool.query(`
@@ -329,7 +389,7 @@ router.delete('/campaigns/:id', async (req: Request, res: Response) => {
 // Get campaign logs
 router.get('/campaigns/:id/logs', async (req: Request, res: Response) => {
   try {
-    const clientId = (req as any).user?.clientId;
+    const clientId = (req as any).user?.id;
     if (!clientId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }

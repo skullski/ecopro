@@ -2,7 +2,6 @@ import { useState, useEffect, ReactNode } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Lock, Gift, MessageCircle, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getCurrentUser } from '@/lib/auth';
 
 interface SubscriptionGuardProps {
   children: ReactNode;
@@ -20,16 +19,17 @@ interface SubscriptionGuardProps {
 export default function SubscriptionGuard({ children }: SubscriptionGuardProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const currentUser = getCurrentUser();
-  const isPaymentLocked = !!currentUser?.is_locked && currentUser?.lock_type === 'payment';
+  
   const [subscriptionStatus, setSubscriptionStatus] = useState<{
     hasAccess: boolean;
     status: string;
     loading: boolean;
+    isPaymentLocked: boolean;
   }>({
     hasAccess: true,
     status: 'active',
-    loading: true
+    loading: true,
+    isPaymentLocked: false
   });
 
   useEffect(() => {
@@ -38,18 +38,35 @@ export default function SubscriptionGuard({ children }: SubscriptionGuardProps) 
 
   const checkSubscription = async () => {
     try {
-      // Payment lock: allow login but block dashboard usage.
-      if (isPaymentLocked) {
-        setSubscriptionStatus({ hasAccess: false, status: 'payment_locked', loading: false });
-        return;
-      }
-
       const token = localStorage.getItem('authToken');
       if (!token) {
-        setSubscriptionStatus({ hasAccess: true, status: 'unknown', loading: false });
+        setSubscriptionStatus({ hasAccess: true, status: 'unknown', loading: false, isPaymentLocked: false });
         return;
       }
 
+      // First, fetch fresh user data from the server to check is_locked status
+      const meRes = await fetch('/api/auth/me', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (meRes.ok) {
+        const userData = await meRes.json();
+        // Update localStorage with fresh user data
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const parsedUser = JSON.parse(storedUser);
+          const updatedUser = { ...parsedUser, is_locked: userData.is_locked, locked_reason: userData.locked_reason };
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+        }
+        
+        // If user is locked, block access
+        if (userData.is_locked) {
+          setSubscriptionStatus({ hasAccess: false, status: 'payment_locked', loading: false, isPaymentLocked: true });
+          return;
+        }
+      }
+
+      // Then check billing/subscription access
       const res = await fetch('/api/billing/check-access', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -59,16 +76,19 @@ export default function SubscriptionGuard({ children }: SubscriptionGuardProps) 
         setSubscriptionStatus({
           hasAccess: data.hasAccess,
           status: data.status,
-          loading: false
+          loading: false,
+          isPaymentLocked: false
         });
       } else {
-        setSubscriptionStatus({ hasAccess: true, status: 'unknown', loading: false });
+        setSubscriptionStatus({ hasAccess: true, status: 'unknown', loading: false, isPaymentLocked: false });
       }
     } catch (err) {
       console.error('Error checking subscription:', err);
-      setSubscriptionStatus({ hasAccess: true, status: 'unknown', loading: false });
+      setSubscriptionStatus({ hasAccess: true, status: 'unknown', loading: false, isPaymentLocked: false });
     }
   };
+
+  const { isPaymentLocked } = subscriptionStatus;
 
   // Allow access to pricing page even if expired
   const isPricingPage = location.pathname === '/pricing' || location.pathname === '/codes' || location.pathname === '/dashboard/codes';

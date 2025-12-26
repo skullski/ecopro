@@ -23,7 +23,6 @@ export async function processScheduledMessages(): Promise<void> {
        JOIN bot_settings bs ON sm.client_id = bs.client_id AND bs.provider = 'telegram' AND bs.enabled = true
        WHERE sm.status = 'pending' 
          AND sm.scheduled_at <= NOW()
-         AND sm.telegram_chat_id IS NOT NULL
        ORDER BY sm.scheduled_at ASC
        LIMIT 50`
     );
@@ -36,6 +35,40 @@ export async function processScheduledMessages(): Promise<void> {
     
     for (const msg of result.rows) {
       try {
+        // Resolve chat id lazily (order can be linked after message is scheduled)
+        let chatId: string | null = msg.telegram_chat_id ? String(msg.telegram_chat_id) : null;
+        if (!chatId && msg.order_id) {
+          const chatRes = await pool.query(
+            `SELECT telegram_chat_id
+             FROM order_telegram_chats
+             WHERE order_id = $1 AND client_id = $2 AND telegram_chat_id IS NOT NULL
+             LIMIT 1`,
+            [msg.order_id, msg.client_id]
+          );
+          if (chatRes.rows.length && chatRes.rows[0]?.telegram_chat_id) {
+            chatId = String(chatRes.rows[0].telegram_chat_id);
+            await pool.query(
+              `UPDATE scheduled_messages
+               SET telegram_chat_id = $1, updated_at = NOW()
+               WHERE id = $2`,
+              [chatId, msg.id]
+            );
+          }
+        }
+
+        if (!chatId) {
+          // Customer hasn't linked Telegram yet; retry later instead of failing.
+          await pool.query(
+            `UPDATE scheduled_messages
+             SET error_message = $1,
+                 scheduled_at = NOW() + INTERVAL '5 minutes',
+                 updated_at = NOW()
+             WHERE id = $2`,
+            ['WAITING_FOR_TELEGRAM_CHAT', msg.id]
+          );
+          continue;
+        }
+
         // For order confirmation messages, add confirm/cancel buttons
         let replyMarkup: any = undefined;
         
@@ -56,7 +89,7 @@ export async function processScheduledMessages(): Promise<void> {
         // Send the message
         const sendResult = await sendTelegramMessage(
           msg.telegram_bot_token,
-          msg.telegram_chat_id,
+          chatId,
           msg.message_content,
           replyMarkup ? { reply_markup: replyMarkup } : undefined
         );

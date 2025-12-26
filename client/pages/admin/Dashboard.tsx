@@ -135,9 +135,9 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-4 p-1 sm:p-2">
+    <div className="space-y-5 p-2 sm:p-3">
       {/* Welcome Header */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 p-2.5 sm:p-3 text-white">
+      <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 p-3 sm:p-4 text-white">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRoLTJ2LTRoMnY0em0wLTZ2LTRoLTJ2NGgyem0tNiA2di00aC00djRoNHptMC02di00aC00djRoNHoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-30" />
         <div className="relative z-10 flex items-center justify-between">
           <div>
@@ -161,8 +161,8 @@ export default function Dashboard() {
       </div>
 
       {/* Period Selector */}
-      <div className="flex flex-wrap items-center justify-between gap-1">
-        <div className="flex items-center gap-0.5 sm:gap-1 bg-muted/50 p-0.5 rounded-lg">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-1 sm:gap-1.5 bg-muted/50 p-1 rounded-lg">
           {[
             { key: 'today', label: 'Today', icon: Zap },
             { key: 'thisWeek', label: 'This Week', icon: Activity },
@@ -171,7 +171,7 @@ export default function Dashboard() {
             <button
               key={period.key}
               onClick={() => setSelectedPeriod(period.key as any)}
-              className={`px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium transition-all flex items-center gap-1 sm:gap-2 ${
+              className={`px-2.5 sm:px-3.5 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all flex items-center gap-1.5 sm:gap-2.5 ${
                 selectedPeriod === period.key
                   ? 'bg-primary text-primary-foreground shadow-md shadow-primary/25'
                   : 'hover:bg-muted text-muted-foreground'
@@ -188,8 +188,8 @@ export default function Dashboard() {
       </div>
 
       {/* Top Stats with Growth - Enhanced */}
-      <div className="grid gap-1 grid-cols-2 lg:grid-cols-4">
-        <Card className="relative overflow-hidden p-1.5 border-0 bg-gradient-to-br from-blue-500 to-blue-600 text-white group hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-300">
+      <div className="grid gap-2 grid-cols-2 lg:grid-cols-4">
+        <Card className="relative overflow-hidden p-2 border-0 bg-gradient-to-br from-blue-500 to-blue-600 text-white group hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-300">
           <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="relative z-10">
             <div className="flex items-center justify-between">
@@ -208,7 +208,7 @@ export default function Dashboard() {
           </div>
         </Card>
 
-        <Card className="relative overflow-hidden p-1.5 border-0 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white group hover:shadow-lg hover:shadow-emerald-500/25 transition-all duration-300">
+        <Card className="relative overflow-hidden p-2 border-0 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white group hover:shadow-lg hover:shadow-emerald-500/25 transition-all duration-300">
           <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="relative z-10">
             <div className="flex items-center justify-between">
@@ -227,7 +227,7 @@ export default function Dashboard() {
           </div>
         </Card>
 
-        <Card className="relative overflow-hidden p-1.5 border-0 bg-gradient-to-br from-violet-500 to-purple-600 text-white group hover:shadow-lg hover:shadow-violet-500/25 transition-all duration-300">
+        <Card className="relative overflow-hidden p-2 border-0 bg-gradient-to-br from-violet-500 to-purple-600 text-white group hover:shadow-lg hover:shadow-violet-500/25 transition-all duration-300">
           <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="relative z-10">
             <div className="flex items-center justify-between">
@@ -241,7 +241,7 @@ export default function Dashboard() {
           </div>
         </Card>
 
-        <Card className="relative overflow-hidden p-1.5 border-0 bg-gradient-to-br from-orange-500 to-amber-600 text-white group hover:shadow-lg hover:shadow-orange-500/25 transition-all duration-300">
+        <Card className="relative overflow-hidden p-2 border-0 bg-gradient-to-br from-orange-500 to-amber-600 text-white group hover:shadow-lg hover:shadow-orange-500/25 transition-all duration-300">
           <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="relative z-10">
             <div className="flex items-center justify-between">
@@ -278,9 +278,9 @@ export default function Dashboard() {
             </div>
           </div>
           
-          <div className="h-32 sm:h-40 flex items-end gap-1 sm:gap-2 px-1">
+          <div className="h-40 sm:h-48 flex items-end gap-2 sm:gap-3 px-1.5">
             {chartData.length > 0 ? chartData.map((day, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-1 group">
+              <div key={i} className="flex-1 flex flex-col items-center gap-1.5 group">
                 <div className="relative w-full">
                   <div 
                     className="w-full rounded-t-md bg-gradient-to-t from-blue-600 via-blue-500 to-purple-500 hover:from-blue-500 hover:via-purple-500 hover:to-pink-500 transition-all duration-300 cursor-pointer shadow-md shadow-blue-500/20 hover:shadow-purple-500/30"

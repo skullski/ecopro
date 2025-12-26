@@ -259,30 +259,45 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
 
   return (
     <div className="flex flex-col h-full bg-gray-950 dark:bg-slate-900">
-      {/* Header */}
-      <div className="px-4 md:px-6 py-3 md:py-4 border-b border-gray-700 bg-gradient-to-r from-blue-700 to-blue-800 shadow-lg">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
-            <div className="w-8 md:w-10 h-8 md:h-10 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-              <span className="text-base md:text-lg">💬</span>
+      {/* Header - Scales with viewport height */}
+      <div 
+        className="border-b border-gray-700 bg-gradient-to-r from-blue-700 to-blue-800 shadow-lg"
+        style={{ padding: 'clamp(0.25rem, 1.5vh, 1.25rem) clamp(0.4rem, 2vh, 2rem)' }}
+      >
+        <div className="flex items-center justify-between" style={{ gap: 'clamp(0.2rem, 1vh, 1rem)' }}>
+          <div className="flex items-center min-w-0 flex-1" style={{ gap: 'clamp(0.25rem, 1vh, 1rem)' }}>
+            <div 
+              className="rounded-full bg-white/20 flex items-center justify-center flex-shrink-0"
+              style={{ width: 'clamp(1.25rem, 4vh, 3rem)', height: 'clamp(1.25rem, 4vh, 3rem)' }}
+            >
+              <span style={{ fontSize: 'clamp(0.6rem, 2vh, 1.5rem)' }}>💬</span>
             </div>
             <div className="min-w-0 flex-1">
-              <h2 className="font-bold text-white text-sm md:text-lg truncate">
+              <h2 className="font-bold text-white truncate" style={{ fontSize: 'clamp(0.7rem, 1.8vh, 1.25rem)' }}>
                 {userRole === 'admin' ? 'Support Chat' : userRole === 'seller' ? 'Customer Chat' : 'Support Agent'}
               </h2>
-              <p className={`text-xs font-medium truncate ${
-                chat.status === 'active' ? 'text-green-100' : 'text-yellow-100'
-              }`}>
-                {chat.status === 'active' ? '🟢 Active' : '🟡 ' + chat.status}
+              <p 
+                className={`font-medium truncate ${chat.status === 'active' ? 'text-green-100' : 'text-yellow-100'}`}
+                style={{ fontSize: 'clamp(0.5rem, 1.2vh, 0.875rem)' }}
+              >
+                {chat.status === 'active' ? '🟢 open' : '🟡 ' + chat.status}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-1 md:gap-3 flex-shrink-0">
-            <button className="p-1.5 md:p-2 hover:bg-white/10 rounded-lg transition text-white" title="Voice call">
-              <Phone className="w-4 md:w-5 h-4 md:h-5" />
+          <div className="flex items-center flex-shrink-0" style={{ gap: 'clamp(0.1rem, 0.8vh, 1rem)' }}>
+            <button 
+              className="hover:bg-white/10 rounded-lg transition text-white" 
+              title="Voice call"
+              style={{ padding: 'clamp(0.15rem, 0.8vh, 0.625rem)' }}
+            >
+              <Phone style={{ width: 'clamp(0.75rem, 2vh, 1.5rem)', height: 'clamp(0.75rem, 2vh, 1.5rem)' }} />
             </button>
             {onClose && (
-              <button onClick={onClose} className="p-1.5 md:p-2 hover:bg-white/10 rounded-lg transition text-white text-lg">
+              <button 
+                onClick={onClose} 
+                className="hover:bg-white/10 rounded-lg transition text-white"
+                style={{ padding: 'clamp(0.15rem, 0.8vh, 0.625rem)', fontSize: 'clamp(0.7rem, 1.8vh, 1.25rem)' }}
+              >
                 ✕
               </button>
             )}
@@ -334,18 +349,22 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
         </div>
       )}
 
-      {/* Input Area */}
-      <div className="border-t border-gray-700 bg-gray-900 p-3 md:p-4 shadow-2xl">
-        <form onSubmit={handleSendMessage} className="flex flex-col gap-2">
-          <div className="flex gap-2">
+      {/* Input Area - Scales with viewport height */}
+      <div 
+        className="border-t border-gray-700 bg-gray-900 shadow-2xl"
+        style={{ padding: 'clamp(0.25rem, 1.2vh, 1.25rem)' }}
+      >
+        <form onSubmit={handleSendMessage} className="flex flex-col" style={{ gap: 'clamp(0.2rem, 0.8vh, 0.625rem)' }}>
+          <div className="flex" style={{ gap: 'clamp(0.2rem, 0.8vh, 0.625rem)' }}>
             {(userRole === 'client' || userRole === 'admin') && (
               <button
                 type="button"
                 onClick={() => setShowFileUpload(!showFileUpload)}
-                className="p-2 md:p-3 hover:bg-blue-100 rounded-xl transition flex-shrink-0 border border-blue-500 text-blue-600 font-medium hover:border-blue-600"
+                className="hover:bg-blue-100 rounded-lg transition flex-shrink-0 border border-blue-500 text-blue-600 font-medium hover:border-blue-600"
                 title="Upload file"
+                style={{ padding: 'clamp(0.2rem, 1vh, 0.875rem)' }}
               >
-                <Upload className="w-4 md:w-5 h-4 md:h-5" />
+                <Upload style={{ width: 'clamp(0.75rem, 2vh, 1.5rem)', height: 'clamp(0.75rem, 2vh, 1.5rem)' }} />
               </button>
             )}
 
@@ -359,41 +378,57 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
                 placeholder="Type message..."
                 disabled={sending}
                 rows={1}
-                className="w-full px-3 md:px-4 py-2 md:py-3 text-sm md:text-base border border-gray-700 bg-gray-800 text-white placeholder-gray-500 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-gray-600 disabled:bg-gray-700 resize-none overflow-hidden"
+                className="w-full border border-gray-700 bg-gray-800 text-white placeholder-gray-500 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-gray-600 disabled:bg-gray-700 resize-none overflow-hidden"
+                style={{ 
+                  padding: 'clamp(0.2rem, 1vh, 0.875rem) clamp(0.3rem, 1.2vh, 1.25rem)',
+                  paddingRight: 'clamp(1.5rem, 4.5vh, 3.5rem)',
+                  fontSize: 'clamp(0.7rem, 1.5vh, 1.125rem)'
+                }}
               />
               
               <button
                 type="button"
                 onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                className="absolute right-2 md:right-3 top-2 md:top-3 p-1 md:p-2 hover:bg-gray-700 rounded-lg transition text-gray-400"
+                className="absolute hover:bg-gray-700 rounded-lg transition text-gray-400"
                 title="Emoji"
+                style={{ 
+                  right: 'clamp(0.2rem, 1vh, 1rem)', 
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  padding: 'clamp(0.1rem, 0.5vh, 0.5rem)'
+                }}
               >
-                <Smile className="w-4 md:w-5 h-4 md:h-5" />
+                <Smile style={{ width: 'clamp(0.7rem, 1.8vh, 1.375rem)', height: 'clamp(0.7rem, 1.8vh, 1.375rem)' }} />
               </button>
             </div>
 
             <button
               type="submit"
               disabled={sending || !messageInput.trim()}
-              className="p-2 md:p-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:from-gray-600 disabled:to-gray-700 transition flex-shrink-0 shadow-md hover:shadow-lg"
+              className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 disabled:from-gray-600 disabled:to-gray-700 transition flex-shrink-0 shadow-md hover:shadow-lg"
+              style={{ padding: 'clamp(0.2rem, 1vh, 0.875rem)' }}
             >
               {sending ? (
-                <Loader className="w-4 md:w-5 h-4 md:h-5 animate-spin" />
+                <Loader style={{ width: 'clamp(0.75rem, 2vh, 1.5rem)', height: 'clamp(0.75rem, 2vh, 1.5rem)' }} className="animate-spin" />
               ) : (
-                <Send className="w-4 md:w-5 h-4 md:h-5" />
+                <Send style={{ width: 'clamp(0.75rem, 2vh, 1.5rem)', height: 'clamp(0.75rem, 2vh, 1.5rem)' }} />
               )}
             </button>
           </div>
 
-          {/* Emoji Picker */}
+          {/* Emoji Picker - Scales with viewport height */}
           {showEmojiPicker && (
-            <div className="grid grid-cols-6 md:grid-cols-8 gap-2 p-2 md:p-3 bg-gray-800 rounded-xl border border-gray-700 max-h-24 overflow-y-auto">
+            <div 
+              className="grid grid-cols-8 bg-gray-800 rounded-lg border border-gray-700 overflow-y-auto"
+              style={{ gap: 'clamp(0.1rem, 0.5vh, 0.5rem)', padding: 'clamp(0.2rem, 0.8vh, 0.875rem)', maxHeight: 'clamp(2.5rem, 10vh, 7rem)' }}
+            >
               {['😀', '😂', '😍', '🤔', '😢', '😡', '👍', '👎', '❤️', '🔥', '✨', '🎉', '🎈', '🎁', '💡', '🚀'].map(emoji => (
                 <button
                   key={emoji}
                   type="button"
                   onClick={() => addEmoji(emoji)}
-                  className="text-xl md:text-2xl hover:bg-gray-700 rounded-lg p-1 md:p-2 transition"
+                  className="hover:bg-gray-700 rounded transition"
+                  style={{ fontSize: 'clamp(0.7rem, 2.5vh, 1.75rem)', padding: 'clamp(0.05rem, 0.5vh, 0.5rem)' }}
                 >
                   {emoji}
                 </button>

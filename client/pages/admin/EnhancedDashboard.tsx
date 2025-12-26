@@ -35,7 +35,7 @@ export default function EnhancedDashboard() {
     { 
       title: "Visits", 
       value: "1", 
-      icon: <Eye className="w-6 h-6" style={{ color: '#1d4ed8' }} />, 
+      icon: <Eye className="w-10 h-10" style={{ color: '#1d4ed8' }} />, 
       gradient: "from-blue-500 to-cyan-500",
       iconBg: "bg-blue-200 dark:bg-blue-500/20",
       iconColor: "text-blue-700 dark:text-blue-400",
@@ -47,7 +47,7 @@ export default function EnhancedDashboard() {
     { 
       title: "Revenue", 
       value: "0 DZD", 
-      icon: <DollarSign className="w-6 h-6" style={{ color: '#15803d' }} />, 
+      icon: <DollarSign className="w-10 h-10" style={{ color: '#15803d' }} />, 
       gradient: "from-green-500 to-emerald-500",
       iconBg: "bg-green-200 dark:bg-green-500/20",
       iconColor: "text-green-700 dark:text-green-400",
@@ -59,7 +59,7 @@ export default function EnhancedDashboard() {
     { 
       title: "Available Products", 
       value: "0", 
-      icon: <Tag className="w-6 h-6" style={{ color: '#7e22ce' }} />, 
+      icon: <Tag className="w-10 h-10" style={{ color: '#7e22ce' }} />, 
       gradient: "from-purple-500 to-pink-500",
       iconBg: "bg-purple-200 dark:bg-purple-500/20",
       iconColor: "text-purple-700 dark:text-purple-400",
@@ -71,7 +71,7 @@ export default function EnhancedDashboard() {
     { 
       title: "New Orders", 
       value: "0", 
-      icon: <ShoppingCart className="w-6 h-6" style={{ color: '#c2410c' }} />, 
+      icon: <ShoppingCart className="w-10 h-10" style={{ color: '#c2410c' }} />, 
       gradient: "from-orange-500 to-red-500",
       iconBg: "bg-orange-200 dark:bg-orange-500/20",
       iconColor: "text-orange-700 dark:text-orange-400",
@@ -102,34 +102,34 @@ export default function EnhancedDashboard() {
   const totalSteps = setupSteps.length;
 
   return (
-    <div className="space-y-3 md:space-y-4">
+    <div className="space-y-6 md:space-y-8">
       {/* Welcome Banner - Unique diagonal split design */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-100 via-blue-100 to-cyan-100 dark:from-black dark:via-black dark:to-black border-2 border-violet-300 dark:border-gray-800 shadow-xl">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(139,92,246,0.2),transparent_50%)] dark:bg-[radial-gradient(circle_at_30%_50%,rgba(139,92,246,0.1),transparent_50%)]"></div>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_50%,rgba(6,182,212,0.2),transparent_50%)] dark:bg-[radial-gradient(circle_at_70%_50%,rgba(6,182,212,0.1),transparent_50%)]"></div>
         
-        <div className="relative z-10 p-4 md:p-6 md:p-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-3 md:gap-4">
+        <div className="relative z-10 p-6 md:p-10">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-5 md:gap-6">
             <div className="text-center md:text-right">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/20 to-accent/20 border border-primary/30 mb-4">
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                <span className="text-sm font-medium">Online Now</span>
+              <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-to-r from-primary/20 to-accent/20 border border-primary/30 mb-5">
+                <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
+                <span className="text-lg font-medium">Online Now</span>
               </div>
-              <h1 className="text-xl md:text-2xl md:text-2xl md:text-xl md:text-2xl font-bold mb-2">
+              <h1 className="text-4xl md:text-5xl font-bold mb-4">
                 <span className="bg-gradient-to-l from-primary via-accent to-purple-600 bg-clip-text text-transparent">
                   Welcome, Walid
                 </span>
               </h1>
-              <p className="text-muted-foreground text-lg">Ready to make sales today?</p>
+              <p className="text-muted-foreground text-2xl md:text-3xl">Ready to make sales today?</p>
             </div>
             
-            <div className="flex items-center gap-3">
-              <Button className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-lg">
-                <Tag className="w-4 h-4 ml-2" />
+            <div className="flex items-center gap-5">
+              <Button size="lg" className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-lg text-lg px-8 py-6">
+                <Tag className="w-6 h-6 ml-2" />
                 Add New Product
               </Button>
-              <Button variant="outline" className="border-2">
-                <Eye className="w-4 h-4 ml-2" />
+              <Button size="lg" variant="outline" className="border-2 text-lg px-8 py-6">
+                <Eye className="w-6 h-6 ml-2" />
                 Preview Store
               </Button>
             </div>
@@ -138,7 +138,7 @@ export default function EnhancedDashboard() {
       </div>
 
       {/* Stats Grid - Unique card design with diagonal accent */}
-      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, idx) => (
           <GradientCard
             key={idx}
@@ -159,87 +159,87 @@ export default function EnhancedDashboard() {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid lg:grid-cols-3 gap-3 md:gap-4">
+      <div className="grid lg:grid-cols-3 gap-6 md:gap-8">
         {/* Left Column - Subscription & Stats */}
-        <div className="lg:col-span-2 space-y-3 md:space-y-4">
+        <div className="lg:col-span-2 space-y-6 md:space-y-8">
           {/* Subscription Card */}
-          <div className="relative rounded-lg border-2 border-rose-300 dark:border-gray-800 bg-gradient-to-br from-rose-100 via-amber-100 to-orange-100 dark:from-black dark:via-black dark:to-black p-4 md:p-6 text-center overflow-hidden shadow-lg">
+          <div className="relative rounded-xl border-2 border-rose-300 dark:border-gray-800 bg-gradient-to-br from-rose-100 via-amber-100 to-orange-100 dark:from-black dark:via-black dark:to-black p-6 md:p-10 text-center overflow-hidden shadow-lg">
             {/* Decorative elements */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-pink-400/30 to-rose-500/30 rounded-full blur-2xl"></div>
             <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-amber-400/30 to-orange-500/30 rounded-full blur-2xl"></div>
             
             <div className="relative z-10">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-500/10 border border-yellow-500/20 mb-4">
-                <span className="text-2xl">⏰</span>
-                <span className="text-sm font-medium text-yellow-600 dark:text-yellow-400">Trial Period</span>
+              <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-yellow-500/10 border border-yellow-500/20 mb-6">
+                <span className="text-4xl">⏰</span>
+                <span className="text-lg font-semibold text-yellow-600 dark:text-yellow-400">Trial Period</span>
               </div>
-              <h3 className="font-bold text-xl mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Your Subscription Usage</h3>
-            <p className="text-sm text-muted-foreground mb-6">
+              <h3 className="font-bold text-3xl md:text-4xl mb-6 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Your Subscription Usage</h3>
+            <p className="text-xl text-muted-foreground mb-8">
               Current Month: Nov 06, 2025 15:52 - Nov 08, 2025 15:52
             </p>
 
             {/* Countdown */}
-            <div className="flex items-center justify-center gap-4 mb-4 md:mb-6">
-              <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center gap-6 mb-6 md:mb-8">
+              <div className="flex items-center gap-4">
                 <div className="relative">
                   <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-orange-500 rounded-xl blur opacity-50"></div>
-                  <div className="relative bg-gradient-to-br from-red-500 to-orange-500 text-white rounded-xl p-4 min-w-[80px]">
-                    <div className="text-xl md:text-2xl font-bold">{String(timeLeft.days).padStart(2, '0')}</div>
-                    <div className="text-xs font-medium mt-1">Day</div>
+                  <div className="relative bg-gradient-to-br from-red-500 to-orange-500 text-white rounded-xl p-6 min-w-[110px]">
+                    <div className="text-4xl md:text-5xl font-bold">{String(timeLeft.days).padStart(2, '0')}</div>
+                    <div className="text-lg font-medium mt-1">Day</div>
                   </div>
                 </div>
-                <span className="text-xl md:text-2xl font-bold text-muted-foreground">:</span>
+                <span className="text-3xl md:text-4xl font-bold text-muted-foreground">:</span>
                 <div className="relative">
                   <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl blur opacity-50"></div>
-                  <div className="relative bg-gradient-to-br from-blue-500 to-cyan-500 text-white rounded-xl p-4 min-w-[80px]">
-                    <div className="text-xl md:text-2xl font-bold">{String(timeLeft.hours).padStart(2, '0')}</div>
-                    <div className="text-xs font-medium mt-1">Hour</div>
+                  <div className="relative bg-gradient-to-br from-blue-500 to-cyan-500 text-white rounded-xl p-6 min-w-[110px]">
+                    <div className="text-4xl md:text-5xl font-bold">{String(timeLeft.hours).padStart(2, '0')}</div>
+                    <div className="text-lg font-medium mt-1">Hour</div>
                   </div>
                 </div>
-                <span className="text-xl md:text-2xl font-bold text-muted-foreground">:</span>
+                <span className="text-3xl md:text-4xl font-bold text-muted-foreground">:</span>
                 <div className="relative">
                   <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl blur opacity-50"></div>
-                  <div className="relative bg-gradient-to-br from-purple-500 to-pink-500 text-white rounded-xl p-4 min-w-[80px]">
-                    <div className="text-xl md:text-2xl font-bold">{String(timeLeft.minutes).padStart(2, '0')}</div>
-                    <div className="text-xs font-medium mt-1">Minute</div>
+                  <div className="relative bg-gradient-to-br from-purple-500 to-pink-500 text-white rounded-xl p-6 min-w-[110px]">
+                    <div className="text-4xl md:text-5xl font-bold">{String(timeLeft.minutes).padStart(2, '0')}</div>
+                    <div className="text-lg font-medium mt-1">Minute</div>
                   </div>
                 </div>
-                <span className="text-xl md:text-2xl font-bold text-muted-foreground">:</span>
+                <span className="text-3xl md:text-4xl font-bold text-muted-foreground">:</span>
                 <div className="relative">
                   <div className="absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl blur opacity-50"></div>
-                  <div className="relative bg-gradient-to-br from-green-500 to-emerald-500 text-white rounded-xl p-4 min-w-[80px]">
-                    <div className="text-xl md:text-2xl font-bold">{String(timeLeft.seconds).padStart(2, '0')}</div>
-                    <div className="text-xs font-medium mt-1">Second</div>
+                  <div className="relative bg-gradient-to-br from-green-500 to-emerald-500 text-white rounded-xl p-6 min-w-[110px]">
+                    <div className="text-4xl md:text-5xl font-bold">{String(timeLeft.seconds).padStart(2, '0')}</div>
+                    <div className="text-lg font-medium mt-1">Second</div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <p className="text-sm text-red-500 font-medium mb-6 flex items-center justify-center gap-2">
-              <span className="text-xl">⚠️</span>
+            <p className="text-lg md:text-xl text-red-500 font-semibold mb-8 flex items-center justify-center gap-3">
+              <span className="text-3xl">⚠️</span>
               Your free trial period ends in:
             </p>
 
-            <Button size="lg" className="w-full max-w-md bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-lg hover:shadow-xl transition-all">
-              <span className="text-lg">✨</span>
+            <Button size="lg" className="w-full max-w-lg bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-lg hover:shadow-xl transition-all text-xl py-7">
+              <span className="text-2xl">✨</span>
               Upgrade Your Subscription Now
             </Button>
             </div>
 
             {/* Details Link */}
-            <button className="flex items-center justify-center gap-2 w-full mt-4 text-sm text-primary hover:underline">
-              <ChevronLeft className="w-4 h-4" />
+            <button className="flex items-center justify-center gap-3 w-full mt-6 text-lg text-primary hover:underline font-medium">
+              <ChevronLeft className="w-6 h-6" />
               View Details
             </button>
           </div>
 
           {/* Overview Stats */}
           <div>
-            <h3 className="font-bold text-xl mb-6 flex items-center gap-2">
-              <span className="text-2xl">📊</span>
+            <h3 className="font-bold text-3xl mb-8 flex items-center gap-4">
+              <span className="text-4xl">📊</span>
               Overview
             </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
               {stats.map((stat, index) => (
                 <GradientCard
                   key={index}
@@ -255,7 +255,7 @@ export default function EnhancedDashboard() {
                 >
                   <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-5 group-hover:opacity-10 transition-opacity`}></div>
                   <div className="relative z-10 mt-3 flex items-center justify-center">
-                    <div className={"inline-flex items-center justify-center w-14 h-14 rounded-xl " + stat.iconBg + " mb-3 group-hover:scale-110 transition-transform"}>
+                    <div className={"inline-flex items-center justify-center w-16 h-16 rounded-xl " + stat.iconBg + " mb-3 group-hover:scale-110 transition-transform"}>
                       {/* icon already colored via wrapper */}
                     </div>
                   </div>
@@ -266,27 +266,27 @@ export default function EnhancedDashboard() {
           </div>
 
           {/* Quick Stats */}
-          <div className="rounded-2xl border-2 border-teal-300 dark:border-gray-800 bg-gradient-to-br from-cyan-50 via-teal-50 to-emerald-50 dark:from-black dark:via-black dark:to-black p-6 shadow-2xl">
-            <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-              <span className="text-xl">📈</span>
+          <div className="rounded-2xl border-2 border-teal-300 dark:border-gray-800 bg-gradient-to-br from-cyan-50 via-teal-50 to-emerald-50 dark:from-black dark:via-black dark:to-black p-8 shadow-2xl">
+            <h3 className="font-bold text-3xl mb-6 flex items-center gap-4">
+              <span className="text-4xl">📈</span>
               Quick Stats
             </h3>
-            <div className="space-y-2">
+            <div className="space-y-4">
               {quickStats.map((stat, index) => (
-                <div key={index} className="flex items-center justify-between py-3 px-4 rounded-xl bg-white dark:bg-black hover:bg-blue-50 dark:hover:bg-gray-900 transition-colors shadow-md border border-gray-200 dark:border-gray-800">
-                  <div className="flex items-center gap-3">
+                <div key={index} className="flex items-center justify-between py-5 px-6 rounded-xl bg-white dark:bg-black hover:bg-blue-50 dark:hover:bg-gray-900 transition-colors shadow-md border border-gray-200 dark:border-gray-800">
+                  <div className="flex items-center gap-5">
                     {stat.status === "success" ? (
-                      <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
-                        <Check className="w-4 h-4 text-green-500" />
+                      <div className="w-14 h-14 rounded-full bg-green-500/20 flex items-center justify-center">
+                        <Check className="w-7 h-7 text-green-500" />
                       </div>
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center">
-                        <span className="text-red-500 font-bold">—</span>
+                      <div className="w-14 h-14 rounded-full bg-red-500/20 flex items-center justify-center">
+                        <span className="text-red-500 font-bold text-xl">—</span>
                       </div>
                     )}
-                    <span className="text-sm font-medium">{stat.label}</span>
+                    <span className="text-xl font-medium">{stat.label}</span>
                   </div>
-                  <span className="font-bold text-lg">{stat.value}</span>
+                  <span className="font-bold text-3xl">{stat.value}</span>
                 </div>
               ))}
             </div>
@@ -294,48 +294,48 @@ export default function EnhancedDashboard() {
         </div>
 
         {/* Right Column - Setup & App */}
-        <div className="space-y-3 md:space-y-4">
+        <div className="space-y-6 md:space-y-8">
           {/* Setup Checklist */}
-          <div className="rounded-2xl border-2 border-lime-300 dark:border-gray-800 bg-gradient-to-br from-lime-50 via-emerald-50 to-teal-50 dark:from-black dark:via-black dark:to-black p-6 shadow-2xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-lg flex items-center gap-2">
-                <span className="text-xl">✅</span>
+          <div className="rounded-2xl border-2 border-lime-300 dark:border-gray-800 bg-gradient-to-br from-lime-50 via-emerald-50 to-teal-50 dark:from-black dark:via-black dark:to-black p-8 shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-bold text-3xl flex items-center gap-4">
+                <span className="text-4xl">✅</span>
                 Complete Your Store Setup
               </h3>
-              <div className="px-3 py-1 rounded-full bg-accent/20 text-accent text-xs font-bold">
+              <div className="px-5 py-2.5 rounded-full bg-accent/20 text-accent text-lg font-bold">
                 {completedSteps}/{totalSteps}
               </div>
             </div>
             
             {/* Progress bar */}
-            <div className="mb-4 h-3 bg-gradient-to-r from-gray-200 to-gray-300 dark:bg-muted rounded-full overflow-hidden shadow-inner">
+            <div className="mb-6 h-5 bg-gradient-to-r from-gray-200 to-gray-300 dark:bg-muted rounded-full overflow-hidden shadow-inner">
               <div 
                 className="h-full bg-gradient-to-r from-lime-400 via-emerald-500 to-teal-500 transition-all duration-500 shadow-lg"
                 style={{ width: `${(completedSteps / totalSteps) * 100}%` }}
               ></div>
             </div>
             
-            <div className="space-y-2">
+            <div className="space-y-4">
               {setupSteps.map((step, index) => (
-                <div key={index} className={`flex items-start gap-3 p-4 rounded-xl transition-all ${
+                <div key={index} className={`flex items-start gap-5 p-6 rounded-xl transition-all ${
                   step.completed 
                     ? 'bg-green-100 dark:bg-green-950 border-2 border-green-400 dark:border-green-800 shadow-md' 
                     : 'bg-white dark:bg-black border-2 border-gray-300 dark:border-gray-800 hover:border-primary hover:shadow-lg'
                 }`}>
                   <button className="mt-0.5 hover:scale-110 transition-transform">
-                    <ChevronLeft className="w-5 h-5 text-primary" />
+                    <ChevronLeft className="w-7 h-7 text-primary" />
                   </button>
                   <div className="flex-1 text-right">
-                    <div className={`text-sm font-medium ${step.completed ? 'line-through text-muted-foreground' : ''}`}>
+                    <div className={`text-lg md:text-xl font-medium ${step.completed ? 'line-through text-muted-foreground' : ''}`}>
                       {step.title}
                     </div>
                   </div>
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
                     step.completed 
                       ? 'bg-gradient-to-br from-green-500 to-emerald-500 shadow-lg shadow-green-500/50' 
                       : 'bg-muted border-2 border-muted-foreground/20'
                   }`}>
-                    {step.completed && <Check className="w-4 h-4 text-white" />}
+                    {step.completed && <Check className="w-7 h-7 text-white" />}
                   </div>
                 </div>
               ))}
@@ -343,7 +343,7 @@ export default function EnhancedDashboard() {
           </div>
 
           {/* App Promotion */}
-          <div className="relative rounded-2xl border-2 border-fuchsia-400 dark:border-gray-800 bg-gradient-to-br from-fuchsia-100 via-purple-100 to-indigo-100 dark:from-black dark:via-black dark:to-black p-4 md:p-6 text-center overflow-hidden shadow-2xl">
+          <div className="relative rounded-2xl border-2 border-fuchsia-400 dark:border-gray-800 bg-gradient-to-br from-fuchsia-100 via-purple-100 to-indigo-100 dark:from-black dark:via-black dark:to-black p-6 md:p-10 text-center overflow-hidden shadow-2xl">
             {/* Animated background */}
             <div className="absolute inset-0">
               <div className="absolute top-0 left-0 w-32 h-32 bg-fuchsia-400/30 rounded-full blur-3xl animate-pulse"></div>
@@ -352,35 +352,35 @@ export default function EnhancedDashboard() {
             </div>
             
             <div className="relative z-10">
-              <div className="text-2xl md:text-xl md:text-2xl mb-3 animate-bounce">📱</div>
-              <h3 className="font-bold text-lg mb-3 flex items-center justify-center gap-2">
-                <span className="text-xl">🚀</span>
+              <div className="text-5xl mb-5 animate-bounce">📱</div>
+              <h3 className="font-bold text-3xl mb-5 flex items-center justify-center gap-4">
+                <span className="text-4xl">🚀</span>
                 Our Apps
               </h3>
-              <div className="text-xl md:text-2xl md:text-2xl md:text-xl md:text-2xl font-bold mb-4 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
+              <div className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
                 CALL VERIFICATION
               </div>
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 mb-4">
-                <span className="text-sm font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+              <div className="inline-flex items-center gap-3 px-6 py-4 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 mb-5">
+                <span className="text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                   SCAN APP
                 </span>
               </div>
-              <p className="text-sm text-muted-foreground mb-6">
+              <p className="text-lg md:text-xl text-muted-foreground mb-8">
                 Scan and track your products easily
               </p>
-              <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg hover:shadow-xl transition-all group">
-                <Download className="w-4 h-4 ml-2 group-hover:animate-bounce" />
+              <Button size="lg" className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg hover:shadow-xl transition-all group text-xl py-7">
+                <Download className="w-6 h-6 ml-2 group-hover:animate-bounce" />
                 Download the App Now
               </Button>
               
               {/* App features */}
-              <div className="mt-6 space-y-2 text-xs text-muted-foreground">
-                <div className="flex items-center justify-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+              <div className="mt-8 space-y-4 text-lg text-muted-foreground">
+                <div className="flex items-center justify-center gap-3">
+                  <span className="w-3 h-3 rounded-full bg-green-500"></span>
                   <span>Available on Android and iOS</span>
                 </div>
-                <div className="flex items-center justify-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                <div className="flex items-center justify-center gap-3">
+                  <span className="w-3 h-3 rounded-full bg-blue-500"></span>
                   <span>100% Free</span>
                 </div>
               </div>

@@ -111,16 +111,31 @@ export const GenerateLabelSchema = z.object({
 export type GenerateLabelInput = z.infer<typeof GenerateLabelSchema>;
 
 // Shipment Creation (for courier API)
+// Extended for Algerian delivery providers (Yalidine, Guepex, etc.)
 export const ShipmentSchema = z.object({
+  // Customer info
   customer_name: z.string().min(1, 'Customer name required'),
   customer_phone: z.string().min(1, 'Phone number required'),
   customer_email: z.string().email().optional(),
   delivery_address: z.string().min(1, 'Delivery address required'),
+  
+  // Algeria-specific location (required for all Algerian providers)
+  wilaya: z.string().optional(), // Province name, e.g., "Alger", "Constantine"
+  commune: z.string().optional(), // Municipality name
+  
+  // Product/Order info
   product_description: z.string().optional(),
-  quantity: z.number().int().positive(),
+  quantity: z.number().int().positive().default(1),
   weight: z.number().positive().optional(),
-  cod_amount: z.number().nonnegative().optional(),
+  cod_amount: z.number().nonnegative().optional(), // Cash on delivery amount in DZD
   reference_id: z.string(), // Order ID from our system
+  
+  // Delivery options
+  is_stopdesk: z.boolean().optional(), // Pickup from desk vs home delivery
+  notes: z.string().optional(), // Special delivery instructions
+  
+  // For aggregators like Dolivroo
+  provider: z.string().optional(), // Specify provider: 'yalidine', 'ecotrack', 'auto'
 });
 
 export type ShipmentInput = z.infer<typeof ShipmentSchema>;

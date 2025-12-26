@@ -627,6 +627,25 @@ export function createServer() {
     stockRoutes.getStockCategories
   );
   app.get(
+    "/api/client/stock/categories/all",
+    authenticate,
+    requireClient,
+    stockRoutes.getAllStockCategories
+  );
+  app.post(
+    "/api/client/stock/categories",
+    authenticate,
+    requireClient,
+    apiLimiter,
+    stockRoutes.createStockCategory
+  );
+  app.delete(
+    "/api/client/stock/categories/:id",
+    authenticate,
+    requireClient,
+    stockRoutes.deleteStockCategory
+  );
+  app.get(
     "/api/client/stock/:id",
     authenticate,
     requireClient,
@@ -748,6 +767,7 @@ export function createServer() {
   // Order routes
   app.post("/api/orders/create", orderRoutes.createOrder); // Public - buyers can create orders
   app.get("/api/client/orders", authenticate, requireClient, orderRoutes.getClientOrders);
+  app.get("/api/orders/new-count", authenticate, requireClient, orderRoutes.getNewOrdersCount); // Get count of new orders;
   
   // Order statuses routes (authenticated - client only)
   app.get("/api/client/order-statuses", authenticate, requireClient, orderRoutes.getOrderStatuses);

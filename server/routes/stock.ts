@@ -558,3 +558,114 @@ export const getStockCategories: RequestHandler = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch categories' });
   }
 };
+
+/**
+ * Create a new stock category
+ * POST /api/client/stock/categories
+ */
+export const createStockCategory: RequestHandler = async (req, res) => {
+  try {
+    const pool = await ensureConnection();
+    const clientId = (req as any).user?.id;
+    const { name, color, icon } = req.body;
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: 'Category name is required' });
+    }
+
+    const categoryName = name.trim();
+
+    // Check if category already exists for this client
+    const existingCheck = await pool.query(
+      `SELECT id FROM client_stock_categories WHERE client_id = $1 AND LOWER(name) = LOWER($2)`,
+      [clientId, categoryName]
+    );
+
+    if (existingCheck.rows.length > 0) {
+      return res.status(400).json({ error: 'Category already exists' });
+    }
+
+    // Insert new category
+    const result = await pool.query(
+      `INSERT INTO client_stock_categories (client_id, name, color, icon, created_at)
+       VALUES ($1, $2, $3, $4, NOW())
+       RETURNING id, name, color, icon, created_at`,
+      [clientId, categoryName, color || '#3b82f6', icon || '📦']
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('[createStockCategory] error:', error);
+    res.status(500).json({ error: 'Failed to create category' });
+  }
+};
+
+/**
+ * Delete a stock category
+ * DELETE /api/client/stock/categories/:id
+ */
+export const deleteStockCategory: RequestHandler = async (req, res) => {
+  try {
+    const pool = await ensureConnection();
+    const clientId = (req as any).user?.id;
+    const categoryId = req.params.id;
+
+    // Get the category name first
+    const categoryResult = await pool.query(
+      `SELECT name FROM client_stock_categories WHERE id = $1 AND client_id = $2`,
+      [categoryId, clientId]
+    );
+
+    if (categoryResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+
+    const categoryName = categoryResult.rows[0].name;
+
+    // Remove category from products (set to null)
+    await pool.query(
+      `UPDATE client_stock_products SET category = NULL WHERE client_id = $1 AND category = $2`,
+      [clientId, categoryName]
+    );
+
+    // Delete the category
+    await pool.query(
+      `DELETE FROM client_stock_categories WHERE id = $1 AND client_id = $2`,
+      [categoryId, clientId]
+    );
+
+    res.json({ success: true, message: 'Category deleted' });
+  } catch (error) {
+    console.error('[deleteStockCategory] error:', error);
+    res.status(500).json({ error: 'Failed to delete category' });
+  }
+};
+
+/**
+ * Get all stock categories with counts
+ * GET /api/client/stock/categories/all
+ */
+export const getAllStockCategories: RequestHandler = async (req, res) => {
+  try {
+    const pool = await ensureConnection();
+    const clientId = (req as any).user?.id;
+
+    // Get categories from the categories table with product counts
+    const result = await pool.query(
+      `SELECT 
+         c.id, c.name, c.color, c.icon, c.created_at,
+         COUNT(p.id) as product_count
+       FROM client_stock_categories c
+       LEFT JOIN client_stock_products p ON p.client_id = c.client_id AND p.category = c.name
+       WHERE c.client_id = $1
+       GROUP BY c.id, c.name, c.color, c.icon, c.created_at
+       ORDER BY c.name ASC`,
+      [clientId]
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('[getAllStockCategories] error:', error);
+    res.status(500).json({ error: 'Failed to fetch categories' });
+  }
+};

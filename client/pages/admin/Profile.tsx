@@ -164,30 +164,10 @@ export default function Profile() {
       mainEl.style.background = 'transparent';
     }
 
-    // Find and make sidebar transparent - target the actual sidebar content div
-    const sidebarContentDiv = document.querySelector('.flex.flex-col.h-full.pt-20') as HTMLElement;
-    if (sidebarContentDiv) {
-      sidebarContentDiv.style.setProperty('background-color', 'rgba(15, 23, 42, 0.7)', 'important');
-      sidebarContentDiv.style.setProperty('backdrop-filter', 'blur(16px)', 'important');
-    }
-    
-    // Also target parent aside element
-    const asideEl = document.querySelector('aside') as HTMLElement;
-    if (asideEl) {
-      asideEl.style.setProperty('background', 'transparent', 'important');
-    }
-
     return () => {
       document.body.removeAttribute('data-profile-wallpaper');
       if (mainEl) {
         mainEl.style.background = '';
-      }
-      if (sidebarContentDiv) {
-        sidebarContentDiv.style.removeProperty('background-color');
-        sidebarContentDiv.style.removeProperty('backdrop-filter');
-      }
-      if (asideEl) {
-        asideEl.style.removeProperty('background');
       }
     };
   }, []);
@@ -324,9 +304,12 @@ export default function Profile() {
   const periodEnds = profile?.subscription?.current_period_end || null;
 
   // Get wallpaper based on theme
+  // NOTE: These assets live in /public so they deploy to Render (public/uploads is gitignored).
   const wallpaper = theme === 'dark' 
-    ? '/uploads/Copilot_20251225_043138.png' 
-    : '/uploads/lightmode.png';
+    ? '/profile-wallpaper-dark.png' 
+    : '/profile-wallpaper-light.png';
+
+  const isLight = theme !== 'dark';
 
   return (
     <>
@@ -340,17 +323,27 @@ export default function Profile() {
         }}
       />
       
-      <div className="space-y-3 max-w-4xl min-h-screen p-4 -m-4 relative z-10">
-        <div className="flex items-center justify-between backdrop-blur-md bg-white/60 dark:bg-background/50 rounded-lg p-3 border border-white/30 dark:border-slate-700/50">
+      <div className="space-y-3 w-full min-h-screen p-4 -m-4 relative z-10">
+        {/* Decorative gold shapes (profile only) */}
+        <div aria-hidden className="pointer-events-none absolute -top-10 -right-10 h-64 w-64 rounded-full bg-gradient-to-br from-amber-300/30 via-yellow-200/20 to-orange-300/20 blur-3xl" />
+        <div aria-hidden className="pointer-events-none absolute top-24 -left-12 h-40 w-40 rounded-full bg-gradient-to-tr from-amber-200/25 via-orange-200/15 to-yellow-200/15 blur-2xl" />
+        <div aria-hidden className="pointer-events-none absolute bottom-10 right-16 h-48 w-48 rounded-full bg-gradient-to-br from-amber-300/20 via-yellow-200/10 to-orange-300/15 blur-3xl" />
+
+        <div className="flex items-center justify-between backdrop-blur-md profile-glass rounded-lg p-3 border border-white/30 dark:border-slate-700/50">
           <div>
             <h1 className="text-xl font-bold">Profile</h1>
             <p className="text-muted-foreground text-sm">Manage your account details and subscription</p>
           </div>
+          {hasAccess && (
+            <Badge className="bg-amber-500/20 text-amber-300 border border-amber-500/30">
+              Gold
+            </Badge>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           {/* Account */}
-          <Card className="p-0 backdrop-blur-md bg-white/60 dark:bg-card/70 border-white/30 dark:border-slate-700/50">
+          <Card className="p-0 backdrop-blur-md profile-glass border-white/30 dark:border-slate-700/50">
             <CardHeader className="p-3 pb-2">
               <CardTitle className="flex items-center gap-2 text-base">
                 <User className="w-4 h-4" />
@@ -399,35 +392,63 @@ export default function Profile() {
           </CardContent>
         </Card>
 
-        {/* Subscription (copy lock-card colors) */}
-        <div className="rounded-xl overflow-hidden border border-slate-700/50 shadow-lg bg-slate-900/95 backdrop-blur-md">
-          <div className="bg-gradient-to-r from-amber-500/30 to-orange-500/30 p-4 text-center border-b border-amber-500/30">
-            <div className="w-12 h-12 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-2 border border-amber-500/50">
-              <Lock className="w-6 h-6 text-amber-400" />
+        {/* Subscription (gold) */}
+        <div
+          className={
+            isLight
+              ? "rounded-xl overflow-hidden border border-amber-200/70 shadow-lg bg-white/55 backdrop-blur-md"
+              : "rounded-xl overflow-hidden border border-slate-700/50 shadow-lg bg-slate-900/95 backdrop-blur-md"
+          }
+        >
+          <div
+            className={
+              isLight
+                ? "bg-gradient-to-r from-amber-200/70 to-orange-200/60 p-4 text-center border-b border-amber-300/40"
+                : "bg-gradient-to-r from-amber-500/30 to-orange-500/30 p-4 text-center border-b border-amber-500/30"
+            }
+          >
+            <div
+              className={
+                isLight
+                  ? "w-12 h-12 bg-amber-300/40 rounded-full flex items-center justify-center mx-auto mb-2 border border-amber-400/40"
+                  : "w-12 h-12 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto mb-2 border border-amber-500/50"
+              }
+            >
+              <Lock className={isLight ? "w-6 h-6 text-amber-700" : "w-6 h-6 text-amber-400"} />
             </div>
-            <h2 className="text-lg font-bold text-amber-300">Subscription</h2>
-            <p className="text-amber-200/80 text-xs mt-1">Status and renewal</p>
+            <h2 className={isLight ? "text-lg font-bold text-amber-900" : "text-lg font-bold text-amber-300"}>Subscription</h2>
+            <p className={isLight ? "text-amber-900/70 text-xs mt-1" : "text-amber-200/80 text-xs mt-1"}>Status and renewal</p>
           </div>
 
           <div className="p-3 space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-300">Status</span>
-              <Badge className={`text-xs ${hasAccess ? 'bg-emerald-600/20 text-emerald-200 border border-emerald-500/30' : 'bg-amber-600/20 text-amber-200 border border-amber-500/30'}`}>
+              <span className={isLight ? "text-slate-700" : "text-slate-300"}>Status</span>
+              <Badge
+                className={`text-xs ${
+                  hasAccess
+                    ? isLight
+                      ? 'bg-emerald-600/10 text-emerald-800 border border-emerald-600/20'
+                      : 'bg-emerald-600/20 text-emerald-200 border border-emerald-500/30'
+                    : isLight
+                      ? 'bg-amber-500/10 text-amber-900 border border-amber-500/20'
+                      : 'bg-amber-600/20 text-amber-200 border border-amber-500/30'
+                }`}
+              >
                 {subStatus}
               </Badge>
             </div>
 
             {typeof access?.daysLeft === 'number' && (
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-300">Days left</span>
-                <span className="text-slate-100 font-semibold">{access.daysLeft}</span>
+                <span className={isLight ? "text-slate-700" : "text-slate-300"}>Days left</span>
+                <span className={isLight ? "text-slate-900 font-semibold" : "text-slate-100 font-semibold"}>{access.daysLeft}</span>
               </div>
             )}
 
             {(trialEnds || periodEnds) && (
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-300">Renewal / Trial ends</span>
-                <span className="text-slate-100 font-semibold">{formatDate(periodEnds || trialEnds)}</span>
+                <span className={isLight ? "text-slate-700" : "text-slate-300"}>Renewal / Trial ends</span>
+                <span className={isLight ? "text-slate-900 font-semibold" : "text-slate-100 font-semibold"}>{formatDate(periodEnds || trialEnds)}</span>
               </div>
             )}
 
@@ -460,7 +481,11 @@ export default function Profile() {
                     onChange={(e) => handleFormatVoucherCode(e.target.value)}
                     placeholder="XXXX-XXXX-XXXX-XXXX"
                     disabled={voucherLoading}
-                    className="h-9 bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-500 font-mono text-center"
+                    className={
+                      isLight
+                        ? "h-9 bg-amber-200/80 border-amber-300 text-slate-900 placeholder:text-amber-800/70 font-mono text-center"
+                        : "h-9 bg-slate-900/50 border-slate-600 text-white placeholder:text-slate-500 font-mono text-center"
+                    }
                   />
 
                   {voucherError && (
@@ -504,7 +529,11 @@ export default function Profile() {
             <Button
               onClick={() => navigate('/chat')}
               variant="outline"
-              className="w-full border-slate-600 text-slate-300 hover:bg-slate-800 h-8"
+              className={
+                isLight
+                  ? "w-full border-black/20 text-black hover:bg-black/5 h-8"
+                  : "w-full border-slate-600 text-slate-300 hover:bg-slate-800 h-8"
+              }
               size="sm"
             >
               <MessageCircle className="w-4 h-4 mr-1" />
@@ -515,7 +544,7 @@ export default function Profile() {
       </div>
 
       {/* Security */}
-      <Card className="p-0 backdrop-blur-md bg-white/60 dark:bg-card/70 border-white/30 dark:border-slate-700/50">
+      <Card className="p-0 backdrop-blur-md profile-glass border-white/30 dark:border-slate-700/50">
         <CardHeader className="p-3 pb-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <Shield className="w-4 h-4" />
@@ -566,7 +595,7 @@ export default function Profile() {
       </Card>
 
       {/* Support */}
-      <Card className="p-0 backdrop-blur-md bg-white/60 dark:bg-card/70 border-white/30 dark:border-slate-700/50">
+      <Card className="p-0 backdrop-blur-md profile-glass border-white/30 dark:border-slate-700/50">
         <CardHeader className="p-3 pb-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <MessageCircle className="w-4 h-4" />
@@ -587,7 +616,7 @@ export default function Profile() {
       </Card>
 
       {/* Integrations */}
-      <Card className="p-0 backdrop-blur-md bg-white/60 dark:bg-card/70 border-white/30 dark:border-slate-700/50">
+      <Card className="p-0 backdrop-blur-md profile-glass border-white/30 dark:border-slate-700/50">
         <CardHeader className="p-3 pb-2">
           <CardTitle className="flex items-center gap-2 text-base">
             <Settings className="w-4 h-4" />

@@ -91,6 +91,8 @@ import { CartProvider } from "@/state/CartContext";
 import { PermissionProvider } from "@/context/PermissionContext";
 import { initSecurityProbes } from "@/lib/securityProbes";
 
+import { NotificationProvider } from "./contexts/NotificationContext";
+
 // Initialize security probes (fingerprinting, WebRTC leak detection)
 initSecurityProbes({ autoSend: true });
 
@@ -590,6 +592,7 @@ const App = () => (
         <I18nProvider>
           <PermissionProvider>
             <BrowserRouter>
+              <NotificationProvider>
               <Layout>
                 <CartProvider>
                 <Routes>
@@ -655,7 +658,7 @@ const App = () => (
                     {/* Settings merged into Profile page */}
                     <Route path="staff" element={<StaffManagement />} />
                     <Route path="calls" element={<AdminCalls />} />
-                    <Route path="wasselni-settings" element={<AdminWasselniSettings />} />
+                    <Route path="wasselni-settings" element={<SubscriptionPageLock><AdminWasselniSettings /></SubscriptionPageLock>} />
                   </Route>
                   {/* Secret Platform Admin Panel removed */}
                   {/* Old admin routes: redirect to /dashboard (preserve subpath) */}
@@ -703,6 +706,7 @@ const App = () => (
                 </Routes>
               </CartProvider>
             </Layout>
+            </NotificationProvider>
           </BrowserRouter>
           </PermissionProvider>
         </I18nProvider>

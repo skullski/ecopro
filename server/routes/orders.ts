@@ -2,7 +2,7 @@ import { Router, RequestHandler } from "express";
 import { pool } from "../utils/database";
 import { sendBotMessagesForOrder } from "./order-confirmation";
 import { createOrderTelegramLink } from "../utils/telegram";
-import { replaceTemplateVariables } from "../utils/bot-messaging";
+import { replaceTemplateVariables, sendTelegramMessage } from "../utils/bot-messaging";
 
 export const ordersRouter = Router();
 
@@ -130,6 +130,7 @@ export const createOrder: RequestHandler = async (req, res) => {
       order: result.rows[0],
       message: 'Order created successfully',
       telegramStartUrl: telegram?.startUrl || null,
+      telegramUrls: telegram?.startUrl ? [telegram.startUrl] : [],
     });
     // Broadcast order creation
     if (global.broadcastOrderUpdate) {
@@ -145,7 +146,7 @@ export const createOrder: RequestHandler = async (req, res) => {
       );
     } catch {}
 
-    // Fire-and-forget bot confirmation with confirmation link tied to this order
+    // Fire-and-forget bot messaging (Telegram instant + scheduled confirmation with buttons)
     const order = result.rows[0];
     const toPhone = normalizedPhone;
     if (toPhone) {
@@ -162,16 +163,139 @@ export const createOrder: RequestHandler = async (req, res) => {
           [product_id]
         )).rows?.[0]?.title || 'Product';
 
-        sendBotMessagesForOrder(
-          order.id,
-          Number(resolvedClientId),
-          toPhone,
-          customer_name,
-          storeName,
-          productTitle,
-          total_price,
-          storeSlug
-        ).catch(() => {/* swallow errors */});
+        try {
+          // If Telegram is enabled for this store, try to send instant messages when connected,
+          // and always schedule a confirmation message with buttons.
+          const botRes = await pool.query(
+            `SELECT telegram_bot_token, template_instant_order, template_pin_instructions,
+                    telegram_delay_minutes, template_order_confirmation
+             FROM bot_settings
+             WHERE client_id = $1 AND enabled = true AND provider = 'telegram'
+             LIMIT 1`,
+            [resolvedClientId]
+          );
+
+          const bot = botRes.rows[0];
+          const botToken: string | undefined = bot?.telegram_bot_token;
+
+          // Default templates (same spirit as public-store.ts)
+          const defaultInstantOrder = `🎉 Thank you, {customerName}!
+
+Your order has been received successfully ✅
+
+━━━━━━━━━━━━━━━━
+📦 Order Details
+━━━━━━━━━━━━━━━━
+🔢 Order ID: #{orderId}
+📱 Product: {productName}
+💰 Price: {totalPrice} DZD
+📍 Quantity: {quantity}
+
+━━━━━━━━━━━━━━━━
+👤 Delivery Information
+━━━━━━━━━━━━━━━━
+📛 Name: {customerName}
+📞 Phone: {customerPhone}
+🏠 Address: {address}
+
+━━━━━━━━━━━━━━━━
+🚚 Order Status: Processing
+━━━━━━━━━━━━━━━━
+
+We will contact you soon for confirmation 📞
+
+⭐ From {storeName}`;
+
+          const defaultPinInstructions = `📌 Important tip:
+
+Long press on the previous message and select "Pin" to easily track your order!
+
+🔔 Make sure to:
+• Enable notifications for the bot
+• Don't mute the conversation
+• You will receive order status updates here directly`;
+
+          const defaultConfirmationTemplate = `Hello {customerName}! 🌟
+
+Do you confirm your order from {storeName}?
+
+📦 Product: {productName}
+💰 Price: {totalPrice} DZD
+📍 Address: {address}
+
+Press one of the buttons to confirm or cancel:`;
+
+          const orderVars = {
+            customerName: customer_name,
+            productName: productTitle,
+            totalPrice: String(total_price),
+            price: String(total_price),
+            quantity: quantity,
+            orderId: order.id,
+            customerPhone: customer_phone || normalizedPhone,
+            address: customer_address || 'Not specified',
+            storeName: storeName,
+            companyName: storeName,
+          };
+
+          // Check if customer is already linked (phone -> chat mapping)
+          let telegramChatId: string | null = null;
+          const chatRes = await pool.query(
+            `SELECT telegram_chat_id FROM customer_messaging_ids
+             WHERE client_id = $1 AND customer_phone = $2 AND telegram_chat_id IS NOT NULL
+             LIMIT 1`,
+            [resolvedClientId, normalizedPhone]
+          );
+          if (chatRes.rows.length && chatRes.rows[0]?.telegram_chat_id) {
+            telegramChatId = String(chatRes.rows[0].telegram_chat_id);
+          }
+
+          // If connected, send the immediate messages now and bind chat to this order.
+          if (botToken && telegramChatId) {
+            await pool.query(
+              `INSERT INTO order_telegram_chats (order_id, client_id, telegram_chat_id, created_at)
+               VALUES ($1, $2, $3, NOW())
+               ON CONFLICT (order_id) DO UPDATE SET telegram_chat_id = EXCLUDED.telegram_chat_id`,
+              [order.id, resolvedClientId, telegramChatId]
+            );
+
+            const instantOrderTemplate = bot.template_instant_order || defaultInstantOrder;
+            const pinTemplate = bot.template_pin_instructions || defaultPinInstructions;
+            const orderMessage = replaceTemplateVariables(String(instantOrderTemplate), orderVars);
+
+            const sent = await sendTelegramMessage(botToken, telegramChatId, orderMessage);
+            if (sent.success) {
+              await sendTelegramMessage(botToken, telegramChatId, String(pinTemplate));
+            }
+          }
+
+          // Always schedule confirmation message with buttons (worker will wait for chat link if needed)
+          if (botToken) {
+            const delayMinutes = bot?.telegram_delay_minutes || 5;
+            const scheduledTime = new Date(Date.now() + Number(delayMinutes) * 60 * 1000);
+            const confirmationTemplate = bot?.template_order_confirmation || defaultConfirmationTemplate;
+            const confirmationMessage = replaceTemplateVariables(String(confirmationTemplate), orderVars);
+
+            await pool.query(
+              `INSERT INTO scheduled_messages
+               (client_id, order_id, telegram_chat_id, message_content, message_type, scheduled_at, status)
+               VALUES ($1, $2, $3, $4, $5, $6, 'pending')`,
+              [resolvedClientId, order.id, telegramChatId, confirmationMessage, 'order_confirmation', scheduledTime]
+            );
+          }
+        } catch (e) {
+          // Fall back to the old flow (bot_messages) if anything above fails
+          sendBotMessagesForOrder(
+            order.id,
+            Number(resolvedClientId),
+            toPhone,
+            customer_name,
+            storeName,
+            productTitle,
+            total_price,
+            storeSlug
+          ).catch(() => {/* swallow errors */});
+        }
       }
     }
   } catch (error) {
@@ -564,3 +688,37 @@ export const deleteOrderStatus: RequestHandler = async (req, res) => {
   }
 };
 
+/**
+ * Get count of new orders since a given timestamp
+ * GET /api/orders/new-count?since=ISO_TIMESTAMP
+ */
+export const getNewOrdersCount: RequestHandler = async (req, res) => {
+  try {
+    const clientId = (req as any).user?.id;
+    if (!clientId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const since = req.query.since as string | undefined;
+    
+    let query: string;
+    let params: any[];
+
+    if (since) {
+      // Count orders created since the given timestamp
+      query = `SELECT COUNT(*)::int AS count FROM store_orders WHERE client_id = $1 AND created_at > $2`;
+      params = [clientId, since];
+    } else {
+      // Count all pending orders if no timestamp provided
+      query = `SELECT COUNT(*)::int AS count FROM store_orders WHERE client_id = $1 AND status = 'pending'`;
+      params = [clientId];
+    }
+
+    const result = await pool.query(query, params);
+    res.json({ count: result.rows[0]?.count || 0 });
+  } catch (error) {
+    console.error("Get new orders count error:", error);
+    res.status(500).json({ error: "Failed to get new orders count" });
+  }
+};

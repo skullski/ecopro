@@ -1,56 +1,147 @@
 // Yalidine Express Courier Service
+// Real API integration based on Yalidine API documentation
+// API Docs: https://yalidine.app/app/dev/docs/api/
+
 import { CourierService } from '../courier-service';
 import { CourierShipmentResponse, CourierStatusResponse, ShipmentInput } from '../../types/delivery';
 import crypto from 'crypto';
 
-export class YalidineService implements CourierService {
-  private readonly apiUrl = 'https://api.yalidine.net';
+// Yalidine API response types
+interface YalidineParcelResponse {
+  id: number;
+  tracking: string;
+  order_id: string;
+  from_wilaya_name: string;
+  to_wilaya_name: string;
+  to_commune_name: string;
+  has_exchange: boolean;
+  product_to_collect: string | null;
+  is_stopdesk: boolean;
+  stopdesk_id: number | null;
+  price: number;
+  freeshipping: boolean;
+  do_insurance: boolean;
+  declared_value: number | null;
+  product_list: string;
+  height: number;
+  width: number;
+  length: number;
+  weight: number;
+  firstname: string;
+  familyname: string;
+  contact_phone: string;
+  address: string;
+  delivery_fee: number | null;
+  cod_to_pay: number;
+  status: string;
+  status_label: string;
+  pdf_label: string;
+}
 
-  async createShipment(shipment: ShipmentInput, apiKey: string): Promise<CourierShipmentResponse> {
+interface YalidineWilaya {
+  id: number;
+  name: string;
+}
+
+interface YalidineCommune {
+  id: number;
+  name: string;
+  wilaya_id: number;
+}
+
+interface YalidineCreateParcelPayload {
+  order_id: string;
+  firstname: string;
+  familyname: string;
+  contact_phone: string;
+  address: string;
+  to_commune_name: string;
+  to_wilaya_name: string;
+  product_list: string;
+  price: number;
+  freeshipping?: boolean;
+  is_stopdesk?: boolean;
+  stopdesk_id?: number;
+  has_exchange?: boolean;
+  product_to_collect?: string;
+  do_insurance?: boolean;
+  declared_value?: number;
+  height?: number;
+  width?: number;
+  length?: number;
+  weight?: number;
+}
+
+export class YalidineService implements CourierService {
+  // Real Yalidine API endpoint
+  private readonly apiUrl = 'https://api.yalidine.app/v1';
+
+  /**
+   * Create shipment using Yalidine API
+   * POST /v1/parcels/
+   */
+  async createShipment(
+    shipment: ShipmentInput, 
+    apiKey: string,
+    apiId?: string
+  ): Promise<CourierShipmentResponse> {
     try {
-      const payload = {
-        client_name: shipment.customer_name,
-        client_phone: shipment.customer_phone,
-        client_email: shipment.customer_email || '',
-        delivery_address: shipment.delivery_address,
-        delivery_type: 1, // Standard delivery
-        product_list: [
-          {
-            product_name: shipment.product_description || 'Item',
-            qty: shipment.quantity,
-          },
-        ],
-        cod: shipment.cod_amount ? shipment.cod_amount : 0,
-        reference: shipment.reference_id,
+      // Parse customer name into first/last name
+      const nameParts = (shipment.customer_name || '').trim().split(' ');
+      const firstname = nameParts[0] || 'Customer';
+      const familyname = nameParts.slice(1).join(' ') || '';
+
+      // Build Yalidine parcel payload
+      const payload: YalidineCreateParcelPayload = {
+        order_id: shipment.reference_id || `ORD-${Date.now()}`,
+        firstname,
+        familyname,
+        contact_phone: shipment.customer_phone || '',
+        address: shipment.delivery_address || '',
+        to_commune_name: shipment.commune || 'Alger Centre', // Default commune
+        to_wilaya_name: shipment.wilaya || 'Alger', // Default wilaya
+        product_list: shipment.product_description || 'Products',
+        price: shipment.cod_amount || 0, // COD amount in DZD
+        freeshipping: !shipment.cod_amount, // Free shipping if no COD
+        is_stopdesk: shipment.is_stopdesk || false,
+        weight: shipment.weight || 1,
       };
 
-      const response = await fetch(`${this.apiUrl}/create`, {
+      // API request with proper headers
+      const response = await fetch(`${this.apiUrl}/parcels/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
+          'X-API-ID': apiId || apiKey,
+          'X-API-TOKEN': apiKey,
         },
         body: JSON.stringify(payload),
       });
 
       const data = await response.json();
 
-      if (!response.ok || !data.tracking_number) {
+      // Handle error responses
+      if (!response.ok) {
+        console.error('[Yalidine] Create shipment error:', data);
         return {
           success: false,
           tracking_number: '',
-          error: data.message || 'Failed to create shipment',
+          error: data.message || data.error || `API Error ${response.status}`,
         };
       }
 
+      // Success - extract tracking info
+      const parcel: YalidineParcelResponse = data;
+      
       return {
         success: true,
-        tracking_number: data.tracking_number,
-        label_url: data.label_url,
-        reference_id: shipment.reference_id,
-        estimated_delivery: data.estimated_delivery,
+        tracking_number: parcel.tracking,
+        label_url: parcel.pdf_label,
+        reference_id: parcel.order_id,
+        estimated_delivery: undefined, // Yalidine doesn't provide this directly
       };
     } catch (error: any) {
+      console.error('[Yalidine] createShipment exception:', error);
       return {
         success: false,
         tracking_number: '',
@@ -59,12 +150,21 @@ export class YalidineService implements CourierService {
     }
   }
 
-  async getStatus(trackingNumber: string, apiKey: string): Promise<CourierStatusResponse> {
+  /**
+   * Get parcel status using Yalidine API
+   * GET /v1/parcels/{tracking}
+   */
+  async getStatus(
+    trackingNumber: string, 
+    apiKey: string,
+    apiId?: string
+  ): Promise<CourierStatusResponse> {
     try {
-      const response = await fetch(`${this.apiUrl}/track/${trackingNumber}`, {
+      const response = await fetch(`${this.apiUrl}/parcels/${trackingNumber}`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
+          'X-API-ID': apiId || apiKey,
+          'X-API-TOKEN': apiKey,
         },
       });
 
@@ -78,12 +178,14 @@ export class YalidineService implements CourierService {
         };
       }
 
+      const parcel: YalidineParcelResponse = data;
+
       return {
         tracking_number: trackingNumber,
-        status: data.status || 'pending',
-        last_update: data.last_update,
-        location: data.current_location,
-        events: data.events || [],
+        status: this.mapYalidineStatus(parcel.status),
+        last_update: undefined,
+        location: parcel.to_wilaya_name,
+        events: [], // History endpoint needed for full events
       };
     } catch (error: any) {
       return {
@@ -94,33 +196,146 @@ export class YalidineService implements CourierService {
     }
   }
 
+  /**
+   * Get all wilayas (provinces) from Yalidine
+   * GET /v1/wilayas/
+   */
+  async getWilayas(apiKey: string, apiId?: string): Promise<YalidineWilaya[]> {
+    try {
+      const response = await fetch(`${this.apiUrl}/wilayas/`, {
+        method: 'GET',
+        headers: {
+          'X-API-ID': apiId || apiKey,
+          'X-API-TOKEN': apiKey,
+        },
+      });
+      
+      if (!response.ok) return [];
+      return await response.json();
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Get communes for a wilaya
+   * GET /v1/communes/?wilaya_id={id}
+   */
+  async getCommunes(wilayaId: number, apiKey: string, apiId?: string): Promise<YalidineCommune[]> {
+    try {
+      const response = await fetch(`${this.apiUrl}/communes/?wilaya_id=${wilayaId}`, {
+        method: 'GET',
+        headers: {
+          'X-API-ID': apiId || apiKey,
+          'X-API-TOKEN': apiKey,
+        },
+      });
+      
+      if (!response.ok) return [];
+      return await response.json();
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Calculate delivery fees
+   * GET /v1/deliveryfees/?from_wilaya_id={id}&to_wilaya_id={id}&weight={weight}&is_stopdesk={bool}
+   */
+  async getDeliveryFees(
+    fromWilayaId: number,
+    toWilayaId: number,
+    weight: number,
+    isStopdesk: boolean,
+    apiKey: string,
+    apiId?: string
+  ): Promise<{ home_fee: number; desk_fee: number } | null> {
+    try {
+      const params = new URLSearchParams({
+        from_wilaya_id: fromWilayaId.toString(),
+        to_wilaya_id: toWilayaId.toString(),
+        weight: weight.toString(),
+        is_stopdesk: isStopdesk.toString(),
+      });
+      
+      const response = await fetch(`${this.apiUrl}/deliveryfees/?${params}`, {
+        method: 'GET',
+        headers: {
+          'X-API-ID': apiId || apiKey,
+          'X-API-TOKEN': apiKey,
+        },
+      });
+      
+      if (!response.ok) return null;
+      return await response.json();
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Generate shipping label PDF
+   * GET /v1/labels/{tracking}/
+   */
+  async getLabel(trackingNumber: string, apiKey: string, apiId?: string): Promise<string | null> {
+    try {
+      const response = await fetch(`${this.apiUrl}/labels/${trackingNumber}/`, {
+        method: 'GET',
+        headers: {
+          'X-API-ID': apiId || apiKey,
+          'X-API-TOKEN': apiKey,
+        },
+      });
+      
+      if (!response.ok) return null;
+      const data = await response.json();
+      return data.pdf_label || null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Verify webhook signature from Yalidine
+   */
   verifyWebhook(payload: any, signature: string, secret: string): boolean {
     const hmac = crypto.createHmac('sha256', secret);
     const digest = hmac.update(JSON.stringify(payload)).digest('hex');
     return digest === signature;
   }
 
+  /**
+   * Parse Yalidine webhook payload
+   */
   parseWebhookPayload(payload: any) {
     return {
-      tracking_number: payload.tracking_number,
-      event_type: this.mapEventType(payload.status),
+      tracking_number: payload.tracking || payload.tracking_number,
+      event_type: this.mapYalidineStatus(payload.status),
       status: payload.status,
-      timestamp: payload.timestamp,
-      location: payload.location,
-      description: payload.message,
+      timestamp: payload.updated_at || payload.timestamp,
+      location: payload.to_wilaya_name || payload.location,
+      description: payload.status_label || payload.description,
     };
   }
 
-  private mapEventType(status: string): string {
-    const mapping: Record<string, string> = {
-      'pending': 'in_transit',
-      'picked_up': 'pickup',
-      'in_transit': 'in_transit',
-      'out_for_delivery': 'out_for_delivery',
-      'delivered': 'delivered',
-      'failed': 'failed',
-      'returned': 'returned',
+  /**
+   * Map Yalidine status codes to standard status
+   */
+  private mapYalidineStatus(status: string): string {
+    const statusMap: Record<string, string> = {
+      // Yalidine status codes
+      'En preparation': 'pending',
+      'Expediee': 'in_transit',
+      'Au centre': 'in_transit',
+      'En attente du client': 'out_for_delivery',
+      'Sortie en livraison': 'out_for_delivery',
+      'Livree': 'delivered',
+      'Echec livraison': 'failed',
+      'Retournee': 'returned',
+      'Retournee expediteur': 'returned',
+      'Prete au retrait': 'ready_for_pickup',
     };
-    return mapping[status] || 'in_transit';
+    
+    return statusMap[status] || 'pending';
   }
 }

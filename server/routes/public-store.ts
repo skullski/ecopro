@@ -543,6 +543,7 @@ Long press on the previous message and select "Pin" to easily track your order!
             customerPhone: customer_phone || normalizedPhone,
             address: customer_address || 'Not specified',
             storeName: storeName,
+            companyName: storeName,
           });
 
           // Send instant order notification (NO buttons - just info)
@@ -582,6 +583,7 @@ Press one of the buttons to confirm or cancel:`;
             customerPhone: customer_phone || normalizedPhone,
             address: customer_address || 'Not specified',
             storeName: storeName,
+            companyName: storeName,
           });
           
           // Insert into scheduled_messages table

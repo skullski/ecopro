@@ -235,8 +235,10 @@ export async function sendOrderConfirmationMessages(
     const templateVariables = {
       customerName,
       storeName,
+      companyName: storeName,
       productName,
       price,
+      totalPrice: price,
       orderId,
       confirmationLink
     };

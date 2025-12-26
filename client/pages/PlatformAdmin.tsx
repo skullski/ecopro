@@ -32,7 +32,9 @@ import {
   Unlock,
   Copy,
   X,
-  PieChart as PieChartIcon
+  PieChart as PieChartIcon,
+  Ban,
+  UserCheck
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { Badge } from '@/components/ui/badge';
@@ -120,10 +122,11 @@ interface LockedAccount {
   unlocked_at?: string;
   is_paid_temporarily?: boolean;
   subscription_extended_until?: string;
+  subscription_ends_at?: string;
   created_at: string;
 }
 
-// Locked Accounts Manager Component
+// Locked Accounts Manager Component - Subscription Lock Management
 function LockedAccountsManager() {
   const [allAccounts, setAllAccounts] = useState<LockedAccount[]>([]);
   const [loading, setLoading] = useState(true);
@@ -134,7 +137,9 @@ function LockedAccountsManager() {
   const [action, setAction] = useState<'extend' | 'mark_paid'>('extend');
   const [extendDays, setExtendDays] = useState(30);
   const [processing, setProcessing] = useState(false);
-  const [filterStatus, setFilterStatus] = useState<'all' | 'locked' | 'unlocked' | 'hackers'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'locked' | 'active' | 'expiring' | 'hackers'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [quickProcessing, setQuickProcessing] = useState<number | null>(null);
 
   useEffect(() => {
     fetchAllAccounts();
@@ -158,17 +163,103 @@ function LockedAccountsManager() {
     }
   }
 
+  // Calculate days until subscription ends
+  const getDaysLeft = (account: LockedAccount) => {
+    const endDate = account.subscription_extended_until || account.subscription_ends_at;
+    if (!endDate) return null;
+    const days = Math.ceil((new Date(endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    return days;
+  };
+
+  // Filter accounts
   const filteredAccounts = allAccounts.filter(acc => {
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      if (!acc.email.toLowerCase().includes(query) && !acc.name?.toLowerCase().includes(query)) {
+        return false;
+      }
+    }
+    // Status filter
     if (filterStatus === 'all') return true;
     if (filterStatus === 'locked') return acc.is_locked && !acc.locked_reason?.includes('HONEYPOT');
-    if (filterStatus === 'unlocked') return !acc.is_locked;
+    if (filterStatus === 'active') return !acc.is_locked;
+    if (filterStatus === 'expiring') {
+      const days = getDaysLeft(acc);
+      return days !== null && days <= 7 && days > 0 && !acc.is_locked;
+    }
     if (filterStatus === 'hackers') return acc.locked_reason?.includes('HONEYPOT');
     return true;
   });
 
   const lockedCount = allAccounts.filter(a => a.is_locked && !a.locked_reason?.includes('HONEYPOT')).length;
-  const unlockedCount = allAccounts.filter(a => !a.is_locked).length;
+  const activeCount = allAccounts.filter(a => !a.is_locked).length;
+  const expiringCount = allAccounts.filter(a => {
+    const days = getDaysLeft(a);
+    return days !== null && days <= 7 && days > 0 && !a.is_locked;
+  }).length;
   const hackerCount = allAccounts.filter(a => a.locked_reason?.includes('HONEYPOT')).length;
+
+  // Quick unlock single account
+  async function quickUnlock(accountId: number) {
+    setQuickProcessing(accountId);
+    try {
+      const response = await fetch('/api/admin/unlock-account', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify({
+          client_id: accountId,
+          unlock_reason: 'Quick unlock from admin panel',
+          action: 'extend',
+          days: 30
+        })
+      });
+      if (response.ok) {
+        await fetchAllAccounts();
+      } else {
+        const error = await response.json();
+        alert(`Failed: ${error.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      alert('Error unlocking account');
+    } finally {
+      setQuickProcessing(null);
+    }
+  }
+
+  // Quick lock single account
+  async function quickLock(accountId: number) {
+    const lockReason = prompt('Enter lock reason:');
+    if (!lockReason) return;
+    
+    setQuickProcessing(accountId);
+    try {
+      const response = await fetch('/api/admin/lock-account', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify({
+          client_id: accountId,
+          reason: lockReason
+        })
+      });
+      if (response.ok) {
+        await fetchAllAccounts();
+      } else {
+        const error = await response.json();
+        alert(`Failed: ${error.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      alert('Error locking account');
+    } finally {
+      setQuickProcessing(null);
+    }
+  }
 
   async function handleProcess() {
     if (selectedAccounts.length === 0) {
@@ -194,11 +285,9 @@ function LockedAccountsManager() {
             }
           : {
               client_id: clientId,
-              reason,
-              lock_type: 'payment'  // Tools page always locks for payment issues
+              reason
             };
 
-        console.log(`[${modalMode.toUpperCase()}] Sending to ${endpoint}:`, body);
         const response = await fetch(endpoint, {
           method: 'POST',
           headers: {
@@ -207,18 +296,12 @@ function LockedAccountsManager() {
           },
           body: JSON.stringify(body)
         });
-
-        console.log(`[${modalMode.toUpperCase()}] Response status:`, response.status);
         
         if (!response.ok) {
           const error = await response.json();
-          console.error(`[${modalMode.toUpperCase()}] Error response:`, error);
           alert(`Failed: ${error.error || 'Unknown error'}`);
           return;
         }
-
-        const result = await response.json();
-        console.log(`[${modalMode.toUpperCase()}] Success:`, result);
       }
 
       const action_text = modalMode === 'unlock' ? 'unlocked' : 'locked';
@@ -228,7 +311,6 @@ function LockedAccountsManager() {
       setShowModal(false);
       await fetchAllAccounts();
     } catch (err) {
-      console.error('Error processing accounts:', err);
       alert(`Error: ${err instanceof Error ? err.message : 'Failed to process accounts'}`);
     } finally {
       setProcessing(false);
@@ -253,207 +335,240 @@ function LockedAccountsManager() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
+      <div className="flex items-center justify-center" style={{ padding: 'clamp(3rem, 8vh, 5rem)' }}>
         <div className="animate-spin">
-          <Zap className="w-8 h-8 text-amber-400" />
+          <Zap className="text-amber-400" style={{ width: 'clamp(2rem, 4vh, 3rem)', height: 'clamp(2rem, 4vh, 3rem)' }} />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(1rem, 2vh, 1.5rem)' }}>
       {/* Header */}
-      <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 backdrop-blur-md rounded-2xl border border-green-500/30 p-6 shadow-lg">
-        <h2 className="text-2xl font-bold text-green-300 mb-2 flex items-center gap-2">
-          <Unlock className="w-6 h-6" />
-          Subscription & Lock Management
+      <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 backdrop-blur-md rounded-xl border border-amber-500/30 shadow-lg"
+        style={{ padding: 'clamp(1rem, 2vh, 1.5rem)' }}>
+        <h2 className="font-bold text-amber-300 flex items-center" style={{ fontSize: 'clamp(1.25rem, 2.5vh, 1.5rem)', gap: 'clamp(0.5rem, 1vh, 0.75rem)', marginBottom: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}>
+          <Lock style={{ width: 'clamp(1.25rem, 2.5vh, 1.5rem)', height: 'clamp(1.25rem, 2.5vh, 1.5rem)' }} />
+          Subscription Lock Management
         </h2>
-        <p className="text-green-200/80">
-          Manage all accounts: lock for payment issues, unlock and extend subscriptions, or grant temporary paid access
+        <p className="text-amber-200/80" style={{ fontSize: 'clamp(0.875rem, 1.75vh, 1rem)' }}>
+          Manage subscription-locked accounts. Lock for payment issues, unlock and extend subscriptions.
         </p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4">
-          <div className="text-sm text-slate-400">Total Accounts</div>
-          <div className="text-3xl font-bold text-white mt-2">{allAccounts.length}</div>
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-5" style={{ gap: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
+        <div className="bg-slate-800/50 rounded-lg border border-slate-700/50" style={{ padding: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
+          <div className="text-slate-400" style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)' }}>Total</div>
+          <div className="font-bold text-white" style={{ fontSize: 'clamp(1.5rem, 3vh, 2rem)' }}>{allAccounts.length}</div>
         </div>
-        <div className="bg-red-500/10 rounded-xl border border-red-500/30 p-4">
-          <div className="text-sm text-red-300">Locked Accounts</div>
-          <div className="text-3xl font-bold text-red-400 mt-2">{lockedCount}</div>
+        <div className="bg-red-500/10 rounded-lg border border-red-500/30" style={{ padding: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
+          <div className="text-red-300" style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)' }}>🔒 Locked</div>
+          <div className="font-bold text-red-400" style={{ fontSize: 'clamp(1.5rem, 3vh, 2rem)' }}>{lockedCount}</div>
         </div>
-        <div className="bg-green-500/10 rounded-xl border border-green-500/30 p-4">
-          <div className="text-sm text-green-300">Active Accounts</div>
-          <div className="text-3xl font-bold text-green-400 mt-2">{unlockedCount}</div>
+        <div className="bg-green-500/10 rounded-lg border border-green-500/30" style={{ padding: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
+          <div className="text-green-300" style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)' }}>✅ Active</div>
+          <div className="font-bold text-green-400" style={{ fontSize: 'clamp(1.5rem, 3vh, 2rem)' }}>{activeCount}</div>
         </div>
-        <div className={`rounded-xl border p-4 ${hackerCount > 0 ? 'bg-orange-500/20 border-orange-500/50 animate-pulse' : 'bg-slate-800/50 border-slate-700/50'}`}>
-          <div className="text-sm text-orange-300">🚨 Hackers Caught</div>
-          <div className={`text-3xl font-bold mt-2 ${hackerCount > 0 ? 'text-orange-400' : 'text-slate-500'}`}>{hackerCount}</div>
+        <div className={`rounded-lg border ${expiringCount > 0 ? 'bg-yellow-500/20 border-yellow-500/50' : 'bg-slate-800/50 border-slate-700/50'}`} style={{ padding: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
+          <div className="text-yellow-300" style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)' }}>⚠️ Expiring</div>
+          <div className={`font-bold ${expiringCount > 0 ? 'text-yellow-400' : 'text-slate-500'}`} style={{ fontSize: 'clamp(1.5rem, 3vh, 2rem)' }}>{expiringCount}</div>
         </div>
-        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-4">
-          <div className="text-sm text-slate-400">Selected</div>
-          <div className="text-3xl font-bold text-cyan-400 mt-2">{selectedAccounts.length}</div>
+        <div className={`rounded-lg border ${hackerCount > 0 ? 'bg-orange-500/20 border-orange-500/50 animate-pulse' : 'bg-slate-800/50 border-slate-700/50'}`} style={{ padding: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
+          <div className="text-orange-300" style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)' }}>🚨 Hackers</div>
+          <div className={`font-bold ${hackerCount > 0 ? 'text-orange-400' : 'text-slate-500'}`} style={{ fontSize: 'clamp(1.5rem, 3vh, 2rem)' }}>{hackerCount}</div>
         </div>
       </div>
 
-      {/* Filter Buttons */}
-      <div className="flex gap-2 flex-wrap">
-        <button
-          onClick={() => setFilterStatus('all')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-            filterStatus === 'all'
-              ? 'bg-cyan-600 text-white'
-              : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600'
-          }`}
-        >
-          All ({allAccounts.length})
-        </button>
-        <button
-          onClick={() => setFilterStatus('locked')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-            filterStatus === 'locked'
-              ? 'bg-red-600 text-white'
-              : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600'
-          }`}
-        >
-          Locked ({lockedCount})
-        </button>
-        <button
-          onClick={() => setFilterStatus('unlocked')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-            filterStatus === 'unlocked'
-              ? 'bg-green-600 text-white'
-              : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600'
-          }`}
-        >
-          Active ({unlockedCount})
-        </button>
-        <button
-          onClick={() => setFilterStatus('hackers')}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-            filterStatus === 'hackers'
-              ? 'bg-orange-600 text-white animate-pulse'
-              : 'bg-slate-700/50 text-slate-300 hover:bg-orange-600/50'
-          }`}
-        >
-          🚨 Hackers ({hackerCount})
-        </button>
+      {/* Search and Filters */}
+      <div className="flex flex-wrap items-center" style={{ gap: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
+        {/* Search */}
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" style={{ width: 'clamp(1rem, 2vh, 1.25rem)', height: 'clamp(1rem, 2vh, 1.25rem)' }} />
+          <input
+            type="text"
+            placeholder="Search by email or name..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-slate-500"
+            style={{ fontSize: 'clamp(0.875rem, 1.75vh, 1rem)', padding: 'clamp(0.5rem, 1vh, 0.75rem) clamp(0.5rem, 1vh, 0.75rem) clamp(0.5rem, 1vh, 0.75rem) clamp(2.5rem, 5vh, 3rem)' }}
+          />
+        </div>
+        
+        {/* Filter Buttons */}
+        <div className="flex flex-wrap" style={{ gap: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}>
+          {[
+            { key: 'all', label: 'All', count: allAccounts.length, color: 'cyan' },
+            { key: 'locked', label: 'Locked', count: lockedCount, color: 'red' },
+            { key: 'active', label: 'Active', count: activeCount, color: 'green' },
+            { key: 'expiring', label: 'Expiring', count: expiringCount, color: 'yellow' },
+            { key: 'hackers', label: '🚨', count: hackerCount, color: 'orange' },
+          ].map(f => (
+            <button
+              key={f.key}
+              onClick={() => setFilterStatus(f.key as any)}
+              className={`rounded-lg font-medium transition-all ${
+                filterStatus === f.key
+                  ? `bg-${f.color}-600 text-white`
+                  : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600'
+              }`}
+              style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', padding: 'clamp(0.375rem, 0.75vh, 0.5rem) clamp(0.75rem, 1.5vh, 1rem)' }}
+            >
+              {f.label} ({f.count})
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Bulk Actions */}
       {selectedAccounts.length > 0 && (
-        <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 shadow-lg p-6">
-          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-            <CheckCircle className="w-5 h-5 text-cyan-400" />
-            Bulk Actions ({selectedAccounts.length} selected)
-          </h3>
-          <div className="flex gap-3">
-            <Button
-              onClick={() => {
-                setModalMode('unlock');
-                setShowModal(true);
-              }}
-              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
-            >
-              <Unlock className="w-4 h-4 mr-2" />
-              Unlock & Extend
-            </Button>
-            <Button
-              onClick={() => {
-                setModalMode('lock');
-                setShowModal(true);
-              }}
-              className="bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white"
-            >
-              <Lock className="w-4 h-4 mr-2" />
-              Lock for Payment Issues
-            </Button>
+        <div className="bg-slate-800/50 backdrop-blur-md rounded-lg border border-cyan-500/30 shadow-lg" style={{ padding: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
+          <div className="flex items-center justify-between flex-wrap" style={{ gap: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
+            <span className="text-cyan-300 font-medium" style={{ fontSize: 'clamp(0.9rem, 1.8vh, 1.1rem)' }}>
+              {selectedAccounts.length} selected
+            </span>
+            <div className="flex" style={{ gap: 'clamp(0.5rem, 1vh, 0.75rem)' }}>
+              <Button
+                onClick={() => { setModalMode('unlock'); setShowModal(true); }}
+                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
+                style={{ fontSize: 'clamp(0.85rem, 1.7vh, 1rem)', padding: 'clamp(0.375rem, 0.75vh, 0.5rem) clamp(0.75rem, 1.5vh, 1rem)', height: 'clamp(2.25rem, 4.5vh, 2.75rem)' }}
+              >
+                <Unlock style={{ width: 'clamp(1rem, 2vh, 1.25rem)', height: 'clamp(1rem, 2vh, 1.25rem)', marginRight: 'clamp(0.375rem, 0.75vh, 0.5rem)' }} />
+                Unlock
+              </Button>
+              <Button
+                onClick={() => { setModalMode('lock'); setShowModal(true); }}
+                className="bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white"
+                style={{ fontSize: 'clamp(0.85rem, 1.7vh, 1rem)', padding: 'clamp(0.375rem, 0.75vh, 0.5rem) clamp(0.75rem, 1.5vh, 1rem)', height: 'clamp(2.25rem, 4.5vh, 2.75rem)' }}
+              >
+                <Lock style={{ width: 'clamp(1rem, 2vh, 1.25rem)', height: 'clamp(1rem, 2vh, 1.25rem)', marginRight: 'clamp(0.375rem, 0.75vh, 0.5rem)' }} />
+                Lock
+              </Button>
+            </div>
           </div>
         </div>
       )}
 
       {/* Accounts Table */}
-      <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 shadow-lg overflow-hidden">
+      <div className="bg-slate-800/50 backdrop-blur-md rounded-lg border border-slate-700/50 shadow-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-slate-700/50 bg-slate-900/30">
-                <th className="px-6 py-4 text-left">
+              <tr className="border-b border-slate-700/50 bg-slate-900/50">
+                <th style={{ padding: 'clamp(0.75rem, 1.5vh, 1rem)', width: '50px' }}>
                   <input
                     type="checkbox"
                     checked={selectedAccounts.length === filteredAccounts.length && filteredAccounts.length > 0}
                     onChange={toggleSelectAll}
                     className="rounded border-slate-600"
+                    style={{ width: 'clamp(1rem, 2vh, 1.25rem)', height: 'clamp(1rem, 2vh, 1.25rem)' }}
                   />
                 </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Status</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Email</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Name</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Reason/Notes</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Date</th>
+                <th className="text-left text-slate-300 font-semibold" style={{ padding: 'clamp(0.75rem, 1.5vh, 1rem)', fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)' }}>Status</th>
+                <th className="text-left text-slate-300 font-semibold" style={{ padding: 'clamp(0.75rem, 1.5vh, 1rem)', fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)' }}>Account</th>
+                <th className="text-left text-slate-300 font-semibold hidden md:table-cell" style={{ padding: 'clamp(0.75rem, 1.5vh, 1rem)', fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)' }}>Subscription</th>
+                <th className="text-left text-slate-300 font-semibold hidden lg:table-cell" style={{ padding: 'clamp(0.75rem, 1.5vh, 1rem)', fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)' }}>Reason</th>
+                <th className="text-right text-slate-300 font-semibold" style={{ padding: 'clamp(0.75rem, 1.5vh, 1rem)', fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredAccounts.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
-                    <CheckCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p>
-                      {filterStatus === 'all'
-                        ? 'No accounts found'
-                        : filterStatus === 'locked'
-                        ? 'No locked accounts'
-                        : filterStatus === 'hackers'
-                        ? '✅ No hackers caught yet'
-                        : 'No active accounts'}
+                  <td colSpan={6} className="text-center text-slate-400" style={{ padding: 'clamp(2rem, 4vh, 3rem)' }}>
+                    <CheckCircle className="mx-auto opacity-50" style={{ width: 'clamp(2rem, 4vh, 3rem)', height: 'clamp(2rem, 4vh, 3rem)', marginBottom: 'clamp(0.5rem, 1vh, 0.75rem)' }} />
+                    <p style={{ fontSize: 'clamp(0.9rem, 1.8vh, 1.1rem)' }}>
+                      {searchQuery ? 'No matching accounts' : filterStatus === 'locked' ? 'No locked accounts' : filterStatus === 'hackers' ? '✅ No hackers' : 'No accounts found'}
                     </p>
                   </td>
                 </tr>
               ) : (
                 filteredAccounts.map(account => {
                   const isHoneypot = account.locked_reason?.includes('HONEYPOT');
+                  const daysLeft = getDaysLeft(account);
+                  const isExpiring = daysLeft !== null && daysLeft <= 7 && daysLeft > 0;
+                  const isExpired = daysLeft !== null && daysLeft <= 0;
+                  
                   return (
-                  <tr
-                    key={account.id}
-                    className={`border-b border-slate-700/20 hover:bg-slate-900/30 transition-colors ${
-                      isHoneypot ? 'bg-orange-500/10' : account.is_locked ? 'bg-red-500/5' : 'bg-green-500/5'
-                    }`}
-                  >
-                    <td className="px-6 py-4">
-                      <input
-                        type="checkbox"
-                        checked={selectedAccounts.includes(account.id)}
-                        onChange={() => toggleSelect(account.id)}
-                        className="rounded border-slate-600"
-                      />
-                    </td>
-                    <td className="px-6 py-4">
-                      {isHoneypot ? (
-                        <Badge className="bg-orange-600 animate-pulse">🚨 HACKER</Badge>
-                      ) : (
-                        <Badge className={account.is_locked ? 'bg-red-600' : 'bg-green-600'}>
-                          {account.is_locked ? 'Locked' : 'Active'}
-                        </Badge>
-                      )}
-                      {account.is_paid_temporarily && <Badge className="bg-blue-600 ml-2">Paid Temp</Badge>}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-white font-mono">{account.email}</td>
-                    <td className="px-6 py-4 text-sm text-slate-300">{account.name}</td>
-                    <td className="px-6 py-4 text-sm text-slate-400">
-                      {account.is_locked
-                        ? account.locked_reason || 'Subscription expired'
-                        : account.unlock_reason || 'Active'}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-400">
-                      {account.is_locked && account.locked_at
-                        ? new Date(account.locked_at).toLocaleDateString()
-                        : account.unlocked_at
-                        ? new Date(account.unlocked_at).toLocaleDateString()
-                        : new Date(account.created_at).toLocaleDateString()}
-                    </td>
-                  </tr>
+                    <tr
+                      key={account.id}
+                      className={`border-b border-slate-700/20 hover:bg-slate-900/30 transition-colors ${
+                        isHoneypot ? 'bg-orange-500/10' : account.is_locked ? 'bg-red-500/5' : isExpiring ? 'bg-yellow-500/5' : ''
+                      }`}
+                    >
+                      <td style={{ padding: 'clamp(0.5rem, 1vh, 0.75rem) clamp(0.75rem, 1.5vh, 1rem)' }}>
+                        <input
+                          type="checkbox"
+                          checked={selectedAccounts.includes(account.id)}
+                          onChange={() => toggleSelect(account.id)}
+                          className="rounded border-slate-600"
+                          style={{ width: 'clamp(1rem, 2vh, 1.25rem)', height: 'clamp(1rem, 2vh, 1.25rem)' }}
+                        />
+                      </td>
+                      <td style={{ padding: 'clamp(0.5rem, 1vh, 0.75rem)' }}>
+                        {isHoneypot ? (
+                          <Badge className="bg-orange-600 animate-pulse" style={{ fontSize: 'clamp(0.7rem, 1.4vh, 0.85rem)', padding: 'clamp(0.25rem, 0.5vh, 0.375rem) clamp(0.5rem, 1vh, 0.75rem)' }}>🚨 HACKER</Badge>
+                        ) : account.is_locked ? (
+                          <Badge className="bg-red-600" style={{ fontSize: 'clamp(0.7rem, 1.4vh, 0.85rem)', padding: 'clamp(0.25rem, 0.5vh, 0.375rem) clamp(0.5rem, 1vh, 0.75rem)' }}>🔒 Locked</Badge>
+                        ) : isExpiring ? (
+                          <Badge className="bg-yellow-600" style={{ fontSize: 'clamp(0.7rem, 1.4vh, 0.85rem)', padding: 'clamp(0.25rem, 0.5vh, 0.375rem) clamp(0.5rem, 1vh, 0.75rem)' }}>⚠️ Expiring</Badge>
+                        ) : (
+                          <Badge className="bg-green-600" style={{ fontSize: 'clamp(0.7rem, 1.4vh, 0.85rem)', padding: 'clamp(0.25rem, 0.5vh, 0.375rem) clamp(0.5rem, 1vh, 0.75rem)' }}>✅ Active</Badge>
+                        )}
+                        {account.is_paid_temporarily && <Badge className="bg-blue-600 ml-1" style={{ fontSize: 'clamp(0.65rem, 1.3vh, 0.75rem)', padding: 'clamp(0.125rem, 0.25vh, 0.25rem) clamp(0.375rem, 0.75vh, 0.5rem)' }}>Temp</Badge>}
+                      </td>
+                      <td style={{ padding: 'clamp(0.5rem, 1vh, 0.75rem)' }}>
+                        <div className="text-white font-medium" style={{ fontSize: 'clamp(0.85rem, 1.7vh, 1rem)' }}>{account.name || 'No name'}</div>
+                        <div className="text-slate-400 font-mono" style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)' }}>{account.email}</div>
+                      </td>
+                      <td className="hidden md:table-cell" style={{ padding: 'clamp(0.5rem, 1vh, 0.75rem)' }}>
+                        {daysLeft !== null ? (
+                          <div>
+                            <div className={`font-medium ${isExpired ? 'text-red-400' : isExpiring ? 'text-yellow-400' : 'text-green-400'}`} style={{ fontSize: 'clamp(0.85rem, 1.7vh, 1rem)' }}>
+                              {isExpired ? `Expired ${Math.abs(daysLeft)}d ago` : `${daysLeft}d left`}
+                            </div>
+                            <div className="text-slate-500" style={{ fontSize: 'clamp(0.7rem, 1.4vh, 0.85rem)' }}>
+                              {new Date(account.subscription_extended_until || account.subscription_ends_at || '').toLocaleDateString()}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-slate-500" style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)' }}>No data</span>
+                        )}
+                      </td>
+                      <td className="hidden lg:table-cell" style={{ padding: 'clamp(0.5rem, 1vh, 0.75rem)', maxWidth: '180px' }}>
+                        <div className="text-slate-400 truncate" style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)' }}>
+                          {account.is_locked ? account.locked_reason || 'Subscription expired' : account.unlock_reason || '—'}
+                        </div>
+                      </td>
+                      <td className="text-right" style={{ padding: 'clamp(0.5rem, 1vh, 0.75rem)' }}>
+                        {quickProcessing === account.id ? (
+                          <div className="animate-spin inline-block">
+                            <Zap className="text-amber-400" style={{ width: 'clamp(1.25rem, 2.5vh, 1.5rem)', height: 'clamp(1.25rem, 2.5vh, 1.5rem)' }} />
+                          </div>
+                        ) : account.is_locked ? (
+                          <Button
+                            onClick={() => quickUnlock(account.id)}
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                            style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.9rem)', padding: 'clamp(0.25rem, 0.5vh, 0.375rem) clamp(0.5rem, 1vh, 0.75rem)', height: 'clamp(2rem, 4vh, 2.5rem)' }}
+                          >
+                            <Unlock style={{ width: 'clamp(0.875rem, 1.75vh, 1rem)', height: 'clamp(0.875rem, 1.75vh, 1rem)', marginRight: 'clamp(0.25rem, 0.5vh, 0.375rem)' }} />
+                            Unlock
+                          </Button>
+                        ) : (
+                          <Button
+                            onClick={() => quickLock(account.id)}
+                            size="sm"
+                            variant="outline"
+                            className="border-red-500/50 text-red-400 hover:bg-red-500/20"
+                            style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.9rem)', padding: 'clamp(0.25rem, 0.5vh, 0.375rem) clamp(0.5rem, 1vh, 0.75rem)', height: 'clamp(2rem, 4vh, 2.5rem)' }}
+                          >
+                            <Lock style={{ width: 'clamp(0.875rem, 1.75vh, 1rem)', height: 'clamp(0.875rem, 1.75vh, 1rem)', marginRight: 'clamp(0.25rem, 0.5vh, 0.375rem)' }} />
+                            Lock
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
                   );
                 })
               )}
@@ -464,66 +579,56 @@ function LockedAccountsManager() {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-800 rounded-2xl border border-slate-700 p-6 max-w-md w-full shadow-2xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-white">
-                {modalMode === 'unlock' ? 'Unlock & Extend' : 'Lock Account'}
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center" style={{ padding: 'clamp(1rem, 2vh, 1.5rem)' }}>
+          <div className="bg-slate-800 rounded-xl border border-slate-700 shadow-2xl w-full" style={{ maxWidth: '480px', padding: 'clamp(1.25rem, 2.5vh, 1.75rem)' }}>
+            <div className="flex items-center justify-between" style={{ marginBottom: 'clamp(1rem, 2vh, 1.25rem)' }}>
+              <h3 className="font-bold text-white" style={{ fontSize: 'clamp(1.1rem, 2.2vh, 1.35rem)' }}>
+                {modalMode === 'unlock' ? '🔓 Unlock & Extend' : '🔒 Lock Account'}
               </h3>
               <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-white">
-                <X className="w-5 h-5" />
+                <X style={{ width: 'clamp(1.25rem, 2.5vh, 1.5rem)', height: 'clamp(1.25rem, 2.5vh, 1.5rem)' }} />
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(1rem, 2vh, 1.25rem)' }}>
               {modalMode === 'unlock' && (
                 <>
                   {/* Action Selection */}
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">Action</label>
-                    <div className="space-y-2">
-                      <label className="flex items-center gap-2 p-3 rounded-lg border border-slate-600 cursor-pointer hover:bg-slate-700/50"
-                        style={{ background: action === 'extend' ? 'rgba(59, 130, 246, 0.1)' : undefined }}>
-                        <input
-                          type="radio"
-                          checked={action === 'extend'}
-                          onChange={() => setAction('extend')}
-                          name="action"
-                        />
+                    <label className="block font-medium text-slate-300" style={{ fontSize: 'clamp(0.85rem, 1.7vh, 1rem)', marginBottom: 'clamp(0.5rem, 1vh, 0.75rem)' }}>Action</label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.5rem, 1vh, 0.75rem)' }}>
+                      <label className={`flex items-center gap-3 rounded-lg border border-slate-600 cursor-pointer hover:bg-slate-700/50 ${action === 'extend' ? 'bg-blue-500/10 border-blue-500/50' : ''}`}
+                        style={{ padding: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
+                        <input type="radio" checked={action === 'extend'} onChange={() => setAction('extend')} name="action" style={{ width: 'clamp(1rem, 2vh, 1.25rem)', height: 'clamp(1rem, 2vh, 1.25rem)' }} />
                         <div>
-                          <div className="font-medium text-white">Extend Subscription</div>
-                          <div className="text-xs text-slate-400">Add days to their subscription</div>
+                          <div className="font-medium text-white" style={{ fontSize: 'clamp(0.9rem, 1.8vh, 1.05rem)' }}>Extend Subscription</div>
+                          <div className="text-slate-400" style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)' }}>Add days to subscription</div>
                         </div>
                       </label>
-                      <label className="flex items-center gap-2 p-3 rounded-lg border border-slate-600 cursor-pointer hover:bg-slate-700/50"
-                        style={{ background: action === 'mark_paid' ? 'rgba(34, 197, 94, 0.1)' : undefined }}>
-                        <input
-                          type="radio"
-                          checked={action === 'mark_paid'}
-                          onChange={() => setAction('mark_paid')}
-                          name="action"
-                        />
+                      <label className={`flex items-center gap-3 rounded-lg border border-slate-600 cursor-pointer hover:bg-slate-700/50 ${action === 'mark_paid' ? 'bg-green-500/10 border-green-500/50' : ''}`}
+                        style={{ padding: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
+                        <input type="radio" checked={action === 'mark_paid'} onChange={() => setAction('mark_paid')} name="action" style={{ width: 'clamp(1rem, 2vh, 1.25rem)', height: 'clamp(1rem, 2vh, 1.25rem)' }} />
                         <div>
-                          <div className="font-medium text-white">Mark as Paid Temporarily</div>
-                          <div className="text-xs text-slate-400">Grant 30-day paid access</div>
+                          <div className="font-medium text-white" style={{ fontSize: 'clamp(0.9rem, 1.8vh, 1.05rem)' }}>Mark as Paid</div>
+                          <div className="text-slate-400" style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)' }}>Grant 30-day paid access</div>
                         </div>
                       </label>
                     </div>
                   </div>
 
-                  {/* Days Input (for extend) */}
+                  {/* Days Input */}
                   {action === 'extend' && (
                     <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">Days to Extend</label>
+                      <label className="block font-medium text-slate-300" style={{ fontSize: 'clamp(0.85rem, 1.7vh, 1rem)', marginBottom: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}>Days to Extend</label>
                       <input
                         type="number"
                         value={extendDays}
                         onChange={(e) => setExtendDays(Math.min(365, Math.max(1, parseInt(e.target.value) || 1)))}
                         min="1"
                         max="365"
-                        className="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-4 py-2 text-white"
+                        className="w-full bg-slate-900/50 border border-slate-600 rounded-lg text-white"
+                        style={{ fontSize: 'clamp(0.9rem, 1.8vh, 1.05rem)', padding: 'clamp(0.5rem, 1vh, 0.75rem)' }}
                       />
-                      <p className="text-xs text-slate-400 mt-1">Maximum: 365 days</p>
                     </div>
                   )}
                 </>
@@ -531,61 +636,32 @@ function LockedAccountsManager() {
 
               {/* Reason */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="block font-medium text-slate-300" style={{ fontSize: 'clamp(0.85rem, 1.7vh, 1rem)', marginBottom: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}>
                   {modalMode === 'unlock' ? 'Unlock Reason' : 'Lock Reason'}
                 </label>
                 <textarea
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
-                  placeholder={
-                    modalMode === 'unlock'
-                      ? 'e.g., Voucher code issue fixed, Customer requested, Trial extension...'
-                      : 'e.g., Subscription payment overdue, Account flagged for review...'
-                  }
-                  className="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder-slate-500 text-sm"
-                  rows={3}
+                  placeholder={modalMode === 'unlock' ? 'e.g., Payment received, Trial extension...' : 'e.g., Payment overdue...'}
+                  className="w-full bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-500"
+                  style={{ fontSize: 'clamp(0.85rem, 1.7vh, 1rem)', padding: 'clamp(0.5rem, 1vh, 0.75rem)' }}
+                  rows={2}
                 />
               </div>
 
               {/* Actions */}
-              <div className="flex gap-3">
-                <Button
-                  onClick={() => setShowModal(false)}
-                  variant="ghost"
-                  className="flex-1"
-                  disabled={processing}
-                >
+              <div className="flex" style={{ gap: 'clamp(0.5rem, 1vh, 0.75rem)' }}>
+                <Button onClick={() => setShowModal(false)} variant="ghost" className="flex-1" disabled={processing}
+                  style={{ fontSize: 'clamp(0.85rem, 1.7vh, 1rem)', height: 'clamp(2.5rem, 5vh, 3rem)' }}>
                   Cancel
                 </Button>
                 <Button
                   onClick={handleProcess}
-                  className={`flex-1 ${
-                    modalMode === 'unlock'
-                      ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700'
-                      : 'bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700'
-                  }`}
+                  className={`flex-1 ${modalMode === 'unlock' ? 'bg-gradient-to-r from-green-600 to-emerald-600' : 'bg-gradient-to-r from-red-600 to-orange-600'}`}
                   disabled={processing || !reason.trim()}
+                  style={{ fontSize: 'clamp(0.85rem, 1.7vh, 1rem)', height: 'clamp(2.5rem, 5vh, 3rem)' }}
                 >
-                  {processing ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      {modalMode === 'unlock' ? (
-                        <>
-                          <Unlock className="w-4 h-4 mr-2" />
-                          Unlock {selectedAccounts.length}
-                        </>
-                      ) : (
-                        <>
-                          <Lock className="w-4 h-4 mr-2" />
-                          Lock {selectedAccounts.length}
-                        </>
-                      )}
-                    </>
-                  )}
+                  {processing ? 'Processing...' : modalMode === 'unlock' ? `Unlock ${selectedAccounts.length}` : `Lock ${selectedAccounts.length}`}
                 </Button>
               </div>
             </div>
@@ -1056,8 +1132,8 @@ export default function PlatformAdmin() {
     }
   };
 
-  const handleLockUser = async (userId: number, userName: string) => {
-    const reason = prompt(`Lock account for ${userName}?\nEnter reason (optional):`);
+  const handleBlockUser = async (userId: number, userName: string) => {
+    const reason = prompt(`Block account for ${userName}?\nEnter reason (optional):`);
     if (reason === null) return;
 
     try {
@@ -1068,29 +1144,29 @@ export default function PlatformAdmin() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ reason: reason || 'Account locked by admin' }),
+        body: JSON.stringify({ reason: reason || 'Account blocked by admin', lock_type: 'critical' }),
       });
 
       if (res.ok) {
         await loadPlatformData();
-        alert('User account locked successfully');
+        alert('User account blocked successfully');
       } else {
         try {
           const data = await res.json();
-          alert(`Failed to lock user account: ${data.error || data.message || 'Unknown error'}`);
+          alert(`Failed to block user account: ${data.error || data.message || 'Unknown error'}`);
         } catch {
-          alert('Failed to lock user account');
+          alert('Failed to block user account');
         }
       }
     } catch (error) {
-      console.error('Failed to lock user:', error);
-      alert('Failed to lock user account');
+      console.error('Failed to block user:', error);
+      alert('Failed to block user account');
     }
   };
 
-  const handleUnlockUser = async (userId: number, userName: string) => {
-    const confirm_unlock = confirm(`Unlock account for ${userName}?`);
-    if (!confirm_unlock) return;
+  const handleUnblockUser = async (userId: number, userName: string) => {
+    const confirm_unblock = confirm(`Unblock account for ${userName}?`);
+    if (!confirm_unblock) return;
 
     try {
       const token = localStorage.getItem('authToken');
@@ -1103,18 +1179,18 @@ export default function PlatformAdmin() {
 
       if (res.ok) {
         await loadPlatformData();
-        alert('User account unlocked successfully');
+        alert('User account unblocked successfully');
       } else {
         try {
           const data = await res.json();
-          alert(`Failed to unlock user account: ${data.error || data.message || 'Unknown error'}`);
+          alert(`Failed to unblock user account: ${data.error || data.message || 'Unknown error'}`);
         } catch {
-          alert('Failed to unlock user account');
+          alert('Failed to unblock user account');
         }
       }
     } catch (error) {
-      console.error('Failed to unlock user:', error);
-      alert('Failed to unlock user account');
+      console.error('Failed to unblock user:', error);
+      alert('Failed to unblock user account');
     }
   };
 
@@ -1222,47 +1298,52 @@ export default function PlatformAdmin() {
         <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-400 rounded-full mix-blend-screen filter blur-3xl opacity-15 animate-pulse hidden lg:block"></div>
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-400 rounded-full mix-blend-screen filter blur-3xl opacity-15 animate-pulse hidden lg:block" style={{animationDelay: '2s'}}></div>
         
-        <div className="container relative mx-auto px-2 sm:px-3 py-2 sm:py-3 max-w-7xl">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 sm:gap-2.5">
+        <div className="container relative mx-auto max-w-7xl" style={{ padding: 'clamp(0.375rem, 0.8vh, 0.75rem) clamp(0.5rem, 1vh, 0.75rem)' }}>
+          <div className="flex items-center justify-between" style={{ gap: 'clamp(0.375rem, 0.8vh, 0.5rem)' }}>
+            <div className="flex items-center" style={{ gap: 'clamp(0.375rem, 0.8vh, 0.625rem)' }}>
               <div className="relative flex-shrink-0">
                 <div className="absolute inset-0 bg-white/30 rounded-lg blur-lg"></div>
-                <div className="relative w-9 sm:w-10 h-9 sm:h-10 rounded-lg bg-gradient-to-br from-white/40 to-white/10 backdrop-blur-md border border-white/50 flex items-center justify-center shadow-lg">
-                  <Zap className="w-5 sm:w-5 h-5 sm:h-5 text-white drop-shadow-lg" strokeWidth={2} />
+                <div className="relative rounded-lg bg-gradient-to-br from-white/40 to-white/10 backdrop-blur-md border border-white/50 flex items-center justify-center shadow-lg"
+                  style={{ width: 'clamp(2rem, 4.5vh, 2.5rem)', height: 'clamp(2rem, 4.5vh, 2.5rem)' }}>
+                  <Zap className="text-white drop-shadow-lg" style={{ width: 'clamp(1rem, 2.2vh, 1.25rem)', height: 'clamp(1rem, 2.2vh, 1.25rem)' }} strokeWidth={2} />
                 </div>
               </div>
               <div className="min-w-0">
-                <h1 className="text-base sm:text-lg font-black drop-shadow-lg truncate">Platform Control</h1>
-                <p className="text-white/90 text-[10px] sm:text-xs font-medium drop-shadow truncate">Management & Analytics</p>
+                <h1 className="font-black drop-shadow-lg truncate" style={{ fontSize: 'clamp(0.875rem, 2vh, 1.125rem)' }}>Platform Control</h1>
+                <p className="text-white/90 font-medium drop-shadow truncate" style={{ fontSize: 'clamp(0.5rem, 1.1vh, 0.75rem)' }}>Management & Analytics</p>
               </div>
             </div>
             
             {/* Quick Stats - Compact */}
-            <div className="flex items-center gap-1 sm:gap-1.5">
-              <div className="px-2 py-1 rounded-md bg-white/20 backdrop-blur-md border border-white/40 hover:bg-white/30 transition-all">
-                <div className="flex items-center gap-1">
-                  <Users className="w-3 h-3" />
-                  <span className="text-[10px] sm:text-xs font-bold">{stats.totalUsers}</span>
+            <div className="flex items-center" style={{ gap: 'clamp(0.25rem, 0.5vh, 0.375rem)' }}>
+              <div className="rounded-md bg-white/20 backdrop-blur-md border border-white/40 hover:bg-white/30 transition-all"
+                style={{ padding: 'clamp(0.25rem, 0.5vh, 0.25rem) clamp(0.375rem, 0.8vh, 0.5rem)' }}>
+                <div className="flex items-center" style={{ gap: 'clamp(0.125rem, 0.3vh, 0.25rem)' }}>
+                  <Users style={{ width: 'clamp(0.625rem, 1.3vh, 0.75rem)', height: 'clamp(0.625rem, 1.3vh, 0.75rem)' }} />
+                  <span className="font-bold" style={{ fontSize: 'clamp(0.5rem, 1.1vh, 0.75rem)' }}>{stats.totalUsers}</span>
                 </div>
               </div>
-              <div className="hidden sm:flex px-2 py-1 rounded-md bg-white/20 backdrop-blur-md border border-white/40 hover:bg-white/30 transition-all">
-                <div className="flex items-center gap-1">
-                  <Store className="w-3 h-3" />
-                  <span className="text-[10px] sm:text-xs font-bold">{stats.totalClients}</span>
+              <div className="hidden sm:flex rounded-md bg-white/20 backdrop-blur-md border border-white/40 hover:bg-white/30 transition-all"
+                style={{ padding: 'clamp(0.25rem, 0.5vh, 0.25rem) clamp(0.375rem, 0.8vh, 0.5rem)' }}>
+                <div className="flex items-center" style={{ gap: 'clamp(0.125rem, 0.3vh, 0.25rem)' }}>
+                  <Store style={{ width: 'clamp(0.625rem, 1.3vh, 0.75rem)', height: 'clamp(0.625rem, 1.3vh, 0.75rem)' }} />
+                  <span className="font-bold" style={{ fontSize: 'clamp(0.5rem, 1.1vh, 0.75rem)' }}>{stats.totalClients}</span>
                 </div>
               </div>
-              <div className="hidden md:flex px-2 py-1 rounded-md bg-white/20 backdrop-blur-md border border-white/40 hover:bg-white/30 transition-all">
-                <div className="flex items-center gap-1">
-                  <Package className="w-3 h-3" />
-                  <span className="text-xs font-bold">{stats.totalProducts}</span>
+              <div className="hidden md:flex rounded-md bg-white/20 backdrop-blur-md border border-white/40 hover:bg-white/30 transition-all"
+                style={{ padding: 'clamp(0.25rem, 0.5vh, 0.25rem) clamp(0.375rem, 0.8vh, 0.5rem)' }}>
+                <div className="flex items-center" style={{ gap: 'clamp(0.125rem, 0.3vh, 0.25rem)' }}>
+                  <Package style={{ width: 'clamp(0.625rem, 1.3vh, 0.75rem)', height: 'clamp(0.625rem, 1.3vh, 0.75rem)' }} />
+                  <span className="font-bold" style={{ fontSize: 'clamp(0.5rem, 1.1vh, 0.75rem)' }}>{stats.totalProducts}</span>
                 </div>
               </div>
               <Button 
                 size="sm"
-                className="text-white bg-white/20 hover:bg-white/30 border border-white/40 text-[10px] sm:text-xs px-2 py-1 h-7"
+                className="text-white bg-white/20 hover:bg-white/30 border border-white/40"
+                style={{ fontSize: 'clamp(0.5rem, 1.1vh, 0.75rem)', padding: 'clamp(0.125rem, 0.3vh, 0.25rem) clamp(0.375rem, 0.8vh, 0.5rem)', height: 'clamp(1.5rem, 3vh, 1.75rem)' }}
                 onClick={() => window.location.href = '/'}
               >
-                <LogOut className="w-3 h-3 mr-1" />
+                <LogOut style={{ width: 'clamp(0.625rem, 1.3vh, 0.75rem)', height: 'clamp(0.625rem, 1.3vh, 0.75rem)', marginRight: 'clamp(0.125rem, 0.3vh, 0.25rem)' }} />
                 <span>Exit</span>
               </Button>
             </div>
@@ -1270,51 +1351,57 @@ export default function PlatformAdmin() {
         </div>
       </div>
 
-      <div className="container mx-auto px-2 sm:px-3 py-3 sm:py-4 max-w-7xl">
+      <div className="container mx-auto max-w-7xl" style={{ padding: 'clamp(0.5rem, 1.2vh, 1rem) clamp(0.5rem, 1vh, 0.75rem)' }}>
         {/* Enhanced Navigation Tabs */}
-        <div className="flex gap-1 sm:gap-2 mb-4 bg-slate-800/50 backdrop-blur-md rounded-lg border border-slate-700/50 p-1.5 shadow-md overflow-x-auto">
+        <div className="flex bg-slate-800/50 backdrop-blur-md rounded-lg border border-slate-700/50 shadow-md overflow-x-auto"
+          style={{ gap: 'clamp(0.25rem, 0.5vh, 0.5rem)', marginBottom: 'clamp(1rem, 2vh, 1.25rem)', padding: 'clamp(0.375rem, 0.8vh, 0.5rem)' }}>
           <Button
             variant={activeTab === 'overview' ? 'default' : 'ghost'}
             onClick={() => setActiveTab('overview')}
-            className="whitespace-nowrap text-slate-200 text-xs sm:text-sm px-2 sm:px-3 py-1.5 h-8 sm:h-9"
+            className="whitespace-nowrap text-slate-200"
+            style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.375rem, 0.8vh, 0.5rem) clamp(0.75rem, 1.5vh, 1rem)', height: 'clamp(2rem, 4vh, 2.5rem)' }}
           >
-            <BarChart3 className="w-4 h-4 mr-1.5" />
+            <BarChart3 style={{ width: 'clamp(0.875rem, 1.8vh, 1rem)', height: 'clamp(0.875rem, 1.8vh, 1rem)', marginRight: 'clamp(0.375rem, 0.75vh, 0.5rem)' }} />
             <span className="hidden sm:inline">Overview</span>
             <span className="sm:hidden">OVR</span>
           </Button>
           <Button
             variant={activeTab === 'users' ? 'default' : 'ghost'}
             onClick={() => setActiveTab('users')}
-            className="whitespace-nowrap text-slate-200 text-xs sm:text-sm px-2 sm:px-3 py-1.5 h-8 sm:h-9"
+            className="whitespace-nowrap text-slate-200"
+            style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.375rem, 0.8vh, 0.5rem) clamp(0.75rem, 1.5vh, 1rem)', height: 'clamp(2rem, 4vh, 2.5rem)' }}
           >
-            <Users className="w-4 h-4 mr-1.5" />
+            <Users style={{ width: 'clamp(0.875rem, 1.8vh, 1rem)', height: 'clamp(0.875rem, 1.8vh, 1rem)', marginRight: 'clamp(0.375rem, 0.75vh, 0.5rem)' }} />
             <span className="hidden sm:inline">Users</span>
             <span className="sm:hidden">U</span>
           </Button>
           <Button
             variant={activeTab === 'stores' ? 'default' : 'ghost'}
             onClick={() => setActiveTab('stores')}
-            className="whitespace-nowrap text-slate-200 text-xs sm:text-sm px-2 sm:px-3 py-1.5 h-8 sm:h-9"
+            className="whitespace-nowrap text-slate-200"
+            style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.375rem, 0.8vh, 0.5rem) clamp(0.75rem, 1.5vh, 1rem)', height: 'clamp(2rem, 4vh, 2.5rem)' }}
           >
-            <Store className="w-4 h-4 mr-1.5" />
+            <Store style={{ width: 'clamp(0.875rem, 1.8vh, 1rem)', height: 'clamp(0.875rem, 1.8vh, 1rem)', marginRight: 'clamp(0.375rem, 0.75vh, 0.5rem)' }} />
             <span className="hidden sm:inline">Stores</span>
             <span className="sm:hidden">S</span>
           </Button>
           <Button
             variant={activeTab === 'products' ? 'default' : 'ghost'}
             onClick={() => setActiveTab('products')}
-            className="whitespace-nowrap text-slate-200 text-xs sm:text-sm px-2 sm:px-3 py-1.5 h-8 sm:h-9"
+            className="whitespace-nowrap text-slate-200"
+            style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.375rem, 0.8vh, 0.5rem) clamp(0.75rem, 1.5vh, 1rem)', height: 'clamp(2rem, 4vh, 2.5rem)' }}
           >
-            <Package className="w-4 h-4 mr-1.5" />
+            <Package style={{ width: 'clamp(0.875rem, 1.8vh, 1rem)', height: 'clamp(0.875rem, 1.8vh, 1rem)', marginRight: 'clamp(0.375rem, 0.75vh, 0.5rem)' }} />
             <span className="hidden sm:inline">Products</span>
             <span className="sm:hidden">P</span>
           </Button>
           <Button
             variant={activeTab === 'activity' ? 'default' : 'ghost'}
             onClick={() => { setActiveTab('activity'); loadActivityLogs(); }}
-            className="whitespace-nowrap text-slate-200 text-xs sm:text-sm px-2 sm:px-3 py-1.5 h-8 sm:h-9"
+            className="whitespace-nowrap text-slate-200"
+            style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.375rem, 0.8vh, 0.5rem) clamp(0.75rem, 1.5vh, 1rem)', height: 'clamp(2rem, 4vh, 2.5rem)' }}
           >
-            <Activity className="w-4 h-4 mr-1.5" />
+            <Activity style={{ width: 'clamp(0.875rem, 1.8vh, 1rem)', height: 'clamp(0.875rem, 1.8vh, 1rem)', marginRight: 'clamp(0.375rem, 0.75vh, 0.5rem)' }} />
             <span className="hidden sm:inline">Activity</span>
             <span className="sm:hidden">A</span>
           </Button>
@@ -1325,9 +1412,10 @@ export default function PlatformAdmin() {
               loadBillingMetrics();
               loadPlatformSettings();
             }}
-            className="whitespace-nowrap text-slate-200 text-xs sm:text-sm px-2 sm:px-3 py-1.5 h-8 sm:h-9"
+            className="whitespace-nowrap text-slate-200"
+            style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.375rem, 0.8vh, 0.5rem) clamp(0.75rem, 1.5vh, 1rem)', height: 'clamp(2rem, 4vh, 2.5rem)' }}
           >
-            <CreditCard className="w-4 h-4 mr-1.5" />
+            <CreditCard style={{ width: 'clamp(0.875rem, 1.8vh, 1rem)', height: 'clamp(0.875rem, 1.8vh, 1rem)', marginRight: 'clamp(0.375rem, 0.75vh, 0.5rem)' }} />
             <span className="hidden sm:inline">Billing</span>
             <span className="sm:hidden">B</span>
           </Button>
@@ -1337,27 +1425,30 @@ export default function PlatformAdmin() {
               setActiveTab('codes');
               loadCodes();
             }}
-            className="whitespace-nowrap text-slate-200 text-xs sm:text-sm px-2 sm:px-3 py-1.5 h-8 sm:h-9"
+            className="whitespace-nowrap text-slate-200"
+            style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.375rem, 0.8vh, 0.5rem) clamp(0.75rem, 1.5vh, 1rem)', height: 'clamp(2rem, 4vh, 2.5rem)' }}
           >
-            <Gift className="w-4 h-4 mr-1.5" />
+            <Gift style={{ width: 'clamp(0.875rem, 1.8vh, 1rem)', height: 'clamp(0.875rem, 1.8vh, 1rem)', marginRight: 'clamp(0.375rem, 0.75vh, 0.5rem)' }} />
             <span className="hidden md:inline">Codes</span>
             <span className="md:hidden">C</span>
           </Button>
           <Button
             variant={activeTab === 'tools' ? 'default' : 'ghost'}
             onClick={() => setActiveTab('tools')}
-            className="whitespace-nowrap text-slate-200 text-xs sm:text-sm px-2 sm:px-3 py-1.5 h-8 sm:h-9"
+            className="whitespace-nowrap text-slate-200"
+            style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.375rem, 0.8vh, 0.5rem) clamp(0.75rem, 1.5vh, 1rem)', height: 'clamp(2rem, 4vh, 2.5rem)' }}
           >
-            <Zap className="w-4 h-4 mr-1.5" />
+            <Zap style={{ width: 'clamp(0.875rem, 1.8vh, 1rem)', height: 'clamp(0.875rem, 1.8vh, 1rem)', marginRight: 'clamp(0.375rem, 0.75vh, 0.5rem)' }} />
             <span className="hidden sm:inline">Tools</span>
             <span className="sm:hidden">T</span>
           </Button>
           <Button
             variant={activeTab === 'settings' ? 'default' : 'ghost'}
             onClick={() => setActiveTab('settings')}
-            className="whitespace-nowrap text-slate-200 text-xs sm:text-sm px-2 sm:px-3 py-1.5 h-8 sm:h-9"
+            className="whitespace-nowrap text-slate-200"
+            style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.375rem, 0.8vh, 0.5rem) clamp(0.75rem, 1.5vh, 1rem)', height: 'clamp(2rem, 4vh, 2.5rem)' }}
           >
-            <Settings className="w-4 h-4 mr-1.5" />
+            <Settings style={{ width: 'clamp(0.875rem, 1.8vh, 1rem)', height: 'clamp(0.875rem, 1.8vh, 1rem)', marginRight: 'clamp(0.375rem, 0.75vh, 0.5rem)' }} />
             <span className="hidden sm:inline">Settings</span>
             <span className="sm:hidden">ST</span>
           </Button>
@@ -1366,62 +1457,62 @@ export default function PlatformAdmin() {
         {/* Overview Tab */}
         {activeTab === 'overview' && (
           <>
-            {/* Premium Stats Grid - Compact */}
+            {/* Premium Stats Grid */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-3">
-              <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg p-2.5 sm:p-3 text-white shadow-md border border-blue-500/30">
-                <div className="flex items-center justify-between gap-1">
+              <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg text-white shadow-md border border-blue-500/30 p-3">
+                <div className="flex items-center justify-between">
                   <div className="min-w-0">
-                    <p className="text-blue-200 text-[10px] sm:text-xs font-medium truncate">Total Users</p>
-                    <h3 className="text-lg sm:text-xl font-black">{stats.totalUsers}</h3>
-                    <p className="text-blue-300 text-[10px] truncate">{stats.totalClients} stores</p>
+                    <p className="text-blue-200 font-medium truncate text-xs">Total Users</p>
+                    <h3 className="font-black text-2xl">{stats.totalUsers}</h3>
+                    <p className="text-blue-300 truncate text-xs">{stats.totalClients} stores</p>
                   </div>
-                  <Users className="w-6 h-6 text-blue-300 opacity-20 flex-shrink-0" />
+                  <Users className="text-blue-300 opacity-20 flex-shrink-0 w-6 h-6" />
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-lg p-2.5 sm:p-3 text-white shadow-md border border-emerald-500/30">
-                <div className="flex items-center justify-between gap-1">
+              <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-lg text-white shadow-md border border-emerald-500/30 p-3">
+                <div className="flex items-center justify-between">
                   <div className="min-w-0">
-                    <p className="text-emerald-200 text-[10px] sm:text-xs font-medium truncate">Active Subs</p>
-                    <h3 className="text-lg sm:text-xl font-black">{stats.activeSubscriptions}</h3>
-                    <p className="text-emerald-300 text-[10px] truncate">Paying</p>
+                    <p className="text-emerald-200 font-medium truncate text-xs">Active Subs</p>
+                    <h3 className="font-black text-2xl">{stats.activeSubscriptions}</h3>
+                    <p className="text-emerald-300 truncate text-xs">Paying</p>
                   </div>
-                  <CheckCircle className="w-6 h-6 text-emerald-300 opacity-20 flex-shrink-0" />
+                  <CheckCircle className="text-emerald-300 opacity-20 flex-shrink-0 w-6 h-6" />
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-amber-600 to-amber-700 rounded-lg p-2.5 sm:p-3 text-white shadow-md border border-amber-500/30">
-                <div className="flex items-center justify-between gap-1">
+              <div className="bg-gradient-to-br from-amber-600 to-amber-700 rounded-lg text-white shadow-md border border-amber-500/30 p-3">
+                <div className="flex items-center justify-between">
                   <div className="min-w-0">
-                    <p className="text-amber-200 text-[10px] sm:text-xs font-medium truncate">Trial</p>
-                    <h3 className="text-lg sm:text-xl font-black">{stats.trialSubscriptions}</h3>
-                    <p className="text-amber-300 text-[10px] truncate">Free trial</p>
+                    <p className="text-amber-200 font-medium truncate text-xs">Trial</p>
+                    <h3 className="font-black text-2xl">{stats.trialSubscriptions}</h3>
+                    <p className="text-amber-300 truncate text-xs">Free trial</p>
                   </div>
-                  <Clock className="w-6 h-6 text-amber-300 opacity-20 flex-shrink-0" />
+                  <Clock className="text-amber-300 opacity-20 flex-shrink-0 w-6 h-6" />
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-red-600 to-red-700 rounded-lg p-2.5 sm:p-3 text-white shadow-md border border-red-500/30">
-                <div className="flex items-center justify-between gap-1">
+              <div className="bg-gradient-to-br from-red-600 to-red-700 rounded-lg text-white shadow-md border border-red-500/30 p-3">
+                <div className="flex items-center justify-between">
                   <div className="min-w-0">
-                    <p className="text-red-200 text-[10px] sm:text-xs font-medium truncate">Locked</p>
-                    <h3 className="text-lg sm:text-xl font-black">{stats.lockedAccounts}</h3>
-                    <p className="text-red-300 text-[10px] truncate">Attention</p>
+                    <p className="text-red-200 font-medium truncate text-xs">Locked</p>
+                    <h3 className="font-black text-2xl">{stats.lockedAccounts}</h3>
+                    <p className="text-red-300 truncate text-xs">Attention</p>
                   </div>
-                  <Lock className="w-6 h-6 text-red-300 opacity-20 flex-shrink-0" />
+                  <Lock className="text-red-300 opacity-20 flex-shrink-0 w-6 h-6" />
                 </div>
               </div>
             </div>
 
-            {/* Charts Section - Compact */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-3 mb-3">
+            {/* Charts Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-3">
               {/* Subscription Distribution Pie Chart */}
               <div className="bg-slate-800/50 backdrop-blur-md rounded-lg border border-slate-700/50 shadow-md p-3">
-                <h3 className="text-xs sm:text-sm font-bold text-white mb-2 flex items-center gap-1.5">
-                  <PieChartIcon className="w-3.5 h-3.5 text-purple-400" />
+                <h3 className="font-bold text-white flex items-center text-sm mb-2 gap-1.5">
+                  <PieChartIcon className="text-purple-400 w-4 h-4" />
                   Subscriptions
                 </h3>
-                <div className="h-36 sm:h-40">
+                <div className="h-40">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -1456,27 +1547,27 @@ export default function PlatformAdmin() {
                 </div>
                 <div className="flex justify-center gap-3 mt-1">
                   <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                    <span className="text-[10px] text-slate-400">Active</span>
+                    <div className="rounded-full bg-emerald-500 w-2 h-2"></div>
+                    <span className="text-slate-400 text-xs">Active</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                    <span className="text-[10px] text-slate-400">Trial</span>
+                    <div className="rounded-full bg-amber-500 w-2 h-2"></div>
+                    <span className="text-slate-400 text-xs">Trial</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                    <span className="text-[10px] text-slate-400">Expired</span>
+                    <div className="rounded-full bg-red-500 w-2 h-2"></div>
+                    <span className="text-slate-400 text-xs">Expired</span>
                   </div>
                 </div>
               </div>
 
               {/* Code Statistics Bar Chart */}
               <div className="bg-slate-800/50 backdrop-blur-md rounded-lg border border-slate-700/50 shadow-md p-3">
-                <h3 className="text-xs sm:text-sm font-bold text-white mb-2 flex items-center gap-1.5">
-                  <BarChart3 className="w-3.5 h-3.5 text-cyan-400" />
+                <h3 className="font-bold text-white flex items-center text-sm mb-2 gap-1.5">
+                  <BarChart3 className="text-cyan-400 w-4 h-4" />
                   Codes
                 </h3>
-                <div className="h-36 sm:h-40">
+                <div className="h-40">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       data={[
@@ -1511,12 +1602,12 @@ export default function PlatformAdmin() {
               </div>
             </div>
 
-            {/* Stats Shapes Row - Compact */}
+            {/* Stats Shapes Row */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
               {/* Circular Progress - Subscription Rate */}
               <div className="bg-slate-800/50 backdrop-blur-md rounded-lg border border-slate-700/50 p-2 shadow-md">
                 <div className="flex flex-col items-center">
-                  <div className="relative w-10 h-10 sm:w-12 sm:h-12">
+                  <div className="relative w-12 h-12">
                     <svg className="w-full h-full transform -rotate-90">
                       <circle cx="50%" cy="50%" r="40%" stroke="#334155" strokeWidth="4" fill="none" />
                       <circle cx="50%" cy="50%" r="40%" stroke="#10b981" strokeWidth="4" fill="none" strokeLinecap="round"
@@ -1524,19 +1615,19 @@ export default function PlatformAdmin() {
                       />
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-[10px] sm:text-xs font-bold text-emerald-400">
+                      <span className="text-xs font-bold text-emerald-400">
                         {stats.totalClients > 0 ? Math.round((stats.activeSubscriptions / stats.totalClients) * 100) : 0}%
                       </span>
                     </div>
                   </div>
-                  <p className="text-[10px] text-slate-400 mt-1">Active</p>
+                  <p className="text-xs text-slate-400 mt-1">Active</p>
                 </div>
               </div>
 
               {/* Circular Progress - Trial Rate */}
               <div className="bg-slate-800/50 backdrop-blur-md rounded-lg border border-slate-700/50 p-2 shadow-md">
                 <div className="flex flex-col items-center">
-                  <div className="relative w-10 h-10 sm:w-12 sm:h-12">
+                  <div className="relative w-12 h-12">
                     <svg className="w-full h-full transform -rotate-90">
                       <circle cx="50%" cy="50%" r="40%" stroke="#334155" strokeWidth="4" fill="none" />
                       <circle cx="50%" cy="50%" r="40%" stroke="#f59e0b" strokeWidth="4" fill="none" strokeLinecap="round"
@@ -1544,19 +1635,19 @@ export default function PlatformAdmin() {
                       />
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-[10px] sm:text-xs font-bold text-amber-400">
+                      <span className="text-xs font-bold text-amber-400">
                         {stats.totalClients > 0 ? Math.round((stats.trialSubscriptions / stats.totalClients) * 100) : 0}%
                       </span>
                     </div>
                   </div>
-                  <p className="text-[10px] text-slate-400 mt-1">Trial</p>
+                  <p className="text-xs text-slate-400 mt-1">Trial</p>
                 </div>
               </div>
 
               {/* Circular Progress - Code Redemption */}
               <div className="bg-slate-800/50 backdrop-blur-md rounded-lg border border-slate-700/50 p-2 shadow-md">
                 <div className="flex flex-col items-center">
-                  <div className="relative w-10 h-10 sm:w-12 sm:h-12">
+                  <div className="relative w-12 h-12">
                     <svg className="w-full h-full transform -rotate-90">
                       <circle cx="50%" cy="50%" r="40%" stroke="#334155" strokeWidth="4" fill="none" />
                       <circle cx="50%" cy="50%" r="40%" stroke="#8b5cf6" strokeWidth="4" fill="none" strokeLinecap="round"
@@ -1564,82 +1655,82 @@ export default function PlatformAdmin() {
                       />
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-[10px] sm:text-xs font-bold text-purple-400">
+                      <span className="text-xs font-bold text-purple-400">
                         {stats.totalCodes > 0 ? Math.round((stats.redeemedCodes / stats.totalCodes) * 100) : 0}%
                       </span>
                     </div>
                   </div>
-                  <p className="text-[10px] text-slate-400 mt-1">Codes</p>
+                  <p className="text-xs text-slate-400 mt-1">Codes</p>
                 </div>
               </div>
 
               {/* Growth Indicator */}
               <div className="bg-slate-800/50 backdrop-blur-md rounded-lg border border-slate-700/50 p-2 shadow-md">
                 <div className="flex flex-col items-center">
-                  <div className="relative w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center">
+                  <div className="relative w-12 h-12 flex items-center justify-center">
                     <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-full"></div>
-                    <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-cyan-400" />
+                    <TrendingUp className="w-6 h-6 text-cyan-400" />
                   </div>
-                  <p className="text-sm font-bold text-cyan-400">+{stats.newSignupsWeek}</p>
-                  <p className="text-[10px] text-slate-400">Week</p>
+                  <p className="text-base font-bold text-cyan-400">+{stats.newSignupsWeek}</p>
+                  <p className="text-xs text-slate-400">Week</p>
                 </div>
               </div>
             </div>
 
-            {/* Quick Insights - Compact */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-3">
+            {/* Quick Insights */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
               {/* Recent Activity */}
               <div className="bg-slate-800/50 backdrop-blur-md rounded-lg border border-slate-700/50 shadow-md p-3">
-                <h3 className="text-xs sm:text-sm font-bold text-white mb-2 flex items-center gap-1.5">
-                  <Activity className="w-3.5 h-3.5 text-cyan-400" />
+                <h3 className="text-sm font-bold text-white mb-2 flex items-center gap-1.5">
+                  <Activity className="w-4 h-4 text-cyan-400" />
                   Recent Activity
                 </h3>
                 <div className="space-y-1.5">
                   {activityLogs.slice(0, 4).map((log) => (
                     <div key={log.id} className="flex items-start gap-2 pb-1.5 border-b border-slate-700/50 last:border-0">
-                      <div className="w-1.5 h-1.5 mt-1 rounded-full bg-cyan-400 flex-shrink-0"></div>
+                      <div className="w-1.5 h-1.5 mt-1.5 rounded-full bg-cyan-400 flex-shrink-0"></div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[10px] sm:text-xs text-white font-medium truncate">{log.action}</p>
-                        <p className="text-[10px] text-slate-400">{log.resource_type}</p>
+                        <p className="text-xs text-white font-medium truncate">{log.action}</p>
+                        <p className="text-xs text-slate-400">{log.resource_type}</p>
                       </div>
-                      <span className="text-[10px] text-slate-500 whitespace-nowrap">{new Date(log.timestamp).toLocaleDateString()}</span>
+                      <span className="text-xs text-slate-500 whitespace-nowrap">{new Date(log.timestamp).toLocaleDateString()}</span>
                     </div>
                   ))}
                   {activityLogs.length === 0 && (
-                    <p className="text-[10px] text-slate-500 text-center py-2">No recent activity</p>
+                    <p className="text-xs text-slate-500 text-center py-2">No recent activity</p>
                   )}
                 </div>
               </div>
 
               {/* Quick Stats Summary */}
               <div className="bg-slate-800/50 backdrop-blur-md rounded-lg border border-slate-700/50 shadow-md p-3">
-                <h3 className="text-xs sm:text-sm font-bold text-white mb-2 flex items-center gap-1.5">
-                  <Zap className="w-3.5 h-3.5 text-yellow-400" />
+                <h3 className="text-sm font-bold text-white mb-2 flex items-center gap-1.5">
+                  <Zap className="w-4 h-4 text-yellow-400" />
                   Quick Stats
                 </h3>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="bg-slate-700/30 rounded-md p-2">
-                    <p className="text-[10px] text-slate-400">This Week</p>
-                    <p className="text-base font-bold text-emerald-400">{stats.newSignupsWeek}</p>
+                    <p className="text-xs text-slate-400">This Week</p>
+                    <p className="text-lg font-bold text-emerald-400">{stats.newSignupsWeek}</p>
                   </div>
                   <div className="bg-slate-700/30 rounded-md p-2">
-                    <p className="text-[10px] text-slate-400">This Month</p>
-                    <p className="text-base font-bold text-blue-400">{stats.newSignupsMonth}</p>
+                    <p className="text-xs text-slate-400">This Month</p>
+                    <p className="text-lg font-bold text-blue-400">{stats.newSignupsMonth}</p>
                   </div>
                   <div className="bg-slate-700/30 rounded-md p-2">
-                    <p className="text-[10px] text-slate-400">Redeemed</p>
-                    <p className="text-base font-bold text-purple-400">{stats.redeemedCodes}</p>
+                    <p className="text-xs text-slate-400">Redeemed</p>
+                    <p className="text-lg font-bold text-purple-400">{stats.redeemedCodes}</p>
                   </div>
                   <div className="bg-slate-700/30 rounded-md p-2">
-                    <p className="text-[10px] text-slate-400">Expired</p>
-                    <p className="text-base font-bold text-orange-400">{stats.expiredSubscriptions}</p>
+                    <p className="text-xs text-slate-400">Expired</p>
+                    <p className="text-lg font-bold text-orange-400">{stats.expiredSubscriptions}</p>
                   </div>
                 </div>
                 <div className="mt-2 pt-2 border-t border-slate-700/50">
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="w-full text-[10px] h-7"
+                    className="w-full text-xs h-7"
                     onClick={() => setActiveTab('billing')}
                   >
                     <CreditCard className="w-3 h-3 mr-1" />
@@ -1653,7 +1744,60 @@ export default function PlatformAdmin() {
 
         {/* Users Tab */}
         {activeTab === 'users' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+          <div className="space-y-6">
+            {/* Blocked Users Table - uses is_blocked (admin block, can't login) */}
+            {users.filter(u => (u as any).is_blocked).length > 0 && (
+              <div className="bg-gradient-to-br from-red-900/30 to-red-800/20 backdrop-blur-md rounded-2xl border border-red-500/30 shadow-lg overflow-hidden">
+                <div className="p-4 border-b border-red-500/30 bg-red-900/40">
+                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                    <Ban className="w-5 h-5 text-red-400" />
+                    Blocked Users ({users.filter(u => (u as any).is_blocked).length})
+                  </h3>
+                  <p className="text-xs text-red-300/70 mt-1">Users blocked by admin - cannot login at all</p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-red-900/30 border-b border-red-500/20">
+                      <tr>
+                        <th className="text-left p-3 font-semibold text-red-200 text-sm">User</th>
+                        <th className="text-left p-3 font-semibold text-red-200 text-sm">Email</th>
+                        <th className="text-left p-3 font-semibold text-red-200 text-sm">Type</th>
+                        <th className="text-left p-3 font-semibold text-red-200 text-sm">Reason</th>
+                        <th className="text-left p-3 font-semibold text-red-200 text-sm">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-red-500/20">
+                      {users.filter(u => (u as any).is_blocked).map((user) => (
+                        <tr key={user.id} className="hover:bg-red-900/20 transition-colors">
+                          <td className="p-3 font-medium text-white text-sm">{user.name}</td>
+                          <td className="p-3 text-red-200 text-sm">{user.email}</td>
+                          <td className="p-3">
+                            <Badge className={user.user_type === 'admin' ? 'bg-red-500/80' : 'bg-emerald-500/80'}>
+                              {user.user_type}
+                            </Badge>
+                          </td>
+                          <td className="p-3 text-red-300 text-xs max-w-[200px] truncate">{(user as any).blocked_reason || 'No reason provided'}</td>
+                          <td className="p-3">
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="text-xs border-green-500 text-green-400 hover:bg-green-500/20"
+                              onClick={() => handleUnblockUser(user.id, user.name)}
+                            >
+                              <UserCheck className="w-3 h-3 mr-1" />
+                              Unblock
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* User Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
             {/* Admins */}
             <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 shadow-lg overflow-hidden">
               <div className="p-6 border-b border-slate-700/50 bg-gradient-to-r from-red-600/20 to-pink-600/20">
@@ -1669,7 +1813,7 @@ export default function PlatformAdmin() {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-white">{user.name}</p>
                         <p className="text-xs text-slate-400 truncate">{user.email}</p>
-                        {(user as any).is_locked && <p className="text-xs text-red-400">🔒 Account Locked</p>}
+                        {(user as any).is_locked && <p className="text-xs text-red-400">� Blocked</p>}
                         {user.email === 'admin@ecopro.com' && <p className="text-xs text-blue-400">🛡️ System Admin</p>}
                       </div>
                       <Badge className="bg-red-500/80 text-white">Admin</Badge>
@@ -1678,11 +1822,11 @@ export default function PlatformAdmin() {
                       <Button 
                         size="sm" 
                         variant="outline" 
-                        className="flex-1 text-xs" 
+                        className={`flex-1 text-xs ${(user as any).is_locked ? 'border-green-500 text-green-400 hover:bg-green-500/20' : 'border-red-500 text-red-400 hover:bg-red-500/20'}`}
                         disabled={user.email === 'admin@ecopro.com'}
-                        onClick={() => (user as any).is_locked ? handleUnlockUser(user.id, user.name) : handleLockUser(user.id, user.name)}
+                        onClick={() => (user as any).is_locked ? handleUnblockUser(user.id, user.name) : handleBlockUser(user.id, user.name)}
                       >
-                        {(user as any).is_locked ? '🔓 Unlock' : '🔒 Lock'}
+                        {(user as any).is_locked ? <><UserCheck className="w-3 h-3 mr-1" /> Unblock</> : <><Ban className="w-3 h-3 mr-1" /> Block</>}
                       </Button>
                       <Button 
                         size="sm" 
@@ -1717,13 +1861,19 @@ export default function PlatformAdmin() {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-white">{user.name}</p>
                         <p className="text-xs text-slate-400 truncate">{user.email}</p>
-                        {(user as any).is_locked && <p className="text-xs text-red-400">🔒 Account Locked</p>}
+                        {(user as any).is_blocked && <p className="text-xs text-red-400">🚫 Blocked</p>}
+                        {(user as any).is_locked && !((user as any).is_blocked) && <p className="text-xs text-amber-400">🔒 Locked (subscription)</p>}
                       </div>
                       <Badge className="bg-emerald-500/80 text-white">Client</Badge>
                     </div>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline" className="flex-1 text-xs" onClick={() => (user as any).is_locked ? handleUnlockUser(user.id, user.name) : handleLockUser(user.id, user.name)}>
-                        {(user as any).is_locked ? '🔓 Unlock' : '🔒 Lock'}
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className={`flex-1 text-xs ${(user as any).is_blocked ? 'border-green-500 text-green-400 hover:bg-green-500/20' : 'border-red-500 text-red-400 hover:bg-red-500/20'}`}
+                        onClick={() => (user as any).is_blocked ? handleUnblockUser(user.id, user.name) : handleBlockUser(user.id, user.name)}
+                      >
+                        {(user as any).is_blocked ? <><UserCheck className="w-3 h-3 mr-1" /> Unblock</> : <><Ban className="w-3 h-3 mr-1" /> Block</>}
                       </Button>
                       <Button size="sm" variant="default" className="flex-1 text-xs" onClick={() => handlePromoteToAdmin(user.id)}>
                         Promote
@@ -1756,15 +1906,20 @@ export default function PlatformAdmin() {
                         <p className="font-medium text-white text-sm">{staffMember.email}</p>
                         <p className="text-xs text-slate-400 truncate">{staffMember.store_name}</p>
                         <p className="text-xs text-slate-500">Owner: {staffMember.owner_email}</p>
-                        {(staffMember as any).is_locked && <p className="text-xs text-red-400">🔒 Account Locked</p>}
+                        {(staffMember as any).is_blocked && <p className="text-xs text-red-400">🚫 Blocked</p>}
                       </div>
                       <Badge className={staffMember.status === 'active' ? 'bg-blue-500/80 text-white' : 'bg-slate-500/80 text-white'}>
                         {staffMember.status}
                       </Badge>
                     </div>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline" className="flex-1 text-xs" onClick={() => (staffMember as any).is_locked ? handleUnlockUser(staffMember.id, staffMember.email) : handleLockUser(staffMember.id, staffMember.email)}>
-                        {(staffMember as any).is_locked ? '🔓 Unlock' : '🔒 Lock'}
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className={`flex-1 text-xs ${(staffMember as any).is_blocked ? 'border-green-500 text-green-400 hover:bg-green-500/20' : 'border-red-500 text-red-400 hover:bg-red-500/20'}`}
+                        onClick={() => (staffMember as any).is_blocked ? handleUnblockUser(staffMember.id, staffMember.email) : handleBlockUser(staffMember.id, staffMember.email)}
+                      >
+                        {(staffMember as any).is_blocked ? <><UserCheck className="w-3 h-3 mr-1" /> Unblock</> : <><Ban className="w-3 h-3 mr-1" /> Block</>}
                       </Button>
                       <Button size="sm" variant="destructive" className="flex-1 text-xs" onClick={() => handleDeleteStaff(staffMember.id)}>
                         Delete
@@ -1778,6 +1933,7 @@ export default function PlatformAdmin() {
               </div>
             </div>
           </div>
+        </div>
         )}
 
         {/* Stores Tab */}
@@ -2218,104 +2374,102 @@ export default function PlatformAdmin() {
 
         {/* Settings Tab */}
         {activeTab === 'settings' && (
-          <div className="space-y-4 sm:space-y-6">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.875rem, 1.75vh, 1.25rem)' }}>
             {/* Main Settings Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2" style={{ gap: 'clamp(0.875rem, 1.75vh, 1.25rem)' }}>
               {/* Platform Limits */}
-              <div className="bg-slate-800/50 backdrop-blur-md rounded-xl sm:rounded-2xl border border-slate-700/50 shadow-lg p-4 sm:p-6">
-                <h3 className="text-base sm:text-lg font-bold text-white mb-4 flex items-center gap-2">
-                  <Users className="w-5 h-5 text-blue-400" />
+              <div className="bg-slate-800/50 backdrop-blur-md rounded-xl border border-slate-700/50 shadow-lg" style={{ padding: 'clamp(1rem, 2vh, 1.25rem)' }}>
+                <h3 className="font-bold text-white flex items-center" style={{ fontSize: 'clamp(1rem, 2vh, 1.15rem)', gap: 'clamp(0.5rem, 1vh, 0.625rem)', marginBottom: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
+                  <Users className="text-blue-400" style={{ width: 'clamp(1.125rem, 2.25vh, 1.375rem)', height: 'clamp(1.125rem, 2.25vh, 1.375rem)' }} />
                   Platform Limits
                 </h3>
-                <div className="space-y-3 sm:space-y-4">
-                  <div className="bg-slate-900/30 rounded-lg p-3 sm:p-4 border border-slate-600/30">
-                    <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-2">Max Users</label>
-                    <div className="flex items-center gap-2">
-                      <input type="number" defaultValue="10000" className="flex-1 px-3 py-2 text-xs sm:text-sm bg-slate-700/50 border border-slate-600/50 text-white rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all" />
-                      <span className="text-slate-400 text-xs sm:text-sm">Current: {stats.totalUsers}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
+                  <div className="bg-slate-900/30 rounded-lg border border-slate-600/30" style={{ padding: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
+                    <label className="block font-medium text-slate-300" style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', marginBottom: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}>Max Users</label>
+                    <div className="flex items-center" style={{ gap: 'clamp(0.5rem, 1vh, 0.625rem)' }}>
+                      <input type="number" defaultValue="10000" className="flex-1 bg-slate-700/50 border border-slate-600/50 text-white rounded-lg focus:border-blue-500" style={{ fontSize: 'clamp(0.85rem, 1.7vh, 1rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)' }} />
+                      <span className="text-slate-400" style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)' }}>Current: {stats.totalUsers}</span>
                     </div>
                   </div>
-                  <div className="bg-slate-900/30 rounded-lg p-3 sm:p-4 border border-slate-600/30">
-                    <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-2">Max Stores</label>
-                    <div className="flex items-center gap-2">
-                      <input type="number" defaultValue="5000" className="flex-1 px-3 py-2 text-xs sm:text-sm bg-slate-700/50 border border-slate-600/50 text-white rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all" />
-                      <span className="text-slate-400 text-xs sm:text-sm">Current: {stats.totalClients}</span>
+                  <div className="bg-slate-900/30 rounded-lg border border-slate-600/30" style={{ padding: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
+                    <label className="block font-medium text-slate-300" style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', marginBottom: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}>Max Stores</label>
+                    <div className="flex items-center" style={{ gap: 'clamp(0.5rem, 1vh, 0.625rem)' }}>
+                      <input type="number" defaultValue="5000" className="flex-1 bg-slate-700/50 border border-slate-600/50 text-white rounded-lg focus:border-emerald-500" style={{ fontSize: 'clamp(0.85rem, 1.7vh, 1rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)' }} />
+                      <span className="text-slate-400" style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)' }}>Current: {stats.totalClients}</span>
                     </div>
                   </div>
-                  <Button className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-xs sm:text-sm">
-                    <Zap className="w-4 h-4 mr-2" />
+                  <Button className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white" style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', height: 'clamp(2.25rem, 4.5vh, 2.75rem)' }}>
+                    <Zap style={{ width: 'clamp(0.875rem, 1.75vh, 1rem)', height: 'clamp(0.875rem, 1.75vh, 1rem)', marginRight: 'clamp(0.375rem, 0.75vh, 0.5rem)' }} />
                     Save Limits
                   </Button>
                 </div>
               </div>
 
               {/* Subscription Settings */}
-              <div className="bg-slate-800/50 backdrop-blur-md rounded-xl sm:rounded-2xl border border-slate-700/50 shadow-lg p-4 sm:p-6">
-                <h3 className="text-base sm:text-lg font-bold text-white mb-4 flex items-center gap-2">
-                  <CreditCard className="w-5 h-5 text-emerald-400" />
+              <div className="bg-slate-800/50 backdrop-blur-md rounded-xl border border-slate-700/50 shadow-lg" style={{ padding: 'clamp(1rem, 2vh, 1.25rem)' }}>
+                <h3 className="font-bold text-white flex items-center" style={{ fontSize: 'clamp(1rem, 2vh, 1.15rem)', gap: 'clamp(0.5rem, 1vh, 0.625rem)', marginBottom: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
+                  <CreditCard className="text-emerald-400" style={{ width: 'clamp(1.125rem, 2.25vh, 1.375rem)', height: 'clamp(1.125rem, 2.25vh, 1.375rem)' }} />
                   Subscription Settings
                 </h3>
-                <div className="space-y-3 sm:space-y-4">
-                  <div className="bg-slate-900/30 rounded-lg p-3 sm:p-4 border border-slate-600/30">
-                    <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-2">Monthly Price ($)</label>
-                    <input type="number" step="0.01" defaultValue="7" className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-700/50 border border-slate-600/50 text-white rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all" />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
+                  <div className="bg-slate-900/30 rounded-lg border border-slate-600/30" style={{ padding: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
+                    <label className="block font-medium text-slate-300" style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', marginBottom: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}>Monthly Price ($)</label>
+                    <input type="number" step="0.01" defaultValue="7" className="w-full bg-slate-700/50 border border-slate-600/50 text-white rounded-lg focus:border-emerald-500" style={{ fontSize: 'clamp(0.85rem, 1.7vh, 1rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)' }} />
                   </div>
-                  <div className="bg-slate-900/30 rounded-lg p-3 sm:p-4 border border-slate-600/30">
-                    <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-2">Free Trial Days</label>
-                    <input type="number" defaultValue="30" className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-700/50 border border-slate-600/50 text-white rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all" />
+                  <div className="bg-slate-900/30 rounded-lg border border-slate-600/30" style={{ padding: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
+                    <label className="block font-medium text-slate-300" style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', marginBottom: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}>Free Trial Days</label>
+                    <input type="number" defaultValue="30" className="w-full bg-slate-700/50 border border-slate-600/50 text-white rounded-lg focus:border-emerald-500" style={{ fontSize: 'clamp(0.85rem, 1.7vh, 1rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)' }} />
                   </div>
-                  <Button className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs sm:text-sm">
-                    <Zap className="w-4 h-4 mr-2" />
+                  <Button className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white" style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', height: 'clamp(2.25rem, 4.5vh, 2.75rem)' }}>
+                    <Zap style={{ width: 'clamp(0.875rem, 1.75vh, 1rem)', height: 'clamp(0.875rem, 1.75vh, 1rem)', marginRight: 'clamp(0.375rem, 0.75vh, 0.5rem)' }} />
                     Save Subscription Settings
                   </Button>
                 </div>
               </div>
 
               {/* Email & Notifications */}
-              <div className="bg-slate-800/50 backdrop-blur-md rounded-xl sm:rounded-2xl border border-slate-700/50 shadow-lg p-4 sm:p-6">
-                <h3 className="text-base sm:text-lg font-bold text-white mb-4 flex items-center gap-2">
-                  <Award className="w-5 h-5 text-purple-400" />
+              <div className="bg-slate-800/50 backdrop-blur-md rounded-xl border border-slate-700/50 shadow-lg" style={{ padding: 'clamp(1rem, 2vh, 1.25rem)' }}>
+                <h3 className="font-bold text-white flex items-center" style={{ fontSize: 'clamp(1rem, 2vh, 1.15rem)', gap: 'clamp(0.5rem, 1vh, 0.625rem)', marginBottom: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
+                  <Award className="text-purple-400" style={{ width: 'clamp(1.125rem, 2.25vh, 1.375rem)', height: 'clamp(1.125rem, 2.25vh, 1.375rem)' }} />
                   Email Configuration
                 </h3>
-                <div className="space-y-3 sm:space-y-4">
-                  <div className="bg-slate-900/30 rounded-lg p-3 sm:p-4 border border-slate-600/30">
-                    <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-2">Admin Email</label>
-                    <input type="email" placeholder="admin@ecopro.com" defaultValue="admin@ecopro.com" className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-700/50 border border-slate-600/50 text-white rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all" />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
+                  <div className="bg-slate-900/30 rounded-lg border border-slate-600/30" style={{ padding: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
+                    <label className="block font-medium text-slate-300" style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', marginBottom: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}>Admin Email</label>
+                    <input type="email" placeholder="admin@ecopro.com" defaultValue="admin@ecopro.com" className="w-full bg-slate-700/50 border border-slate-600/50 text-white rounded-lg focus:border-purple-500" style={{ fontSize: 'clamp(0.85rem, 1.7vh, 1rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)' }} />
                   </div>
-                  <div className="bg-slate-900/30 rounded-lg p-3 sm:p-4 border border-slate-600/30">
-                    <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-2">Support Email</label>
-                    <input type="email" placeholder="support@ecopro.com" className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-700/50 border border-slate-600/50 text-white rounded-lg focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all" />
+                  <div className="bg-slate-900/30 rounded-lg border border-slate-600/30" style={{ padding: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
+                    <label className="block font-medium text-slate-300" style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', marginBottom: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}>Support Email</label>
+                    <input type="email" placeholder="support@ecopro.com" className="w-full bg-slate-700/50 border border-slate-600/50 text-white rounded-lg focus:border-purple-500" style={{ fontSize: 'clamp(0.85rem, 1.7vh, 1rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)' }} />
                   </div>
-                  <div className="flex gap-2">
-                    <label className="flex items-center gap-2 text-slate-300 text-xs sm:text-sm cursor-pointer">
-                      <input type="checkbox" defaultChecked className="w-4 h-4 rounded bg-slate-700 border-slate-600" />
-                      Payment alerts
-                    </label>
-                  </div>
+                  <label className="flex items-center text-slate-300 cursor-pointer" style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', gap: 'clamp(0.5rem, 1vh, 0.625rem)' }}>
+                    <input type="checkbox" defaultChecked className="rounded bg-slate-700 border-slate-600" style={{ width: 'clamp(0.9rem, 1.8vh, 1.05rem)', height: 'clamp(0.9rem, 1.8vh, 1.05rem)' }} />
+                    Payment alerts
+                  </label>
                 </div>
               </div>
 
               {/* Security & Compliance */}
-              <div className="bg-slate-800/50 backdrop-blur-md rounded-xl sm:rounded-2xl border border-slate-700/50 shadow-lg p-4 sm:p-6">
-                <h3 className="text-base sm:text-lg font-bold text-white mb-4 flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-red-400" />
+              <div className="bg-slate-800/50 backdrop-blur-md rounded-xl border border-slate-700/50 shadow-lg" style={{ padding: 'clamp(1rem, 2vh, 1.25rem)' }}>
+                <h3 className="font-bold text-white flex items-center" style={{ fontSize: 'clamp(1rem, 2vh, 1.15rem)', gap: 'clamp(0.5rem, 1vh, 0.625rem)', marginBottom: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
+                  <Shield className="text-red-400" style={{ width: 'clamp(1.125rem, 2.25vh, 1.375rem)', height: 'clamp(1.125rem, 2.25vh, 1.375rem)' }} />
                   Security Options
                 </h3>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-slate-300 text-xs sm:text-sm cursor-pointer p-2 hover:bg-slate-700/30 rounded-lg transition-all">
-                    <input type="checkbox" defaultChecked className="w-4 h-4 rounded bg-slate-700 border-slate-600" />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.25rem, 0.5vh, 0.375rem)' }}>
+                  <label className="flex items-center text-slate-300 cursor-pointer hover:bg-slate-700/30 rounded-lg transition-all" style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', gap: 'clamp(0.5rem, 1vh, 0.625rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)' }}>
+                    <input type="checkbox" defaultChecked className="rounded bg-slate-700 border-slate-600" style={{ width: 'clamp(0.9rem, 1.8vh, 1.05rem)', height: 'clamp(0.9rem, 1.8vh, 1.05rem)' }} />
                     Enable 2FA for admins
                   </label>
-                  <label className="flex items-center gap-2 text-slate-300 text-xs sm:text-sm cursor-pointer p-2 hover:bg-slate-700/30 rounded-lg transition-all">
-                    <input type="checkbox" defaultChecked className="w-4 h-4 rounded bg-slate-700 border-slate-600" />
+                  <label className="flex items-center text-slate-300 cursor-pointer hover:bg-slate-700/30 rounded-lg transition-all" style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', gap: 'clamp(0.5rem, 1vh, 0.625rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)' }}>
+                    <input type="checkbox" defaultChecked className="rounded bg-slate-700 border-slate-600" style={{ width: 'clamp(0.9rem, 1.8vh, 1.05rem)', height: 'clamp(0.9rem, 1.8vh, 1.05rem)' }} />
                     Enable IP whitelist
                   </label>
-                  <label className="flex items-center gap-2 text-slate-300 text-xs sm:text-sm cursor-pointer p-2 hover:bg-slate-700/30 rounded-lg transition-all">
-                    <input type="checkbox" defaultChecked className="w-4 h-4 rounded bg-slate-700 border-slate-600" />
+                  <label className="flex items-center text-slate-300 cursor-pointer hover:bg-slate-700/30 rounded-lg transition-all" style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', gap: 'clamp(0.5rem, 1vh, 0.625rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)' }}>
+                    <input type="checkbox" defaultChecked className="rounded bg-slate-700 border-slate-600" style={{ width: 'clamp(0.9rem, 1.8vh, 1.05rem)', height: 'clamp(0.9rem, 1.8vh, 1.05rem)' }} />
                     Enable audit logging
                   </label>
-                  <label className="flex items-center gap-2 text-slate-300 text-xs sm:text-sm cursor-pointer p-2 hover:bg-slate-700/30 rounded-lg transition-all">
-                    <input type="checkbox" className="w-4 h-4 rounded bg-slate-700 border-slate-600" />
+                  <label className="flex items-center text-slate-300 cursor-pointer hover:bg-slate-700/30 rounded-lg transition-all" style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', gap: 'clamp(0.5rem, 1vh, 0.625rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)' }}>
+                    <input type="checkbox" className="rounded bg-slate-700 border-slate-600" style={{ width: 'clamp(0.9rem, 1.8vh, 1.05rem)', height: 'clamp(0.9rem, 1.8vh, 1.05rem)' }} />
                     Enable maintenance mode
                   </label>
                 </div>
@@ -2323,27 +2477,27 @@ export default function PlatformAdmin() {
             </div>
 
             {/* System Maintenance */}
-            <div className="bg-slate-800/50 backdrop-blur-md rounded-xl sm:rounded-2xl border border-slate-700/50 shadow-lg p-4 sm:p-6">
-              <h3 className="text-base sm:text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <Lock className="w-5 h-5 text-red-400" />
+            <div className="bg-slate-800/50 backdrop-blur-md rounded-xl border border-slate-700/50 shadow-lg" style={{ padding: 'clamp(1rem, 2vh, 1.25rem)' }}>
+              <h3 className="font-bold text-white flex items-center" style={{ fontSize: 'clamp(1rem, 2vh, 1.15rem)', gap: 'clamp(0.5rem, 1vh, 0.625rem)', marginBottom: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
+                <Lock className="text-red-400" style={{ width: 'clamp(1.125rem, 2.25vh, 1.375rem)', height: 'clamp(1.125rem, 2.25vh, 1.375rem)' }} />
                 System Maintenance
               </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
-                <Button variant="outline" className="text-slate-200 text-xs sm:text-sm p-2 sm:p-3 h-auto flex flex-col items-center justify-center gap-1 sm:gap-2">
-                  <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span className="text-xs">Clear Cache</span>
+              <div className="grid grid-cols-2 lg:grid-cols-4" style={{ gap: 'clamp(0.5rem, 1vh, 0.625rem)' }}>
+                <Button variant="outline" className="text-slate-200 h-auto flex flex-col items-center justify-center" style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)', gap: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}>
+                  <Trash2 style={{ width: 'clamp(1rem, 2vh, 1.25rem)', height: 'clamp(1rem, 2vh, 1.25rem)' }} />
+                  <span>Clear Cache</span>
                 </Button>
-                <Button variant="outline" className="text-slate-200 text-xs sm:text-sm p-2 sm:p-3 h-auto flex flex-col items-center justify-center gap-1 sm:gap-2">
-                  <Package className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span className="text-xs">Export DB</span>
+                <Button variant="outline" className="text-slate-200 h-auto flex flex-col items-center justify-center" style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)', gap: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}>
+                  <Package style={{ width: 'clamp(1rem, 2vh, 1.25rem)', height: 'clamp(1rem, 2vh, 1.25rem)' }} />
+                  <span>Export DB</span>
                 </Button>
-                <Button variant="outline" className="text-slate-200 text-xs sm:text-sm p-2 sm:p-3 h-auto flex flex-col items-center justify-center gap-1 sm:gap-2">
-                  <Activity className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span className="text-xs">Audit Log</span>
+                <Button variant="outline" className="text-slate-200 h-auto flex flex-col items-center justify-center" style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)', gap: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}>
+                  <Activity style={{ width: 'clamp(1rem, 2vh, 1.25rem)', height: 'clamp(1rem, 2vh, 1.25rem)' }} />
+                  <span>Audit Log</span>
                 </Button>
-                <Button variant="destructive" className="text-xs sm:text-sm p-2 sm:p-3 h-auto flex flex-col items-center justify-center gap-1 sm:gap-2">
-                  <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span className="text-xs">Emergency</span>
+                <Button variant="destructive" className="h-auto flex flex-col items-center justify-center" style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)', gap: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}>
+                  <AlertCircle style={{ width: 'clamp(1rem, 2vh, 1.25rem)', height: 'clamp(1rem, 2vh, 1.25rem)' }} />
+                  <span>Emergency</span>
                 </Button>
               </div>
             </div>

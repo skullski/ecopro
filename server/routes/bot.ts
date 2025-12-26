@@ -4,20 +4,17 @@ import { registerTelegramWebhook, upsertTelegramWebhookSecret } from "../utils/t
 
 async function getClientAccessState(clientId: string | number): Promise<{ allowBot: boolean; reason?: string }>
 {
-  // Payment lock: allow login but do not allow bot usage
+  // Check if user is locked - is_locked means subscription issue, bot should be disabled
   try {
     const lockRes = await pool.query(
-      `SELECT is_locked, locked_reason, lock_type FROM clients WHERE id = $1`,
+      `SELECT is_locked, locked_reason FROM clients WHERE id = $1`,
       [clientId]
     );
-    if (lockRes.rows.length) {
-      const row = lockRes.rows[0];
-      const lockType = row.lock_type || (typeof row.locked_reason === 'string' && /(subscription|expired|payment|trial|billing)/i.test(row.locked_reason)
-        ? 'payment'
-        : 'critical');
-      if (row.is_locked && lockType === 'payment') {
-        return { allowBot: false, reason: 'Account locked for payment. Please renew to enable the bot.' };
-      }
+    if (lockRes.rows.length && lockRes.rows[0].is_locked) {
+      return { 
+        allowBot: false, 
+        reason: lockRes.rows[0].locked_reason || 'Account locked. Please renew your subscription to enable the bot.' 
+      };
     }
   } catch {
     // If the lock columns aren't present, skip this check.

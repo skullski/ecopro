@@ -5,16 +5,30 @@ import { pool } from '../utils/database';
 import { encryptData, decryptData } from '../utils/encryption';
 import { generateRequestId, logDeliveryEvent } from '../utils/delivery-logging';
 import { getCourierService } from './courier-service';
-import { YalidineService } from './couriers/yalidine';
-import { AlgeriePosteService } from './couriers/algerie-poste';
-import { MarsExpressService } from './couriers/mars-express';
 import { registerCourierService } from './courier-service';
 import { CourierShipmentResponse, DeliveryStatus } from '../types/delivery';
 
-// Register all courier services
-registerCourierService('Yalidine Express', YalidineService);
-registerCourierService('Algérie Poste', AlgeriePosteService);
-registerCourierService('Mars Express', MarsExpressService);
+// Import real courier services (verified APIs only)
+import { YalidineService } from './couriers/yalidine';
+import { GuepexService } from './couriers/guepex';
+import { EcotrackService } from './couriers/ecotrack';
+import { ZRExpressService } from './couriers/zr-express';
+import { MaystroService } from './couriers/maystro';
+import { DolivrooService } from './couriers/dolivroo';
+
+// ========================================
+// REGISTER REAL ALGERIAN DELIVERY PROVIDERS
+// Only services with verified public APIs
+// ========================================
+registerCourierService('yalidine', YalidineService);
+registerCourierService('yalidine express', YalidineService);
+registerCourierService('guepex', GuepexService);
+registerCourierService('ecotrack', EcotrackService);
+registerCourierService('zr express', ZRExpressService);
+registerCourierService('zr-express', ZRExpressService);
+registerCourierService('maystro', MaystroService);
+registerCourierService('maystro delivery', MaystroService);
+registerCourierService('dolivroo', DolivrooService); // Aggregator - recommended
 
 export class DeliveryService {
   /**

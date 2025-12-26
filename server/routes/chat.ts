@@ -601,4 +601,103 @@ const handleChatFileUpload = async (req: Request, res: Response, next: Function)
   }
 };
 
+/**
+ * POST /api/chat/admin/create-for-client
+ * Admin creates a chat with a specific client (by client_id or email)
+ */
+router.post('/admin/create-for-client', async (req: Request, res: Response) => {
+  const user = (req.user as any);
+  
+  // Verify admin access
+  if (!user || (user.role !== 'admin' && user.user_type !== 'admin')) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  try {
+    const { client_id, email } = req.body;
+
+    let targetClientId = client_id;
+
+    // If email provided, find the client
+    if (!targetClientId && email) {
+      const clientResult = await pool.query(
+        'SELECT id FROM clients WHERE LOWER(email) = LOWER($1)',
+        [email.trim()]
+      );
+      
+      if (clientResult.rows.length === 0) {
+        return res.status(404).json({ error: 'Client not found with that email' });
+      }
+      
+      targetClientId = clientResult.rows[0].id;
+    }
+
+    if (!targetClientId) {
+      return res.status(400).json({ error: 'client_id or email is required' });
+    }
+
+    // Check if chat already exists
+    const existing = await pool.query(
+      'SELECT * FROM chats WHERE client_id = $1 AND seller_id IS NULL',
+      [targetClientId]
+    );
+
+    if (existing.rows.length > 0) {
+      return res.json({ chat: existing.rows[0], message: 'Chat already exists' });
+    }
+
+    // Create new chat
+    const result = await pool.query(
+      `INSERT INTO chats (client_id, seller_id, status, created_at)
+       VALUES ($1, NULL, 'open', NOW())
+       RETURNING *`,
+      [targetClientId]
+    );
+
+    res.status(201).json({ chat: result.rows[0], message: 'Chat created' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/chat/admin/search-clients
+ * Admin search for clients by email or name to start a chat
+ */
+router.get('/admin/search-clients', async (req: Request, res: Response) => {
+  const user = (req.user as any);
+  
+  // Verify admin access
+  if (!user || (user.role !== 'admin' && user.user_type !== 'admin')) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  try {
+    const { q } = req.query;
+
+    if (!q || typeof q !== 'string' || q.trim().length < 2) {
+      return res.status(400).json({ error: 'Search query must be at least 2 characters' });
+    }
+
+    const searchTerm = `%${q.trim().toLowerCase()}%`;
+
+    const result = await pool.query(`
+      SELECT 
+        c.id,
+        c.name,
+        c.email,
+        c.created_at,
+        (SELECT COUNT(*) FROM chats ch WHERE ch.client_id = c.id AND ch.seller_id IS NULL) as has_chat
+      FROM clients c
+      WHERE LOWER(c.email) LIKE $1 OR LOWER(c.name) LIKE $1
+      ORDER BY c.name ASC
+      LIMIT 20
+    `, [searchTerm]);
+
+    res.json({ clients: result.rows });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

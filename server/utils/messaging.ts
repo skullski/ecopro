@@ -5,11 +5,19 @@ const WA_PHONE_ID = process.env.WHATSAPP_PHONE_ID || "";
  * Send a plain text WhatsApp message using Meta WhatsApp Cloud API.
  * Expects E.164 phone format (e.g., +212xxxxxxxxx).
  */
-export async function sendWhatsAppMessage(to: string, text: string): Promise<void> {
-  if (!WA_TOKEN || !WA_PHONE_ID) {
-    throw new Error("WhatsApp env vars not configured");
+export async function sendWhatsAppMessage(
+  to: string,
+  text: string,
+  opts?: { token?: string; phoneId?: string }
+): Promise<void> {
+  const token = opts?.token || WA_TOKEN;
+  const phoneId = opts?.phoneId || WA_PHONE_ID;
+
+  if (!token || !phoneId) {
+    throw new Error("WhatsApp Cloud credentials not configured");
   }
-  const url = `https://graph.facebook.com/v20.0/${WA_PHONE_ID}/messages`;
+
+  const url = `https://graph.facebook.com/v20.0/${phoneId}/messages`;
   const body = {
     messaging_product: "whatsapp",
     to,
@@ -19,7 +27,7 @@ export async function sendWhatsAppMessage(to: string, text: string): Promise<voi
   const res = await fetch(url, {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${WA_TOKEN}`,
+      "Authorization": `Bearer ${token}`,
       "Content-Type": "application/json"
     },
     body: JSON.stringify(body)

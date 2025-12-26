@@ -194,6 +194,51 @@ export default function ProductCheckout() {
     return () => clearTimeout(timeout);
   }, [storeSlug, product?.store_slug, formData.phone]);
 
+  // After placing an order, poll briefly for Telegram connection so UI updates automatically.
+  useEffect(() => {
+    if (!orderSuccess) return;
+
+    const slug = storeSlug || product?.store_slug || localStorage.getItem('currentStoreSlug');
+    const normalizedPhone = (formData.phone || '').replace(/\D/g, '');
+
+    if (!slug) return;
+    if (telegramConnected) return;
+    if (!telegramBotInfo?.enabled) return;
+    if (normalizedPhone.length < 9) return;
+
+    let stopped = false;
+    let tries = 0;
+
+    const tick = async () => {
+      if (stopped) return;
+      tries++;
+      try {
+        const res = await fetch(`/api/telegram/check-connection/${slug}?phone=${normalizedPhone}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.connected) {
+            setTelegramConnected(true);
+            stopped = true;
+            return;
+          }
+        }
+      } catch {
+        // ignore
+      }
+
+      if (tries >= 15) {
+        stopped = true;
+      }
+    };
+
+    tick();
+    const interval = setInterval(tick, 2000);
+    return () => {
+      stopped = true;
+      clearInterval(interval);
+    };
+  }, [orderSuccess, storeSlug, product?.store_slug, formData.phone, telegramConnected, telegramBotInfo?.enabled]);
+
   // Generate Telegram connect URL with phone
   const getTelegramConnectUrl = () => {
     if (!telegramBotInfo?.enabled || !telegramBotInfo?.botUsername) return null;
@@ -346,16 +391,51 @@ export default function ProductCheckout() {
               </div>
             </div>
 
-            {telegramUrls.length > 0 && (
-              <a
-                href={telegramUrls[0]}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center justify-center gap-2 w-full py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold mb-4 transition-all"
-              >
-                <MessageCircle className="w-5 h-5" />
-                Track via Telegram
-              </a>
+            {telegramBotInfo?.enabled && (
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 mb-4 text-left">
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <div className="flex items-center gap-2">
+                    <MessageCircle className="w-5 h-5 text-blue-300" />
+                    <div>
+                      <p className="text-white font-bold text-sm">Telegram confirmation</p>
+                      <p className="text-white/70 text-xs">
+                        {telegramConnected ? 'Connected ✓' : 'Not connected yet'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {!telegramConnected ? (
+                    <button
+                      onClick={handleConnectTelegram}
+                      disabled={!formData.phone || formData.phone.replace(/\D/g, '').length < 9}
+                      className="px-3 py-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold disabled:opacity-50"
+                    >
+                      Connect
+                    </button>
+                  ) : (
+                    <span className="text-green-300 text-xs font-bold">Ready</span>
+                  )}
+                </div>
+
+                <div className="text-white/80 text-xs leading-relaxed">
+                  <p className="mb-1">You will receive:</p>
+                  <p>1) Order received message</p>
+                  <p>2) Pin instructions</p>
+                  <p>3) Confirmation buttons (Confirm / Cancel)</p>
+                </div>
+
+                {telegramUrls.length > 0 && (
+                  <a
+                    href={telegramUrls[0]}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-3 flex items-center justify-center gap-2 w-full py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold transition-all"
+                  >
+                    <Send className="w-4 h-4" />
+                    Open Telegram
+                  </a>
+                )}
+              </div>
             )}
 
             <button

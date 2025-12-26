@@ -7,7 +7,6 @@ import { Switch } from "@/components/ui/switch";
 import { useTranslation } from "@/lib/i18n";
 import { useToast } from "@/hooks/use-toast";
 import CustomerBot from "../CustomerBot";
-import { getCurrentUser } from "@/lib/auth";
 
 interface BotSettings {
   enabled: boolean;
@@ -36,9 +35,6 @@ export default function AdminWasselniSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeBot, setActiveBot] = useState<'confirmation' | 'updates' | 'tracking' | null>(null);
-  const currentUser = getCurrentUser();
-  const isPaymentLocked = !!currentUser?.is_locked && currentUser?.lock_type === 'payment';
-  const [subscriptionLocked, setSubscriptionLocked] = useState(false);
   const [settings, setSettings] = useState<BotSettings>({
     enabled: true,
     updatesEnabled: false,
@@ -63,30 +59,6 @@ export default function AdminWasselniSettings() {
   useEffect(() => {
     loadSettings();
   }, []);
-
-  useEffect(() => {
-    void checkSubscriptionLock();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const checkSubscriptionLock = async () => {
-    try {
-      if (isPaymentLocked) {
-        setSubscriptionLocked(true);
-        return;
-      }
-      const token = localStorage.getItem('authToken');
-      if (!token) return;
-      const res = await fetch('/api/billing/check-access', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (!res.ok) return;
-      const data = await res.json();
-      setSubscriptionLocked(!data.hasAccess);
-    } catch {
-      // ignore
-    }
-  };
 
   const loadSettings = async () => {
     setLoading(true);
@@ -115,16 +87,6 @@ export default function AdminWasselniSettings() {
   };
 
   const handleSave = async () => {
-    // Prevent enabling bot while subscription is ended/payment-locked
-    if ((subscriptionLocked || isPaymentLocked) && settings.enabled) {
-      toast({
-        title: 'Subscription ended',
-        description: 'You must renew/unlock your account to enable the bot.',
-        variant: 'destructive'
-      });
-      return;
-    }
-
     setSaving(true);
     try {
       const token = localStorage.getItem('authToken');
@@ -236,17 +198,8 @@ export default function AdminWasselniSettings() {
                 <Switch
                   checked={settings.enabled}
                   onCheckedChange={(checked) => {
-                    if (checked && (subscriptionLocked || isPaymentLocked)) {
-                      toast({
-                        title: 'Subscription ended',
-                        description: 'You must renew/unlock your account to enable the bot.',
-                        variant: 'destructive'
-                      });
-                      return;
-                    }
                     updateSetting('enabled', checked);
                   }}
-                  disabled={subscriptionLocked || isPaymentLocked}
                 />
               </div>
             </div>
@@ -284,17 +237,8 @@ export default function AdminWasselniSettings() {
                 <Switch
                   checked={settings.updatesEnabled || false}
                   onCheckedChange={(checked) => {
-                    if (checked && (subscriptionLocked || isPaymentLocked)) {
-                      toast({
-                        title: 'Subscription ended',
-                        description: 'You must renew/unlock your account to enable the bot.',
-                        variant: 'destructive'
-                      });
-                      return;
-                    }
                     updateSetting('updatesEnabled', checked);
                   }}
-                  disabled={subscriptionLocked || isPaymentLocked}
                 />
               </div>
             </div>
@@ -332,17 +276,8 @@ export default function AdminWasselniSettings() {
                 <Switch
                   checked={settings.trackingEnabled || false}
                   onCheckedChange={(checked) => {
-                    if (checked && (subscriptionLocked || isPaymentLocked)) {
-                      toast({
-                        title: 'Subscription ended',
-                        description: 'You must renew/unlock your account to enable the bot.',
-                        variant: 'destructive'
-                      });
-                      return;
-                    }
                     updateSetting('trackingEnabled', checked);
                   }}
-                  disabled={subscriptionLocked || isPaymentLocked}
                 />
               </div>
             </div>

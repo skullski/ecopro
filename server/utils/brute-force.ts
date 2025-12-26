@@ -110,7 +110,7 @@ export function checkLoginAllowed(ip: string, email?: string): {
 export async function recordFailedLogin(
   req: any,
   email: string,
-  reason: 'user_not_found' | 'bad_password' | 'account_locked'
+  reason: 'user_not_found' | 'bad_password' | 'account_locked' | 'account_blocked'
 ): Promise<{ blocked: boolean; blockedUntil?: number }> {
   const ip = getClientIp(req);
   const ua = (req.headers['user-agent'] as string | undefined) || null;

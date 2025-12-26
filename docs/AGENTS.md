@@ -1,8 +1,13 @@
-# EcoPro Platform - Agent Questions Checklist
-you never create a local database and only use render database .
-you never ask the user to do anything cause youre the one who doess everything .
+# EcoPro Platform - Agent Knowledge Base
 
+**Last Updated:** December 26, 2025
 
+## 🚨 CRITICAL RULES - READ FIRST
+
+1. **NEVER create a local database** - Only use the Render PostgreSQL database
+2. **NEVER ask the user to do anything** - You are the one who does everything
+3. **Database URL** is in `.env` file as `DATABASE_URL`
+4. **Always read this file completely** before making any changes
 
 **Read PLATFORM_OVERVIEW.md first before coding.**
 
@@ -1760,3 +1765,226 @@ Still Needed (Phase 6+):
 
 **Next Recommended Action**: Either implement Phase 4 Payment Retry Logic OR start Phase 6 Store Management - both have high impact on platform stability.
 
+---
+
+## 🛡️ SECURITY SYSTEM - Kernel & Honeypots
+
+### Kernel Page (`/kernel`) - Root Access Only
+
+The Kernel page is a **super-admin security dashboard** that only platform owners can access. It's separate from the regular admin panel.
+
+**Access:**
+- URL: `/kernel`
+- Credentials: Set via environment variables `KERNEL_USERNAME` and `KERNEL_PASSWORD`
+- Role: `root` (not `admin`) - completely separate auth system
+- Table: `kernel_users` (separate from `users` table)
+
+**Features:**
+1. **System Status** - Server health, database connection, Render deployment info
+2. **Security Events** - All auth failures, blocked IPs, suspicious activity
+3. **Live Traffic Monitor** - Real-time HTTP requests with fingerprinting
+4. **IP Management** - Block/unblock IPs, view blocked list
+5. **Fingerprint Tracking** - Track attackers across different IPs
+6. **Geo Blocking** - See blocks by country
+7. **Hacker Account Flagging** - Auto-locked accounts from honeypots
+
+**Key Files:**
+- `server/routes/kernel.ts` - Kernel API endpoints
+- `client/pages/Kernel.tsx` - Kernel dashboard UI
+- `server/utils/security.ts` - Security utilities (fingerprinting, geo, logging)
+
+### Honeypot System (Traps)
+
+Hidden trap endpoints that catch hackers/bots scanning for vulnerabilities.
+
+**How It Works:**
+1. Trap routes look like common attack targets (`.env`, `wp-admin`, `phpMyAdmin`, etc.)
+2. When accessed, the system:
+   - **Auto-blocks the IP** permanently
+   - **Flags the user account** if logged in (locks account)
+   - **Logs detailed security event** with fingerprint
+   - Returns fake "interesting" responses to waste attacker time
+
+**Trap Categories:**
+- **Environment Files**: `/.env`, `/config.php`, `/wp-config.php`
+- **Admin Panels**: `/wp-admin`, `/phpmyadmin`, `/adminer`
+- **API Exploits**: `/api/debug`, `/graphql`, `/.git/config`
+- **Backup Files**: `/backup.sql`, `/db.sql`, `/dump.sql`
+
+**Key Files:**
+- `server/routes/traps.ts` - Honeypot trap routes
+- Auto-blocks stored in `security_ip_blocks` table
+- Events logged in `security_events` table
+
+**Security Tables:**
+| Table | Purpose |
+|-------|---------|
+| `kernel_users` | Root/kernel user accounts |
+| `security_events` | All security events log |
+| `security_ip_blocks` | Blocked IPs (manual + auto) |
+| `security_decisions` | Security decision audit trail |
+| `security_trusted_actors` | Whitelisted IPs/users |
+
+**Environment Variables:**
+```env
+KERNEL_USERNAME=your_root_username
+KERNEL_PASSWORD=your_secure_password
+```
+
+---
+
+## 🆕 RECENT CHANGES (December 26, 2025)
+
+### Arabic to English Conversion - COMPLETE ✅
+
+**ALL hardcoded Arabic text has been converted to English** throughout the platform. This was done to standardize the UI until a proper translation system is implemented.
+
+#### What Was Converted:
+
+**Client Pages (All Arabic → English):**
+- `client/pages/admin/Orders.tsx` - Filter tabs, stats labels, sample customer names
+- `client/pages/admin/Dashboard.tsx` - Greetings, period selectors, stat labels
+- `client/pages/admin/EnhancedDashboard.tsx` - Stats, subscription info, setup checklist, countdown labels
+- `client/pages/admin/WasselniSettings.tsx` - All bot message templates
+- `client/pages/admin/Calls.tsx` - Call management labels
+- `client/pages/admin/orders/WasselniOrders.tsx` - Delivery tracking labels, sample data
+- `client/pages/admin/orders/AbandonedOrders.tsx` - Stats labels, sample data
+- `client/pages/admin/orders/AddOrder.tsx` - Form labels
+- `client/pages/admin/orders/FlexScan.tsx` - Analytics insights
+- `client/pages/admin/delivery/DeliveryCompanies.tsx` - API field placeholders
+- `client/pages/customer/Dashboard.tsx` - Navigation labels
+- `client/pages/customer/Login.tsx` - Form labels
+- `client/pages/customer/Signup.tsx` - Form labels
+- `client/pages/storefront/ProductCheckout.tsx` - Checkout form
+- `client/pages/storefront/OrderConfirmation.tsx` - Confirmation page title
+- `client/pages/Pricing.tsx` - Currency symbol (دج → DZD)
+
+**Client Components:**
+- `client/components/layout/Header.tsx` - Platform subtitle, aria labels
+- `client/components/layout/Footer.tsx` - Navigation links
+
+**Server Routes (All Arabic → English):**
+- `server/routes/orders.ts` - Status names (قيد الانتظار → Pending, etc.)
+- `server/routes/telegram.ts` - All Telegram bot messages, callback button text
+- `server/routes/bot.ts` - Default message templates
+- `server/routes/public-store.ts` - Order notification templates
+- `server/routes/dashboard.ts` - City labels
+
+**Server Utils:**
+- `server/utils/bot-messaging.ts` - WhatsApp template
+- `server/utils/scheduled-messages.ts` - Confirm/Cancel button labels
+
+#### What Remains Arabic (Intentionally):
+- `client/lib/translations.ts` - Translation system file
+- `client/lib/translations/ar.ts` - Arabic translation file
+- Language switcher label "العربية" - The word for "Arabic" in Arabic
+
+#### Currency:
+- All instances of "دج" converted to "DZD" (Algerian Dinar)
+
+#### Bot Message Templates (Now English):
+```
+Greeting: "Thank you for ordering from {storeName}, {customerName}!"
+Instant Order: "🎉 Thank you, {customerName}! Your order has been received..."
+Pin Instructions: "📌 Important tip: Long press on the previous message..."
+Order Confirmation: "Hello {customerName}! Do you confirm the order?"
+Payment: "Your order #{orderId} has been confirmed. Please pay {totalPrice} DZD."
+Shipping: "Your order #{orderId} has been shipped. Tracking number: {trackingNumber}."
+```
+
+#### Telegram Callback Buttons:
+- "✅ تأكيد الطلب" → "✅ Confirm Order"
+- "❌ إلغاء الطلب" → "❌ Cancel Order"
+
+#### How to Check for Remaining Arabic:
+```bash
+# Check client files (excluding translations)
+grep -r -P '[\x{0600}-\x{06FF}]' client/pages/ client/components/ | grep -v translations
+
+# Check server files
+grep -r -P '[\x{0600}-\x{06FF}]' server/
+```
+
+---
+
+## 🔑 Quick Reference for New Agents
+
+### Running the Project
+```bash
+# Start backend (port 8080)
+npm run dev:server
+
+# Start frontend (port 5173)
+npm run dev
+```
+
+### Database Access
+```bash
+# Load env and connect to Render DB
+source .env && psql "$DATABASE_URL"
+```
+
+### Key Environment Variables
+- `DATABASE_URL` - PostgreSQL connection string (Render)
+- `JWT_SECRET` - JWT signing secret
+- `TELEGRAM_BOT_TOKEN` - Platform Telegram bot (optional)
+
+### Important File Locations
+| Purpose | Location |
+|---------|----------|
+| API Routes | `server/routes/*.ts` |
+| React Pages | `client/pages/**/*.tsx` |
+| Admin Pages | `client/pages/admin/*.tsx` |
+| Customer Pages | `client/pages/customer/*.tsx` |
+| Storefront Pages | `client/pages/storefront/*.tsx` |
+| UI Components | `client/components/ui/*.tsx` |
+| Layout Components | `client/components/layout/*.tsx` |
+| Database Utils | `server/utils/database.ts` |
+| Bot Messaging | `server/utils/bot-messaging.ts` |
+| Migrations | `migrations/*.sql` |
+
+### Key Database Tables (57 tables total)
+| Table | Purpose |
+|-------|---------|
+| `users` | Platform admins (not sellers) |
+| `clients` | Sellers/store owners |
+| `customers` | End customers (optional accounts) |
+| `store_orders` | All orders |
+| `client_store_products` | Products |
+| `client_store_settings` | Store config + template settings |
+| `bot_settings` | Telegram/WhatsApp bot config per store |
+| `subscriptions` | Billing subscriptions |
+| `order_statuses` | Custom order statuses |
+| `staff` | Staff/manager accounts |
+| `voucher_codes` | Discount codes |
+| `delivery_integrations` | Delivery company credentials |
+
+### Common Patterns
+```typescript
+// API: Get authenticated user ID
+const clientId = (req as any).user?.id;
+
+// API: Return error
+return res.status(400).json({ error: 'Message' });
+
+// Database query
+const result = await pool.query('SELECT * FROM table WHERE id = $1', [id]);
+```
+
+### Account Lock System
+- `is_locked`: boolean - account is locked
+- `lock_type`: 'payment' | 'critical'
+  - `payment`: Can login but bot/features disabled (subscription expired)
+  - `critical`: Cannot login at all (security/ban)
+
+### Order Statuses (English)
+- `pending` - Waiting for confirmation
+- `confirmed` - Customer confirmed
+- `processing` - Being processed
+- `shipped` - Shipped out
+- `delivered` - Delivered (counts as revenue)
+- `cancelled` - Cancelled
+
+---
+
+**END OF AGENTS.md**
