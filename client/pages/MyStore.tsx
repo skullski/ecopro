@@ -5,28 +5,34 @@ export default function MyStore() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Get client ID from JWT token
-    const token = localStorage.getItem('token');
-    
-    if (!token) {
-      navigate('/login');
-      return;
-    }
+    const run = async () => {
+      try {
+        const res = await fetch('/api/client/store/settings');
+        if (res.status === 401 || res.status === 403) {
+          navigate('/login');
+          return;
+        }
 
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      const clientId = payload.id;
-      
-      if (clientId) {
-        // Redirect to the client's public storefront
-        navigate(`/store/${clientId}`, { replace: true });
-      } else {
+        if (!res.ok) {
+          navigate('/dashboard');
+          return;
+        }
+
+        const data = await res.json().catch(() => ({} as any));
+        const storeSlug = data?.store_slug;
+        if (storeSlug) {
+          navigate(`/store/${storeSlug}`, { replace: true });
+          return;
+        }
+
+        navigate('/dashboard');
+      } catch (error) {
+        console.error('Failed to load store settings:', error);
         navigate('/dashboard');
       }
-    } catch (error) {
-      console.error('Failed to parse token:', error);
-      navigate('/login');
-    }
+    };
+
+    run();
   }, [navigate]);
 
   return (

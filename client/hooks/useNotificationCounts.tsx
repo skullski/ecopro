@@ -18,24 +18,14 @@ export function useNotificationCounts() {
   });
 
   const fetchCounts = useCallback(async () => {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      setCounts({ newOrders: 0, unreadMessages: 0, loading: false });
-      return;
-    }
-
     try {
       // Fetch new orders count
       const ordersLastSeen = localStorage.getItem(ORDERS_LAST_SEEN_KEY);
       const ordersParams = ordersLastSeen ? `?since=${encodeURIComponent(ordersLastSeen)}` : '';
       
       const [ordersRes, messagesRes] = await Promise.all([
-        fetch(`/api/orders/new-count${ordersParams}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch('/api/chat/unread-count', {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
+        fetch(`/api/orders/new-count${ordersParams}`),
+        fetch('/api/chat/unread-count'),
       ]);
 
       let newOrders = 0;

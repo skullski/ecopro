@@ -54,12 +54,9 @@ export default function Dashboard() {
 
   const loadDashboardData = async () => {
     try {
-      const token = localStorage.getItem('authToken');
-      const headers: HeadersInit = token ? { 'Authorization': `Bearer ${token}` } : {};
-      
       const [statsRes, analyticsRes] = await Promise.all([
-        fetch('/api/dashboard/stats', { headers }),
-        fetch('/api/dashboard/analytics', { headers })
+        fetch('/api/dashboard/stats'),
+        fetch('/api/dashboard/analytics')
       ]);
 
       if (statsRes.ok) {

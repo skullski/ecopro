@@ -11,7 +11,7 @@
 1. **URL**: http://localhost:5174/platform-admin
 2. **Login**: 
    - Email: `admin@ecopro.com`
-   - Password: `admin123`
+   - Password: `<ADMIN_PASSWORD>`
 
 ### Test 3 New Features
 

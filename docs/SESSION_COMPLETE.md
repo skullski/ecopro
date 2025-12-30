@@ -35,7 +35,7 @@ Documentation:         ✅ Complete (6 guides)
 
 ### Test the Payment System (5 minutes)
 1. Open: http://localhost:5174
-2. Login: admin@ecopro.com / admin123
+2. Login: admin@ecopro.com / <ADMIN_PASSWORD>
 3. Go to: Dashboard → Billing
 4. You should see the billing dashboard!
 
@@ -44,7 +44,7 @@ Documentation:         ✅ Complete (6 guides)
 # Get token
 TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@ecopro.com","password":"admin123"}' \
+  -d '{"email":"admin@ecopro.com","password":"<ADMIN_PASSWORD>"}' \
   | jq -r '.data.token')
 
 # Test checkout
@@ -152,7 +152,7 @@ Total Documentation: **4,500+ lines**
 
 **Admin Account**:
 - Email: admin@ecopro.com
-- Password: admin123
+- Password: <ADMIN_PASSWORD>
 
 **API Port**: 8080  
 **Client Port**: 5174

@@ -15,8 +15,8 @@
 **Backend:**
 - Express.js + Node.js
 - PostgreSQL database (Render)
-- Authentication: JWT + bcrypt
-- Database URL: `postgresql://ecoprodata_user:SibI6VXuUdXFDh7gXfnHroSEgmAei1mL@dpg-d510j0vfte5s739cdai0-a.oregon-postgres.render.com/ecoprodata`
+- Authentication: HttpOnly cookies + CSRF (double-submit)
+- Database URL: via `DATABASE_URL` environment variable (never commit real credentials)
 
 **Deployment:**
 - Render (auto-deploys on git push to main)
@@ -43,8 +43,8 @@
 ## API PATTERNS
 
 ### Authentication:
-- Token stored in localStorage as `authToken`
-- Pass token in headers: `Authorization: Bearer {token}`
+- Auth uses HttpOnly cookies (no `Authorization: Bearer`)
+- CSRF uses a double-submit cookie + `X-CSRF-Token` header
 
 ### Endpoints:
 - `/api/storefront/{storeSlug}/settings` - Get store settings
@@ -238,7 +238,7 @@ Response: {
 
 **Credentials:**
 - Email: `admin@ecopro.com`
-- Password: `admin123`
+- Password: `<ADMIN_PASSWORD>`
 - Role: `admin`
 - Verified: `true`
 

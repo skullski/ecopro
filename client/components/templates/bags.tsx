@@ -1,11 +1,21 @@
 import React, { useState, useMemo } from 'react';
 import { TemplateProps } from '@/pages/storefront/templates/types';
 import { useTemplateUniversalSettings } from '@/hooks/useTemplateUniversalSettings';
+import { coerceSilverImageBlocks } from '@/lib/silverBlocks';
 
 export default function BagsTemplate(props: TemplateProps) {
   const [activeType, setActiveType] = useState('All');
   const { products = [], settings = {}, formatPrice = (p: number) => `${p}`, navigate, storeSlug } = props;
   const templateSettings = settings as any;
+
+  const silverHeaderBlocks = useMemo(
+    () => coerceSilverImageBlocks((templateSettings as any).silver_header_blocks),
+    [templateSettings]
+  );
+  const silverFooterBlocks = useMemo(
+    () => coerceSilverImageBlocks((templateSettings as any).silver_footer_blocks),
+    [templateSettings]
+  );
 
   const previewMode = Boolean((props as any).previewMode);
   const hideProducts = Boolean((props as any).hideProducts);
@@ -197,6 +207,32 @@ export default function BagsTemplate(props: TemplateProps) {
         background: enable_dark_mode ? '#1a1a1a' : secondary_color,
       }}
     >
+      {silverHeaderBlocks.length > 0 && (
+        <div
+          style={{
+            marginBottom: section_padding,
+            display: 'grid',
+            gap: 12,
+            gridTemplateColumns: `repeat(${silverHeaderBlocks.length}, minmax(0, 1fr))`,
+          }}
+        >
+          {silverHeaderBlocks
+            .filter((b) => b.url && String(b.url).trim().length > 0)
+            .map((b) => (
+              <img
+                key={b.id}
+                src={b.url}
+                alt={b.alt || 'Header image'}
+                style={{
+                  width: '100%',
+                  height: 140,
+                  objectFit: 'cover',
+                  borderRadius: border_radius,
+                }}
+              />
+            ))}
+        </div>
+      )}
       <style>{dynamicStyles}</style>
       <div className="max-w-7xl mx-auto px-4 md:px-6 pb-16" style={{ 
         background: enable_dark_mode ? 'rgba(10, 10, 10, 0.92)' : `rgba(255, 255, 255, 0.92)`, 
@@ -210,11 +246,12 @@ export default function BagsTemplate(props: TemplateProps) {
             <img 
               src={resolvedLogoUrl} 
               alt="Store Logo" 
+              data-edit-path="__settings.store_logo"
               style={{ height: '40px', width: 'auto', maxWidth: `${logo_width}px` }}
               className={`${enable_animations ? 'hover:opacity-80 transition-opacity' : ''}`}
             />
           ) : (
-            <div className="text-xs tracking-[0.3em] uppercase" style={{ color: secondary_text_color }}>
+            <div data-edit-path="__settings.store_name" className="text-xs tracking-[0.3em] uppercase" style={{ color: secondary_text_color }}>
               {settings.store_name || 'BAGSOS'}
             </div>
           )}
@@ -232,13 +269,13 @@ export default function BagsTemplate(props: TemplateProps) {
         {/* HERO */}
         <section className="grid md:grid-cols-[0.9fr,1.1fr] gap-10 items-end py-10" style={{ paddingLeft: `${section_padding / 2}px`, paddingRight: `${section_padding / 2}px` }}>
           <div>
-            <div className="text-xs tracking-[0.24em] uppercase mb-3" style={{ color: secondary_text_color }}>
+            <div data-edit-path="__settings.template_hero_kicker" className="text-xs tracking-[0.24em] uppercase mb-3" style={{ color: secondary_text_color }}>
               {heroKicker}
             </div>
-            <h1 className="leading-tight mb-4 font-medium" style={{ fontSize: headingSizes.h1, color: primary_color }}>
+            <h1 data-edit-path="__settings.template_hero_heading" className="leading-tight mb-4 font-medium" style={{ fontSize: headingSizes.h1, color: primary_color }}>
               {heroHeading}
             </h1>
-            <p className="text-sm max-w-md mb-6" style={{ color: secondary_text_color }}>
+            <p data-edit-path="__settings.template_hero_subtitle" className="text-sm max-w-md mb-6" style={{ color: secondary_text_color }}>
               {heroSubtitle}
             </p>
           </div>
@@ -254,8 +291,9 @@ export default function BagsTemplate(props: TemplateProps) {
                   muted
                   loop
                   playsInline
-                  className={`w-full object-cover ${enable_animations ? 'hover:scale-105 transition-transform' : ''}`}
-                  style={{ height: '460px', borderRadius: `${border_radius}px` }}
+                  className={`w-full aspect-[4/3] md:aspect-auto md:h-[460px] object-cover ${enable_animations ? 'hover:scale-105 transition-transform' : ''}`}
+                  style={{ borderRadius: `${border_radius}px` }}
+                  data-edit-path="__settings.hero_video_url"
                 >
                   <source src={heroVideoUrl} type="video/mp4" />
                 </video>
@@ -263,8 +301,9 @@ export default function BagsTemplate(props: TemplateProps) {
                 <img 
                   src={settings.banner_url || bgImage} 
                   alt="Hero bag" 
-                  className={`w-full object-cover ${enable_animations ? 'hover:scale-105 transition-transform' : ''}`}
-                  style={{ height: '460px', borderRadius: `${border_radius}px` }}
+                  className={`w-full aspect-[4/3] md:aspect-auto md:h-[460px] object-cover ${enable_animations ? 'hover:scale-105 transition-transform' : ''}`}
+                  style={{ borderRadius: `${border_radius}px` }}
+                  data-edit-path="__settings.banner_url"
                 />
               )}
             </div>
@@ -321,24 +360,24 @@ export default function BagsTemplate(props: TemplateProps) {
           paddingLeft: `${section_padding / 2}px`,
           paddingRight: `${section_padding / 2}px`,
         }}>
-          <div className="grid md:grid-cols-[0.35fr,1.65fr] gap-10 items-start">
+          <div className="grid md:grid-cols-[0.35fr,1.65fr] gap-6 md:gap-10 items-start">
             <div className="flex gap-4">
               <div className="w-px bg-gradient-to-b from-gray-400 to-gray-300" style={{ background: `linear-gradient(to bottom, ${primary_color}, ${secondary_text_color})` }} />
               <div>
                 <div className="text-xs tracking-[0.24em] uppercase mb-2" style={{ color: secondary_text_color }}>
                   {chapterLabel}
                 </div>
-                <h2 className="font-medium mb-3" style={{ fontSize: headingSizes.h2, color: primary_color }}>
+                <h2 className="font-medium mb-3 text-lg md:text-xl" style={{ color: primary_color }}>
                   {chapterTitle}
                 </h2>
-                <p className="text-sm" style={{ color: secondary_text_color }}>
+                <p className="text-xs md:text-sm" style={{ color: secondary_text_color }}>
                   {chapterText}
                 </p>
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: `repeat(3, 1fr)`, gap: `${section_padding / 8}px` }}>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4">
               {products.slice(0, 3).map((bag: any, idx: number) => (
-                <div key={bag.id} className="space-y-2 cursor-pointer" onClick={() => handleProductClick(bag)}>
+                <div key={bag.id} className={`space-y-2 cursor-pointer ${idx === 2 ? 'hidden md:block' : ''}`} onClick={() => handleProductClick(bag)}>
                   <div style={{ 
                     background: secondary_color,
                     boxShadow: show_product_shadows ? '0 32px 60px rgba(80, 60, 40, 0.36), 0 6px 16px rgba(55, 41, 30, 0.8)' : 'none',
@@ -349,26 +388,26 @@ export default function BagsTemplate(props: TemplateProps) {
                     <img
                       src={bag.images?.[0] || 'https://via.placeholder.com/400'}
                       alt={bag.title}
-                      className={`w-full object-cover ${enable_animations ? 'hover:scale-110' : ''} transition-transform`}
-                      style={{ height: idx === 0 ? '320px' : '260px' }}
+                      className={`w-full aspect-[3/4] md:aspect-auto object-cover ${enable_animations ? 'hover:scale-110' : ''} transition-transform`}
+                      style={{ height: undefined }}
                     />
                   </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <div className="text-sm font-medium" style={{ color: primary_color }}>
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-1 md:gap-2">
+                    <div className="min-w-0">
+                      <div className="text-xs md:text-sm font-medium truncate" style={{ color: primary_color }}>
                         {bag.title}
                       </div>
-                      <div className="text-xs mt-1 tracking-[0.18em] uppercase" style={{ color: secondary_text_color }}>
+                      <div className="text-[10px] md:text-xs mt-0.5 md:mt-1 tracking-[0.18em] uppercase" style={{ color: secondary_text_color }}>
                         {bag.category || 'Bag'}
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-sm mb-1" style={{ color: primary_color }}>
-                        {formatPrice(bag.price)} <span style={{ color: secondary_text_color }}>DZD</span>
+                    <div className="flex items-center gap-2 md:flex-col md:items-end md:text-right">
+                      <div className="text-xs md:text-sm whitespace-nowrap" style={{ color: primary_color }}>
+                        {formatPrice(bag.price)} <span className="hidden md:inline" style={{ color: secondary_text_color }}>DZD</span>
                       </div>
                       <button 
                         onClick={(e) => handleBuyClick(bag, e)}
-                        className="text-xs px-3 py-1 text-white font-medium transition"
+                        className="text-[10px] md:text-xs px-2 md:px-3 py-1 text-white font-medium transition whitespace-nowrap"
                         style={{
                           background: primary_color,
                           borderRadius: `${border_radius}px`,
@@ -403,7 +442,7 @@ export default function BagsTemplate(props: TemplateProps) {
 
           <div style={{ 
             display: 'grid', 
-            gridTemplateColumns: `repeat(auto-fill, minmax(200px, 1fr))`,
+            gridTemplateColumns: `repeat(auto-fill, minmax(140px, 1fr))`,
             gap: `${section_padding / 10}px`,
           }}>
             {filteredProducts.map((bag: any, index: number) => (
@@ -417,26 +456,26 @@ export default function BagsTemplate(props: TemplateProps) {
                   boxShadow: show_product_shadows ? '0 32px 60px rgba(80, 60, 40, 0.36), 0 6px 16px rgba(55, 41, 30, 0.8)' : 'none',
                   borderRadius: `${border_radius}px`,
                   overflow: 'hidden',
+                  aspectRatio: index % 3 === 0 ? '3/4' : '4/5',
                 }}>
                   <img
                     src={bag.images?.[0] || 'https://via.placeholder.com/400'}
                     alt={bag.title}
-                    className={`w-full object-cover ${enable_animations ? 'hover:scale-110' : ''} transition-transform`}
-                    style={{ height: index % 3 === 0 ? '320px' : '260px' }}
+                    className={`w-full h-full object-cover ${enable_animations ? 'hover:scale-110' : ''} transition-transform`}
                   />
                 </div>
-                <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <div className="text-sm font-medium" style={{ color: primary_color }}>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
+                  <div className="min-w-0">
+                    <div className="text-xs sm:text-sm font-medium truncate" style={{ color: primary_color }}>
                       {bag.title}
                     </div>
-                    <div className="text-xs mt-1 tracking-[0.18em] uppercase" style={{ color: secondary_text_color }}>
+                    <div className="text-[10px] sm:text-xs mt-0.5 sm:mt-1 tracking-[0.18em] uppercase" style={{ color: secondary_text_color }}>
                       {bag.category || 'Bag'}
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-sm mb-1" style={{ color: primary_color }}>
-                      {formatPrice(bag.price)} <span style={{ color: secondary_text_color }}>DZD</span>
+                  <div className="flex items-center gap-2 sm:flex-col sm:items-end sm:text-right">
+                    <div className="text-xs sm:text-sm whitespace-nowrap" style={{ color: primary_color }}>
+                      {formatPrice(bag.price)} <span className="hidden sm:inline" style={{ color: secondary_text_color }}>DZD</span>
                     </div>
                     <button 
                       onClick={(e) => {
@@ -444,7 +483,7 @@ export default function BagsTemplate(props: TemplateProps) {
                         const slug = bag.slug || bag.id;
                         navigate(storeSlug ? `/store/${storeSlug}/${slug}` : `/product/${bag.id}`);
                       }}
-                      className="text-xs px-3 py-1 text-white font-medium transition"
+                      className="text-[10px] sm:text-xs px-2 sm:px-3 py-1 text-white font-medium transition whitespace-nowrap"
                       style={{
                         background: primary_color,
                         borderRadius: `${border_radius}px`,
@@ -470,11 +509,7 @@ export default function BagsTemplate(props: TemplateProps) {
             <h2 className="text-center font-medium mb-8" style={{ fontSize: headingSizes.h2, color: primary_color }}>
               {testimonialsTitle}
             </h2>
-            <div style={{ 
-              display: 'grid',
-              gridTemplateColumns: `repeat(auto-fit, minmax(300px, 1fr))`,
-              gap: `${section_padding}px`,
-            }}>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {testimonialsList.slice(0, 3).map((testimonial: any, idx: number) => (
                 <div 
                   key={idx}
@@ -599,6 +634,33 @@ export default function BagsTemplate(props: TemplateProps) {
           </div>
         </footer>
       </div>
+
+      {silverFooterBlocks.length > 0 && (
+        <div
+          style={{
+            marginTop: section_padding,
+            display: 'grid',
+            gap: 12,
+            gridTemplateColumns: `repeat(${silverFooterBlocks.length}, minmax(0, 1fr))`,
+          }}
+        >
+          {silverFooterBlocks
+            .filter((b) => b.url && String(b.url).trim().length > 0)
+            .map((b) => (
+              <img
+                key={b.id}
+                src={b.url}
+                alt={b.alt || 'Footer image'}
+                style={{
+                  width: '100%',
+                  height: 140,
+                  objectFit: 'cover',
+                  borderRadius: border_radius,
+                }}
+              />
+            ))}
+        </div>
+      )}
     </div>
   );
 }

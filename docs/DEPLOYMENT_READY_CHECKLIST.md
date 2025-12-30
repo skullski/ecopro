@@ -213,7 +213,7 @@ Animations:          3 (loading, success, error)
 
 ### Manual Testing (Quick 5-minute verification)
 - [ ] Open http://localhost:5174 in browser
-- [ ] Login as admin@ecopro.com / admin123
+- [ ] Login as admin@ecopro.com / <ADMIN_PASSWORD>
 - [ ] Navigate to Dashboard → Billing
 - [ ] Verify dashboard loads without errors
 - [ ] Click "Upgrade to Pro" button
@@ -227,7 +227,7 @@ curl http://localhost:8080/api/health
 # Test 2: Login
 TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@ecopro.com","password":"admin123"}' \
+  -d '{"email":"admin@ecopro.com","password":"<ADMIN_PASSWORD>"}' \
   | jq -r '.data.token')
 
 # Test 3: Checkout endpoint

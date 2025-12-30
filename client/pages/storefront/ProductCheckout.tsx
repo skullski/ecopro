@@ -7,6 +7,20 @@ import {
   CreditCard, Package, Sparkles, ArrowRight, X, ChevronRight,
   Copy, MessageCircle, Zap, Gift, Send, CheckCircle2
 } from 'lucide-react';
+import {
+  formatWilayaLabel,
+  getAlgeriaCommuneById,
+  getAlgeriaCommunesByWilayaId,
+  getAlgeriaWilayaById,
+  getAlgeriaWilayas,
+} from '@/lib/algeriaGeo';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface Product {
   id: number;
@@ -62,26 +76,62 @@ export default function ProductCheckout() {
     phone: '',
     email: '',
     city: '',
+    wilayaId: '',
+    communeId: '',
+    hai: '',
     address: '',
     notes: '',
   });
+  const [haiSuggestions, setHaiSuggestions] = useState<string[]>([]);
+  const [haiSuggestionsSupported, setHaiSuggestionsSupported] = useState(true);
 
   // Get template and settings
   const template = localStorage.getItem('template') || 'fashion';
   const settings: StoreSettings = JSON.parse(localStorage.getItem('storeSettings') || '{}');
   const accentColor = settings.template_accent_color || '#3b82f6';
-  
-  // Get store slug from URL params, localStorage, or product data
-  const getEffectiveStoreSlug = () => {
-    if (storeSlug) return storeSlug;
-    // Try from localStorage
-    const storedSlug = localStorage.getItem('currentStoreSlug');
-    if (storedSlug) return storedSlug;
-    // Try from product data
-    if (product?.store_slug) return product.store_slug;
-    return null;
-  };
-  const effectiveStoreSlug = getEffectiveStoreSlug();
+
+  const dzWilayas = getAlgeriaWilayas();
+  const dzCommunes = getAlgeriaCommunesByWilayaId(formData.wilayaId);
+
+  useEffect(() => {
+    let stopped = false;
+    const loadHaiSuggestions = async () => {
+      const slug = storeSlug || localStorage.getItem('currentStoreSlug');
+      if (!haiSuggestionsSupported || !slug || !formData.communeId) {
+        setHaiSuggestions([]);
+        return;
+      }
+      try {
+        const res = await fetch(
+          `/api/storefront/${encodeURIComponent(String(slug))}/address/hai-suggestions?communeId=${encodeURIComponent(formData.communeId)}`
+        );
+        if (res.status === 404) {
+          if (!stopped) {
+            setHaiSuggestions([]);
+            setHaiSuggestionsSupported(false);
+          }
+          return;
+        }
+        if (!res.ok) {
+          if (!stopped) setHaiSuggestions([]);
+          return;
+        }
+        const data = await res.json();
+        const values = Array.isArray(data?.suggestions)
+          ? data.suggestions
+              .map((s: any) => String(s?.value || '').trim())
+              .filter((v: string) => v.length > 0)
+          : [];
+        if (!stopped) setHaiSuggestions(values);
+      } catch {
+        if (!stopped) setHaiSuggestions([]);
+      }
+    };
+    loadHaiSuggestions();
+    return () => {
+      stopped = true;
+    };
+  }, [haiSuggestionsSupported, storeSlug, formData.communeId]);
 
   // Fetch product
   const { data: product, isLoading, error } = useQuery({
@@ -104,8 +154,9 @@ export default function ProductCheckout() {
       const cachedProduct = localStorage.getItem(`product_${productIdentifier}`);
       if (cachedProduct) {
         const parsed = JSON.parse(cachedProduct);
-        // If cached product has store_slug, use it
-        if (parsed.store_slug) return parsed;
+        // Only use cache if it includes stock_quantity.
+        // Older cached payloads may miss it and can allow out-of-stock checkout.
+        if (parsed.store_slug && typeof parsed.stock_quantity === 'number') return parsed;
       }
       
       // Try the new product-info endpoint that returns store_slug
@@ -126,13 +177,8 @@ export default function ProductCheckout() {
       if (response.ok) return response.json();
       
       // Try client store products (for store checkout)
-      const token = localStorage.getItem('authToken');
-      if (token) {
-        response = await fetch(`/api/client/store/products/${productIdentifier}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (response.ok) return response.json();
-      }
+      response = await fetch(`/api/client/store/products/${productIdentifier}`);
+      if (response.ok) return response.json();
       
       throw new Error('Failed to fetch product');
     },
@@ -247,7 +293,9 @@ export default function ProductCheckout() {
     }
     // Re-fetch with phone to get personalized link
     const normalizedPhone = formData.phone.replace(/\D/g, '');
-    return `/api/telegram/bot-link/${storeSlug}?phone=${normalizedPhone}`;
+    const slug = storeSlug || product?.store_slug || localStorage.getItem('currentStoreSlug');
+    if (!slug) return `https://t.me/${telegramBotInfo.botUsername}`;
+    return `/api/telegram/bot-link/${slug}?phone=${normalizedPhone}`;
   };
 
   // Open Telegram with proper link
@@ -274,7 +322,16 @@ export default function ProductCheckout() {
   };
 
   const handleSubmitOrder = async () => {
-    if (!formData.fullName || !formData.phone || !formData.city || !formData.address) {
+    const currentStock = Number(product?.stock_quantity ?? 0);
+    if (Number.isFinite(currentStock) && currentStock <= 0) {
+      alert('Out of stock');
+      return;
+    }
+    if (Number.isFinite(currentStock) && quantity > currentStock) {
+      alert('Insufficient stock');
+      return;
+    }
+    if (!formData.fullName || !formData.phone || !formData.wilayaId || !formData.communeId || !formData.address) {
       alert('Please fill in all required fields');
       return;
     }
@@ -287,27 +344,58 @@ export default function ProductCheckout() {
     setIsSubmitting(true);
     
     try {
+      const selectedWilaya = getAlgeriaWilayaById(formData.wilayaId);
+      const selectedCommune = getAlgeriaCommuneById(formData.communeId);
+
       // Build order data matching the API expectations
       const orderData = {
         product_id: product.id,
-        store_slug: storeSlug || product.store_slug,
         quantity: quantity,
         total_price: (product.price || 0) * quantity,
         customer_name: formData.fullName,
         customer_phone: formData.phone,
-        customer_email: formData.email || '',
-        customer_address: `${formData.city} - ${formData.address}${formData.notes ? ` (${formData.notes})` : ''}`,
+        ...(formData.email?.trim() ? { customer_email: formData.email.trim() } : {}),
+        shipping_wilaya_id: formData.wilayaId ? Number(formData.wilayaId) : null,
+        shipping_commune_id: formData.communeId ? Number(formData.communeId) : null,
+        shipping_hai: (formData.hai || '').trim() || null,
+        customer_address: [
+          selectedCommune?.name || formData.city,
+          selectedWilaya?.name ? selectedWilaya.name : '',
+          formData.hai,
+        ]
+          .filter(Boolean)
+          .join(', ') + ` - ${formData.address}${formData.notes ? ` (${formData.notes})` : ''}`,
       };
 
       console.log('Submitting order:', orderData);
 
-      const response = await fetch('/api/orders/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderData),
-      });
+      const postJson = async (body: any) => {
+        const resp = await fetch('/api/orders/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const rawText = await resp.text();
+        let json: any = null;
+        try {
+          json = rawText ? JSON.parse(rawText) : null;
+        } catch {
+          json = null;
+        }
+        return { resp, rawText, json };
+      };
 
-      const result = await response.json();
+      let { resp: response, rawText: raw, json: result } = await postJson(orderData);
+
+      // Backward-compat: older servers reject unknown shipping_* fields (Zod .strict())
+      if (!response.ok && response.status === 400) {
+        const formErrors: string[] = result?.details?.formErrors || [];
+        const unrecognized = formErrors.some((e) => String(e).includes('Unrecognized key'));
+        if (unrecognized) {
+          const { shipping_wilaya_id, shipping_commune_id, shipping_hai, ...fallback } = orderData as any;
+          ({ resp: response, rawText: raw, json: result } = await postJson(fallback));
+        }
+      }
       
       if (response.ok) {
         console.log('Order created:', result);
@@ -316,11 +404,13 @@ export default function ProductCheckout() {
         setOrderSuccess(true);
       } else {
         console.error('Order failed:', result);
-        throw new Error(result.error || 'Failed to submit order');
+        const msg = result?.error || result?.message || raw || `HTTP ${response.status}`;
+        throw new Error(msg);
       }
     } catch (error) {
       console.error('Order submission error:', error);
-      alert('An error occurred while submitting the order. Please try again.');
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Order failed: ${msg}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -356,7 +446,8 @@ export default function ProductCheckout() {
   const productPrice = product.price || 0;
   const productName = product.title || product.name || 'Product';
   const productDesc = product.description || 'High quality product';
-  const inStock = (product.stock_quantity ?? 10) > 0;
+  const availableStock = Number(product.stock_quantity ?? 0);
+  const inStock = Number.isFinite(availableStock) && availableStock > 0;
   const totalPrice = productPrice * quantity;
 
   // Success Screen
@@ -515,9 +606,24 @@ export default function ProductCheckout() {
             <div className="flex items-center justify-between py-2 border-y border-white/10">
               <div className="flex items-center gap-2">
                 <span className="text-white/60 text-sm">Quantity:</span>
-                <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="w-7 h-7 rounded bg-white/10 text-white flex items-center justify-center"><Minus className="w-4 h-4" /></button>
+                <button
+                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                  disabled={quantity <= 1}
+                  className="w-7 h-7 rounded bg-white/10 text-white flex items-center justify-center disabled:opacity-50"
+                >
+                  <Minus className="w-4 h-4" />
+                </button>
                 <span className="text-white font-bold w-6 text-center">{quantity}</span>
-                <button onClick={() => setQuantity(q => q + 1)} className="w-7 h-7 rounded bg-white/10 text-white flex items-center justify-center"><Plus className="w-4 h-4" /></button>
+                <button
+                  onClick={() => {
+                    if (!Number.isFinite(availableStock) || availableStock <= 0) return;
+                    setQuantity((q) => Math.min(availableStock, q + 1));
+                  }}
+                  disabled={!inStock || (Number.isFinite(availableStock) && quantity >= availableStock)}
+                  className="w-7 h-7 rounded bg-white/10 text-white flex items-center justify-center disabled:opacity-50"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
               </div>
               <div className="flex items-center gap-2">
                 <span className={`text-sm ${inStock ? 'text-green-400' : 'text-red-400'}`}>{inStock ? '✓ In Stock' : '✗ Out of Stock'}</span>
@@ -529,8 +635,67 @@ export default function ProductCheckout() {
             <div className="grid grid-cols-2 gap-2">
               <input type="text" placeholder="Full Name *" value={formData.fullName} onChange={(e) => setFormData(f => ({ ...f, fullName: e.target.value }))} className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm placeholder:text-white/40 focus:outline-none" />
               <input type="tel" placeholder="Phone Number *" value={formData.phone} onChange={(e) => setFormData(f => ({ ...f, phone: e.target.value }))} className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm placeholder:text-white/40 focus:outline-none" dir="ltr" />
-              <input type="text" placeholder="City *" value={formData.city} onChange={(e) => setFormData(f => ({ ...f, city: e.target.value }))} className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm placeholder:text-white/40 focus:outline-none" />
-              <input type="text" placeholder="Address *" value={formData.address} onChange={(e) => setFormData(f => ({ ...f, address: e.target.value }))} className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm placeholder:text-white/40 focus:outline-none" />
+              <Select
+                value={formData.wilayaId}
+                onValueChange={(nextId) => {
+                  setFormData((f) => ({ ...f, wilayaId: nextId, communeId: '', city: '' }));
+                }}
+              >
+                <SelectTrigger className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm focus:outline-none h-auto">
+                  <SelectValue placeholder="Wilaya *" />
+                </SelectTrigger>
+                <SelectContent>
+                  {dzWilayas.map((w) => (
+                    <SelectItem key={w.id} value={String(w.id)}>
+                      {formatWilayaLabel(w)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={formData.communeId}
+                disabled={!formData.wilayaId}
+                onValueChange={(nextId) => {
+                  const c = getAlgeriaCommuneById(nextId);
+                  setFormData((f) => ({ ...f, communeId: nextId, city: c?.name || '' }));
+                }}
+              >
+                <SelectTrigger className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm focus:outline-none disabled:opacity-60 h-auto">
+                  <SelectValue placeholder={formData.wilayaId ? 'Baladia/Commune *' : 'Select Wilaya first'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {dzCommunes.map((c) => (
+                    <SelectItem key={c.id} value={String(c.id)}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {haiSuggestions.length > 0 && (
+                <Select
+                  value={formData.hai}
+                  onValueChange={(v) => setFormData(f => ({ ...f, hai: v }))}
+                >
+                  <SelectTrigger className="col-span-2 px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm focus:outline-none h-auto">
+                    <SelectValue placeholder="Choose Hai (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {haiSuggestions.map((h) => (
+                      <SelectItem key={h} value={h}>
+                        {h}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <input
+                type="text"
+                placeholder="Hai / Neighborhood (optional)"
+                value={formData.hai}
+                onChange={(e) => setFormData(f => ({ ...f, hai: e.target.value }))}
+                className="col-span-2 px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm placeholder:text-white/40 focus:outline-none"
+              />
+              <input type="text" placeholder="Address *" value={formData.address} onChange={(e) => setFormData(f => ({ ...f, address: e.target.value }))} className="col-span-2 px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm placeholder:text-white/40 focus:outline-none" />
             </div>
 
             {/* Telegram */}

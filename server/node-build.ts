@@ -1,22 +1,8 @@
 import { createServer } from "./index";
-import { initializeDatabase, createDefaultAdmin } from "./utils/database";
 import { startScheduledMessageWorker, stopScheduledMessageWorker } from "./utils/scheduled-messages";
-import * as bcrypt from "bcrypt";
 
 async function startServer() {
   try {
-    // Initialize database and create tables
-    console.log("🔄 Initializing database...");
-    await initializeDatabase();
-
-    // Create default admin user
-    const adminEmail = "admin@ecopro.com";
-    const adminPassword = "admin123";
-    const hashedPassword = await bcrypt.hash(adminPassword, 10);
-    await createDefaultAdmin(adminEmail, hashedPassword);
-    console.log(`✅ Default admin user created: ${adminEmail}`);
-    console.log(`🔑 Default password: ${adminPassword}`);
-
     // Create and start server with WebSocket support
     const app = createServer();
     const port = process.env.PORT || 3000;

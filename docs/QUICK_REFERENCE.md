@@ -19,7 +19,7 @@ Overall Status:   ✅ PRODUCTION READY
 
 ```
 Email:    admin@ecopro.com
-Password: admin123
+Password: <ADMIN_PASSWORD>
 ```
 
 ---
@@ -52,7 +52,7 @@ API Checkout:     http://localhost:8080/api/billing/checkout
 # 1. Get Token
 TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@ecopro.com","password":"admin123"}' \
+  -d '{"email":"admin@ecopro.com","password":"<ADMIN_PASSWORD>"}' \
   | jq -r '.data.token')
 
 # 2. Create Checkout Session

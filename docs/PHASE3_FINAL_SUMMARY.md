@@ -349,7 +349,7 @@ VITE_API_URL=http://localhost:8080/api
 
 ### Default Credentials
 - **Admin Email**: admin@ecopro.com
-- **Admin Password**: admin123
+- **Admin Password**: <ADMIN_PASSWORD>
 - **API Port**: 8080
 - **Client Port**: 5174
 

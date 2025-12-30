@@ -38,16 +38,13 @@ export default function SubscriptionGuard({ children }: SubscriptionGuardProps) 
 
   const checkSubscription = async () => {
     try {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
+      // First, fetch fresh user data from the server to check is_locked status
+      const meRes = await fetch('/api/auth/me');
+
+      if (meRes.status === 401 || meRes.status === 403) {
         setSubscriptionStatus({ hasAccess: true, status: 'unknown', loading: false, isPaymentLocked: false });
         return;
       }
-
-      // First, fetch fresh user data from the server to check is_locked status
-      const meRes = await fetch('/api/auth/me', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
 
       if (meRes.ok) {
         const userData = await meRes.json();
@@ -67,9 +64,7 @@ export default function SubscriptionGuard({ children }: SubscriptionGuardProps) 
       }
 
       // Then check billing/subscription access
-      const res = await fetch('/api/billing/check-access', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await fetch('/api/billing/check-access');
 
       if (res.ok) {
         const data = await res.json();

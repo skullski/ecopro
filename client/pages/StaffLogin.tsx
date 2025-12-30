@@ -42,7 +42,6 @@ export default function StaffLogin() {
         return;
       }
 
-      localStorage.setItem('authToken', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       localStorage.setItem('staffId', data.staffId);
       localStorage.setItem('isStaff', 'true');

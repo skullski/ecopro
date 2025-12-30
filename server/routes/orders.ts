@@ -1,121 +1,176 @@
 import { Router, RequestHandler } from "express";
+import { randomBytes } from "crypto";
 import { pool } from "../utils/database";
 import { sendBotMessagesForOrder } from "./order-confirmation";
 import { createOrderTelegramLink } from "../utils/telegram";
 import { replaceTemplateVariables, sendTelegramMessage } from "../utils/bot-messaging";
+import { z } from 'zod';
+
+const isProduction = process.env.NODE_ENV === 'production';
 
 export const ordersRouter = Router();
+
+const createOrderBodySchema = z
+  .object({
+    product_id: z.preprocess((v) => (typeof v === 'string' ? Number(v) : v), z.number().int().positive()).optional(),
+    client_id: z.preprocess((v) => (typeof v === 'string' ? Number(v) : v), z.number().int().positive()).optional(),
+    store_slug: z.string().trim().min(1).max(100).optional(),
+    quantity: z.preprocess((v) => (typeof v === 'string' ? Number(v) : v), z.number().int().positive().max(9999)),
+    // Client-provided total_price is accepted for backward-compatibility but ignored.
+    // Total is computed server-side from the current product price.
+    total_price: z.preprocess((v) => (typeof v === 'string' ? Number(v) : v), z.number().finite().positive().max(1_000_000_000)).optional(),
+    customer_name: z.string().trim().min(1).max(255),
+    customer_email: z.string().trim().email().max(255).optional().nullable(),
+    customer_phone: z.string().trim().min(7).max(50),
+    customer_address: z.string().trim().max(1000).optional().nullable(),
+    shipping_wilaya_id: z.preprocess(
+      (v) => (v === '' || v === null || v === undefined ? undefined : typeof v === 'string' ? Number(v) : v),
+      z.number().int().positive()
+    ).optional().nullable(),
+    shipping_commune_id: z.preprocess(
+      (v) => (v === '' || v === null || v === undefined ? undefined : typeof v === 'string' ? Number(v) : v),
+      z.number().int().positive()
+    ).optional().nullable(),
+    shipping_hai: z.string().trim().max(120).optional().nullable(),
+  })
+  .strict();
 
 /**
  * Create a new order from a buyer
  * POST /api/orders/create
  */
 export const createOrder: RequestHandler = async (req, res) => {
+  let client: any;
+  let inTransaction = false;
   try {
+    const parsed = createOrderBodySchema.safeParse(req.body);
+    if (parsed.success === false) {
+      return res.status(400).json({ error: 'Invalid request', details: parsed.error.flatten() });
+    }
     const {
       product_id,
       client_id,
       store_slug,
       quantity,
-      total_price,
+      total_price: _ignoredTotalPrice,
       customer_name,
       customer_email,
       customer_phone,
       customer_address,
-    } = req.body;
-
-    // Validate required fields
-    if (!quantity || !total_price || !customer_name || !customer_phone) {
-      res.status(400).json({ error: "Missing required fields: quantity, total_price, customer_name" });
-      return;
-    }
+      shipping_wilaya_id,
+      shipping_commune_id,
+      shipping_hai,
+    } = parsed.data;
 
     const normalizedPhone = String(customer_phone).replace(/\s/g, '');
     if (!/^\+?[0-9]{7,}$/.test(normalizedPhone)) {
-      res.status(400).json({ error: 'Invalid phone number' });
-      return;
+      return res.status(400).json({ error: 'Invalid phone number' });
     }
 
-    // Validate that we have either product_id or store_slug
-    if (!product_id && !store_slug) {
-      res.status(400).json({ error: "Must provide either product_id or store_slug" });
-      return;
+    if (!product_id) {
+      return res.status(400).json({ error: 'product_id is required' });
     }
+    
+    if (!isProduction) {
+      console.log(`[Orders] Attempting to resolve client_id from product_id=${product_id} or store_slug=${store_slug}`);
+    }
+    
+    let resolvedClientId: number | null = null;
 
-    // Infer client_id by product or store_slug if not provided
-    let resolvedClientId = client_id;
-    let orderType = 'client'; // Track order type for later use
-    
-    console.log(`[Orders] Attempting to resolve client_id from product_id=${product_id} or store_slug=${store_slug}`);
-    
-    if (!resolvedClientId && product_id) {
-      // First try client_store_products
-      const pid = await pool.query('SELECT client_id FROM client_store_products WHERE id = $1', [product_id]);
-      if (pid.rows.length > 0) {
-        resolvedClientId = pid.rows[0].client_id;
-        console.log(`[Orders] Resolved client_id from product: ${resolvedClientId}`);
-      } else {
-        // Try marketplace_products (seller) - but we need to handle this differently
-        const mProduct = await pool.query('SELECT seller_id FROM marketplace_products WHERE id = $1', [product_id]);
-        if (mProduct.rows.length > 0) {
-          console.log(`[Orders] Product is a marketplace product (seller_id=${mProduct.rows[0].seller_id})`);
-          // For now, orders from marketplace need special handling - we'll just fail gracefully
-        }
-      }
-    }
-    
-    if (!resolvedClientId && store_slug) {
-      // Try client_store_settings
-      console.log(`[Orders] Looking up store_slug in client_store_settings...`);
-      const cs = await pool.query('SELECT client_id FROM client_store_settings WHERE store_slug = $1', [store_slug]);
+    // Resolve owner from store_slug first (if given)
+    if (store_slug) {
+      if (!isProduction) console.log(`[Orders] Looking up store_slug in client_store_settings...`);
+      const cs = await pool.query('SELECT client_id FROM client_store_settings WHERE store_slug = $1 LIMIT 1', [store_slug]);
       if (cs.rows.length > 0) {
-        resolvedClientId = cs.rows[0].client_id;
-        orderType = 'client';
-        console.log(`[Orders] Found in client_store_settings, client_id=${resolvedClientId}`);
+        resolvedClientId = Number(cs.rows[0].client_id);
+        if (!isProduction) console.log(`[Orders] Found in client_store_settings, client_id=${resolvedClientId}`);
       } else {
-        // Fall back to seller_store_settings
-        console.log(`[Orders] Not found in client_store_settings, trying seller_store_settings...`);
-        const ss = await pool.query('SELECT seller_id FROM seller_store_settings WHERE store_slug = $1', [store_slug]);
-        if (ss.rows.length > 0) {
-          // For seller orders, we need to handle differently - store seller_id as client_id temporarily
-          resolvedClientId = ss.rows[0].seller_id;
-          orderType = 'seller';
-          console.log(`[Orders] Found in seller_store_settings, seller_id=${resolvedClientId}`);
-        } else {
-          console.log(`[Orders] Store not found in either table: ${store_slug}`);
-        }
+        return res.status(404).json({ error: 'Store not found' });
       }
     }
 
-    // Final check - must have client_id by now
-    if (!resolvedClientId) {
-      res.status(400).json({ error: "Could not determine client - provide client_id, product_id, or store_slug" });
-      return;
+    // Resolve owner + pricing from product_id (and cross-check if store_slug was provided)
+    const productRes = await pool.query(
+      'SELECT client_id, price, stock_quantity, status FROM client_store_products WHERE id = $1 LIMIT 1',
+      [product_id]
+    );
+    if (productRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Product not found' });
     }
-    
-    console.log(`[Orders] Resolved ${orderType}_id: ${resolvedClientId}`);
+    const productRow = productRes.rows[0];
+    const productClientId = Number(productRow.client_id);
+    if (!resolvedClientId) {
+      resolvedClientId = productClientId;
+      if (!isProduction) console.log(`[Orders] Resolved client_id from product: ${resolvedClientId}`);
+    } else if (resolvedClientId !== productClientId) {
+      return res.status(400).json({ error: 'Product does not belong to store' });
+    }
 
-    // Create order with pending status
-    const result = await pool.query(
+    if (String(productRow.status || 'active') !== 'active') {
+      return res.status(400).json({ error: 'Product is not available' });
+    }
+
+    const unitPrice = Number(productRow.price);
+    if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
+      return res.status(400).json({ error: 'Invalid product price' });
+    }
+
+    const availableStock = Number(productRow.stock_quantity ?? 0);
+    if (!Number.isFinite(availableStock) || availableStock < quantity) {
+      return res.status(400).json({ error: 'Insufficient stock' });
+    }
+
+    const expectedTotalPrice = unitPrice * Number(quantity);
+
+    if (!resolvedClientId) {
+      return res.status(400).json({ error: 'Could not determine store owner' });
+    }
+
+    if (client_id && Number(client_id) !== Number(resolvedClientId)) {
+      return res.status(400).json({ error: 'client_id mismatch' });
+    }
+
+    // Create order with pending status + atomically decrement stock
+    client = await pool.connect();
+    await client.query('BEGIN');
+    inTransaction = true;
+    const result = await client.query(
       `INSERT INTO store_orders (
         product_id, client_id, quantity, total_price, 
         customer_name, customer_email, customer_phone, shipping_address,
+        shipping_wilaya_id, shipping_commune_id, shipping_hai,
         status, payment_status, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW()) 
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,TIMEZONE('UTC', NOW())) 
       RETURNING *`,
       [
-        product_id,
+        product_id || null,
         resolvedClientId,
         quantity,
-        total_price,
+        expectedTotalPrice,
         customer_name,
         customer_email || null,
-        customer_phone || null,
+        normalizedPhone || null,
         customer_address || null,
+        shipping_wilaya_id || null,
+        shipping_commune_id || null,
+        shipping_hai || null,
         'pending',
         'unpaid'
       ]
     );
+
+    const stockUpdate = await client.query(
+      'UPDATE client_store_products SET stock_quantity = stock_quantity - $1 WHERE id = $2 AND client_id = $3 AND stock_quantity >= $1 RETURNING stock_quantity',
+      [quantity, product_id, resolvedClientId]
+    );
+    if (stockUpdate.rows.length === 0) {
+      await client.query('ROLLBACK');
+      inTransaction = false;
+      return res.status(400).json({ error: 'Insufficient stock' });
+    }
+
+    await client.query('COMMIT');
+    inTransaction = false;
 
     // Create Telegram deep-link for this order (optional for the customer)
     const telegram = await createOrderTelegramLink({
@@ -228,8 +283,8 @@ Press one of the buttons to confirm or cancel:`;
           const orderVars = {
             customerName: customer_name,
             productName: productTitle,
-            totalPrice: String(total_price),
-            price: String(total_price),
+            totalPrice: String(order.total_price ?? expectedTotalPrice),
+            price: String(order.total_price ?? expectedTotalPrice),
             quantity: quantity,
             orderId: order.id,
             customerPhone: customer_phone || normalizedPhone,
@@ -273,13 +328,15 @@ Press one of the buttons to confirm or cancel:`;
           if (botToken) {
             const delayMinutes = bot?.telegram_delay_minutes || 5;
             const scheduledTime = new Date(Date.now() + Number(delayMinutes) * 60 * 1000);
+            console.log(`[Orders] Scheduling confirmation for order ${order.id} in ${delayMinutes} minutes (at ${scheduledTime.toISOString()}, db value: ${bot?.telegram_delay_minutes})`);
             const confirmationTemplate = bot?.template_order_confirmation || defaultConfirmationTemplate;
             const confirmationMessage = replaceTemplateVariables(String(confirmationTemplate), orderVars);
 
             await pool.query(
               `INSERT INTO scheduled_messages
                (client_id, order_id, telegram_chat_id, message_content, message_type, scheduled_at, status)
-               VALUES ($1, $2, $3, $4, $5, $6, 'pending')`,
+               VALUES ($1, $2, $3, $4, $5, $6, 'pending')
+               ON CONFLICT DO NOTHING`,
               [resolvedClientId, order.id, telegramChatId, confirmationMessage, 'order_confirmation', scheduledTime]
             );
           }
@@ -292,15 +349,24 @@ Press one of the buttons to confirm or cancel:`;
             customer_name,
             storeName,
             productTitle,
-            total_price,
+            Number(order.total_price ?? expectedTotalPrice),
             storeSlug
           ).catch(() => {/* swallow errors */});
         }
       }
     }
   } catch (error) {
+    if (inTransaction && client) {
+      try {
+        await client.query('ROLLBACK');
+      } catch {}
+    }
     console.error("Create order error:", error);
     res.status(500).json({ error: "Failed to create order" });
+  } finally {
+    try {
+      if (client) client.release();
+    } catch {}
   }
 };
 
@@ -381,7 +447,7 @@ export const saveProductForCheckout: RequestHandler = async (req, res) => {
 
     // Store in a temporary checkout_sessions table
     // This persists across page refreshes and browser restarts
-    const sessionId = `${product_id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const sessionId = `${product_id}-${Date.now()}-${randomBytes(16).toString('base64url')}`;
     
     const result = await pool.query(
       `INSERT INTO checkout_sessions (session_id, product_id, product_data, store_slug, created_at, expires_at)
@@ -456,7 +522,7 @@ export const updateOrderStatus: RequestHandler = async (req, res) => {
       return;
     }
     
-    console.log('[updateOrderStatus] User:', req.user.id, 'Order:', id, 'Status:', status);
+    if (!isProduction) console.log('[updateOrderStatus] User:', req.user.id, 'Order:', id, 'Status:', status);
 
     // Built-in valid statuses
     const builtInStatuses = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'];
@@ -466,17 +532,17 @@ export const updateOrderStatus: RequestHandler = async (req, res) => {
     
     if (!isValidStatus) {
       // Check custom statuses in the database
-      console.log('[updateOrderStatus] Checking custom status for client_id:', req.user.id, 'status:', status);
+      if (!isProduction) console.log('[updateOrderStatus] Checking custom status for client_id:', req.user.id, 'status:', status);
       const customStatusCheck = await pool.query(
         'SELECT id FROM order_statuses WHERE client_id = $1 AND name = $2',
         [req.user.id, status]
       );
-      console.log('[updateOrderStatus] Custom status query result:', customStatusCheck.rows);
+      if (!isProduction) console.log('[updateOrderStatus] Custom status query result:', customStatusCheck.rows);
       isValidStatus = customStatusCheck.rows.length > 0;
     }
     
     if (!isValidStatus) {
-      console.log('[updateOrderStatus] Invalid status rejected');
+      if (!isProduction) console.log('[updateOrderStatus] Invalid status rejected');
       res.status(400).json({ error: "Invalid status" });
       return;
     }
@@ -489,7 +555,7 @@ export const updateOrderStatus: RequestHandler = async (req, res) => {
       [status, id, req.user.id]
     );
     
-    console.log('[updateOrderStatus] Update result rows:', result.rows.length);
+    if (!isProduction) console.log('[updateOrderStatus] Update result rows:', result.rows.length);
 
     if (result.rows.length === 0) {
       res.status(404).json({ error: "Order not found" });

@@ -50,9 +50,7 @@ const AdminBilling = () => {
   const { data: subscription, isLoading: subLoading, refetch: refetchSub } = useQuery({
     queryKey: ['billing-subscription'],
     queryFn: async () => {
-      const res = await fetch('/api/billing/subscription', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
-      });
+      const res = await fetch('/api/billing/subscription');
       if (!res.ok) throw new Error('Failed to fetch subscription');
       return res.json() as Promise<Subscription>;
     },
@@ -62,9 +60,7 @@ const AdminBilling = () => {
   const { data: paymentData, isLoading: payLoading, refetch: refetchPayments } = useQuery({
     queryKey: ['billing-payments'],
     queryFn: async () => {
-      const res = await fetch('/api/billing/payments', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
-      });
+      const res = await fetch('/api/billing/payments');
       if (!res.ok) throw new Error('Failed to fetch payments');
       return res.json();
     },
@@ -79,7 +75,6 @@ const AdminBilling = () => {
       const res = await fetch('/api/billing/checkout', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({}),

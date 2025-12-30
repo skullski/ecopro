@@ -11,20 +11,17 @@ export default function BotSettingsPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      navigate('/login');
-      return;
-    }
-
-    fetchSettings(token);
+    fetchSettings();
   }, [navigate]);
 
-  const fetchSettings = async (token) => {
+  const fetchSettings = async () => {
     try {
-      const response = await fetch('/api/bot-settings', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await fetch('/api/bot-settings');
+
+      if (response.status === 401) {
+        navigate('/login');
+        return;
+      }
 
       const data = await response.json();
       setSettings(data.settings);
@@ -38,15 +35,12 @@ export default function BotSettingsPage() {
   };
 
   const generatePreviews = async (currentSettings) => {
-    const token = localStorage.getItem('token');
-
     try {
       const [whatsappRes, smsRes] = await Promise.all([
         fetch('/api/bot-settings/preview', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             template: currentSettings.whatsapp_template,
@@ -57,7 +51,6 @@ export default function BotSettingsPage() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             template: currentSettings.sms_template,
@@ -85,12 +78,10 @@ export default function BotSettingsPage() {
     setMessage('');
 
     try {
-      const token = localStorage.getItem('token');
       const response = await fetch('/api/bot-settings', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(settings),
       });

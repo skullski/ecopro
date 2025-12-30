@@ -33,9 +33,7 @@ export function GoogleConnect({ onConnected, onDisconnected }: GoogleConnectProp
 
   const checkConnectionStatus = async () => {
     try {
-      const response = await fetch('/api/google/status', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
+      const response = await fetch('/api/google/status');
       const data = await response.json();
 
       if (data.connected) {
@@ -58,7 +56,6 @@ export function GoogleConnect({ onConnected, onDisconnected }: GoogleConnectProp
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({ code, state })
       });
@@ -90,8 +87,7 @@ export function GoogleConnect({ onConnected, onDisconnected }: GoogleConnectProp
   const handleDisconnect = async () => {
     try {
       const response = await fetch('/api/google/disconnect', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        method: 'POST'
       });
 
       if (!response.ok) {

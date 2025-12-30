@@ -76,6 +76,10 @@ type BlockCache = {
 
 let blockCache: BlockCache | null = null;
 
+export function clearSecurityBlockCache(): void {
+  blockCache = null;
+}
+
 async function getBlockedIpSet(): Promise<Set<string>> {
   const now = Date.now();
   const ttlMs = 60 * 1000;
@@ -161,8 +165,9 @@ export function ensureFingerprintCookie(req: Request, res: Response): string {
   if (existing && existing.length >= 8) return existing;
 
   const value = crypto.randomBytes(16).toString('hex');
-  // Do not set Secure here; Render/production will still be HTTPS; cookie works either way.
-  const newCookie = `ecopro_fp=${encodeURIComponent(value)}; Path=/; Max-Age=31536000; SameSite=Lax`;
+  const isProduction = process.env.NODE_ENV === 'production';
+  const secure = isProduction ? '; Secure' : '';
+  const newCookie = `ecopro_fp=${encodeURIComponent(value)}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
   const current = res.getHeader('Set-Cookie');
   if (!current) {
     res.setHeader('Set-Cookie', newCookie);
@@ -248,17 +253,25 @@ export function securityMiddleware(options: {
 }) {
   const dzOnlyUnauth = options.dzOnlyUnauth ?? true;
   const allowUnknownCountry = options.allowUnknownCountry ?? false;
+  const isProduction = process.env.NODE_ENV === 'production';
 
   return async (req: Request, res: Response, next: NextFunction) => {
     const start = Date.now();
 
     const requestId = (req.headers['x-request-id'] as string | undefined) || crypto.randomBytes(8).toString('hex');
     (req as any).requestId = requestId;
+    res.setHeader('X-Request-Id', requestId);
 
     const ip = getClientIp(req);
     (req as any).clientIp = ip;
     const userAgent = (req.headers['user-agent'] as string | undefined) || null;
     const linuxUa = !!userAgent && /Linux/i.test(userAgent) && !/Android/i.test(userAgent);
+
+    // Local dev fast path: for localhost/private IP traffic, skip DB-backed security
+    // checks/logging entirely to keep the dev server very responsive.
+    if (!isProduction && ip && isPrivateIp(ip)) {
+      return next();
+    }
 
     const fpCookie = ensureFingerprintCookie(req, res);
     const fingerprint = computeFingerprint({ ip, userAgent, cookie: fpCookie });

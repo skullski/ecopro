@@ -58,7 +58,7 @@ app.use(/^\/api\/store\//, authenticate, requireActiveSubscription);
 ### Default Admin Account
 ```
 Email: admin@ecopro.com
-Password: admin123
+Password: <ADMIN_PASSWORD>
 ```
 
 ---
@@ -125,7 +125,7 @@ curl http://localhost:8080/api/health
 ```
 1. Open http://localhost:5174 in browser
 2. Click "Admin Login"
-3. Enter: admin@ecopro.com / admin123
+3. Enter: admin@ecopro.com / <ADMIN_PASSWORD>
 4. Navigate to Billing page: http://localhost:5174/dashboard/billing
 5. Verify you see:
    - Subscription status card
@@ -152,7 +152,7 @@ curl http://localhost:8080/api/health
 # First, get JWT token by logging in
 TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@ecopro.com","password":"admin123"}' \
+  -d '{"email":"admin@ecopro.com","password":"<ADMIN_PASSWORD>"}' \
   | jq -r '.token')
 
 echo "Token: $TOKEN"

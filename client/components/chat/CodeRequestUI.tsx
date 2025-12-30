@@ -37,9 +37,7 @@ export function CodeRequestUI({ chatId, onClose, onSuccess }: CodeRequestUIProps
   const loadCodeRequests = async () => {
     setLoadingRequests(true);
     try {
-      const response = await fetch(`/api/chat/${chatId}/codes`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
-      });
+      const response = await fetch(`/api/chat/${chatId}/codes`);
 
       if (!response.ok) throw new Error('Failed to load code requests');
 
@@ -61,7 +59,6 @@ export function CodeRequestUI({ chatId, onClose, onSuccess }: CodeRequestUIProps
       const response = await fetch(`/api/chat/${chatId}/request-code`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({

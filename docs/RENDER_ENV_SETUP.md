@@ -6,7 +6,7 @@ Go to your Render dashboard at https://dashboard.render.com and configure these 
 
 ### 1. DATABASE_URL
 ```
-postgresql://eco_db_drrv_user:teCMT25hytwYFgWqpmg2Q0x97TJymRhs@dpg-d4cl4ubipnbc739hbcmg-a.oregon-postgres.render.com/eco_db_drrv
+postgresql://<USER>:<PASSWORD>@<HOST>:5432/<DB_NAME>?sslmode=require
 ```
 **Source**: Your PostgreSQL database connection string (External Database URL)
 
@@ -50,7 +50,7 @@ After deployment completes:
 
 3. Test Login:
    - Visit: https://ecopro-1lbl.onrender.com
-   - Try logging in with: `admin@ecopro.com` / `admin123`
+   - Log in with your admin account
 
 ## Troubleshooting
 
@@ -73,5 +73,4 @@ After deployment completes:
 
 - **Production URL**: https://ecopro-1lbl.onrender.com
 - **Database**: PostgreSQL on Render (Oregon region)
-- **Default Admin**: admin@ecopro.com / admin123
 - **API Health Check**: /api/ping

@@ -214,7 +214,7 @@ trial_days: 30
 # Admin login to get token
 curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@ecopro.com","password":"admin123"}'
+  -d '{"email":"admin@ecopro.com","password":"<ADMIN_PASSWORD>"}'
 
 # Update settings
 curl -X POST http://localhost:8080/api/billing/admin/settings \
@@ -231,7 +231,7 @@ curl -X POST http://localhost:8080/api/billing/admin/settings \
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"skull@gmail.com","password":"anaimad"}' | jq -r '.token')
+  -d '{"email":"skull@gmail.com","password":"<TEST_PASSWORD>"}' | jq -r '.token')
 
 curl -s http://localhost:8080/api/billing/subscription \
   -H "Authorization: Bearer $TOKEN" | jq .
@@ -248,7 +248,7 @@ curl -s http://localhost:8080/api/billing/check-access \
 ```bash
 ADMIN=$(curl -s -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@ecopro.com","password":"admin123"}' | jq -r '.token')
+  -d '{"email":"admin@ecopro.com","password":"<ADMIN_PASSWORD>"}' | jq -r '.token')
 
 curl -s http://localhost:8080/api/billing/admin/metrics \
   -H "Authorization: Bearer $ADMIN" | jq .
@@ -256,7 +256,7 @@ curl -s http://localhost:8080/api/billing/admin/metrics \
 
 **Test 4: Admin Dashboard**
 1. Open `http://localhost:8080`
-2. Login as `admin@ecopro.com` / `admin123`
+2. Login as `admin@ecopro.com` / `<ADMIN_PASSWORD>`
 3. Click **Billing** tab
 4. View all metrics in real-time
 

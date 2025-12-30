@@ -90,17 +90,17 @@ export const getDashboardAnalytics: RequestHandler = async (req, res) => {
       [clientId]
     );
 
-    // Daily revenue for last 30 days (show all orders revenue regardless of status)
+    // Daily revenue for last 30 days (only count revenue from revenue-counting statuses)
     const dailyRevenueRes = await pool.query(
       `SELECT 
         DATE(created_at) as date,
         COUNT(*)::int as orders,
-        COALESCE(SUM(total_price), 0)::float as revenue
+        COALESCE(SUM(CASE WHEN status = ANY($2) THEN total_price ELSE 0 END), 0)::float as revenue
        FROM store_orders 
        WHERE client_id = $1 AND created_at >= NOW() - INTERVAL '30 days'
        GROUP BY DATE(created_at)
        ORDER BY date ASC`,
-      [clientId]
+      [clientId, revenueStatuses]
     );
 
     // Today vs Yesterday comparison
@@ -164,29 +164,32 @@ export const getDashboardAnalytics: RequestHandler = async (req, res) => {
       [clientId, revenueStatuses]
     );
 
-    // Top selling products
+    // Top selling products - use images[1] for first image as image_url
     const topProductsRes = await pool.query(
       `SELECT 
-        p.id, p.title, p.price, p.image_url,
+        p.id, p.title, p.price, 
+        COALESCE(p.images[1], '') as image_url,
         COUNT(o.id)::int as total_orders,
         COALESCE(SUM(o.quantity), 0)::int as total_quantity,
-        COALESCE(SUM(o.total_price), 0)::float as total_revenue
+        COALESCE(SUM(CASE WHEN o.status = ANY($2) THEN o.total_price ELSE 0 END), 0)::float as total_revenue
        FROM client_store_products p
        LEFT JOIN store_orders o ON o.product_id = p.id AND o.client_id = $1
        WHERE p.client_id = $1
-       GROUP BY p.id, p.title, p.price, p.image_url
+       GROUP BY p.id, p.title, p.price, p.images
        ORDER BY total_orders DESC
        LIMIT 5`,
-      [clientId]
+      [clientId, revenueStatuses]
     );
 
-    // Recent orders
+    // Recent orders - join with client_store_products to get product title
     const recentOrdersRes = await pool.query(
       `SELECT 
-        id, customer_name, customer_phone, total_price, status, created_at, product_title
-       FROM store_orders 
-       WHERE client_id = $1 
-       ORDER BY created_at DESC 
+        o.id, o.customer_name, o.customer_phone, o.total_price, o.status, o.created_at,
+        COALESCE(p.title, 'Unknown Product') as product_title
+       FROM store_orders o
+       LEFT JOIN client_store_products p ON o.product_id = p.id
+       WHERE o.client_id = $1 
+       ORDER BY o.created_at DESC 
        LIMIT 10`,
       [clientId]
     );
@@ -204,19 +207,46 @@ export const getDashboardAnalytics: RequestHandler = async (req, res) => {
       [clientId]
     );
 
-    // Orders by city
+    // Orders by city - use shipping_wilaya_id since shipping_city doesn't exist
+    // Map wilaya IDs to names (Algeria wilayas)
     const cityBreakdownRes = await pool.query(
       `SELECT 
-        COALESCE(NULLIF(TRIM(shipping_city), ''), 'Not specified') as city,
+        CASE 
+          WHEN shipping_wilaya_id IS NOT NULL THEN shipping_wilaya_id::text
+          ELSE 'Not specified'
+        END as city,
+        shipping_wilaya_id,
         COUNT(*)::int as count,
         COALESCE(SUM(total_price), 0)::float as revenue
        FROM store_orders 
        WHERE client_id = $1
-       GROUP BY COALESCE(NULLIF(TRIM(shipping_city), ''), 'Not specified')
+       GROUP BY shipping_wilaya_id
        ORDER BY count DESC
        LIMIT 10`,
       [clientId]
     );
+
+    // Map wilaya IDs to names
+    const algeriaWilayas: Record<number, string> = {
+      1: 'Adrar', 2: 'Chlef', 3: 'Laghouat', 4: 'Oum El Bouaghi', 5: 'Batna',
+      6: 'Béjaïa', 7: 'Biskra', 8: 'Béchar', 9: 'Blida', 10: 'Bouira',
+      11: 'Tamanrasset', 12: 'Tébessa', 13: 'Tlemcen', 14: 'Tiaret', 15: 'Tizi Ouzou',
+      16: 'Alger', 17: 'Djelfa', 18: 'Jijel', 19: 'Sétif', 20: 'Saïda',
+      21: 'Skikda', 22: 'Sidi Bel Abbès', 23: 'Annaba', 24: 'Guelma', 25: 'Constantine',
+      26: 'Médéa', 27: 'Mostaganem', 28: 'M\'Sila', 29: 'Mascara', 30: 'Ouargla',
+      31: 'Oran', 32: 'El Bayadh', 33: 'Illizi', 34: 'Bordj Bou Arréridj', 35: 'Boumerdès',
+      36: 'El Tarf', 37: 'Tindouf', 38: 'Tissemsilt', 39: 'El Oued', 40: 'Khenchela',
+      41: 'Souk Ahras', 42: 'Tipaza', 43: 'Mila', 44: 'Aïn Defla', 45: 'Naâma',
+      46: 'Aïn Témouchent', 47: 'Ghardaïa', 48: 'Relizane', 49: 'Timimoun', 50: 'Bordj Badji Mokhtar',
+      51: 'Ouled Djellal', 52: 'Béni Abbès', 53: 'In Salah', 54: 'In Guezzam', 55: 'Touggourt',
+      56: 'Djanet', 57: 'El M\'Ghair', 58: 'El Meniaa'
+    };
+
+    const cityBreakdown = cityBreakdownRes.rows.map(row => ({
+      city: row.shipping_wilaya_id ? (algeriaWilayas[row.shipping_wilaya_id] || `Wilaya ${row.shipping_wilaya_id}`) : 'Not specified',
+      count: row.count,
+      revenue: row.revenue
+    }));
 
     // Calculate growth percentages
     const calcGrowth = (current: number, previous: number) => {
@@ -257,7 +287,7 @@ export const getDashboardAnalytics: RequestHandler = async (req, res) => {
       topProducts: topProductsRes.rows,
       recentOrders: recentOrdersRes.rows,
       statusBreakdown: statusBreakdownRes.rows,
-      cityBreakdown: cityBreakdownRes.rows,
+      cityBreakdown: cityBreakdown,
     });
   } catch (error) {
     console.error("Dashboard analytics error:", error);

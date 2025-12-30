@@ -1,4 +1,5 @@
 import express from 'express';
+import crypto from 'crypto';
 import { Product } from '../models/Product.js';
 import { Order } from '../models/Order.js';
 import { Buyer } from '../models/Buyer.js';
@@ -83,8 +84,8 @@ router.post('/:clientId/orders', async (req, res) => {
     // Create all orders
     const createdOrders = [];
     for (const orderData of orders) {
-      const order = await Order.create({
-        order_number: `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
+        const order = await Order.create({
+          order_number: `ORD-${Date.now()}-${crypto.randomBytes(3).toString('hex').slice(0, 5).toUpperCase()}`,
         client_id: clientId,
         buyer_id: buyer.id,
         product_id: orderData.product_id,

@@ -4,6 +4,29 @@ import path from 'path';
 const logsDir = path.resolve(process.cwd(), 'server', 'logs');
 const storeSettingsLog = path.join(logsDir, 'store-settings.log');
 
+const SENSITIVE_KEY_RE = /(authorization|cookie|token|secret|password|api[_-]?key|private[_-]?key)/i;
+
+function redact(value: any, depth = 0): any {
+  if (depth > 6) return '[truncated]';
+  if (value == null) return value;
+  if (Array.isArray(value)) return value.map((v) => redact(v, depth + 1));
+  if (typeof value === 'object') {
+    const out: Record<string, any> = {};
+    for (const [k, v] of Object.entries(value as Record<string, any>)) {
+      if (SENSITIVE_KEY_RE.test(k)) {
+        out[k] = '[REDACTED]';
+      } else {
+        out[k] = redact(v, depth + 1);
+      }
+    }
+    return out;
+  }
+  if (typeof value === 'string' && value.length > 500) {
+    return value.slice(0, 500) + '…';
+  }
+  return value;
+}
+
 function ensureDirAndFile(filePath: string) {
   try {
     if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true });
@@ -16,11 +39,12 @@ function ensureDirAndFile(filePath: string) {
 
 export function logStoreSettings(event: string, payload: Record<string, any>) {
   try {
+    if (process.env.NODE_ENV === 'production') return;
     ensureDirAndFile(storeSettingsLog);
     const line = JSON.stringify({
       ts: new Date().toISOString(),
       event,
-      payload,
+      payload: redact(payload),
     });
     fs.appendFileSync(storeSettingsLog, line + '\n', 'utf-8');
   } catch (e) {

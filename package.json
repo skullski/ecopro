@@ -23,17 +23,20 @@
     "format.fix": "prettier --write .",
     "typecheck": "tsc",
     "migrate:rehash-passwords": "tsx server/scripts/rehash-passwords.ts",
-    "extract:template-settings": "tsx scripts/extract-template-settings.ts"
+    "extract:template-settings": "tsx scripts/extract-template-settings.ts",
+    "e2e:smoke": "node scripts/e2e-smoke.js"
   },
   "dependencies": {
     "argon2": "^0.44.0",
     "bcrypt": "^6.0.0",
     "chart.js": "^4.5.1",
     "compression": "^1.8.1",
+    "cookie-parser": "^1.4.7",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "express-rate-limit": "^8.2.1",
     "express-validator": "^7.3.0",
+    "file-type": "^20.5.0",
     "geoip-lite": "^1.4.10",
     "google-auth-library": "^10.5.0",
     "googleapis": "^169.0.0",
@@ -82,6 +85,7 @@
     "@tailwindcss/typography": "^0.5.16",
     "@tanstack/react-query": "^5.84.2",
     "@types/bcrypt": "^6.0.0",
+    "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/jsonwebtoken": "^9.0.10",
@@ -127,5 +131,13 @@
     "vite": "^7.2.4",
     "vitest": "^3.2.4"
   },
-  "packageManager": "pnpm@10.14.0+sha512.ad27a79641b49c3e481a16a805baa71817a04bbe06a38d17e60e2eaee83f6a146c6a688125f5792e48dd5ba30e7da52a5cda4c3992b9ccf333f9ce223af84748"
+  "packageManager": "pnpm@10.14.0+sha512.ad27a79641b49c3e481a16a805baa71817a04bbe06a38d17e60e2eaee83f6a146c6a688125f5792e48dd5ba30e7da52a5cda4c3992b9ccf333f9ce223af84748",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@swc/core",
+      "argon2",
+      "bcrypt",
+      "esbuild"
+    ]
+  }
 }

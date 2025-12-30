@@ -1,40 +1,35 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from '@/lib/i18n';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Users, 
-  ShoppingBag, 
-  DollarSign, 
-  TrendingUp, 
-  Package, 
-  Store,
-  AlertCircle,
+import {
   Activity,
-  Eye,
-  Shield,
+  AlertCircle,
+  Award,
+  Ban,
   BarChart3,
-  Settings,
-  MessageCircle,
+  CheckCircle,
+  Clock,
+  Copy,
+  CreditCard,
+  DollarSign,
+  Eye,
+  Gift,
   Lock,
   LogOut,
-  Trash2,
-  CheckCircle,
-  XCircle,
-  Clock,
-  MapPin,
-  Zap,
-  Award,
-  Search,
-  CreditCard,
-  Gift,
-  UserPlus,
-  AlertTriangle,
-  Unlock,
-  Copy,
-  X,
+  Package,
   PieChart as PieChartIcon,
-  Ban,
-  UserCheck
+  Search,
+  Settings,
+  Shield,
+  ShoppingBag,
+  Store,
+  Trash2,
+  TrendingUp,
+  Unlock,
+  UserCheck,
+  Users,
+  X,
+  Zap,
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
 import { Badge } from '@/components/ui/badge';
@@ -88,6 +83,16 @@ interface ActivityLog {
   action: string;
   resource_type: string;
   timestamp: string;
+}
+
+interface AdminAuditLog {
+  id: number;
+  actor_id: number;
+  action: string;
+  target_type: string;
+  target_id?: number | null;
+  details?: any;
+  created_at: string;
 }
 
 interface Store {
@@ -148,11 +153,7 @@ function LockedAccountsManager() {
   async function fetchAllAccounts() {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/locked-accounts', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('authToken')}`
-        }
-      });
+      const response = await fetch('/api/admin/locked-accounts');
       const data = await response.json();
       setAllAccounts(data.accounts || []);
     } catch (err) {
@@ -208,7 +209,6 @@ function LockedAccountsManager() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('authToken')}`
         },
         body: JSON.stringify({
           client_id: accountId,
@@ -241,7 +241,6 @@ function LockedAccountsManager() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('authToken')}`
         },
         body: JSON.stringify({
           client_id: accountId,
@@ -292,7 +291,6 @@ function LockedAccountsManager() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('authToken')}`
           },
           body: JSON.stringify(body)
         });
@@ -695,11 +693,21 @@ export default function PlatformAdmin() {
   const [stores, setStores] = useState<Store[]>([]);
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+  const [adminAuditLogs, setAdminAuditLogs] = useState<AdminAuditLog[]>([]);
+  const [logMode, setLogMode] = useState<'staff' | 'admin'>('staff');
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stores' | 'products' | 'activity' | 'settings' | 'billing' | 'payment-failures' | 'codes' | 'tools'>('overview');
   const [billingMetrics, setBillingMetrics] = useState<any>(null);
   const [billingLoading, setBillingLoading] = useState(false);
   const [platformSettings, setPlatformSettings] = useState<any>(null);
+  const [settingsForm, setSettingsForm] = useState({
+    max_users: 1000,
+    max_stores: 1000,
+    subscription_price: 7,
+    trial_days: 30,
+  });
+  const [savingLimits, setSavingLimits] = useState(false);
+  const [savingSubscription, setSavingSubscription] = useState(false);
   const [converting, setConverting] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -729,34 +737,31 @@ export default function PlatformAdmin() {
     return () => clearInterval(interval);
   }, [activeTab]);
 
+  useEffect(() => {
+    if (!platformSettings) return;
+    setSettingsForm({
+      max_users: Number(platformSettings.max_users ?? 1000) || 0,
+      max_stores: Number(platformSettings.max_stores ?? 1000) || 0,
+      subscription_price: Number(platformSettings.subscription_price ?? 7) || 0,
+      trial_days: Number(platformSettings.trial_days ?? 30) || 0,
+    });
+  }, [platformSettings]);
+
   const loadPlatformData = async () => {
     try {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
+      const [usersRes, productsRes, statsRes, storesRes, activityRes, staffRes] = await Promise.all([
+        fetch('/api/admin/users'),
+        fetch('/api/admin/products').catch(() => null),
+        fetch('/api/admin/stats').catch(() => null),
+        fetch('/api/admin/stores').catch(() => null),
+        fetch('/api/admin/activity-logs').catch(() => null),
+        fetch('/api/admin/staff').catch(() => null),
+      ]);
+
+      if (usersRes.status === 401 || usersRes.status === 403) {
         window.location.href = '/login';
         return;
       }
-
-      const [usersRes, productsRes, statsRes, storesRes, activityRes, staffRes] = await Promise.all([
-        fetch('/api/admin/users', {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch('/api/admin/products', {
-          headers: { Authorization: `Bearer ${token}` },
-        }).catch(() => null),
-        fetch('/api/admin/stats', {
-          headers: { Authorization: `Bearer ${token}` },
-        }).catch(() => null),
-        fetch('/api/admin/stores', {
-          headers: { Authorization: `Bearer ${token}` },
-        }).catch(() => null),
-        fetch('/api/admin/activity-logs', {
-          headers: { Authorization: `Bearer ${token}` },
-        }).catch(() => null),
-        fetch('/api/admin/staff', {
-          headers: { Authorization: `Bearer ${token}` },
-        }).catch(() => null),
-      ]);
 
       if (usersRes.ok) {
         const usersData = await usersRes.json();
@@ -817,10 +822,7 @@ export default function PlatformAdmin() {
 
   const loadActivityLogs = async () => {
     try {
-      const token = localStorage.getItem('authToken');
-      const res = await fetch('/api/admin/activity-logs', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch('/api/admin/activity-logs');
       if (res.ok) {
         const data = await res.json();
         setActivityLogs(data || []);
@@ -830,13 +832,22 @@ export default function PlatformAdmin() {
     }
   };
 
+  const loadAdminAuditLogs = async () => {
+    try {
+      const res = await fetch('/api/admin/audit-logs');
+      if (res.ok) {
+        const data = await res.json();
+        setAdminAuditLogs(data || []);
+      }
+    } catch (error) {
+      console.error('Failed to load admin audit logs:', error);
+    }
+  };
+
   const loadBillingMetrics = async () => {
     setBillingLoading(true);
     try {
-      const token = localStorage.getItem('authToken');
-      const res = await fetch('/api/billing/admin/metrics', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch('/api/billing/admin/metrics');
       if (res.ok) {
         const data = await res.json();
         setBillingMetrics(data);
@@ -850,10 +861,7 @@ export default function PlatformAdmin() {
 
   const loadPlatformSettings = async () => {
     try {
-      const token = localStorage.getItem('authToken');
-      const res = await fetch('/api/billing/admin/settings', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch('/api/billing/admin/settings');
       if (res.ok) {
         const data = await res.json();
         setPlatformSettings(data);
@@ -863,13 +871,26 @@ export default function PlatformAdmin() {
     }
   };
 
+  const updatePlatformSettings = async (settings: Record<string, any>) => {
+    const res = await fetch('/api/billing/admin/settings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ settings }),
+    });
+
+    const data = await res.json().catch(() => ({} as any));
+    if (!res.ok) {
+      throw new Error(data?.error || data?.message || 'Failed to update settings');
+    }
+    return data;
+  };
+
   const loadPaymentFailures = async () => {
     setFailuresLoading(true);
     try {
-      const token = localStorage.getItem('authToken');
-      const res = await fetch('/api/billing/admin/payment-failures', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch('/api/billing/admin/payment-failures');
       if (res.ok) {
         const data = await res.json();
         setPaymentFailures(data || []);
@@ -886,12 +907,10 @@ export default function PlatformAdmin() {
     
     setRetryingPayment(codeRequestId as any);
     try {
-      const token = localStorage.getItem('authToken');
       const res = await fetch('/api/billing/admin/retry-payment', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ transactionId: codeRequestId }),
       });
@@ -915,10 +934,7 @@ export default function PlatformAdmin() {
   const loadCodes = async () => {
     setCodesLoading(true);
     try {
-      const token = localStorage.getItem('authToken');
-      const res = await fetch('/api/codes/admin/list', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch('/api/codes/admin/list');
       if (res.ok) {
         const data = await res.json();
         setGeneratedCodes(data || []);
@@ -939,12 +955,10 @@ export default function PlatformAdmin() {
     
     setIssuingCode(true);
     try {
-      const token = localStorage.getItem('authToken');
       const res = await fetch('/api/codes/admin/issue', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           tier: selectedTier,
@@ -981,11 +995,8 @@ export default function PlatformAdmin() {
 
     setExpiringClient(true);
     try {
-      const token = localStorage.getItem('authToken');
-      
       // First, find the client by email
       const searchRes = await fetch(`/api/users/search?email=${encodeURIComponent(expireClientEmail)}`, {
-        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (!searchRes.ok) {
@@ -1002,7 +1013,6 @@ export default function PlatformAdmin() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           clientId: clientId,
@@ -1038,12 +1048,10 @@ export default function PlatformAdmin() {
 
     setBulkModeratingProducts(true);
     try {
-      const token = localStorage.getItem('authToken');
       const res = await fetch('/api/admin/bulk-remove-products', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ productIds: Array.from(selectedProducts) }),
       });
@@ -1083,12 +1091,10 @@ export default function PlatformAdmin() {
 
     setBulkModeratingProducts(true);
     try {
-      const token = localStorage.getItem('authToken');
       const res = await fetch('/api/admin/bulk-suspend-stores', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ sellerEmails: Array.from(storeEmails) }),
       });
@@ -1113,12 +1119,10 @@ export default function PlatformAdmin() {
     if (!confirm('Are you sure you want to promote this user to admin?')) return;
 
     try {
-      const token = localStorage.getItem('authToken');
       const res = await fetch('/api/admin/promote', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ userId }),
       });
@@ -1137,12 +1141,10 @@ export default function PlatformAdmin() {
     if (reason === null) return;
 
     try {
-      const token = localStorage.getItem('authToken');
       const res = await fetch(`/api/admin/users/${userId}/lock`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ reason: reason || 'Account blocked by admin', lock_type: 'critical' }),
       });
@@ -1169,12 +1171,8 @@ export default function PlatformAdmin() {
     if (!confirm_unblock) return;
 
     try {
-      const token = localStorage.getItem('authToken');
       const res = await fetch(`/api/admin/users/${userId}/unlock`, {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
       });
 
       if (res.ok) {
@@ -1199,12 +1197,10 @@ export default function PlatformAdmin() {
     if (!confirmDelete) return;
 
     try {
-      const token = localStorage.getItem('authToken');
       const res = await fetch(`/api/admin/users/${userId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: userEmail && userType ? JSON.stringify({ email: userEmail, user_type: userType }) : undefined,
       });
@@ -1230,10 +1226,8 @@ export default function PlatformAdmin() {
   const handleConvertToSeller = async (userId: number) => {
     setConverting(userId);
     try {
-      const token = localStorage.getItem('authToken');
       const res = await fetch(`/api/admin/users/${userId}/convert-to-seller`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         const data = await res.json();
@@ -1256,12 +1250,8 @@ export default function PlatformAdmin() {
     if (!confirmDelete) return;
 
     try {
-      const token = localStorage.getItem('authToken');
       const res = await fetch(`/api/admin/staff/${staffId}`, {
         method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
       });
 
       if (res.ok) {
@@ -1397,7 +1387,11 @@ export default function PlatformAdmin() {
           </Button>
           <Button
             variant={activeTab === 'activity' ? 'default' : 'ghost'}
-            onClick={() => { setActiveTab('activity'); loadActivityLogs(); }}
+            onClick={() => { 
+              setActiveTab('activity');
+              setLogMode('staff');
+              loadActivityLogs();
+            }}
             className="whitespace-nowrap text-slate-200"
             style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.375rem, 0.8vh, 0.5rem) clamp(0.75rem, 1.5vh, 1rem)', height: 'clamp(2rem, 4vh, 2.5rem)' }}
           >
@@ -1444,7 +1438,7 @@ export default function PlatformAdmin() {
           </Button>
           <Button
             variant={activeTab === 'settings' ? 'default' : 'ghost'}
-            onClick={() => setActiveTab('settings')}
+            onClick={() => { setActiveTab('settings'); loadPlatformSettings(); }}
             className="whitespace-nowrap text-slate-200"
             style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.375rem, 0.8vh, 0.5rem) clamp(0.75rem, 1.5vh, 1rem)', height: 'clamp(2rem, 4vh, 2.5rem)' }}
           >
@@ -2328,12 +2322,51 @@ export default function PlatformAdmin() {
             <div className="p-6 border-b border-slate-700/50 bg-slate-900/80">
               <h3 className="text-lg font-bold text-cyan-400 flex items-center gap-2">
                 <Activity className="w-5 h-5" />
-                $ activity_logs --stream
+                {logMode === 'admin' ? '$ audit_logs --stream' : '$ activity_logs --stream'}
               </h3>
               <p className="text-xs text-slate-500 mt-2">Live system activity - Press Ctrl+C to exit</p>
             </div>
             <div className="p-6 max-h-[600px] overflow-auto bg-black/60">
-              {activityLogs.length === 0 ? (
+              {logMode === 'admin' ? (
+                adminAuditLogs.length === 0 ? (
+                  <div className="text-slate-500 text-sm">
+                    <div>$ audit_logs --stream</div>
+                    <div className="text-slate-600 mt-2">waiting for events...</div>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <div className="text-slate-500 text-sm mb-4">$ tail -f /var/log/ecopro/audit.log</div>
+                    {adminAuditLogs.map((log) => {
+                      const timestamp = new Date(log.created_at).toLocaleTimeString();
+                      const date = new Date(log.created_at).toLocaleDateString();
+                      const actor = `admin_${log.actor_id}`;
+                      const label = log.target_type || 'system';
+                      const target = log.target_id ? `${label}#${log.target_id}` : label;
+                      const color = log.action.includes('create')
+                        ? 'text-green-400'
+                        : log.action.includes('delete')
+                          ? 'text-red-400'
+                          : log.action.includes('update')
+                            ? 'text-yellow-400'
+                            : 'text-cyan-400';
+
+                      return (
+                        <div key={log.id} className={`text-xs ${color} hover:bg-slate-800/50 p-2 rounded transition-colors`}>
+                          <span className="text-slate-500">[{date} {timestamp}]</span>
+                          {' '}
+                          <span className="text-slate-400">{actor}</span>
+                          {' '}
+                          <span className="text-slate-300">→</span>
+                          {' '}
+                          <span className="font-semibold">{log.action}</span>
+                          {' '}
+                          <span className="text-slate-500">({target})</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )
+              ) : activityLogs.length === 0 ? (
                 <div className="text-slate-500 text-sm">
                   <div>$ activity_logs --stream</div>
                   <div className="text-slate-600 mt-2">waiting for events...</div>
@@ -2387,20 +2420,51 @@ export default function PlatformAdmin() {
                   <div className="bg-slate-900/30 rounded-lg border border-slate-600/30" style={{ padding: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
                     <label className="block font-medium text-slate-300" style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', marginBottom: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}>Max Users</label>
                     <div className="flex items-center" style={{ gap: 'clamp(0.5rem, 1vh, 0.625rem)' }}>
-                      <input type="number" defaultValue="10000" className="flex-1 bg-slate-700/50 border border-slate-600/50 text-white rounded-lg focus:border-blue-500" style={{ fontSize: 'clamp(0.85rem, 1.7vh, 1rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)' }} />
+                      <input
+                        type="number"
+                        value={settingsForm.max_users}
+                        onChange={(e) => setSettingsForm((s) => ({ ...s, max_users: Number(e.target.value) }))}
+                        className="flex-1 bg-slate-700/50 border border-slate-600/50 text-white rounded-lg focus:border-blue-500"
+                        style={{ fontSize: 'clamp(0.85rem, 1.7vh, 1rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)' }}
+                      />
                       <span className="text-slate-400" style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)' }}>Current: {stats.totalUsers}</span>
                     </div>
                   </div>
                   <div className="bg-slate-900/30 rounded-lg border border-slate-600/30" style={{ padding: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
                     <label className="block font-medium text-slate-300" style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', marginBottom: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}>Max Stores</label>
                     <div className="flex items-center" style={{ gap: 'clamp(0.5rem, 1vh, 0.625rem)' }}>
-                      <input type="number" defaultValue="5000" className="flex-1 bg-slate-700/50 border border-slate-600/50 text-white rounded-lg focus:border-emerald-500" style={{ fontSize: 'clamp(0.85rem, 1.7vh, 1rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)' }} />
+                      <input
+                        type="number"
+                        value={settingsForm.max_stores}
+                        onChange={(e) => setSettingsForm((s) => ({ ...s, max_stores: Number(e.target.value) }))}
+                        className="flex-1 bg-slate-700/50 border border-slate-600/50 text-white rounded-lg focus:border-emerald-500"
+                        style={{ fontSize: 'clamp(0.85rem, 1.7vh, 1rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)' }}
+                      />
                       <span className="text-slate-400" style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)' }}>Current: {stats.totalClients}</span>
                     </div>
                   </div>
-                  <Button className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white" style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', height: 'clamp(2.25rem, 4.5vh, 2.75rem)' }}>
+                  <Button
+                    className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
+                    disabled={savingLimits}
+                    onClick={async () => {
+                      setSavingLimits(true);
+                      try {
+                        await updatePlatformSettings({
+                          max_users: settingsForm.max_users,
+                          max_stores: settingsForm.max_stores,
+                        });
+                        await loadPlatformSettings();
+                        alert('✅ Platform limits updated');
+                      } catch (e: any) {
+                        alert(`❌ ${e?.message || 'Failed to update limits'}`);
+                      } finally {
+                        setSavingLimits(false);
+                      }
+                    }}
+                    style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', height: 'clamp(2.25rem, 4.5vh, 2.75rem)' }}
+                  >
                     <Zap style={{ width: 'clamp(0.875rem, 1.75vh, 1rem)', height: 'clamp(0.875rem, 1.75vh, 1rem)', marginRight: 'clamp(0.375rem, 0.75vh, 0.5rem)' }} />
-                    Save Limits
+                    {savingLimits ? 'Saving...' : 'Save Limits'}
                   </Button>
                 </div>
               </div>
@@ -2414,15 +2478,47 @@ export default function PlatformAdmin() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
                   <div className="bg-slate-900/30 rounded-lg border border-slate-600/30" style={{ padding: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
                     <label className="block font-medium text-slate-300" style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', marginBottom: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}>Monthly Price ($)</label>
-                    <input type="number" step="0.01" defaultValue="7" className="w-full bg-slate-700/50 border border-slate-600/50 text-white rounded-lg focus:border-emerald-500" style={{ fontSize: 'clamp(0.85rem, 1.7vh, 1rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)' }} />
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={settingsForm.subscription_price}
+                      onChange={(e) => setSettingsForm((s) => ({ ...s, subscription_price: Number(e.target.value) }))}
+                      className="w-full bg-slate-700/50 border border-slate-600/50 text-white rounded-lg focus:border-emerald-500"
+                      style={{ fontSize: 'clamp(0.85rem, 1.7vh, 1rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)' }}
+                    />
                   </div>
                   <div className="bg-slate-900/30 rounded-lg border border-slate-600/30" style={{ padding: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
                     <label className="block font-medium text-slate-300" style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', marginBottom: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}>Free Trial Days</label>
-                    <input type="number" defaultValue="30" className="w-full bg-slate-700/50 border border-slate-600/50 text-white rounded-lg focus:border-emerald-500" style={{ fontSize: 'clamp(0.85rem, 1.7vh, 1rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)' }} />
+                    <input
+                      type="number"
+                      value={settingsForm.trial_days}
+                      onChange={(e) => setSettingsForm((s) => ({ ...s, trial_days: Number(e.target.value) }))}
+                      className="w-full bg-slate-700/50 border border-slate-600/50 text-white rounded-lg focus:border-emerald-500"
+                      style={{ fontSize: 'clamp(0.85rem, 1.7vh, 1rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)' }}
+                    />
                   </div>
-                  <Button className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white" style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', height: 'clamp(2.25rem, 4.5vh, 2.75rem)' }}>
+                  <Button
+                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white"
+                    disabled={savingSubscription}
+                    onClick={async () => {
+                      setSavingSubscription(true);
+                      try {
+                        await updatePlatformSettings({
+                          subscription_price: settingsForm.subscription_price,
+                          trial_days: settingsForm.trial_days,
+                        });
+                        await loadPlatformSettings();
+                        alert('✅ Subscription settings updated');
+                      } catch (e: any) {
+                        alert(`❌ ${e?.message || 'Failed to update subscription settings'}`);
+                      } finally {
+                        setSavingSubscription(false);
+                      }
+                    }}
+                    style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', height: 'clamp(2.25rem, 4.5vh, 2.75rem)' }}
+                  >
                     <Zap style={{ width: 'clamp(0.875rem, 1.75vh, 1rem)', height: 'clamp(0.875rem, 1.75vh, 1rem)', marginRight: 'clamp(0.375rem, 0.75vh, 0.5rem)' }} />
-                    Save Subscription Settings
+                    {savingSubscription ? 'Saving...' : 'Save Subscription Settings'}
                   </Button>
                 </div>
               </div>
@@ -2483,19 +2579,56 @@ export default function PlatformAdmin() {
                 System Maintenance
               </h3>
               <div className="grid grid-cols-2 lg:grid-cols-4" style={{ gap: 'clamp(0.5rem, 1vh, 0.625rem)' }}>
-                <Button variant="outline" className="text-slate-200 h-auto flex flex-col items-center justify-center" style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)', gap: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}>
+                <Button
+                  variant="outline"
+                  className="text-slate-200 h-auto flex flex-col items-center justify-center"
+                  onClick={async () => {
+                    if (!confirm('Clear server caches now?')) return;
+                    try {
+                      const res = await fetch('/api/admin/clear-cache', { method: 'POST' });
+                      const data = await res.json().catch(() => ({} as any));
+                      if (!res.ok) throw new Error(data?.error || data?.message || 'Failed to clear cache');
+                      alert('✅ Cache cleared');
+                    } catch (e: any) {
+                      alert(`❌ ${e?.message || 'Failed to clear cache'}`);
+                    }
+                  }}
+                  style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)', gap: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}
+                >
                   <Trash2 style={{ width: 'clamp(1rem, 2vh, 1.25rem)', height: 'clamp(1rem, 2vh, 1.25rem)' }} />
                   <span>Clear Cache</span>
                 </Button>
-                <Button variant="outline" className="text-slate-200 h-auto flex flex-col items-center justify-center" style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)', gap: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}>
+                <Button
+                  variant="outline"
+                  className="text-slate-200 h-auto flex flex-col items-center justify-center"
+                  onClick={() => {
+                    if (!confirm('Export a DB snapshot now? (This will download a JSON file)')) return;
+                    window.location.href = '/api/admin/export-db?limit=1000';
+                  }}
+                  style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)', gap: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}
+                >
                   <Package style={{ width: 'clamp(1rem, 2vh, 1.25rem)', height: 'clamp(1rem, 2vh, 1.25rem)' }} />
                   <span>Export DB</span>
                 </Button>
-                <Button variant="outline" className="text-slate-200 h-auto flex flex-col items-center justify-center" style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)', gap: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}>
+                <Button
+                  variant="outline"
+                  className="text-slate-200 h-auto flex flex-col items-center justify-center"
+                  onClick={() => {
+                    setActiveTab('activity');
+                    setLogMode('admin');
+                    loadAdminAuditLogs();
+                  }}
+                  style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)', gap: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}
+                >
                   <Activity style={{ width: 'clamp(1rem, 2vh, 1.25rem)', height: 'clamp(1rem, 2vh, 1.25rem)' }} />
                   <span>Audit Log</span>
                 </Button>
-                <Button variant="destructive" className="h-auto flex flex-col items-center justify-center" style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)', gap: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}>
+                <Button
+                  variant="destructive"
+                  className="h-auto flex flex-col items-center justify-center"
+                  onClick={() => alert('Not implemented yet')}
+                  style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)', gap: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}
+                >
                   <AlertCircle style={{ width: 'clamp(1rem, 2vh, 1.25rem)', height: 'clamp(1rem, 2vh, 1.25rem)' }} />
                   <span>Emergency</span>
                 </Button>
@@ -2790,11 +2923,9 @@ export default function PlatformAdmin() {
 
                       setFlagging(true);
                       try {
-                        const token = localStorage.getItem('authToken');
                         const response = await fetch('/api/admin/flag-product', {
                           method: 'POST',
                           headers: {
-                            'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json'
                           },
                           body: JSON.stringify({

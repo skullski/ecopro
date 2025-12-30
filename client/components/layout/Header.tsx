@@ -29,13 +29,8 @@ export default function Header() {
   const fetchUnreadCount = useCallback(async () => {
     if (!user || isAdmin) return;
     
-    const token = localStorage.getItem('authToken');
-    if (!token) return;
-    
     try {
-      const res = await fetch('/api/chat/unread-count', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch('/api/chat/unread-count');
       if (res.ok) {
         const data = await res.json();
         const newCount = data.unread_count || 0;

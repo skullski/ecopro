@@ -17,7 +17,7 @@ The admin panel is hidden behind a secret URL that cannot be found by automated 
 1. **Login as Admin**:
    - Visit: `/login`
    - Email: `admin@ecopro.com`
-   - Password: `admin123`
+   - Password: `<ADMIN_PASSWORD>`
    - Automatically redirected to secret admin URL
 
 2. **Direct Access**:

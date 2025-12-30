@@ -93,10 +93,7 @@ export default function OrdersAdmin() {
   // Load custom statuses
   const loadStatuses = async () => {
     try {
-      const token = localStorage.getItem('authToken');
-      const res = await fetch('/api/client/order-statuses', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await fetch('/api/client/order-statuses');
       if (res.ok) {
         const data = await res.json();
         setCustomStatuses(data);
@@ -110,12 +107,10 @@ export default function OrdersAdmin() {
   const handleAddStatus = async () => {
     if (!newStatusName.trim()) return;
     try {
-      const token = localStorage.getItem('authToken');
       const res = await fetch('/api/client/order-statuses', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
           name: newStatusName,
@@ -139,10 +134,8 @@ export default function OrdersAdmin() {
   // Delete custom status
   const handleDeleteStatus = async (statusId: string | number) => {
     try {
-      const token = localStorage.getItem('authToken');
       const res = await fetch(`/api/client/order-statuses/${statusId}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
         await loadStatuses();
@@ -226,16 +219,7 @@ export default function OrdersAdmin() {
         setIsLoading(true);
       }
       setError(null);
-      
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        setError('Not authenticated. Please log in.');
-        setIsLoading(false);
-        return;
-      }
-
       const res = await fetch('/api/client/orders?limit=100', {
-        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (res.status === 401) {
@@ -253,20 +237,33 @@ export default function OrdersAdmin() {
       const ordersArray = Array.isArray(data) ? data : (data.orders || []);
       
       // Transform API data to match our format
-      const transformedOrders = ordersArray.map((order: any) => ({
-        id: `ORD-${String(order.id).padStart(3, '0')}`,
-        customer: order.customer_name,
-        total: order.total_price,
-        status: order.status, // Keep the actual status from database
-        created_at: order.created_at,
-        time: getTimeStr(Math.floor((Date.now() - new Date(order.created_at).getTime()) / 60000)),
-        product_title: order.product_title,
-        quantity: order.quantity,
-        phone: order.customer_phone,
-        email: order.customer_email,
-        address: order.shipping_address,
-        raw_id: order.id
-      }));
+      const transformedOrders = ordersArray.map((order: any) => {
+        // Get first product image from the images array
+        let product_image = null;
+        if (order.product_images) {
+          // product_images comes as PostgreSQL array string like '{url1,url2}' or as actual array
+          const images = Array.isArray(order.product_images) 
+            ? order.product_images 
+            : order.product_images.replace(/^\{|\}$/g, '').split(',').filter(Boolean);
+          product_image = images[0] || null;
+        }
+        
+        return {
+          id: `ORD-${String(order.id).padStart(3, '0')}`,
+          customer: order.customer_name,
+          total: order.total_price,
+          status: order.status, // Keep the actual status from database
+          created_at: order.created_at,
+          time: getTimeStr(Math.floor((Date.now() - new Date(order.created_at).getTime()) / 60000)),
+          product_title: order.product_title,
+          product_image: product_image,
+          quantity: order.quantity,
+          phone: order.customer_phone,
+          email: order.customer_email,
+          address: order.shipping_address,
+          raw_id: order.id
+        };
+      });
       setOrders(transformedOrders);
       setError(null);
     } catch (error) {
@@ -285,12 +282,10 @@ export default function OrdersAdmin() {
       const rawId = orders.find(o => o.id === id)?.raw_id;
       if (!rawId) return;
 
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
       const res = await fetch(`/api/client/orders/${rawId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({ status })
       });
@@ -316,12 +311,10 @@ export default function OrdersAdmin() {
         return;
       }
 
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
       const res = await fetch('/api/orders/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
           product_id: 1,
@@ -541,12 +534,14 @@ export default function OrdersAdmin() {
           <table className="w-full text-sm font-semibold">
             <thead>
               <tr className="border-b border-primary/10 bg-gradient-to-r from-muted/50 to-muted/30">
+                <th className="whitespace-nowrap p-2 text-right font-bold text-sm">Image</th>
                 <th className="whitespace-nowrap p-2 text-right font-bold text-sm">{t('orders.orderNumber')}</th>
+                <th className="whitespace-nowrap p-2 text-right font-bold text-sm">Product</th>
                 <th className="whitespace-nowrap p-2 text-right font-bold text-sm">{t('orders.customer')}</th>
                 <th className="whitespace-nowrap p-2 text-right font-bold text-sm">{t('orders.amount')}</th>
                 <th className="whitespace-nowrap p-2 text-right font-bold text-sm">{t('orders.status')}</th>
                 <th className="whitespace-nowrap p-2 text-right font-bold text-sm">{t('orders.time')}</th>
-                <th className="whitespace-nowrap p-2 text-right font-bold text-sm">{t('orders.actions')}</th>
+                <th className="whitespace-nowrap p-2 text-right font-bold text-sm w-8"></th>
               </tr>
             </thead>
             <tbody>
@@ -556,7 +551,25 @@ export default function OrdersAdmin() {
                     onClick={() => setExpandedOrderId(expandedOrderId === o.id ? null : o.id)}
                     className="border-b border-primary/5 transition-all cursor-pointer hover:bg-primary/10"
                   >
+                    <td className="whitespace-nowrap p-2 text-right">
+                      {o.product_image ? (
+                        <img 
+                          src={o.product_image} 
+                          alt={o.product_title || 'Product'} 
+                          className="w-10 h-10 rounded object-cover border border-border/50 ml-auto"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded bg-muted flex items-center justify-center border border-border/50 ml-auto">
+                          <ShoppingBag className="w-5 h-5 text-muted-foreground" />
+                        </div>
+                      )}
+                    </td>
                     <td className="whitespace-nowrap p-2 text-right font-bold text-sm">{o.id}</td>
+                    <td className="whitespace-nowrap p-2 text-right">
+                      <span className="text-sm font-semibold max-w-[150px] truncate block" title={o.product_title}>
+                        {o.product_title || 'No product'}
+                      </span>
+                    </td>
                     <td className="whitespace-nowrap p-2 text-right text-sm font-semibold">{o.customer}</td>
                     <td className="whitespace-nowrap p-2 text-right">
                       <span className="font-bold bg-gradient-to-r from-accent to-orange-500 bg-clip-text text-transparent text-sm">
@@ -581,26 +594,7 @@ export default function OrdersAdmin() {
                       })()}
                     </td>
                     <td className="whitespace-nowrap p-2 text-right text-muted-foreground text-sm" key={`time-${o.id}-${timeUpdate}`}>{getTimeStr(Math.floor((Date.now() - new Date(o.created_at).getTime()) / 60000))}</td>
-                    <td className="p-2 text-right flex items-center justify-end gap-1">
-                      {/* Quick status change buttons */}
-                      {customStatuses.slice(0, 3).map(status => (
-                        <button
-                          key={status.id}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setStatus(o.id, status.name);
-                          }}
-                          disabled={updatingOrderId === o.id || o.status === status.name}
-                          className="text-xs px-2 py-1 rounded disabled:opacity-30 transition"
-                          style={{ 
-                            backgroundColor: `${status.color}20`,
-                            color: status.color 
-                          }}
-                          title={status.name}
-                        >
-                          {status.icon}
-                        </button>
-                      ))}
+                    <td className="p-2 text-right">
                       <span className="text-xs text-muted-foreground">
                         {expandedOrderId === o.id ? '▼' : '▶'}
                       </span>
@@ -608,7 +602,7 @@ export default function OrdersAdmin() {
                   </tr>
                   {expandedOrderId === o.id && (
                     <tr className="bg-muted/30 border-b border-primary/10">
-                      <td colSpan={6} className="p-3">
+                      <td colSpan={8} className="p-3">
                         <div className="space-y-2">
                           {/* Order Details Grid */}
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
@@ -634,7 +628,20 @@ export default function OrdersAdmin() {
                             </div>
                             <div className="bg-background rounded p-2 border border-border/50">
                               <div className="text-sm font-semibold text-muted-foreground mb-0.5">Product</div>
-                              <div className="font-bold text-sm">{o.product_title || 'Not available'}</div>
+                              <div className="flex items-center gap-2">
+                                {o.product_image ? (
+                                  <img 
+                                    src={o.product_image} 
+                                    alt={o.product_title || 'Product'} 
+                                    className="w-12 h-12 rounded object-cover border border-border/50"
+                                  />
+                                ) : (
+                                  <div className="w-12 h-12 rounded bg-muted flex items-center justify-center border border-border/50">
+                                    <ShoppingBag className="w-6 h-6 text-muted-foreground" />
+                                  </div>
+                                )}
+                                <div className="font-bold text-sm">{o.product_title || 'Not available'}</div>
+                              </div>
                             </div>
                           </div>
 

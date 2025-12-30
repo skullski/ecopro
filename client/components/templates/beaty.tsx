@@ -50,14 +50,14 @@ export default function BeautyTemplate(props: TemplateProps) {
 
       <header className="sticky top-0 z-40 bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-4">
-          <h1 className="font-serif text-2xl font-semibold">{storeName}</h1>
-          <p className="text-xs text-gray-600">{storeDescription}</p>
+          <h1 data-edit-path="__settings.store_name" className="font-serif text-2xl font-semibold">{storeName}</h1>
+          <p data-edit-path="__settings.store_description" className="text-xs text-gray-600">{storeDescription}</p>
         </div>
       </header>
 
       <section className="bg-gradient-to-br from-pink-100 to-rose-50 py-6 md:py-4 md:py-6">
         <div className="max-w-7xl mx-auto px-6">
-          <h2 className="font-serif text-xl md:text-2xl font-semibold mb-6">{shadeTitle}</h2>
+          <h2 data-edit-path="__settings.template_hero_heading" className="font-serif text-xl md:text-2xl font-semibold mb-6">{shadeTitle}</h2>
           <div className="flex gap-4">
             {shades.map((shade, idx) => (
               <button key={idx} className="w-16 h-16 rounded-full shadow-md transition hover:scale-110 border-2 border-gray-900" style={{ backgroundColor: shade }} />
@@ -74,7 +74,7 @@ export default function BeautyTemplate(props: TemplateProps) {
               className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition cursor-pointer flex flex-col"
               onClick={() => navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/${p.slug}` : `/product/${p.id}`)}
             >
-              <div className="relative h-56 bg-gray-100">
+              <div className="relative aspect-square md:aspect-auto md:h-56 bg-gray-100">
                 <img src={p.images?.[0] || 'https://via.placeholder.com/400'} alt={p.title} className="w-full h-full object-cover" />
               </div>
               <div className="p-3 flex flex-col flex-grow">

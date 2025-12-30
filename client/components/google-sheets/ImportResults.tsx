@@ -46,9 +46,7 @@ export function ImportResults({
 
     setLoading(true);
     try {
-      const response = await fetch(`/api/google/imports/${jobId}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
+      const response = await fetch(`/api/google/imports/${jobId}`);
 
       if (!response.ok) {
         throw new Error('Failed to load import details');

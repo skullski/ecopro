@@ -31,9 +31,7 @@ export function SheetSelector({ spreadsheetId, onSheetSelected }: SheetSelectorP
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/google/sheets/${spreadsheetId}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-      });
+      const response = await fetch(`/api/google/sheets/${spreadsheetId}`);
 
       if (!response.ok) {
         throw new Error('Failed to load sheets');

@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { TemplateProps } from '@/pages/storefront/templates/types';
 import { useTemplateUniversalSettings } from '@/hooks/useTemplateUniversalSettings';
+import { coerceSilverImageBlocks } from '@/lib/silverBlocks';
 
 export default function PerfumeTemplate(props: TemplateProps) {
   const universalSettings = useTemplateUniversalSettings();
@@ -9,6 +10,15 @@ export default function PerfumeTemplate(props: TemplateProps) {
 
   const products = props.products || [];
   const settings = props.settings || {};
+
+  const silverHeaderBlocks = useMemo(
+    () => coerceSilverImageBlocks((settings as any).silver_header_blocks),
+    [settings]
+  );
+  const silverFooterBlocks = useMemo(
+    () => coerceSilverImageBlocks((settings as any).silver_footer_blocks),
+    [settings]
+  );
 
   // Extract universal settings with defaults
   const {
@@ -124,7 +134,7 @@ export default function PerfumeTemplate(props: TemplateProps) {
         }}
         onClick={() => navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/${p.slug}` : `/product/${p.id}`)}
       >
-        <div className="relative h-64 overflow-hidden">
+        <div className="relative aspect-[3/4] md:h-64 overflow-hidden">
           <img
             src={p.images[0]}
             alt={p.name}
@@ -133,34 +143,34 @@ export default function PerfumeTemplate(props: TemplateProps) {
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
 
           <div
-            className="absolute top-3 left-3 px-3 py-1 text-[10px] uppercase tracking-widest font-semibold rounded-full"
+            className="absolute top-2 md:top-3 left-2 md:left-3 px-2 md:px-3 py-0.5 md:py-1 text-[9px] md:text-[10px] uppercase tracking-widest font-semibold rounded-full"
             style={{ backgroundColor: realmColor.bg, color: realmColor.text }}
           >
             {p.realmLabel}
           </div>
         </div>
 
-        <div className="p-4">
-          <h3 className="text-sm font-semibold text-zinc-100">{p.name}</h3>
-          <p className="text-xs text-zinc-400 mb-2">
+        <div className="p-2 md:p-4">
+          <h3 className="text-xs md:text-sm font-semibold text-zinc-100 line-clamp-2">{p.name}</h3>
+          <p className="text-[10px] md:text-xs text-zinc-400 mb-1 md:mb-2">
             {p.family} · {p.intensity}
           </p>
 
-          <div className="space-y-1 text-[11px] text-zinc-300 opacity-80 group-hover:opacity-100 transition-opacity">
+          <div className="space-y-0.5 md:space-y-1 text-[10px] md:text-[11px] text-zinc-300 opacity-80 group-hover:opacity-100 transition-opacity hidden sm:block">
             {p.notes.slice(0, 3).map((note: string, i: number) => (
               <div key={i} className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-zinc-600"></span>
+                <span className="w-1.5 md:w-2 h-1.5 md:h-2 rounded-full bg-zinc-600"></span>
                 <span>{note}</span>
               </div>
             ))}
           </div>
 
-          <div className="mt-4 font-semibold text-sm" style={{ color: primary_color }}>
+          <div className="mt-2 md:mt-4 font-semibold text-xs md:text-sm" style={{ color: primary_color }}>
             {p.price} DZD
           </div>
 
           <button
-            className="w-full mt-3 py-2 rounded-lg font-semibold text-xs hover:opacity-90 transition text-white"
+            className="w-full mt-2 md:mt-3 py-1.5 md:py-2 rounded-lg font-semibold text-[10px] md:text-xs hover:opacity-90 transition text-white"
             style={{ backgroundColor: primary_color }}
             onClick={(e) => {
               e.stopPropagation();
@@ -192,10 +202,31 @@ export default function PerfumeTemplate(props: TemplateProps) {
 
   return (
     <div style={{ backgroundColor: secondary_color, color: text_color }} className="min-h-screen">
+      {silverHeaderBlocks.length > 0 && (
+        <div className="max-w-6xl mx-auto px-6 pt-6">
+          <div
+            className="grid gap-3"
+            style={{ gridTemplateColumns: `repeat(${silverHeaderBlocks.length}, minmax(0, 1fr))` }}
+          >
+            {silverHeaderBlocks
+              .filter((b) => b.url && String(b.url).trim().length > 0)
+              .map((b) => (
+                <img
+                  key={b.id}
+                  src={b.url}
+                  alt={b.alt || 'Header image'}
+                  className="w-full h-32 object-cover"
+                  style={{ borderRadius: border_radius }}
+                />
+              ))}
+          </div>
+        </div>
+      )}
       {/* HERO SECTION */}
       <section
         className="relative h-screen max-h-[90vh] overflow-hidden bg-cover bg-center"
         style={{ backgroundImage: heroVideoUrl ? 'none' : `url(${bannerImage})` }}
+        data-edit-path="__settings.banner_url"
       >
         {heroVideoUrl && (
           <video
@@ -203,6 +234,7 @@ export default function PerfumeTemplate(props: TemplateProps) {
             muted
             loop
             playsInline
+            data-edit-path="__settings.hero_video_url"
             style={{
               position: 'absolute',
               inset: 0,
@@ -218,10 +250,10 @@ export default function PerfumeTemplate(props: TemplateProps) {
         <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0.9))' }}></div>
 
         <div className="absolute bottom-16 left-10 max-w-2xl pr-6">
-          <h1 className="text-5xl md:text-6xl font-serif font-semibold mb-3" style={{ color: text_color }}>
+          <h1 data-edit-path="__settings.template_hero_heading" className="text-5xl md:text-6xl font-serif font-semibold mb-3" style={{ color: text_color }}>
             {heroHeading}
           </h1>
-          <p className="text-base md:text-lg" style={{ color: secondary_text_color }}>
+          <p data-edit-path="__settings.template_hero_subtitle" className="text-base md:text-lg" style={{ color: secondary_text_color }}>
             {heroSubtitle}
           </p>
         </div>
@@ -331,6 +363,27 @@ export default function PerfumeTemplate(props: TemplateProps) {
           <p>&copy; {new Date().getFullYear()} {storeName}. {footerRights}</p>
         </div>
       </footer>
+
+      {silverFooterBlocks.length > 0 && (
+        <div className="max-w-6xl mx-auto px-6 pb-8">
+          <div
+            className="grid gap-3"
+            style={{ gridTemplateColumns: `repeat(${silverFooterBlocks.length}, minmax(0, 1fr))` }}
+          >
+            {silverFooterBlocks
+              .filter((b) => b.url && String(b.url).trim().length > 0)
+              .map((b) => (
+                <img
+                  key={b.id}
+                  src={b.url}
+                  alt={b.alt || 'Footer image'}
+                  className="w-full h-32 object-cover"
+                  style={{ borderRadius: border_radius }}
+                />
+              ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

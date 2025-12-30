@@ -57,11 +57,7 @@ export default function StaffManagement() {
   const loadStaffList = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/client/staff', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-        },
-      });
+      const response = await fetch('/api/client/staff');
 
       const data = await response.json();
       
@@ -99,7 +95,6 @@ export default function StaffManagement() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         },
         body: JSON.stringify({
           username: staffUsername,
@@ -170,7 +165,6 @@ export default function StaffManagement() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         },
         body: JSON.stringify({ permissions: editPermissions }),
       });
@@ -204,9 +198,6 @@ export default function StaffManagement() {
     try {
       const response = await fetch(`/api/client/staff/${staffId}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-        },
       });
 
       if (!response.ok) throw new Error('Failed to remove staff');

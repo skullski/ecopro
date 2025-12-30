@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { TemplateProps } from '@/pages/storefront/templates/types';
 import { useTemplateUniversalSettings } from '@/hooks/useTemplateUniversalSettings';
+import { coerceSilverImageBlocks } from '@/lib/silverBlocks';
 
 export default function BeautyTemplate(props: TemplateProps) {
   const universalSettings = useTemplateUniversalSettings();
@@ -32,6 +33,15 @@ export default function BeautyTemplate(props: TemplateProps) {
   const [quickViewProduct, setQuickViewProduct] = useState<any>(null);
 
   const { products = [], settings = {}, formatPrice = (p: number) => `${p}` } = props;
+
+  const silverHeaderBlocks = useMemo(
+    () => coerceSilverImageBlocks((settings as any).silver_header_blocks),
+    [settings]
+  );
+  const silverFooterBlocks = useMemo(
+    () => coerceSilverImageBlocks((settings as any).silver_footer_blocks),
+    [settings]
+  );
 
   // Extract universal settings with defaults
   const {
@@ -202,6 +212,32 @@ export default function BeautyTemplate(props: TemplateProps) {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: secondary_color }}>
+      {silverHeaderBlocks.length > 0 && (
+        <div
+          style={{
+            padding: section_padding,
+            display: 'grid',
+            gap: 12,
+            gridTemplateColumns: `repeat(${silverHeaderBlocks.length}, minmax(0, 1fr))`,
+          }}
+        >
+          {silverHeaderBlocks
+            .filter((b) => b.url && String(b.url).trim().length > 0)
+            .map((b) => (
+              <img
+                key={b.id}
+                src={b.url}
+                alt={b.alt || 'Header image'}
+                style={{
+                  width: '100%',
+                  height: 140,
+                  objectFit: 'cover',
+                  borderRadius: border_radius,
+                }}
+              />
+            ))}
+        </div>
+      )}
       <style>{dynamicStyles}</style>
       {/* Floating bag */}
       <div className="fixed bottom-4 right-4 z-40">
@@ -234,10 +270,10 @@ export default function BeautyTemplate(props: TemplateProps) {
               )}
             </div>
             <div>
-              <div className="font-serif text-lg font-semibold leading-tight" style={{ color: text_color }}>
+              <div data-edit-path="__settings.store_name" className="font-serif text-lg font-semibold leading-tight" style={{ color: text_color }}>
                 {storeName}
               </div>
-              <div className="text-[11px]" style={{ color: secondary_text_color }}>
+              <div data-edit-path="__settings.template_header_tagline" className="text-[11px]" style={{ color: secondary_text_color }}>
                 {headerTagline}
               </div>
             </div>
@@ -285,10 +321,10 @@ export default function BeautyTemplate(props: TemplateProps) {
             >
               {heroBadge}
             </span>
-            <h2 className="font-serif text-xl md:text-2xl sm:text-2xl md:text-xl md:text-2xl font-semibold mt-4 leading-tight">
+            <h2 data-edit-path="__settings.template_hero_heading" className="font-serif text-xl md:text-2xl sm:text-2xl md:text-xl md:text-2xl font-semibold mt-4 leading-tight">
               {heroHeading}
             </h2>
-            <p className="text-sm mt-3" style={{ color: '#6b7280' }}>
+            <p data-edit-path="__settings.template_hero_subtitle" className="text-sm mt-3" style={{ color: '#6b7280' }}>
               {heroSubtitle}
             </p>
             <div className="mt-5 flex flex-wrap justify-center gap-2">
@@ -458,11 +494,11 @@ export default function BeautyTemplate(props: TemplateProps) {
             </div>
 
             {/* Products grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-4 md:mb-6">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4 mb-4 md:mb-6">
               {filteredProducts.map((p: any) => (
                 <div
                   key={p.id}
-                  className="rounded-2xl border overflow-hidden flex flex-col transition hover:-translate-y-1 cursor-pointer"
+                  className="rounded-xl md:rounded-2xl border overflow-hidden flex flex-col transition hover:-translate-y-1 cursor-pointer"
                   style={{
                     backgroundColor: '#ffffff',
                     borderColor: '#f3d5dd',
@@ -476,12 +512,12 @@ export default function BeautyTemplate(props: TemplateProps) {
                     <img
                       src={p.images?.[0] || 'https://via.placeholder.com/400'}
                       alt={p.title}
-                      className="w-full object-cover"
-                      style={{ height: '190px' }}
+                      className="w-full object-cover aspect-square md:aspect-auto"
+                      style={{ height: 'auto', minHeight: '120px', maxHeight: '190px' }}
                     />
-                    <div className="absolute top-2 right-2 flex flex-col gap-1">
+                    <div className="absolute top-1.5 md:top-2 right-1.5 md:right-2 flex flex-col gap-1">
                       <button
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-sm border transition"
+                        className="w-5 h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center text-xs md:text-sm border transition"
                         style={{
                           backgroundColor: wishlist.includes(p.id) ? '#111827' : '#ffffff',
                           color: wishlist.includes(p.id) ? '#fef2f2' : '#111827',
@@ -496,15 +532,15 @@ export default function BeautyTemplate(props: TemplateProps) {
                       </button>
                     </div>
                   </div>
-                  <div className="p-3 flex-1 flex flex-col">
-                    <div className="font-semibold text-sm line-clamp-2" style={{ color: '#1f2933' }}>
+                  <div className="p-2 md:p-3 flex-1 flex flex-col">
+                    <div className="font-semibold text-xs md:text-sm line-clamp-2" style={{ color: '#1f2933' }}>
                       {p.title}
                     </div>
-                    <div className="text-[11px] mt-1" style={{ color: '#9f7a85' }}>
+                    <div className="text-[9px] md:text-[11px] mt-0.5 md:mt-1" style={{ color: '#9f7a85' }}>
                       {p.category || productFallbackCategory} · {p.price}
                     </div>
-                    <div className="flex items-center justify-between mt-auto pt-2">
-                      <div className="text-xs" style={{ color: '#7b4351' }}>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-1.5 mt-auto pt-1.5 md:pt-2">
+                      <div className="text-[10px] md:text-xs" style={{ color: '#7b4351' }}>
                         {formatPrice(p.price)} DZD
                       </div>
                       <button
@@ -513,7 +549,7 @@ export default function BeautyTemplate(props: TemplateProps) {
                           const slug = p.slug || p.id;
                           navigate(storeSlug ? `/store/${storeSlug}/${slug}` : `/product/${p.id}`);
                         }}
-                        className="text-[11px] px-3 py-1 rounded-full font-semibold text-white"
+                        className="text-[9px] md:text-[11px] px-2 md:px-3 py-1 rounded-full font-semibold text-white whitespace-nowrap"
                         style={{ backgroundColor: '#111827' }}
                       >
                         {buyNowLabel}
@@ -629,6 +665,33 @@ export default function BeautyTemplate(props: TemplateProps) {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {silverFooterBlocks.length > 0 && (
+        <div
+          style={{
+            padding: section_padding,
+            display: 'grid',
+            gap: 12,
+            gridTemplateColumns: `repeat(${silverFooterBlocks.length}, minmax(0, 1fr))`,
+          }}
+        >
+          {silverFooterBlocks
+            .filter((b) => b.url && String(b.url).trim().length > 0)
+            .map((b) => (
+              <img
+                key={b.id}
+                src={b.url}
+                alt={b.alt || 'Footer image'}
+                style={{
+                  width: '100%',
+                  height: 140,
+                  objectFit: 'cover',
+                  borderRadius: border_radius,
+                }}
+              />
+            ))}
         </div>
       )}
     </div>

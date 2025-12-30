@@ -75,7 +75,7 @@ This document outlines the security measures implemented in the EcoPro platform.
 
 For initial setup:
 - **Email**: `admin@ecopro.com`
-- **Password**: `admin123`
+- **Password**: `<ADMIN_PASSWORD>`
 - **⚠️ CHANGE THIS IMMEDIATELY IN PRODUCTION**
 
 ## 📝 Security Best Practices

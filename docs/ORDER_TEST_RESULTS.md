@@ -28,7 +28,7 @@ When no products exist, order creation fails with foreign key constraint error.
 
 ### Method 1: Via Dashboard (Recommended)
 1. Open http://localhost:8080/dashboard
-2. Login with: admin@ecopro.com / admin123
+2. Login with: admin@ecopro.com / <ADMIN_PASSWORD>
 3. Create a store (e.g., "My Store")
 4. Add products to the store
 5. Note the product ID

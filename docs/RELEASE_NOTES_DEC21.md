@@ -102,7 +102,7 @@ pnpm start
 
 # Access admin dashboard
 http://localhost:8080
-# Login as: admin@ecopro.com / admin123
+# Login as: admin@ecopro.com / <ADMIN_PASSWORD>
 # Click "Billing" tab to see metrics
 ```
 
@@ -187,7 +187,7 @@ curl -X POST http://localhost:8080/api/billing/admin/settings \
 # Login as store owner
 TOKEN=$(curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"skull@gmail.com","password":"anaimad"}' | jq -r '.token')
+  -d '{"email":"skull@gmail.com","password":"<TEST_PASSWORD>"}' | jq -r '.token')
 
 # Check subscription (should show 30 days trial)
 curl http://localhost:8080/api/billing/subscription \
@@ -199,7 +199,7 @@ curl http://localhost:8080/api/billing/subscription \
 # Login as admin
 ADMIN=$(curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@ecopro.com","password":"admin123"}' | jq -r '.token')
+  -d '{"email":"admin@ecopro.com","password":"<ADMIN_PASSWORD>"}' | jq -r '.token')
 
 # Get metrics
 curl http://localhost:8080/api/billing/admin/metrics \
@@ -209,7 +209,7 @@ curl http://localhost:8080/api/billing/admin/metrics \
 ### Test 3: Admin Dashboard
 1. Open http://localhost:8080
 2. Click "Login" or navigate to login page
-3. Enter: admin@ecopro.com / admin123
+3. Enter: admin@ecopro.com / <ADMIN_PASSWORD>
 4. Navigate to "Billing" tab
 5. View all metrics in real-time
 

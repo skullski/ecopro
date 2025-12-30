@@ -5,6 +5,35 @@ import { fileURLToPath } from 'url';
 
 let pool: Pool | null = null;
 
+function readIntEnv(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (!raw) return fallback;
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+}
+
+function getDbDefaults() {
+  const isProd = process.env.NODE_ENV === 'production';
+  const connectTimeoutMs = readIntEnv('DB_CONNECT_TIMEOUT_MS', isProd ? 30000 : 4000);
+  const statementTimeoutMs = readIntEnv('DB_STATEMENT_TIMEOUT_MS', isProd ? 30000 : 15000);
+  const queryTimeoutMs = readIntEnv('DB_QUERY_TIMEOUT_MS', isProd ? 30000 : 8000);
+  const max = readIntEnv('DB_POOL_MAX', isProd ? 10 : 15);
+  const idleTimeoutMs = readIntEnv('DB_IDLE_TIMEOUT_MS', 30000);
+  const retries = readIntEnv('DB_CONNECT_RETRIES', isProd ? 5 : 1);
+  const retryBaseDelayMs = readIntEnv('DB_RETRY_BASE_DELAY_MS', 250);
+  const retryMaxDelayMs = readIntEnv('DB_RETRY_MAX_DELAY_MS', 1000);
+  return {
+    connectTimeoutMs,
+    statementTimeoutMs,
+    queryTimeoutMs,
+    max,
+    idleTimeoutMs,
+    retries,
+    retryBaseDelayMs,
+    retryMaxDelayMs,
+  };
+}
+
 export interface User {
   id: string;
   email: string;
@@ -13,6 +42,10 @@ export interface User {
   role: string;
   user_type?: string;
   is_verified?: boolean;
+  is_blocked?: boolean;
+  blocked_reason?: string | null;
+  blocked_at?: string | null;
+  blocked_by_admin_id?: number | null;
   is_locked?: boolean;
   locked_reason?: string | null;
   locked_at?: string | null;
@@ -22,35 +55,57 @@ export interface User {
   updated_at?: string;
 }
 
-export async function ensureConnection(retries = 5): Promise<Pool> {
+export async function ensureConnection(retries = getDbDefaults().retries): Promise<Pool> {
   if (!pool) {
-    let connectionString = process.env.DATABASE_URL || '';
+    let connectionString = (process.env.DATABASE_URL || '').trim();
+    if (!connectionString) {
+      throw new Error('DATABASE_URL is not set (Render Postgres required; local DB disabled)');
+    }
     const hasQuery = connectionString.includes('?');
     const hasSslMode = /[?&]sslmode=\w+/i.test(connectionString);
     if (connectionString && !hasSslMode) {
       connectionString = connectionString + (hasQuery ? '&' : '?') + 'sslmode=require';
     }
+
+    const defaults = getDbDefaults();
     pool = new Pool({
       connectionString,
       ssl: { rejectUnauthorized: false },
-      max: 10,
-      min: 1,
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 30000,
-      statement_timeout: 30000,
+      keepAlive: true,
+      keepAliveInitialDelayMillis: 0,
+      max: defaults.max,
+      idleTimeoutMillis: defaults.idleTimeoutMs,
+      connectionTimeoutMillis: defaults.connectTimeoutMs,
+      query_timeout: defaults.queryTimeoutMs,
+      statement_timeout: defaults.statementTimeoutMs,
+    });
+
+    // Set timezone to UTC for all connections to ensure consistent timestamps
+    pool.on('connect', (client) => {
+      client.query("SET timezone = 'UTC'");
+    });
+
+    pool.on('error', (err) => {
+      console.error('Unexpected DB pool error:', (err as any)?.message || err);
     });
   }
 
   let attempt = 0;
   let lastError: any = null;
+  const defaults = getDbDefaults();
   while (attempt <= retries) {
     try {
+      const start = Date.now();
       await pool!.query('SELECT 1');
+      const elapsedMs = Date.now() - start;
+      if (elapsedMs > 2000) {
+        console.warn(`DB ping succeeded but was slow (${elapsedMs}ms).`);
+      }
       return pool!;
     } catch (err) {
       lastError = err;
       console.error(`DB connect attempt ${attempt + 1} failed:`, (err as any)?.message || err);
-      const delay = Math.min(1000 * Math.pow(2, attempt), 10000);
+      const delay = Math.min(defaults.retryBaseDelayMs * Math.pow(2, attempt), defaults.retryMaxDelayMs);
       await new Promise(res => setTimeout(res, delay));
       attempt++;
     }
@@ -76,8 +131,16 @@ export async function runPendingMigrations(): Promise<void> {
     return;
   }
   const files = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort();
-  const client = await pool.connect();
+  if (!pool) {
+    await ensureConnection();
+  }
+  const client = await pool!.connect();
   try {
+    // Ensure the migrations tracking table exists (dev/server runs should be able to bootstrap)
+    await client.query(
+      'CREATE TABLE IF NOT EXISTS schema_migrations (filename TEXT PRIMARY KEY, applied_at TIMESTAMPTZ DEFAULT NOW())'
+    );
+
     for (const file of files) {
       // Skip destructive drop-all migration in automated runs
       if (file.includes('drop_all_tables')) {
@@ -117,19 +180,34 @@ export async function runPendingMigrations(): Promise<void> {
  * Find user by email - checks admins and clients tables
  */
 export async function findUserByEmail(email: string): Promise<User | null> {
+  const db = await ensureConnection();
   // First try admins table
   let result;
   try {
-    result = await pool.query(
-      "SELECT id, email, password, full_name as name, role, user_type, is_verified, is_locked, locked_reason, lock_type, created_at, updated_at FROM admins WHERE email = $1",
+    result = await db.query(
+      "SELECT id, email, password, full_name as name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, lock_type, totp_enabled, totp_secret_encrypted, totp_pending_secret_encrypted, totp_backup_codes_hashes, totp_enrolled_at, created_at, updated_at FROM admins WHERE email = $1",
       [email]
     );
   } catch (err: any) {
     // Backward compatible if lock_type column doesn't exist yet
-    result = await pool.query(
-      "SELECT id, email, password, full_name as name, role, user_type, is_verified, is_locked, locked_reason, created_at, updated_at FROM admins WHERE email = $1",
-      [email]
-    );
+    try {
+      result = await db.query(
+        "SELECT id, email, password, full_name as name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, lock_type, created_at, updated_at FROM admins WHERE email = $1",
+        [email]
+      );
+    } catch (_err2: any) {
+      try {
+        result = await db.query(
+          "SELECT id, email, password, full_name as name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, created_at, updated_at FROM admins WHERE email = $1",
+          [email]
+        );
+      } catch (_err3: any) {
+        result = await db.query(
+          "SELECT id, email, password, full_name as name, role, user_type, is_verified, is_locked, locked_reason, created_at, updated_at FROM admins WHERE email = $1",
+          [email]
+        );
+      }
+    }
   }
   
   if (result.rows.length > 0) {
@@ -138,15 +216,22 @@ export async function findUserByEmail(email: string): Promise<User | null> {
   
   // Then try clients table
   try {
-    result = await pool.query(
-      "SELECT id, email, password, name, role, user_type, is_verified, is_locked, locked_reason, lock_type, created_at, updated_at FROM clients WHERE email = $1",
+    result = await db.query(
+      "SELECT id, email, password, name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, lock_type, created_at, updated_at FROM clients WHERE email = $1",
       [email]
     );
   } catch (err: any) {
-    result = await pool.query(
-      "SELECT id, email, password, name, role, user_type, is_verified, is_locked, locked_reason, created_at, updated_at FROM clients WHERE email = $1",
-      [email]
-    );
+    try {
+      result = await db.query(
+        "SELECT id, email, password, name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, created_at, updated_at FROM clients WHERE email = $1",
+        [email]
+      );
+    } catch (_err2: any) {
+      result = await db.query(
+        "SELECT id, email, password, name, role, user_type, is_verified, is_locked, locked_reason, created_at, updated_at FROM clients WHERE email = $1",
+        [email]
+      );
+    }
   }
   
   return result.rows[0] || null;
@@ -156,18 +241,33 @@ export async function findUserByEmail(email: string): Promise<User | null> {
  * Find user by ID - checks admins and clients tables
  */
 export async function findUserById(id: string): Promise<User | null> {
+  const db = await ensureConnection();
   // First try admins table
   let result;
   try {
-    result = await pool.query(
-      "SELECT id, email, password, full_name as name, role, user_type, is_verified, is_locked, locked_reason, lock_type, created_at, updated_at FROM admins WHERE id = $1",
+    result = await db.query(
+      "SELECT id, email, password, full_name as name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, lock_type, totp_enabled, totp_secret_encrypted, totp_pending_secret_encrypted, totp_backup_codes_hashes, totp_enrolled_at, created_at, updated_at FROM admins WHERE id = $1",
       [id]
     );
   } catch (err: any) {
-    result = await pool.query(
-      "SELECT id, email, password, full_name as name, role, user_type, is_verified, created_at, updated_at FROM admins WHERE id = $1",
-      [id]
-    );
+    try {
+      result = await db.query(
+        "SELECT id, email, password, full_name as name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, lock_type, created_at, updated_at FROM admins WHERE id = $1",
+        [id]
+      );
+    } catch (_err2: any) {
+      try {
+        result = await db.query(
+          "SELECT id, email, password, full_name as name, role, user_type, is_verified, is_blocked, blocked_reason, created_at, updated_at FROM admins WHERE id = $1",
+          [id]
+        );
+      } catch (_err3: any) {
+        result = await db.query(
+          "SELECT id, email, password, full_name as name, role, user_type, is_verified, created_at, updated_at FROM admins WHERE id = $1",
+          [id]
+        );
+      }
+    }
   }
   
   if (result.rows.length > 0) {
@@ -177,14 +277,21 @@ export async function findUserById(id: string): Promise<User | null> {
   // Then try clients table
   try {
     result = await pool.query(
-      "SELECT id, email, password, name, role, user_type, is_verified, is_locked, locked_reason, lock_type, created_at, updated_at FROM clients WHERE id = $1",
+      "SELECT id, email, password, name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, lock_type, created_at, updated_at FROM clients WHERE id = $1",
       [id]
     );
   } catch (err: any) {
-    result = await pool.query(
-      "SELECT id, email, password, name, role, user_type, is_verified, created_at, updated_at FROM clients WHERE id = $1",
-      [id]
-    );
+    try {
+      result = await pool.query(
+        "SELECT id, email, password, name, role, user_type, is_verified, is_blocked, blocked_reason, created_at, updated_at FROM clients WHERE id = $1",
+        [id]
+      );
+    } catch (_err2: any) {
+      result = await pool.query(
+        "SELECT id, email, password, name, role, user_type, is_verified, created_at, updated_at FROM clients WHERE id = $1",
+        [id]
+      );
+    }
   }
   
   return result.rows[0] || null;
@@ -217,6 +324,7 @@ export async function updateUser(
   id: string,
   updates: Partial<User>
 ): Promise<User | null> {
+  const db = await ensureConnection();
   const fields: string[] = [];
   const values: any[] = [];
   let paramCount = 1;
@@ -236,16 +344,16 @@ export async function updateUser(
   values.push(id);
   
   // First check if this is an admin
-  const adminResult = await pool.query('SELECT id FROM admins WHERE id = $1', [id]);
+  const adminResult = await db.query('SELECT id FROM admins WHERE id = $1', [id]);
   if (adminResult.rows.length > 0) {
-    const result = await pool.query(
+    const result = await db.query(
       `UPDATE admins SET ${fields.join(", ")} WHERE id = $${paramCount} RETURNING id, email, password, full_name as name, role, user_type, is_verified, created_at, updated_at`,
       values
     );
     return result.rows[0] || null;
   } else {
     // Update client
-    const result = await pool.query(
+    const result = await db.query(
       `UPDATE clients SET ${fields.join(", ")} WHERE id = $${paramCount} RETURNING id, email, password, name, role, user_type, is_verified, created_at, updated_at`,
       values
     );
@@ -257,8 +365,9 @@ export async function updateUser(
  * Delete user - now deletes from admins or clients table based on where they exist
  */
 export async function deleteUser(id: string): Promise<boolean> {
+  const db = await ensureConnection();
   // Check if admin
-  let result = await pool.query(
+  let result = await db.query(
     "DELETE FROM admins WHERE id = $1 RETURNING id",
     [id]
   );
@@ -268,7 +377,7 @@ export async function deleteUser(id: string): Promise<boolean> {
   }
   
   // Delete from clients if not admin
-  result = await pool.query(
+  result = await db.query(
     "DELETE FROM clients WHERE id = $1 RETURNING id",
     [id]
   );
@@ -284,7 +393,8 @@ export async function createDefaultAdmin(
 ): Promise<void> {
   const existingAdmin = await findUserByEmail(email);
   if (!existingAdmin) {
-    await pool.query(
+    const db = await ensureConnection();
+    await db.query(
       `INSERT INTO admins (email, password, full_name, role, user_type, is_verified, created_at, updated_at)
        VALUES ($1, $2, 'Admin User', 'admin', 'admin', true, NOW(), NOW())`,
       [email, hashedPassword]

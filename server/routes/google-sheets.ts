@@ -10,6 +10,7 @@ import {
   ImportRequestSchema,
 } from '../types/google-sheets';
 import { ZodError } from 'zod';
+import { jsonServerError } from '../utils/httpHelpers';
 
 const router = Router();
 
@@ -31,7 +32,7 @@ router.get('/auth-url', (req: Request, res: Response) => {
     const url = googleSheetsService.getAuthorizationUrl();
     res.json({ url });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return jsonServerError(res, error, 'Failed to generate authorization URL');
   }
 });
 
@@ -62,7 +63,7 @@ router.post('/connect', requireAuth, async (req: Request, res: Response) => {
         details: error.errors,
       });
     }
-    res.status(500).json({ error: error.message });
+    return jsonServerError(res, error, 'Failed to connect Google account');
   }
 });
 
@@ -92,7 +93,7 @@ router.get('/status', requireAuth, async (req: Request, res: Response) => {
       lastUpdated: token.updated_at,
     });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return jsonServerError(res, error, 'Failed to check connection status');
   }
 });
 
@@ -110,7 +111,7 @@ router.get('/sheets/:spreadsheetId', requireAuth, async (req: Request, res: Resp
 
     res.json(metadata);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return jsonServerError(res, error, 'Failed to list sheets');
   }
 });
 
@@ -143,7 +144,7 @@ router.post('/preview', requireAuth, async (req: Request, res: Response) => {
       headers: rows.length > 0 ? Object.keys(rows[0]) : [],
     });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return jsonServerError(res, error, 'Failed to preview sheet data');
   }
 });
 
@@ -178,7 +179,7 @@ router.post('/mappings', requireAuth, async (req: Request, res: Response) => {
         details: error.errors,
       });
     }
-    res.status(500).json({ error: error.message });
+    return jsonServerError(res, error, 'Failed to save mapping');
   }
 });
 
@@ -215,7 +216,7 @@ router.get('/mappings', requireAuth, async (req: Request, res: Response) => {
 
     res.json(mappings);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return jsonServerError(res, error, 'Failed to fetch mappings');
   }
 });
 
@@ -322,7 +323,7 @@ router.post('/import', requireAuth, async (req: Request, res: Response) => {
         details: error.errors,
       });
     }
-    res.status(500).json({ error: error.message });
+    return jsonServerError(res, error, 'Import failed');
   }
 });
 
@@ -357,7 +358,7 @@ router.get('/imports', requireAuth, async (req: Request, res: Response) => {
       offset: parseInt(offset as string),
     });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return jsonServerError(res, error, 'Failed to fetch import history');
   }
 });
 
@@ -397,7 +398,7 @@ router.get('/imports/:jobId', requireAuth, async (req: Request, res: Response) =
       logs: logsResult.rows,
     });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return jsonServerError(res, error, 'Failed to fetch import details');
   }
 });
 
@@ -421,7 +422,7 @@ router.post('/disconnect', requireAuth, async (req: Request, res: Response) => {
       message: 'Google account disconnected',
     });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return jsonServerError(res, error, 'Failed to disconnect Google account');
   }
 });
 

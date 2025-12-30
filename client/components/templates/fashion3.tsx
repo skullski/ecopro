@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { TemplateProps } from '@/pages/storefront/templates/types';
 import { useTemplateUniversalSettings } from '@/hooks/useTemplateUniversalSettings';
+import { coerceSilverImageBlocks } from '@/lib/silverBlocks';
 
 export default function Fashion3Template(props: TemplateProps) {
   const universalSettings = useTemplateUniversalSettings();
@@ -23,6 +24,15 @@ export default function Fashion3Template(props: TemplateProps) {
   };
 
   const { products = [], settings = {}, categories = [] } = props;
+
+  const silverHeaderBlocks = useMemo(
+    () => coerceSilverImageBlocks((settings as any).silver_header_blocks),
+    [settings]
+  );
+  const silverFooterBlocks = useMemo(
+    () => coerceSilverImageBlocks((settings as any).silver_footer_blocks),
+    [settings]
+  );
   
   // Extract universal settings with defaults
   const {
@@ -116,6 +126,25 @@ export default function Fashion3Template(props: TemplateProps) {
 
   return (
     <div className="min-h-screen bg-black">
+      {silverHeaderBlocks.length > 0 && (
+        <div className="max-w-6xl mx-auto px-4 pt-4">
+          <div
+            className="grid gap-3"
+            style={{ gridTemplateColumns: `repeat(${silverHeaderBlocks.length}, minmax(0, 1fr))` }}
+          >
+            {silverHeaderBlocks
+              .filter((b) => b.url && String(b.url).trim().length > 0)
+              .map((b) => (
+                <img
+                  key={b.id}
+                  src={b.url}
+                  alt={b.alt || 'Header image'}
+                  className="w-full h-32 object-cover rounded-lg"
+                />
+              ))}
+          </div>
+        </div>
+      )}
       {/* Floating Bag Button */}
       <div className="fixed bottom-6 right-6 z-40">
         <button style={{ backgroundColor: accent_color, color: '#000' }} className="rounded-full font-semibold px-5 py-3 flex items-center gap-2 shadow-lg hover:shadow-xl transition">
@@ -143,8 +172,8 @@ export default function Fashion3Template(props: TemplateProps) {
                 )}
               </div>
               <div>
-                <h1 className="font-semibold text-lg text-white">{storeName}</h1>
-                <p className="text-xs text-gray-500">{headerTagline}</p>
+                <h1 data-edit-path="__settings.store_name" className="font-semibold text-lg text-white">{storeName}</h1>
+                <p data-edit-path="__settings.template_header_tagline" className="text-xs text-gray-500">{headerTagline}</p>
               </div>
             </div>
             <div className="hidden md:flex flex-1 mx-8">
@@ -168,9 +197,9 @@ export default function Fashion3Template(props: TemplateProps) {
 
       {/* Hero Section */}
       <section className="border-b border-gray-800 bg-gradient-to-b from-gray-950 to-black">
-        <div className="max-w-7xl mx-auto px-6 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-            <div className="relative rounded-xl overflow-hidden h-80 border border-gray-800">
+        <div className="max-w-7xl mx-auto px-3 md:px-6 py-6 md:py-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 items-center">
+            <div className="relative rounded-xl overflow-hidden aspect-[4/3] md:aspect-auto md:h-80 border border-gray-800">
               {heroVideoUrl ? (
                 <video
                   autoPlay
@@ -178,6 +207,7 @@ export default function Fashion3Template(props: TemplateProps) {
                   loop
                   playsInline
                   className="w-full h-full object-cover"
+                  data-edit-path="__settings.hero_video_url"
                 >
                   <source src={heroVideoUrl} type="video/mp4" />
                 </video>
@@ -186,19 +216,20 @@ export default function Fashion3Template(props: TemplateProps) {
                   src={settings.banner_url || 'https://images.unsplash.com/photo-1543087903-1ac2ec7aa8c5?auto=format&fit=crop&w=600&q=80'}
                   alt="Hero"
                   className="w-full h-full object-cover"
+                  data-edit-path="__settings.banner_url"
                 />
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
-              <div className="absolute bottom-0 left-0 right-0 p-6">
-                <p className="text-xs text-yellow-400 font-bold uppercase tracking-wider mb-2">{featuredCollectionLabel}</p>
-                <h2 className="text-2xl font-light text-white">{featuredCollectionHeading}</h2>
+              <div className="absolute bottom-0 left-0 right-0 p-3 md:p-6">
+                <p className="text-[10px] md:text-xs text-yellow-400 font-bold uppercase tracking-wider mb-1 md:mb-2">{featuredCollectionLabel}</p>
+                <h2 className="text-lg md:text-2xl font-light text-white">{featuredCollectionHeading}</h2>
               </div>
             </div>
-            <div>
-              <p className="text-xs text-yellow-400 font-bold uppercase tracking-wider mb-4">{newArrivalLabel}</p>
-              <h2 className="text-4xl font-light text-white mb-6">{heroHeading || 'Premium Essentials'}</h2>
-              <p className="text-gray-400 text-sm leading-relaxed mb-8">{heroSubtitle}</p>
-              <button onClick={() => window.scrollTo({ top: window.innerHeight, behavior: 'smooth' })} className="px-8 py-3 bg-yellow-400 text-black text-sm font-semibold rounded-lg hover:bg-yellow-500 transition">
+            <div className="px-1">
+              <p data-edit-path="__settings.template_new_arrival_label" className="text-[10px] md:text-xs text-yellow-400 font-bold uppercase tracking-wider mb-2 md:mb-4">{newArrivalLabel}</p>
+              <h2 data-edit-path="__settings.template_hero_heading" className="text-2xl md:text-4xl font-light text-white mb-3 md:mb-6">{heroHeading || 'Premium Essentials'}</h2>
+              <p data-edit-path="__settings.template_hero_subtitle" className="text-gray-400 text-xs md:text-sm leading-relaxed mb-4 md:mb-8">{heroSubtitle}</p>
+              <button onClick={() => window.scrollTo({ top: window.innerHeight, behavior: 'smooth' })} className="px-4 md:px-8 py-2 md:py-3 bg-yellow-400 text-black text-xs md:text-sm font-semibold rounded-lg hover:bg-yellow-500 transition">
                 {heroButtonText}
               </button>
             </div>
@@ -208,21 +239,21 @@ export default function Fashion3Template(props: TemplateProps) {
 
       {/* Featured Products Section */}
       <section className="border-b border-gray-800 bg-black">
-        <div className="max-w-7xl mx-auto px-6 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="max-w-7xl mx-auto px-3 md:px-6 py-6 md:py-12">
+          <div className="grid grid-cols-2 md:grid-cols-2 gap-2 md:gap-8">
             {products.slice(0, 2).map((p: any) => (
               <div 
                 key={p.id}
                 className="group cursor-pointer rounded-lg overflow-hidden border border-gray-800 hover:border-yellow-400 transition"
                 onClick={() => handleProductClick(p)}
               >
-                <div className="relative h-72 bg-gray-900 overflow-hidden">
+                <div className="relative aspect-[3/4] md:aspect-auto md:h-72 bg-gray-900 overflow-hidden">
                   <img src={p.images?.[0] || 'https://via.placeholder.com/400'} alt={p.title} className="w-full h-full object-cover group-hover:scale-110 transition duration-500" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-40"></div>
-                  <div className="absolute bottom-0 left-0 right-0 p-6">
-                    <p className="text-xs text-yellow-400 font-bold uppercase mb-2">{featuredLabel}</p>
-                    <h3 className="text-xl font-light text-white line-clamp-2 mb-2">{p.title}</h3>
-                    <p className="text-yellow-400 font-semibold">{p.price} DZD</p>
+                  <div className="absolute bottom-0 left-0 right-0 p-2 md:p-6">
+                    <p className="text-[9px] md:text-xs text-yellow-400 font-bold uppercase mb-1 md:mb-2">{featuredLabel}</p>
+                    <h3 className="text-sm md:text-xl font-light text-white line-clamp-2 mb-1 md:mb-2">{p.title}</h3>
+                    <p className="text-yellow-400 font-semibold text-xs md:text-base">{p.price} DZD</p>
                   </div>
                 </div>
               </div>
@@ -233,10 +264,10 @@ export default function Fashion3Template(props: TemplateProps) {
 
       {/* Main Catalog */}
       <main className="bg-black">
-        <div className="max-w-7xl mx-auto px-6 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-12">
-            {/* Filters Sidebar */}
-            <aside className="h-fit">
+        <div className="max-w-7xl mx-auto px-3 md:px-6 py-6 md:py-12">
+          <div className="grid grid-cols-1 lg:grid-cols-[180px_1fr] gap-6 md:gap-12">
+            {/* Filters Sidebar - Hidden on mobile */}
+            <aside className="hidden lg:block h-fit">
               <div className="text-sm font-semibold text-white mb-8">{filterTitle}</div>
               
               <div className="mb-8">
@@ -292,21 +323,21 @@ export default function Fashion3Template(props: TemplateProps) {
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-6">
                 {filteredProducts.map((p: any) => (
                   <div 
                     key={p.id}
                     className="group cursor-pointer rounded-lg overflow-hidden border border-gray-800 hover:border-yellow-400 transition flex flex-col"
                     onClick={() => handleProductClick(p)}
                   >
-                    <div className="relative h-80 bg-gray-900 overflow-hidden flex-grow">
+                    <div className="relative aspect-[3/4] md:h-80 md:aspect-auto bg-gray-900 overflow-hidden flex-grow">
                       <img src={p.images?.[0] || 'https://via.placeholder.com/400'} alt={p.title} className="w-full h-full object-cover group-hover:scale-110 transition duration-500" />
                       <button 
                         onClick={(e) => { 
                           e.stopPropagation();
                           toggleWishlist(p.id);
                         }} 
-                        className="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center text-lg transition"
+                        className="absolute top-2 md:top-4 right-2 md:right-4 w-7 h-7 md:w-10 md:h-10 rounded-full flex items-center justify-center text-sm md:text-lg transition"
                         style={{ 
                           backgroundColor: wishlist.includes(p.id) ? accent_color : 'rgba(0,0,0,0.5)',
                           color: wishlist.includes(p.id) ? '#000' : accent_color,
@@ -316,13 +347,13 @@ export default function Fashion3Template(props: TemplateProps) {
                         ♥
                       </button>
                     </div>
-                    <div className="p-5 flex flex-col flex-grow bg-gray-950">
-                      <p className="font-light text-sm text-white line-clamp-2">{p.title}</p>
-                      <p className="text-xs text-gray-500 mt-2 font-light">{p.category}</p>
-                      <p className="font-semibold text-sm mt-4 text-yellow-400">{p.price} DZD</p>
+                    <div className="p-2 md:p-5 flex flex-col flex-grow bg-gray-950">
+                      <p className="font-light text-xs md:text-sm text-white line-clamp-2">{p.title}</p>
+                      <p className="text-[10px] md:text-xs text-gray-500 mt-1 md:mt-2 font-light">{p.category}</p>
+                      <p className="font-semibold text-xs md:text-sm mt-2 md:mt-4 text-yellow-400">{p.price} DZD</p>
                       <button 
                         onClick={(e) => handleBuyClick(p, e)}
-                        className="w-full mt-4 py-2 text-xs font-semibold rounded-lg bg-yellow-400 text-black hover:bg-yellow-500 transition"
+                        className="w-full mt-2 md:mt-4 py-1.5 md:py-2 text-[10px] md:text-xs font-semibold rounded-lg bg-yellow-400 text-black hover:bg-yellow-500 transition"
                       >
                         {addToBagLabel}
                       </button>
@@ -359,6 +390,26 @@ export default function Fashion3Template(props: TemplateProps) {
           </div>
         </div>
       </footer>
+
+      {silverFooterBlocks.length > 0 && (
+        <div className="max-w-6xl mx-auto px-4 py-4">
+          <div
+            className="grid gap-3"
+            style={{ gridTemplateColumns: `repeat(${silverFooterBlocks.length}, minmax(0, 1fr))` }}
+          >
+            {silverFooterBlocks
+              .filter((b) => b.url && String(b.url).trim().length > 0)
+              .map((b) => (
+                <img
+                  key={b.id}
+                  src={b.url}
+                  alt={b.alt || 'Footer image'}
+                  className="w-full h-32 object-cover rounded-lg"
+                />
+              ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

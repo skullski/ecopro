@@ -34,6 +34,14 @@ const CONFIG = {
 // Track which accounts an IP has tried
 const ipToAccounts = new Map<string, Set<string>>();
 
+export function clearBruteForceMemory(): { clearedAttempts: number; clearedIpAccounts: number } {
+  const clearedAttempts = loginAttempts.size;
+  const clearedIpAccounts = ipToAccounts.size;
+  loginAttempts.clear();
+  ipToAccounts.clear();
+  return { clearedAttempts, clearedIpAccounts };
+}
+
 /**
  * Check if a login attempt should be allowed
  */

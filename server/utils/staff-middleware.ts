@@ -1,6 +1,7 @@
 import { RequestHandler } from 'express';
 import jwt from 'jsonwebtoken';
 import { ensureConnection } from './database';
+import { getJwtSecret } from './auth';
 
 /**
  * STAFF AUTHENTICATION MIDDLEWARE
@@ -15,15 +16,19 @@ import { ensureConnection } from './database';
 export const authenticateStaff: RequestHandler = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const headerToken = authHeader && authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    const cookies = (req as any).cookies as Record<string, string | undefined> | undefined;
+    const cookieToken = cookies?.ecopro_staff_at || cookies?.ecopro_at;
+    const token = cookieToken || headerToken;
+    if (!token) {
       return res.status(401).json({ error: 'No authorization token' });
     }
-
-    const token = authHeader.slice(7);
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    const decoded: any = jwt.verify(token, getJwtSecret());
 
     // Verify staff identity
-    if (!decoded.staffId || !decoded.clientId || !decoded.isStaff) {
+    const staffId = decoded.staffId || decoded.staff_id || decoded.id;
+    const clientId = decoded.clientId || decoded.client_id;
+    if (!staffId || !clientId || decoded.isStaff !== true) {
       return res.status(401).json({ error: 'Invalid staff token format' });
     }
 
@@ -31,7 +36,7 @@ export const authenticateStaff: RequestHandler = async (req, res, next) => {
     const pool = await ensureConnection();
     const result = await pool.query(
       'SELECT id, client_id, status FROM staff WHERE id = $1 AND client_id = $2',
-      [decoded.staffId, decoded.clientId]
+      [staffId, clientId]
     );
 
     if (result.rows.length === 0) {
@@ -43,14 +48,41 @@ export const authenticateStaff: RequestHandler = async (req, res, next) => {
       return res.status(403).json({ error: 'Staff member account is not active' });
     }
 
+    // Enforce subscription/payment lock of the parent client.
+    try {
+      const lockRes = await pool.query(
+        `SELECT is_locked, locked_reason, lock_type
+         FROM clients
+         WHERE id = $1`,
+        [clientId]
+      );
+      if (lockRes.rows.length) {
+        const row = lockRes.rows[0];
+        const lockType = row.lock_type || (typeof row.locked_reason === 'string' && /(subscription|expired|payment|trial|billing)/i.test(row.locked_reason)
+          ? 'payment'
+          : 'critical');
+        if (row.is_locked && lockType === 'payment') {
+          return res.status(403).json({
+            error: row.locked_reason || 'Subscription expired. Your store access is temporarily disabled.',
+            accountLocked: true,
+            paymentRequired: true,
+            code: 'SUBSCRIPTION_EXPIRED',
+          });
+        }
+      }
+    } catch {
+      // If we cannot validate lock status, fail closed for staff.
+      return res.status(503).json({ error: 'Unable to validate store subscription status' });
+    }
+
     // Attach staff info to request - cast to any to bypass type checking since staff is not in standard Express.Request.user
     (req as any).user = {
-      staffId: decoded.staffId,
-      clientId: decoded.clientId,
+      staffId,
+      clientId,
       email: decoded.email,
       isStaff: true,
       role: decoded.role,
-      id: decoded.staffId,
+      id: staffId,
     };
 
     next();
@@ -58,7 +90,8 @@ export const authenticateStaff: RequestHandler = async (req, res, next) => {
     if (error instanceof jwt.JsonWebTokenError) {
       return res.status(401).json({ error: 'Invalid or expired token' });
     }
-    console.error('Staff auth error:', error);
+    const isProduction = process.env.NODE_ENV === 'production';
+    console.error('Staff auth error:', isProduction ? (error as any)?.message : error);
     res.status(500).json({ error: 'Authentication failed' });
   }
 };

@@ -1,0 +1,53 @@
+{
+  "layout": {
+    "header": {
+      "searchLabel": "Search",
+      "cartLabel": "Cart (0)"
+    },
+    "hero": {
+      "badgeLeft": "New season",
+      "badgeRight": "Soft & Playful",
+      "heading": "A soft, modern universe\nfor every little moment.",
+      "subtitle": "Toys, outfits, feeding essentials, nursery finds and tiny gifts — curated for newborns and toddlers in one balanced, playful store.",
+      "ageChips": ["0–6 months", "6–12 months", "1–3 years"],
+      "primaryCta": "Shop baby essentials",
+      "secondaryCta": "View all toys",
+      "featuredProductLabel": "Featured product",
+      "heroImageAlt": "Baby hero",
+      "bannerUrl": "https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&w=2000&q=80",
+      "heroVideoUrl": ""
+    },
+    "categories": {
+      "browseByCategoryLabel": "Browse by category",
+      "categories": [
+        { "label": "All", "icon": "✨" },
+        { "label": "Toys", "icon": "🧸" },
+        { "label": "Clothing", "icon": "👕" },
+        { "label": "Feeding", "icon": "🍼" },
+        { "label": "Strollers", "icon": "🚼" },
+        { "label": "Nursery", "icon": "🛏" },
+        { "label": "Bath", "icon": "🛁" },
+        { "label": "Shoes", "icon": "🧦" },
+        { "label": "Gifts", "icon": "🎁" }
+      ],
+      "productBadge1": "Soft",
+      "productBadge2": "0–6m",
+      "buyNowLabel": "Buy Now"
+    },
+    "featured": {
+      "kicker": "Soft & snuggly picks",
+      "title": "Plush friends and warm layers.",
+      "text": "A small edit of plush toys, blankets and first outfits designed to feel soft against newborn skin. Gentle colors, cozy textures, and everyday comfort."
+    },
+    "grid": {
+      "kicker": "All baby products",
+      "title": "Pieces in this universe",
+      "itemsSuffix": "items",
+      "emptyCategoryText": "No items in this category"
+    },
+    "footer": {
+      "suffix": "Modern Baby Store",
+      "links": ["0–6m", "6–12m", "1–3y", "Care guide"]
+    }
+  }
+}

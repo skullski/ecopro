@@ -65,9 +65,6 @@ export function FileUploadUI({ chatId, onClose, onSuccess }: FileUploadUIProps) 
 
       const response = await fetch(`/api/chat/${chatId}/upload`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-        },
         body: formData
       });
 

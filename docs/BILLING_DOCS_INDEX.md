@@ -272,14 +272,14 @@ http://localhost:8080/api/billing
 ### Admin Dashboard
 ```
 http://localhost:8080
-Login: admin@ecopro.com / admin123
+Login: admin@ecopro.com / <ADMIN_PASSWORD>
 Navigation: Click "Billing" tab
 ```
 
 ### Test User Credentials
 ```
 Email: skull@gmail.com
-Password: anaimad
+Password: <TEST_PASSWORD>
 ```
 
 ### Database Connection

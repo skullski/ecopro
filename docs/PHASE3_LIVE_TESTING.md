@@ -78,7 +78,7 @@
 1. Open http://localhost:5174 in browser
 2. Click "Admin Login"
 3. Email: admin@ecopro.com
-4. Password: admin123
+4. Password: <ADMIN_PASSWORD>
 5. Navigate to: Dashboard → Billing (or http://localhost:5174/dashboard/billing)
 6. Verify you see:
    ✓ "Your Subscription" card showing subscription status
@@ -117,7 +117,7 @@
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@ecopro.com","password":"admin123"}' \
+  -d '{"email":"admin@ecopro.com","password":"<ADMIN_PASSWORD>"}' \
   | jq -r '.data.token')
 
 echo "Token obtained: ${TOKEN:0:20}..."
@@ -290,7 +290,7 @@ cat /home/skull/Desktop/ecopro/server/migrations/20251221_phase3_payments.sql | 
 # Decode JWT to see expiry
 TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@ecopro.com","password":"admin123"}' \
+  -d '{"email":"admin@ecopro.com","password":"<ADMIN_PASSWORD>"}' \
   | jq -r '.data.token')
 
 # Decode (requires base64 and jq)

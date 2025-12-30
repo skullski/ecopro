@@ -1,10 +1,46 @@
 import { RequestHandler } from 'express';
 import jwt from 'jsonwebtoken';
 import { ensureConnection } from '../utils/database';
-import { hashPassword, generateSecurePassword, comparePassword } from '../utils/auth';
+import { hashPassword, generateSecurePassword, comparePassword, getJwtSecret } from '../utils/auth';
 import { StaffMember, ActivityLog } from '@shared/staff';
 import { checkLoginAllowed, recordFailedLogin, recordSuccessfulLogin } from '../utils/brute-force';
 import { getClientIp } from '../utils/security';
+import { checkPasswordPolicy } from '../utils/password-policy';
+import { checkPwnedPassword } from '../utils/pwned-passwords';
+
+const isProduction = process.env.NODE_ENV === 'production';
+
+type StaffPasswordSchema = {
+  hasPassword: boolean;
+  hasPasswordHash: boolean;
+  passwordNotNull: boolean;
+};
+
+let staffPasswordSchema: StaffPasswordSchema | null = null;
+
+async function getStaffPasswordSchema(pool: any): Promise<StaffPasswordSchema> {
+  if (staffPasswordSchema) return staffPasswordSchema;
+  try {
+    const res = await pool.query(
+      `SELECT column_name, is_nullable
+       FROM information_schema.columns
+       WHERE table_schema = 'public'
+         AND table_name = 'staff'
+         AND column_name IN ('password_hash', 'password')`
+    );
+    const byName = new Map<string, { is_nullable: string }>();
+    for (const row of res.rows || []) {
+      byName.set(String(row.column_name), { is_nullable: String(row.is_nullable) });
+    }
+    const hasPassword = byName.has('password');
+    const hasPasswordHash = byName.has('password_hash');
+    const passwordNotNull = hasPassword ? byName.get('password')?.is_nullable === 'NO' : false;
+    staffPasswordSchema = { hasPassword, hasPasswordHash, passwordNotNull };
+  } catch {
+    staffPasswordSchema = { hasPassword: false, hasPasswordHash: true, passwordNotNull: false };
+  }
+  return staffPasswordSchema;
+}
 
 /**
  * CRITICAL SECURITY NOTE:
@@ -38,8 +74,14 @@ export const createStaff: RequestHandler = async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    if (password.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    // Strong password policy + breach check (same as main auth)
+    const policy = checkPasswordPolicy(password, username);
+    if (policy.ok === false) {
+      return res.status(400).json({ error: policy.reason });
+    }
+    const pwned = await checkPwnedPassword(password);
+    if (pwned.ok && pwned.pwned) {
+      return res.status(400).json({ error: 'Password has appeared in a data breach; choose a different password' });
     }
 
     // Check if staff already exists for this client with this username (email)
@@ -55,16 +97,36 @@ export const createStaff: RequestHandler = async (req, res) => {
     // Hash the provided password
     const passwordHash = await hashPassword(password);
 
+    const schema = await getStaffPasswordSchema(pool);
+
     // Create staff record in STAFF table (completely separate from clients)
     let result;
     try {
-      result = await pool.query(
-        `INSERT INTO staff 
-          (client_id, email, password, role, status, permissions, created_by, invited_at)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
-          RETURNING id, email, role, status`,
-        [clientId, username, passwordHash, role, 'active', JSON.stringify(permissions || {}), clientId]
-      );
+      if (schema.hasPassword && schema.hasPasswordHash) {
+        result = await pool.query(
+          `INSERT INTO staff 
+            (client_id, email, password, password_hash, role, status, permissions, created_by, invited_at)
+            VALUES ($1, $2, $3, $3, $4, $5, $6, $7, NOW())
+            RETURNING id, email, role, status`,
+          [clientId, username, passwordHash, role, 'active', JSON.stringify(permissions || {}), clientId]
+        );
+      } else if (schema.hasPassword) {
+        result = await pool.query(
+          `INSERT INTO staff 
+            (client_id, email, password, role, status, permissions, created_by, invited_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+            RETURNING id, email, role, status`,
+          [clientId, username, passwordHash, role, 'active', JSON.stringify(permissions || {}), clientId]
+        );
+      } else {
+        result = await pool.query(
+          `INSERT INTO staff 
+            (client_id, email, password_hash, role, status, permissions, created_by, invited_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+            RETURNING id, email, role, status`,
+          [clientId, username, passwordHash, role, 'active', JSON.stringify(permissions || {}), clientId]
+        );
+      }
     } catch (dbError: any) {
       console.error('Error creating staff record:', dbError);
       
@@ -95,9 +157,11 @@ export const createStaff: RequestHandler = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('[Staff] Create staff error:', error);
+    console.error('[Staff] Create staff error:', isProduction ? (error as any)?.message : error);
     const errorMessage = error instanceof Error ? error.message : String(error);
-    res.status(500).json({ error: 'Failed to create staff', message: errorMessage });
+    res
+      .status(500)
+      .json(isProduction ? { error: 'Failed to create staff' } : { error: 'Failed to create staff', message: errorMessage });
   }
 };
 
@@ -139,14 +203,35 @@ export const inviteStaff: RequestHandler = async (req, res) => {
     const tempPassword = generateSecurePassword();
     const passwordHash = await hashPassword(tempPassword);
 
+    const schema = await getStaffPasswordSchema(pool);
+
     // Create staff record
-    const result = await pool.query(
-      `INSERT INTO staff 
-        (client_id, email, password, role, status, permissions, created_by, invited_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
-        RETURNING id`,
-      [clientId, email, passwordHash, role || 'staff', 'pending', JSON.stringify(permissions || {}), clientId]
-    );
+    let result;
+    if (schema.hasPassword && schema.hasPasswordHash) {
+      result = await pool.query(
+        `INSERT INTO staff 
+          (client_id, email, password, password_hash, role, status, permissions, created_by, invited_at)
+          VALUES ($1, $2, $3, $3, $4, $5, $6, $7, NOW())
+          RETURNING id`,
+        [clientId, email, passwordHash, role || 'staff', 'pending', JSON.stringify(permissions || {}), clientId]
+      );
+    } else if (schema.hasPassword) {
+      result = await pool.query(
+        `INSERT INTO staff 
+          (client_id, email, password, role, status, permissions, created_by, invited_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+          RETURNING id`,
+        [clientId, email, passwordHash, role || 'staff', 'pending', JSON.stringify(permissions || {}), clientId]
+      );
+    } else {
+      result = await pool.query(
+        `INSERT INTO staff 
+          (client_id, email, password_hash, role, status, permissions, created_by, invited_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+          RETURNING id`,
+        [clientId, email, passwordHash, role || 'staff', 'pending', JSON.stringify(permissions || {}), clientId]
+      );
+    }
 
     const staffId = result.rows[0].id;
 
@@ -180,7 +265,6 @@ export const inviteStaff: RequestHandler = async (req, res) => {
 
 // Get all staff for a client
 export const getStaffList: RequestHandler = async (req, res) => {
-  console.log('[Staff] getStaffList called');
   
   try {
     res.setHeader('Content-Type', 'application/json');
@@ -188,29 +272,22 @@ export const getStaffList: RequestHandler = async (req, res) => {
     
     const userId = req.user?.id;
     const userEmail = req.user?.email;
-    console.log('[Staff] userId:', userId, 'email:', userEmail);
     
     if (!userEmail) {
-      console.log('[Staff] No userEmail found');
       return res.status(401).json({ error: 'User email not found in token' });
     }
 
-    console.log('[Staff] Querying clients for user:', userEmail);
     const clientResult = await pool.query(
       'SELECT id FROM clients WHERE email = $1 LIMIT 1',
       [userEmail]
     );
-    console.log('[Staff] Client result rows:', clientResult.rows.length);
 
     if (clientResult.rows.length === 0) {
-      console.log('[Staff] No client found, returning empty array');
       return res.json([]);
     }
 
     const clientId = clientResult.rows[0].id;
-    console.log('[Staff] Found client:', clientId);
 
-    console.log('[Staff] Querying staff table');
     const result = await pool.query(
       `SELECT 
         id, client_id, email, full_name, role, status, permissions,
@@ -221,29 +298,34 @@ export const getStaffList: RequestHandler = async (req, res) => {
       [clientId]
     );
     
-    console.log('[Staff] Query result:', result.rows.length, 'rows');
 
     const formatted = result.rows.map((s: any) => ({
       ...s,
       permissions: typeof s.permissions === 'string' ? JSON.parse(s.permissions) : s.permissions,
     }));
 
-    console.log('[Staff] Sending response with', formatted.length, 'items');
     return res.json(formatted);
     
   } catch (error: any) {
-    console.error('[Staff] CATCH ERROR:', error.message);
-    console.error('[Staff] Error stack:', error.stack);
-    console.error('[Staff] Error code:', error.code);
+    console.error('[Staff] getStaffList error:', isProduction ? error?.message : error);
+    if (!isProduction) {
+      console.error('[Staff] getStaffList stack:', error?.stack);
+      console.error('[Staff] getStaffList code:', error?.code);
+    }
     
     // Always return valid JSON
-    return res.status(500).json({ 
-      error: 'Failed to get staff list', 
-      message: error?.message || 'Unknown error',
-      code: error?.code || 'UNKNOWN'
-    });
+    return res.status(500).json(
+      isProduction
+        ? { error: 'Failed to get staff list' }
+        : {
+            error: 'Failed to get staff list',
+            message: error?.message || 'Unknown error',
+            code: error?.code || 'UNKNOWN',
+          }
+    );
   }
 };
+
 
 // Update staff permissions (instant apply)
 export const updateStaffPermissions: RequestHandler = async (req, res) => {
@@ -278,8 +360,8 @@ export const updateStaffPermissions: RequestHandler = async (req, res) => {
 
     // Update permissions
     await pool.query(
-      'UPDATE staff SET permissions = $1, updated_at = NOW() WHERE id = $2',
-      [JSON.stringify(permissions), staffId]
+      'UPDATE staff SET permissions = $1, updated_at = NOW() WHERE id = $2 AND client_id = $3',
+      [JSON.stringify(permissions), staffId, clientId]
     );
 
     // Log activity (non-blocking)
@@ -329,7 +411,7 @@ export const removeStaff: RequestHandler = async (req, res) => {
     const staffEmail = staff.rows[0].email;
 
     // Delete staff record
-    await pool.query('DELETE FROM staff WHERE id = $1', [staffId]);
+    await pool.query('DELETE FROM staff WHERE id = $1 AND client_id = $2', [staffId, clientId]);
 
     // Log activity (non-blocking)
     try {
@@ -477,6 +559,8 @@ export const staffLogin: RequestHandler = async (req, res) => {
   try {
     const pool = await ensureConnection();
     const { username, password } = req.body;
+      const schema = await getStaffPasswordSchema(pool);
+      const passwordCol = schema.hasPasswordHash ? 'password_hash' : 'password';
     const ip = getClientIp(req as any);
 
     if (!username || !password) {
@@ -492,20 +576,18 @@ export const staffLogin: RequestHandler = async (req, res) => {
       return res.status(429).json({ error: `Too many login attempts. Please try again in ${waitTime} minutes.` });
     }
 
-    console.log(`[Staff] Login attempt for username: ${username}`);
 
     // CRITICAL: Query STAFF table, NOT clients or users
     // This prevents any privilege escalation
     // Username can be email or any identifier
     const result = await pool.query(
-      `SELECT id, email, password, client_id, role, status, permissions, full_name
+      `SELECT id, email, ${passwordCol} as password_hash, client_id, role, status, permissions, full_name
        FROM staff 
        WHERE email = $1 AND status IN ('active', 'pending')`,
       [username]
     );
 
     if (result.rows.length === 0) {
-      console.log(`[Staff] No staff found with username: ${username}`);
       await recordFailedLogin(req, username, 'user_not_found');
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -513,9 +595,8 @@ export const staffLogin: RequestHandler = async (req, res) => {
     const staffMember = result.rows[0];
 
     // Check password
-    const passwordMatch = await comparePassword(password, staffMember.password);
+    const passwordMatch = await comparePassword(password, staffMember.password_hash);
     if (!passwordMatch) {
-      console.log(`[Staff] Password mismatch for staff ${staffMember.id}`);
       await recordFailedLogin(req, username, 'bad_password');
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -540,15 +621,26 @@ export const staffLogin: RequestHandler = async (req, res) => {
     // Create JWT token with STAFF identity (NOT owner identity)
     const token = jwt.sign(
       {
+        id: staffMember.id,
         staffId: staffMember.id,           // Staff member ID
         clientId: staffMember.client_id,   // The client they work for
         email: staffMember.email,
         isStaff: true,                     // CRITICAL: Mark as staff, not owner
+        user_type: 'staff',
         role: staffMember.role,
       },
-      process.env.JWT_SECRET || 'your-secret-key-change-in-production',
+      getJwtSecret(),
       { expiresIn: '7d' }
     );
+
+    // Set HttpOnly cookie for staff auth (kept separate from client/owner cookies)
+    res.cookie('ecopro_staff_at', token, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: (isProduction ? 'none' : 'lax') as 'none' | 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
 
     // Update last login and activate if pending
     await pool.query(
@@ -563,7 +655,6 @@ export const staffLogin: RequestHandler = async (req, res) => {
       console.warn('Failed to log login:', err);
     }
 
-    console.log(`[Staff] Staff ${staffMember.id} logged in successfully`);
 
     res.json({
       token,
@@ -580,11 +671,82 @@ export const staffLogin: RequestHandler = async (req, res) => {
       },
     });
   } catch (error) {
+    const isProduction = process.env.NODE_ENV === 'production';
     console.error('Staff login error:', error);
     const errorMsg = error instanceof Error ? error.message : String(error);
-    console.error('Error details:', errorMsg);
-    res.status(500).json({ error: 'Login failed', details: errorMsg });
+    if (!isProduction) {
+      console.error('Error details:', errorMsg);
+    }
+    return res.status(500).json({
+      error: 'Login failed',
+      ...(!isProduction ? { details: errorMsg } : {}),
+    });
   }
+};
+
+// STAFF ME - validate staff cookie/header auth and return staff profile
+export const getStaffMe: RequestHandler = async (req, res) => {
+  try {
+    const pool = await ensureConnection();
+    const clientId = (req as any).user?.clientId;
+    const staffId = (req as any).user?.staffId;
+
+    if (!clientId || !staffId) {
+      return res.status(401).json({ error: 'Invalid authentication' });
+    }
+
+    const staffResult = await pool.query(
+      `SELECT id, email, full_name, role, status, permissions
+       FROM staff
+       WHERE id = $1 AND client_id = $2
+       LIMIT 1`,
+      [staffId, clientId]
+    );
+
+    if (staffResult.rows.length === 0) {
+      return res.status(401).json({ error: 'Staff member not found' });
+    }
+
+    const staffMember = staffResult.rows[0];
+    if (staffMember.status !== 'active' && staffMember.status !== 'pending') {
+      return res.status(403).json({ error: 'Staff account inactive' });
+    }
+
+    const clientResult = await pool.query('SELECT company_name, name FROM clients WHERE id = $1', [clientId]);
+    const storeName = clientResult.rows[0]?.company_name || clientResult.rows[0]?.name || 'Store';
+
+    res.json({
+      staffId: staffMember.id,
+      user: {
+        id: staffMember.id,
+        email: staffMember.email,
+        fullName: staffMember.full_name,
+        role: staffMember.role,
+        isStaff: true,
+        permissions:
+          typeof staffMember.permissions === 'string'
+            ? JSON.parse(staffMember.permissions)
+            : staffMember.permissions,
+        storeName,
+        status: staffMember.status === 'pending' ? 'active' : staffMember.status,
+      },
+    });
+  } catch (error) {
+    console.error('[Staff] Me error:', isProduction ? (error as any)?.message : error);
+    return res.status(500).json({ error: 'Failed to load staff profile' });
+  }
+};
+
+// STAFF LOGOUT - clears staff auth cookie
+export const staffLogout: RequestHandler = async (_req, res) => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  res.clearCookie('ecopro_staff_at', {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: (isProduction ? 'none' : 'lax') as 'none' | 'lax',
+    path: '/',
+  });
+  res.json({ ok: true });
 };
 
 /**
@@ -630,9 +792,13 @@ export const getStaffOrders: RequestHandler = async (req, res) => {
 
     res.json(orders.rows);
   } catch (error) {
+    const isProduction = process.env.NODE_ENV === 'production';
     console.error('[Staff] Get orders error:', error);
     const errorMsg = error instanceof Error ? error.message : String(error);
-    res.status(500).json({ error: 'Failed to fetch orders', details: errorMsg });
+    return res.status(500).json({
+      error: 'Failed to fetch orders',
+      ...(!isProduction ? { details: errorMsg } : {}),
+    });
   }
 };
 
@@ -650,14 +816,43 @@ export const updateStaffOrderStatus: RequestHandler = async (req, res) => {
     const pool = await ensureConnection();
     const clientId = req.user?.clientId;
     const staffId = req.user?.staffId;
-    const { orderId, status } = req.body;
+    const bodyOrderId = (req.body as any)?.orderId;
+    const bodyStatus = (req.body as any)?.status;
+
+    const routeOrderIdRaw = (req.params as any)?.orderId;
+    const orderId = bodyOrderId ?? routeOrderIdRaw;
+    const status = bodyStatus;
 
     if (!clientId || !staffId) {
       return res.status(401).json({ error: 'Invalid authentication' });
     }
 
-    if (!orderId || !status) {
+    const nextStatus = typeof status === 'string' ? status.trim() : '';
+
+    if (!orderId || !nextStatus) {
       return res.status(400).json({ error: 'Missing orderId or status' });
+    }
+
+    const numericOrderId = typeof orderId === 'number' ? orderId : parseInt(String(orderId), 10);
+    if (!Number.isFinite(numericOrderId)) {
+      return res.status(400).json({ error: 'Invalid orderId' });
+    }
+
+    // Built-in valid statuses (same as owner route)
+    const builtInStatuses = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'];
+
+    // Check if status is a built-in status OR a custom status for this client
+    let isValidStatus = builtInStatuses.includes(nextStatus);
+    if (!isValidStatus) {
+      const customStatusCheck = await pool.query(
+        'SELECT id FROM order_statuses WHERE client_id = $1 AND name = $2',
+        [clientId, nextStatus]
+      );
+      isValidStatus = customStatusCheck.rows.length > 0;
+    }
+
+    if (!isValidStatus) {
+      return res.status(400).json({ error: 'Invalid status' });
     }
 
     // Verify staff has permission
@@ -681,7 +876,7 @@ export const updateStaffOrderStatus: RequestHandler = async (req, res) => {
     // Get current order and verify it belongs to this store
     const orderResult = await pool.query(
       'SELECT id, status as current_status FROM store_orders WHERE id = $1 AND client_id = $2',
-      [orderId, clientId]
+      [numericOrderId, clientId]
     );
 
     if (orderResult.rows.length === 0) {
@@ -692,8 +887,8 @@ export const updateStaffOrderStatus: RequestHandler = async (req, res) => {
 
     // Update order status
     await pool.query(
-      'UPDATE store_orders SET status = $1, updated_at = NOW() WHERE id = $2',
-      [status, orderId]
+      'UPDATE store_orders SET status = $1, updated_at = NOW() WHERE id = $2 AND client_id = $3',
+      [nextStatus, numericOrderId, clientId]
     );
 
     // Log activity
@@ -712,11 +907,15 @@ export const updateStaffOrderStatus: RequestHandler = async (req, res) => {
       console.warn('Failed to log order status change:', logErr);
     }
 
-    res.json({ message: 'Order status updated', orderId, newStatus: status });
+    res.json({ message: 'Order status updated', orderId, newStatus: nextStatus });
   } catch (error) {
+    const isProduction = process.env.NODE_ENV === 'production';
     console.error('[Staff] Update order status error:', error);
     const errorMsg = error instanceof Error ? error.message : String(error);
-    res.status(500).json({ error: 'Failed to update order status', details: errorMsg });
+    return res.status(500).json({
+      error: 'Failed to update order status',
+      ...(!isProduction ? { details: errorMsg } : {}),
+    });
   }
 };
 

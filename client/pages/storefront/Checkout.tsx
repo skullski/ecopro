@@ -1,7 +1,21 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, Plus, Minus, Trash2, Lock, Truck } from 'lucide-react';
+import {
+  formatWilayaLabel,
+  getAlgeriaCommuneById,
+  getAlgeriaCommunesByWilayaId,
+  getAlgeriaWilayaById,
+  getAlgeriaWilayas,
+} from '@/lib/algeriaGeo';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface CartItem {
   id: number;
@@ -9,6 +23,7 @@ interface CartItem {
   title?: string;
   price: number;
   quantity: number;
+  stock_quantity?: number;
   image?: string;
   images?: string[];
 }
@@ -145,6 +160,17 @@ export default function Checkout() {
     message: '',
   });
   const [telegramStartUrls, setTelegramStartUrls] = useState<string[]>([]);
+  const [telegramBotInfo, setTelegramBotInfo] = useState<
+    | {
+        enabled?: boolean;
+        botUsername?: string;
+        botUrl?: string;
+        storeName?: string;
+      }
+    | null
+  >(null);
+  const [telegramConnected, setTelegramConnected] = useState(false);
+  const [checkingTelegramConnection, setCheckingTelegramConnection] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [formData, setFormData] = useState({
@@ -152,15 +178,134 @@ export default function Checkout() {
     email: '',
     phone: '',
     address: '',
+    hai: '',
     city: '',
+    wilayaId: '',
+    communeId: '',
     amount: '',
   });
+  const [haiSuggestions, setHaiSuggestions] = useState<string[]>([]);
+  const [haiSuggestionsSupported, setHaiSuggestionsSupported] = useState(true);
 
   // Get template and settings
   const template = localStorage.getItem('template') || 'fashion';
   const settings: StoreSettings = JSON.parse(localStorage.getItem('storeSettings') || '{}');
   const style = TEMPLATE_STYLES[template] || TEMPLATE_STYLES.fashion;
   const accentColor = settings.template_accent_color || style.accent;
+
+  const dzWilayas = getAlgeriaWilayas();
+  const dzCommunes = getAlgeriaCommunesByWilayaId(formData.wilayaId);
+
+  // Fetch Telegram bot info for this store
+  useEffect(() => {
+    const fetchTelegramInfo = async () => {
+      const slug = settings?.store_slug;
+      if (!slug) return;
+      try {
+        const res = await fetch(`/api/telegram/bot-link/${encodeURIComponent(slug)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setTelegramBotInfo(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch Telegram info:', error);
+      }
+    };
+    fetchTelegramInfo();
+  }, [settings?.store_slug]);
+
+  // Check Telegram connection when phone changes
+  useEffect(() => {
+    const checkConnection = async () => {
+      const slug = settings?.store_slug;
+      const normalizedPhone = (formData.phone || '').replace(/\D/g, '');
+      if (!slug || normalizedPhone.length < 9) {
+        setTelegramConnected(false);
+        return;
+      }
+
+      setCheckingTelegramConnection(true);
+      try {
+        const res = await fetch(
+          `/api/telegram/check-connection/${encodeURIComponent(slug)}?phone=${encodeURIComponent(normalizedPhone)}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setTelegramConnected(Boolean(data?.connected));
+        }
+      } catch (error) {
+        console.error('Failed to check Telegram connection:', error);
+      } finally {
+        setCheckingTelegramConnection(false);
+      }
+    };
+
+    const timeout = window.setTimeout(checkConnection, 500);
+    return () => window.clearTimeout(timeout);
+  }, [settings?.store_slug, formData.phone]);
+
+  const handleConnectTelegram = async () => {
+    const slug = settings?.store_slug;
+    const botUsername = telegramBotInfo?.botUsername;
+    if (!slug || !botUsername) return;
+
+    let url = `https://t.me/${botUsername}`;
+    const normalizedPhone = (formData.phone || '').replace(/\D/g, '');
+    if (normalizedPhone.length >= 9) {
+      try {
+        const res = await fetch(
+          `/api/telegram/bot-link/${encodeURIComponent(slug)}?phone=${encodeURIComponent(normalizedPhone)}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.botUrl) url = String(data.botUrl);
+        }
+      } catch (error) {
+        console.error('Failed to get Telegram link:', error);
+      }
+    }
+
+    window.open(url, '_blank');
+  };
+
+  useEffect(() => {
+    let stopped = false;
+    const loadHaiSuggestions = async () => {
+      if (!haiSuggestionsSupported || !settings?.store_slug || !formData.communeId) {
+        setHaiSuggestions([]);
+        return;
+      }
+      try {
+        const res = await fetch(
+          `/api/storefront/${encodeURIComponent(settings.store_slug)}/address/hai-suggestions?communeId=${encodeURIComponent(formData.communeId)}`
+        );
+        if (res.status === 404) {
+          if (!stopped) {
+            setHaiSuggestions([]);
+            setHaiSuggestionsSupported(false);
+          }
+          return;
+        }
+        if (!res.ok) {
+          if (!stopped) setHaiSuggestions([]);
+          return;
+        }
+        const data = await res.json();
+        const values = Array.isArray(data?.suggestions)
+          ? data.suggestions
+              .map((s: any) => String(s?.value || '').trim())
+              .filter((v: string) => v.length > 0)
+          : [];
+        if (!stopped) setHaiSuggestions(values);
+      } catch {
+        if (!stopped) setHaiSuggestions([]);
+      }
+    };
+    loadHaiSuggestions();
+    return () => {
+      stopped = true;
+    };
+  }, [haiSuggestionsSupported, settings?.store_slug, formData.communeId]);
 
   // Fetch product on mount - try checkout session first, then localStorage, then API
   const { data: product } = useQuery({
@@ -187,7 +332,9 @@ export default function Checkout() {
       // Fallback to localStorage
       const cachedProduct = localStorage.getItem(`product_${productId}`);
       if (cachedProduct) {
-        return JSON.parse(cachedProduct);
+        const parsed = JSON.parse(cachedProduct);
+        // Only use cache if it includes stock_quantity; otherwise it can allow out-of-stock checkout.
+        if (typeof parsed?.stock_quantity === 'number') return parsed;
       }
       
       // Try marketplace product first
@@ -197,14 +344,9 @@ export default function Checkout() {
       }
       
       // Fallback to store product endpoint (for products added from stock)
-      const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-      if (token) {
-        response = await fetch(`/api/client/store/products/${productId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (response.ok) {
-          return response.json();
-        }
+      response = await fetch(`/api/client/store/products/${productId}`);
+      if (response.ok) {
+        return response.json();
       }
       
       throw new Error('Failed to fetch product from marketplace or store');
@@ -215,14 +357,17 @@ export default function Checkout() {
   React.useEffect(() => {
     if (product) {
       const qty = parseInt(searchParams.get('quantity') || '1');
-      setQuantity(qty);
+      const stock = typeof product?.stock_quantity === 'number' ? Number(product.stock_quantity) : null;
+      const safeQty = stock !== null && Number.isFinite(stock) && stock > 0 ? Math.min(Math.max(1, qty), stock) : Math.max(1, qty);
+      setQuantity(safeQty);
       setCart([
         {
           id: product.id,
           title: product.title || product.name,
           name: product.title || product.name,
           price: product.price,
-          quantity: qty,
+          quantity: safeQty,
+          stock_quantity: typeof product?.stock_quantity === 'number' ? Number(product.stock_quantity) : undefined,
           image: product.images?.[0],
           images: product.images,
         },
@@ -319,15 +464,31 @@ export default function Checkout() {
                               )
                             }
                             className="p-0.5 sm:p-1"
+                            disabled={item.quantity <= 1}
                           >
                             <Minus className="w-3 sm:w-4 h-3 sm:h-4" />
                           </button>
                           <span className="w-4 sm:w-6 text-center text-xs sm:text-sm">{item.quantity}</span>
                           <button
-                            onClick={() =>
-                              setCart(cart.map((i) => (i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i)))
-                            }
+                            onClick={() => {
+                              const max = typeof item.stock_quantity === 'number' && Number.isFinite(item.stock_quantity)
+                                ? Number(item.stock_quantity)
+                                : null;
+                              setCart(
+                                cart.map((i) => {
+                                  if (i.id !== item.id) return i;
+                                  if (max !== null && max > 0) return { ...i, quantity: Math.min(max, i.quantity + 1) };
+                                  return { ...i, quantity: i.quantity + 1 };
+                                })
+                              );
+                            }}
                             className="p-0.5 sm:p-1"
+                            disabled={
+                              typeof item.stock_quantity === 'number' &&
+                              Number.isFinite(item.stock_quantity) &&
+                              item.stock_quantity > 0 &&
+                              item.quantity >= item.stock_quantity
+                            }
                           >
                             <Plus className="w-3 sm:w-4 h-3 sm:h-4" />
                           </button>
@@ -406,15 +567,117 @@ export default function Checkout() {
                     {formData.phone && !/^\+?[0-9]{7,}$/.test(formData.phone.replace(/\s/g, '')) && (
                       <p className="text-xs text-red-600 mt-1">Please enter a valid phone number</p>
                     )}
+
+                    {telegramBotInfo?.enabled && settings?.store_slug && (
+                      <div className={`mt-2 p-2 rounded-lg border ${style.border}`}>
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="text-[11px] sm:text-xs font-bold opacity-75">
+                            Telegram (Optional)
+                          </div>
+                          <div className="text-[11px] sm:text-xs">
+                            {checkingTelegramConnection
+                              ? 'Checking…'
+                              : telegramConnected
+                              ? 'Connected ✓'
+                              : 'Not connected'}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleConnectTelegram}
+                          disabled={(formData.phone || '').replace(/\D/g, '').length < 9}
+                          className={`mt-2 w-full py-1.5 sm:py-2 rounded-lg font-bold text-xs sm:text-sm transition disabled:opacity-60 ${style.button}`}
+                          style={{ backgroundColor: accentColor, color: style.bg === 'bg-black' ? '#000' : '#fff' }}
+                        >
+                          Connect Telegram
+                        </button>
+                        <div className="mt-1 text-[10px] sm:text-[11px] opacity-60">
+                          Add your phone number first, then connect to receive instant order updates.
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-0.5 sm:space-y-0.5 md:space-y-0.5">
-                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">City *</label>
+                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">Wilaya *</label>
+                    <Select
+                      value={formData.wilayaId}
+                      onValueChange={(nextId) => {
+                        setFormData({ ...formData, wilayaId: nextId, communeId: '', city: '' });
+                      }}
+                    >
+                      <SelectTrigger
+                        className={`w-full px-2 sm:px-3 md:px-2 lg:px-4 py-1 sm:py-1.5 md:py-1.5 lg:py-3 rounded-lg border-2 text-xs sm:text-sm md:text-xs lg:text-sm ${style.inputBg} focus:outline-none focus:ring-2 focus:ring-offset-1 transition shadow-sm h-auto`}
+                        style={{ '--tw-ring-color': accentColor } as any}
+                      >
+                        <SelectValue placeholder="Select Wilaya" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {dzWilayas.map((w) => (
+                          <SelectItem key={w.id} value={String(w.id)}>
+                            {formatWilayaLabel(w)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-0.5 sm:space-y-0.5 md:space-y-0.5">
+                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">Baladia/Commune *</label>
+                    <Select
+                      value={formData.communeId}
+                      disabled={!formData.wilayaId}
+                      onValueChange={(nextId) => {
+                        const c = getAlgeriaCommuneById(nextId);
+                        setFormData({ ...formData, communeId: nextId, city: c?.name || '' });
+                      }}
+                    >
+                      <SelectTrigger
+                        className={`w-full px-2 sm:px-3 md:px-2 lg:px-4 py-1 sm:py-1.5 md:py-1.5 lg:py-3 rounded-lg border-2 text-xs sm:text-sm md:text-xs lg:text-sm ${style.inputBg} focus:outline-none focus:ring-2 focus:ring-offset-1 transition shadow-sm disabled:opacity-60 h-auto`}
+                        style={{ '--tw-ring-color': accentColor } as any}
+                      >
+                        <SelectValue placeholder={formData.wilayaId ? 'Select Baladia/Commune' : 'Select Wilaya first'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {dzCommunes.map((c) => (
+                          <SelectItem key={c.id} value={String(c.id)}>
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-0.5 sm:space-y-0.5 md:space-y-0.5 md:col-span-2">
+                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">Hai / Neighborhood</label>
+                    {haiSuggestions.length > 0 && (
+                      <div className="mb-1.5">
+                        <label className="block text-[10px] sm:text-[10px] md:text-[10px] lg:text-xs font-bold opacity-60">Choose Hai (optional)</label>
+                        <Select
+                          value={String(formData.hai || '')}
+                          onValueChange={(v) => setFormData({ ...formData, hai: v })}
+                        >
+                          <SelectTrigger
+                            className={`w-full px-2 sm:px-3 md:px-2 lg:px-4 py-1 sm:py-1.5 md:py-1.5 lg:py-3 rounded-lg border-2 text-xs sm:text-sm md:text-xs lg:text-sm ${style.inputBg} focus:outline-none focus:ring-2 focus:ring-offset-1 transition shadow-sm h-auto`}
+                            style={{ '--tw-ring-color': accentColor } as any}
+                          >
+                            <SelectValue placeholder="Select Hai" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {haiSuggestions.map((h) => (
+                              <SelectItem key={h} value={h}>
+                                {h}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                     <input
                       type="text"
-                      placeholder="e.g., Algiers, Oran"
-                      value={formData.city}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      placeholder="Example: Hai Badr Eddine"
+                      value={formData.hai}
+                      onChange={(e) => setFormData({ ...formData, hai: e.target.value })}
                       className={`w-full px-2 sm:px-3 md:px-2 lg:px-4 py-1 sm:py-1.5 md:py-1.5 lg:py-3 rounded-lg border-2 text-xs sm:text-sm md:text-xs lg:text-sm ${style.inputBg} focus:outline-none focus:ring-2 focus:ring-offset-1 transition shadow-sm`}
                       style={{ '--tw-ring-color': accentColor } as any}
                     />
@@ -574,7 +837,8 @@ export default function Checkout() {
                         if (!formData.fullName) missingFields.push('Full Name');
                         if (!formData.email) missingFields.push('Email');
                         if (!formData.phone) missingFields.push('Phone');
-                        if (!formData.city) missingFields.push('City');
+                        if (!formData.wilayaId) missingFields.push('Wilaya');
+                        if (!formData.communeId) missingFields.push('Baladia/Commune');
                         if (!formData.address) missingFields.push('Address');
                         if (formData.phone && !/^\+?[0-9]{7,}$/.test(formData.phone.replace(/\s/g, ''))) {
                           missingFields.push('Valid Phone Number');
@@ -590,15 +854,28 @@ export default function Checkout() {
                         let successCount = 0;
                         let errorMessage = '';
                         const tgLinks: string[] = [];
+                        const selectedWilaya = getAlgeriaWilayaById(formData.wilayaId);
+                        const selectedCommune = getAlgeriaCommuneById(formData.communeId);
+
                         for (const item of cart) {
                           const orderData = {
                             product_id: item.id,
                             quantity: item.quantity,
                             total_price: item.price * item.quantity,
                             customer_name: formData.fullName,
-                            customer_email: formData.email,
+                            ...(formData.email?.trim() ? { customer_email: formData.email.trim() } : {}),
                             customer_phone: formData.phone,
-                            customer_address: `${formData.address}, ${formData.city}`,
+                            shipping_wilaya_id: formData.wilayaId ? Number(formData.wilayaId) : null,
+                            shipping_commune_id: formData.communeId ? Number(formData.communeId) : null,
+                            shipping_hai: (formData.hai || '').trim() || null,
+                            customer_address: [
+                              formData.address,
+                              formData.hai,
+                              selectedCommune?.name || formData.city,
+                              selectedWilaya?.name ? selectedWilaya.name : '',
+                            ]
+                              .filter(Boolean)
+                              .join(', '),
                           };
 
                           const endpoint = `/api/storefront/${settings.store_slug}/orders`;

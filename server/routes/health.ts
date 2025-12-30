@@ -9,6 +9,8 @@ export const handleHealth: RequestHandler = async (_req, res) => {
     const latency = Date.now() - start;
     res.json({ status: 'ok', db: { connected: true, latency } });
   } catch (err: any) {
-    res.status(500).json({ status: 'error', db: { connected: false, error: err?.message || 'unknown' } });
+    const isProduction = process.env.NODE_ENV === 'production';
+    const message = isProduction ? 'unknown' : (err?.message || 'unknown');
+    res.status(500).json({ status: 'error', db: { connected: false, error: message } });
   }
 };

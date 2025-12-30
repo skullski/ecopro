@@ -141,15 +141,7 @@ export default function StockManagement() {
 
   const loadStock = async () => {
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
-      if (!token) {
-        console.error('No auth token found');
-        setLoading(false);
-        return;
-      }
-      const res = await fetch('/api/client/stock', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await fetch('/api/client/stock');
       if (res.ok) {
         const data = await res.json();
         console.log('[loadStock] Fetched stock items:', data);
@@ -168,23 +160,14 @@ export default function StockManagement() {
 
   const loadCategories = async () => {
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
-      if (!token) {
-        console.error('No auth token found');
-        return;
-      }
-      const res = await fetch('/api/client/stock/categories', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await fetch('/api/client/stock/categories');
       if (res.ok) {
         const data = await res.json();
         setCategories(data.map((c: any) => c.category).filter(Boolean));
       }
       
       // Also load all categories with details
-      const allRes = await fetch('/api/client/stock/categories/all', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const allRes = await fetch('/api/client/stock/categories/all');
       if (allRes.ok) {
         const allData = await allRes.json();
         setAllCategories(allData);
@@ -199,12 +182,10 @@ export default function StockManagement() {
     
     setCreatingCategory(true);
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
       const res = await fetch('/api/client/stock/categories', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
           name: newCategoryName.trim(),
@@ -236,10 +217,8 @@ export default function StockManagement() {
     if (!confirm('Delete this category? Products will have their category removed.')) return;
     
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
       const res = await fetch(`/api/client/stock/categories/${categoryId}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
       });
       
       if (res.ok) {
@@ -287,8 +266,6 @@ export default function StockManagement() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    console.log('Starting image upload:', file.name, file.size, file.type);
-
     // Validate file size (2MB max)
     if (file.size > 2 * 1024 * 1024) {
       alert('Image must be less than 2MB');
@@ -305,36 +282,17 @@ export default function StockManagement() {
 
     setUploading(true);
     try {
-      const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-      console.log('Token present:', !!token);
-      
-      if (!token) {
-        alert('Not authenticated. Please log in again.');
-        setUploading(false);
-        return;
-      }
-      
       const uploadFormData = new FormData();
       uploadFormData.append('image', file);
-
-      console.log('Uploading to /api/upload...');
       const res = await fetch('/api/upload', {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
         body: uploadFormData
       });
 
-      console.log('Upload response status:', res.status, res.statusText);
-      console.log('Response headers:', Object.fromEntries(res.headers.entries()));
-
       // Get response text first
       const responseText = await res.text();
-      console.log('Response text:', responseText);
 
       if (!res.ok) {
-        console.error('Upload failed with status:', res.status);
         try {
           const error = JSON.parse(responseText);
           alert(`Upload failed: ${error.error || 'Unknown error'}`);
@@ -349,25 +307,20 @@ export default function StockManagement() {
       if (responseText) {
         try {
           const data = JSON.parse(responseText);
-          console.log('Upload successful, URL:', data.url);
           // Just use the relative URL - don't add origin
           const imageUrl = data.url;
-          console.log('Setting image URL:', imageUrl);
           setFormData(prev => { 
             const updated = { ...prev, images: [imageUrl] };
-            console.log('FormData after image upload:', updated);
             return updated;
           });
           
           // If editing an existing item, auto-save the image immediately
           if (selectedItem?.id) {
-            console.log('[handleImageUpload] Auto-saving image for existing item:', selectedItem.id);
             try {
               const updateRes = await fetch(`/api/client/stock/${selectedItem.id}`, {
                 method: 'PUT',
                 headers: {
                   'Content-Type': 'application/json',
-                  Authorization: `Bearer ${token}`
                 },
                 body: JSON.stringify({
                   images: [imageUrl]
@@ -375,7 +328,6 @@ export default function StockManagement() {
               });
 
               if (updateRes.ok) {
-                console.log('[handleImageUpload] Image auto-saved successfully');
                 await loadStock();
               } else {
                 console.warn('[handleImageUpload] Failed to auto-save image');
@@ -393,7 +345,6 @@ export default function StockManagement() {
           e.target.value = '';
         }
       } else {
-        console.error('Empty response from server');
         alert('Upload succeeded but server returned empty response');
         e.target.value = '';
       }
@@ -408,12 +359,6 @@ export default function StockManagement() {
 
   const handleCreateStock = async () => {
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
-      if (!token) {
-        alert('Not authenticated. Please log in again.');
-        return;
-      }
-      
       console.log('[handleCreateStock] Submitting form data:', formData);
       console.log('[handleCreateStock] Images in formData:', formData.images);
       console.log('[handleCreateStock] Images count:', formData.images?.length);
@@ -422,7 +367,6 @@ export default function StockManagement() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify(formData)
       });
@@ -457,12 +401,10 @@ export default function StockManagement() {
     if (!selectedItem) return;
 
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
       const res = await fetch(`/api/client/stock/${selectedItem.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify(formData)
       });
@@ -486,12 +428,10 @@ export default function StockManagement() {
     if (!selectedItem) return;
 
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
       const res = await fetch(`/api/client/stock/${selectedItem.id}/adjust`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify(adjustData)
       });
@@ -515,10 +455,8 @@ export default function StockManagement() {
     if (!selectedItem) return;
 
     try {
-      const token = localStorage.getItem('token') || localStorage.getItem('authToken');
       const res = await fetch(`/api/client/stock/${selectedItem.id}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (res.ok) {
@@ -537,10 +475,7 @@ export default function StockManagement() {
 
   const loadHistory = async (itemId: number) => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`/api/client/stock/${itemId}/history`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await fetch(`/api/client/stock/${itemId}/history`);
       if (res.ok) {
         const data = await res.json();
         setStockHistory(data);

@@ -2,14 +2,26 @@ import { RequestHandler } from "express";
 import { ensureConnection } from "../utils/database";
 import { sendBotMessagesForOrder } from "./order-confirmation";
 import { createOrderTelegramLink } from "../utils/telegram";
-import { sendTelegramMessage, replaceTemplateVariables } from "../utils/bot-messaging";
+import { createConfirmationLink, sendTelegramMessage, replaceTemplateVariables } from "../utils/bot-messaging";
+import { z, ZodError } from "zod";
+
+const StoreSlugSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(200)
+  .refine((v) => v !== 'null' && v !== 'undefined', { message: 'Invalid store ID' });
+
+const ProductSlugSchema = z.string().trim().min(1).max(200);
+const ProductIdSchema = z.preprocess((v) => Number(v), z.number().int().positive());
 
 // Get all products for a storefront
 export const getStorefrontProducts: RequestHandler = async (req, res) => {
-  const { storeSlug } = req.params;
-
-  // Validate storeSlug
-  if (!storeSlug || storeSlug === 'null' || storeSlug === 'undefined') {
+  const isProduction = process.env.NODE_ENV === 'production';
+  let storeSlug: string;
+  try {
+    storeSlug = StoreSlugSchema.parse(req.params.storeSlug);
+  } catch {
     return res.status(400).json({ error: 'Invalid store ID' });
   }
 
@@ -26,7 +38,9 @@ export const getStorefrontProducts: RequestHandler = async (req, res) => {
 
     if (clientCheck.rows.length > 0) {
       const clientId = clientCheck.rows[0].client_id;
-      console.log(`Loading client store ${storeSlug} for client ID ${clientId}`);
+      if (!isProduction) {
+        console.log(`Loading client store ${storeSlug} for client ID ${clientId}`);
+      }
       // Include store-level fields so product cards can show owner/store info without extra round-trip
       const result = await pool.query(
         `SELECT 
@@ -40,7 +54,9 @@ export const getStorefrontProducts: RequestHandler = async (req, res) => {
         ORDER BY p.is_featured DESC, p.created_at DESC`,
         [clientId]
       );
-      console.log(`Found ${result.rows.length} client products for store ${storeSlug}`);
+      if (!isProduction) {
+        console.log(`Found ${result.rows.length} client products for store ${storeSlug}`);
+      }
       return res.json(result.rows);
     }
 
@@ -52,11 +68,15 @@ export const getStorefrontProducts: RequestHandler = async (req, res) => {
       [storeSlug]
     );
     if (sellerCheck.rows.length === 0) {
-      console.log(`Store not found: ${storeSlug}`);
+      if (!isProduction) {
+        console.log(`Store not found: ${storeSlug}`);
+      }
       return res.status(404).json({ error: 'Store not found' });
     }
     const sellerId = sellerCheck.rows[0].seller_id;
-    console.log(`Loading seller store ${storeSlug} for seller ID ${sellerId}`);
+    if (!isProduction) {
+      console.log(`Loading seller store ${storeSlug} for seller ID ${sellerId}`);
+    }
     const mResult = await pool.query(
       `SELECT p.id, p.title, p.description, p.price, p.original_price, p.images, p.category, p.stock, p.condition, p.location, p.shipping_available AS shipping, p.views, p.created_at,
               ss.store_name, sel.name AS seller_name, sel.email AS seller_email
@@ -67,16 +87,25 @@ export const getStorefrontProducts: RequestHandler = async (req, res) => {
        ORDER BY p.created_at DESC`,
       [sellerId]
     );
-    console.log(`Found ${mResult.rows.length} marketplace products for seller store ${storeSlug}`);
+    if (!isProduction) {
+      console.log(`Found ${mResult.rows.length} marketplace products for seller store ${storeSlug}`);
+    }
     res.json(mResult.rows);
   } catch (error) {
-    console.error('Get storefront products error:', error);
+    const isProduction = process.env.NODE_ENV === 'production';
+    console.error('Get storefront products error:', isProduction ? (error as any)?.message : error);
     res.status(500).json({ error: 'Failed to fetch products' });
   }
 };
 // Get store settings for a storefront
 export const getStorefrontSettings: RequestHandler = async (req, res) => {
-  let { storeSlug } = req.params;
+  const isProduction = process.env.NODE_ENV === 'production';
+  let storeSlug: string;
+  try {
+    storeSlug = StoreSlugSchema.parse(req.params.storeSlug);
+  } catch {
+    return res.status(400).json({ error: 'Invalid store ID' });
+  }
 
   try {
     // Helper function to convert store name to clean format (same as client-side)
@@ -202,18 +231,28 @@ export const getStorefrontSettings: RequestHandler = async (req, res) => {
       store_images: storeImagesArr,
     });
   } catch (error) {
-    console.error('Get storefront settings error:', error);
+    console.error('Get storefront settings error:', isProduction ? (error as any)?.message : error);
     res.status(500).json({ error: 'Failed to fetch store settings' });
   }
 };
 
 // Get single product for a storefront
 export const getPublicProduct: RequestHandler = async (req, res) => {
-  const { storeSlug, productSlug } = req.params;
+  const isProduction = process.env.NODE_ENV === 'production';
+  let storeSlug: string;
+  let productSlug: string;
+  try {
+    storeSlug = StoreSlugSchema.parse(req.params.storeSlug);
+    productSlug = ProductSlugSchema.parse(req.params.productSlug);
+  } catch {
+    return res.status(400).json({ error: 'Invalid request' });
+  }
 
   try {
     const pool = await ensureConnection();
-    console.log('[getPublicProduct] Looking for:', { storeSlug, productSlug });
+    if (!isProduction) {
+      console.log('[getPublicProduct] Looking for:', { storeSlug, productSlug });
+    }
     
     // Try client store product first
     const productResult = await pool.query(
@@ -230,8 +269,9 @@ export const getPublicProduct: RequestHandler = async (req, res) => {
       WHERE s.store_slug = $1 AND p.slug = $2`,
       [storeSlug, productSlug]
     );
-
-    console.log('[getPublicProduct] Found rows:', productResult.rows.length);
+    if (!isProduction) {
+      console.log('[getPublicProduct] Found rows:', productResult.rows.length);
+    }
     
     if (productResult.rows.length === 0) {
       // Try marketplace product for seller storefronts
@@ -245,14 +285,6 @@ export const getPublicProduct: RequestHandler = async (req, res) => {
       );
 
       if (mResult.rows.length === 0) {
-        // Debug: Check if product exists with different criteria
-        const debugResult = await pool.query(
-          `SELECT p.id, p.slug, p.status, p.client_id, p.seller_id
-           FROM client_store_products p
-           WHERE p.slug = $1`,
-          [productSlug]
-        );
-        console.log('[getPublicProduct] Debug - Product by slug:', debugResult.rows);
         return res.status(404).json({ error: 'Product not found' });
       }
 
@@ -274,18 +306,28 @@ export const getPublicProduct: RequestHandler = async (req, res) => {
       views: product.views + 1, // Return updated view count
     });
   } catch (error) {
-    console.error('Get public product error:', error);
+    console.error('Get public product error:', isProduction ? (error as any)?.message : error);
     res.status(500).json({ error: 'Failed to fetch product' });
   }
 };
 
 // Get single product by ID for a storefront
 export const getStorefrontProductById: RequestHandler = async (req, res) => {
-  const { storeSlug, productId } = req.params;
+  const isProduction = process.env.NODE_ENV === 'production';
+  let storeSlug: string;
+  let productId: number;
+  try {
+    storeSlug = StoreSlugSchema.parse(req.params.storeSlug);
+    productId = ProductIdSchema.parse(req.params.productId);
+  } catch {
+    return res.status(400).json({ error: 'Invalid request' });
+  }
 
   try {
     const pool = await ensureConnection();
-    console.log('[getStorefrontProductById] Looking for:', { storeSlug, productId });
+    if (!isProduction) {
+      console.log('[getStorefrontProductById] Looking for:', { storeSlug, productId });
+    }
     
     // Try client store product first by ID
     const productResult = await pool.query(
@@ -310,7 +352,7 @@ export const getStorefrontProductById: RequestHandler = async (req, res) => {
     const product = productResult.rows[0];
     res.json(product);
   } catch (error) {
-    console.error('Get storefront product by ID error:', error);
+    console.error('Get storefront product by ID error:', isProduction ? (error as any)?.message : error);
     res.status(500).json({ error: 'Failed to fetch product' });
   }
 };
@@ -318,24 +360,68 @@ export const getStorefrontProductById: RequestHandler = async (req, res) => {
 // Create order via public storefront using storeSlug
 export const createPublicStoreOrder: RequestHandler = async (req, res) => {
   const { storeSlug } = req.params as any;
-  console.log('[createPublicStoreOrder] Starting with storeSlug:', storeSlug);
+  let pool: any;
+  let client: any;
+  let inTransaction = false;
   try {
-    const pool = await ensureConnection();
-    console.log('[createPublicStoreOrder] Incoming:', req.body);
+    const isProduction = process.env.NODE_ENV === 'production';
+    pool = await ensureConnection();
+    client = await pool.connect();
+
+    const trimmedOptionalString = (maxLen: number) =>
+      z.preprocess(
+        (v) => {
+          if (v === null || v === undefined) return undefined;
+          if (typeof v !== 'string') return v;
+          const t = v.trim();
+          return t === '' ? undefined : t;
+        },
+        z.string().max(maxLen)
+      );
+
+    const CreatePublicStoreOrderSchema = z.object({
+      product_id: z.preprocess((v) => Number(v), z.number().int().positive()),
+      quantity: z.preprocess((v) => Number(v), z.number().int().positive()),
+      // Client-provided total_price is accepted for backward-compatibility but ignored.
+      // Total is computed server-side from the current product price.
+      total_price: z.preprocess((v) => Number(v), z.number().positive()).optional(),
+      customer_name: z.preprocess(
+        (v) => (typeof v === 'string' ? v.trim() : v),
+        z.string().min(1).max(120)
+      ),
+      customer_phone: z.preprocess(
+        (v) => (typeof v === 'string' ? v.trim() : v),
+        z.string().min(7).max(32)
+      ),
+      customer_email: trimmedOptionalString(255).pipe(z.string().email()).optional(),
+      customer_address: trimmedOptionalString(500).optional(),
+      shipping_wilaya_id: z.preprocess((v) => (v === '' || v === null || v === undefined ? undefined : Number(v)), z.number().int().positive()).optional(),
+      shipping_commune_id: z.preprocess((v) => (v === '' || v === null || v === undefined ? undefined : Number(v)), z.number().int().positive()).optional(),
+      shipping_hai: trimmedOptionalString(120).optional(),
+    });
+
+    let data: z.infer<typeof CreatePublicStoreOrderSchema>;
+    try {
+      data = CreatePublicStoreOrderSchema.parse(req.body);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+      return res.status(400).json({ error: 'Invalid request' });
+    }
+
     const {
       product_id,
       quantity,
-      total_price,
+      total_price: _ignoredTotalPrice,
       customer_name,
       customer_email,
       customer_phone,
       customer_address,
-    } = req.body;
-
-    if (!product_id || !quantity || !total_price || !customer_name || !customer_phone) {
-      res.status(400).json({ error: 'Missing required fields' });
-      return;
-    }
+      shipping_wilaya_id,
+      shipping_commune_id,
+      shipping_hai,
+    } = data;
 
     const normalizedPhone = String(customer_phone).replace(/\s/g, '');
     if (!/^\+?[0-9]{7,}$/.test(normalizedPhone)) {
@@ -343,7 +429,6 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
       return;
     }
 
-    console.log('[createPublicStoreOrder] About to query store settings...');
     // Match by exact store_slug OR normalized store_name (same as storefront loading)
     const cs = await pool.query(
       `SELECT client_id, store_name
@@ -352,7 +437,6 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
           OR LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1)`,
       [storeSlug]
     );
-    console.log('[createPublicStoreOrder] Client store lookup:', cs.rows);
     
     let clientId: number | string;
     let storeName: string;
@@ -360,81 +444,69 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
     if (cs.rows.length > 0) {
       clientId = cs.rows[0].client_id;
       storeName = cs.rows[0].store_name || 'EcoPro Store';
-      console.log('[createPublicStoreOrder] Found client store, client_id:', clientId);
-    } else {
-      // Try seller_store_settings as fallback
-      console.log('[createPublicStoreOrder] Not found in client_store_settings, trying seller_store_settings...');
-      const ss = await pool.query(
-        `SELECT seller_id, store_name
-         FROM seller_store_settings
-         WHERE store_slug = $1
-            OR LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1)`,
-        [storeSlug]
-      );
-      console.log('[createPublicStoreOrder] Seller store lookup:', ss.rows);
-      
-      if (!ss.rows.length) {
-        console.log('[createPublicStoreOrder] Store not found for slug:', storeSlug);
-        res.status(404).json({ error: 'Store not found' });
-        return;
+      if (!isProduction) {
+        console.log('[createPublicStoreOrder] Found client store, client_id:', clientId);
       }
-      clientId = ss.rows[0].seller_id;
-      storeName = ss.rows[0].store_name || 'EcoPro Store';
-      console.log('[createPublicStoreOrder] Found seller store, seller_id:', clientId);
+    } else {
+      // NOTE: Seller storefront orders are handled via marketplace guest checkout (/api/guest/orders).
+      // This endpoint is for client storefronts only.
+      if (!isProduction) {
+        console.log('[createPublicStoreOrder] Client store not found for slug:', storeSlug);
+      }
+      res.status(404).json({ error: 'Store not found' });
+      return;
     }
 
-    // For public orders, use the store owner's client_id so they can see the orders in their dashboard
-    // Check stock availability
-    const stockCheckResult = await pool.query(
-      'SELECT stock_quantity FROM client_store_products WHERE id = $1',
-      [product_id]
+    // Ensure product belongs to this store (prevents cross-tenant product/order spoofing)
+    const productRes = await pool.query(
+      `SELECT id, price, stock_quantity
+       FROM client_store_products
+       WHERE id = $1 AND client_id = $2 AND status = 'active'
+       LIMIT 1`,
+      [product_id, clientId]
     );
-    
-    if (stockCheckResult.rows.length === 0) {
-      console.log('[createPublicStoreOrder] Product not found:', product_id);
+
+    if (productRes.rows.length === 0) {
+      if (!isProduction) {
+        console.log('[createPublicStoreOrder] Product not found for store:', { product_id, clientId });
+      }
       res.status(404).json({ error: 'Product not found' });
       return;
     }
 
-    const availableStock = stockCheckResult.rows[0].stock_quantity || 0;
-    if (availableStock < quantity) {
-      console.log(`[createPublicStoreOrder] Insufficient stock: requested ${quantity}, available ${availableStock}`);
-      res.status(400).json({ error: `Insufficient stock. Only ${availableStock} available.` });
-      return;
-    }
+    const productRow = productRes.rows[0];
+    const unitPrice = Number(productRow.price);
+    const expectedTotalPrice = unitPrice * Number(quantity);
 
-    console.log('[createPublicStoreOrder] Insert order params:', [
-      product_id,
-      clientId, // Store owner's client_id so orders appear in their dashboard
-      quantity,
-      total_price,
-      customer_name,
-      customer_email || null,
-      customer_phone || null,
-      customer_address || null,
-      'pending',
-      'unpaid'
-    ]);
-    const result = await pool.query(
+    await client.query('BEGIN');
+    inTransaction = true;
+
+    const result = await client.query(
       `INSERT INTO store_orders (
         product_id, client_id, quantity, total_price,
         customer_name, customer_email, customer_phone, shipping_address,
+        shipping_wilaya_id, shipping_commune_id, shipping_hai,
         status, payment_status, created_at
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,NOW()) RETURNING *`,
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,TIMEZONE('UTC', NOW())) RETURNING *`,
       [
         product_id,
         clientId, // Store owner's client_id so orders appear in their dashboard
         quantity,
-        total_price,
+        expectedTotalPrice,
         customer_name,
         customer_email || null,
-        customer_phone || null,
+        normalizedPhone || null,
         customer_address || null,
+        shipping_wilaya_id || null,
+        shipping_commune_id || null,
+        shipping_hai || null,
         'pending',
         'unpaid'
       ]
     );
-    console.log('[createPublicStoreOrder] Inserted order:', result.rows);
+    if (!isProduction) {
+      console.log('[createPublicStoreOrder] Inserted order id:', result.rows?.[0]?.id);
+    }
 
     // Create Telegram deep-link for this order (optional for the customer)
     const telegram = await createOrderTelegramLink({
@@ -444,12 +516,22 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
       customerName: String(customer_name),
     }).catch(() => ({ startToken: '', startUrl: null } as any));
 
-    // Decrease stock after successful order creation
-    await pool.query(
-      'UPDATE client_store_products SET stock_quantity = stock_quantity - $1 WHERE id = $2',
-      [quantity, product_id]
+    // Decrease stock after successful order creation (scoped + guarded)
+    const stockUpdate = await client.query(
+      'UPDATE client_store_products SET stock_quantity = stock_quantity - $1 WHERE id = $2 AND client_id = $3 AND stock_quantity >= $1 RETURNING stock_quantity',
+      [quantity, product_id, clientId]
     );
-    console.log(`[createPublicStoreOrder] Stock decreased by ${quantity} for product ${product_id}`);
+    if (stockUpdate.rows.length === 0) {
+      await client.query('ROLLBACK');
+      inTransaction = false;
+      return res.status(400).json({ error: 'Insufficient stock.' });
+    }
+    if (!isProduction) {
+      console.log(`[createPublicStoreOrder] Stock decreased by ${quantity} for product ${product_id}`);
+    }
+
+    await client.query('COMMIT');
+    inTransaction = false;
     // Audit log
     try {
       await pool.query(
@@ -461,22 +543,26 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
 
     // Fire-and-forget bot confirmation with confirmation link tied to this order
     if (normalizedPhone) {
+      const orderTotalPrice = Number(result.rows?.[0]?.total_price ?? expectedTotalPrice);
       const productTitle = (await pool.query('SELECT title FROM client_store_products WHERE id = $1', [product_id])).rows?.[0]?.title || 'Product';
 
       // Check if customer has pre-connected via Telegram
-      console.log('[createPublicStoreOrder] Checking pre-connect for phone:', normalizedPhone, 'client:', clientId);
       const preConnectRes = await pool.query(
         `SELECT telegram_chat_id FROM customer_messaging_ids 
          WHERE client_id = $1 AND customer_phone = $2 AND telegram_chat_id IS NOT NULL
          LIMIT 1`,
         [clientId, normalizedPhone]
       );
-      console.log('[createPublicStoreOrder] Pre-connect result:', preConnectRes.rows);
+      if (!isProduction) {
+        console.log('[createPublicStoreOrder] Pre-connect found:', preConnectRes.rows.length > 0);
+      }
 
       if (preConnectRes.rows.length > 0) {
         // Customer is pre-connected! Send immediate notification
         const chatId = preConnectRes.rows[0].telegram_chat_id;
-        console.log('[createPublicStoreOrder] Customer is pre-connected, chat_id:', chatId);
+        if (!isProduction) {
+          console.log('[createPublicStoreOrder] Customer is pre-connected, chat_id:', chatId);
+        }
         
         // Get bot settings
         const botRes = await pool.query(
@@ -487,11 +573,15 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
            LIMIT 1`,
           [clientId]
         );
-        console.log('[createPublicStoreOrder] Bot settings found:', botRes.rows.length > 0);
+        if (!isProduction) {
+          console.log('[createPublicStoreOrder] Bot settings found:', botRes.rows.length > 0);
+        }
 
         if (botRes.rows.length > 0 && botRes.rows[0].telegram_bot_token) {
           const botToken = botRes.rows[0].telegram_bot_token;
-          console.log('[createPublicStoreOrder] Sending Telegram message to chat:', chatId);
+          if (!isProduction) {
+            console.log('[createPublicStoreOrder] Sending Telegram message to chat:', chatId);
+          }
           
           // Default instant order template
           const defaultInstantOrder = `🎉 Thank you, {customerName}!
@@ -537,10 +627,10 @@ Long press on the previous message and select "Pin" to easily track your order!
           const orderMessage = replaceTemplateVariables(instantOrderTemplate, {
             customerName: customer_name,
             productName: productTitle,
-            totalPrice: total_price.toLocaleString(),
+            totalPrice: orderTotalPrice.toLocaleString(),
             quantity: quantity,
             orderId: result.rows[0].id,
-            customerPhone: customer_phone || normalizedPhone,
+            customerPhone: normalizedPhone,
             address: customer_address || 'Not specified',
             storeName: storeName,
             companyName: storeName,
@@ -550,17 +640,22 @@ Long press on the previous message and select "Pin" to easily track your order!
           const orderId = result.rows[0].id;
           
           const msgResult = await sendTelegramMessage(botToken, chatId, orderMessage);
-          console.log('[createPublicStoreOrder] Telegram send result:', msgResult);
+          if (!isProduction) {
+            console.log('[createPublicStoreOrder] Telegram send result:', msgResult);
+          }
           
           // Send pinning instruction as separate message
           if (msgResult.success) {
             const pinResult = await sendTelegramMessage(botToken, chatId, pinInstructionsTemplate);
-            console.log('[createPublicStoreOrder] Pin instructions send result:', pinResult);
+            if (!isProduction) {
+              console.log('[createPublicStoreOrder] Pin instructions send result:', pinResult);
+            }
           }
           
           // Schedule confirmation message with buttons after delay
           const delayMinutes = botRes.rows[0].telegram_delay_minutes || 5; // default 5 minutes
           const scheduledTime = new Date(Date.now() + delayMinutes * 60 * 1000);
+          console.log(`[PublicStore] Scheduling confirmation for order ${orderId} in ${delayMinutes} minutes (at ${scheduledTime.toISOString()}, db value: ${botRes.rows[0].telegram_delay_minutes})`);
           
           // Get confirmation template
           const defaultConfirmationTemplate = `Hello {customerName}! 🌟
@@ -577,23 +672,26 @@ Press one of the buttons to confirm or cancel:`;
           const confirmationMessage = replaceTemplateVariables(confirmationTemplate, {
             customerName: customer_name,
             productName: productTitle,
-            totalPrice: String(total_price),
+            totalPrice: String(orderTotalPrice),
             quantity: quantity,
             orderId: orderId,
-            customerPhone: customer_phone || normalizedPhone,
+            customerPhone: normalizedPhone,
             address: customer_address || 'Not specified',
             storeName: storeName,
             companyName: storeName,
           });
           
-          // Insert into scheduled_messages table
+          // Insert into scheduled_messages table (use DO NOTHING to prevent duplicates for same order)
           await pool.query(
             `INSERT INTO scheduled_messages 
              (client_id, order_id, telegram_chat_id, message_content, message_type, scheduled_at, status)
-             VALUES ($1, $2, $3, $4, $5, $6, 'pending')`,
+             VALUES ($1, $2, $3, $4, $5, $6, 'pending')
+             ON CONFLICT DO NOTHING`,
             [clientId, orderId, chatId, confirmationMessage, 'order_confirmation', scheduledTime]
           );
-          console.log(`[createPublicStoreOrder] Scheduled confirmation message for ${delayMinutes} minutes later`);
+          if (!isProduction) {
+            console.log(`[createPublicStoreOrder] Scheduled confirmation message for ${delayMinutes} minutes later`);
+          }
 
           // Also create the order-telegram link for future use
           await pool.query(
@@ -603,7 +701,9 @@ Press one of the buttons to confirm or cancel:`;
             [result.rows[0].id, clientId, chatId]
           );
 
-          console.log(`[createPublicStoreOrder] Sent immediate Telegram notification to chat ${chatId}`);
+          if (!isProduction) {
+            console.log(`[createPublicStoreOrder] Sent immediate Telegram notification to chat ${chatId}`);
+          }
         }
       } else {
         // Customer not pre-connected, use the scheduled bot message flow
@@ -614,34 +714,123 @@ Press one of the buttons to confirm or cancel:`;
           customer_name,
           storeName,
           productTitle,
-          total_price,
+          orderTotalPrice,
           storeSlug
         ).catch(() => {});
       }
     }
 
-    console.log('[createPublicStoreOrder] Order creation successful, sending response...');
+    if (!isProduction) {
+      console.log('[createPublicStoreOrder] Order creation successful, sending response...');
+    }
+
+    // Create a tokenized confirmation URL for the buyer (lets web flow work securely)
+    let confirmationUrl: string | null = null;
+    try {
+      const token = await createConfirmationLink(Number(result.rows[0].id), Number(clientId));
+      confirmationUrl = `/store/${storeSlug}/order/${result.rows[0].id}/confirm?t=${encodeURIComponent(String(token))}`;
+    } catch {
+      confirmationUrl = null;
+    }
+
     // Return only safe fields - don't expose client_id to buyers
     const { client_id, ...safeOrder } = result.rows[0];
-    res.status(201).json({ success: true, order: safeOrder, telegramStartUrl: telegram?.startUrl || null });
+    res.status(201).json({ success: true, order: safeOrder, telegramStartUrl: telegram?.startUrl || null, confirmationUrl });
   } catch (error) {
-    console.error('Create public store order error:', error instanceof Error ? error.message : String(error));
-    console.error('Full error details:', error);
-    if (!res.headersSent) {
-      res.status(500).json({ error: 'Failed to create order', details: error instanceof Error ? error.message : String(error) });
+    if (inTransaction && client) {
+      try {
+        await client.query('ROLLBACK');
+      } catch {}
     }
+    const isProduction = process.env.NODE_ENV === 'production';
+    console.error(
+      'Create public store order error:',
+      isProduction ? (error instanceof Error ? error.message : String(error)) : error
+    );
+    if (!isProduction) {
+      console.error('Full error details:', error);
+    }
+    if (!res.headersSent) {
+      const details = isProduction ? undefined : (error instanceof Error ? error.message : String(error));
+      res.status(500).json({
+        error: 'Failed to create order',
+        ...(details ? { details } : {}),
+      });
+    }
+  } finally {
+    try {
+      if (client) client.release();
+    } catch {}
+  }
+};
+
+// Get Hai / Neighborhood suggestions for a storefront (public)
+// GET /api/storefront/:storeSlug/address/hai-suggestions?communeId=123
+export const getStorefrontHaiSuggestions: RequestHandler = async (req, res) => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  let storeSlug: string;
+  try {
+    storeSlug = StoreSlugSchema.parse((req.params as any).storeSlug);
+  } catch {
+    return res.status(400).json({ error: 'Invalid store ID' });
+  }
+
+  const communeIdRaw = (req.query as any)?.communeId;
+  const communeId = Number(communeIdRaw);
+  if (!Number.isFinite(communeId) || communeId <= 0) {
+    return res.status(400).json({ error: 'communeId is required' });
+  }
+
+  try {
+    const pool = await ensureConnection();
+    const cs = await pool.query(
+      `SELECT client_id
+       FROM client_store_settings
+       WHERE store_slug = $1
+          OR LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1)`,
+      [storeSlug]
+    );
+    if (cs.rows.length === 0) {
+      return res.status(404).json({ error: 'Store not found' });
+    }
+    const clientId = Number(cs.rows[0].client_id);
+
+    const result = await pool.query(
+      `SELECT shipping_hai AS value, COUNT(*)::int AS count
+       FROM store_orders
+       WHERE client_id = $1
+         AND shipping_commune_id = $2
+         AND shipping_hai IS NOT NULL
+         AND BTRIM(shipping_hai) <> ''
+       GROUP BY shipping_hai
+       ORDER BY COUNT(*) DESC, shipping_hai ASC
+       LIMIT 50`,
+      [clientId, communeId]
+    );
+
+    res.json({ suggestions: result.rows });
+  } catch (error) {
+    console.error('Get Hai suggestions error:', isProduction ? (error as any)?.message : error);
+    res.status(500).json({ error: 'Failed to fetch suggestions' });
   }
 };
 
 // Get product by ID or slug with store info (for Telegram integration)
 export const getProductWithStoreInfo: RequestHandler = async (req, res) => {
-  const { productId } = req.params;
+  const isProduction = process.env.NODE_ENV === 'production';
+  let productId: string;
+  try {
+    productId = z.string().trim().min(1).max(200).parse(req.params.productId);
+  } catch {
+    return res.status(400).json({ error: 'Invalid request' });
+  }
 
   try {
     const pool = await ensureConnection();
     
-    // Determine if it's an ID (numeric) or slug (string with letters/hyphens)
+    // Determine if it's an ID (numeric) or slug
     const isNumericId = /^\d+$/.test(productId);
+    const idOrSlug: number | string = isNumericId ? Number(productId) : productId;
     
     // Try client store product first - search by ID or slug
     const result = await pool.query(
@@ -652,7 +841,7 @@ export const getProductWithStoreInfo: RequestHandler = async (req, res) => {
       FROM client_store_products p
       INNER JOIN client_store_settings s ON p.client_id = s.client_id
       WHERE ${isNumericId ? 'p.id = $1' : 'p.slug = $1'}`,
-      [productId]
+      [idOrSlug]
     );
 
     if (result.rows.length > 0) {
@@ -668,7 +857,7 @@ export const getProductWithStoreInfo: RequestHandler = async (req, res) => {
       FROM marketplace_products p
       INNER JOIN seller_store_settings ss ON p.seller_id = ss.seller_id
       WHERE ${isNumericId ? 'p.id = $1' : 'p.slug = $1'}`,
-      [productId]
+      [idOrSlug]
     );
 
     if (mResult.rows.length > 0) {
@@ -677,7 +866,7 @@ export const getProductWithStoreInfo: RequestHandler = async (req, res) => {
 
     res.status(404).json({ error: 'Product not found' });
   } catch (error) {
-    console.error('Get product with store info error:', error);
+    console.error('Get product with store info error:', isProduction ? (error as any)?.message : error);
     res.status(500).json({ error: 'Failed to fetch product' });
   }
 };

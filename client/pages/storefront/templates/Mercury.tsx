@@ -9,7 +9,6 @@ import { useTheme } from '@/contexts/ThemeContext';
 export default function MercuryTemplate(props: TemplateProps & { canManage?: boolean }) {
   const { storeSlug, products, filtered, settings, categories, searchQuery, setSearchQuery, categoryFilter, setCategoryFilter, formatPrice, navigate } = props;
   const canManage = (props as any).canManage ?? false;
-  const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
   const apiBase = `/api/storefront/${storeSlug}`;
 
   // Fallback images to keep the page visually rich even when settings are empty
@@ -70,7 +69,7 @@ export default function MercuryTemplate(props: TemplateProps & { canManage?: boo
   async function handleDelete(productId: number) {
     if (!confirm('Delete this product?')) return;
     try {
-      const res = await fetch(`${apiBase}/products/${productId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(`${apiBase}/products/${productId}`, { method: 'DELETE' });
       if (res.ok) {
         // naive reload
         window.location.reload();
@@ -87,7 +86,7 @@ export default function MercuryTemplate(props: TemplateProps & { canManage?: boo
     const form = new FormData();
     Array.from(files).forEach((f) => form.append('files', f));
     try {
-      const res = await fetch(`${apiBase}/products/${productId}/images`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form });
+      const res = await fetch(`${apiBase}/products/${productId}/images`, { method: 'POST', body: form });
       if (res.ok) {
         window.location.reload();
       } else {
@@ -109,7 +108,7 @@ export default function MercuryTemplate(props: TemplateProps & { canManage?: boo
     try {
       const res = await fetch(`${apiBase}/products`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: form.title,
           description: form.description,

@@ -21,6 +21,8 @@ export const handleDbCheck: RequestHandler = async (_req, res) => {
       },
     });
   } catch (err: any) {
-    res.status(500).json({ ok: false, error: err?.message ?? String(err) });
+    const isProduction = process.env.NODE_ENV === 'production';
+    const message = isProduction ? 'Internal server error' : (err?.message ?? String(err));
+    res.status(500).json({ ok: false, error: message });
   }
 };

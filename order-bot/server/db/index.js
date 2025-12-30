@@ -5,16 +5,43 @@ dotenv.config();
 
 const { Pool } = pg;
 
-const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 5432,
-  database: process.env.DB_NAME || 'order_bot',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'password',
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-});
+const isProduction = process.env.NODE_ENV === 'production';
+
+const databaseUrl = process.env.DATABASE_URL;
+const hasDiscreteConfig =
+  process.env.DB_HOST &&
+  process.env.DB_PORT &&
+  process.env.DB_NAME &&
+  process.env.DB_USER &&
+  process.env.DB_PASSWORD;
+
+if (!databaseUrl && !hasDiscreteConfig) {
+  throw new Error(
+    'Order-bot database is not configured. Set DATABASE_URL (recommended) or DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASSWORD.'
+  );
+}
+
+const pool = new Pool(
+  databaseUrl
+    ? {
+        connectionString: databaseUrl,
+        ssl: isProduction ? { rejectUnauthorized: false } : undefined,
+        max: 20,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000,
+      }
+    : {
+        host: process.env.DB_HOST,
+        port: Number(process.env.DB_PORT),
+        database: process.env.DB_NAME,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        ssl: isProduction ? { rejectUnauthorized: false } : undefined,
+        max: 20,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 2000,
+      }
+);
 
 pool.on('error', (err) => {
   console.error('Unexpected database error:', err);
@@ -25,10 +52,12 @@ export const query = async (text, params) => {
   try {
     const res = await pool.query(text, params);
     const duration = Date.now() - start;
-    console.log('Executed query', { text, duration, rows: res.rowCount });
+    if (!isProduction) {
+      console.log('Executed query', { duration, rows: res.rowCount });
+    }
     return res;
   } catch (error) {
-    console.error('Database query error:', error);
+    console.error('Database query error:', isProduction ? error?.message : error);
     throw error;
   }
 };

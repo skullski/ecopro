@@ -2,6 +2,53 @@
 
 **Last Updated:** December 26, 2025
 
+---
+
+# Recent Agent Session Updates (Dec 27–28, 2025)
+
+This section records the work completed in the prior Copilot chat so a new agent session can pick up with full context.
+
+## Staff dashboard access + permissions
+
+- Added a staff “Orders” experience end-to-end:
+  - New staff orders page: [client/pages/StaffOrders.tsx](client/pages/StaffOrders.tsx)
+  - Route added: `/staff/orders` guarded by `RequireStaff` in [client/App.tsx](client/App.tsx)
+  - Uses existing staff APIs:
+    - `GET /api/staff/me` for auth + profile
+    - `GET /api/staff/orders` (requires `view_orders`)
+    - `PATCH /api/staff/orders/:orderId/status` (requires `edit_orders`)
+
+- Improved staff landing UX: staff go to `/staff/dashboard` and choose actions based on permissions:
+  - Dashboard now shows “What you can do” with an Orders button enabled/disabled by `permissions.view_orders`: [client/pages/StaffDashboard.tsx](client/pages/StaffDashboard.tsx)
+
+- Fixed staff access edge-case: when the parent client is payment-locked, staff routes now redirect to `/account-locked` (instead of looping back to staff login): `RequireStaff` in [client/App.tsx](client/App.tsx)
+
+- Fixed a data mismatch: backend returns `storeName` for staff profile; UI was reading `store_name`. Dashboard now supports both fields: [client/pages/StaffDashboard.tsx](client/pages/StaffDashboard.tsx)
+
+## Staff auth/logout + server correctness
+
+- Added staff logout endpoint that clears the HttpOnly staff cookie:
+  - New endpoint `POST /api/staff/logout` registered in [server/index.ts](server/index.ts)
+  - Handler `staffLogout` implemented in [server/routes/staff.ts](server/routes/staff.ts)
+  - Staff UI now calls `/api/staff/logout` on logout
+
+- Fixed staff order status update handler to accept the route param `:orderId` (body `orderId` optional): `updateStaffOrderStatus` in [server/routes/staff.ts](server/routes/staff.ts)
+
+## Tests/verification added
+
+- Added unit tests for staff middleware auth + permission checks:
+  - [server/utils/__tests__/staff-middleware.test.ts](server/utils/__tests__/staff-middleware.test.ts)
+- Verified this session’s changes with `pnpm typecheck` and `pnpm test` (all passing).
+
+## Admin Profile page cleanup
+
+- Removed Security, Support, and Integrations sections from the Profile page:
+  - Deleted the password change UI block, support buttons, and local “integrations” settings UI
+  - Cleaned related state/handlers/imports
+  - File updated: [client/pages/admin/Profile.tsx](client/pages/admin/Profile.tsx)
+
+---
+
 ## 🚨 CRITICAL RULES - READ FIRST
 
 1. **NEVER create a local database** - Only use the Render PostgreSQL database
@@ -192,6 +239,62 @@ These answers define how the platform works. Read them before building anything.
     - Templates (jewelry, electronics, etc) are just UI/styling
     - No different workflows - all products work the same way
     - Add new template = new component file
+
+---
+
+# Gold Template Editor (V2) — Client-Only Template Editing (NOT Building)
+
+**Owner decision recap (December 27, 2025)**
+
+## Goal
+Provide a **new advanced editor** for **Gold tier clients** that can edit pre-built template pages “in every corner” (within the schema), while keeping the **existing/old editor** for **Silver tier**.
+
+## Key Rules (Hard Requirements)
+1. **This editor edits templates; it does NOT build templates.**
+  - **Admins build/create templates and their pages** ahead of time.
+  - **Clients only edit** those admin-provided template pages.
+  - Clients cannot create new templates or new template page structures outside the schema.
+
+2. **Tier gating by subscription/account type**
+  - **Silver**: keeps the old editor.
+  - **Gold**: gets the new editor.
+  - The editor and available templates must be enforced server-side (not only UI).
+
+3. **Silver vs Gold templates are different**
+  - Each tier has its **own set of templates and pages**.
+  - Each tier may have a **different schema/structure**, so the editor must be schema-aware per tier.
+
+4. **Layout-first, product placeholders (no binding to live products yet)**
+  - Template pages are **layout-only** initially.
+  - Use **placeholder blocks/slots** for product areas to avoid “endless product management” inside the editor.
+  - Later, placeholders can be mapped to real data (e.g., client products), but the V2 editor should treat them as layout components.
+
+## Data Model & Persistence (Recommended Pattern)
+To keep admin templates immutable and client changes isolated:
+- **Base template pages**: stored as admin-managed JSON documents (read-only for clients).
+- **Client overrides**: stored per `client_id` as either:
+  - a full overridden page JSON, or
+  - a patch/diff against the base JSON.
+
+Must support:
+- versioning (`version` in the document)
+- migrations (upgrade stored docs when schema changes)
+- optimistic locking (ETag/If-Match) to prevent lost updates
+
+## Authorization & Tenant Isolation
+- Clients can only read/edit their own saved overrides (`client_id` scoped).
+- Admins can manage base templates and base pages.
+- Gold-only endpoints must enforce plan checks (Silver cannot access Gold editor APIs).
+
+## Scope Boundaries (What NOT to Build Yet)
+- Do not implement an “admin template builder” inside the editor V2.
+- Do not implement “full live product binding” inside the editor.
+- Avoid creating new schemas that break existing storefront rendering without a migration plan.
+
+## Open Design Notes (Allowed to Decide Later)
+- Where to store base templates/pages and client overrides (dedicated tables vs existing settings JSON).
+- Whether overrides are stored as full documents vs patches.
+- How many pages per template (home/product/category/checkout/etc.) and how routing maps to page IDs.
 
 12. **Order Statuses**
     - pending (default when order created, waiting for customer confirmation via bot)

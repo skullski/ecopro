@@ -57,11 +57,12 @@ import Storefront from "./pages/Storefront";
 import Checkout from "./pages/Checkout";
 import MyStore from "./pages/MyStore";
 import StoreLayout from "./pages/StoreLayout";
-import TemplateSettings from "./pages/TemplateSettings";
+import GoldTemplateEditor from "./pages/GoldTemplateEditor"; // Main template editor (handles both basic/advanced modes)
 import BuildPage from "./pages/storefront/BuildPage";
 import StaffManagement from "./pages/seller/StaffManagement";
 import StaffLogin from "./pages/StaffLogin";
 import StaffDashboard from "./pages/StaffDashboard";
+import StaffOrders from "./pages/StaffOrders";
 import ProductDetail from "./pages/storefront/ProductDetail";
 import ProductCheckout from "./pages/storefront/ProductCheckout";
 import StorefrontCheckout from "./pages/storefront/Checkout";
@@ -165,53 +166,40 @@ function CheckSubscriptionStatus({ children }: { children: JSX.Element }) {
 // Route guard for staff dashboard: only allow staff members
 // CRITICAL: Verifies staff has valid clientId (belongs to a store)
 function RequireStaff({ children }: { children: JSX.Element }) {
-  const isStaff = localStorage.getItem('isStaff');
-  const token = localStorage.getItem('authToken');
-  
-  if (!token || !isStaff) {
-    return <Navigate to="/staff/login" replace />;
-  }
-  
-  // SECURITY: Decode JWT and verify clientId exists
-  // This ensures staff member has been assigned to a store
-  try {
-    const tokenParts = token.split('.');
-    if (tokenParts.length !== 3) {
-      console.warn('[Auth] Invalid JWT format');
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('isStaff');
-      return <Navigate to="/staff/login" replace />;
-    }
-    
-    // Decode JWT payload (second part)
-    const payload = JSON.parse(atob(tokenParts[1]));
-    
-    // Verify token has required staff fields
-    if (!payload.staffId || !payload.clientId || !payload.isStaff) {
-      console.warn('[Auth] JWT missing required staff fields', { 
-        hasStaffId: !!payload.staffId, 
-        hasClientId: !!payload.clientId, 
-        isStaff: payload.isStaff 
-      });
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('isStaff');
-      return <Navigate to="/staff/login" replace />;
-    }
-    
-    // Check if token is expired
-    if (payload.exp && payload.exp * 1000 < Date.now()) {
-      console.warn('[Auth] JWT token expired');
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('isStaff');
-      return <Navigate to="/staff/login" replace />;
-    }
-  } catch (error) {
-    console.error('[Auth] Failed to decode JWT token:', error);
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('isStaff');
-    return <Navigate to="/staff/login" replace />;
-  }
-  
+  const [checking, setChecking] = React.useState(true);
+  const [allowed, setAllowed] = React.useState(false);
+  const [locked, setLocked] = React.useState(false);
+
+  React.useEffect(() => {
+    const run = async () => {
+      try {
+        const res = await fetch('/api/staff/me');
+        if (res.ok) {
+          setAllowed(true);
+          setLocked(false);
+        } else {
+          const data = await res.json().catch(() => null);
+          if (res.status === 403 && (data?.code === 'SUBSCRIPTION_EXPIRED' || data?.paymentRequired)) {
+            setLocked(true);
+            setAllowed(false);
+          } else {
+            setAllowed(false);
+            setLocked(false);
+          }
+        }
+      } catch {
+        setAllowed(false);
+        setLocked(false);
+      } finally {
+        setChecking(false);
+      }
+    };
+    void run();
+  }, []);
+
+  if (checking) return null;
+  if (locked) return <Navigate to="/account-locked" replace />;
+  if (!allowed) return <Navigate to="/staff/login" replace />;
   return children;
 }
 
@@ -617,6 +605,14 @@ const App = () => (
                       </RequireStaff>
                     }
                   />
+                  <Route
+                    path="/staff/orders"
+                    element={
+                      <RequireStaff>
+                        <StaffOrders />
+                      </RequireStaff>
+                    }
+                  />
                   {/* Platform Admin routes (guarded) */}
                   <Route path="/platform-admin" element={<RequireAdmin><PlatformAdmin /></RequireAdmin>} />
                   <Route path="/platform-admin/chats" element={<RequireAdmin><AdminChats /></RequireAdmin>} />
@@ -685,8 +681,12 @@ const App = () => (
                   <Route path="/guest-checkout/:productId" element={<GuestCheckout />} />
                   {/* My Store - logged in client viewing their own store */}
                   <Route path="/my-store" element={<MyStore />} />
-                  {/* Template Settings - for clients to customize their store templates */}
-                  <Route path="/template-settings" element={<RequirePaidClient><TemplateSettings /></RequirePaidClient>} />
+                  {/* Template Editor - use ?mode=basic or ?mode=advanced */}
+                  <Route path="/template-editor" element={<RequirePaidClient><GoldTemplateEditor /></RequirePaidClient>} />
+                  {/* Backwards compatibility routes (redirect to editor) */}
+                  <Route path="/silver-editor" element={<Navigate to="/template-editor?mode=basic" replace />} />
+                  <Route path="/gold-editor" element={<Navigate to="/template-editor?mode=advanced" replace />} />
+                  <Route path="/template-settings" element={<Navigate to="/template-editor?mode=basic" replace />} />
                   {/* Public storefront routes (client's store by store name or store_slug) with persistent header */}
                   <Route path="/store/:storeSlug" element={<StoreLayout />}>
                     <Route index element={<Storefront />} />

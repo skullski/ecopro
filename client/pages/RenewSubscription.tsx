@@ -25,15 +25,12 @@ export default function RenewSubscription() {
 
   const checkSubscription = async () => {
     try {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
+      const res = await fetch('/api/billing/check-access');
+
+      if (res.status === 401 || res.status === 403) {
         navigate('/login');
         return;
       }
-
-      const res = await fetch('/api/billing/check-access', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
 
       if (res.ok) {
         const data = await res.json();
@@ -60,12 +57,10 @@ export default function RenewSubscription() {
     setError('');
 
     try {
-      const token = localStorage.getItem('authToken');
       const res = await fetch('/api/codes/redeem', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ code: code.trim().toUpperCase() }),
       });
@@ -78,9 +73,7 @@ export default function RenewSubscription() {
         
         // Refresh user data in localStorage to clear any lock flags
         try {
-          const meRes = await fetch('/api/auth/me', {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const meRes = await fetch('/api/auth/me');
           if (meRes.ok) {
             const userData = await meRes.json();
             localStorage.setItem('user', JSON.stringify(userData));
@@ -107,10 +100,16 @@ export default function RenewSubscription() {
     navigate('/chat');
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('user');
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // ignore
+    } finally {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
+      navigate('/login');
+    }
   };
 
   // Format code as user types (XXXX-XXXX-XXXX-XXXX)

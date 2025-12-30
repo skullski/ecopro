@@ -6,7 +6,6 @@
 
 import React, { useState } from 'react';
 import { Lock, CheckCircle, AlertCircle, Loader } from 'lucide-react';
-import { getAuthToken } from '@/lib/auth';
 
 interface CodeRedemptionProps {
   onSuccess?: (subscription: any) => void;
@@ -33,12 +32,10 @@ export function CodeRedemption({ onSuccess, onError, showInline = false }: CodeR
         throw new Error('Please enter a code');
       }
 
-      const token = getAuthToken();
       const res = await fetch('/api/codes/redeem', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ code: code.trim().toUpperCase() }),
       });
@@ -61,9 +58,7 @@ export function CodeRedemption({ onSuccess, onError, showInline = false }: CodeR
         
         // Refresh user data in localStorage to clear any lock flags
         try {
-          const meRes = await fetch('/api/auth/me', {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const meRes = await fetch('/api/auth/me');
           if (meRes.ok) {
             const userData = await meRes.json();
             localStorage.setItem('user', JSON.stringify(userData));

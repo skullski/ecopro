@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, LogOut, User } from 'lucide-react';
+import { Loader2, LogOut, User, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +12,7 @@ interface StaffUser {
   role: 'manager' | 'staff';
   permissions: Record<string, boolean>;
   store_name?: string;
+  storeName?: string;
   status: 'pending' | 'active' | 'inactive';
 }
 
@@ -23,55 +24,47 @@ export default function StaffDashboard() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    try {
-      // SECURITY: Extract and validate clientId from JWT token
-      const token = localStorage.getItem('authToken');
-      const storedUser = localStorage.getItem('user');
-      
-      if (!token || !storedUser) {
+    const run = async () => {
+      try {
+        const res = await fetch('/api/staff/me');
+        const data = await res.json().catch(() => null);
+        if (!res.ok) {
+          const msg = data?.error || 'Failed to validate authentication';
+
+          if (res.status === 403 && (data?.code === 'SUBSCRIPTION_EXPIRED' || data?.paymentRequired)) {
+            navigate('/account-locked', { replace: true });
+            return;
+          }
+
+          setError(msg);
+          localStorage.removeItem('user');
+          localStorage.removeItem('staffId');
+          localStorage.removeItem('isStaff');
+          navigate('/staff/login');
+          return;
+        }
+
+        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('staffId', String(data.staffId));
+        localStorage.setItem('isStaff', 'true');
+        setUser(data.user);
+      } catch (err) {
+        console.error('[StaffDashboard] Validation error:', err);
+        setError('Failed to validate authentication');
+        localStorage.removeItem('user');
+        localStorage.removeItem('staffId');
+        localStorage.removeItem('isStaff');
         navigate('/staff/login');
-        return;
+      } finally {
+        setLoading(false);
       }
+    };
 
-      // Decode JWT to get clientId
-      const tokenParts = token.split('.');
-      if (tokenParts.length !== 3) {
-        throw new Error('Invalid token format');
-      }
-
-      const payload = JSON.parse(atob(tokenParts[1]));
-      
-      // Verify staff has clientId (assigned to a store)
-      if (!payload.clientId || !payload.staffId) {
-        throw new Error('Invalid staff credentials: missing store assignment');
-      }
-
-      // Check expiration
-      if (payload.exp && payload.exp * 1000 < Date.now()) {
-        throw new Error('Token expired');
-      }
-
-      const parsedUser = JSON.parse(storedUser);
-      
-      // Store clientId for later use in API calls
-      localStorage.setItem('staffClientId', String(payload.clientId));
-      
-      setUser(parsedUser);
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to validate authentication';
-      console.error('[StaffDashboard] Validation error:', errorMsg);
-      setError(errorMsg);
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('user');
-      localStorage.removeItem('isStaff');
-      navigate('/staff/login');
-    } finally {
-      setLoading(false);
-    }
+    void run();
   }, [navigate]);
 
   const handleLogout = () => {
-    localStorage.removeItem('authToken');
+    void fetch('/api/staff/logout', { method: 'POST' }).catch(() => undefined);
     localStorage.removeItem('user');
     localStorage.removeItem('staffId');
     localStorage.removeItem('isStaff');
@@ -110,6 +103,7 @@ export default function StaffDashboard() {
 
   // Count available permissions
   const availablePermissions = Object.values(user.permissions || {}).filter(Boolean).length;
+  const canViewOrders = user.permissions?.view_orders === true;
 
   return (
     <div className="min-h-screen bg-slate-900 dark:bg-slate-950">
@@ -118,12 +112,23 @@ export default function StaffDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-white">Staff Dashboard</h1>
-            <p className="text-sm text-slate-400 mt-1">{user.store_name || 'Your Store'}</p>
+            <p className="text-sm text-slate-400 mt-1">{user.storeName || user.store_name || 'Your Store'}</p>
           </div>
-          <Button variant="outline" onClick={handleLogout} className="gap-2 bg-slate-700 dark:bg-slate-800 border-slate-600 dark:border-slate-700 text-slate-200 hover:bg-slate-600 dark:hover:bg-slate-700 hover:text-white">
-            <LogOut className="w-4 h-4" />
-            Logout
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => navigate('/staff/orders')}
+              disabled={!canViewOrders}
+              className="gap-2 bg-slate-700 dark:bg-slate-800 border-slate-600 dark:border-slate-700 text-slate-200 hover:bg-slate-600 dark:hover:bg-slate-700 hover:text-white disabled:opacity-50"
+            >
+              <ShoppingBag className="w-4 h-4" />
+              Orders
+            </Button>
+            <Button variant="outline" onClick={handleLogout} className="gap-2 bg-slate-700 dark:bg-slate-800 border-slate-600 dark:border-slate-700 text-slate-200 hover:bg-slate-600 dark:hover:bg-slate-700 hover:text-white">
+              <LogOut className="w-4 h-4" />
+              Logout
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -175,12 +180,32 @@ export default function StaffDashboard() {
           </CardContent>
         </Card>
 
-        {/* Coming Soon Message */}
-        <div className="mt-8 bg-blue-900/30 dark:bg-blue-950/50 border border-blue-700/50 dark:border-blue-800/50 rounded-lg p-6">
-          <p className="text-blue-300 dark:text-blue-200">
-            <strong>Staff dashboard is coming soon!</strong> Once your store owner enables additional features, you'll be able to manage orders, products, and more from here. Your permissions have been configured by the store owner.
-          </p>
-        </div>
+        {/* Actions */}
+        <Card className="mt-8 bg-slate-800 dark:bg-slate-900 border-slate-700 dark:border-slate-800">
+          <CardHeader>
+            <CardTitle className="text-white">What you can do</CardTitle>
+            <CardDescription className="text-slate-400">
+              Only actions you’re permitted to access are enabled.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                onClick={() => navigate('/staff/orders')}
+                disabled={!canViewOrders}
+                className="gap-2"
+              >
+                <ShoppingBag className="w-4 h-4" />
+                Orders
+              </Button>
+              {!canViewOrders ? (
+                <div className="text-sm text-slate-400 flex items-center">
+                  You don’t have permission to view orders.
+                </div>
+              ) : null}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

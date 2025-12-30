@@ -19,15 +19,8 @@ ALTER TABLE clients ADD COLUMN IF NOT EXISTS user_type VARCHAR(50) DEFAULT 'clie
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT false;
 UPDATE clients SET user_type = 'client' WHERE user_type IS NULL;
 
--- Step 3: Insert admin@ecopro.com into admins table
-INSERT INTO admins (email, password, full_name, role, user_type, is_verified, created_at, updated_at)
-VALUES ('admin@ecopro.com', 'admin123', 'Admin User', 'admin', 'admin', true, NOW(), NOW())
-ON CONFLICT (email) DO NOTHING;
-
--- Step 4: Insert skull@gmail.com into clients table
-INSERT INTO clients (email, password, name, role, user_type, is_verified, created_at, updated_at)
-VALUES ('skull@gmail.com', 'anaimad', 'skull', 'client', 'client', true, NOW(), NOW())
-ON CONFLICT (email) DO NOTHING;
+-- NOTE: Do not insert default credentials in migrations.
+-- Use runtime bootstrap with explicit env configuration if an initial admin is required.
 
 -- Step 5: Drop users and sellers tables if they exist
 DROP TABLE IF EXISTS users CASCADE;

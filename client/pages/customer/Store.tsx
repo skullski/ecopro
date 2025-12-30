@@ -76,33 +76,21 @@ export default function Store() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-        if (!token) {
-          console.error('No authentication token found');
-          setLoading(false);
-          return;
-        }
         // Fetch store settings
-        const settingsRes = await fetch('/api/client/store/settings', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const settingsRes = await fetch('/api/client/store/settings');
         if (settingsRes.ok) {
           const settingsData = await settingsRes.json();
           setStoreSettings(settingsData);
         }
         // Fetch products
-        const productsRes = await fetch('/api/client/store/products', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const productsRes = await fetch('/api/client/store/products');
         if (productsRes.ok) {
           const productsData = await productsRes.json();
           setProducts(productsData);
           setFilteredProducts(productsData);
         }
         // Fetch all available products from inventory (stock) for selection
-        const inventoryRes = await fetch('/api/client/stock', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const inventoryRes = await fetch('/api/client/stock');
         if (inventoryRes.ok) {
           const inventoryData = await inventoryRes.json();
           setInventoryProducts(inventoryData);
@@ -124,12 +112,10 @@ export default function Store() {
           // Product action handlers
           const handleCreateProduct = async () => {
             try {
-              const token = localStorage.getItem('authToken');
               const res = await fetch('/api/client/store/products', {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
-                  Authorization: `Bearer ${token}`
                 },
                 body: JSON.stringify(formData)
               });
@@ -149,12 +135,10 @@ export default function Store() {
           const handleUpdateProduct = async () => {
             if (!selectedProduct) return;
             try {
-              const token = localStorage.getItem('authToken');
               const res = await fetch(`/api/client/store/products/${selectedProduct.id}`, {
                 method: 'PUT',
                 headers: {
                   'Content-Type': 'application/json',
-                  Authorization: `Bearer ${token}`
                 },
                 body: JSON.stringify(formData)
               });
@@ -175,10 +159,8 @@ export default function Store() {
           const handleDeleteProduct = async () => {
             if (!selectedProduct) return;
             try {
-              const token = localStorage.getItem('authToken');
               const res = await fetch(`/api/client/store/products/${selectedProduct.id}`, {
                 method: 'DELETE',
-                headers: { Authorization: `Bearer ${token}` }
               });
               if (res.ok) {
                 // reload products
@@ -195,10 +177,7 @@ export default function Store() {
           };
           const handleGetShareLink = async (product: StoreProduct) => {
             try {
-              const token = localStorage.getItem('authToken');
-              const res = await fetch(`/api/client/store/products/${product.id}/share-link`, {
-                headers: { Authorization: `Bearer ${token}` }
-              });
+              const res = await fetch(`/api/client/store/products/${product.id}/share-link`);
               if (res.ok) {
                 const data = await res.json();
                 setShareLink(data.shareLink);
@@ -225,12 +204,10 @@ export default function Store() {
   const saveStoreSettings = async () => {
           try {
             setSavingSettings(true);
-            const token = localStorage.getItem('authToken');
             const res = await fetch('/api/client/store/settings', {
               method: 'PUT',
               headers: {
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
               },
                 body: JSON.stringify({
                   store_name: storeSettings.store_name || null,
@@ -265,7 +242,6 @@ export default function Store() {
             const saved = await res.json().catch(() => null);
             try {
               const settingsRes = await fetch('/api/client/store/settings', {
-                headers: { Authorization: `Bearer ${token}` },
               });
               if (settingsRes.ok) {
                 const fresh = await settingsRes.json();
@@ -331,10 +307,8 @@ export default function Store() {
         setUploadingLogo(true);
         const formData = new FormData();
         formData.append('image', file);
-        const token = localStorage.getItem('authToken');
         const res = await fetch('/api/upload', {
           method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
           body: formData,
         });
         if (!res.ok) throw new Error('Upload failed');
@@ -346,7 +320,6 @@ export default function Store() {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({ store_logo: data.url }),
           });
@@ -368,12 +341,10 @@ export default function Store() {
       // Optimistically remove locally
       setStoreSettings((s: any) => ({ ...s, store_logo: '' }));
       try {
-        const token = localStorage.getItem('authToken');
         const res = await fetch('/api/client/store/settings', {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ store_logo: null }),
         });
@@ -397,10 +368,8 @@ export default function Store() {
         setUploadingBanner(true);
         const formData = new FormData();
         formData.append('image', file);
-        const token = localStorage.getItem('authToken');
         const res = await fetch('/api/upload', {
           method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
           body: formData,
         });
         if (!res.ok) throw new Error('Upload failed');
@@ -412,7 +381,6 @@ export default function Store() {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({ banner_url: data.url }),
           });
@@ -433,12 +401,10 @@ export default function Store() {
     const removeBanner = async () => {
       setStoreSettings((s: any) => ({ ...s, banner_url: '' }));
       try {
-        const token = localStorage.getItem('authToken');
         const res = await fetch('/api/client/store/settings', {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ banner_url: null }),
         });
@@ -461,10 +427,8 @@ export default function Store() {
       try {
         const formData = new FormData();
         formData.append('image', file);
-        const token = localStorage.getItem('authToken');
         const res = await fetch('/api/upload', {
           method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
           body: formData,
         });
         if (!res.ok) throw new Error('Upload failed');
@@ -476,7 +440,6 @@ export default function Store() {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({ [field]: data.url }),
           });
@@ -498,14 +461,12 @@ export default function Store() {
       // Clear locally
       setStoreSettings((s: any) => ({ ...s, [field]: '' }));
       try {
-        const token = localStorage.getItem('authToken');
         const body: any = {};
         body[field] = null;
         const res = await fetch('/api/client/store/settings', {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(body),
         });
@@ -553,26 +514,15 @@ export default function Store() {
 
     setUploading(true);
     try {
-      const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-      console.log('Token present:', !!token);
-      
       const uploadFormData = new FormData();
       uploadFormData.append('image', file);
-
-      console.log('Uploading to /api/upload...');
       const res = await fetch('/api/upload', {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
         body: uploadFormData
       });
 
-      console.log('Upload response status:', res.status, res.statusText);
-
       if (res.ok) {
         const data = await res.json();
-        console.log('Upload successful, URL:', data.url);
         const fullUrl = `${window.location.origin}${data.url}`;
         setFormData(prev => ({ ...prev, images: [fullUrl] }));
         e.target.value = '';
@@ -651,10 +601,17 @@ export default function Store() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => navigate('/template-settings')}
+              onClick={() => navigate('/silver-editor')}
             >
               <Settings className="w-4 h-4 mr-2" />
-              Template Settings
+              Silver Editor
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate('/template-editor')}
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Gold Editor
             </Button>
             <Button 
               onClick={() => {
@@ -1110,16 +1067,10 @@ export default function Store() {
               onClick={async () => {
                 if (!selectedInventoryProduct) return;
                 try {
-                  const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-                  if (!token) {
-                    alert('Authentication required');
-                    return;
-                  }
                   const res = await fetch('/api/client/store/products', {
                     method: 'POST',
                     headers: {
                       'Content-Type': 'application/json',
-                      Authorization: `Bearer ${token}`
                     },
                     body: JSON.stringify({
                       title: selectedInventoryProduct.name || selectedInventoryProduct.title,
@@ -1139,7 +1090,6 @@ export default function Store() {
                     setInventoryStockQuantity(1);
                     // Reload products
                     const productsRes = await fetch('/api/client/store/products', {
-                      headers: { Authorization: `Bearer ${token}` }
                     });
                     if (productsRes.ok) {
                       const productsData = await productsRes.json();

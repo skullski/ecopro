@@ -19,42 +19,44 @@ export function ChatPage() {
   const [creatingChat, setCreatingChat] = useState(false);
 
   useEffect(() => {
-    // Get user info from token
-    const token = localStorage.getItem('authToken');
-    if (token) {
+    const bootstrap = async () => {
       try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        
-        // Determine user type and ID based on token structure
-        let userId = 0;
-        let userType: 'client' | 'seller' | 'admin' = 'client';
-        
-        if (payload.user_type === 'admin' || payload.role === 'admin') {
-          userType = 'admin';
-          userId = parseInt(payload.id || 0);
-        } else if (payload.user_type === 'client') {
-          userType = 'client';
-          userId = parseInt(payload.id || 0);
-        } else if (payload.user_type === 'seller' || payload.sellerId) {
-          userType = 'seller';
-          userId = parseInt(payload.sellerId || payload.id || 0);
-        } else if (payload.staffId) {
-          userType = 'client';
-          userId = parseInt(payload.clientId || 0);
+        const stored = localStorage.getItem('user');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed?.id) {
+            setUser({
+              id: parsed.id,
+              email: parsed.email,
+              role: parsed.role === 'admin' ? 'seller' : 'client',
+              clientId: parsed.role === 'admin' ? undefined : parsed.id,
+              sellerId: undefined,
+            });
+            setLoading(false);
+            return;
+          }
         }
-        
-        setUser({
-          id: userId,
-          email: payload.email,
-          role: userType === 'admin' ? 'seller' : 'client',
-          clientId: userType === 'client' ? userId : parseInt(payload.clientId || 0),
-          sellerId: userType === 'seller' ? userId : parseInt(payload.sellerId || 0)
-        });
+
+        const meRes = await fetch('/api/auth/me');
+        if (meRes.ok) {
+          const me = await meRes.json();
+          localStorage.setItem('user', JSON.stringify(me));
+          setUser({
+            id: me.id,
+            email: me.email,
+            role: me.role === 'admin' ? 'seller' : 'client',
+            clientId: me.role === 'admin' ? undefined : me.id,
+            sellerId: undefined,
+          });
+        }
       } catch (err) {
-        console.error('Failed to parse user from token:', err);
+        console.error('Failed to bootstrap chat user:', err);
+      } finally {
+        setLoading(false);
       }
-    }
-    setLoading(false);
+    };
+
+    bootstrap();
   }, []);
 
   // Auto-create admin chat for clients

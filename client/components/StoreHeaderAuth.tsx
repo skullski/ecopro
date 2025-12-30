@@ -12,10 +12,7 @@ export default function StoreHeaderAuth() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const token = localStorage.getItem('authToken');
-        const res = await fetch('/api/client/store/settings', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const res = await fetch('/api/client/store/settings');
         if (res.ok) {
           const data = await res.json();
           setStoreSettings(data || {});

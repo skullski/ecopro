@@ -2,11 +2,6 @@ import type { Product } from "@shared/types";
 
 const API_URL = "/api";
 
-// Helper to get auth token
-const getAuthToken = (): string | null => {
-  return localStorage.getItem("authToken");
-};
-
 // Vendor APIs removed (selling/store feature deprecated)
 export async function fetchVendors(): Promise<never> {
   throw new Error('Vendors API removed');
@@ -55,13 +50,10 @@ export async function createPublicProduct(): Promise<never> {
 export async function uploadImage(file: File): Promise<{ url: string }> {
   const formData = new FormData();
   formData.append('image', file);
-  const token = getAuthToken();
   const res = await fetch(`${API_URL}/upload`, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
     body: formData,
+    credentials: 'include',
   });
   if (!res.ok) {
     const error = await res.json();
@@ -110,13 +102,9 @@ export async function deleteProduct(id: string): Promise<void> {
   });
 }
 
-export const CURRENT_USER_ID = localStorage.getItem("demo_user_id") || "u_buyer";
-
 export async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
-  const token = getAuthToken();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    "X-User-Id": CURRENT_USER_ID,
   };
 
   if (init?.headers) {
@@ -126,14 +114,10 @@ export async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
     });
   }
 
-  // Add Authorization header if token exists
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
   const res = await fetch(url, {
     ...init,
     headers,
+    credentials: 'include',
   });
   if (!res.ok) {
     const msg = await res.text();

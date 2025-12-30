@@ -2,6 +2,8 @@ import { Request, Response, NextFunction } from "express";
 import type { RequestHandler } from 'express';
 import { verifyToken, extractToken } from "../utils/auth";
 import { JWTPayload } from "@shared/api";
+import { findUserById } from '../utils/database';
+import { clearAuthCookies } from '../utils/auth-cookies';
 
 // Extend Express Request to include user
 declare global {
@@ -15,9 +17,11 @@ declare global {
 /**
  * Middleware to verify JWT token and attach user to request
  */
-export function authenticate(req: Request, res: Response, next: NextFunction) {
+export async function authenticate(req: Request, res: Response, next: NextFunction) {
   try {
-    const token = extractToken(req.headers.authorization);
+    const cookieToken = (req as any).cookies?.ecopro_at as string | undefined;
+    const headerToken = extractToken(req.headers.authorization);
+    const token = cookieToken || headerToken;
     
     if (!token) {
       res.status(401).json({ error: "No token provided" });
@@ -25,9 +29,27 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
     }
 
     const decoded: any = verifyToken(token);
+    if (decoded?.isStaff === true || decoded?.user_type === 'staff') {
+      res.status(401).json({ error: "Invalid or expired token" });
+      return;
+    }
     const role = decoded?.role;
     const normalizedRole = role === 'admin' || role === 'user' || role === 'seller' || role === 'root' ? role : 'user';
     req.user = { ...decoded, role: normalizedRole } as JWTPayload;
+
+    // Enforce admin block immediately (logout + deny) even if token is still valid.
+    try {
+      const dbUser = await findUserById(String((req.user as any).id));
+      if (dbUser && (dbUser as any).is_blocked) {
+        clearAuthCookies(res as any);
+        res.status(403).json({ error: 'Account is blocked', blocked: true, blocked_reason: (dbUser as any).blocked_reason || null });
+        return;
+      }
+    } catch {
+      res.status(503).json({ error: 'Unable to validate account status' });
+      return;
+    }
+
     next();
   } catch (error) {
     res.status(401).json({ error: "Invalid or expired token" });
@@ -49,10 +71,15 @@ export const requireAdmin: RequestHandler = (req: Request, res: Response, next: 
  */
 export function optionalAuthenticate(req: Request, res: Response, next: NextFunction): void {
   try {
-    const token = extractToken(req.headers.authorization);
+    const cookieToken = ((req as any).cookies?.ecopro_at || (req as any).cookies?.ecopro_kernel_at) as string | undefined;
+    const headerToken = extractToken(req.headers.authorization);
+    const token = cookieToken || headerToken;
     
     if (token) {
       const decoded: any = verifyToken(token);
+      if (decoded?.isStaff === true || decoded?.user_type === 'staff') {
+        return next();
+      }
       const role = decoded?.role;
       const normalizedRole = role === 'admin' || role === 'user' || role === 'seller' || role === 'root' ? role : 'user';
       req.user = { ...decoded, role: normalizedRole } as JWTPayload;

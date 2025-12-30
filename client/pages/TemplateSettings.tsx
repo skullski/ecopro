@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,6 +14,7 @@ import {
   Loader2,
   Save,
   Eye,
+  Settings,
   Check,
   ChevronDown,
   ChevronUp,
@@ -22,7 +23,6 @@ import {
   AlertCircle,
   CheckCircle,
 } from 'lucide-react';
-import { getAuthToken } from '@/lib/auth';
 import { uploadImage } from '@/lib/api';
 import {
   GENERATED_TEMPLATE_DEFAULTS,
@@ -32,6 +32,73 @@ import {
 import { setWindowTemplateSettings } from '@/lib/templateWindow';
 import { UNIVERSAL_DEFAULTS } from '@/hooks/useTemplateUniversalSettings';
 import { getTemplateEditorSections } from '@/lib/templateEditorRegistry';
+import { SilverImageBlock, MAX_SILVER_BLOCKS, coerceSilverImageBlocks } from '@/lib/silverBlocks';
+
+type TemplateSwitchMode = 'defaults' | 'import';
+
+const universalImportGroups: Array<{ id: string; label: string; keys: string[] }> = [
+  {
+    id: 'branding',
+    label: 'Branding (name, logo, currency)',
+    keys: ['store_name', 'store_description', 'currency_code', 'store_logo', 'logo_url', 'logo_width'],
+  },
+  {
+    id: 'colors',
+    label: 'Colors',
+    keys: ['primary_color', 'secondary_color', 'accent_color', 'text_color', 'secondary_text_color'],
+  },
+  {
+    id: 'typography',
+    label: 'Typography',
+    keys: ['font_family', 'heading_size_multiplier', 'body_font_size'],
+  },
+  {
+    id: 'layout',
+    label: 'Layout',
+    keys: [
+      'section_padding',
+      'grid_columns',
+      'border_radius',
+      'enable_sidebar',
+      'carousel_dot_size',
+      'carousel_dot_gap',
+      'carousel_dot_color',
+      'carousel_dot_active_color',
+      'carousel_dot_border_color',
+    ],
+  },
+  {
+    id: 'theme',
+    label: 'Theme',
+    keys: ['enable_dark_mode', 'default_theme', 'show_product_shadows', 'enable_animations'],
+  },
+  {
+    id: 'features',
+    label: 'Homepage features (featured, testimonials, FAQ, footer)',
+    keys: [
+      'show_featured_section',
+      'featured_section_title',
+      'featured_product_ids',
+      'show_testimonials',
+      'testimonials',
+      'show_faq',
+      'faq_items',
+      'footer_about',
+      'social_links',
+      'footer_contact',
+    ],
+  },
+  {
+    id: 'seo',
+    label: 'SEO (meta tags)',
+    keys: ['meta_title', 'meta_description', 'meta_keywords'],
+  },
+  {
+    id: 'silverBlocks',
+    label: 'Silver Gold Touch (header/footer images)',
+    keys: ['silver_header_blocks', 'silver_footer_blocks'],
+  },
+];
 
 // Import all templates for preview
 import FashionTemplate from '@/components/templates/fashion';
@@ -649,6 +716,7 @@ const templateList = [
 ];
 
 export default function TemplateSettingsPage() {
+  const navigate = useNavigate();
   const [template, setTemplate] = useState<string>('fashion');
   const [settings, setSettings] = useState<TemplateSettings>({});
   const [loading, setLoading] = useState(true);
@@ -688,29 +756,43 @@ export default function TemplateSettingsPage() {
 
   const [switchOpen, setSwitchOpen] = useState(false);
   const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
-  const [switchMode, setSwitchMode] = useState<'defaults' | 'import'>('import');
   const [savingSwitch, setSavingSwitch] = useState(false);
+  const [switchMode, setSwitchMode] = useState<TemplateSwitchMode>('import');
   const [selectedGroups, setSelectedGroups] = useState<Record<string, boolean>>(() => {
-    const initial: Record<string, boolean> = {};
-    universalSections.forEach((_, idx) => {
-      initial[`u_${idx}`] = true;
-    });
-    return initial;
+    const defaults: Record<string, boolean> = {};
+    for (const g of universalImportGroups) defaults[g.id] = true;
+    return defaults;
   });
 
-  const universalImportGroups = universalSections.map((section, idx) => ({
-    id: `u_${idx}`,
-    label: section.title,
-    keys: (section.fields || []).map((f: any) => f.key).filter(Boolean),
-  }));
+  const [selectedSilverBlock, setSelectedSilverBlock] = useState<
+    { area: 'header' | 'footer'; id: string } | null
+  >(null);
+  const [draggingSilverBlock, setDraggingSilverBlock] = useState<
+    { area: 'header' | 'footer'; id: string } | null
+  >(null);
+
+  const headerBlocks = useMemo(
+    () => coerceSilverImageBlocks((settings as any).silver_header_blocks),
+    [settings]
+  );
+  const footerBlocks = useMemo(
+    () => coerceSilverImageBlocks((settings as any).silver_footer_blocks),
+    [settings]
+  );
+
+  const setBlocks = (area: 'header' | 'footer', next: SilverImageBlock[]) => {
+    const capped = (next || []).slice(0, MAX_SILVER_BLOCKS);
+    const key = area === 'header' ? 'silver_header_blocks' : 'silver_footer_blocks';
+    handleChange(key, capped);
+  };
 
   const computeImportKeys = () => {
-    const keys: string[] = [];
-    for (const g of universalImportGroups) {
-      if (!selectedGroups[g.id]) continue;
-      for (const k of g.keys) keys.push(k);
+    const keys = new Set<string>();
+    for (const group of universalImportGroups) {
+      if (!selectedGroups[group.id]) continue;
+      for (const k of group.keys) keys.add(k);
     }
-    return Array.from(new Set(keys));
+    return Array.from(keys);
   };
 
   const requestTemplateSwitch = (toTemplate: string) => {
@@ -724,13 +806,11 @@ export default function TemplateSettingsPage() {
     if (!pendingTemplateId) return;
     try {
       setSavingSwitch(true);
-      const token = getAuthToken();
       const importKeys = switchMode === 'import' ? computeImportKeys() : [];
       const res = await fetch('/api/client/store/settings', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           __templateSwitch: {
@@ -777,20 +857,8 @@ export default function TemplateSettingsPage() {
   const fetchSettings = async () => {
     try {
       setLoading(true);
-      const token = getAuthToken();
-      
-      if (!token) {
-        console.error('No auth token found');
-        setMessage({ type: 'error', text: 'Please log in to access template settings' });
-        return;
-      }
-      
-      console.log('Fetching settings with token:', token.substring(0, 20) + '...');
       const res = await fetch('/api/client/store/settings', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+        headers: { 'Content-Type': 'application/json' },
       });
       if (res.ok) {
         const data = await res.json();
@@ -814,19 +882,8 @@ export default function TemplateSettingsPage() {
 
   const fetchProducts = async () => {
     try {
-      const token = getAuthToken();
-      
-      if (!token) {
-        console.warn('No token for fetching products');
-        return;
-      }
-      
-      console.log('Fetching products with token:', token.substring(0, 20) + '...');
       const res = await fetch('/api/client/store/products', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+        headers: { 'Content-Type': 'application/json' },
       });
       if (res.ok) {
         const data = await res.json();
@@ -903,12 +960,10 @@ export default function TemplateSettingsPage() {
 
     try {
       setSaving(true);
-      const token = getAuthToken();
       const res = await fetch('/api/client/store/settings', {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(settings)
       });
@@ -1286,6 +1341,176 @@ export default function TemplateSettingsPage() {
           )}
         </div>
 
+        {/* Silver Gold Touch: Header/Footer Blocks */}
+        <div className={`border rounded-lg overflow-hidden transition-colors ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+          <button
+            onClick={() => setExpandedSections((prev) => ({ ...prev, silverBlocks: !prev.silverBlocks }))}
+            className={`w-full px-2 md:px-3 py-2 font-semibold text-left flex items-center justify-between transition-colors ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-50 hover:bg-gray-100 text-gray-900'}`}
+          >
+            <div className="text-left">
+              <h3 className="text-base">✨ Silver Gold Touch</h3>
+              <p className={`text-xs font-normal mt-0 transition-colors ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                Pick & drop images into your header and footer (limited)
+              </p>
+            </div>
+            <ChevronDown className={`w-5 h-5 transform transition-transform ${expandedSections.silverBlocks ? 'rotate-180' : ''}`} />
+          </button>
+
+          {expandedSections.silverBlocks && (
+            <div className={`p-2 md:p-3 space-y-3 transition-colors ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+              <div className="space-y-2">
+                <div className={`text-xs font-semibold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Header Images</div>
+                <div className="space-y-2">
+                  {headerBlocks.map((b, idx) => (
+                    <div
+                      key={b.id}
+                      draggable
+                      onDragStart={() => setDraggingSilverBlock({ area: 'header', id: b.id })}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={() => {
+                        if (!draggingSilverBlock || draggingSilverBlock.area !== 'header') return;
+                        if (draggingSilverBlock.id === b.id) return;
+                        const fromIdx = headerBlocks.findIndex((x) => x.id === draggingSilverBlock.id);
+                        const toIdx = headerBlocks.findIndex((x) => x.id === b.id);
+                        if (fromIdx < 0 || toIdx < 0) return;
+                        const next = [...headerBlocks];
+                        const [moved] = next.splice(fromIdx, 1);
+                        next.splice(toIdx, 0, moved);
+                        setBlocks('header', next);
+                      }}
+                      onDragEnd={() => setDraggingSilverBlock(null)}
+                      onClick={() => setSelectedSilverBlock({ area: 'header', id: b.id })}
+                      className={`flex items-center gap-2 p-2 rounded border cursor-move transition-colors ${
+                        selectedSilverBlock?.area === 'header' && selectedSilverBlock?.id === b.id
+                          ? isDarkMode
+                            ? 'border-blue-500 bg-gray-700'
+                            : 'border-blue-500 bg-blue-50'
+                          : isDarkMode
+                          ? 'border-gray-700 bg-gray-900'
+                          : 'border-gray-200 bg-white'
+                      }`}
+                      title="Drag to reorder"
+                    >
+                      <div className={`w-10 h-10 rounded overflow-hidden flex-shrink-0 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                        {b.url ? (
+                          <img src={b.url} alt={b.alt || 'Header image'} className="w-full h-full object-cover" />
+                        ) : null}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className={`text-xs font-semibold truncate ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>Image {idx + 1}</div>
+                        <div className={`text-[11px] truncate ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{b.url || 'No image selected'}</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const next = headerBlocks.filter((x) => x.id !== b.id);
+                          setBlocks('header', next);
+                        }}
+                        className="text-red-500 text-xs font-bold px-2"
+                        title="Remove"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={headerBlocks.length >= MAX_SILVER_BLOCKS}
+                  onClick={() => {
+                    const id = `hdr_${Date.now()}`;
+                    const next = [...headerBlocks, { id, url: '', alt: '' }];
+                    setBlocks('header', next);
+                    setSelectedSilverBlock({ area: 'header', id });
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-1" /> Add header image
+                </Button>
+              </div>
+
+              <div className="space-y-2">
+                <div className={`text-xs font-semibold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Footer Images</div>
+                <div className="space-y-2">
+                  {footerBlocks.map((b, idx) => (
+                    <div
+                      key={b.id}
+                      draggable
+                      onDragStart={() => setDraggingSilverBlock({ area: 'footer', id: b.id })}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={() => {
+                        if (!draggingSilverBlock || draggingSilverBlock.area !== 'footer') return;
+                        if (draggingSilverBlock.id === b.id) return;
+                        const fromIdx = footerBlocks.findIndex((x) => x.id === draggingSilverBlock.id);
+                        const toIdx = footerBlocks.findIndex((x) => x.id === b.id);
+                        if (fromIdx < 0 || toIdx < 0) return;
+                        const next = [...footerBlocks];
+                        const [moved] = next.splice(fromIdx, 1);
+                        next.splice(toIdx, 0, moved);
+                        setBlocks('footer', next);
+                      }}
+                      onDragEnd={() => setDraggingSilverBlock(null)}
+                      onClick={() => setSelectedSilverBlock({ area: 'footer', id: b.id })}
+                      className={`flex items-center gap-2 p-2 rounded border cursor-move transition-colors ${
+                        selectedSilverBlock?.area === 'footer' && selectedSilverBlock?.id === b.id
+                          ? isDarkMode
+                            ? 'border-blue-500 bg-gray-700'
+                            : 'border-blue-500 bg-blue-50'
+                          : isDarkMode
+                          ? 'border-gray-700 bg-gray-900'
+                          : 'border-gray-200 bg-white'
+                      }`}
+                      title="Drag to reorder"
+                    >
+                      <div className={`w-10 h-10 rounded overflow-hidden flex-shrink-0 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                        {b.url ? (
+                          <img src={b.url} alt={b.alt || 'Footer image'} className="w-full h-full object-cover" />
+                        ) : null}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className={`text-xs font-semibold truncate ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>Image {idx + 1}</div>
+                        <div className={`text-[11px] truncate ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{b.url || 'No image selected'}</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const next = footerBlocks.filter((x) => x.id !== b.id);
+                          setBlocks('footer', next);
+                        }}
+                        className="text-red-500 text-xs font-bold px-2"
+                        title="Remove"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={footerBlocks.length >= MAX_SILVER_BLOCKS}
+                  onClick={() => {
+                    const id = `ftr_${Date.now()}`;
+                    const next = [...footerBlocks, { id, url: '', alt: '' }];
+                    setBlocks('footer', next);
+                    setSelectedSilverBlock({ area: 'footer', id });
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-1" /> Add footer image
+                </Button>
+              </div>
+
+              <div className={`text-[11px] ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                Tip: click an item to edit it on the right. Drag to reorder.
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Template Sections (Basic only for now) */}
         {basicSections.map((section: any, idx: number) => {
           const key = `basic_${idx}`;
@@ -1453,6 +1678,86 @@ export default function TemplateSettingsPage() {
         {/* Right Column - Actions */}
         <div className="lg:col-span-1 space-y-2">
           <div className={`border rounded-lg overflow-hidden transition-colors ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+            <div className={`w-full px-2 md:px-3 py-2 font-semibold text-left transition-colors ${isDarkMode ? 'bg-gray-700 text-white' : 'bg-gray-50 text-gray-900'}`}>
+              <h3 className="text-base">Selected Block</h3>
+            </div>
+            <div className={`p-2 md:p-3 space-y-2 transition-colors ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
+              {!selectedSilverBlock ? (
+                <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Select a header/footer image from the left.
+                </div>
+              ) : (() => {
+                const blocks = selectedSilverBlock.area === 'header' ? headerBlocks : footerBlocks;
+                const block = blocks.find((b) => b.id === selectedSilverBlock.id);
+                if (!block) return null;
+                return (
+                  <>
+                    <div className={`text-xs font-semibold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      {selectedSilverBlock.area === 'header' ? 'Header' : 'Footer'} Image
+                    </div>
+
+                    <div>
+                      <label className={`block text-sm font-medium mb-1 transition-colors ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Image</label>
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          try {
+                            const res = await uploadImage(file);
+                            const next = blocks.map((x) => (x.id === block.id ? { ...x, url: res.url } : x));
+                            setBlocks(selectedSilverBlock.area, next);
+                            setMessage({ type: 'success', text: 'Image uploaded' });
+                            setTimeout(() => setMessage(null), 2500);
+                          } catch (err) {
+                            const errorMsg = err instanceof Error ? err.message : 'Failed to upload image';
+                            setMessage({ type: 'error', text: errorMsg });
+                            setTimeout(() => setMessage(null), 5000);
+                          }
+                        }}
+                        className={isDarkMode ? 'dark' : ''}
+                      />
+                      <div className="mt-2">
+                        <label className={`block text-sm font-medium mb-1 transition-colors ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Image URL</label>
+                        <Input
+                          value={block.url}
+                          onChange={(e) => {
+                            const next = blocks.map((x) => (x.id === block.id ? { ...x, url: e.target.value } : x));
+                            setBlocks(selectedSilverBlock.area, next);
+                          }}
+                          placeholder="https://..."
+                          className={isDarkMode ? 'dark' : ''}
+                        />
+                      </div>
+                      {block.url ? (
+                        <img
+                          src={block.url}
+                          alt={block.alt || 'preview'}
+                          className={`mt-2 w-full h-28 object-cover rounded border ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}
+                        />
+                      ) : null}
+                    </div>
+
+                    <div>
+                      <label className={`block text-sm font-medium mb-1 transition-colors ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Alt Text (optional)</label>
+                      <Input
+                        value={block.alt || ''}
+                        onChange={(e) => {
+                          const next = blocks.map((x) => (x.id === block.id ? { ...x, alt: e.target.value } : x));
+                          setBlocks(selectedSilverBlock.area, next);
+                        }}
+                        placeholder="Describe the image"
+                        className={isDarkMode ? 'dark' : ''}
+                      />
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+
+          <div className={`border rounded-lg overflow-hidden transition-colors ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
             <button
               onClick={() => setExpandedSections(prev => ({ ...prev, actions: !prev.actions }))}
               className={`w-full px-2 md:px-3 py-2 font-semibold text-left flex items-center justify-between transition-colors ${isDarkMode ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-50 hover:bg-gray-100 text-gray-900'}`}
@@ -1468,6 +1773,10 @@ export default function TemplateSettingsPage() {
                   <Button onClick={handleSave} disabled={saving} className="w-full gap-2">
                     {saving ? <Loader2 className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4" />}
                     Save Changes
+                  </Button>
+                  <Button onClick={() => navigate('/template-editor')} variant="outline" className="w-full gap-2">
+                    <Settings className="w-4 h-4" />
+                    Gold Editor
                   </Button>
                   <Button onClick={() => setShowPreview(!showPreview)} variant="outline" className="w-full gap-2">
                     <Eye className="w-4 h-4" />

@@ -5,12 +5,8 @@
 Your EcoPro marketplace is now configured to use **Render PostgreSQL**:
 
 ### Database Connection
-- **Host**: dpg-d4cl4ubipnbc739hbcmg-a.oregon-postgres.render.com
-- **Port**: 5432
-- **Database**: eco_db_drrv
-- **User**: eco_db_drrv_user
-- **Password**: `teCMT25hytwYFgWqpmg2Q0x97TJymRhs`
-- **Connection String**: `postgresql://eco_db_drrv_user:teCMT25hytwYFgWqpmg2Q0x97TJymRhs@dpg-d4cl4ubipnbc739hbcmg-a.oregon-postgres.render.com:5432/eco_db_drrv?sslmode=require`
+- **Host/Port/DB/User/Password**: Managed by Render (do not commit credentials)
+- **Connection String (example)**: `postgresql://<USER>:<PASSWORD>@<HOST>:5432/<DB_NAME>?sslmode=require`
 
 ### Tables Created
 - ✅ `users` - User accounts (admin, sellers, clients)
@@ -28,15 +24,15 @@ Your EcoPro marketplace is now configured to use **Render PostgreSQL**:
 
 ### Default Admin User
 - **Email**: admin@ecopro.com
-- **Password**: admin123
-- **Note**: Change in production!
+- **Password**: (set securely; do not use defaults)
+- **Note**: Use a strong password + enable admin 2FA.
 
 ## Environment Variables for Render
 
 Set these in your Render Dashboard under "Environment":
 
 ```
-DATABASE_URL=postgresql://eco_db_drrv_user:teCMT25hytwYFgWqpmg2Q0x97TJymRhs@dpg-d4cl4ubipnbc739hbcmg-a.oregon-postgres.render.com:5432/eco_db_drrv?sslmode=require
+DATABASE_URL=postgresql://<USER>:<PASSWORD>@<HOST>:5432/<DB_NAME>?sslmode=require
 JWT_SECRET=your-super-secret-jwt-key-change-this
 NODE_ENV=production
 ALLOWED_ORIGINS=https://ecopro-1lbl.onrender.com
@@ -70,10 +66,7 @@ npm run dev
 
 ## Current Users in Database
 
-- `admin@ecopro.com` - Admin account
-- `seller@ecopro.com` - Seller account
-- `skull@gmail.com` - Test user
-- Plus 5+ other test accounts
+This project intentionally does not document real user emails or credentials in-repo.
 
 ## API Endpoints Working
 
@@ -117,5 +110,5 @@ npm run dev
 1. Deploy to Render using `render.yaml`
 2. Set environment variables in Render Dashboard
 3. Monitor deployment logs
-4. Test admin login with credentials above
+4. Test admin login with your configured credentials
 5. Create test products via API or admin dashboard

@@ -34,7 +34,66 @@ export async function processScheduledMessages(): Promise<void> {
     console.log(`[ScheduledMessages] Processing ${result.rows.length} pending messages`);
     
     for (const msg of result.rows) {
+      console.log(`[ScheduledMessages] Processing msg ${msg.id} for order ${msg.order_id}, scheduled_at: ${msg.scheduled_at}, now: ${new Date().toISOString()}`);
       try {
+        // If the client is subscription-locked / subscription ended, bots must be OFF.
+        // Cancel the message instead of sending.
+        try {
+          const lockRes = await pool.query(
+            `SELECT is_locked, locked_reason, lock_type FROM clients WHERE id = $1`,
+            [msg.client_id]
+          );
+          if (lockRes.rows.length) {
+            const row = lockRes.rows[0];
+            const lockType = row.lock_type || (typeof row.locked_reason === 'string' && /(subscription|expired|payment|trial|billing)/i.test(row.locked_reason)
+              ? 'payment'
+              : 'critical');
+            if (row.is_locked && lockType === 'payment') {
+              await pool.query(
+                `UPDATE bot_settings SET enabled = false, updated_at = NOW() WHERE client_id = $1`,
+                [msg.client_id]
+              );
+              await pool.query(
+                `UPDATE scheduled_messages
+                 SET status = 'cancelled', error_message = $1, updated_at = NOW()
+                 WHERE id = $2`,
+                ['ACCOUNT_LOCKED', msg.id]
+              );
+              continue;
+            }
+          }
+
+          const subRes = await pool.query(
+            `SELECT status, trial_ends_at, current_period_end
+             FROM subscriptions
+             WHERE user_id = $1`,
+            [msg.client_id]
+          );
+          if (subRes.rows.length) {
+            const sub = subRes.rows[0];
+            const now = new Date();
+            const trialEndOk = sub.status === 'trial' && sub.trial_ends_at && now < new Date(sub.trial_ends_at);
+            const activeEndOk = sub.status === 'active' && (!sub.current_period_end || now < new Date(sub.current_period_end));
+            const hasAccess = trialEndOk || activeEndOk;
+
+            if (!hasAccess) {
+              await pool.query(
+                `UPDATE bot_settings SET enabled = false, updated_at = NOW() WHERE client_id = $1`,
+                [msg.client_id]
+              );
+              await pool.query(
+                `UPDATE scheduled_messages
+                 SET status = 'cancelled', error_message = $1, updated_at = NOW()
+                 WHERE id = $2`,
+                ['SUBSCRIPTION_ENDED', msg.id]
+              );
+              continue;
+            }
+          }
+        } catch (err) {
+          console.warn('[ScheduledMessages] Access check failed; proceeding with enabled flag only:', (err as any)?.message || err);
+        }
+
         // Resolve chat id lazily (order can be linked after message is scheduled)
         let chatId: string | null = msg.telegram_chat_id ? String(msg.telegram_chat_id) : null;
         if (!chatId && msg.order_id) {

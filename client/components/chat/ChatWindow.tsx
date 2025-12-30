@@ -112,9 +112,7 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
 
   const loadChat = async () => {
     try {
-      const response = await fetch(`/api/chat/list`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
-      });
+      const response = await fetch(`/api/chat/list`);
       const data = await response.json();
       const currentChat = data.chats?.find((c: Chat) => c.id === chatId);
       if (currentChat) {
@@ -127,9 +125,7 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
 
   const loadMessages = async () => {
     try {
-      const response = await fetch(`/api/chat/${chatId}/messages?limit=50&offset=0`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
-      });
+      const response = await fetch(`/api/chat/${chatId}/messages?limit=50&offset=0`);
 
       if (!response.ok) throw new Error('Failed to load messages');
 
@@ -155,7 +151,6 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
       await fetch(`/api/chat/${chatId}/mark-read`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ 
@@ -177,7 +172,6 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
     setError(null);
 
     try {
-      const token = localStorage.getItem('authToken');
       const payload = {
         chat_id: Number(chatId),
         message_content: messageContent,
@@ -187,7 +181,6 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
       const response = await fetch(`/api/chat/${chatId}/message`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(payload)

@@ -21,16 +21,10 @@ export default function DashboardPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
     const clientData = localStorage.getItem('client');
 
-    if (!token) {
-      navigate('/login');
-      return;
-    }
-
     setClient(JSON.parse(clientData));
-    fetchData(token);
+    fetchData();
 
     // Setup WebSocket for real-time updates
     const ws = new WebSocket('ws://localhost:3001');
@@ -38,17 +32,15 @@ export default function DashboardPage() {
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.type === 'order-update') {
-        fetchData(token);
+        fetchData();
       }
     };
 
     return () => ws.close();
   }, [navigate]);
 
-  const fetchData = async (token) => {
+  const fetchData = async () => {
     try {
-      const headers = { Authorization: `Bearer ${token}` };
-
       // Build query params for orders
       const orderParams = new URLSearchParams();
       if (filters.search) orderParams.append('search', filters.search);
@@ -57,11 +49,16 @@ export default function DashboardPage() {
       if (filters.delivery_status) orderParams.append('delivery_status', filters.delivery_status);
 
       const [ordersRes, messagesRes, buyersRes, analyticsRes] = await Promise.all([
-        fetch(`/api/orders?${orderParams.toString()}`, { headers }),
-        fetch('/api/messages', { headers }),
-        fetch('/api/buyers', { headers }),
-        fetch('/api/analytics', { headers }),
+        fetch(`/api/orders?${orderParams.toString()}`),
+        fetch('/api/messages'),
+        fetch('/api/buyers'),
+        fetch('/api/analytics'),
       ]);
+
+      if (ordersRes.status === 401 || messagesRes.status === 401 || buyersRes.status === 401 || analyticsRes.status === 401) {
+        navigate('/login');
+        return;
+      }
 
       const [ordersData, messagesData, buyersData, analyticsData] = await Promise.all([
         ordersRes.json(),
@@ -82,8 +79,7 @@ export default function DashboardPage() {
   };
 
   const applyFilters = () => {
-    const token = localStorage.getItem('token');
-    fetchData(token);
+    fetchData();
   };
 
   const exportToCSV = () => {
@@ -122,7 +118,6 @@ export default function DashboardPage() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
     localStorage.removeItem('client');
     navigate('/login');
   };

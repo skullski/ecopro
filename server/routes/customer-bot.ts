@@ -274,8 +274,8 @@ router.post('/campaigns/:id/send', async (req: Request, res: Response) => {
 
     // Update campaign status to sending
     await pool.query(
-      'UPDATE message_campaigns SET status = $1, recipients_count = $2, updated_at = NOW() WHERE id = $3',
-      ['sending', customers.length, id]
+      'UPDATE message_campaigns SET status = $1, recipients_count = $2, updated_at = NOW() WHERE id = $3 AND client_id = $4',
+      ['sending', customers.length, id, clientId]
     );
 
     // Load bot settings for channel dispatch

@@ -3,10 +3,42 @@ import { Router } from 'express';
 import { ensureConnection } from '../utils/database';
 import { generateToken } from '../utils/auth';
 import { hashKernelPassword, verifyKernelPassword, logSecurityEvent, getClientIp, getGeo, computeFingerprint, parseCookie } from '../utils/security';
+import { randomBytes } from 'crypto';
 import os from 'os';
 import { getTrafficRecent, getTrafficSummary } from '../utils/traffic';
 
 const router = Router();
+
+const KERNEL_ACCESS_COOKIE = 'ecopro_kernel_at';
+
+function getKernelCookieOptions() {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const sameSite = (process.env.COOKIE_SAMESITE as any) || (isProduction ? 'none' : 'lax');
+  const domain = process.env.COOKIE_DOMAIN || undefined;
+  return { isProduction, sameSite, domain };
+}
+
+function setKernelAuthCookie(res: any, token: string) {
+  const { isProduction, sameSite, domain } = getKernelCookieOptions();
+  res.cookie(KERNEL_ACCESS_COOKIE, token, {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite,
+    domain,
+    path: '/api/kernel',
+    maxAge: 15 * 60 * 1000,
+  });
+}
+
+function clearKernelAuthCookie(res: any) {
+  const { isProduction, sameSite, domain } = getKernelCookieOptions();
+  res.clearCookie(KERNEL_ACCESS_COOKIE, {
+    secure: isProduction,
+    sameSite,
+    domain,
+    path: '/api/kernel',
+  });
+}
 
 function requireRoot(req: any, res: any, next: any) {
   if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
@@ -41,7 +73,7 @@ async function ensureKernelUserExists(): Promise<void> {
   }
 
   const username = 'root';
-  const password = 'root-' + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+  const password = 'root-' + randomBytes(24).toString('base64url');
   await pool.query(
     `INSERT INTO kernel_users (username, password_hash, is_active)
      VALUES ($1, $2, true)
@@ -50,7 +82,7 @@ async function ensureKernelUserExists(): Promise<void> {
   );
   console.log('🔑 DEV kernel credentials created:');
   console.log('   username:', username);
-  console.log('   password:', password);
+  console.log('   password: [REDACTED]');
 }
 
 // Called from server startup
@@ -119,6 +151,8 @@ export const kernelLogin: RequestHandler = async (req, res) => {
     role: 'root',
     user_type: 'root',
   });
+
+  setKernelAuthCookie(res, token);
 
   return res.json({
     token,
@@ -200,6 +234,10 @@ export const listSecurityEvents: RequestHandler = async (req, res) => {
 };
 
 router.post('/login', kernelLogin);
+router.post('/logout', (_req, res) => {
+  clearKernelAuthCookie(res);
+  return res.json({ ok: true });
+});
 router.get('/security/summary', requireRoot, getSecuritySummary);
 router.get('/security/events', requireRoot, listSecurityEvents);
 

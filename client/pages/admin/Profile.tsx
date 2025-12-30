@@ -1,14 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Gift, Lock, MessageCircle, Save, Shield, User, Settings, Database, CreditCard, CheckCircle, AlertCircle, Loader, Ticket } from 'lucide-react';
-import { setAuthToken, getAuthToken } from '@/lib/auth';
+import { Gift, Lock, CheckCircle, AlertCircle, Loader, Ticket, Save, User } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 
 type SubscriptionRow = {
@@ -44,13 +41,11 @@ function formatDate(input?: string | null): string {
 }
 
 export default function Profile() {
-  const navigate = useNavigate();
   const { toast } = useToast();
   const { theme } = useTheme();
 
   const [loading, setLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
-  const [changingPassword, setChangingPassword] = React.useState(false);
 
   const [profile, setProfile] = React.useState<ProfileResponse | null>(null);
   const [access, setAccess] = React.useState<{
@@ -67,17 +62,6 @@ export default function Profile() {
     business_name: '',
     country: '',
     city: '',
-  });
-
-  const [pw, setPw] = React.useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmNewPassword: '',
-  });
-
-  const [integrations, setIntegrations] = React.useState({
-    stripeKey: '',
-    supabaseUrl: '',
   });
 
   // Voucher code redemption state
@@ -104,13 +88,10 @@ export default function Profile() {
       if (!voucherCode.trim()) {
         throw new Error('Please enter a code');
       }
-
-      const token = getAuthToken();
       const res = await fetch('/api/codes/redeem', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ code: voucherCode.trim().toUpperCase() }),
       });
@@ -130,9 +111,7 @@ export default function Profile() {
         
         // Refresh user data
         try {
-          const meRes = await fetch('/api/auth/me', {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const meRes = await fetch('/api/auth/me');
           if (meRes.ok) {
             const userData = await meRes.json();
             localStorage.setItem('user', JSON.stringify(userData));
@@ -180,15 +159,9 @@ export default function Profile() {
   const load = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
       const [pRes, aRes] = await Promise.all([
-        fetch('/api/users/me', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('/api/billing/check-access', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/users/me'),
+        fetch('/api/billing/check-access'),
       ]);
 
       if (pRes.ok) {
@@ -219,14 +192,10 @@ export default function Profile() {
   const onSave = async () => {
     try {
       setSaving(true);
-      const token = localStorage.getItem('authToken');
-      if (!token) return;
-
       const res = await fetch('/api/users/me', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(form),
       });
@@ -236,9 +205,6 @@ export default function Profile() {
         throw new Error(data?.error || data?.message || 'Failed to update profile');
       }
 
-      if (data?.token) {
-        setAuthToken(data.token);
-      }
       if (data?.user) {
         localStorage.setItem('user', JSON.stringify(data.user));
       }
@@ -249,51 +215,6 @@ export default function Profile() {
       toast({ variant: 'destructive', title: 'Error', description: (e as Error).message });
     } finally {
       setSaving(false);
-    }
-  };
-
-  const onChangePassword = async () => {
-    try {
-      if (!pw.currentPassword || !pw.newPassword) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Please fill all password fields' });
-        return;
-      }
-      if (pw.newPassword.length < 6) {
-        toast({ variant: 'destructive', title: 'Error', description: 'New password must be at least 6 characters' });
-        return;
-      }
-      if (pw.newPassword !== pw.confirmNewPassword) {
-        toast({ variant: 'destructive', title: 'Error', description: 'New passwords do not match' });
-        return;
-      }
-
-      setChangingPassword(true);
-      const token = localStorage.getItem('authToken');
-      if (!token) return;
-
-      const res = await fetch('/api/auth/change-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          currentPassword: pw.currentPassword,
-          newPassword: pw.newPassword,
-        }),
-      });
-
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data?.error || data?.message || 'Failed to change password');
-      }
-
-      toast({ title: 'Updated', description: 'Password changed successfully' });
-      setPw({ currentPassword: '', newPassword: '', confirmNewPassword: '' });
-    } catch (e) {
-      toast({ variant: 'destructive', title: 'Error', description: (e as Error).message });
-    } finally {
-      setChangingPassword(false);
     }
   };
 
@@ -526,165 +447,9 @@ export default function Profile() {
               </p>
             </div>
 
-            <Button
-              onClick={() => navigate('/chat')}
-              variant="outline"
-              className={
-                isLight
-                  ? "w-full border-black/20 text-black hover:bg-black/5 h-8"
-                  : "w-full border-slate-600 text-slate-300 hover:bg-slate-800 h-8"
-              }
-              size="sm"
-            >
-              <MessageCircle className="w-4 h-4 mr-1" />
-              Need a code? Contact Support
-            </Button>
           </div>
         </div>
       </div>
-
-      {/* Security */}
-      <Card className="p-0 backdrop-blur-md profile-glass border-white/30 dark:border-slate-700/50">
-        <CardHeader className="p-3 pb-2">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Shield className="w-4 h-4" />
-            Security
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 p-3 pt-0">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-            <div className="space-y-1">
-              <Label htmlFor="currentPassword" className="text-xs">Current Password</Label>
-              <Input
-                id="currentPassword"
-                type="password"
-                className="h-8"
-                value={pw.currentPassword}
-                onChange={(e) => setPw((s) => ({ ...s, currentPassword: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="newPassword" className="text-xs">New Password</Label>
-              <Input
-                id="newPassword"
-                type="password"
-                className="h-8"
-                value={pw.newPassword}
-                onChange={(e) => setPw((s) => ({ ...s, newPassword: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="confirmNewPassword" className="text-xs">Confirm New Password</Label>
-              <Input
-                id="confirmNewPassword"
-                type="password"
-                className="h-8"
-                value={pw.confirmNewPassword}
-                onChange={(e) => setPw((s) => ({ ...s, confirmNewPassword: e.target.value }))}
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="text-xs text-muted-foreground">Password changes require your current password.</div>
-            <Button onClick={onChangePassword} disabled={changingPassword} size="sm" className="h-8">
-              {changingPassword ? 'Updating...' : 'Change Password'}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Support */}
-      <Card className="p-0 backdrop-blur-md profile-glass border-white/30 dark:border-slate-700/50">
-        <CardHeader className="p-3 pb-2">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <MessageCircle className="w-4 h-4" />
-            Support
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 p-3 pt-0">
-          <div className="text-xs text-muted-foreground">
-            Need help with your subscription or account?
-          </div>
-          <Separator />
-          <div className="flex gap-2 flex-col sm:flex-row">
-            <Button onClick={() => navigate('/chat')} className="sm:w-auto w-full h-8" size="sm">
-              Contact Support
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Integrations */}
-      <Card className="p-0 backdrop-blur-md profile-glass border-white/30 dark:border-slate-700/50">
-        <CardHeader className="p-3 pb-2">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Settings className="w-4 h-4" />
-            Integrations
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 p-3 pt-0">
-          <div className="text-xs text-muted-foreground mb-2">
-            Configure external service integrations for your store.
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <div className="rounded-lg border bg-card p-2 space-y-2">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-purple-100 dark:bg-purple-500/20">
-                  <CreditCard className="w-3 h-3 text-purple-600 dark:text-purple-400" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-sm">Stripe</h4>
-                  <p className="text-xs text-muted-foreground">Payment processing</p>
-                </div>
-              </div>
-              <Input 
-                placeholder="Stripe Secret Key" 
-                type="password"
-                className="h-8"
-                value={integrations.stripeKey} 
-                onChange={(e) => setIntegrations(s => ({ ...s, stripeKey: e.target.value }))} 
-              />
-            </div>
-            
-            <div className="rounded-lg border bg-card p-2 space-y-2">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-green-100 dark:bg-green-500/20">
-                  <Database className="w-3 h-3 text-green-600 dark:text-green-400" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-sm">Supabase</h4>
-                  <p className="text-xs text-muted-foreground">Database & storage</p>
-                </div>
-              </div>
-              <Input 
-                placeholder="Supabase URL" 
-                className="h-8"
-                value={integrations.supabaseUrl} 
-                onChange={(e) => setIntegrations(s => ({ ...s, supabaseUrl: e.target.value }))} 
-              />
-            </div>
-          </div>
-
-          <Button 
-            onClick={() => {
-              localStorage.setItem('integrations', JSON.stringify(integrations));
-              toast({ title: 'Saved', description: 'Integration settings saved locally' });
-            }} 
-            variant="outline"
-            className="w-full h-8"
-            size="sm"
-          >
-            <Save className="w-3 h-3 mr-1" />
-            Save Integrations
-          </Button>
-          
-          <p className="text-xs text-muted-foreground text-center">
-            These settings are saved locally. Full integration will be available in future updates.
-          </p>
-        </CardContent>
-      </Card>
       </div>
     </>
   );

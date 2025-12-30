@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { TemplateProps } from '@/pages/storefront/templates/types';
 import { useTemplateUniversalSettings } from '@/hooks/useTemplateUniversalSettings';
+import { coerceSilverImageBlocks } from '@/lib/silverBlocks';
 
 export default function Fashion2Template(props: TemplateProps) {
   const { navigate, storeSlug } = props;
@@ -27,6 +28,15 @@ export default function Fashion2Template(props: TemplateProps) {
   };
 
   const { products = [], settings = {}, categories = [] } = props;
+
+  const silverHeaderBlocks = useMemo(
+    () => coerceSilverImageBlocks((settings as any).silver_header_blocks),
+    [settings]
+  );
+  const silverFooterBlocks = useMemo(
+    () => coerceSilverImageBlocks((settings as any).silver_footer_blocks),
+    [settings]
+  );
 
   const previewMode = Boolean((props as any).previewMode);
   const hideProducts = Boolean((props as any).hideProducts);
@@ -129,6 +139,25 @@ export default function Fashion2Template(props: TemplateProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {silverHeaderBlocks.length > 0 && (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-4">
+          <div
+            className="grid gap-3"
+            style={{ gridTemplateColumns: `repeat(${silverHeaderBlocks.length}, minmax(0, 1fr))` }}
+          >
+            {silverHeaderBlocks
+              .filter((b) => b.url && String(b.url).trim().length > 0)
+              .map((b) => (
+                <img
+                  key={b.id}
+                  src={b.url}
+                  alt={b.alt || 'Header image'}
+                  className="w-full h-32 object-cover rounded-lg"
+                />
+              ))}
+          </div>
+        </div>
+      )}
       {/* Floating Bag */}
       <div className="fixed bottom-4 right-4 z-40">
         <button style={{ backgroundColor: primary_color, color: secondary_color }} className="rounded-full font-semibold text-xs px-3 py-2 flex items-center gap-2 shadow-lg">
@@ -149,8 +178,8 @@ export default function Fashion2Template(props: TemplateProps) {
                 )}
               </div>
             <div>
-              <div style={{ color: text_color }} className="font-serif text-lg font-semibold leading-tight">{storeName}</div>
-              <div className="text-xs text-gray-500">{headerTagline}</div>
+              <div data-edit-path="__settings.store_name" style={{ color: text_color }} className="font-serif text-lg font-semibold leading-tight">{storeName}</div>
+              <div data-edit-path="__settings.template_header_tagline" className="text-xs text-gray-500">{headerTagline}</div>
             </div>
           </div>
 
@@ -179,16 +208,16 @@ export default function Fashion2Template(props: TemplateProps) {
 
       {/* Hero Section - 3 Image Grid */}
       <section className="border-b border-gray-200 bg-gray-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-8">
-          <div className="mb-5">
-            <span className="inline-block text-xs font-bold px-3 py-1 rounded-full mb-3" style={{ backgroundColor: primary_color, color: secondary_color }}>{heroBadge}</span>
-            <h2 style={{ color: text_color }} className="font-serif text-2xl sm:text-3xl font-semibold mt-3 leading-tight max-w-xl">{heroHeading}</h2>
-            <p className="text-sm text-gray-600 mt-2 max-w-md">{heroSubtitle}</p>
+        <div className="max-w-6xl mx-auto px-3 md:px-6 pt-4 md:pt-6 pb-6 md:pb-8">
+          <div className="mb-4 md:mb-5">
+            <span data-edit-path="__settings.template_hero_badge" className="inline-block text-[10px] md:text-xs font-bold px-2 md:px-3 py-0.5 md:py-1 rounded-full mb-2 md:mb-3" style={{ backgroundColor: primary_color, color: secondary_color }}>{heroBadge}</span>
+            <h2 data-edit-path="__settings.template_hero_heading" style={{ color: text_color }} className="font-serif text-lg md:text-2xl lg:text-3xl font-semibold mt-2 md:mt-3 leading-tight max-w-xl">{heroHeading}</h2>
+            <p data-edit-path="__settings.template_hero_subtitle" className="text-xs md:text-sm text-gray-600 mt-1.5 md:mt-2 max-w-md">{heroSubtitle}</p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.9fr] gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.9fr] gap-3 md:gap-6">
             {/* Left – Main product */}
-            <div className="relative rounded-2xl overflow-hidden border border-gray-200 bg-white h-96">
+            <div className="relative rounded-xl md:rounded-2xl overflow-hidden border border-gray-200 bg-white aspect-[4/3] md:aspect-auto md:h-96">
               {heroVideoUrl ? (
                 <video
                   autoPlay
@@ -196,6 +225,7 @@ export default function Fashion2Template(props: TemplateProps) {
                   loop
                   playsInline
                   className="w-full h-full object-cover"
+                  data-edit-path="__settings.hero_video_url"
                 >
                   <source src={heroVideoUrl} type="video/mp4" />
                 </video>
@@ -204,32 +234,33 @@ export default function Fashion2Template(props: TemplateProps) {
                   src={settings.banner_url || 'https://images.unsplash.com/photo-1543087903-1ac2ec7aa8c5?auto=format&fit=crop&w=1200&q=80'}
                   alt="Hero"
                   className="w-full h-full object-cover"
+                  data-edit-path="__settings.banner_url"
                 />
               )}
-              <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-4">
-                <div className="text-sm font-semibold">{safeProducts[0]?.title || 'Featured Product'}</div>
-                <div className="text-xs text-gray-300">{safeProducts[0]?.price || 'Price'} DZD</div>
+              <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-2 md:p-4">
+                <div className="text-xs md:text-sm font-semibold">{safeProducts[0]?.title || 'Featured Product'}</div>
+                <div className="text-[10px] md:text-xs text-gray-300">{safeProducts[0]?.price || 'Price'} DZD</div>
                 <button
                   onClick={() => {
                     if (!safeProducts[0]) return;
                     handleBuyClick(safeProducts[0]);
                   }}
-                  className="mt-2 text-xs py-1 px-3 rounded-full bg-white text-black font-semibold"
+                  className="mt-1.5 md:mt-2 text-[10px] md:text-xs py-0.5 md:py-1 px-2 md:px-3 rounded-full bg-white text-black font-semibold"
                 >
                   {heroProductCta}
                 </button>
               </div>
-              <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black text-white text-xs uppercase tracking-widest">{dropLabel}</div>
+              <div className="absolute top-1.5 left-1.5 md:top-2 md:left-2 px-1.5 md:px-2 py-0.5 rounded-full bg-black text-white text-[9px] md:text-xs uppercase tracking-widest">{dropLabel}</div>
             </div>
 
             {/* Right – Two smaller products */}
-            <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-1 gap-2 md:gap-4">
               {safeProducts.slice(1, 3).map((p: any) => (
-                <div key={p.id} className="relative rounded-2xl overflow-hidden border border-gray-200 bg-white h-44">
+                <div key={p.id} className="relative rounded-xl md:rounded-2xl overflow-hidden border border-gray-200 bg-white aspect-[4/3] lg:aspect-auto lg:h-44">
                   <img src={p.images?.[0] || 'https://via.placeholder.com/400'} alt={p.title} className="w-full h-full object-cover" />
-                  <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-3">
-                    <div className="text-sm font-semibold line-clamp-1">{p.title}</div>
-                    <div className="text-xs text-gray-300">{p.price} DZD</div>
+                  <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-white p-2 md:p-3">
+                    <div className="text-xs md:text-sm font-semibold line-clamp-1">{p.title}</div>
+                    <div className="text-[10px] md:text-xs text-gray-300">{p.price} DZD</div>
                   </div>
                 </div>
               ))}
@@ -239,10 +270,10 @@ export default function Fashion2Template(props: TemplateProps) {
       </section>
 
       {/* Main Catalog */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-7">
-        <div className="grid grid-cols-1 md:grid-cols-[240px_minmax(0,1fr)] gap-6">
-          {/* Filters Sidebar */}
-          <aside className="bg-white rounded-2xl border border-gray-200 p-4 h-fit">
+      <main className="max-w-6xl mx-auto px-3 md:px-6 py-4 md:py-7">
+        <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-4 md:gap-6">
+          {/* Filters Sidebar - Hidden on mobile */}
+          <aside className="hidden lg:block bg-white rounded-2xl border border-gray-200 p-4 h-fit sticky top-20">
             <div className="text-sm font-semibold mb-3">{filtersTitle}</div>
 
             <div className="mb-4">
@@ -309,22 +340,22 @@ export default function Fashion2Template(props: TemplateProps) {
             </div>
 
             {/* Products Grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4">
               {filteredProducts.map((p: any) => (
                 <div key={p.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg hover:border-gray-400 transition cursor-pointer" onClick={() => handleProductClick(p)}>
                   <div className="relative">
-                    <img src={p.images?.[0] || 'https://via.placeholder.com/400'} alt={p.title} className="w-full h-60 object-cover" />
-                    <div className="absolute top-2 right-2 flex flex-col gap-1">
-                      <button onClick={(e) => { e.stopPropagation(); toggleWishlist(p.id); }} className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${ wishlist.includes(p.id) ? 'bg-black text-white border-0' : 'bg-white border border-gray-200 text-gray-800'}`}>♥</button>
+                    <img src={p.images?.[0] || 'https://via.placeholder.com/400'} alt={p.title} className="w-full aspect-[3/4] md:h-60 md:aspect-auto object-cover" />
+                    <div className="absolute top-1.5 md:top-2 right-1.5 md:right-2 flex flex-col gap-1">
+                      <button onClick={(e) => { e.stopPropagation(); toggleWishlist(p.id); }} className={`w-5 h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center text-[10px] md:text-xs ${ wishlist.includes(p.id) ? 'bg-black text-white border-0' : 'bg-white border border-gray-200 text-gray-800'}`}>♥</button>
                     </div>
                   </div>
-                  <div className="p-3">
-                    <div style={{ color: text_color }} className="text-sm font-semibold line-clamp-2">{p.title}</div>
-                    <div className="text-xs text-gray-600 mt-1">{p.category}</div>
-                    <div className="flex items-center justify-between mt-2">
-                      <div className="text-xs font-semibold">{p.price} DZD</div>
+                  <div className="p-2 md:p-3">
+                    <div style={{ color: text_color }} className="text-xs md:text-sm font-semibold line-clamp-2">{p.title}</div>
+                    <div className="text-[10px] md:text-xs text-gray-600 mt-0.5 md:mt-1">{p.category}</div>
+                    <div className="flex items-center justify-between mt-1 md:mt-2">
+                      <div className="text-[10px] md:text-xs font-semibold">{p.price} DZD</div>
                     </div>
-                    <button onClick={(e) => handleBuyClick(p, e)} className="w-full text-xs py-1.5 rounded-full mt-3" style={{ backgroundColor: primary_color, color: secondary_color, fontWeight: '600' }}>{addToBagLabel}</button>
+                    <button onClick={(e) => handleBuyClick(p, e)} className="w-full text-[9px] md:text-xs py-1 md:py-1.5 rounded-full mt-2 md:mt-3" style={{ backgroundColor: primary_color, color: secondary_color, fontWeight: '600' }}>{addToBagLabel}</button>
                   </div>
                 </div>
               ))}
@@ -344,6 +375,26 @@ export default function Fashion2Template(props: TemplateProps) {
           </div>
         </div>
       </footer>
+
+      {silverFooterBlocks.length > 0 && (
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
+          <div
+            className="grid gap-3"
+            style={{ gridTemplateColumns: `repeat(${silverFooterBlocks.length}, minmax(0, 1fr))` }}
+          >
+            {silverFooterBlocks
+              .filter((b) => b.url && String(b.url).trim().length > 0)
+              .map((b) => (
+                <img
+                  key={b.id}
+                  src={b.url}
+                  alt={b.alt || 'Footer image'}
+                  className="w-full h-32 object-cover rounded-lg"
+                />
+              ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

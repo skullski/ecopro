@@ -251,6 +251,27 @@ export async function redeemSubscriptionCode(
   error?: string;
 }> {
   try {
+    const normalizeTier = (t: any): string => String(t || '').trim().toLowerCase();
+    const tierRank = (t: string): number => {
+      switch (normalizeTier(t)) {
+        case 'bronze':
+          return 1;
+        case 'silver':
+          return 2;
+        case 'gold':
+          return 3;
+        default:
+          return 0;
+      }
+    };
+    const coerceCodeTierToSubscriptionTier = (t: any): string => {
+      const tt = normalizeTier(t);
+      // Business rule: voucher/license codes grant Gold-level editor access.
+      if (tt === 'voucher' || tt === 'license') return 'gold';
+      if (tt === 'general') return 'silver';
+      return tt;
+    };
+
     // Check rate limit first
     const rateLimit = await checkCodeValidationRateLimit(clientId, 'client', ipAddress);
     if (!rateLimit.allowed) {
@@ -280,6 +301,8 @@ export async function redeemSubscriptionCode(
     }
 
     const codeRequest = validation.codeRequest;
+
+    const requestedTier = coerceCodeTierToSubscriptionTier((codeRequest as any)?.code_tier);
 
     // Verify client matches the code request
     // If the code was issued to a specific client, enforce ownership.
@@ -340,10 +363,10 @@ export async function redeemSubscriptionCode(
       if (subResult.rows.length === 0) {
         // Create new subscription with 30-day trial-to-active conversion
         const newSub = await client.query(
-          `INSERT INTO subscriptions (user_id, status, trial_started_at, trial_ends_at, current_period_start, current_period_end)
-           VALUES ($1, 'active', NOW() - INTERVAL '1 day', NOW(), NOW(), NOW() + INTERVAL '30 days')
+          `INSERT INTO subscriptions (user_id, tier, status, trial_started_at, trial_ends_at, current_period_start, current_period_end)
+           VALUES ($1, $2, 'active', NOW() - INTERVAL '1 day', NOW(), NOW(), NOW(), NOW() + INTERVAL '30 days')
            RETURNING *`,
-          [userId]
+          [userId, requestedTier || 'free']
         );
         subscriptionId = newSub.rows[0].id;
       } else {
@@ -353,14 +376,19 @@ export async function redeemSubscriptionCode(
           ? new Date(currentSub.current_period_end).getTime() + (30 * 24 * 60 * 60 * 1000)
           : Date.now() + (30 * 24 * 60 * 60 * 1000);
 
+        const currentTier = normalizeTier((currentSub as any)?.tier);
+        const nextTier = requestedTier || currentTier || 'free';
+        const upgradedTier = tierRank(nextTier) > tierRank(currentTier) ? nextTier : currentTier || nextTier;
+
         const updateSubResult = await client.query(
           `UPDATE subscriptions 
            SET status = 'active', 
+               tier = $1,
                current_period_end = to_timestamp($1 / 1000.0),
                updated_at = NOW()
-           WHERE id = $2
+           WHERE id = $3
            RETURNING *`,
-          [newEndDate, currentSub.id]
+          [upgradedTier || 'free', newEndDate, currentSub.id]
         );
         subscriptionId = updateSubResult.rows[0].id;
       }

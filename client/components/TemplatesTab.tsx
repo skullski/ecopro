@@ -84,13 +84,11 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
     if (!pendingTemplateId) return;
     try {
       setSavingSwitch(true);
-      const token = localStorage.getItem('authToken') || localStorage.getItem('token');
       const importKeys = switchMode === 'import' ? computeImportKeys() : [];
       const res = await fetch('/api/client/store/settings', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           __templateSwitch: {

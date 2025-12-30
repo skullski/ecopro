@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto';
 import { ensureConnection } from "./database";
 
 type SendResult = { success: boolean; messageId?: string; error?: string };
@@ -122,7 +123,8 @@ export async function sendViberMessage(
  * Generate confirmation link token
  */
 export function generateConfirmationToken(): string {
-  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  // 32 bytes -> 43 chars base64url; fits confirmation_links.link_token VARCHAR(100)
+  return randomBytes(32).toString('base64url');
 }
 
 /**
@@ -250,7 +252,7 @@ export async function sendOrderConfirmationMessages(
         settings.template_order_confirmation || defaultWhatsAppTemplate(),
         templateVariables
       );
-      const delayMinutes = settings.telegram_delay_minutes || 60;
+      const delayMinutes = settings.telegram_delay_minutes || 5;
       const sendAt = new Date(Date.now() + delayMinutes * 60 * 1000);
       await pool.query(
         `INSERT INTO bot_messages (order_id, client_id, customer_phone, message_type, message_content, confirmation_link, send_at)

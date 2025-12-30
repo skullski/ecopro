@@ -27,12 +27,10 @@ export default function OrderEditModal({ order, onClose, onSave }) {
     setError('');
 
     try {
-      const token = localStorage.getItem('token');
       const response = await fetch(`/api/orders/${order.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(formData),
       });

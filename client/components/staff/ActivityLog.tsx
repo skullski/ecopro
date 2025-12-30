@@ -58,9 +58,6 @@ export function ActivityLog({ storeId, staffId }: ActivityLogProps) {
         : `/api/client/staff/0/activity?limit=100`;
 
       const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-        },
       });
 
       if (!response.ok) throw new Error('Failed to load activity logs');

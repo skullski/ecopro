@@ -50,11 +50,10 @@ Database: PostgreSQL
 **Key Rule**: ALL orders are saved with the STORE OWNER's client_id, regardless of who places them.
 
 ## How Authentication Works
-- JWT tokens stored in localStorage as `authToken`
-- Token contains: `{ id, email, user_type, role }`
-- `id` is the user's database ID
-- `authenticate` middleware verifies token on protected routes
-- Store owner's ID = the `id` that orders are filtered by
+- Auth uses HttpOnly cookies (no localStorage tokens)
+- Protected routes use the `authenticate` middleware (cookie-based)
+- CSRF uses a double-submit cookie + `X-CSRF-Token` header
+- Store owner's ID = the authenticated user's `id` that orders are filtered by
 
 ## Database Tables (Key Ones)
 ```sql
@@ -87,6 +86,9 @@ client_store_settings(
 - `POST /api/seller/products` - Create product
 - `GET /api/seller/products` - List store owner's products
 
+### Authenticated (Cookie-based)
+- All authenticated endpoints require the auth cookie; state-changing endpoints also require `X-CSRF-Token`.
+
 ## Development
 ```bash
 pnpm dev      # Start dev server (client + server on one port)
@@ -111,7 +113,7 @@ Edit `client/global.css` and `tailwind.config.ts`
 4. Display on Orders page
 
 ## Debugging Orders Not Showing
-1. Check: Is user logged in? (JWT token in localStorage)
+1. Check: Is user logged in? (auth cookie present)
 2. Check: Is order in database? (`SELECT * FROM store_orders`)
 3. Check: Does order have `client_id = user's ID`? 
 4. If not → orders created with wrong client_id

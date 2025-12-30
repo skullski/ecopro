@@ -1,48 +1,46 @@
-import { RequestHandler } from "express";
-import { Pool } from "pg";
-
-const pool = new Pool({
-  connectionString: "postgresql://eco_db_drrv_user:teCMT25hytwYFgWqpmg2Q0x97TJymRhs@dpg-d4cl4ubipnbc739hbcmg-a.oregon-postgres.render.com/eco_db_drrv",
-});
+import { RequestHandler } from 'express';
+import { ensureConnection } from '../utils/database';
 
 // Handler to delete a store image
 export const deleteStoreImage: RequestHandler = async (req, res) => {
-  const { storeId, imageIndex } = req.body;
+  const user = (req as any).user;
+  const clientId = user?.id;
+  const { imageIndex } = req.body || {};
 
-  if (typeof storeId !== "string" || typeof imageIndex !== "number") {
-    return res.status(400).json({ error: "Invalid request payload" });
+  if (!clientId) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  if (typeof imageIndex !== 'number' || !Number.isFinite(imageIndex)) {
+    return res.status(400).json({ error: 'Invalid request payload' });
   }
 
   try {
-    const client = await pool.connect();
+    const pool = await ensureConnection();
 
-    // Fetch the current store images
-    const result = await client.query(
-      "SELECT store_images FROM stores WHERE id = $1",
-      [storeId]
+    // Fetch current store_images for this tenant only
+    const result = await pool.query(
+      'SELECT store_images FROM client_store_settings WHERE client_id = $1',
+      [clientId]
     );
 
     if (result.rows.length === 0) {
-      client.release();
-      return res.status(404).json({ error: "Store not found" });
+      return res.status(404).json({ error: 'Store settings not found' });
     }
 
-    const images: string[] = result.rows[0].store_images || [];
+    const images: string[] = Array.isArray(result.rows[0].store_images) ? result.rows[0].store_images : [];
     if (imageIndex < 0 || imageIndex >= images.length) {
-      client.release();
-      return res.status(400).json({ error: "Invalid image index" });
+      return res.status(400).json({ error: 'Invalid image index' });
     }
 
     // Remove the image from the array
     images.splice(imageIndex, 1);
 
-    // Update the store images in the database
-    await client.query(
-      "UPDATE stores SET store_images = $1 WHERE id = $2",
-      [images, storeId]
+    // Update store_images (tenant-scoped)
+    await pool.query(
+      'UPDATE client_store_settings SET store_images = $2, updated_at = NOW() WHERE client_id = $1',
+      [clientId, images]
     );
 
-    client.release();
     res.status(200).json({ success: true });
   } catch (error) {
     console.error("Error deleting store image:", error);

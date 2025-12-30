@@ -13,6 +13,10 @@ services:
         sync: false  # Set manually in Render Dashboard
       - key: JWT_SECRET
         sync: false  # Set manually in Render Dashboard
+      - key: ENCRYPTION_KEY
+        sync: false  # Required in production (encryption + admin 2FA)
+      - key: UPLOAD_SIGNING_KEY
+        sync: false  # Required in production (signed upload URLs)
       - key: ALLOWED_ORIGINS
         value: https://ecopro-1lbl.onrender.com
       - key: BASE_URL

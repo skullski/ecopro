@@ -11,7 +11,7 @@
 1. Open browser: http://localhost:5174
 2. Login with:
    Email: admin@ecopro.com
-   Password: admin123
+   Password: <ADMIN_PASSWORD>
 3. Navigate to: Dashboard → Billing
 4. See your billing dashboard in action!
 ```
@@ -27,7 +27,7 @@ Cancelled Page: http://localhost:5174/billing/cancelled?session=test456
 # Get authentication token
 TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@ecopro.com","password":"admin123"}' \
+  -d '{"email":"admin@ecopro.com","password":"<ADMIN_PASSWORD>"}' \
   | jq -r '.data.token')
 
 # Test checkout endpoint
@@ -199,7 +199,7 @@ pnpm dev
 # 1. Get token
 TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@ecopro.com","password":"admin123"}' \
+  -d '{"email":"admin@ecopro.com","password":"<ADMIN_PASSWORD>"}' \
   | jq -r '.data.token')
 
 # 2. Create checkout session
@@ -386,7 +386,7 @@ curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/billing/payment
 
 **Your Default Credentials**:
 - Email: admin@ecopro.com
-- Password: admin123
+- Password: <ADMIN_PASSWORD>
 - API: http://localhost:8080
 - Client: http://localhost:5174
 

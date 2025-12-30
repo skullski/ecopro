@@ -39,9 +39,7 @@ export function DeliveryTracking({
   // Fetch tracking info
   const fetchTracking = async () => {
     try {
-      const response = await fetch(`/api/delivery/orders/${orderId}/tracking`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
-      });
+      const response = await fetch(`/api/delivery/orders/${orderId}/tracking`);
 
       if (!response.ok) {
         if (response.status === 400) {

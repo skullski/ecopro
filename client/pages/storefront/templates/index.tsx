@@ -16,11 +16,71 @@ import BeautyTemplate from '@/components/templates/beauty';
 import CafeTemplate from '@/components/templates/cafe';
 import StoreTemplate from '@/components/templates/store';
 
-export type TemplateId = 'classic' | 'supreme' | 'maximize' | 'fullframe' | 'stockist' | 'walidstore' | 'minimal' | 'catalog' | 'fashion' | 'fashion2' | 'fashion3' | 'electronics' | 'food' | 'furniture' | 'jewelry' | 'perfume' | 'baby' | 'bags' | 'beauty' | 'cafe' | 'store';
+// Schema-driven templates (render from Universal Store Schema)
+import ShiroHanaTemplate from './gold/shiro-hana/ShiroHanaTemplate';
+import BabyGoldTemplate from '@/components/templates/baby_gold';
+
+/**
+ * All available template renderers.
+ * 
+ * NOTE: There is no more "silver" vs "gold" distinction.
+ * All templates are equal - they just render the Universal Store Schema differently.
+ * The difference is in the EDITOR MODE (basic vs advanced), not the template.
+ */
+export type TemplateId =
+  // Schema-driven templates (recommended)
+  | 'shiro-hana'
+  | 'baby-gold'
+  // Legacy templates (will be migrated to schema-driven)
+  | 'classic'
+  | 'supreme'
+  | 'maximize'
+  | 'fullframe'
+  | 'stockist'
+  | 'walidstore'
+  | 'minimal'
+  | 'catalog'
+  | 'fashion'
+  | 'fashion2'
+  | 'fashion3'
+  | 'electronics'
+  | 'food'
+  | 'furniture'
+  | 'jewelry'
+  | 'perfume'
+  | 'baby'
+  | 'bags'
+  | 'beauty'
+  | 'cafe'
+  | 'store'
+  // Backwards compatibility aliases (deprecated - will be removed)
+  | 'gold-shiro-hana'
+  | 'gold-baby';
+
+/**
+ * Normalize template ID - removes deprecated prefixes
+ */
+export function normalizeTemplateId(t: string): TemplateId {
+  // Remove deprecated gold- prefix
+  if (t.startsWith('gold-')) {
+    return t.replace('gold-', '') as TemplateId;
+  }
+  return t as TemplateId;
+}
 
 export function RenderStorefront(t: TemplateId, props: TemplateProps) {
-  console.log('[RenderStorefront] Template ID:', t);
-  switch (t) {
+  // Normalize template ID
+  const templateId = normalizeTemplateId(t);
+  console.log('[RenderStorefront] Template ID:', templateId, '(original:', t, ')');
+
+  switch (templateId) {
+    // Schema-driven templates (recommended)
+    case 'shiro-hana':
+      return <ShiroHanaTemplate {...props} />;
+    case 'baby-gold':
+      return <BabyGoldTemplate {...props} />;
+    
+    // Legacy category templates
     case 'fashion':
       console.log('[RenderStorefront] Rendering fashion template');
       return <FashionTemplate {...props} />;
@@ -48,6 +108,8 @@ export function RenderStorefront(t: TemplateId, props: TemplateProps) {
       return <CafeTemplate {...props} />;
     case 'store':
       return <StoreTemplate {...props} />;
+    
+    // Legacy base templates
     case 'supreme':
       return <EditorialTemplate {...props} mode="supreme" />;
     case 'fullframe':
@@ -62,10 +124,11 @@ export function RenderStorefront(t: TemplateId, props: TemplateProps) {
       return <BaseTemplate {...props} variant="minimal" />;
     case 'catalog':
       return <BaseTemplate {...props} variant="catalog" />;
+    
     case 'classic':
     default:
-      // Default to fashion template instead of mercury
-      console.log('[RenderStorefront] No template matched, using fashion as default');
-      return <FashionTemplate {...props} />;
+      // Default to shiro-hana (schema-driven) for new stores
+      console.log('[RenderStorefront] No template matched, using shiro-hana as default');
+      return <ShiroHanaTemplate {...props} />;
   }
 }

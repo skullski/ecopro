@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { TemplateProps } from '@/pages/storefront/templates/types';
 import { useTemplateUniversalSettings } from '@/hooks/useTemplateUniversalSettings';
+import { coerceSilverImageBlocks } from '@/lib/silverBlocks';
 
 export default function CafeTemplate(props: TemplateProps) {
   const universalSettings = useTemplateUniversalSettings();
@@ -10,6 +11,15 @@ export default function CafeTemplate(props: TemplateProps) {
 
   const products = props.products || [];
   const settings = props.settings || {};
+
+  const silverHeaderBlocks = useMemo(
+    () => coerceSilverImageBlocks((settings as any).silver_header_blocks),
+    [settings]
+  );
+  const silverFooterBlocks = useMemo(
+    () => coerceSilverImageBlocks((settings as any).silver_footer_blocks),
+    [settings]
+  );
 
   // Extract universal settings with defaults
   const {
@@ -100,7 +110,7 @@ export default function CafeTemplate(props: TemplateProps) {
       style={{ backgroundColor: '#ffffff', borderRadius: `${border_radius}px` }}
       onClick={() => navigate(product.slug && product.slug.length > 0 ? `/store/${storeSlug}/${product.slug}` : `/product/${product.id}`)}
     >
-      <div className="relative h-40 overflow-hidden" style={{ backgroundColor: `${secondary_text_color}20` }}>
+      <div className="relative aspect-[4/3] overflow-hidden" style={{ backgroundColor: `${secondary_text_color}20` }}>
         <img 
           src={product.images?.[0]} 
           alt={product.name || product.title} 
@@ -108,23 +118,23 @@ export default function CafeTemplate(props: TemplateProps) {
         />
       </div>
 
-      <div className="p-3">
-        <h4 className="text-sm font-semibold line-clamp-2" style={{ color: text_color }}>
+      <div className="p-2 md:p-3">
+        <h4 className="text-xs md:text-sm font-semibold line-clamp-2" style={{ color: text_color }}>
           {product.name || product.title}
         </h4>
-        <p className="text-xs mt-1" style={{ color: secondary_text_color }}>
+        <p className="text-[10px] md:text-xs mt-0.5 md:mt-1" style={{ color: secondary_text_color }}>
           {product.price} DZD {product.unit ? `/ ${product.unit}` : ''}
         </p>
         
         {product.description && (
-          <p className="text-[11px] mt-1 line-clamp-1" style={{ color: secondary_text_color }}>
+          <p className="text-[10px] md:text-[11px] mt-0.5 md:mt-1 line-clamp-1 hidden sm:block" style={{ color: secondary_text_color }}>
             {product.description}
           </p>
         )}
 
-        <div className="mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="mt-2 md:mt-3">
           <button
-            className="w-full text-[11px] py-1.5 rounded-full font-semibold transition"
+            className="w-full text-[10px] md:text-[11px] py-1 md:py-1.5 rounded-full font-semibold transition"
             style={{ backgroundColor: text_color, color: secondary_color }}
             onClick={(e) => {
               e.stopPropagation();
@@ -133,7 +143,7 @@ export default function CafeTemplate(props: TemplateProps) {
               navigate(storeSlug ? `/store/${storeSlug}/${slug}` : `/product/${product.id}`);
             }}
           >
-            {isBundleType ? 'Add tray to cart' : 'Quick add'}
+            {isBundleType ? 'Add tray' : 'Quick add'}
           </button>
         </div>
       </div>
@@ -142,6 +152,26 @@ export default function CafeTemplate(props: TemplateProps) {
 
   return (
     <div style={{ background: `radial-gradient(circle at top, ${secondary_color} 0, #f8f1e8 40%, #f5ede4 100%)`, color: text_color }} className="min-h-screen">
+      {silverHeaderBlocks.length > 0 && (
+        <div className="max-w-6xl mx-auto px-6 pt-6">
+          <div
+            className="grid gap-3"
+            style={{ gridTemplateColumns: `repeat(${silverHeaderBlocks.length}, minmax(0, 1fr))` }}
+          >
+            {silverHeaderBlocks
+              .filter((b) => b.url && String(b.url).trim().length > 0)
+              .map((b) => (
+                <img
+                  key={b.id}
+                  src={b.url}
+                  alt={b.alt || 'Header image'}
+                  className="w-full h-32 object-cover"
+                  style={{ borderRadius: border_radius }}
+                />
+              ))}
+          </div>
+        </div>
+      )}
       {/* Sticky Cart Icon */}
       <button
         className="fixed bottom-4 right-4 z-30 flex items-center gap-2 px-4 py-2 rounded-full shadow-lg text-xs transition hover:shadow-xl"
@@ -159,10 +189,10 @@ export default function CafeTemplate(props: TemplateProps) {
       {/* HEADER */}
       <header className="flex items-center justify-between px-6 py-8 max-w-6xl mx-auto">
         <div>
-          <h1 className="font-serif text-3xl md:text-4xl font-bold tracking-tight" style={{ color: text_color }}>
+          <h1 data-edit-path="__settings.store_name" className="font-serif text-3xl md:text-4xl font-bold tracking-tight" style={{ color: text_color }}>
             {storeName}
           </h1>
-          <p className="text-xs mt-1 max-w-xs" style={{ color: secondary_text_color }}>
+          <p data-edit-path="__settings.template_header_tagline" className="text-xs mt-1 max-w-xs" style={{ color: secondary_text_color }}>
             {String(headerTagline).replace('{city}', String(storeCity))}
           </p>
         </div>
@@ -178,17 +208,18 @@ export default function CafeTemplate(props: TemplateProps) {
           {/* Hero Text */}
           <div>
             <div 
+              data-edit-path="__settings.template_hero_kicker"
               className="inline-block rounded-full px-3 py-1.5 text-[11px] text-transform uppercase tracking-widest font-semibold mb-4"
               style={{ backgroundColor: `${primary_color}30`, color: secondary_text_color, borderRadius: '999px', border: `1px solid ${primary_color}50` }}
             >
               {heroBadge}
             </div>
             
-            <h2 className="font-serif text-4xl md:text-5xl font-bold mt-4 leading-tight" style={{ color: text_color }}>
+            <h2 data-edit-path="__settings.template_hero_heading" className="font-serif text-4xl md:text-5xl font-bold mt-4 leading-tight" style={{ color: text_color }}>
               {heroHeading}
             </h2>
             
-            <p className="text-sm mt-3 max-w-md" style={{ color: secondary_text_color }}>
+            <p data-edit-path="__settings.template_hero_subtitle" className="text-sm mt-3 max-w-md" style={{ color: secondary_text_color }}>
               {heroSubtitle}
             </p>
             
@@ -212,31 +243,31 @@ export default function CafeTemplate(props: TemplateProps) {
 
           {/* Hero Image/Video or Product Collage */}
           {heroVideoUrl ? (
-            <div className="rounded-2xl overflow-hidden shadow-lg">
+            <div className="rounded-2xl overflow-hidden shadow-lg" data-edit-path="__settings.hero_video_url">
               <video 
                 autoPlay
                 muted
                 loop
                 playsInline
-                className="w-full h-[280px] md:h-[360px] object-cover"
+                className="w-full aspect-[16/10] md:aspect-auto md:h-[360px] object-cover"
               >
                 <source src={heroVideoUrl} type="video/mp4" />
               </video>
             </div>
           ) : settings.banner_url ? (
-            <div className="rounded-2xl overflow-hidden shadow-lg">
+            <div className="rounded-2xl overflow-hidden shadow-lg" data-edit-path="__settings.banner_url">
               <img 
                 src={settings.banner_url} 
                 alt="Hero" 
-                className="w-full h-[280px] md:h-[360px] object-cover"
+                className="w-full aspect-[16/10] md:aspect-auto md:h-[360px] object-cover"
               />
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-2 md:gap-3">
               {products.slice(0, 6).map((p, idx) => (
                 <div
                   key={idx}
-                  className="rounded-2xl overflow-hidden shadow-md"
+                  className="rounded-xl md:rounded-2xl overflow-hidden shadow-md"
                   style={{ 
                     backgroundColor: `${secondary_text_color}20`,
                     transform: (idx === 1 || idx === 4) ? 'translateY(0.5rem)' : 'none'
@@ -245,7 +276,7 @@ export default function CafeTemplate(props: TemplateProps) {
                   <img
                     src={p.images?.[0]}
                     alt={p.name || p.title}
-                    className="w-full h-[90px] md:h-[120px] object-cover"
+                    className="w-full aspect-square md:aspect-auto md:h-[120px] object-cover"
                   />
                 </div>
               ))}
@@ -384,6 +415,27 @@ export default function CafeTemplate(props: TemplateProps) {
           </div>
         </div>
       </footer>
+
+      {silverFooterBlocks.length > 0 && (
+        <div className="max-w-6xl mx-auto px-6 pb-6">
+          <div
+            className="grid gap-3"
+            style={{ gridTemplateColumns: `repeat(${silverFooterBlocks.length}, minmax(0, 1fr))` }}
+          >
+            {silverFooterBlocks
+              .filter((b) => b.url && String(b.url).trim().length > 0)
+              .map((b) => (
+                <img
+                  key={b.id}
+                  src={b.url}
+                  alt={b.alt || 'Footer image'}
+                  className="w-full h-32 object-cover"
+                  style={{ borderRadius: border_radius }}
+                />
+              ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

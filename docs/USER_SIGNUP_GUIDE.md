@@ -157,7 +157,7 @@ pnpm exec tsx db-query.ts
 
 For testing purposes, there's a default admin:
 - **Email**: admin@ecopro.com
-- **Password**: admin123
+- **Password**: <ADMIN_PASSWORD>
 - **Role**: admin
 
 This account has full access to:

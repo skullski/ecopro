@@ -1,4 +1,5 @@
 import { Dispatch, SetStateAction } from 'react';
+import type { UniversalStoreSchema } from '@/../../shared/universal-store-schema';
 
 export interface StoreProduct {
   id: number;
@@ -39,6 +40,8 @@ export interface StoreSettings {
   template_hero_subtitle?: string;
   template_button_text?: string;
   template_accent_color?: string;
+  // Universal Store Schema (for schema-driven templates)
+  store_schema?: UniversalStoreSchema;
 }
 
 export interface TemplateProps {
@@ -62,3 +65,8 @@ export interface TemplateProps {
   navigate: (to: string | number) => void;
   canManage?: boolean;
 }
+
+/**
+ * Re-export Universal Store Schema types for convenience
+ */
+export type { UniversalStoreSchema } from '@/../../shared/universal-store-schema';

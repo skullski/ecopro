@@ -232,7 +232,7 @@ bulkModeratingProducts: boolean
 ```
 URL: http://localhost:5174/platform-admin
 Email: admin@ecopro.com
-Password: admin123
+Password: <ADMIN_PASSWORD>
 ```
 
 **API Server**:

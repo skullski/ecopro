@@ -32,14 +32,16 @@ export interface ApiError {
  * Get stored auth token
  */
 export function getAuthToken(): string | null {
-  return localStorage.getItem("authToken") || localStorage.getItem("token");
+  // Tokens are now stored in HttpOnly cookies (not accessible to JS)
+  return null;
 }
 
 /**
  * Store auth token
  */
 export function setAuthToken(token: string): void {
-  localStorage.setItem("authToken", token);
+  // No-op: token stored in HttpOnly cookie server-side
+  void token;
 }
 
 /**
@@ -47,6 +49,7 @@ export function setAuthToken(token: string): void {
  */
 export function removeAuthToken(): void {
   localStorage.removeItem("authToken");
+  localStorage.removeItem("token");
   localStorage.removeItem("user");
 }
 
@@ -57,20 +60,15 @@ async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const token = getAuthToken();
-  
   const headers: HeadersInit = {
     "Content-Type": "application/json",
     ...options.headers,
   };
 
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers,
+    credentials: 'include',
   });
 
   if (!response.ok) {
@@ -100,7 +98,7 @@ export const authApi = {
       method: "POST",
       body: JSON.stringify(data),
     });
-    setAuthToken(response.token);
+    // Token stored in HttpOnly cookie by server
     localStorage.setItem("user", JSON.stringify(response.user));
     return response;
   },
@@ -116,7 +114,7 @@ export const authApi = {
       method: "POST",
       body: JSON.stringify(data),
     });
-    setAuthToken(response.token);
+    // Token stored in HttpOnly cookie by server
     localStorage.setItem("user", JSON.stringify(response.user));
     if (response.user.role === "admin") {
       localStorage.setItem("isAdmin", "true");
@@ -131,6 +129,10 @@ export const authApi = {
    */
   me: async (): Promise<{ id: string; email: string; name: string; role: string }> => {
     return apiRequest("/auth/me");
+  },
+
+  refresh: async (): Promise<{ ok: boolean }> => {
+    return apiRequest("/auth/refresh", { method: 'POST' });
   },
 
   /**
@@ -150,6 +152,8 @@ export const authApi = {
    * Logout user
    */
   logout: () => {
+    // Best-effort server logout to clear cookies
+    void apiRequest("/auth/logout", { method: 'POST' }).catch(() => null);
     removeAuthToken();
     window.location.href = "/";
   },

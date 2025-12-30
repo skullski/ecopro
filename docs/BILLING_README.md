@@ -19,7 +19,7 @@ pnpm start
 ```
 http://localhost:8080
 Username: admin@ecopro.com
-Password: admin123
+Password: <ADMIN_PASSWORD>
 Navigation: Click "Billing" tab
 ```
 
@@ -243,13 +243,13 @@ UPDATE platform_settings SET max_users = 5000;
 ### Test User Credentials
 ```
 Email: skull@gmail.com
-Password: anaimad
+Password: <TEST_PASSWORD>
 ```
 
 ### Admin Credentials
 ```
 Email: admin@ecopro.com
-Password: admin123
+Password: <ADMIN_PASSWORD>
 ```
 
 ### Test Subscription Status
@@ -257,7 +257,7 @@ Password: admin123
 # Login
 TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"skull@gmail.com","password":"anaimad"}' | jq -r '.token')
+  -d '{"email":"skull@gmail.com","password":"<TEST_PASSWORD>"}' | jq -r '.token')
 
 # Check subscription
 curl http://localhost:8080/api/billing/subscription \
@@ -268,7 +268,7 @@ curl http://localhost:8080/api/billing/subscription \
 
 ### Test Admin Dashboard
 1. Open http://localhost:8080
-2. Login as admin@ecopro.com / admin123
+2. Login as admin@ecopro.com / <ADMIN_PASSWORD>
 3. Click "Billing" tab
 4. View all metrics
 

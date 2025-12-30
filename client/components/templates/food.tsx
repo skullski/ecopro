@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { TemplateProps } from '@/pages/storefront/templates/types';
 import { useTemplateUniversalSettings } from '@/hooks/useTemplateUniversalSettings';
+import { coerceSilverImageBlocks } from '@/lib/silverBlocks';
 
 export default function FoodTemplate(props: TemplateProps) {
   const universalSettings = useTemplateUniversalSettings();
@@ -9,6 +10,15 @@ export default function FoodTemplate(props: TemplateProps) {
   const [scrollY, setScrollY] = useState(0);
 
   const { products = [], settings = {}, formatPrice = (p: number) => `${p}` } = props;
+
+  const silverHeaderBlocks = useMemo(
+    () => coerceSilverImageBlocks((settings as any).silver_header_blocks),
+    [settings]
+  );
+  const silverFooterBlocks = useMemo(
+    () => coerceSilverImageBlocks((settings as any).silver_footer_blocks),
+    [settings]
+  );
 
   // Extract universal settings with defaults
   const {
@@ -111,6 +121,25 @@ export default function FoodTemplate(props: TemplateProps) {
 
   return (
     <div className="min-h-screen text-[15px] antialiased" style={{ backgroundColor: secondary_color }}>
+      {silverHeaderBlocks.length > 0 && (
+        <div className="mx-auto max-w-6xl px-4 pt-5">
+          <div
+            className="grid gap-3"
+            style={{ gridTemplateColumns: `repeat(${silverHeaderBlocks.length}, minmax(0, 1fr))` }}
+          >
+            {silverHeaderBlocks
+              .filter((b) => b.url && String(b.url).trim().length > 0)
+              .map((b) => (
+                <img
+                  key={b.id}
+                  src={b.url}
+                  alt={b.alt || 'Header image'}
+                  className="w-full h-32 object-cover rounded-xl"
+                />
+              ))}
+          </div>
+        </div>
+      )}
       <style>{`
         :root {
           --bg: ${secondary_color};
@@ -312,10 +341,10 @@ export default function FoodTemplate(props: TemplateProps) {
               {(settings?.store_name || 'SH').slice(0, 2)}
             </div>
             <div>
-              <h1 className="font-serif text-xl tracking-[0.06em]">
+              <h1 data-edit-path="__settings.store_name" className="font-serif text-xl tracking-[0.06em]">
                 {settings?.store_name || 'Shiro Hana'}
               </h1>
-              <p className="text-[10px] text-[#7a7a7a] uppercase menu-tag">
+              <p data-edit-path="__settings.template_header_tagline" className="text-[10px] text-[#7a7a7a] uppercase menu-tag">
                 Modern Japanese Kitchen
               </p>
             </div>
@@ -337,13 +366,13 @@ export default function FoodTemplate(props: TemplateProps) {
 
           {/* text side */}
           <div className="fade-in" style={{ animationDelay: '40ms' }}>
-            <p className="text-[10px] uppercase tracking-[0.22em] text-[#7a7a7a] mb-3">
+            <p data-edit-path="__settings.template_hero_kicker" className="text-[10px] uppercase tracking-[0.22em] text-[#7a7a7a] mb-3">
               Tokyo-inspired · Since 2024
             </p>
-            <h2 className="font-serif text-[1.9rem] sm:text-[2.2rem] lg:text-[2.6rem] leading-tight mb-4">
+            <h2 data-edit-path="__settings.template_hero_heading" className="font-serif text-[1.9rem] sm:text-[2.2rem] lg:text-[2.6rem] leading-tight mb-4">
               {settings.template_hero_heading || 'Crafted with precision, served without urgency.'}
             </h2>
-            <p className="text-[13px] text-[#7a7a7a] max-w-md mb-4">
+            <p data-edit-path="__settings.template_hero_subtitle" className="text-[13px] text-[#7a7a7a] max-w-md mb-4">
               {settings.template_hero_subtitle || 'A small, deliberate menu built on clean broths, sharp knives, and patient techniques. Every plate is designed to be noticed, not photographed and forgotten.'}
             </p>
 
@@ -374,7 +403,8 @@ export default function FoodTemplate(props: TemplateProps) {
                   muted
                   loop
                   playsInline
-                  className="w-full h-[300px] sm:h-[340px] lg:h-[380px] object-cover"
+                  className="w-full aspect-[4/3] md:aspect-auto md:h-[340px] lg:h-[380px] object-cover"
+                  data-edit-path="__settings.hero_video_url"
                 >
                   <source src={heroVideoUrl} type="video/mp4" />
                 </video>
@@ -382,7 +412,8 @@ export default function FoodTemplate(props: TemplateProps) {
                 <img
                   src={settings.banner_url || 'https://images.unsplash.com/photo-1553621042-f6e147245754?auto=format&fit=crop&w=1200&q=80'}
                   alt="Hero dish"
-                  className="w-full h-[300px] sm:h-[340px] lg:h-[380px] object-cover"
+                  className="w-full aspect-[4/3] md:aspect-auto md:h-[340px] lg:h-[380px] object-cover"
+                  data-edit-path="__settings.banner_url"
                 />
               )}
               <div className="hero-seal hidden sm:flex">
@@ -428,43 +459,40 @@ export default function FoodTemplate(props: TemplateProps) {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-5">
                 {featured.map((product, idx) => (
                   <article
                     key={product.id}
                     className="card overflow-hidden fade-in"
                     style={{ animationDelay: `${80 + idx * 60}ms` }}
                   >
-                    <div className="card-image-wrap h-40">
+                    <div className="card-image-wrap aspect-square md:aspect-auto md:h-40">
                       <img
                         src={product.images?.[0]}
                         alt={product.title}
                         className="w-full h-full object-cover"
                       />
                       {idx === 0 && (
-                        <span className="absolute top-3 left-3 bg-white/92 text-[10px] uppercase tracking-[0.16em] px-2 py-1 rounded-full">
+                        <span className="absolute top-2 left-2 md:top-3 md:left-3 bg-white/92 text-[9px] md:text-[10px] uppercase tracking-[0.16em] px-1.5 md:px-2 py-0.5 md:py-1 rounded-full">
                           Chef's pick
                         </span>
                       )}
                     </div>
-                    <div className="p-4">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <h4 className="font-serif text-[15px]">
+                    <div className="p-2 md:p-4">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-1 md:mb-1.5">
+                        <h4 className="font-serif text-xs md:text-[15px] line-clamp-1">
                           {product.title}
                         </h4>
-                        <span className="text-[10px] text-[#7a7a7a] uppercase tracking-[0.16em]">
+                        <span className="text-[9px] md:text-[10px] text-[#7a7a7a] uppercase tracking-[0.16em]">
                           {product.category || 'Dish'}
                         </span>
                       </div>
-                      <p className="text-[12px] text-[#7a7a7a] mb-2 line-clamp-2">
+                      <p className="text-[10px] md:text-[12px] text-[#7a7a7a] mb-1 md:mb-2 line-clamp-2 hidden sm:block">
                         {product.description || 'Clean, focused flavors with a precise balance of texture and aroma.'}
                       </p>
-                      <p className="text-[13px] flex items-center justify-between">
+                      <p className="text-[11px] md:text-[13px] flex items-center justify-between">
                         <span className="font-medium">
                           {product.price} DZD
-                        </span>
-                        <span className="text-[11px] text-[#a0a0a0]">
-                          Best in three bites.
                         </span>
                       </p>
                     </div>
@@ -701,6 +729,26 @@ export default function FoodTemplate(props: TemplateProps) {
           </p>
         </footer>
       </div>
+
+      {silverFooterBlocks.length > 0 && (
+        <div className="mx-auto max-w-6xl px-4 pb-6">
+          <div
+            className="grid gap-3"
+            style={{ gridTemplateColumns: `repeat(${silverFooterBlocks.length}, minmax(0, 1fr))` }}
+          >
+            {silverFooterBlocks
+              .filter((b) => b.url && String(b.url).trim().length > 0)
+              .map((b) => (
+                <img
+                  key={b.id}
+                  src={b.url}
+                  alt={b.alt || 'Footer image'}
+                  className="w-full h-32 object-cover rounded-xl"
+                />
+              ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, CheckCircle, XCircle, Edit2 } from "lucide-react";
 
 export default function OrderConfirmation() {
   const { storeSlug, orderId } = useParams<{ storeSlug: string; orderId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const token = new URLSearchParams(location.search).get('t') || new URLSearchParams(location.search).get('token') || '';
   
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -21,7 +23,10 @@ export default function OrderConfirmation() {
   const loadOrder = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/storefront/${storeSlug}/order/${orderId}`);
+      if (!token) {
+        throw new Error('Missing confirmation token');
+      }
+      const res = await fetch(`/api/storefront/${storeSlug}/order/${orderId}?t=${encodeURIComponent(token)}`);
       
       if (!res.ok) {
         throw new Error("Order not found or link expired");
@@ -40,7 +45,8 @@ export default function OrderConfirmation() {
   const handleApprove = async () => {
     try {
       setSubmitting(true);
-      const res = await fetch(`/api/storefront/${storeSlug}/order/${orderId}/confirm`, {
+      if (!token) throw new Error('Missing confirmation token');
+      const res = await fetch(`/api/storefront/${storeSlug}/order/${orderId}/confirm?t=${encodeURIComponent(token)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -66,7 +72,8 @@ export default function OrderConfirmation() {
 
     try {
       setSubmitting(true);
-      const res = await fetch(`/api/storefront/${storeSlug}/order/${orderId}/confirm`, {
+      if (!token) throw new Error('Missing confirmation token');
+      const res = await fetch(`/api/storefront/${storeSlug}/order/${orderId}/confirm?t=${encodeURIComponent(token)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -88,7 +95,8 @@ export default function OrderConfirmation() {
   const handleSaveChanges = async () => {
     try {
       setSubmitting(true);
-      const res = await fetch(`/api/storefront/${storeSlug}/order/${orderId}/update`, {
+      if (!token) throw new Error('Missing confirmation token');
+      const res = await fetch(`/api/storefront/${storeSlug}/order/${orderId}/update?t=${encodeURIComponent(token)}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editedOrder)

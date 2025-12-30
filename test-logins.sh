@@ -3,7 +3,7 @@
 echo "=== Testing Admin Login ==="
 curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@ecopro.com","password":"admin123"}' \
+  -d '{"email":"admin@ecopro.com","password":"<ADMIN_PASSWORD>"}' \
   2>/dev/null | jq . | head -30
 
 echo -e "\n=== Testing Client Login ==="

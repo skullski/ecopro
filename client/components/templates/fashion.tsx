@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { TemplateProps } from '@/pages/storefront/templates/types';
 import { useTemplateSettings } from '@/hooks/useTemplateData';
+import { coerceSilverImageBlocks } from '@/lib/silverBlocks';
 
 export default function FashionTemplate(props: TemplateProps) {
   const { navigate, storeSlug } = props;
@@ -29,6 +30,15 @@ export default function FashionTemplate(props: TemplateProps) {
 
   const products = props.products || [];
   const settings = props.settings || {};
+
+  const silverHeaderBlocks = useMemo(
+    () => coerceSilverImageBlocks((settings as any).silver_header_blocks),
+    [settings]
+  );
+  const silverFooterBlocks = useMemo(
+    () => coerceSilverImageBlocks((settings as any).silver_footer_blocks),
+    [settings]
+  );
   
   // Extract universal settings with defaults
   const {
@@ -154,6 +164,32 @@ export default function FashionTemplate(props: TemplateProps) {
       background: enable_dark_mode ? '#09090f' : '#f5f5f5',
       color: text_color,
     }}>
+      {silverHeaderBlocks.length > 0 && (
+        <div
+          style={{
+            padding: section_padding,
+            display: 'grid',
+            gap: 12,
+            gridTemplateColumns: `repeat(${silverHeaderBlocks.length}, minmax(0, 1fr))`,
+          }}
+        >
+          {silverHeaderBlocks
+            .filter((b) => b.url && String(b.url).trim().length > 0)
+            .map((b) => (
+              <img
+                key={b.id}
+                src={b.url}
+                alt={b.alt || 'Header image'}
+                style={{
+                  width: '100%',
+                  height: 140,
+                  objectFit: 'cover',
+                  borderRadius: border_radius,
+                }}
+              />
+            ))}
+        </div>
+      )}
       <style>{`
         .hero {
           min-height: 70vh;
@@ -212,7 +248,7 @@ export default function FashionTemplate(props: TemplateProps) {
         backdropFilter: 'blur(10px)',
       }}>
         <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
-          <div className="text-xs tracking-[0.2em] uppercase" style={{ color: text_color }}>
+          <div data-edit-path="__settings.store_name" className="text-xs tracking-[0.2em] uppercase" style={{ color: text_color }}>
             {storeName}
           </div>
           <nav className="hidden md:flex gap-5 text-[11px]" style={{ color: secondary_text_color }}>
@@ -231,6 +267,7 @@ export default function FashionTemplate(props: TemplateProps) {
       <section
         className="hero"
         style={{ backgroundImage: heroVideoUrl ? 'none' : `url(${bannerUrl})` }}
+        data-edit-path="__settings.banner_url"
       >
         {heroVideoUrl && (
           <video
@@ -238,6 +275,7 @@ export default function FashionTemplate(props: TemplateProps) {
             muted
             loop
             playsInline
+            data-edit-path="__settings.hero_video_url"
             style={{
               position: 'absolute',
               inset: 0,
@@ -253,19 +291,19 @@ export default function FashionTemplate(props: TemplateProps) {
         <div className="hero-overlay"></div>
         <div className="max-w-6xl mx-auto px-6 h-full flex items-end pb-14">
           <div className="max-w-lg">
-            <div className="text-[11px] tracking-[0.25em] uppercase mb-2" style={{ color: secondary_text_color }}>
+            <div data-edit-path="__settings.template_hero_kicker" className="text-[11px] tracking-[0.25em] uppercase mb-2" style={{ color: secondary_text_color }}>
               {heroKicker}
             </div>
-            <h1 className="md:text-2xl font-serif font-semibold mb-3" style={{ 
+            <h1 data-edit-path="__settings.template_hero_heading" className="md:text-2xl font-serif font-semibold mb-3" style={{ 
               fontSize: headingSizes.h1,
               color: text_color,
             }}>
               {heroHeading}
             </h1>
-            <p className="text-sm max-w-md mb-4" style={{ color: secondary_text_color }}>
+            <p data-edit-path="__settings.template_hero_subtitle" className="text-sm max-w-md mb-4" style={{ color: secondary_text_color }}>
               {heroSubtitle}
             </p>
-            <button className="text-[11px] uppercase tracking-[0.18em] px-5 py-2 rounded-full font-semibold transition" style={{
+            <button data-edit-path="__settings.template_button_text" className="text-[11px] uppercase tracking-[0.18em] px-5 py-2 rounded-full font-semibold transition" style={{
               border: `1px solid ${secondary_text_color}`,
               color: primary_color,
               backgroundColor: 'transparent',
@@ -392,7 +430,7 @@ export default function FashionTemplate(props: TemplateProps) {
                 transform: enable_animations ? 'translateZ(0)' : 'none',
               }}
             >
-              <div className="relative h-64 overflow-hidden" style={{ borderRadius: `${border_radius}px` }}>
+              <div className="relative aspect-[3/4] md:h-64 overflow-hidden" style={{ borderRadius: `${border_radius}px` }}>
                 <img
                   src={p.images?.[0] || bannerUrl}
                   alt={p.title}
@@ -402,7 +440,7 @@ export default function FashionTemplate(props: TemplateProps) {
                   }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
-                <div className="absolute top-3 left-3 text-[10px] uppercase tracking-[0.18em] px-3 py-1 rounded-full" style={{
+                <div className="absolute top-2 md:top-3 left-2 md:left-3 text-[9px] md:text-[10px] uppercase tracking-[0.18em] px-2 md:px-3 py-0.5 md:py-1 rounded-full" style={{
                   border: `1px solid ${secondary_text_color}`,
                   background: enable_dark_mode ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.5)',
                   color: text_color,
@@ -410,23 +448,23 @@ export default function FashionTemplate(props: TemplateProps) {
                   {p.category || 'Category'}
                 </div>
               </div>
-              <div className="p-4 flex flex-col flex-grow">
-                <div className="flex items-center justify-between mb-1">
-                  <h3 className="text-sm font-semibold" style={{ color: text_color }}>
+              <div className="p-2 md:p-4 flex flex-col flex-grow">
+                <div className="flex items-start justify-between gap-1 mb-1">
+                  <h3 className="text-xs md:text-sm font-semibold line-clamp-2" style={{ color: text_color }}>
                     {p.title}
                   </h3>
-                  <span className="text-xs" style={{ color: secondary_text_color }}>{p.gender || 'All'}</span>
+                  <span className="text-[10px] md:text-xs whitespace-nowrap" style={{ color: secondary_text_color }}>{p.gender || 'All'}</span>
                 </div>
-                <p className="text-[11px] mb-2" style={{ color: secondary_text_color }}>
+                <p className="text-[10px] md:text-[11px] mb-2 hidden sm:block" style={{ color: secondary_text_color }}>
                   {p.fit || 'Regular'} · {p.color || 'Color'}
                 </p>
-                <div className="flex items-center justify-between mt-auto">
-                  <span className="text-sm font-semibold" style={{ color: primary_color }}>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1.5 sm:justify-between mt-auto">
+                  <span className="text-xs md:text-sm font-semibold whitespace-nowrap" style={{ color: primary_color }}>
                     {props.formatPrice(p.price)}
                   </span>
                   <button 
                     onClick={(e) => handleBuyClick(p, e)}
-                    className="text-[11px] uppercase tracking-[0.16em] px-4 py-2 rounded-full font-semibold transition"
+                    className="text-[9px] md:text-[11px] uppercase tracking-[0.12em] md:tracking-[0.16em] px-2 md:px-4 py-1.5 md:py-2 rounded-full font-semibold transition whitespace-nowrap"
                     style={{
                       border: `1px solid ${primary_color}`,
                       background: primary_color,
@@ -449,6 +487,33 @@ export default function FashionTemplate(props: TemplateProps) {
           ))}
         </div>
       </section>
+
+      {silverFooterBlocks.length > 0 && (
+        <div
+          style={{
+            padding: section_padding,
+            display: 'grid',
+            gap: 12,
+            gridTemplateColumns: `repeat(${silverFooterBlocks.length}, minmax(0, 1fr))`,
+          }}
+        >
+          {silverFooterBlocks
+            .filter((b) => b.url && String(b.url).trim().length > 0)
+            .map((b) => (
+              <img
+                key={b.id}
+                src={b.url}
+                alt={b.alt || 'Footer image'}
+                style={{
+                  width: '100%',
+                  height: 140,
+                  objectFit: 'cover',
+                  borderRadius: border_radius,
+                }}
+              />
+            ))}
+        </div>
+      )}
     </div>
   );
 }

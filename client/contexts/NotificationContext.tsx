@@ -66,15 +66,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   // Fetch new orders count
   const fetchNewOrdersCount = useCallback(async () => {
-    const token = localStorage.getItem('authToken');
-    if (!token) return;
-    
     try {
       const lastSeen = localStorage.getItem(ORDERS_LAST_SEEN_KEY);
       const params = lastSeen ? `?since=${encodeURIComponent(lastSeen)}` : '';
-      const res = await fetch(`/api/orders/new-count${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(`/api/orders/new-count${params}`);
       if (res.ok) {
         const data = await res.json();
         const newCount = data.count || 0;
@@ -94,13 +89,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   // Fetch unread messages count
   const fetchUnreadCount = useCallback(async () => {
-    const token = localStorage.getItem('authToken');
-    if (!token) return;
-    
     try {
-      const res = await fetch('/api/chat/unread-count', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch('/api/chat/unread-count');
       if (res.ok) {
         const data = await res.json();
         const newCount = data.unreadCount || 0;

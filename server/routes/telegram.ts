@@ -342,9 +342,9 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
       if (parsed.action === 'approve') {
         const upd = await pool.query(
           `UPDATE store_orders SET status = 'confirmed', updated_at = NOW()
-           WHERE id = $1 AND status IN ('pending')
+           WHERE id = $1 AND client_id = $2 AND status IN ('pending')
            RETURNING id`,
-          [orderId]
+          [orderId, clientId]
         );
         if (upd.rows.length) {
           await pool.query(
@@ -362,9 +362,9 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
       if (parsed.action === 'decline') {
         const upd = await pool.query(
           `UPDATE store_orders SET status = 'declined', updated_at = NOW()
-           WHERE id = $1 AND status IN ('pending')
+           WHERE id = $1 AND client_id = $2 AND status IN ('pending')
            RETURNING id`,
-          [orderId]
+          [orderId, clientId]
         );
         if (upd.rows.length) {
           await pool.query(

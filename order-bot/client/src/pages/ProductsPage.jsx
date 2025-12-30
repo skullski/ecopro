@@ -18,20 +18,17 @@ export default function ProductsPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      navigate('/login');
-      return;
-    }
-
-    fetchProducts(token);
+    fetchProducts();
   }, [navigate]);
 
-  const fetchProducts = async (token) => {
+  const fetchProducts = async () => {
     try {
-      const response = await fetch('/api/products', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await fetch('/api/products');
+
+      if (response.status === 401) {
+        navigate('/login');
+        return;
+      }
 
       const data = await response.json();
       setProducts(data.products);
@@ -44,7 +41,6 @@ export default function ProductsPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem('token');
 
     try {
       const url = editingProduct
@@ -56,13 +52,12 @@ export default function ProductsPage() {
         method,
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(formData),
       });
 
       if (response.ok) {
-        fetchProducts(token);
+        fetchProducts();
         resetForm();
       }
     } catch (error) {
@@ -86,15 +81,12 @@ export default function ProductsPage() {
   const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to delete this product?')) return;
 
-    const token = localStorage.getItem('token');
-
     try {
       await fetch(`/api/products/${id}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
       });
 
-      fetchProducts(token);
+      fetchProducts();
     } catch (error) {
       console.error('Failed to delete product:', error);
     }

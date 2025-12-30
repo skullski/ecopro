@@ -33,6 +33,7 @@ export const getDeliveryCompanies: RequestHandler = async (req, res) => {
  */
 export const configureDeliveryIntegration: RequestHandler = async (req, res) => {
   try {
+    const isProduction = process.env.NODE_ENV === 'production';
     const clientId = req.user?.id || (req.body.client_id as number);
     if (!clientId) {
       res.status(401).json({ error: 'Unauthorized' });
@@ -41,7 +42,10 @@ export const configureDeliveryIntegration: RequestHandler = async (req, res) => 
 
     const validation = ConfigureIntegrationSchema.safeParse(req.body);
     if (!validation.success) {
-      res.status(400).json({ error: 'Invalid input', details: validation.error });
+      res.status(400).json({
+        error: 'Invalid input',
+        ...(!isProduction ? { details: validation.error } : {}),
+      });
       return;
     }
 

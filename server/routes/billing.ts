@@ -1,7 +1,10 @@
 import { RequestHandler } from "express";
+import { randomInt } from "crypto";
 import { pool } from "../utils/database";
-import { jsonError } from "../utils/httpHelpers";
+import { jsonError, jsonServerError } from "../utils/httpHelpers";
 import { createCheckoutSession, handlePaymentCompleted, handlePaymentFailed, verifyWebhookSignature } from "../utils/redotpay";
+
+const isProduction = process.env.NODE_ENV === 'production';
 
 /**
  * Get subscription status for current user
@@ -68,6 +71,7 @@ export const checkAccess: RequestHandler = async (req, res) => {
       return res.json({ 
         hasAccess: true, 
         status: "trial", 
+        tier: subscription.tier,
         daysLeft: Math.ceil((trialEnds.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
         message: "Free trial active" 
       });
@@ -75,13 +79,14 @@ export const checkAccess: RequestHandler = async (req, res) => {
 
     // Trial expired - check if paid
     if (subscription.status === "active") {
-      return res.json({ hasAccess: true, status: "active", message: "Subscription active" });
+      return res.json({ hasAccess: true, status: "active", tier: subscription.tier, message: "Subscription active" });
     }
 
     // Expired/suspended
     return res.json({ 
       hasAccess: false, 
       status: subscription.status,
+      tier: subscription.tier,
       message: `Subscription ${subscription.status}. Please pay $7/month to continue.`
     });
   } catch (error) {
@@ -172,15 +177,27 @@ export const getBillingMetrics: RequestHandler = async (req, res) => {
 export const getPlatformSettings: RequestHandler = async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT setting_key, setting_value, data_type FROM platform_settings`
+      `SELECT setting_key, setting_value, data_type, updated_at FROM platform_settings`
     );
 
+    let lastUpdated: string | null = null;
+
     const settings = result.rows.reduce((acc: any, row: any) => {
-      acc[row.setting_key] = row.data_type === 'number' ? parseInt(row.setting_value) : row.setting_value;
+      if (row?.updated_at) {
+        const ts = new Date(row.updated_at).toISOString();
+        if (!lastUpdated || ts > lastUpdated) lastUpdated = ts;
+      }
+
+      if (row.data_type === 'number') {
+        const n = Number(row.setting_value);
+        acc[row.setting_key] = Number.isFinite(n) ? n : 0;
+      } else {
+        acc[row.setting_key] = row.setting_value;
+      }
       return acc;
     }, {});
 
-    res.json(settings);
+    res.json({ ...settings, updated_at: lastUpdated });
   } catch (error) {
     console.error("Error getting settings:", error);
     return jsonError(res, 500, "Failed to get settings");
@@ -301,11 +318,13 @@ export const createCheckout: RequestHandler = async (req, res) => {
       },
     });
 
-    console.log('[Billing] Checkout session created:', {
-      userId,
-      sessionToken: checkoutSession.sessionToken,
-      checkoutUrl: checkoutSession.checkoutUrl,
-    });
+    if (!isProduction) {
+      console.log('[Billing] Checkout session created:', {
+        userId,
+        sessionToken: checkoutSession.sessionToken,
+        checkoutUrl: checkoutSession.checkoutUrl,
+      });
+    }
 
     res.json({
       message: 'Checkout session created successfully',
@@ -317,7 +336,7 @@ export const createCheckout: RequestHandler = async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating checkout session:', error);
-    return jsonError(res, 500, `Failed to create checkout session: ${(error as any).message}`);
+    return jsonServerError(res, error, 'Failed to create checkout session');
   }
 };
 
@@ -348,11 +367,13 @@ export const handleRedotPayWebhook: RequestHandler = async (req, res) => {
 
     const payload = req.body;
 
-    console.log('[RedotPay Webhook] Received event:', {
-      event: payload.event,
-      transactionId: payload.data?.transaction_id,
-      status: payload.data?.status,
-    });
+    if (!isProduction) {
+      console.log('[RedotPay Webhook] Received event:', {
+        event: payload.event,
+        transactionId: payload.data?.transaction_id,
+        status: payload.data?.status,
+      });
+    }
 
     // Handle different webhook events
     switch (payload.event) {
@@ -363,10 +384,10 @@ export const handleRedotPayWebhook: RequestHandler = async (req, res) => {
         await handlePaymentFailed(payload);
         break;
       case 'payment.cancelled':
-        console.log('[RedotPay Webhook] Payment cancelled:', payload.data?.transaction_id);
+        if (!isProduction) console.log('[RedotPay Webhook] Payment cancelled:', payload.data?.transaction_id);
         break;
       default:
-        console.log('[RedotPay Webhook] Unhandled event:', payload.event);
+        if (!isProduction) console.log('[RedotPay Webhook] Unhandled event:', payload.event);
     }
 
     // Always return 200 OK to acknowledge receipt
@@ -374,7 +395,7 @@ export const handleRedotPayWebhook: RequestHandler = async (req, res) => {
   } catch (error) {
     console.error('[RedotPay Webhook] Error processing webhook:', error);
     // Still return 200 to prevent RedotPay from retrying
-    res.json({ message: 'Webhook processed', error: (error as any).message });
+    res.json(isProduction ? { message: 'Webhook processed' } : { message: 'Webhook processed', error: (error as any).message });
   }
 };
 
@@ -510,11 +531,11 @@ export const retryPayment: RequestHandler = async (req, res) => {
 
     const codeRequest = codeResult.rows[0];
 
-    // Generate new code
+    // Generate new code (crypto-secure)
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let newCode = '';
     for (let i = 0; i < 16; i++) {
-      newCode += characters.charAt(Math.floor(Math.random() * characters.length));
+      newCode += characters.charAt(randomInt(0, characters.length));
       if ((i + 1) % 4 === 0 && i !== 15) newCode += '-';
     }
 

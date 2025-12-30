@@ -360,7 +360,7 @@ ecopro/
 **Server**: http://localhost:8080  
 **Client**: http://localhost:5174  
 **Admin Email**: admin@ecopro.com  
-**Admin Password**: admin123  
+**Admin Password**: <ADMIN_PASSWORD>  
 
 **Phase 3 Status**: ✅ Complete and Production Ready  
 **Total Code**: 1,350+ lines (production) + 4,500+ lines (docs)  

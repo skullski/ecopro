@@ -171,7 +171,7 @@ curl -H "Authorization: Bearer {token}" \
 **Test Admin Account**:
 ```
 Email: admin@ecopro.com
-Password: admin123
+Password: <ADMIN_PASSWORD>
 ```
 
 ---

@@ -51,9 +51,7 @@ export function OrderFulfillment({ order, onDeliveryAssigned }: OrderFulfillment
 
   const fetchCompanies = async () => {
     try {
-      const response = await fetch('/api/delivery/companies', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
-      });
+      const response = await fetch('/api/delivery/companies');
       if (response.ok) {
         const data = await response.json();
         setCompanies(data);
@@ -77,7 +75,6 @@ export function OrderFulfillment({ order, onDeliveryAssigned }: OrderFulfillment
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         },
         body: JSON.stringify({
           delivery_company_id: selectedCompany,
@@ -114,7 +111,6 @@ export function OrderFulfillment({ order, onDeliveryAssigned }: OrderFulfillment
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         },
         body: JSON.stringify({
           delivery_company_id: selectedCompany,

@@ -5,7 +5,7 @@
 API_URL="http://localhost:8080"
 ADMIN_TOKEN=$(curl -s -X POST "$API_URL/api/auth/login" \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@ecopro.com","password":"admin123"}' | jq -r '.token')
+  -d '{"email":"admin@ecopro.com","password":"<ADMIN_PASSWORD>"}' | jq -r '.token')
 
 echo "Admin Token: $ADMIN_TOKEN"
 

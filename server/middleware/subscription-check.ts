@@ -22,6 +22,32 @@ export const requireActiveSubscription: RequestHandler = async (req, res, next) 
       return res.status(401).json({ error: "Not authenticated" });
     }
 
+    // If the client is explicitly payment-locked, block access immediately.
+    // (Lock allows login, but should restrict store owner APIs.)
+    try {
+      const lockRes = await pool.query(
+        `SELECT is_locked, locked_reason, lock_type FROM clients WHERE id = $1`,
+        [userId]
+      );
+      if (lockRes.rows.length) {
+        const row = lockRes.rows[0];
+        const lockType = row.lock_type || (typeof row.locked_reason === 'string' && /(subscription|expired|payment|trial|billing)/i.test(row.locked_reason)
+          ? 'payment'
+          : 'critical');
+        if (row.is_locked && lockType === 'payment') {
+          return res.status(403).json({
+            error: row.locked_reason || "Subscription expired. Your store access is temporarily disabled.",
+            accountLocked: true,
+            paymentRequired: true,
+            code: "SUBSCRIPTION_EXPIRED"
+          });
+        }
+      }
+    } catch {
+      // If we cannot validate lock status, fail closed.
+      return res.status(503).json({ error: "Server error checking subscription", code: "SUBSCRIPTION_CHECK_ERROR" });
+    }
+
     // Get subscription from database
     const result = await pool.query(
       `SELECT * FROM subscriptions WHERE user_id = $1`,
@@ -44,6 +70,17 @@ export const requireActiveSubscription: RequestHandler = async (req, res, next) 
     if (subscription.status === 'trial') {
       const trialEnd = new Date(subscription.trial_ends_at);
       if (now < trialEnd) {
+        // Ensure payment-lock is cleared when trial is valid
+        try {
+          await pool.query(
+            `UPDATE clients
+             SET is_locked = false, locked_reason = NULL, lock_type = NULL, updated_at = NOW()
+             WHERE id = $1 AND COALESCE(is_locked, false) = true AND lock_type = 'payment'`,
+            [userId]
+          );
+        } catch {
+          // Non-fatal
+        }
         // Trial still active, allow access
         return next();
       }
@@ -59,6 +96,17 @@ export const requireActiveSubscription: RequestHandler = async (req, res, next) 
     if (subscription.status === 'active' && subscription.period_end) {
       const periodEnd = new Date(subscription.period_end);
       if (now < periodEnd) {
+        // Ensure payment-lock is cleared when subscription is valid
+        try {
+          await pool.query(
+            `UPDATE clients
+             SET is_locked = false, locked_reason = NULL, lock_type = NULL, updated_at = NOW()
+             WHERE id = $1 AND COALESCE(is_locked, false) = true AND lock_type = 'payment'`,
+            [userId]
+          );
+        } catch {
+          // Non-fatal
+        }
         // Paid subscription still active, allow access
         return next();
       }
@@ -72,6 +120,22 @@ export const requireActiveSubscription: RequestHandler = async (req, res, next) 
 
     // Subscription expired or not active - LOCK ACCOUNT
     const trialEnded = subscription.trial_ends_at ? new Date(subscription.trial_ends_at).toISOString() : null;
+
+    // Mark client as payment-locked so UI/bots can rely on a single flag.
+    try {
+      await pool.query(
+        `UPDATE clients
+         SET is_locked = true,
+             lock_type = 'payment',
+             locked_reason = COALESCE(locked_reason, 'Subscription expired. Pay $7/month to unlock.'),
+             locked_at = COALESCE(locked_at, NOW()),
+             updated_at = NOW()
+         WHERE id = $1`,
+        [userId]
+      );
+    } catch {
+      // Non-fatal; still block API access.
+    }
     
     return res.status(403).json({
       error: "Subscription expired. Your store access is temporarily disabled.",

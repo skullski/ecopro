@@ -67,7 +67,6 @@ type CustomerBotProps = {
 
 export default function CustomerBot({ embedded = false }: CustomerBotProps) {
   const navigate = useNavigate();
-  const [token] = useState(() => localStorage.getItem('token') || localStorage.getItem('authToken') || '');
   const [segments, setSegments] = useState<CustomerSegment | null>(null);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,22 +91,17 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
     try {
       setLoading(true);
       setLoadError(null);
+      const [segmentsRes, campaignsRes] = await Promise.all([
+        fetch("/api/customer-bot/segments"),
+        fetch("/api/customer-bot/campaigns"),
+      ]);
 
-      if (!token) {
+      if (segmentsRes.status === 401 || campaignsRes.status === 401) {
         setSegments(EMPTY_SEGMENTS);
         setCampaigns([]);
-        setLoadError("No login token found. Please log in again.");
+        setLoadError("Not authenticated. Please log in again.");
         return;
       }
-
-      const [segmentsRes, campaignsRes] = await Promise.all([
-        fetch("/api/customer-bot/segments", {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch("/api/customer-bot/campaigns", {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-      ]);
 
       if (segmentsRes.ok) {
         const segData = await segmentsRes.json();
@@ -146,7 +140,6 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           name: campaignName,
@@ -184,7 +177,6 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
       setSendingCampaign(campaignId);
       const res = await fetch(`/api/customer-bot/campaigns/${campaignId}/send`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
       });
 
       const data = await res.json();
@@ -210,7 +202,6 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
     try {
       const res = await fetch(`/api/customer-bot/campaigns/${campaignId}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (res.ok) {
@@ -226,7 +217,6 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
       setShowLogs(campaignId);
       setLogsLoading(true);
       const res = await fetch(`/api/customer-bot/campaigns/${campaignId}/logs`, {
-        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (res.ok) {

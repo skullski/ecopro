@@ -32,7 +32,7 @@ pnpm dev
 
 The server will automatically:
 - ✅ Create the `users` table
-- ✅ Create default admin user (admin@ecopro.com / admin123)
+- ✅ Create default admin user (admin@ecopro.com / <ADMIN_PASSWORD>)
 - ✅ Show success messages in console
 
 ## 🎯 What Changed?

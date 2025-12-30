@@ -103,7 +103,7 @@ app.use('/api/store/*', requireActiveSubscription);
 # Get valid token
 TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"skull@gmail.com","password":"anaimad"}' | jq -r '.token')
+  -d '{"email":"skull@gmail.com","password":"<TEST_PASSWORD>"}' | jq -r '.token')
 
 # Test subscription active (should succeed)
 curl -s http://localhost:8080/api/client/products \

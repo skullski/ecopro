@@ -246,17 +246,6 @@ export const createProduct: RequestHandler = async (req, res) => {
       return;
     }
 
-    console.log('[createProduct] incoming body:', {
-      sellerId,
-      title,
-      price,
-      original_price,
-      category,
-      imagesType: Array.isArray(images) ? 'array' : typeof images,
-      imagesCount: Array.isArray(images) ? images.length : 0,
-      payloadSize: JSON.stringify(req.body).length,
-    });
-
     // Validate payload size per image
     const imageArray = Array.isArray(images) ? images : (images ? [images] : []);
     if (imageArray.some((img: string) => img.length > 10_000_000)) {
@@ -311,18 +300,27 @@ export const createProduct: RequestHandler = async (req, res) => {
         ]
       );
     } catch (dbErr: any) {
-      console.error('[createProduct] insert failed:', {
-        code: dbErr.code,
-        detail: dbErr.detail,
-        table: dbErr.table,
-        constraint: dbErr.constraint,
-        message: dbErr.message,
-      });
+      const isProduction = process.env.NODE_ENV === 'production';
+      console.error(
+        '[createProduct] insert failed:',
+        isProduction
+          ? { code: dbErr.code, message: dbErr?.message }
+          : {
+              code: dbErr.code,
+              detail: dbErr.detail,
+              table: dbErr.table,
+              constraint: dbErr.constraint,
+              message: dbErr.message,
+            }
+      );
       if (dbErr.code === '42P01') { // undefined_table
         return res.status(500).json({ error: 'Marketplace products table missing. Run migrations.' });
       }
       if (dbErr.code === '42703') { // undefined_column
-        return res.status(500).json({ error: `Column missing: ${dbErr.message}` });
+        const message = isProduction
+          ? 'Database schema mismatch. Run migrations.'
+          : `Column missing: ${dbErr.message}`;
+        return res.status(500).json({ error: message });
       }
       if (dbErr.code === '23505') { // unique_violation
         return res.status(400).json({ error: 'Duplicate product data violates unique constraint.' });
@@ -510,12 +508,8 @@ export const getSellerOrders: RequestHandler = async (req, res) => {
       AND p.id IS NOT NULL`,
       [sellerId]
     );
-
-    console.log('[getSellerOrders] marketplaceOrders:', marketplaceOrders.rows);
-    console.log('[getSellerOrders] storeOrders:', storeOrders.rows);
     // Merge and sort all orders by created_at desc
     const allOrders = [...marketplaceOrders.rows, ...storeOrders.rows].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    console.log('[getSellerOrders] allOrders:', allOrders);
     res.json(allOrders);
   } catch (error) {
     console.error("Get seller orders error:", error);

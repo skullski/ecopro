@@ -71,9 +71,13 @@ export const getBotSettings: RequestHandler = async (req, res) => {
         whatsappToken: '',
         telegramBotToken: '',
         telegramBotUsername: '',
+        telegramDelayMinutes: 5,
+        autoExpireHours: 24,
         viberAuthToken: '',
         viberSenderName: '',
         templateGreeting: `Thank you for ordering from {storeName}, {customerName}!\n\n✅ Enable notifications on Telegram to receive order confirmation and tracking updates.`,
+        templateInstantOrder: '',
+        templatePinInstructions: '',
         templateOrderConfirmation: `Hello {customerName}! 🌟\n\nThank you for your order from {companyName}! \n\n📦 Order Details:\n• Product: {productName}\n• Price: {totalPrice} DZD\n• Address: {address}\n\nDo you confirm the order? Reply "Yes" to confirm or "No" to cancel.`,
         templatePayment: `Your order #{orderId} has been confirmed. Please pay {totalPrice} DZD.`,
         templateShipping: `Your order #{orderId} has been shipped. Tracking number: {trackingNumber}.`

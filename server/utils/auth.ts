@@ -1,11 +1,23 @@
 import argon2 from "argon2";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { randomInt } from "crypto";
 
-// Security: Moderate token expiry for admin work (7 days)
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-in-production";
-const JWT_EXPIRES_IN = "7d"; // Access token expires in 7 days (sufficient for admin use)
-const REFRESH_TOKEN_EXPIRES_IN = "30d"; // Refresh token expires in 30 days
+const isProduction = process.env.NODE_ENV === 'production';
+
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (secret && secret.trim()) return secret;
+  if (isProduction) {
+    throw new Error('Missing JWT_SECRET in production');
+  }
+  // Dev-only fallback. Do not rely on this in production.
+  return 'dev-jwt-secret-change-me';
+}
+
+// Security: short-lived access token + long-lived refresh token
+const JWT_EXPIRES_IN = '15m';
+const REFRESH_TOKEN_EXPIRES_IN = '30d';
 
 interface JWTPayload {
   id: string;
@@ -23,10 +35,15 @@ export function getUserFromRequest(req: any) {
 }
 
 /**
- * Hash a password (DISABLED - returns plain text as requested)
+ * Hash a password (argon2id)
  */
 export async function hashPassword(password: string): Promise<string> {
-  return password;
+  return argon2.hash(password, {
+    type: argon2.argon2id,
+    memoryCost: 19456,
+    timeCost: 2,
+    parallelism: 1,
+  });
 }
 
 /**
@@ -67,14 +84,14 @@ export async function comparePassword(
  * Generate JWT access token (short-lived, 15 minutes)
  */
 export function generateToken(payload: JWTPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: JWT_EXPIRES_IN });
 }
 
 /**
  * Generate refresh token (long-lived, 7 days)
  */
 export function generateRefreshToken(payload: JWTPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRES_IN });
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: REFRESH_TOKEN_EXPIRES_IN });
 }
 
 /**
@@ -82,11 +99,13 @@ export function generateRefreshToken(payload: JWTPayload): string {
  */
 export function verifyToken(token: string): JWTPayload {
   try {
-    return jwt.verify(token, JWT_SECRET) as JWTPayload;
+    return jwt.verify(token, getJwtSecret()) as JWTPayload;
   } catch (error) {
     throw new Error("Invalid or expired token");
   }
 }
+
+export { getJwtSecret };
 
 /**
  * Extract token from Authorization header
@@ -105,7 +124,7 @@ export function generateSecurePassword(length: number = 12): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
   let password = '';
   for (let i = 0; i < length; i++) {
-    password += chars.charAt(Math.floor(Math.random() * chars.length));
+    password += chars.charAt(randomInt(0, chars.length));
   }
   return password;
 }

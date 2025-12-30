@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { TemplateProps } from '@/pages/storefront/templates/types';
 import { useTemplateUniversalSettings } from '@/hooks/useTemplateUniversalSettings';
+import { coerceSilverImageBlocks } from '@/lib/silverBlocks';
 
 export default function FurnitureTemplate(props: TemplateProps) {
   const universalSettings = useTemplateUniversalSettings();
@@ -27,6 +28,15 @@ export default function FurnitureTemplate(props: TemplateProps) {
   const [filters, setFilters] = useState({ category: 'all', maxPrice: 999999, subcategories: [] });
 
   const { products = [], settings = {}, categories = [] } = props;
+
+  const silverHeaderBlocks = useMemo(
+    () => coerceSilverImageBlocks((settings as any).silver_header_blocks),
+    [settings]
+  );
+  const silverFooterBlocks = useMemo(
+    () => coerceSilverImageBlocks((settings as any).silver_footer_blocks),
+    [settings]
+  );
   const templateSettings = settings as any;
   
   // Extract universal settings with defaults
@@ -137,47 +147,69 @@ export default function FurnitureTemplate(props: TemplateProps) {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: secondary_color }}>
+      {silverHeaderBlocks.length > 0 && (
+        <div className="max-w-6xl mx-auto px-6 pt-4">
+          <div
+            className="grid gap-3"
+            style={{ gridTemplateColumns: `repeat(${silverHeaderBlocks.length}, minmax(0, 1fr))` }}
+          >
+            {silverHeaderBlocks
+              .filter((b) => b.url && String(b.url).trim().length > 0)
+              .map((b) => (
+                <img
+                  key={b.id}
+                  src={b.url}
+                  alt={b.alt || 'Header image'}
+                  className="w-full h-32 object-cover rounded-lg"
+                />
+              ))}
+          </div>
+        </div>
+      )}
       <style>{dynamicStyles}</style>
       {/* Floating Cart */}
-      <div className="fixed bottom-6 right-6 z-40">
-        <button style={{ backgroundColor: primary_color, color: secondary_color }} className="rounded-full font-semibold px-5 py-3 flex items-center gap-2 shadow-lg">
+      <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-40">
+        <button style={{ backgroundColor: primary_color, color: secondary_color }} className="rounded-full font-semibold px-3 py-2 md:px-5 md:py-3 flex items-center gap-2 shadow-lg text-xs md:text-sm">
           {floatingCartLabel}{' '}
-          <span style={{ backgroundColor: secondary_color, color: primary_color }} className="w-6 h-6 rounded-full text-xs flex items-center justify-center font-bold">{cartCount}</span>
+          <span style={{ backgroundColor: secondary_color, color: primary_color }} className="w-5 h-5 md:w-6 md:h-6 rounded-full text-[10px] md:text-xs flex items-center justify-center font-bold">{cartCount}</span>
         </button>
       </div>
 
       {/* Header */}
       <header className="bg-white border-b sticky top-0 z-40" style={{ borderBottomColor: secondary_text_color }}>
-        <div className="max-w-6xl mx-auto px-6 py-3">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div style={{ backgroundColor: primary_color, color: secondary_color }} className="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold overflow-hidden">
+        <div className="max-w-6xl mx-auto px-3 md:px-6 py-2 md:py-3">
+          <div className="flex items-center justify-between gap-2 md:gap-4 mb-2 md:mb-3">
+            <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-shrink-0">
+              <div style={{ backgroundColor: primary_color, color: secondary_color }} className="w-8 h-8 md:w-9 md:h-9 rounded-lg flex items-center justify-center text-[10px] md:text-xs font-bold overflow-hidden flex-shrink-0">
                 {logoUrl ? (
                   <img src={logoUrl} alt={`${storeName} logo`} className="w-full h-full object-contain" />
                 ) : (
                   storeInitials
                 )}
               </div>
-              <div>
-                <h1 className="text-sm font-semibold" style={{ color: text_color }}>{storeName}</h1>
-                <p className="text-xs" style={{ color: secondary_text_color }}>{headerTagline}</p>
+              <div className="min-w-0">
+                <h1 data-edit-path="__settings.store_name" className="text-xs md:text-sm font-semibold truncate" style={{ color: text_color }}>{storeName}</h1>
+                <p data-edit-path="__settings.template_header_tagline" className="text-[10px] md:text-xs truncate hidden sm:block" style={{ color: secondary_text_color }}>{headerTagline}</p>
               </div>
             </div>
-            <input type="text" placeholder={searchPlaceholder} className="hidden md:block flex-1 mx-6 text-sm border rounded-full px-4 py-2" style={{ borderColor: secondary_text_color, backgroundColor: secondary_color, color: text_color }} />
-            <div className="flex items-center gap-3 md:gap-4 text-xs" style={{ color: secondary_text_color }}>
-              <div>{wishlistLabel} {wishlist.length}</div>
-              <div>{compareLabel} {compareList.length}</div>
-              <div>{cartLabel} {cartCount}</div>
+            <input type="text" placeholder={searchPlaceholder} className="hidden lg:block flex-1 mx-4 text-sm border rounded-full px-4 py-2" style={{ borderColor: secondary_text_color, backgroundColor: secondary_color, color: text_color }} />
+            <div className="flex items-center gap-2 md:gap-4 text-[10px] md:text-xs whitespace-nowrap flex-shrink-0" style={{ color: secondary_text_color }}>
+              <span className="hidden sm:inline">{wishlistLabel} {wishlist.length}</span>
+              <span className="hidden md:inline">{compareLabel} {compareList.length}</span>
+              <span>{cartLabel} {cartCount}</span>
             </div>
           </div>
 
           {/* Navigation + Mega Menu */}
-          <div className="flex items-center gap-4 text-sm py-2 border-t" style={{ borderTopColor: secondary_text_color }}>
+          <div className="flex items-center gap-4 text-xs md:text-sm py-1.5 md:py-2 border-t" style={{ borderTopColor: secondary_text_color }}>
             <div className="relative group">
-              <button style={{ color: text_color }}>{navRoomsLabel} ▾</button>
-              <div className="absolute left-0 hidden group-hover:block w-80 bg-white border rounded-lg shadow-lg p-4 z-50" style={{ borderColor: secondary_text_color, backgroundColor: secondary_color }}>
+              <button className="flex items-center gap-1" style={{ color: text_color }}>
+                <span className="truncate">{navRoomsLabel}</span>
+                <span>▾</span>
+              </button>
+              <div className="absolute left-0 hidden group-hover:block w-48 md:w-80 bg-white border rounded-lg shadow-lg p-2 md:p-4 z-50" style={{ borderColor: secondary_text_color, backgroundColor: secondary_color }}>
                 {roomMenu.map((cat: string) => (
-                  <div key={cat} onClick={() => setActiveCategory(cat.toLowerCase())} className="px-3 py-2 hover:bg-gray-100 rounded cursor-pointer text-sm" style={{ color: text_color }}>
+                  <div key={cat} onClick={() => setActiveCategory(cat.toLowerCase())} className="px-2 md:px-3 py-1.5 md:py-2 hover:bg-gray-100 rounded cursor-pointer text-xs md:text-sm" style={{ color: text_color }}>
                     {cat}
                   </div>
                 ))}
@@ -188,18 +220,18 @@ export default function FurnitureTemplate(props: TemplateProps) {
       </header>
 
       {/* Hero Banner */}
-      <section className="py-6 md:py-4 md:py-6" style={{ backgroundColor: secondary_text_color, color: secondary_color }}>
-        <div className="max-w-6xl mx-auto px-6">
-          <h2 className="font-serif text-xl md:text-2xl font-semibold mb-3" style={{ fontSize: headingSizes.h2, color: text_color }}>{heroHeading}</h2>
-          <p style={{ color: secondary_text_color }}>{heroSubtitle}</p>
+      <section className="py-4 md:py-6" style={{ backgroundColor: secondary_text_color, color: secondary_color }}>
+        <div className="max-w-6xl mx-auto px-3 md:px-6">
+          <h2 data-edit-path="__settings.template_hero_heading" className="font-serif text-lg md:text-xl lg:text-2xl font-semibold mb-2 md:mb-3" style={{ color: text_color }}>{heroHeading}</h2>
+          <p data-edit-path="__settings.template_hero_subtitle" className="text-xs md:text-sm" style={{ color: secondary_text_color }}>{heroSubtitle}</p>
         </div>
       </section>
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-6 py-4 md:py-6">
-        <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-4 md:gap-3 md:gap-4">
-          {/* Filters Sidebar */}
-          <aside className="bg-white rounded-lg border border-gray-200 p-4 h-fit">
+      <main className="max-w-6xl mx-auto px-3 md:px-6 py-4 md:py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-4 md:gap-6">
+          {/* Filters Sidebar - Hidden on mobile by default */}
+          <aside className="hidden lg:block bg-white rounded-lg border border-gray-200 p-4 h-fit sticky top-20">
             <h3 className="text-sm font-semibold mb-4 text-gray-900">{filtersTitle}</h3>
 
             {/* Price Filter */}
@@ -232,12 +264,12 @@ export default function FurnitureTemplate(props: TemplateProps) {
 
           {/* Products Grid */}
           <section>
-            <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 md:mb-6 pb-3 md:pb-4 border-b border-gray-200">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">{filteredProducts.length} {itemsLabel}</h3>
-                <p className="text-xs text-gray-600">{wishlist.length} {wishlistedLabel} · {compareList.length} {comparingLabel}</p>
+                <h3 className="text-base md:text-lg font-semibold text-gray-900 whitespace-nowrap">{filteredProducts.length} {itemsLabel}</h3>
+                <p className="text-[10px] md:text-xs text-gray-600 whitespace-nowrap">{wishlist.length} {wishlistedLabel} · {compareList.length} {comparingLabel}</p>
               </div>
-              <select className="text-xs border border-gray-300 rounded-full px-3 py-2 bg-white">
+              <select className="text-[10px] md:text-xs border border-gray-300 rounded-full px-2 md:px-3 py-1.5 md:py-2 bg-white self-start sm:self-auto">
                 <option>{sortFeatured}</option>
                 <option>{sortPriceLowHigh}</option>
                 <option>{sortPriceHighLow}</option>
@@ -245,27 +277,27 @@ export default function FurnitureTemplate(props: TemplateProps) {
               </select>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3 lg:gap-4">
               {filteredProducts.map((p: any) => (
                 <div 
                   key={p.id} 
                   className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition group cursor-pointer flex flex-col"
                   onClick={() => navigate(p.slug && p.slug.length > 0 ? `/store/${storeSlug}/${p.slug}` : `/product/${p.id}`)}
                 >
-                  <div className="relative h-56 bg-gray-100 overflow-hidden">
+                  <div className="relative aspect-square bg-gray-100 overflow-hidden">
                     <img src={p.images?.[0] || 'https://via.placeholder.com/400'} alt={p.title} className="w-full h-full object-cover group-hover:scale-105 transition" />
                   </div>
-                  <div className="p-4 flex flex-col flex-grow">
-                    <p className="font-semibold text-sm text-gray-900 line-clamp-2">{p.title}</p>
-                    <p className="text-xs text-gray-600 mt-1">{p.category}</p>
-                    <p className="font-bold text-lg text-gray-900 mt-2">{p.price} DZD</p>
-                    <div className="flex gap-2 mt-3">
+                  <div className="p-2 md:p-3 lg:p-4 flex flex-col flex-grow">
+                    <p className="font-semibold text-[11px] md:text-xs lg:text-sm text-gray-900 line-clamp-2 leading-tight">{p.title}</p>
+                    <p className="text-[9px] md:text-[10px] lg:text-xs text-gray-500 mt-0.5">{p.category}</p>
+                    <p className="font-bold text-xs md:text-sm lg:text-base text-gray-900 mt-1 md:mt-2">{p.price} DZD</p>
+                    <div className="flex gap-1 mt-2 md:mt-3">
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleWishlist(p.id);
                         }} 
-                        className={`flex-1 py-2 text-xs rounded ${wishlist.includes(p.id) ? 'bg-gray-900 text-white' : 'border border-gray-300'}`}
+                        className={`w-7 h-7 md:w-8 md:h-8 flex items-center justify-center text-[10px] md:text-xs rounded flex-shrink-0 ${wishlist.includes(p.id) ? 'bg-gray-900 text-white' : 'border border-gray-300 text-gray-600'}`}
                       >
                         ♥
                       </button>
@@ -274,7 +306,7 @@ export default function FurnitureTemplate(props: TemplateProps) {
                           e.stopPropagation();
                           toggleCompare(p.id);
                         }} 
-                        className={`flex-1 py-2 text-xs rounded ${compareList.includes(p.id) ? 'bg-gray-900 text-white' : 'border border-gray-300'}`}
+                        className={`w-7 h-7 md:w-8 md:h-8 flex items-center justify-center text-[10px] md:text-xs rounded flex-shrink-0 ${compareList.includes(p.id) ? 'bg-gray-900 text-white' : 'border border-gray-300 text-gray-600'}`}
                       >
                         ⚖
                       </button>
@@ -284,7 +316,7 @@ export default function FurnitureTemplate(props: TemplateProps) {
                           const slug = p.slug || p.id;
                           navigate(storeSlug ? `/store/${storeSlug}/${slug}` : `/product/${p.id}`);
                         }} 
-                        className="flex-1 py-2 bg-gray-900 text-white text-xs rounded font-semibold hover:bg-gray-800"
+                        className="flex-1 h-7 md:h-8 bg-gray-900 text-white text-[9px] md:text-[10px] lg:text-xs rounded font-semibold hover:bg-gray-800 whitespace-nowrap px-1"
                       >
                         {buyNowLabel}
                       </button>
@@ -296,7 +328,7 @@ export default function FurnitureTemplate(props: TemplateProps) {
 
             {canLoadMore && (
               <div className="mt-4 md:mt-6 text-center">
-                <button onClick={() => setVisibleCount(c => c + 8)} className="px-6 py-3 border border-gray-300 rounded-full text-gray-700 hover:border-gray-900 font-semibold text-sm">
+                <button onClick={() => setVisibleCount(c => c + 8)} className="px-4 md:px-6 py-2 md:py-3 border border-gray-300 rounded-full text-gray-700 hover:border-gray-900 font-semibold text-xs md:text-sm">
                   {loadMoreLabel}
                 </button>
               </div>
@@ -306,22 +338,42 @@ export default function FurnitureTemplate(props: TemplateProps) {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-gray-200 mt-6 md:mt-4 md:mt-6 py-4 md:py-6 bg-white">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="grid md:grid-cols-4 gap-4 md:gap-3 md:gap-4 mb-4 md:mb-6">
+      <footer className="border-t border-gray-200 mt-4 md:mt-6 py-4 md:py-6 bg-white">
+        <div className="max-w-6xl mx-auto px-3 md:px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-4 md:mb-6">
             {footerColumns.slice(0, 4).map((col: string) => (
               <div key={col}>
-                <h4 className="font-semibold text-gray-900 mb-3">{col}</h4>
-                <ul className="text-sm text-gray-600 space-y-2">
+                <h4 className="font-semibold text-gray-900 text-sm mb-2 md:mb-3">{col}</h4>
+                <ul className="text-xs md:text-sm text-gray-600 space-y-1.5 md:space-y-2">
                   <li><a href="#" className="hover:text-gray-900">{footerLink1}</a></li>
                   <li><a href="#" className="hover:text-gray-900">{footerLink2}</a></li>
                 </ul>
               </div>
             ))}
           </div>
-          <p className="text-xs text-gray-600 text-center">&copy; {footerYear} {storeName}</p>
+          <p className="text-[10px] md:text-xs text-gray-600 text-center">&copy; {footerYear} {storeName}</p>
         </div>
       </footer>
+
+      {silverFooterBlocks.length > 0 && (
+        <div className="max-w-6xl mx-auto px-6 py-4">
+          <div
+            className="grid gap-3"
+            style={{ gridTemplateColumns: `repeat(${silverFooterBlocks.length}, minmax(0, 1fr))` }}
+          >
+            {silverFooterBlocks
+              .filter((b) => b.url && String(b.url).trim().length > 0)
+              .map((b) => (
+                <img
+                  key={b.id}
+                  src={b.url}
+                  alt={b.alt || 'Footer image'}
+                  className="w-full h-32 object-cover rounded-lg"
+                />
+              ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

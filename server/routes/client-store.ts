@@ -1,4 +1,5 @@
 import { Router, RequestHandler } from "express";
+import { randomBytes } from "crypto";
 import { pool } from "../utils/database";
 import { logStoreSettings } from "../utils/logger";
 
@@ -78,6 +79,8 @@ export const getStoreProduct: RequestHandler = async (req, res) => {
 
 // Create product
 export const createStoreProduct: RequestHandler = async (req, res) => {
+  let client: any;
+  let inTransaction = false;
   try {
     const user = (req as any).user;
     if (user && (user.role === 'admin' || user.user_type === 'admin')) return res.status(403).json({ error: 'Admins are not allowed to manage client storefronts' });
@@ -98,7 +101,11 @@ export const createStoreProduct: RequestHandler = async (req, res) => {
       return res.status(400).json({ error: "Title and price are required" });
     }
 
-    const result = await pool.query(
+    client = await pool.connect();
+    await client.query('BEGIN');
+    inTransaction = true;
+
+    const result = await client.query(
       `INSERT INTO client_store_products 
        (client_id, title, description, price, original_price, images, 
         category, stock_quantity, status, is_featured)
@@ -118,14 +125,16 @@ export const createStoreProduct: RequestHandler = async (req, res) => {
       ]
     );
 
-    // Generate and update slug
     const product = result.rows[0];
     const slug = `${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${product.id}`;
-    
-    await pool.query(
-      `UPDATE client_store_products SET slug = $1 WHERE id = $2`,
-      [slug, product.id]
+
+    await client.query(
+      `UPDATE client_store_products SET slug = $1 WHERE id = $2 AND client_id = $3`,
+      [slug, product.id, clientId]
     );
+
+    await client.query('COMMIT');
+    inTransaction = false;
 
     product.slug = slug;
     // Audit log create
@@ -140,8 +149,17 @@ export const createStoreProduct: RequestHandler = async (req, res) => {
     }
     res.status(201).json(product);
   } catch (error) {
+    if (inTransaction && client) {
+      try {
+        await client.query('ROLLBACK');
+      } catch {}
+    }
     console.error("Create store product error:", error);
     res.status(500).json({ error: "Failed to create product" });
+  } finally {
+    try {
+      if (client) client.release();
+    } catch {}
   }
 };
 
@@ -186,9 +204,6 @@ export const updateStoreProduct: RequestHandler = async (req, res) => {
     fields.push(`updated_at = CURRENT_TIMESTAMP`);
     values.push(id, clientId);
 
-    console.log('[updateStoreProduct] SQL:', `UPDATE client_store_products SET ${fields.join(", ")} WHERE id = $${paramCount} AND client_id = $${paramCount + 1}`);
-    console.log('[updateStoreProduct] Values:', values.map((v, i) => (Array.isArray(v) ? `[array of ${v.length} items]` : typeof v === 'string' && v.length > 100 ? v.substring(0, 100) + '...' : v)));
-
     const result = await pool.query(
       `UPDATE client_store_products 
        SET ${fields.join(", ")}
@@ -212,9 +227,16 @@ export const updateStoreProduct: RequestHandler = async (req, res) => {
     }
     res.json(result.rows[0]);
   } catch (error) {
+    const isProduction = process.env.NODE_ENV === 'production';
     console.error("Update store product error:", error instanceof Error ? error.message : String(error));
-    console.error("Full error:", error);
-    res.status(500).json({ error: "Failed to update product", details: error instanceof Error ? error.message : String(error) });
+    if (!isProduction) {
+      console.error("Full error:", error);
+    }
+    const details = isProduction ? undefined : (error instanceof Error ? error.message : String(error));
+    return res.status(500).json({
+      error: "Failed to update product",
+      ...(details ? { details } : {}),
+    });
   }
 };
 
@@ -309,7 +331,7 @@ export const getStoreSettings: RequestHandler = async (req, res) => {
       }
 
       // Generate unique slug
-      const randomSlug = 'store-' + Math.random().toString(36).substr(2, 8);
+      const randomSlug = 'store-' + randomBytes(6).toString('base64url');
       
       // Create default settings with slug
       result = await pool.query(
@@ -321,7 +343,7 @@ export const getStoreSettings: RequestHandler = async (req, res) => {
 
     // Handle legacy rows missing store_slug
     if (result.rows[0].store_slug == null) {
-      const newSlug = 'store-' + Math.random().toString(36).substr(2, 8);
+      const newSlug = 'store-' + randomBytes(6).toString('base64url');
       const updated = await pool.query(
         `UPDATE client_store_settings SET store_slug = $1 WHERE client_id = $2 RETURNING *`,
         [newSlug, clientId]
@@ -334,7 +356,7 @@ export const getStoreSettings: RequestHandler = async (req, res) => {
     const globalSettings = row?.global_settings && typeof row.global_settings === 'object' ? row.global_settings : {};
     const merged = { ...globalSettings, ...templateSettings, ...row };
 
-    logStoreSettings('getStoreSettings:success', { clientId, result: merged });
+    logStoreSettings('getStoreSettings:success', { clientId, store_slug: merged.store_slug, template: merged.template });
     res.json(merged);
   } catch (error) {
     console.error("Get store settings error:", error);
@@ -350,23 +372,66 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
     if (user && (user.role === 'admin' || user.user_type === 'admin')) return res.status(403).json({ error: 'Admins are not allowed to manage client storefronts' });
     const clientId = (req as any).user.id;
     const updates = req.body || {};
-    // Debug: log incoming updates for easier diagnosis during development
-    console.log('[updateStoreSettings] clientId=', clientId, 'payload=', JSON.stringify(updates));
-    logStoreSettings('updateStoreSettings:start', { clientId, keys: Object.keys(updates), updates });
+    logStoreSettings('updateStoreSettings:start', { clientId, keys: Object.keys(updates) });
 
-    // Ensure DB has the JSON settings columns (safe to run on each update)
-    try {
-      await pool.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS template_settings JSONB NOT NULL DEFAULT '{}'::jsonb`);
-      await pool.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS template_settings_by_template JSONB NOT NULL DEFAULT '{}'::jsonb`);
-      await pool.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS global_settings JSONB NOT NULL DEFAULT '{}'::jsonb`);
-    } catch (e) {
-      console.error('Could not ensure JSON settings columns exist:', (e as any).message);
+    // Basic input validation (defense-in-depth)
+    const updateKeys = Object.keys(updates);
+    if (updateKeys.length > 200) {
+      return res.status(400).json({ error: 'Too many fields in update' });
+    }
+
+    const stringFields = new Set([
+      'store_name',
+      'store_description',
+      'store_logo',
+      'primary_color',
+      'secondary_color',
+      'custom_domain',
+      'store_slug',
+      'template',
+      'banner_url',
+      'currency_code',
+      'hero_main_url',
+      'hero_tile1_url',
+      'hero_tile2_url',
+      'owner_name',
+      'owner_email',
+      'template_hero_heading',
+      'template_hero_subtitle',
+      'template_button_text',
+      'template_accent_color',
+      'seller_name',
+      'seller_email',
+    ]);
+
+    const booleanFields = new Set(['is_public']);
+
+    for (const key of updateKeys) {
+      const value = (updates as any)[key];
+      if (stringFields.has(key)) {
+        if (value !== null && value !== undefined && typeof value !== 'string') {
+          return res.status(400).json({ error: `Invalid type for ${key}` });
+        }
+        if (typeof value === 'string' && value.length > 5000) {
+          return res.status(400).json({ error: `Value too long for ${key}` });
+        }
+      }
+      if (booleanFields.has(key)) {
+        if (value !== null && value !== undefined && typeof value !== 'boolean') {
+          return res.status(400).json({ error: `Invalid type for ${key}` });
+        }
+      }
+      if (key === '__templateSwitch') {
+        if (value !== null && value !== undefined && typeof value !== 'object') {
+          return res.status(400).json({ error: 'Invalid __templateSwitch payload' });
+        }
+      }
     }
 
     // Load current row so we can merge JSON settings and support template switching.
     let existingRes = await pool.query('SELECT * FROM client_store_settings WHERE client_id = $1', [clientId]);
     if (existingRes.rows.length === 0) {
-      const randomSlug = 'store-' + Math.random().toString(36).substr(2, 8);
+      const randomSlug = 'store-' + randomBytes(6).toString('base64url');
       existingRes = await pool.query(
         `INSERT INTO client_store_settings (client_id, store_slug)
          VALUES ($1, $2) RETURNING *`,
@@ -423,23 +488,6 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
         // Unknown type - coerce to null
         updates.store_images = null;
       }
-    }
-
-    // Ensure DB has necessary columns (safe to run on each update)
-    try {
-      await pool.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS store_images TEXT[]`);
-      await pool.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS template_hero_heading TEXT`);
-      await pool.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS template_hero_subtitle TEXT`);
-      await pool.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS template_button_text TEXT`);
-      await pool.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS template_accent_color TEXT`);
-      await pool.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS hero_main_url TEXT`);
-      await pool.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS hero_tile1_url TEXT`);
-      await pool.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS hero_tile2_url TEXT`);
-      await pool.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS seller_name TEXT`);
-      await pool.query(`ALTER TABLE client_store_settings ADD COLUMN IF NOT EXISTS seller_email TEXT`);
-    } catch (e) {
-      // Non-fatal if DB doesn't allow alter; we'll attempt update and let it fail loudly
-      console.error('Could not ensure store columns exist:', (e as any).message);
     }
 
     const fields: string[] = [];
@@ -569,6 +617,28 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
       nextTemplateByTemplate = map;
     }
 
+    // Enforce Gold template access server-side.
+    // Any template id starting with "gold-" requires subscription tier "gold".
+    const requestedTemplate = typeof columnUpdates.template === 'string' ? String(columnUpdates.template) : null;
+    if (requestedTemplate && requestedTemplate.startsWith('gold-')) {
+      const email = String((user as any)?.email || '').trim().toLowerCase();
+      const allowSkull = email === 'skull@gmail.com' || Number(clientId) === 10;
+      if (!allowSkull) {
+        const subRes = await pool.query(
+          'SELECT tier FROM subscriptions WHERE user_id = $1 LIMIT 1',
+          [clientId]
+        );
+        const tier = String(subRes.rows?.[0]?.tier || '').trim().toLowerCase();
+        if (tier !== 'gold') {
+          return res.status(403).json({
+            error: 'Gold templates require a Gold subscription',
+            requiredTier: 'gold',
+            tier: tier || 'unknown',
+          });
+        }
+      }
+    }
+
     // Apply computed + direct column updates
     Object.entries(columnUpdates).forEach(([key, value]) => {
       // Always add the field to update, even if null
@@ -608,18 +678,13 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
        SET ${fields.join(", ")}
        WHERE client_id = $${paramCount}
        RETURNING *`;
-    // Debug: log the exact SQL and parameter values sent to Postgres
-    console.log('[updateStoreSettings] SQL=', queryText);
-    console.log('[updateStoreSettings] SQL values=', JSON.stringify(values));
     const result = await pool.query(queryText, values);
 
-    // Debug: log the DB result so we can confirm persisted values
     const updatedRow = result.rows[0];
-    console.log('[updateStoreSettings] updatedRow=', JSON.stringify(updatedRow));
     const templateSettings = updatedRow?.template_settings && typeof updatedRow.template_settings === 'object' ? updatedRow.template_settings : {};
     const globalSettings = updatedRow?.global_settings && typeof updatedRow.global_settings === 'object' ? updatedRow.global_settings : {};
     const merged = { ...globalSettings, ...templateSettings, ...updatedRow };
-    logStoreSettings('updateStoreSettings:success', { clientId, updated: merged });
+     logStoreSettings('updateStoreSettings:success', { clientId, keys: Object.keys(updates), store_slug: merged.store_slug, template: merged.template });
 
     // Audit log settings update
     const changedSettings = Object.keys(updates);
@@ -638,7 +703,6 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
     const payload: any = { error: "Failed to update store settings" };
     // Always include details in development
     payload.details = (error as any)?.message || String(error);
-    console.log('[updateStoreSettings] Error response:', JSON.stringify(payload));
     res.status(500).json(payload);
   }
 };

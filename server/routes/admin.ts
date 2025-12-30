@@ -3,6 +3,10 @@ import { jsonError } from '../utils/httpHelpers';
 import { RequestHandler } from "express";
 import { requireAdmin } from "../middleware/auth";
 import { findUserByEmail, updateUser } from "../utils/database";
+import { clearSecurityBlockCache } from '../utils/security';
+import { clearBruteForceMemory } from '../utils/brute-force';
+
+const isProduction = process.env.NODE_ENV === 'production';
 
 // Promote a user to admin
 export const promoteUserToAdmin: RequestHandler = async (req, res) => {
@@ -193,8 +197,14 @@ export const deleteUser: RequestHandler = async (req, res) => {
       }
     }
 
-    // Delete from appropriate table
-    await pool.query(`DELETE FROM ${tableToDelete} WHERE id = $1`, [userId]);
+    // Delete from appropriate table (avoid dynamic SQL)
+    if (tableToDelete === 'admins') {
+      await pool.query('DELETE FROM admins WHERE id = $1', [userId]);
+    } else if (tableToDelete === 'clients') {
+      await pool.query('DELETE FROM clients WHERE id = $1', [userId]);
+    } else {
+      return jsonError(res, 400, 'Invalid user type');
+    }
 
     // Audit log
     const actorId = (req as any).user?.id ? parseInt((req as any).user.id, 10) : null;
@@ -321,6 +331,200 @@ export const listActivityLogs: RequestHandler = async (_req, res) => {
   } catch (err) {
     console.error('Failed to list activity logs:', err);
     return jsonError(res, 500, "Failed to list activity logs");
+  }
+};
+
+// List admin audit logs (admin only)
+// These are platform/admin actions recorded in audit_logs.
+export const listAdminAuditLogs: RequestHandler = async (_req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT 
+        id,
+        actor_id,
+        action,
+        COALESCE(target_type, '') as target_type,
+        target_id,
+        details,
+        created_at
+      FROM audit_logs
+      ORDER BY created_at DESC
+      LIMIT 500`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Failed to list admin audit logs:', err);
+    return jsonError(res, 500, 'Failed to list admin audit logs');
+  }
+};
+
+// Clear server caches (admin only)
+// - In-memory: security block list cache + brute-force attempt cache
+// - DB cache: ip_intelligence table (if present)
+export const clearCache: RequestHandler = async (_req, res) => {
+  try {
+    clearSecurityBlockCache();
+    const bf = clearBruteForceMemory();
+
+    let ipIntelDeleted: number | null = null;
+    try {
+      const r = await pool.query('DELETE FROM ip_intelligence');
+      ipIntelDeleted = r.rowCount ?? 0;
+    } catch (e: any) {
+      const msg = String(e?.message || '');
+      // Table may not exist in some environments; treat as non-fatal
+      if (msg.includes('ip_intelligence') && msg.includes('does not exist')) {
+        ipIntelDeleted = null;
+      } else {
+        throw e;
+      }
+    }
+
+    return res.json({
+      ok: true,
+      cleared: {
+        securityBlockCache: true,
+        bruteForce: bf,
+        ipIntelligenceRowsDeleted: ipIntelDeleted,
+      },
+    });
+  } catch (err) {
+    console.error('Failed to clear cache:', err);
+    return jsonError(res, 500, 'Failed to clear cache');
+  }
+};
+
+// Export a safe DB snapshot (admin only)
+// NOTE: This is NOT a full pg_dump. It intentionally excludes secrets/password hashes.
+export const exportDbSnapshot: RequestHandler = async (req, res) => {
+  try {
+    const limit = Math.min(5000, Math.max(1, parseInt(String(req.query.limit || '1000'), 10) || 1000));
+    const nowIso = new Date().toISOString();
+
+    const queries: Array<Promise<{ key: string; rows: any[] }>> = [
+      pool.query(
+        `SELECT setting_key, setting_value, data_type, description, editable, updated_at, updated_by
+         FROM platform_settings
+         ORDER BY setting_key ASC`
+      ).then(r => ({ key: 'platform_settings', rows: r.rows })),
+
+      pool.query(
+        `SELECT id, email, full_name, role, created_at
+         FROM admins
+         ORDER BY created_at DESC
+         LIMIT $1`,
+        [limit]
+      ).then(r => ({ key: 'admins', rows: r.rows })),
+
+      pool.query(
+        `SELECT id, email, name, role, user_type, created_at, updated_at,
+                is_blocked, blocked_reason, blocked_at,
+                is_locked, locked_reason, locked_at, lock_type
+         FROM clients
+         ORDER BY created_at DESC
+         LIMIT $1`,
+        [limit]
+      ).then(r => ({ key: 'clients', rows: r.rows })),
+
+      pool.query(
+        `SELECT client_id, store_slug, store_name, created_at, updated_at
+         FROM client_store_settings
+         ORDER BY updated_at DESC NULLS LAST
+         LIMIT $1`,
+        [limit]
+      ).then(r => ({ key: 'client_store_settings', rows: r.rows })),
+
+      pool.query(
+        `SELECT id, user_id, tier, status, trial_started_at, trial_ends_at,
+                current_period_start, current_period_end, created_at
+         FROM subscriptions
+         ORDER BY created_at DESC
+         LIMIT $1`,
+        [limit]
+      ).then(r => ({ key: 'subscriptions', rows: r.rows })),
+
+      pool.query(
+        `SELECT id, subscription_id, amount, currency, status, provider, provider_transaction_id,
+                created_at
+         FROM payments
+         ORDER BY created_at DESC
+         LIMIT $1`,
+        [limit]
+      ).then(r => ({ key: 'payments', rows: r.rows })),
+
+      pool.query(
+        `SELECT id, client_id, email, full_name, role, status, permissions,
+                last_login, last_ip_address, invited_at, activated_at, created_by,
+                created_at, updated_at
+         FROM staff
+         ORDER BY created_at DESC
+         LIMIT $1`,
+        [limit]
+      ).then(r => ({ key: 'staff', rows: r.rows })),
+
+      pool.query(
+        `SELECT id, client_id, staff_id, action, resource_type, resource_id, resource_name,
+                before_value, after_value, ip_address, user_agent, timestamp
+         FROM staff_activity_log
+         ORDER BY timestamp DESC
+         LIMIT $1`,
+        [limit]
+      ).then(r => ({ key: 'staff_activity_log', rows: r.rows })),
+
+      pool.query(
+        `SELECT id, actor_id, action, target_type, target_id, details, created_at
+         FROM audit_logs
+         ORDER BY created_at DESC
+         LIMIT $1`,
+        [limit]
+      ).then(r => ({ key: 'audit_logs', rows: r.rows })),
+
+      pool.query(
+        `SELECT id, client_id, title, price, status, created_at
+         FROM client_store_products
+         ORDER BY created_at DESC
+         LIMIT $1`,
+        [limit]
+      ).then(r => ({ key: 'client_store_products', rows: r.rows })),
+
+      pool.query(
+        `SELECT id, client_id, status, total_price, customer_name, customer_phone, created_at
+         FROM store_orders
+         ORDER BY created_at DESC
+         LIMIT $1`,
+        [limit]
+      ).then(r => ({ key: 'store_orders', rows: r.rows })),
+    ];
+
+    // Some installs may not have certain tables; allow partial export.
+    const settled = await Promise.allSettled(queries);
+    const data: Record<string, any> = {};
+    const errors: Array<{ table: string; error: string }> = [];
+
+    for (const item of settled) {
+      if (item.status === 'fulfilled') {
+        data[item.value.key] = item.value.rows;
+      } else {
+        // best-effort: infer table name from message
+        const msg = String((item.reason as any)?.message || item.reason || 'Unknown error');
+        errors.push({ table: 'unknown', error: msg });
+      }
+    }
+
+    const payload = {
+      exported_at: nowIso,
+      limit,
+      tables: Object.fromEntries(Object.entries(data).map(([k, v]) => [k, { rows: v, count: Array.isArray(v) ? v.length : 0 }])),
+      errors,
+    };
+
+    const safeDate = nowIso.replace(/[:.]/g, '-');
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="ecopro-export-${safeDate}.json"`);
+    return res.status(200).send(JSON.stringify(payload, null, 2));
+  } catch (err) {
+    console.error('Failed to export DB snapshot:', err);
+    return jsonError(res, 500, 'Failed to export DB snapshot');
   }
 };
 
@@ -690,34 +894,40 @@ export const unlockAccountWithOptions: RequestHandler = async (req, res) => {
 export const lockAccountManually: RequestHandler = async (req, res) => {
   try {
     const adminUser = (req as any).user;
-    console.log('[LOCK ACCOUNT] Admin user:', adminUser?.email, 'Role:', adminUser?.role);
+    if (!isProduction) {
+      console.log('[LOCK ACCOUNT] Admin user:', adminUser?.email, 'Role:', adminUser?.role);
+    }
     
     if (!adminUser || adminUser.role !== 'admin') {
-      console.log('[LOCK ACCOUNT] ❌ Not authorized: admin user:', !!adminUser, 'is admin:', adminUser?.role === 'admin');
+      if (!isProduction) {
+        console.log('[LOCK ACCOUNT] ❌ Not authorized: admin user:', !!adminUser, 'is admin:', adminUser?.role === 'admin');
+      }
       return jsonError(res, 403, "Only admins can lock accounts");
     }
 
     const { client_id, reason, lock_type = 'critical' } = req.body;
-    console.log('[LOCK ACCOUNT] Request body:', { client_id, reason, lock_type });
+    if (!isProduction) console.log('[LOCK ACCOUNT] Request body:', { client_id, reason, lock_type });
 
     // Validate lock_type
     if (!['payment', 'critical'].includes(lock_type)) {
-      console.log('[LOCK ACCOUNT] ❌ Invalid lock_type:', lock_type);
+      if (!isProduction) console.log('[LOCK ACCOUNT] ❌ Invalid lock_type:', lock_type);
       return jsonError(res, 400, "lock_type must be 'payment' or 'critical'");
     }
 
     if (!client_id || !reason) {
-      console.log('[LOCK ACCOUNT] ❌ Missing fields');
+      if (!isProduction) console.log('[LOCK ACCOUNT] ❌ Missing fields');
       return jsonError(res, 400, "client_id and reason are required");
     }
 
     const clientId = parseInt(client_id, 10);
     if (Number.isNaN(clientId)) {
-      console.log('[LOCK ACCOUNT] ❌ Invalid client_id:', client_id);
+      if (!isProduction) console.log('[LOCK ACCOUNT] ❌ Invalid client_id:', client_id);
       return jsonError(res, 400, "Invalid client_id");
     }
 
-    console.log('[LOCK ACCOUNT] Locking client:', clientId, 'by admin:', adminUser.id, 'type:', lock_type);
+    if (!isProduction) {
+      console.log('[LOCK ACCOUNT] Locking client:', clientId, 'by admin:', adminUser.id, 'type:', lock_type);
+    }
     
     // Try to update with lock_type (if column exists)
     let result = await pool.query(
@@ -738,13 +948,15 @@ export const lockAccountManually: RequestHandler = async (req, res) => {
       );
     });
 
-    console.log('[LOCK ACCOUNT] Query result rowCount:', result.rowCount);
+    if (!isProduction) console.log('[LOCK ACCOUNT] Query result rowCount:', result.rowCount);
     if (result.rowCount === 0) {
-      console.log('[LOCK ACCOUNT] ❌ Client not found:', clientId);
+      if (!isProduction) console.log('[LOCK ACCOUNT] ❌ Client not found:', clientId);
       return jsonError(res, 404, "Client not found");
     }
 
-    console.log('[LOCK ACCOUNT] ✅ Account locked successfully:', result.rows[0].email, 'as', lock_type);
+    if (!isProduction) {
+      console.log('[LOCK ACCOUNT] ✅ Account locked successfully:', result.rows[0].email, 'as', lock_type);
+    }
     res.json({
       message: "Account locked successfully",
       account: result.rows[0],
@@ -752,7 +964,7 @@ export const lockAccountManually: RequestHandler = async (req, res) => {
       lock_type
     });
   } catch (err) {
-    console.error('[LOCK ACCOUNT] ❌ Error:', err);
+    console.error('[LOCK ACCOUNT] ❌ Error:', isProduction ? (err as any)?.message : err);
     return jsonError(res, 500, "Failed to lock account");
   }
 };

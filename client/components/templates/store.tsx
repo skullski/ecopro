@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import { type TemplateProps } from "@/pages/storefront/templates/types";
 import { useTemplateUniversalSettings } from "@/hooks/useTemplateUniversalSettings";
+import { coerceSilverImageBlocks } from "@/lib/silverBlocks";
 
 /**
  * Store.tsx
@@ -18,6 +19,15 @@ export default function Store(props: TemplateProps): JSX.Element {
   // Get products and settings from props
   const products = props.products || [];
   const settings = props.settings || {};
+
+  const silverHeaderBlocks = useMemo(
+    () => coerceSilverImageBlocks((settings as any).silver_header_blocks),
+    [settings]
+  );
+  const silverFooterBlocks = useMemo(
+    () => coerceSilverImageBlocks((settings as any).silver_footer_blocks),
+    [settings]
+  );
 
   // Extract settings with defaults
   const {
@@ -130,6 +140,25 @@ export default function Store(props: TemplateProps): JSX.Element {
 
   return (
     <div className="min-h-screen antialiased">
+      {silverHeaderBlocks.length > 0 && (
+        <div className="max-w-7xl mx-auto px-6 pt-6">
+          <div
+            className="grid gap-3"
+            style={{ gridTemplateColumns: `repeat(${silverHeaderBlocks.length}, minmax(0, 1fr))` }}
+          >
+            {silverHeaderBlocks
+              .filter((b) => b.url && String(b.url).trim().length > 0)
+              .map((b) => (
+                <img
+                  key={b.id}
+                  src={b.url}
+                  alt={b.alt || 'Header image'}
+                  className="w-full h-32 object-cover rounded-xl"
+                />
+              ))}
+          </div>
+        </div>
+      )}
       {/* Inline styles for the component (keeps TSX single-file) */}
       <style>{`
         :root {
@@ -190,7 +219,7 @@ export default function Store(props: TemplateProps): JSX.Element {
       <header className="sticky top-0 z-40 header-glass">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center gap-6">
           <a href="#" className="flex items-center gap-3">
-            <div className="logo-badge overflow-hidden">
+            <div className="logo-badge overflow-hidden" data-edit-path="__settings.store_logo">
               {logoUrl ? (
                 <img src={logoUrl} alt={`${storeName} logo`} className="w-full h-full object-contain" />
               ) : (
@@ -198,7 +227,7 @@ export default function Store(props: TemplateProps): JSX.Element {
               )}
             </div>
             <div>
-              <div className="font-semibold">{storeName}</div>
+              <div data-edit-path="__settings.store_name" className="font-semibold">{storeName}</div>
               <div className="text-xs muted">Algeria • {currencyCode}</div>
             </div>
           </a>
@@ -234,7 +263,7 @@ export default function Store(props: TemplateProps): JSX.Element {
         <div className="floating-accent" aria-hidden="true" />
 
         {/* Hero carousel */}
-        <section className="hero-wrap h-[520px] mb-10" aria-roledescription="carousel" aria-label="Featured promotions">
+        <section className="hero-wrap aspect-[16/10] md:aspect-auto md:h-[520px] mb-10" aria-roledescription="carousel" aria-label="Featured promotions">
           {slides.map((s, idx) => {
             const isActive = idx === currentSlide;
             const showVideo = s.type === "build" && heroVideoUrl;
@@ -258,6 +287,7 @@ export default function Store(props: TemplateProps): JSX.Element {
                     muted
                     loop
                     playsInline
+                    data-edit-path="__settings.hero_video_url"
                     style={{
                       position: 'absolute',
                       inset: 0,
@@ -273,8 +303,8 @@ export default function Store(props: TemplateProps): JSX.Element {
                 <div className="hero-overlay" aria-hidden="true" />
                 <div className="hero-content">
                   {s.type === "build" && <span className="hero-badge">Featured</span>}
-                  <h1 className="mt-6 text-4xl md:text-5xl font-extrabold leading-tight">{s.title}</h1>
-                  <p className="mt-4 text-lg max-w-xl muted">{s.subtitle}</p>
+                  <h1 data-edit-path="__settings.template_hero_heading" className="mt-6 text-4xl md:text-5xl font-extrabold leading-tight">{s.title}</h1>
+                  <p data-edit-path="__settings.template_hero_subtitle" className="mt-4 text-lg max-w-xl muted">{s.subtitle}</p>
 
                   <div className="mt-8 flex gap-4">
                     {s.type === "build" ? (
@@ -335,8 +365,8 @@ export default function Store(props: TemplateProps): JSX.Element {
         </section>
 
         {/* Products & filters */}
-        <section id="electronics" className="grid lg:grid-cols-4 gap-8">
-          <aside className="lg:col-span-1">
+        <section id="electronics" className="grid lg:grid-cols-4 gap-4 md:gap-8">
+          <aside className="hidden lg:block lg:col-span-1">
             <div className="card sticky top-28 p-4">
               <h4 className="font-semibold">Filters</h4>
               <div className="mt-3">
@@ -371,7 +401,7 @@ export default function Store(props: TemplateProps): JSX.Element {
                 <p className="text-gray-400">This store hasn't added any products yet. Check back later!</p>
               </div>
             ) : (
-              <div id="productGrid" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              <div id="productGrid" className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-6">
                 {filteredProducts.map((p: any) => {
                   const productImage = Array.isArray(p.images) && p.images.length > 0 
                     ? p.images[0] 
@@ -383,20 +413,20 @@ export default function Store(props: TemplateProps): JSX.Element {
                       onClick={() => handleProductClick(p)}
                     >
                       <div className="relative">
-                        <img src={productImage} alt={p.title || p.name} className="w-full h-40 object-cover rounded-lg" loading="lazy" />
+                        <img src={productImage} alt={p.title || p.name} className="w-full aspect-square md:h-40 md:aspect-auto object-cover rounded-lg" loading="lazy" />
                         {p.is_featured && (
-                          <div className="absolute top-3 left-3">
-                            <span style={{ background: "linear-gradient(90deg,var(--neon-magenta),var(--neon-cyan))", color: "white", padding: "6px 8px", borderRadius: 999, fontWeight: 700, fontSize: 12 }}>Featured</span>
+                          <div className="absolute top-2 md:top-3 left-2 md:left-3">
+                            <span style={{ background: "linear-gradient(90deg,var(--neon-magenta),var(--neon-cyan))", color: "white", padding: "4px 6px", borderRadius: 999, fontWeight: 700, fontSize: 10 }} className="md:text-xs md:px-2 md:py-1.5">Featured</span>
                           </div>
                         )}
                       </div>
-                      <div className="mt-3">
-                        <div className="font-medium line-clamp-1">{p.title || p.name}</div>
-                        <div className="text-xs muted">{p.category || 'Uncategorized'}</div>
-                        <div className="mt-2 flex items-center justify-between">
-                          <div className="price">{Number(p.price).toLocaleString()} {currencyCode}</div>
+                      <div className="mt-2 md:mt-3">
+                        <div className="font-medium text-xs md:text-sm line-clamp-2">{p.title || p.name}</div>
+                        <div className="text-[10px] md:text-xs muted">{p.category || 'Uncategorized'}</div>
+                        <div className="mt-1.5 md:mt-2 flex flex-col sm:flex-row items-start sm:items-center gap-1.5 sm:justify-between">
+                          <div className="price text-xs md:text-sm">{Number(p.price).toLocaleString()} {currencyCode}</div>
                           <button 
-                            className="px-3 py-1 bg-gradient-to-r from-indigo-500 to-cyan-400 text-white rounded text-sm"
+                            className="px-2 md:px-3 py-1 bg-gradient-to-r from-indigo-500 to-cyan-400 text-white rounded text-[10px] md:text-sm whitespace-nowrap"
                             onClick={(e) => addToCart(p)}
                           >
                             Buy
@@ -423,6 +453,26 @@ export default function Store(props: TemplateProps): JSX.Element {
           </div>
         </div>
       </footer>
+
+      {silverFooterBlocks.length > 0 && (
+        <div className="max-w-7xl mx-auto px-6 pb-10">
+          <div
+            className="grid gap-3"
+            style={{ gridTemplateColumns: `repeat(${silverFooterBlocks.length}, minmax(0, 1fr))` }}
+          >
+            {silverFooterBlocks
+              .filter((b) => b.url && String(b.url).trim().length > 0)
+              .map((b) => (
+                <img
+                  key={b.id}
+                  src={b.url}
+                  alt={b.alt || 'Footer image'}
+                  className="w-full h-32 object-cover rounded-xl"
+                />
+              ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

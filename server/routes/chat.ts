@@ -5,6 +5,12 @@ import { Router, Request, Response } from 'express';
 import { chatService } from '../services/chat';
 import { pool } from '../utils/database';
 import { upload } from './uploads';
+import crypto from 'crypto';
+import fs from 'fs/promises';
+import path from 'path';
+import { fileTypeFromFile } from 'file-type';
+import { scanFileForMalware } from '../utils/malware-scan';
+import { signUploadPath, isSafeUploadName } from '../utils/upload-signing';
 import {
   SendMessageSchema,
   CreateChatSchema,
@@ -16,6 +22,15 @@ import {
 import { ZodError } from 'zod';
 
 const router = Router();
+
+const isProduction = process.env.NODE_ENV === 'production';
+const UPLOAD_DIR = process.env.UPLOAD_DIR
+  ? path.resolve(process.env.UPLOAD_DIR)
+  : path.resolve(process.cwd(), 'uploads');
+const serverError = (res: Response, error: any) => {
+  const message = isProduction ? 'Internal server error' : (error?.message || String(error));
+  return res.status(500).json({ error: message });
+};
 
 // Middleware to verify user role
 const getUserRole = (req: Request): { userId: number; role: 'client' | 'seller' | 'admin' | null } => {
@@ -68,7 +83,7 @@ router.get('/list', async (req: Request, res: Response) => {
 
     res.json({ chats, total: chats.length });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return serverError(res, error);
   }
 });
 
@@ -99,9 +114,11 @@ router.post('/create', async (req: Request, res: Response) => {
     res.json({ chat, message: 'Chat created or retrieved' });
   } catch (error: any) {
     if (error instanceof ZodError) {
-      return res.status(400).json({ error: 'Invalid request', details: error.errors });
+      return res
+        .status(400)
+        .json(isProduction ? { error: 'Invalid request' } : { error: 'Invalid request', details: error.errors });
     }
-    res.status(500).json({ error: error.message });
+    return serverError(res, error);
   }
 });
 
@@ -146,7 +163,7 @@ router.get('/:chatId/messages', async (req: Request, res: Response) => {
 
     res.json({ items: messages, total: messages.length });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return serverError(res, error);
   }
 });
 
@@ -158,10 +175,7 @@ router.post('/:chatId/message', async (req: Request, res: Response) => {
   const { userId, role } = getUserRole(req);
   const { chatId } = req.params;
 
-  console.log('[chat/message] userId:', userId, 'role:', role, 'chatId:', chatId, 'body:', req.body);
-
   if (!userId || !role) {
-    console.log('[chat/message] Unauthorized - no userId or role');
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
@@ -186,7 +200,7 @@ router.post('/:chatId/message', async (req: Request, res: Response) => {
     if (error instanceof ZodError) {
       return res.status(400).json({ error: 'Invalid request', details: error.errors });
     }
-    res.status(500).json({ error: error.message });
+    return serverError(res, error);
   }
 });
 
@@ -206,7 +220,7 @@ router.post('/:chatId/mark-read', async (req: Request, res: Response) => {
     await chatService.markMessagesAsRead(Number(chatId), userId, role);
     res.json({ success: true });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return serverError(res, error);
   }
 });
 
@@ -240,7 +254,7 @@ router.post('/:chatId/request-code', async (req: Request, res: Response) => {
     if (error instanceof ZodError) {
       return res.status(400).json({ error: 'Invalid request', details: error.errors });
     }
-    res.status(500).json({ error: error.message });
+    return serverError(res, error);
   }
 });
 
@@ -286,7 +300,7 @@ router.post('/code-request/:requestId/issue', async (req: Request, res: Response
     if (error instanceof ZodError) {
       return res.status(400).json({ error: 'Invalid request', details: error.errors });
     }
-    res.status(500).json({ error: error.message });
+    return serverError(res, error);
   }
 });
 
@@ -322,7 +336,7 @@ router.get('/:chatId/codes', async (req: Request, res: Response) => {
     const codes = await chatService.getCodeRequests(Number(chatId));
     res.json({ codes });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return serverError(res, error);
   }
 });
 
@@ -356,7 +370,7 @@ router.post('/:chatId/status', async (req: Request, res: Response) => {
     if (error instanceof ZodError) {
       return res.status(400).json({ error: 'Invalid request', details: error.errors });
     }
-    res.status(500).json({ error: error.message });
+    return serverError(res, error);
   }
 });
 
@@ -375,7 +389,7 @@ router.get('/unread-count', async (req: Request, res: Response) => {
     const count = await chatService.getUnreadCount(userId);
     res.json({ unread_count: count });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return serverError(res, error);
   }
 });
 
@@ -411,7 +425,7 @@ router.delete('/:chatId', async (req: Request, res: Response) => {
     await chatService.deleteChat(Number(chatId));
     res.json({ success: true, message: 'Chat archived' });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return serverError(res, error);
   }
 });
 
@@ -459,7 +473,7 @@ router.get('/admin/all-chats', async (req: Request, res: Response) => {
 
     res.json({ chats, total: chats.length });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return serverError(res, error);
   }
 });
 
@@ -506,7 +520,7 @@ router.post('/create-admin-chat', async (req: Request, res: Response) => {
       message: 'Chat with admin created/retrieved'
     });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return serverError(res, error);
   }
 });
 
@@ -517,8 +531,9 @@ router.post('/create-admin-chat', async (req: Request, res: Response) => {
 router.post('/:chatId/upload', (req: Request, res: Response, next) => {
   upload.single('file')(req, res, (err: any) => {
     if (err) {
-      console.error('[chat upload] multer error:', err);
-      return res.status(400).json({ error: `Upload failed: ${err.message}` });
+      console.error('[chat upload] multer error:', isProduction ? (err as any)?.message : err);
+      const message = isProduction ? 'Upload failed' : `Upload failed: ${err.message}`;
+      return res.status(400).json({ error: message });
     }
     handleChatFileUpload(req, res, next);
   });
@@ -557,12 +572,34 @@ const handleChatFileUpload = async (req: Request, res: Response, next: Function)
       return res.status(403).json({ error: 'Unauthorized: seller cannot access this chat' });
     }
 
-    const fileUrl = `/uploads/${req.file.filename}`;
-    const fileName = req.file.originalname;
-    const fileType = req.file.mimetype;
-    const isImage = fileType.startsWith('image/');
+    // Secure upload finalization (magic bytes + allowlist + malware scan + signed URL)
+    const allowed = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4']);
+    const detected = await fileTypeFromFile(req.file.path);
+    if (!detected || !allowed.has(detected.mime)) {
+      await fs.unlink(req.file.path).catch(() => null);
+      return res.status(400).json({ error: 'File contents not allowed' });
+    }
 
-    console.log(`[chat upload] File: ${fileName}, Type: ${fileType}, IsImage: ${isImage}`);
+    const scan = await scanFileForMalware(req.file.path);
+    if (scan.ok === false) {
+      await fs.unlink(req.file.path).catch(() => null);
+      return res.status(400).json({ error: scan.reason });
+    }
+
+    await fs.mkdir(UPLOAD_DIR, { recursive: true });
+    const finalName = `${crypto.randomUUID()}.${detected.ext}`;
+    if (!isSafeUploadName(finalName)) {
+      await fs.unlink(req.file.path).catch(() => null);
+      return res.status(400).json({ error: 'Invalid filename' });
+    }
+    const finalPath = path.join(UPLOAD_DIR, finalName);
+    await fs.rename(req.file.path, finalPath);
+    const { exp, sig } = signUploadPath({ filename: finalName, expiresInSeconds: 10 * 60 });
+
+    const fileUrl = `/uploads/${finalName}?exp=${exp}&sig=${sig}`;
+    const fileName = req.file.originalname;
+    const fileType = detected.mime;
+    const isImage = fileType.startsWith('image/');
 
     // Create message with file metadata
     const result = await pool.query(
@@ -587,17 +624,24 @@ const handleChatFileUpload = async (req: Request, res: Response, next: Function)
     );
 
     // Update chat updated_at
-    await pool.query(
-      'UPDATE chats SET updated_at = NOW() WHERE id = $1',
-      [chatId]
-    );
+    if (role === 'client') {
+      await pool.query(
+        'UPDATE chats SET updated_at = NOW() WHERE id = $1 AND client_id = $2',
+        [chatId, userId]
+      );
+    } else {
+      await pool.query(
+        'UPDATE chats SET updated_at = NOW() WHERE id = $1 AND seller_id = $2',
+        [chatId, userId]
+      );
+    }
 
     res.json({ 
       message: 'File uploaded successfully',
       file: result.rows[0]
     });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return serverError(res, error);
   }
 };
 
@@ -656,7 +700,7 @@ router.post('/admin/create-for-client', async (req: Request, res: Response) => {
 
     res.status(201).json({ chat: result.rows[0], message: 'Chat created' });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return serverError(res, error);
   }
 });
 
@@ -696,7 +740,7 @@ router.get('/admin/search-clients', async (req: Request, res: Response) => {
 
     res.json({ clients: result.rows });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return serverError(res, error);
   }
 });
 

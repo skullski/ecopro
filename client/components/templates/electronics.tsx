@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { TemplateProps } from '@/pages/storefront/templates/types';
 import { useTemplateUniversalSettings } from '@/hooks/useTemplateUniversalSettings';
+import { useUniversalTemplateData } from '@/hooks/useUniversalTemplateData';
+import { coerceSilverImageBlocks } from '@/lib/silverBlocks';
 
 export default function ElectronicsTemplate(props: TemplateProps) {
   const universalSettings = useTemplateUniversalSettings();
@@ -23,35 +25,71 @@ export default function ElectronicsTemplate(props: TemplateProps) {
 
   const products = props.products || [];
   const settings = props.settings || {};
+  
+  // ═══════════════════════════════════════════════════════════════════════════
+  // UNIVERSAL TEMPLATE DATA - All editable fields come from here
+  // Adding a new field to useUniversalTemplateData → ALL templates get it
+  // ═══════════════════════════════════════════════════════════════════════════
+  const universalData = useUniversalTemplateData(settings);
+
+  const silverHeaderBlocks = useMemo(
+    () => coerceSilverImageBlocks((settings as any).silver_header_blocks),
+    [settings]
+  );
+  const silverFooterBlocks = useMemo(
+    () => coerceSilverImageBlocks((settings as any).silver_footer_blocks),
+    [settings]
+  );
 
   const previewMode = Boolean((props as any).previewMode);
   const hideProducts = Boolean((props as any).hideProducts);
   const hasProducts = Array.isArray(products) && products.length > 0;
   
-  // Extract universal settings with defaults
+  // ═══════════════════════════════════════════════════════════════════════════
+  // UNIVERSAL SETTINGS - These work the SAME across ALL templates
+  // The visual STYLE is different per template, but the DATA comes from here
+  // ═══════════════════════════════════════════════════════════════════════════
   const {
-    primary_color = '#22d3ee',
-    secondary_color = '#0f172a',
-    accent_color = '#22d3ee',
-    text_color = '#e2e8f0',
-    secondary_text_color = '#94a3b8',
-    font_family = 'Inter',
-    heading_size_multiplier = 'Large',
-    body_font_size = 14,
-    section_padding = 24,
-    border_radius = 8,
-    enable_dark_mode = true,
-    show_product_shadows = true,
-    enable_animations = true,
-  } = useMemo(() => universalSettings as any || {}, [universalSettings]);
+    // Colors - same for all templates
+    primaryColor: primary_color = '#22d3ee',
+    secondaryColor: secondary_color = '#0f172a',
+    accentColor: accent_color = '#22d3ee',
+    textColor: text_color = '#e2e8f0',
+    secondaryTextColor: secondary_text_color = '#94a3b8',
+    
+    // Typography - same for all templates
+    fontFamily: font_family = 'Inter',
+    
+    // Layout - same for all templates
+    borderRadius: border_radius = 8,
+    
+    // Effects - same for all templates  
+    enableDarkMode: enable_dark_mode = true,
+    enableShadows: show_product_shadows = true,
+    enableAnimations: enable_animations = true,
+    
+    // Hero - same fields, different visual placement per template
+    heroTitle,
+    heroSubtitle,
+    heroCtaText,
+    heroSecondaryCtaText,
+    
+    // Store info - same for all templates
+    storeName,
+    storeLogo: logoUrl = '',
+    
+    // Buttons - same for all templates
+    buyButtonText,
+  } = universalData;
   
+  // Map to legacy variable names for backward compatibility
   const accentColor = accent_color;
-  
-  const storeName = settings.store_name || 'ElectroVerse';
   const storeCity = (settings as any).store_city || 'Algiers';
   const heroBadge = (settings as any).template_hero_badge || '2025 line-up';
   const storeInitials = (settings as any).store_initials || String(storeName).slice(0, 2).toUpperCase();
-  const logoUrl = (settings as any).store_logo || (settings as any).logo_url || '';
+  
+  // Heading size multiplier from legacy settings
+  const heading_size_multiplier = (settings as any).heading_size_multiplier || 'Large';
 
   const headerTagline = (settings as any).template_header_tagline || 'Phones · Audio · Gaming · Accessories';
   const headerStatus = (settings as any).template_header_status || '24/7 online';
@@ -60,13 +98,18 @@ export default function ElectronicsTemplate(props: TemplateProps) {
   const emptySubtitle = (settings as any).template_empty_subtitle || 'Add some electronics to your store to see them displayed here.';
   const emptyHint = (settings as any).template_empty_hint || 'Products will appear automatically once you add them to your store.';
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HERO SETTINGS - Use universal data, fallback to template-specific
+  // ═══════════════════════════════════════════════════════════════════════════
   const heroKickerLabel = (settings as any).template_hero_kicker_label || 'New';
   const heroHeadingPrefix = (settings as any).template_hero_heading_prefix || 'Flagship';
   const heroHeadingAccent = (settings as any).template_hero_heading_accent || 'performance';
   const heroHeadingSuffix = (settings as any).template_hero_heading_suffix || 'for your entire tech store.';
-  const heroSubtitle = (settings as any).template_hero_subtitle || 'Showcase phones, headphones, gaming gear and accessories in a layout that feels engineered.';
-  const heroPrimaryCta = (settings as any).template_hero_primary_cta || 'Shop flagship';
-  const heroSecondaryCta = (settings as any).template_hero_secondary_cta || 'View full catalog';
+  // Use universal heroSubtitle (can be edited in any template editor!)
+  const heroSubtitleText = heroSubtitle || (settings as any).template_hero_subtitle || 'Showcase phones, headphones, gaming gear and accessories in a layout that feels engineered.';
+  // Use universal CTA text (can be edited in any template editor!)
+  const heroPrimaryCta = heroCtaText || (settings as any).template_hero_primary_cta || 'Shop flagship';
+  const heroSecondaryCta = heroSecondaryCtaText || (settings as any).template_hero_secondary_cta || 'View full catalog';
 
   const splitKicker = (settings as any).template_split_kicker || 'Catalog engine';
   const splitHeadingPrefix = (settings as any).template_split_heading_prefix || 'Split hero built for';
@@ -91,7 +134,8 @@ export default function ElectronicsTemplate(props: TemplateProps) {
   const topTagLabel = (settings as any).template_top_tag_label || 'TOP';
   const viewButtonLabel = (settings as any).template_view_button_label || 'View';
   const buyButtonLabel = (settings as any).template_buy_button_label || 'Buy';
-  const buyNowLabel = (settings as any).template_buy_now_label || 'Buy Now';
+  // Use universal buyButtonText (can be edited from any template editor!)
+  const buyNowLabel = buyButtonText || (settings as any).template_buy_now_label || 'Buy Now';
 
   const allItemsKicker = (settings as any).template_all_items_kicker || 'All items';
   const categoryPrefix = (settings as any).template_category_prefix || 'Category:';
@@ -150,6 +194,23 @@ export default function ElectronicsTemplate(props: TemplateProps) {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-4 md:py-6 relative" style={{ background: enable_dark_mode ? 'radial-gradient(circle at top, #0f172a 0, #020617 45%, #000 100%)' : secondary_color }}>
+      {silverHeaderBlocks.length > 0 && (
+        <div
+          className="grid gap-3 mb-4"
+          style={{ gridTemplateColumns: `repeat(${silverHeaderBlocks.length}, minmax(0, 1fr))` }}
+        >
+          {silverHeaderBlocks
+            .filter((b) => b.url && String(b.url).trim().length > 0)
+            .map((b) => (
+              <img
+                key={b.id}
+                src={b.url}
+                alt={b.alt || 'Header image'}
+                className="w-full h-32 object-cover rounded-lg"
+              />
+            ))}
+        </div>
+      )}
       <style>{dynamicStyles}</style>
       <header className="flex items-center justify-between mb-4 md:mb-6">
         <div className="flex items-center gap-3">
@@ -161,8 +222,8 @@ export default function ElectronicsTemplate(props: TemplateProps) {
             )}
           </div>
           <div>
-            <h1 className="text-lg sm:text-xl font-semibold tracking-tight text-gray-200">{storeName}</h1>
-            <p className="text-[11px] text-slate-400">{headerTagline}</p>
+            <h1 data-edit-path="__settings.store_name" className="text-lg sm:text-xl font-semibold tracking-tight text-gray-200">{storeName}</h1>
+            <p data-edit-path="__settings.template_header_tagline" className="text-[11px] text-slate-400">{headerTagline}</p>
           </div>
         </div>
         <div className="hidden sm:flex items-center gap-3 text-[11px] text-slate-400">
@@ -184,11 +245,11 @@ export default function ElectronicsTemplate(props: TemplateProps) {
                 <span className="w-1.5 h-1.5 rounded-full bg-lime-400" />
                 {heroKickerLabel} · {heroBadge}
               </span>
-              <h2 className="mt-4 text-xl md:text-2xl sm:text-2xl md:text-xl md:text-2xl font-bold leading-tight text-gray-100">
+              <h2 data-edit-path="__settings.template_hero_heading" className="mt-4 text-xl md:text-2xl sm:text-2xl md:text-xl md:text-2xl font-bold leading-tight text-gray-100">
                 {heroHeadingPrefix} <span style={{ color: accent_color }}>{heroHeadingAccent}</span> {heroHeadingSuffix}
               </h2>
-              <p className="mt-3 text-sm text-slate-200 max-w-md">
-                {heroSubtitle}
+              <p data-edit-path="__settings.template_hero_subtitle" className="mt-3 text-sm text-slate-200 max-w-md">
+                {heroSubtitleText}
               </p>
               {products.length > 0 && (
                 <div className="mt-4 flex flex-wrap gap-3 text-[11px] text-slate-100">
@@ -294,27 +355,27 @@ export default function ElectronicsTemplate(props: TemplateProps) {
         {products.length > 2 && (
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs uppercase tracking-widest text-slate-400">{featuredKicker}</span>
-              <span className="text-[11px] text-slate-400">{featuredHint}</span>
+              <span className="text-[10px] md:text-xs uppercase tracking-widest text-slate-400">{featuredKicker}</span>
+              <span className="text-[10px] md:text-[11px] text-slate-400 hidden sm:inline">{featuredHint}</span>
             </div>
-            <div className="flex gap-3 overflow-x-auto pb-2">
+            <div className="flex gap-2 md:gap-3 overflow-x-auto pb-2">
               {products.slice(2, 5).map(p => (
                 <div 
                   key={p.id} 
                   onClick={() => handleProductClick(p)}
-                  className="p-3 rounded-xl min-w-[220px] flex-shrink-0 bg-slate-900/80 border border-slate-700 group cursor-pointer hover:border-cyan-400 transition flex flex-col"
+                  className="p-2 md:p-3 rounded-xl min-w-[160px] md:min-w-[220px] flex-shrink-0 bg-slate-900/80 border border-slate-700 group cursor-pointer hover:border-cyan-400 transition flex flex-col"
                 >
                   <div className="overflow-hidden rounded-md mb-2">
-                    <img src={p.images[0]} alt={p.title} className="w-full h-[110px] object-cover group-hover:scale-105 transition" />
+                    <img src={p.images[0]} alt={p.title} className="w-full aspect-[4/3] object-cover group-hover:scale-105 transition" />
                   </div>
-                  <div className="flex items-center justify-between text-xs mb-1">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between text-[10px] md:text-xs mb-1 gap-0.5">
                     <span className="line-clamp-1 text-slate-200">{p.title}</span>
-                    <span style={{ color: accentColor }}>{p.price} DZD</span>
+                    <span style={{ color: accentColor }} className="whitespace-nowrap">{p.price} DZD</span>
                   </div>
-                  <div className="text-[11px] text-slate-400 line-clamp-1 mb-2">{String((p as any).category || 'General')}</div>
+                  <div className="text-[9px] md:text-[11px] text-slate-400 line-clamp-1 mb-2">{String((p as any).category || 'General')}</div>
                   <button 
                     style={{ backgroundColor: accentColor, borderColor: accentColor, color: '#0f172a' }} 
-                    className="w-full px-2 py-2 rounded-full bg-slate-900 text-[11px] border font-semibold transition hover:opacity-90" 
+                    className="w-full px-2 py-1.5 md:py-2 rounded-full bg-slate-900 text-[9px] md:text-[11px] border font-semibold transition hover:opacity-90" 
                     onClick={(e) => handleBuyClick(p, e)}
                   >
                     {buyNowLabel}
@@ -352,32 +413,32 @@ export default function ElectronicsTemplate(props: TemplateProps) {
 
       {/* Best Sellers */}
       {products.length > 0 && (
-        <section className="mb-10">
-          <div className="flex items-center justify-between mb-4">
+        <section className="mb-6 md:mb-10">
+          <div className="flex items-center justify-between mb-3 md:mb-4">
             <div>
-              <span className="text-xs uppercase tracking-widest text-slate-400">{bestSellersKicker}</span>
-              <h3 className="mt-1 text-xl font-semibold text-gray-100">{bestSellersTitle}</h3>
+              <span className="text-[10px] md:text-xs uppercase tracking-widest text-slate-400">{bestSellersKicker}</span>
+              <h3 className="mt-0.5 md:mt-1 text-base md:text-xl font-semibold text-gray-100">{bestSellersTitle}</h3>
             </div>
-            <span className="text-[11px] text-slate-400 hidden sm:inline">{bestSellersHint}</span>
+            <span className="text-[10px] md:text-[11px] text-slate-400 hidden sm:inline">{bestSellersHint}</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 md:gap-4">
             {products.slice(0, 4).map((p, idx) => (
-              <div key={p.id} className="rounded-xl p-3 bg-slate-900/80 border border-slate-700 group hover:border-cyan-400 transition relative">
-                <div className="absolute top-2 left-2 px-2 py-1 rounded-full bg-slate-900/90 border border-slate-700 text-slate-300 text-[10px] uppercase tracking-wider font-semibold">
+              <div key={p.id} className="rounded-xl p-2 md:p-3 bg-slate-900/80 border border-slate-700 group hover:border-cyan-400 transition relative">
+                <div className="absolute top-1.5 left-1.5 md:top-2 md:left-2 px-1.5 md:px-2 py-0.5 md:py-1 rounded-full bg-slate-900/90 border border-slate-700 text-slate-300 text-[8px] md:text-[10px] uppercase tracking-wider font-semibold">
                   #{idx + 1} <span style={{ color: accentColor }}>{topTagLabel}</span>
                 </div>
-                <div className="overflow-hidden rounded-md mb-2">
-                  <img src={p.images[0]} alt={p.title} className="w-full h-[130px] sm:h-[140px] object-cover group-hover:scale-105 transition" />
+                <div className="overflow-hidden rounded-md mb-2 mt-5 md:mt-6">
+                  <img src={p.images[0]} alt={p.title} className="w-full aspect-square md:aspect-[4/3] object-cover group-hover:scale-105 transition" />
                 </div>
-                <h4 className="text-sm font-semibold line-clamp-2 text-gray-200">{p.title}</h4>
-                <p className="text-xs text-slate-400 mt-1">{p.price} DZD</p>
-                <p className="text-[11px] text-slate-500 mt-1">{String((p as any).category || 'General')}</p>
-                <div className="flex gap-1 mt-2">
-                  <button className="flex-1 px-2 py-1 rounded-full bg-slate-900 text-[10px] border border-slate-600 text-slate-300 hover:border-cyan-400 transition" onClick={() => handleProductClick(p)}>
+                <h4 className="text-[11px] md:text-sm font-semibold line-clamp-2 text-gray-200">{p.title}</h4>
+                <p className="text-[10px] md:text-xs text-slate-400 mt-0.5 md:mt-1">{p.price} DZD</p>
+                <p className="text-[9px] md:text-[11px] text-slate-500 mt-0.5 md:mt-1 hidden sm:block">{String((p as any).category || 'General')}</p>
+                <div className="flex gap-1 mt-1.5 md:mt-2">
+                  <button className="flex-1 px-1.5 md:px-2 py-1 rounded-full bg-slate-900 text-[8px] md:text-[10px] border border-slate-600 text-slate-300 hover:border-cyan-400 transition whitespace-nowrap" onClick={() => handleProductClick(p)}>
                     {viewButtonLabel}
                   </button>
-                  <button style={{ backgroundColor: accentColor, borderColor: accentColor, color: '#0f172a' }} className="flex-1 px-2 py-1 rounded-full text-[10px] border transition" onClick={(e) => handleBuyClick(p, e)}>
+                  <button style={{ backgroundColor: accentColor, borderColor: accentColor, color: '#0f172a' }} className="flex-1 px-1.5 md:px-2 py-1 rounded-full text-[8px] md:text-[10px] border transition whitespace-nowrap" onClick={(e) => handleBuyClick(p, e)}>
                     {buyButtonLabel}
                   </button>
                 </div>
@@ -399,12 +460,12 @@ export default function ElectronicsTemplate(props: TemplateProps) {
           <span className="text-[11px] text-slate-400">{filteredProducts.length} items</span>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
           {filteredProducts.map((p, idx) => (
             <div
               key={p.id}
               onClick={() => handleProductClick(p)}
-              className={`rounded-xl p-3 bg-slate-900/80 border border-slate-700 group hover:border-cyan-400 transition flex flex-col cursor-pointer ${
+              className={`rounded-xl p-2 md:p-3 bg-slate-900/80 border border-slate-700 group hover:border-cyan-400 transition flex flex-col cursor-pointer ${
                 idx % 7 === 0 ? 'lg:col-span-2' : ''
               }`}
             >
@@ -413,15 +474,15 @@ export default function ElectronicsTemplate(props: TemplateProps) {
                   src={p.images[0]}
                   alt={p.title}
                   className={`w-full object-cover group-hover:scale-105 transition ${
-                    idx % 7 === 0 ? 'h-[150px] sm:h-[170px]' : 'h-[120px] sm:h-[130px]'
+                    idx % 7 === 0 ? 'aspect-[4/3] md:h-[170px] md:aspect-auto' : 'aspect-square md:h-[130px] md:aspect-auto'
                   }`}
                 />
               </div>
-              <h4 className="text-sm font-semibold line-clamp-2 text-gray-200">{p.title}</h4>
-              <p className="text-xs text-slate-400 mt-1">{p.price} DZD</p>
-              <p className="text-[11px] text-slate-500 mt-1 line-clamp-1">{String((p as any).category || 'General')}</p>
-              <div className="flex gap-1 mt-2">
-                <button style={{ backgroundColor: accentColor, borderColor: accentColor, color: '#0f172a' }} className="w-full px-2 py-2 rounded-full text-xs font-semibold border transition hover:opacity-90" onClick={(e) => handleBuyClick(p, e)}>
+              <h4 className="text-xs md:text-sm font-semibold line-clamp-2 text-gray-200">{p.title}</h4>
+              <p className="text-[10px] md:text-xs text-slate-400 mt-0.5 md:mt-1">{p.price} DZD</p>
+              <p className="text-[9px] md:text-[11px] text-slate-500 mt-0.5 md:mt-1 line-clamp-1">{String((p as any).category || 'General')}</p>
+              <div className="flex gap-1 mt-1.5 md:mt-2">
+                <button style={{ backgroundColor: accentColor, borderColor: accentColor, color: '#0f172a' }} className="w-full px-2 py-1.5 md:py-2 rounded-full text-[10px] md:text-xs font-semibold border transition hover:opacity-90 whitespace-nowrap" onClick={(e) => handleBuyClick(p, e)}>
                   {buyNowLabel}
                 </button>
               </div>
@@ -442,6 +503,24 @@ export default function ElectronicsTemplate(props: TemplateProps) {
           ))}
         </div>
       </footer>
+
+      {silverFooterBlocks.length > 0 && (
+        <div
+          className="grid gap-3 mt-4"
+          style={{ gridTemplateColumns: `repeat(${silverFooterBlocks.length}, minmax(0, 1fr))` }}
+        >
+          {silverFooterBlocks
+            .filter((b) => b.url && String(b.url).trim().length > 0)
+            .map((b) => (
+              <img
+                key={b.id}
+                src={b.url}
+                alt={b.alt || 'Footer image'}
+                className="w-full h-32 object-cover rounded-lg"
+              />
+            ))}
+        </div>
+      )}
     </div>
   );
 }

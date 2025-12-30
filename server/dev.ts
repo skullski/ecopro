@@ -1,71 +1,51 @@
 import { createServer } from "./index";
-import { initializeDatabase, createDefaultAdmin, runPendingMigrations } from "./utils/database";
+import { initializeDatabase, runPendingMigrations } from "./utils/database";
 import { processPendingMessages, cleanupOldOrders } from "./utils/bot-messaging";
 import { cleanupExpiredCodes } from "./utils/code-utils";
-import { hashPassword } from "./utils/auth";
 
 const PORT = process.env.PORT || 8080;
 
 async function startServer() {
-  try {
-    // Initialize database and create tables (skip if no DATABASE_URL for local dev)
-    if (process.env.DATABASE_URL) {
-      const url = process.env.DATABASE_URL || '';
-      const masked = url.replace(/:(.*?)@/, ':****@');
-      console.log("🔄 Initializing database... using DATABASE_URL=", masked);
-      await initializeDatabase();
+  // Start server immediately (don't block boot on remote DB + migrations).
+  const app = createServer();
+  app.listen(PORT, () => {
+    console.log(`\n🚀 API Server running on http://localhost:${PORT}`);
+    console.log(`📡 API endpoints available at http://localhost:${PORT}/api`);
+    console.log(`📊 Dashboard available at http://localhost:${PORT}/dashboard\n`);
+  });
 
-      // Run pending migrations
-      await runPendingMigrations();
+  // Initialize DB + migrations + background jobs asynchronously.
+  (async () => {
+    try {
+      if (process.env.DATABASE_URL) {
+        const url = process.env.DATABASE_URL || '';
+        const masked = url.replace(/:(.*?)@/, ':****@');
+        console.log("🔄 Initializing database... using DATABASE_URL=", masked);
+        await initializeDatabase();
+        await runPendingMigrations();
+        console.log('✅ Database ready');
 
-      // Create default admin user
-      const adminEmail = "admin@ecopro.com";
-      const adminPassword = "admin123";
-      const hashedPassword = await hashPassword(adminPassword);
-      await createDefaultAdmin(adminEmail, hashedPassword);
-      console.log(`✅ Default admin user created: ${adminEmail}`);
-      console.log(`🔑 Default password: ${adminPassword}`);
-    } else {
-      console.log("⚠️  No DATABASE_URL found - skipping database initialization");
-      console.log("💡 Frontend will be available but API endpoints will fail");
+        setInterval(() => {
+          processPendingMessages().catch(err => console.error("Bot message processor error:", err));
+        }, 5 * 60 * 1000);
+        console.log("🤖 Bot message processor started (runs every 5 minutes)");
+
+        setInterval(() => {
+          cleanupOldOrders().catch(err => console.error("Order cleanup error:", err));
+        }, 60 * 60 * 1000);
+        console.log("🧹 Order cleanup started (runs every 1 hour)");
+
+        setInterval(() => {
+          cleanupExpiredCodes().catch(err => console.error("Code cleanup error:", err));
+        }, 10 * 60 * 1000);
+        console.log("📋 Subscription code cleanup started (runs every 10 minutes)");
+      } else {
+        console.log("⚠️  No DATABASE_URL found - skipping database initialization");
+      }
+    } catch (error) {
+      console.error("❌ DB init failed (server still running):", error);
     }
-
-    // Create and start server
-    const app = createServer();
-    app.listen(PORT, () => {
-      console.log(`\n🚀 API Server running on http://localhost:${PORT}`);
-      console.log(`📡 API endpoints available at http://localhost:${PORT}/api`);
-      console.log(`📊 Dashboard available at http://localhost:${PORT}/dashboard\n`);
-    });
-
-    // Start background job to process pending bot messages (every 5 minutes)
-    setInterval(() => {
-      processPendingMessages().catch(err => console.error("Bot message processor error:", err));
-    }, 5 * 60 * 1000);
-    console.log("🤖 Bot message processor started (runs every 5 minutes)");
-
-    // Start background job to cleanup old orders (every 1 hour)
-    setInterval(() => {
-      cleanupOldOrders().catch(err => console.error("Order cleanup error:", err));
-    }, 60 * 60 * 1000);
-    console.log("🧹 Order cleanup started (runs every 1 hour)");
-
-    // Start background job to cleanup expired subscription codes (every 10 minutes)
-    setInterval(() => {
-      cleanupExpiredCodes().catch(err => console.error("Code cleanup error:", err));
-    }, 10 * 60 * 1000);
-    console.log("📋 Subscription code cleanup started (runs every 10 minutes)");
-  } catch (error) {
-    console.error("❌ Failed to start server:", error);
-    console.log("💡 Starting server anyway for frontend development...");
-    
-    // Start server even if DB fails (for frontend dev)
-    const app = createServer();
-    app.listen(PORT, () => {
-      console.log(`\n⚠️  API Server running (DB connection failed)`);
-      console.log(`📡 Frontend available at http://localhost:${PORT}\n`);
-    });
-  }
+  })();
 }
 
 startServer();

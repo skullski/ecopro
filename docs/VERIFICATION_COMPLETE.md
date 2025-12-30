@@ -305,7 +305,7 @@ PGPASSWORD='SibI6VXuUdXFDh7gXfnHroSEgmAei1mL' psql \
 # Get admin token
 ADMIN_TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@ecopro.com","password":"admin123"}' | jq -r '.token')
+  -d '{"email":"admin@ecopro.com","password":"<ADMIN_PASSWORD>"}' | jq -r '.token')
 
 # Check metrics
 curl -s http://localhost:8080/api/billing/admin/metrics \

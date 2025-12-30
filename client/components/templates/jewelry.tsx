@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { TemplateProps } from '@/pages/storefront/templates/types';
 import { useTemplateUniversalSettings } from '@/hooks/useTemplateUniversalSettings';
+import { coerceSilverImageBlocks } from '@/lib/silverBlocks';
 
 export default function JewelryTemplate(props: TemplateProps) {
   const universalSettings = useTemplateUniversalSettings();
@@ -23,6 +24,15 @@ export default function JewelryTemplate(props: TemplateProps) {
     enable_animations = true,
     show_product_shadows = true,
   } = useMemo(() => universalSettings as any || {}, [universalSettings]);
+
+  const silverHeaderBlocks = useMemo(
+    () => coerceSilverImageBlocks((settings as any).silver_header_blocks),
+    [settings]
+  );
+  const silverFooterBlocks = useMemo(
+    () => coerceSilverImageBlocks((settings as any).silver_footer_blocks),
+    [settings]
+  );
 
   const storeName = settings.store_name || 'JewelryOS';
 
@@ -180,9 +190,16 @@ export default function JewelryTemplate(props: TemplateProps) {
 
     .product-img {
       width: 100%;
-      height: 260px;
+      aspect-ratio: 3/4;
       object-fit: cover;
       display: block;
+    }
+    
+    @media (min-width: 768px) {
+      .product-img {
+        aspect-ratio: auto;
+        height: 260px;
+      }
     }
 
     .shadow-gold {
@@ -289,12 +306,32 @@ export default function JewelryTemplate(props: TemplateProps) {
 
   return (
     <div className="min-h-screen bg-white" style={{ color: text_color }}>
+      {silverHeaderBlocks.length > 0 && (
+        <div className="max-w-6xl mx-auto px-6 pt-5">
+          <div
+            className="grid gap-3"
+            style={{ gridTemplateColumns: `repeat(${silverHeaderBlocks.length}, minmax(0, 1fr))` }}
+          >
+            {silverHeaderBlocks
+              .filter((b) => b.url && String(b.url).trim().length > 0)
+              .map((b) => (
+                <img
+                  key={b.id}
+                  src={b.url}
+                  alt={b.alt || 'Header image'}
+                  className="w-full h-32 object-cover"
+                  style={{ borderRadius: border_radius }}
+                />
+              ))}
+          </div>
+        </div>
+      )}
       <style>{dynamicStyles}</style>
 
       {/* HEADER */}
       <header className="border-b border-gray-200 bg-white/90 backdrop-blur-sm sticky top-0 z-20">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="text-xs tracking-[0.3em] uppercase" style={{ color: text_color }}>
+          <div data-edit-path="__settings.store_name" className="text-xs tracking-[0.3em] uppercase" style={{ color: text_color }}>
             {storeName}
           </div>
           <nav className="hidden md:flex gap-6 text-[11px] uppercase tracking-[0.16em]" style={{ color: secondary_text_color }}>
@@ -313,13 +350,13 @@ export default function JewelryTemplate(props: TemplateProps) {
       <section className="max-w-6xl mx-auto px-6 pt-10 pb-14">
         <div className="grid md:grid-cols-[1.3fr,1.1fr] gap-10 items-center">
           <div>
-            <div className="mb-3 text-[11px] tracking-[0.28em] uppercase" style={{ color: secondary_text_color }}>
+            <div data-edit-path="__settings.template_hero_kicker" className="mb-3 text-[11px] tracking-[0.28em] uppercase" style={{ color: secondary_text_color }}>
               {heroKicker}
             </div>
-            <h1 className="text-3xl md:text-4xl font-serif mb-4 leading-tight" style={{ color: text_color }}>
+            <h1 data-edit-path="__settings.template_hero_heading" className="text-3xl md:text-4xl font-serif mb-4 leading-tight" style={{ color: text_color }}>
               {heroHeading}
             </h1>
-            <p className="text-sm mb-5 max-w-md" style={{ color: secondary_text_color }}>
+            <p data-edit-path="__settings.template_hero_subtitle" className="text-sm mb-5 max-w-md" style={{ color: secondary_text_color }}>
               {heroSubtitle}
             </p>
             <div className="flex flex-wrap gap-3 mb-4 text-[11px]" style={{ color: secondary_text_color }}>
@@ -355,6 +392,7 @@ export default function JewelryTemplate(props: TemplateProps) {
                 loop
                 playsInline
                 className="hero-img hero-frame"
+                data-edit-path="__settings.hero_video_url"
               >
                 <source src={heroVideoUrl} type="video/mp4" />
               </video>
@@ -363,6 +401,7 @@ export default function JewelryTemplate(props: TemplateProps) {
                 src={heroImage}
                 alt={heroImageAlt}
                 className="hero-img hero-frame"
+                data-edit-path="__settings.banner_url"
               />
             )}
             {heroProduct && (
@@ -409,16 +448,16 @@ export default function JewelryTemplate(props: TemplateProps) {
               {editSubtitle2}
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-2 md:gap-4">
             <img
               src={editImage1}
-              className="h-44 w-full object-cover rounded-2xl shadow-gold border"
+              className="aspect-square md:aspect-auto md:h-44 w-full object-cover rounded-xl md:rounded-2xl shadow-gold border"
               style={{ borderColor: accent_color + '33' }}
               alt={editImage1Alt}
             />
             <img
               src={editImage2}
-              className="h-44 w-full object-cover rounded-2xl shadow-gold border"
+              className="aspect-square md:aspect-auto md:h-44 w-full object-cover rounded-xl md:rounded-2xl shadow-gold border"
               style={{ borderColor: accent_color + '33' }}
               alt={editImage2Alt}
             />
@@ -435,7 +474,7 @@ export default function JewelryTemplate(props: TemplateProps) {
           </span>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
           {filteredProducts.map((p: any) => (
             <div
               key={p.id}
@@ -448,25 +487,25 @@ export default function JewelryTemplate(props: TemplateProps) {
                 alt={p.title}
                 className="product-img"
               />
-              <div className="p-4">
-                <div className="flex items-center justify-between mb-1">
-                  <h3 className="text-sm font-serif font-semibold" style={{ color: text_color }}>
+              <div className="p-2 md:p-4">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-0.5 md:gap-0 mb-1">
+                  <h3 className="text-xs md:text-sm font-serif font-semibold line-clamp-2" style={{ color: text_color }}>
                     {p.title}
                   </h3>
-                  <span className="text-[10px] uppercase tracking-[0.18em]" style={{ color: secondary_text_color }}>
+                  <span className="text-[9px] md:text-[10px] uppercase tracking-[0.18em]" style={{ color: secondary_text_color }}>
                     {p.collection || 'Jewelry'}
                   </span>
                 </div>
-                <p className="text-xs" style={{ color: secondary_text_color }}>
+                <p className="text-[10px] md:text-xs hidden sm:block" style={{ color: secondary_text_color }}>
                   {p.material || 'Premium'}
                 </p>
-                <div className="mt-4 flex items-center justify-between">
-                  <span className={`font-semibold text-sm ${PRICE_CLASS[p.material || 'gold']}`}>
+                <div className="mt-2 md:mt-4 flex flex-col sm:flex-row items-start sm:items-center gap-1.5 sm:justify-between">
+                  <span className={`font-semibold text-xs md:text-sm ${PRICE_CLASS[p.material || 'gold']}`}>
                     {p.price?.toLocaleString() || '0'} DZD
                   </span>
                   <button
                     onClick={(e) => handleBuyClick(p, e)}
-                    className="text-[10px] uppercase tracking-[0.18em] px-3 py-1.5 rounded-full border transition"
+                    className="text-[9px] md:text-[10px] uppercase tracking-[0.12em] md:tracking-[0.18em] px-2 md:px-3 py-1 md:py-1.5 rounded-full border transition whitespace-nowrap"
                     style={{
                       borderColor: accent_color,
                       color: accent_color,
@@ -496,6 +535,27 @@ export default function JewelryTemplate(props: TemplateProps) {
           </div>
         </div>
       </footer>
+
+      {silverFooterBlocks.length > 0 && (
+        <div className="max-w-6xl mx-auto px-6 pb-6">
+          <div
+            className="grid gap-3"
+            style={{ gridTemplateColumns: `repeat(${silverFooterBlocks.length}, minmax(0, 1fr))` }}
+          >
+            {silverFooterBlocks
+              .filter((b) => b.url && String(b.url).trim().length > 0)
+              .map((b) => (
+                <img
+                  key={b.id}
+                  src={b.url}
+                  alt={b.alt || 'Footer image'}
+                  className="w-full h-32 object-cover"
+                  style={{ borderRadius: border_radius }}
+                />
+              ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

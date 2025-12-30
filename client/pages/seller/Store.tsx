@@ -11,8 +11,7 @@ export default function SellerStore() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const token = localStorage.getItem('authToken');
-        const res = await fetch('/api/seller/store/settings', { headers: { Authorization: `Bearer ${token}` } });
+        const res = await fetch('/api/seller/store/settings');
         if (res.ok) {
           const data = await res.json();
           setSettings(data);
@@ -27,10 +26,9 @@ export default function SellerStore() {
   const save = async () => {
     setSaving(true);
     try {
-      const token = localStorage.getItem('authToken');
       const res = await fetch('/api/seller/store/settings', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           store_name: settings.store_name || null,
           store_description: settings.store_description || null,

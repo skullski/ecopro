@@ -376,7 +376,7 @@ Ready to code: Phase 2 implementation in 1 day
 ```
 Server:              http://localhost:8080
 Admin Dashboard:     http://localhost:8080
-                     Login: admin@ecopro.com / admin123
+                     Login: admin@ecopro.com / <ADMIN_PASSWORD>
 API Base URL:        http://localhost:8080/api/billing
 Database:            Render PostgreSQL
 ```

@@ -70,8 +70,15 @@ export default function Pricing() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    setIsLoggedIn(!!token);
+    const check = async () => {
+      try {
+        const res = await fetch('/api/auth/me');
+        setIsLoggedIn(res.ok);
+      } catch {
+        setIsLoggedIn(false);
+      }
+    };
+    check();
   }, []);
 
   const handleRequestCode = async (planId: string) => {

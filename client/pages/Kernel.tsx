@@ -186,19 +186,9 @@ type IPIntelCache = {
   last_checked_at: string;
 };
 
-const TOKEN_KEY = "kernelToken";
-const USER_KEY = "kernelUser";
-
 export default function Kernel() {
-  const [token, setToken] = React.useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
-  const [username, setUsername] = React.useState(() => {
-    try {
-      const u = localStorage.getItem(USER_KEY);
-      return u ? JSON.parse(u)?.username || "" : "";
-    } catch {
-      return "";
-    }
-  });
+  const [token, setToken] = React.useState<string | null>(null);
+  const [username, setUsername] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [error, setError] = React.useState<string>("");
 
@@ -406,9 +396,7 @@ export default function Kernel() {
         throw new Error(data?.error || "Login failed");
       }
 
-      localStorage.setItem(TOKEN_KEY, data.token);
-      localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-      setToken(data.token);
+      setToken("ok");
       setPassword("");
     } catch (e: any) {
       setError(e?.message || "Login failed");
@@ -417,43 +405,30 @@ export default function Kernel() {
     }
   }
 
-  function logout() {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
+  async function logout() {
+    try {
+      await fetch('/api/kernel/logout', { method: 'POST' });
+    } catch {
+      // ignore
+    }
     setToken(null);
     setSummary(null);
     setEvents([]);
   }
 
-  async function loadAll(currentToken: string) {
+  async function loadAll() {
     setLoading(true);
     setError("");
     try {
       const [statusRes, meRes, summaryRes, eventsRes, trafficSummaryRes, trafficRes, blocksRes, linuxRes] = await Promise.all([
-        fetch(`/api/kernel/status`, {
-          headers: { Authorization: `Bearer ${currentToken}` },
-        }),
-        fetch(`/api/kernel/security/me`, {
-          headers: { Authorization: `Bearer ${currentToken}` },
-        }),
-        fetch(`/api/kernel/security/summary?days=${days}`, {
-          headers: { Authorization: `Bearer ${currentToken}` },
-        }),
-        fetch(`/api/kernel/security/events?limit=200`, {
-          headers: { Authorization: `Bearer ${currentToken}` },
-        }),
-        fetch(`/api/kernel/traffic/summary?minutes=${trafficMinutes}`, {
-          headers: { Authorization: `Bearer ${currentToken}` },
-        }),
-        fetch(`/api/kernel/traffic/recent?limit=200`, {
-          headers: { Authorization: `Bearer ${currentToken}` },
-        }),
-        fetch(`/api/kernel/blocks`, {
-          headers: { Authorization: `Bearer ${currentToken}` },
-        }),
-        fetch(`/api/kernel/security/linux/watchlist?days=${linuxDays}&limit=60`, {
-          headers: { Authorization: `Bearer ${currentToken}` },
-        }),
+        fetch(`/api/kernel/status`),
+        fetch(`/api/kernel/security/me`),
+        fetch(`/api/kernel/security/summary?days=${days}`),
+        fetch(`/api/kernel/security/events?limit=200`),
+        fetch(`/api/kernel/traffic/summary?minutes=${trafficMinutes}`),
+        fetch(`/api/kernel/traffic/recent?limit=200`),
+        fetch(`/api/kernel/blocks`),
+        fetch(`/api/kernel/security/linux/watchlist?days=${linuxDays}&limit=60`),
       ]);
 
       if (!statusRes.ok) throw new Error("Failed to load status");
@@ -486,12 +461,8 @@ export default function Kernel() {
       // Load IP Intelligence stats (separate try to not break main load)
       try {
         const [intelStatsRes, intelCacheRes] = await Promise.all([
-          fetch(`/api/intel/admin/stats?days=${days}`, {
-            headers: { Authorization: `Bearer ${currentToken}` },
-          }),
-          fetch(`/api/intel/admin/cache?limit=50`, {
-            headers: { Authorization: `Bearer ${currentToken}` },
-          }),
+          fetch(`/api/intel/admin/stats?days=${days}`),
+          fetch(`/api/intel/admin/cache?limit=50`),
         ]);
         if (intelStatsRes.ok) {
           const statsData = await intelStatsRes.json();
@@ -516,9 +487,7 @@ export default function Kernel() {
     setLookupLoading(true);
     setLookupResult(null);
     try {
-      const res = await fetch(`/api/intel/admin/lookup/${encodeURIComponent(lookupIp.trim())}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(`/api/intel/admin/lookup/${encodeURIComponent(lookupIp.trim())}`);
       if (!res.ok) throw new Error('Lookup failed');
       const data = await res.json();
       setLookupResult(data);
@@ -537,13 +506,12 @@ export default function Kernel() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ fingerprint: me.fingerprint, ip: me.ip, label: 'my_device' }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || 'Failed to trust device');
-      await loadAll(token);
+      await loadAll();
     } catch (e: any) {
       setError(e?.message || 'Failed to trust device');
     }
@@ -555,9 +523,7 @@ export default function Kernel() {
     setActorDetails((prev) => ({ ...prev, [key]: null }));
     try {
       const qs = fingerprint ? `fingerprint=${encodeURIComponent(fingerprint)}` : `ip=${encodeURIComponent(ip || '')}`;
-      const res = await fetch(`/api/kernel/security/actor/events?${qs}&limit=200`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(`/api/kernel/security/actor/events?${qs}&limit=200`);
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || 'Failed to load actor');
       setActorDetails((prev) => ({ ...prev, [key]: data }));
@@ -574,7 +540,6 @@ export default function Kernel() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ ip, reason: reason || null }),
       });
@@ -582,7 +547,7 @@ export default function Kernel() {
       if (!res.ok) throw new Error(data?.error || 'Failed to block IP');
       setBlockIp('');
       setBlockReason('');
-      await loadAll(token);
+      await loadAll();
     } catch (e: any) {
       setError(e?.message || 'Failed to block IP');
     }
@@ -594,11 +559,10 @@ export default function Kernel() {
     try {
       const res = await fetch(`/api/kernel/blocks/${encodeURIComponent(ip)}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || 'Failed to unblock IP');
-      await loadAll(token);
+      await loadAll();
     } catch (e: any) {
       setError(e?.message || 'Failed to unblock IP');
     }
@@ -612,12 +576,11 @@ export default function Kernel() {
     try {
       const res = await fetch('/api/kernel/security/events?confirm=yes', {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || 'Failed to clear events');
       alert(`Cleared ${data.deleted || 0} events`);
-      await loadAll(token);
+      await loadAll();
     } catch (e: any) {
       setError(e?.message || 'Failed to clear events');
     }
@@ -629,12 +592,11 @@ export default function Kernel() {
     try {
       const res = await fetch('/api/kernel/security/events/localhost', {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || 'Failed to clear localhost events');
       alert(`Cleared ${data.deleted || 0} localhost events`);
-      await loadAll(token);
+      await loadAll();
     } catch (e: any) {
       setError(e?.message || 'Failed to clear localhost events');
     }
@@ -647,12 +609,11 @@ export default function Kernel() {
     try {
       const res = await fetch(`/api/kernel/security/events/ip/${encodeURIComponent(ip)}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || 'Failed to clear events');
       alert(`Cleared ${data.deleted || 0} events for ${ip}`);
-      await loadAll(token);
+      await loadAll();
     } catch (e: any) {
       setError(e?.message || 'Failed to clear events');
     }
@@ -665,12 +626,11 @@ export default function Kernel() {
     try {
       const res = await fetch(`/api/kernel/security/events/fingerprint/${encodeURIComponent(fp)}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || 'Failed to clear events');
       alert(`Cleared ${data.deleted || 0} events`);
-      await loadAll(token);
+      await loadAll();
     } catch (e: any) {
       setError(e?.message || 'Failed to clear events');
     }
@@ -687,7 +647,6 @@ export default function Kernel() {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({ ip, reason: 'AUTO:non_dz_geo' }),
           });
@@ -697,7 +656,7 @@ export default function Kernel() {
       }
       setPendingAutoBlock(new Set());
       // Refresh data
-      await loadAll(token);
+      await loadAll();
     };
     
     void autoBlockAll();
@@ -705,7 +664,7 @@ export default function Kernel() {
 
   React.useEffect(() => {
     if (token) {
-      void loadAll(token);
+      void loadAll();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, days, trafficMinutes, linuxDays]);
@@ -796,7 +755,7 @@ export default function Kernel() {
                 className="w-24"
               />
             </div>
-            <Button variant="outline" onClick={() => token && loadAll(token)} disabled={loading}>
+            <Button variant="outline" onClick={() => token && loadAll()} disabled={loading}>
               Refresh
             </Button>
             <Button variant="destructive" onClick={logout}>

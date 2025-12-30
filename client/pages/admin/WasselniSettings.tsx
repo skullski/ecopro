@@ -63,11 +63,7 @@ export default function AdminWasselniSettings() {
   const loadSettings = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('authToken');
       const response = await fetch('/api/bot/settings', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
       });
 
       if (response.ok) {
@@ -89,12 +85,10 @@ export default function AdminWasselniSettings() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const token = localStorage.getItem('authToken');
       const response = await fetch('/api/bot/settings', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(settings)
       });

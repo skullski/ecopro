@@ -61,9 +61,7 @@ export function ChatList({ userRole, selectedChatId, onSelectChat, onCreateChat 
     setLoading(true);
     try {
       const endpoint = userRole === 'admin' ? '/api/chat/admin/all-chats' : '/api/chat/list';
-      const response = await fetch(endpoint, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
-      });
+      const response = await fetch(endpoint);
 
       if (!response.ok) {
         throw new Error('Failed to load chats');
