@@ -2,17 +2,11 @@ import argon2 from "argon2";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { randomInt } from "crypto";
-
-const isProduction = process.env.NODE_ENV === 'production';
+import { getOrGenerateSecret } from "./required-env";
 
 function getJwtSecret(): string {
-  const secret = process.env.JWT_SECRET;
-  if (secret && secret.trim()) return secret;
-  if (isProduction) {
-    throw new Error('Missing JWT_SECRET in production');
-  }
-  // Dev-only fallback. Do not rely on this in production.
-  return 'dev-jwt-secret-change-me';
+  // Use the centralized secret manager which auto-generates in production if needed
+  return getOrGenerateSecret('JWT_SECRET') || 'dev-jwt-secret-change-me';
 }
 
 // Security: short-lived access token + long-lived refresh token

@@ -1,11 +1,10 @@
 // Encryption utilities for sensitive delivery data
 import crypto from 'crypto';
+import { getOrGenerateSecret } from './required-env';
 
 function getEncryptionKey(): string {
-  const key = process.env.ENCRYPTION_KEY;
-  if (key && key.trim()) return key;
-  // Dev-only fallback. Do not rely on this in production.
-  return 'dev-encryption-key-change-me';
+  // Use the centralized secret manager which auto-generates in production if needed
+  return getOrGenerateSecret('ENCRYPTION_KEY') || 'dev-encryption-key-change-me';
 }
 const ALGORITHM = 'aes-256-gcm';
 

@@ -1,9 +1,9 @@
 import crypto from 'crypto';
+import { getOrGenerateSecret } from './required-env';
 
 function getUploadSigningKey(): string {
-  const k = process.env.UPLOAD_SIGNING_KEY;
-  if (k && k.trim()) return k;
-  return 'dev-upload-signing-key-change-me';
+  // Use the centralized secret manager which auto-generates in production if needed
+  return getOrGenerateSecret('UPLOAD_SIGNING_KEY') || 'dev-upload-signing-key-change-me';
 }
 
 const SAFE_NAME_RE = /^[A-Za-z0-9._-]+$/;
