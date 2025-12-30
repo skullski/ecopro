@@ -28,6 +28,8 @@ dist-ssr
 
 # User data database
 data/
+!client/data/
+!client/data/algeria-geo/
 *.json.backup
 
 # Vercel
