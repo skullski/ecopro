@@ -18,7 +18,7 @@ export default function Cart() {
             {i.imageUrl && <img src={i.imageUrl} alt={i.title} className="w-20 h-20 object-cover rounded" />}
             <div className="flex-1">
               <div className="font-medium">{i.title}</div>
-              <div className="text-sm text-gray-600">{t('cart.priceEach', { price: (i.price / 100).toFixed(2) })}</div>
+              <div className="text-sm text-gray-600">{t('cart.priceEach', { price: Math.round(i.price / 100) })}</div>
               <div className="mt-2 flex items-center gap-2">
                 <span className="text-sm">{t('cart.qty')}</span>
                 <input
@@ -32,7 +32,7 @@ export default function Cart() {
             </div>
             <div className="text-right">
               <div className="font-semibold">
-                {t('cart.lineTotal', { total: (i.price * i.qty / 100).toFixed(2) })}
+                {t('cart.lineTotal', { total: Math.round(i.price * i.qty / 100) })}
               </div>
               <div className="mt-2 flex gap-2">
                 <button className="btn btn-outline btn-sm" onClick={() => nav(`/checkout/${i.productId}`)}>
@@ -48,7 +48,7 @@ export default function Cart() {
       </div>
       {cart.items.length > 0 && (
         <div className="flex items-center justify-between pt-4 border-t">
-          <div className="text-xl font-semibold">{t('cart.total', { total: (cart.totalCents / 100).toFixed(2) })}</div>
+          <div className="text-xl font-semibold">{t('cart.total', { total: Math.round(cart.totalCents / 100) })}</div>
           <div className="flex gap-2">
             <button className="btn btn-outline" onClick={() => cart.clear()}>{t('cart.clear')}</button>
             <button className="btn btn-primary" onClick={() => nav(`/checkout/${cart.items[0].productId}`)}>

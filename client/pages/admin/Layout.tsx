@@ -1,12 +1,14 @@
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { EnhancedSidebar } from "@/components/admin/EnhancedSidebar";
 import { useState, useEffect } from "react";
 import { useTranslation } from "../../lib/i18n";
 import { cn } from "@/lib/utils";
 import { getCurrentUser } from "@/lib/auth";
-import { Bell, Search, User, Sparkles } from "lucide-react";
+import { Bell, Search, User, Sparkles, Shield, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useStaffPermissions } from "@/contexts/StaffPermissionContext";
+import { PermissionGate } from "@/components/PermissionGate";
 
 export default function AdminLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -15,23 +17,32 @@ export default function AdminLayout() {
   const isDark = theme === "dark";
   const isRTL = locale === "ar";
   const navigate = useNavigate();
+  const location = useLocation();
   const user = getCurrentUser();
+  const { isStaff, staffUser, logout: staffLogout } = useStaffPermissions();
 
   useEffect(() => {
-    // Check if user is logged in
+    // Check if user is logged in (either as client or staff)
     const user = getCurrentUser();
-    if (!user) {
+    const isStaffMember = localStorage.getItem('isStaff') === 'true';
+    
+    if (!user && !isStaffMember) {
       // Not logged in - redirect to login
       navigate("/login");
       return;
     }
-    if (user.role === "admin") {
+    if (user?.role === "admin") {
       // Admins should not see the dashboard, redirect to admin panel
       navigate("/platform-control-x9k2m8p5q7w3");
       return;
     }
-    // Only vendors/clients see the dashboard
+    // Clients and staff members can see the dashboard
   }, [navigate]);
+
+  const handleStaffLogout = () => {
+    staffLogout();
+    navigate('/staff/login');
+  };
 
   return (
     <div className={cn(
@@ -50,8 +61,31 @@ export default function AdminLayout() {
             : (sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-72')
         )}
       >
+        {/* Staff indicator banner */}
+        {isStaff && staffUser && (
+          <div className="bg-blue-600 text-white px-4 py-2 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Shield className="w-4 h-4" />
+              <span className="text-sm font-medium">
+                Staff Mode: {staffUser.email} ({staffUser.role})
+              </span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleStaffLogout}
+              className="text-white hover:bg-blue-700"
+            >
+              <LogOut className="w-4 h-4 mr-1" />
+              Logout
+            </Button>
+          </div>
+        )}
         <div className="p-4 md:p-6">
-          <Outlet />
+          {/* Wrap outlet with PermissionGate - auto-detects permission from route */}
+          <PermissionGate>
+            <Outlet />
+          </PermissionGate>
         </div>
       </main>
     </div>

@@ -90,6 +90,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { I18nProvider } from "@/lib/i18n";
 import { CartProvider } from "@/state/CartContext";
 import { PermissionProvider } from "@/context/PermissionContext";
+import { StaffPermissionProvider } from "@/contexts/StaffPermissionContext";
 import { initSecurityProbes } from "@/lib/securityProbes";
 
 import { NotificationProvider } from "./contexts/NotificationContext";
@@ -113,17 +114,26 @@ function RedirectAdmin() {
   return <Navigate to={to} replace />;
 }
 
-// Route guard for dashboard: only allow logged-in clients (NOT sellers or admins)
+// Route guard for dashboard: allow logged-in clients AND staff members
 function RequirePaidClient({ children }: { children: JSX.Element }) {
   const user = getCurrentUser();
-  if (!user) {
+  const isStaff = localStorage.getItem('isStaff') === 'true';
+  
+  // If not logged in at all, redirect to login
+  if (!user && !isStaff) {
     return <Navigate to="/login" replace />;
   }
   
-  // SECURITY: Check if user is staff member (not store owner)
-  const isStaff = localStorage.getItem('isStaff') === 'true';
+  // Staff members CAN access dashboard - they'll see permission-gated content
+  // The StaffPermissionProvider and PermissionGate components handle restrictions
   if (isStaff) {
-    return <Navigate to="/staff/dashboard" replace />;
+    // Validate staff session exists
+    const staffId = localStorage.getItem('staffId');
+    if (!staffId) {
+      return <Navigate to="/staff/login" replace />;
+    }
+    // Allow staff to access dashboard pages - permissions handled by PermissionGate
+    return children;
   }
   
   // Check user_type, not role
@@ -355,7 +365,7 @@ function GuestCheckout() {
                   <div className="flex-1">
                     <h3 className="font-medium mb-1">{p?.title}</h3>
                     <p className="text-sm text-muted-foreground mb-2 line-clamp-2">{p?.description}</p>
-                    <div className="text-2xl font-bold text-primary">${Number(p?.price ?? 0).toFixed(2)}</div>
+                    <div className="text-2xl font-bold text-primary">{Math.round(Number(p?.price ?? 0))}</div>
                   </div>
                 </div>
               </div>
@@ -365,7 +375,7 @@ function GuestCheckout() {
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span className="font-medium">${Number(p?.price ?? 0).toFixed(2)}</span>
+                    <span className="font-medium">{Math.round(Number(p?.price ?? 0))}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Shipping</span>
@@ -373,7 +383,7 @@ function GuestCheckout() {
                   </div>
                   <div className="border-t pt-3 flex justify-between text-lg font-bold">
                     <span>Total</span>
-                    <span className="text-primary">${Number(p?.price ?? 0).toFixed(2)}</span>
+                    <span className="text-primary">{Math.round(Number(p?.price ?? 0))}</span>
                   </div>
                 </div>
               </div>
@@ -579,6 +589,7 @@ const App = () => (
         <Sonner />
         <I18nProvider>
           <PermissionProvider>
+            <StaffPermissionProvider>
             <BrowserRouter>
               <NotificationProvider>
               <Layout>
@@ -708,6 +719,7 @@ const App = () => (
             </Layout>
             </NotificationProvider>
           </BrowserRouter>
+          </StaffPermissionProvider>
           </PermissionProvider>
         </I18nProvider>
       </TooltipProvider>

@@ -9,12 +9,12 @@ export const getDashboardStats: RequestHandler = async (req, res) => {
     
     // Get custom statuses that count as revenue
     const revenueStatusesRes = await pool.query(
-      `SELECT name FROM order_statuses WHERE client_id = $1 AND counts_as_revenue = true`,
+      `SELECT key, name FROM order_statuses WHERE client_id = $1 AND counts_as_revenue = true`,
       [clientId]
     );
-    const revenueStatuses = revenueStatusesRes.rows.map(r => r.name);
-    // Include built-in statuses for revenue calculation (English only)
-    revenueStatuses.push('delivered', 'completed', 'confirmed');
+    const revenueStatuses = revenueStatusesRes.rows.map(r => r.key || r.name);
+    // Include built-in 'completed' status (مكتملة) for revenue calculation
+    revenueStatuses.push('completed');
     
     const [productsRes, ordersRes, revenueRes, pendingRes, completedRes] = await Promise.all([
       pool.query(
@@ -77,12 +77,12 @@ export const getDashboardAnalytics: RequestHandler = async (req, res) => {
     
     // Get custom statuses that count as revenue
     const revenueStatusesRes = await pool.query(
-      `SELECT name FROM order_statuses WHERE client_id = $1 AND counts_as_revenue = true`,
+      `SELECT key, name FROM order_statuses WHERE client_id = $1 AND counts_as_revenue = true`,
       [clientId]
     );
-    const revenueStatuses = revenueStatusesRes.rows.map(r => r.name);
-    // Include built-in statuses for revenue calculation (English only)
-    revenueStatuses.push('delivered', 'completed', 'confirmed');
+    const revenueStatuses = revenueStatusesRes.rows.map(r => r.key || r.name);
+    // Include built-in 'completed' status (مكتملة) for revenue calculation
+    revenueStatuses.push('completed');
 
     // Get all custom statuses for breakdown
     const customStatusesRes = await pool.query(

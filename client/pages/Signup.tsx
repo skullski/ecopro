@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/i18n";
-import { authApi } from "@/lib/auth";
 import { FloatingShapes } from "@/components/ui/floating-shapes";
 import { UserPlus, Mail, Lock, Sparkles, User, Loader2 } from "lucide-react";
 
@@ -15,14 +14,30 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
-      await authApi.register({ email, password, name, role: "user" });
-      navigate("/dashboard"); // Redirect to client dashboard
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, password, name })
+      });
+      
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.error || 'Registration failed');
+      }
+      
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+      }
+      
+      navigate("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
@@ -36,7 +51,6 @@ export default function Signup() {
       
       <div className="relative z-10 mx-auto max-w-sm sm:max-w-md w-full px-4">
         <div className="rounded-xl sm:rounded-2xl border-2 border-accent/20 bg-gradient-to-br from-card via-card to-accent/5 p-6 sm:p-8 shadow-2xl backdrop-blur-sm">
-          {/* Header */}
           <div className="text-center mb-3 sm:mb-5">
             <div className="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-accent to-orange-500 mb-3 shadow-lg">
               <UserPlus className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
@@ -46,7 +60,7 @@ export default function Signup() {
             </h2>
             <p className="text-xs sm:text-sm text-muted-foreground mt-1 flex items-center justify-center gap-1">
               <Sparkles className="w-3 h-3 text-accent" />
-              {t('signup.subtitle')}
+              {t('signup.subtitle') || "Create your account"}
             </p>
           </div>
           
@@ -56,7 +70,7 @@ export default function Signup() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-3">
+          <form onSubmit={handleSignup} className="space-y-3">
             <div>
               <label className="block text-xs sm:text-sm font-medium mb-1.5 flex items-center gap-1.5">
                 <User className="w-3.5 h-3.5 text-accent" />
@@ -66,7 +80,7 @@ export default function Signup() {
                 value={name} 
                 onChange={(e) => setName(e.target.value)} 
                 className="w-full rounded-lg border-2 border-accent/20 bg-background px-3 py-2 text-sm focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all" 
-                placeholder={t("auth.namePlaceholder")}
+                placeholder={t("auth.namePlaceholder") || "Enter your name"}
                 type="text"
                 required
                 disabled={loading}
@@ -82,7 +96,7 @@ export default function Signup() {
                 value={email} 
                 onChange={(e) => setEmail(e.target.value)} 
                 className="w-full rounded-lg border-2 border-accent/20 bg-background px-3 py-2 text-sm focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all" 
-                placeholder={t('auth.emailPlaceholder')}
+                placeholder={t('auth.emailPlaceholder') || "Enter your email"}
                 type="email"
                 required
                 disabled={loading}
@@ -98,14 +112,14 @@ export default function Signup() {
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
                 className="w-full rounded-lg border-2 border-accent/20 bg-background px-3 py-2 text-sm focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all" 
-                placeholder={t('auth.passwordPlaceholder')}
+                placeholder={t('auth.passwordPlaceholder') || "Enter your password"}
                 required
                 disabled={loading}
                 minLength={6}
                 autoComplete="new-password"
               />
               <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
-                {t("auth.passwordHint")}
+                {t("auth.passwordHint") || "At least 6 characters"}
               </p>
             </div>
             <div className="flex items-center justify-between pt-1">
@@ -117,11 +131,11 @@ export default function Signup() {
                 {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                    {t("loading") || "Loading..."}
+                    Creating account...
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-4 h-4 ml-2" />
+                    <UserPlus className="w-4 h-4 ml-2" />
                     {t("signup") || "Sign up"}
                   </>
                 )}

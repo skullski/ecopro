@@ -1008,7 +1008,7 @@ export default function Store() {
                           <p className="font-medium truncate">{product.title || product.name}</p>
                           <p className="text-sm text-muted-foreground truncate">{product.description}</p>
                           <div className="flex items-center gap-3 mt-1">
-                            <span className="font-semibold text-primary">${product.price ? Number(product.price).toFixed(2) : '0.00'}</span>
+                            <span className="font-semibold text-primary">{product.price ? Math.round(Number(product.price)) : '0'}</span>
                             <Badge variant="outline" className="text-xs">
                               Stock: {product.stock_quantity}
                             </Badge>

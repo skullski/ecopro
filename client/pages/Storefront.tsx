@@ -72,13 +72,13 @@ export default function Storefront() {
   const secondaryColor = storeSettings.secondary_color || '#0ea5e9';
   const bannerUrl = storeSettings.banner_url || '';
 
-  // Price formatter based on store currency
+  // Price formatter based on store currency (no decimals)
   const formatPrice = (n: number) => {
-    const code = storeSettings.currency_code || 'USD';
+    const code = storeSettings.currency_code || 'DZD';
     try {
-      return new Intl.NumberFormat(undefined, { style: 'currency', currency: code }).format(n);
+      return new Intl.NumberFormat(undefined, { style: 'currency', currency: code, maximumFractionDigits: 0, minimumFractionDigits: 0 }).format(Math.round(n));
     } catch {
-      return `$${n.toFixed(2)}`;
+      return `${Math.round(n)} ${code}`;
     }
   };
 

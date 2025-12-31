@@ -205,9 +205,129 @@ export const handleDeliveryWebhook: RequestHandler = async (req, res) => {
   }
 };
 
+/**
+ * POST /api/delivery/orders/bulk-assign
+ * Bulk assign delivery company to multiple orders and generate labels
+ */
+export const bulkAssignDelivery: RequestHandler = async (req, res) => {
+  try {
+    const clientId = req.user?.id || (req.body.client_id as number);
+    const { order_ids, delivery_company_id, generate_labels } = req.body;
+
+    if (!clientId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    if (!order_ids || !Array.isArray(order_ids) || order_ids.length === 0) {
+      res.status(400).json({ error: 'No orders selected' });
+      return;
+    }
+
+    if (!delivery_company_id) {
+      res.status(400).json({ error: 'Delivery company is required' });
+      return;
+    }
+
+    // If generating labels, check if integration is configured FIRST
+    if (generate_labels) {
+      const integrationCheck = await pool.query(
+        `SELECT di.id, dc.name as company_name
+         FROM delivery_integrations di
+         JOIN delivery_companies dc ON dc.id = di.delivery_company_id
+         WHERE di.client_id = $1 AND di.delivery_company_id = $2 AND di.is_enabled = true`,
+        [clientId, delivery_company_id]
+      );
+
+      if (integrationCheck.rows.length === 0) {
+        res.status(400).json({ 
+          error: 'Delivery integration not configured',
+          details: 'You need to configure API credentials for this delivery company in Settings → Delivery Companies before generating labels.'
+        });
+        return;
+      }
+    }
+
+    const results: { orderId: number; success: boolean; error?: string; tracking_number?: string }[] = [];
+
+    // Process each order
+    for (const orderId of order_ids) {
+      try {
+        // Get order details for COD amount
+        const orderResult = await pool.query(
+          'SELECT total_price FROM store_orders WHERE id = $1 AND client_id = $2',
+          [orderId, clientId]
+        );
+
+        if (orderResult.rows.length === 0) {
+          results.push({ orderId, success: false, error: 'Order not found' });
+          continue;
+        }
+
+        const codAmount = orderResult.rows[0].total_price;
+
+        // Assign delivery company
+        const assignResult = await DeliveryService.assignDeliveryCompany(
+          orderId,
+          clientId as number,
+          Number(delivery_company_id),
+          codAmount
+        );
+
+        if (!assignResult.success) {
+          results.push({ orderId, success: false, error: assignResult.error });
+          continue;
+        }
+
+        // Generate label if requested
+        if (generate_labels) {
+          const labelResult = await DeliveryService.generateLabel(
+            orderId,
+            clientId as number,
+            Number(delivery_company_id)
+          );
+
+          if (labelResult.success) {
+            results.push({
+              orderId,
+              success: true,
+              tracking_number: labelResult.tracking_number,
+            });
+          } else {
+            results.push({
+              orderId,
+              success: true, // Assignment succeeded
+              error: `Label generation failed: ${labelResult.error}`,
+            });
+          }
+        } else {
+          results.push({ orderId, success: true });
+        }
+      } catch (err: any) {
+        results.push({ orderId, success: false, error: err.message });
+      }
+    }
+
+    const successCount = results.filter((r) => r.success).length;
+    const failCount = results.filter((r) => !r.success).length;
+
+    res.json({
+      success: true,
+      message: `${successCount} orders assigned successfully${failCount > 0 ? `, ${failCount} failed` : ''}`,
+      results,
+      successCount,
+      failCount,
+    });
+  } catch (error: any) {
+    console.error('[Delivery] bulkAssignDelivery error:', error);
+    res.status(500).json({ error: 'Failed to process bulk assignment' });
+  }
+};
+
 // Register routes
 deliveryRouter.get('/companies', getDeliveryCompanies);
 deliveryRouter.post('/integrations', configureDeliveryIntegration);
+deliveryRouter.post('/orders/bulk-assign', bulkAssignDelivery);
 deliveryRouter.post('/orders/:id/assign', assignDeliveryToOrder);
 deliveryRouter.post('/orders/:id/generate-label', generateShippingLabel);
 deliveryRouter.get('/orders/:id/tracking', getOrderTracking);

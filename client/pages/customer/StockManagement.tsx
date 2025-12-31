@@ -612,7 +612,7 @@ export default function StockManagement() {
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
                 <p className="text-xs text-muted-foreground font-medium truncate">💰 Value</p>
-                <p className="text-lg md:text-xl font-bold text-emerald-600 dark:text-emerald-400">${totalValue.toFixed(0)}</p>
+                <p className="text-lg md:text-xl font-bold text-emerald-600 dark:text-emerald-400">{Math.round(totalValue)}</p>
               </div>
               <div className="bg-emerald-500/20 dark:bg-emerald-500/10 p-2 rounded flex-shrink-0">
                 <BarChart3 className="w-4 h-4 md:w-5 md:h-5 text-emerald-500" />
@@ -765,7 +765,7 @@ export default function StockManagement() {
                         <span className="text-[10px] text-muted-foreground">/{item.reorder_level}</span>
                       </td>
                       <td className="p-2 text-right font-medium text-sm">
-                        {item.unit_price ? `$${Number(item.unit_price).toFixed(0)}` : '-'}
+                        {item.unit_price ? Math.round(Number(item.unit_price)) : '-'}
                       </td>
                       <td className="p-2 text-center text-muted-foreground text-xs">{item.location || '-'}</td>
                       <td className="p-2 text-center">

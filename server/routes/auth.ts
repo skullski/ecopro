@@ -669,3 +669,252 @@ export const searchUserByEmail: RequestHandler = async (req, res) => {
     return jsonError(res, 500, 'Failed to search user');
   }
 };
+
+// ========================================
+// EMAIL VERIFICATION FOR SIGNUP
+// ========================================
+
+import { sendVerificationCode, generateVerificationCode } from '../services/email';
+
+/**
+ * Send verification code to email
+ * POST /api/auth/send-verification
+ */
+export const sendVerificationCodeHandler: RequestHandler = async (req, res) => {
+  try {
+    const { email, name, password } = req.body;
+
+    if (!email || !password) {
+      return jsonError(res, 400, 'Email and password are required');
+    }
+
+    // Check if user already exists
+    const existingUser = await findUserByEmail(email);
+    if (existingUser) {
+      return jsonError(res, 400, 'Email already registered');
+    }
+
+    // Strong password policy check
+    const policy = checkPasswordPolicy(password, email);
+    if (policy.ok === false) {
+      return jsonError(res, 400, policy.reason);
+    }
+
+    // Check for breached password
+    const pwned = await checkPwnedPassword(password);
+    if (pwned.ok && pwned.pwned) {
+      return jsonError(res, 400, 'Password has appeared in a data breach; choose a different password');
+    }
+
+    const pool = await ensureConnection();
+
+    // Check rate limit - max 3 codes per email per hour
+    const recentCodes = await pool.query(
+      `SELECT COUNT(*) as count FROM email_verifications 
+       WHERE email = $1 AND created_at > NOW() - INTERVAL '1 hour'`,
+      [email]
+    );
+    
+    if (parseInt(recentCodes.rows[0].count) >= 3) {
+      return jsonError(res, 429, 'Too many verification requests. Please wait before trying again.');
+    }
+
+    // Generate 6-digit code
+    const code = generateVerificationCode();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Store verification record (delete old ones for this email first)
+    await pool.query('DELETE FROM email_verifications WHERE email = $1', [email]);
+    await pool.query(
+      `INSERT INTO email_verifications (email, code, expires_at) VALUES ($1, $2, $3)`,
+      [email, code, expiresAt]
+    );
+
+    // Send email
+    const emailResult = await sendVerificationCode(email, code);
+    
+    if (!emailResult.success) {
+      console.error('[AUTH] Failed to send verification email:', emailResult.error);
+      // Still return success - code is in DB, user can retry
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'Verification code sent to your email',
+      // Only include code in development for testing
+      ...(process.env.NODE_ENV !== 'production' ? { code } : {})
+    });
+  } catch (error) {
+    console.error('[AUTH] Send verification error:', error);
+    return jsonError(res, 500, 'Failed to send verification code');
+  }
+};
+
+/**
+ * Verify code and complete registration
+ * POST /api/auth/verify-and-register
+ */
+export const verifyAndRegister: RequestHandler = async (req, res) => {
+  try {
+    const { email, password, name, code } = req.body;
+
+    if (!email || !password || !code) {
+      return jsonError(res, 400, 'Email, password, and verification code are required');
+    }
+
+    const pool = await ensureConnection();
+
+    // Find valid verification record
+    const verifyResult = await pool.query(
+      `SELECT * FROM email_verifications 
+       WHERE email = $1 AND code = $2 AND expires_at > NOW() AND verified = false
+       LIMIT 1`,
+      [email, code]
+    );
+
+    if (verifyResult.rows.length === 0) {
+      // Check if code exists but expired or wrong
+      const anyCode = await pool.query(
+        `SELECT * FROM email_verifications WHERE email = $1 ORDER BY created_at DESC LIMIT 1`,
+        [email]
+      );
+      
+      if (anyCode.rows.length > 0) {
+        const record = anyCode.rows[0];
+        if (record.code !== code) {
+          // Update attempts
+          await pool.query(
+            `UPDATE email_verifications SET attempts = attempts + 1 WHERE id = $1`,
+            [record.id]
+          );
+          return jsonError(res, 400, 'Invalid verification code');
+        }
+        if (new Date(record.expires_at) < new Date()) {
+          return jsonError(res, 400, 'Verification code has expired. Please request a new one.');
+        }
+        if (record.verified) {
+          return jsonError(res, 400, 'This code has already been used');
+        }
+      }
+      
+      return jsonError(res, 400, 'Invalid or expired verification code');
+    }
+
+    // Mark as verified
+    await pool.query(
+      `UPDATE email_verifications SET verified = true WHERE id = $1`,
+      [verifyResult.rows[0].id]
+    );
+
+    // Now proceed with actual registration (same as original register function)
+    
+    // Check if user already exists (double-check)
+    const existingUser = await findUserByEmail(email);
+    if (existingUser) {
+      return jsonError(res, 400, 'Email already registered');
+    }
+
+    // Check platform user limit
+    const userCountResult = await pool.query("SELECT COUNT(*) as count FROM clients");
+    const currentUserCount = parseInt(userCountResult.rows[0].count);
+    
+    const maxUsersResult = await pool.query(
+      "SELECT setting_value FROM platform_settings WHERE setting_key = 'max_users'"
+    );
+    const maxUsers = maxUsersResult.rows.length > 0 
+      ? parseInt(maxUsersResult.rows[0].setting_value) 
+      : 1000;
+    
+    if (currentUserCount >= maxUsers) {
+      return jsonError(res, 429, `Platform is at capacity. Maximum users: ${maxUsers}`);
+    }
+
+    // Hash password and create user
+    const hashedPassword = await hashPassword(password);
+    const user = await createUser({
+      email,
+      password: hashedPassword,
+      name: name || email.split('@')[0],
+      role: 'client',
+      user_type: 'client',
+    });
+
+    // Create client record
+    try {
+      await pool.query(
+        `INSERT INTO clients (email, password, name, role, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, NOW(), NOW())
+         ON CONFLICT (email) DO NOTHING`,
+        [user.email, user.password, user.name || 'Store Owner', 'client']
+      );
+    } catch (clientError) {
+      console.warn("[REGISTER] Could not create client record:", clientError);
+    }
+
+    // Log security event
+    try {
+      const ip = getClientIp(req as any);
+      const ua = (req.headers['user-agent'] as string | undefined) || null;
+      const geo = getGeo(req as any, ip);
+      const fpCookie = parseCookie(req as any, 'ecopro_fp');
+      const fingerprint = computeFingerprint({ ip, userAgent: ua, cookie: fpCookie });
+
+      await logSecurityEvent({
+        event_type: 'auth_register_verified',
+        severity: 'info',
+        request_id: (req as any).requestId || null,
+        method: req.method,
+        path: req.path,
+        status_code: 201,
+        ip,
+        user_agent: ua,
+        fingerprint,
+        country_code: geo.country_code,
+        region: geo.region,
+        city: geo.city,
+        user_id: String(user.id),
+        user_type: 'client',
+        role: 'client',
+        metadata: {
+          scope: 'auth',
+          action: 'register_with_email_verification',
+        },
+      });
+    } catch (e) {
+      console.warn('[REGISTER] Failed to log security event:', (e as any)?.message || e);
+    }
+
+    // Generate tokens
+    const token = generateToken({
+      id: user.id,
+      email: user.email,
+      role: 'user',
+      user_type: 'client',
+    });
+
+    const refreshToken = generateRefreshToken({
+      id: user.id,
+      email: user.email,
+      role: 'user',
+      user_type: 'client',
+    });
+
+    setAuthCookies(res as any, token, refreshToken);
+
+    // Cleanup old verification codes for this email
+    await pool.query('DELETE FROM email_verifications WHERE email = $1', [email]);
+
+    res.status(201).json({
+      message: 'Email verified and account created successfully',
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+      },
+    });
+  } catch (error) {
+    console.error('[AUTH] Verify and register error:', error);
+    return jsonError(res, 500, 'Registration failed');
+  }
+};

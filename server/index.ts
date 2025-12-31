@@ -416,6 +416,17 @@ export function createServer() {
     validate,
     authRoutes.register
   );
+  // Email verification signup flow
+  app.post(
+    "/api/auth/send-verification",
+    authLimiter,
+    authRoutes.sendVerificationCodeHandler
+  );
+  app.post(
+    "/api/auth/verify-and-register",
+    authLimiter,
+    authRoutes.verifyAndRegister
+  );
   app.post(
     "/api/auth/login",
     authLimiter,

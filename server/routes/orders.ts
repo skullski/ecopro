@@ -401,6 +401,10 @@ export const getClientOrders: RequestHandler = async (req, res) => {
         o.shipping_address,
         o.created_at,
         o.updated_at,
+        o.delivery_company_id,
+        o.tracking_number,
+        o.delivery_status,
+        o.shipping_label_url,
         COALESCE(cp.title, 'Deleted Product') as product_title,
         COALESCE(cp.price, 0) as product_price,
         COALESCE(cp.images, '{}') as product_images
@@ -617,7 +621,7 @@ export const getOrderStatuses: RequestHandler = async (req, res) => {
     }
 
     const result = await pool.query(
-      `SELECT id, name, key, color, icon, sort_order, is_default, counts_as_revenue 
+      `SELECT id, name, key, color, icon, sort_order, is_default, is_system, counts_as_revenue 
        FROM order_statuses 
        WHERE client_id = $1 
        ORDER BY sort_order ASC, id ASC`,
@@ -627,12 +631,11 @@ export const getOrderStatuses: RequestHandler = async (req, res) => {
     // If no custom statuses exist, return default statuses
     if (result.rows.length === 0) {
       const defaultStatuses = [
-        { id: 'pending', name: 'Pending', key: 'pending', color: '#eab308', icon: '●', sort_order: 0, is_default: true, counts_as_revenue: false },
-        { id: 'confirmed', name: 'Confirmed', key: 'confirmed', color: '#22c55e', icon: '✓', sort_order: 1, is_default: true, counts_as_revenue: false },
-        { id: 'processing', name: 'Processing', key: 'processing', color: '#3b82f6', icon: '◐', sort_order: 2, is_default: true, counts_as_revenue: false },
-        { id: 'shipped', name: 'Shipped', key: 'shipped', color: '#8b5cf6', icon: '📦', sort_order: 3, is_default: true, counts_as_revenue: false },
-        { id: 'delivered', name: 'Delivered', key: 'delivered', color: '#10b981', icon: '✓', sort_order: 4, is_default: true, counts_as_revenue: true },
-        { id: 'cancelled', name: 'Cancelled', key: 'cancelled', color: '#ef4444', icon: '✕', sort_order: 5, is_default: true, counts_as_revenue: false },
+        { id: 'pending', name: 'Pending', key: 'pending', color: '#eab308', icon: '●', sort_order: 0, is_default: true, is_system: true, counts_as_revenue: false },
+        { id: 'confirmed', name: 'Confirmed', key: 'confirmed', color: '#22c55e', icon: '✓', sort_order: 1, is_default: true, is_system: true, counts_as_revenue: false },
+        { id: 'completed', name: 'Completed', key: 'completed', color: '#10b981', icon: '✓', sort_order: 2, is_default: true, is_system: true, counts_as_revenue: true },
+        { id: 'cancelled', name: 'Cancelled', key: 'cancelled', color: '#ef4444', icon: '✕', sort_order: 3, is_default: true, is_system: true, counts_as_revenue: false },
+        { id: 'at_delivery', name: 'At Delivery', key: 'at_delivery', color: '#8b5cf6', icon: '🚚', sort_order: 4, is_default: true, is_system: true, counts_as_revenue: false },
       ];
       res.json(defaultStatuses);
       return;
@@ -737,13 +740,29 @@ export const deleteOrderStatus: RequestHandler = async (req, res) => {
       return;
     }
 
+    // Check if this is a system status (cannot be deleted)
+    const checkResult = await pool.query(
+      'SELECT is_system FROM order_statuses WHERE id = $1 AND client_id = $2',
+      [statusId, clientId]
+    );
+
+    if (checkResult.rows.length === 0) {
+      res.status(404).json({ error: "Status not found" });
+      return;
+    }
+
+    if (checkResult.rows[0].is_system) {
+      res.status(400).json({ error: "Cannot delete system status. These statuses are required for platform functionality." });
+      return;
+    }
+
     const result = await pool.query(
-      'DELETE FROM order_statuses WHERE id = $1 AND client_id = $2 AND is_default = FALSE RETURNING id',
+      'DELETE FROM order_statuses WHERE id = $1 AND client_id = $2 AND is_system = FALSE RETURNING id',
       [statusId, clientId]
     );
 
     if (result.rows.length === 0) {
-      res.status(404).json({ error: "Status not found or cannot delete default status" });
+      res.status(404).json({ error: "Status not found or cannot delete system status" });
       return;
     }
 

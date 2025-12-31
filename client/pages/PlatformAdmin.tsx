@@ -2647,7 +2647,7 @@ export default function PlatformAdmin() {
                   <div>
                     <p className="text-xs text-slate-400 mb-0.5">Monthly Revenue (MRR)</p>
                     <p className="text-xl md:text-2xl font-bold text-emerald-400">
-                      ${billingMetrics?.mrr?.toFixed(2) || '0.00'}
+                      {Math.round(billingMetrics?.mrr || 0)}
                     </p>
                   </div>
                   <DollarSign className="w-6 h-6 md:w-8 md:h-8 text-emerald-500/40" />

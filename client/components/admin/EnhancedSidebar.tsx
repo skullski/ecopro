@@ -4,13 +4,14 @@ import {
   Truck, Megaphone, Star, Percent, Globe, BarChart3, 
   Users, Shield, Ban, Puzzle, CreditCard, Settings,
   ChevronDown, ChevronRight, Menu, X, Package, Bot,
-  Divide, Palette, User
+  Divide, Palette, User, Lock
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { AnimatedLogo } from "@/components/ui/animated-logo";
 import { useTranslation } from "@/lib/i18n";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useStaffPermissions } from "@/contexts/StaffPermissionContext";
 
 interface MenuItem {
   titleKey: string;
@@ -18,6 +19,7 @@ interface MenuItem {
   icon: React.ReactNode;
   badgeKey?: string;
   children?: MenuItem[];
+  permission?: string; // Staff permission required for this menu item
 }
 
 interface EnhancedSidebarProps {
@@ -54,32 +56,36 @@ const CATEGORY_COLORS: { [key: string]: string } = {
 };
 
 const menuItems: MenuItem[] = [
-  { titleKey: "sidebar.home", path: "/dashboard", icon: <Home className="w-5 h-5" /> },
-  { titleKey: "sidebar.profile", path: "/dashboard/profile", icon: <User className="w-5 h-5" /> },
-  { titleKey: "sidebar.store", path: "/dashboard/preview", icon: <Eye className="w-5 h-5" /> },
-  { titleKey: "sidebar.stock", path: "/dashboard/stock", icon: <Package className="w-5 h-5" /> },
-  { titleKey: "sidebar.orders", path: "/dashboard/orders", icon: <ShoppingCart className="w-5 h-5" /> },
+  { titleKey: "sidebar.home", path: "/dashboard", icon: <Home className="w-5 h-5" />, permission: "view_dashboard" },
+  { titleKey: "sidebar.profile", path: "/dashboard/profile", icon: <User className="w-5 h-5" />, permission: "view_settings" },
+  { titleKey: "sidebar.store", path: "/dashboard/preview", icon: <Eye className="w-5 h-5" />, permission: "view_products_list" },
+  { titleKey: "sidebar.stock", path: "/dashboard/stock", icon: <Package className="w-5 h-5" />, permission: "view_inventory" },
+  { titleKey: "sidebar.orders", path: "/dashboard/orders", icon: <ShoppingCart className="w-5 h-5" />, permission: "view_orders_list" },
   { 
     titleKey: "sidebar.delivery", 
     path: "/dashboard/delivery/companies", 
     icon: <Truck className="w-5 h-5" />,
+    permission: "edit_delivery_settings"
   },
   { 
     titleKey: "sidebar.addons", 
     path: "/dashboard/addons/google-sheets", 
     icon: <Puzzle className="w-5 h-5" />,
+    permission: "view_settings"
   },
   { 
     titleKey: "sidebar.wasselni", 
     path: "/dashboard/wasselni-settings", 
     icon: <Bot className="w-5 h-5" />,
+    permission: "manage_bot_settings"
   },
-  { titleKey: "sidebar.staff", path: "/dashboard/staff", icon: <Users className="w-5 h-5" /> },
+  { titleKey: "sidebar.staff", path: "/dashboard/staff", icon: <Users className="w-5 h-5" />, permission: "view_staff" },
 ];
 
 export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {}) {
   const { t, locale } = useTranslation();
   const { theme: platformTheme } = useTheme();
+  const { isStaff, hasPermission } = useStaffPermissions();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
@@ -140,6 +146,9 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
     const isExpanded = expandedItems.includes(item.path);
     const active = isActive(item.path) || isParentActive(item);
     
+    // Check staff permission
+    const hasAccess = !isStaff || !item.permission || hasPermission(item.permission);
+    
     // Get category color based on menu item
     const categoryKey = item.titleKey.split('.')[1] || 'home';
     const categoryColor = CATEGORY_COLORS[categoryKey] || CATEGORY_COLORS.home;
@@ -163,7 +172,8 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
             active 
               ? "shadow-sm font-medium"
               : "hover:bg-white hover:bg-opacity-50 text-muted-foreground hover:text-foreground",
-            collapsed && level === 0 && "justify-center"
+            collapsed && level === 0 && "justify-center",
+            !hasAccess && "opacity-50"
           )}
           style={{
             backgroundColor: active ? `${categoryColor}20` : 'transparent',
@@ -171,21 +181,26 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
             borderLeft: active && !isRTL ? `3px solid ${categoryColor}` : 'none',
             borderRight: active && isRTL ? `3px solid ${categoryColor}` : 'none',
           }}
+          title={!hasAccess ? 'No permission' : undefined}
         >
           {/* Icon with category color */}
           <div className="flex-shrink-0 transition-colors rounded-md p-1.5" 
             style={{
               backgroundColor: `${categoryColor}20`,
-              color: categoryColor,
+              color: hasAccess ? categoryColor : '#9ca3af',
             }}>
-            {item.icon}
+            {hasAccess ? item.icon : <Lock className="w-5 h-5" />}
           </div>
           
           {!collapsed && (
             <>
               <span className="flex-1 font-bold" style={{ fontSize: '13px' }}>{t(item.titleKey)}</span>
               
-              {item.badgeKey && (
+              {!hasAccess && (
+                <Lock className="w-3 h-3 text-gray-400" />
+              )}
+              
+              {item.badgeKey && hasAccess && (
                 <span className="px-2 py-0.5 text-xs font-bold rounded-full text-white shadow-sm"
                   style={{ backgroundColor: categoryColor }}>
                   {t(item.badgeKey)}

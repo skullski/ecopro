@@ -102,19 +102,41 @@ export default function Dashboard() {
   };
 
   const getStatusColor = (status: string) => {
-    const customStatus = analytics?.customStatuses?.find(s => s.name === status);
+    // First check custom statuses from analytics (uses key)
+    const customStatus = analytics?.customStatuses?.find(s => s.key === status || s.name === status);
     if (customStatus) return customStatus.color;
     
+    // Fallback colors for all statuses
     const colors: Record<string, string> = {
       'pending': '#eab308',
       'confirmed': '#22c55e',
+      'completed': '#10b981',
       'processing': '#3b82f6',
       'shipped': '#8b5cf6',
       'delivered': '#10b981',
       'cancelled': '#ef4444',
       'failed': '#ef4444',
+      'at_delivery': '#8b5cf6',
+      'no_answer_1': '#f97316',
+      'no_answer_2': '#f97316',
+      'no_answer_3': '#f97316',
+      'waiting_callback': '#3b82f6',
+      'postponed': '#6366f1',
+      'line_closed': '#6b7280',
+      'fake': '#dc2626',
+      'duplicate': '#9ca3af',
+      'returned': '#f97316',
+      'refunded': '#22c55e',
     };
     return colors[status] || '#6b7280';
+  };
+
+  // Get translated status name
+  const getStatusName = (status: string) => {
+    const translated = t(`orders.status.${status}`);
+    if (translated && translated !== `orders.status.${status}`) return translated;
+    // Fallback: format the key nicely
+    return status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
   // Calculate chart data for last 12 days
@@ -145,7 +167,7 @@ export default function Dashboard() {
           <div className="hidden md:flex items-center gap-2">
             <div className="text-right">
               <p className="text-white/70 text-xs">Total Revenue</p>
-              <p className="text-lg sm:text-xl font-bold">{stats.revenue.toLocaleString()} DZD</p>
+              <p className="text-lg sm:text-xl font-bold">{Math.round(stats.revenue)} DZD</p>
             </div>
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-white/20 backdrop-blur flex items-center justify-center">
               <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -219,7 +241,7 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
-            <p className="text-xl sm:text-2xl font-bold">{loading ? '...' : `${(currentComparison?.revenue || 0).toLocaleString()}`}</p>
+            <p className="text-xl sm:text-2xl font-bold">{loading ? '...' : `${Math.round(currentComparison?.revenue || 0)}`}</p>
             <p className="text-white/70 text-xs sm:text-sm">Revenue (DZD)</p>
           </div>
         </Card>
@@ -269,7 +291,7 @@ export default function Dashboard() {
             </div>
             <div className="text-left bg-gradient-to-r from-emerald-500/10 to-green-500/10 px-2 sm:px-3 py-1.5 rounded-lg border border-emerald-500/20">
               <p className="text-sm sm:text-lg font-bold text-emerald-600 dark:text-emerald-400">
-                {chartData.reduce((sum, d) => sum + d.revenue, 0).toLocaleString()} DZD
+                {Math.round(chartData.reduce((sum, d) => sum + d.revenue, 0))} DZD
               </p>
               <p className="text-[10px] sm:text-xs text-muted-foreground">Period total</p>
             </div>
@@ -284,7 +306,7 @@ export default function Dashboard() {
                     style={{ height: `${Math.max((day.revenue / maxRevenue) * 100, 6)}px` }}
                   />
                   <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] px-2 py-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap z-10 shadow-xl">
-                    <p className="font-bold">{day.revenue.toLocaleString()} DZD</p>
+                    <p className="font-bold">{Math.round(day.revenue)} DZD</p>
                     <p className="text-white/70">{day.orders} orders</p>
                   </div>
                 </div>
@@ -323,7 +345,7 @@ export default function Dashboard() {
                         className="w-2.5 h-2.5 rounded-full ring-1 ring-offset-1 dark:ring-offset-slate-900"
                         style={{ backgroundColor: getStatusColor(item.status), borderColor: getStatusColor(item.status) }}
                       />
-                      <span className="text-xs font-medium">{item.status}</span>
+                      <span className="text-xs font-medium">{getStatusName(item.status)}</span>
                     </div>
                     <span className="text-xs font-bold">{item.count}</span>
                   </div>
@@ -377,7 +399,7 @@ export default function Dashboard() {
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium truncate group-hover:text-primary transition-colors">{product.title}</p>
                   <p className="text-[10px] text-muted-foreground">
-                    {product.total_orders} orders • <span className="text-emerald-600 dark:text-emerald-400 font-medium">{product.total_revenue.toLocaleString()} DZD</span>
+                    {product.total_orders} orders • <span className="text-emerald-600 dark:text-emerald-400 font-medium">{Math.round(product.total_revenue)} DZD</span>
                   </p>
                 </div>
               </div>
@@ -406,7 +428,7 @@ export default function Dashboard() {
                   </p>
                 </div>
                 <div className="text-left">
-                  <p className="text-xs font-bold">{order.total_price} DZD</p>
+                  <p className="text-xs font-bold">{Math.round(order.total_price)} DZD</p>
                   <div 
                     className="text-[10px] px-1.5 py-0.5 rounded-full text-white inline-block shadow-sm"
                     style={{ backgroundColor: getStatusColor(order.status) }}
@@ -441,7 +463,7 @@ export default function Dashboard() {
                       {city.city}
                     </span>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] text-muted-foreground">{city.revenue.toLocaleString()} DZD</span>
+                      <span className="text-[10px] text-muted-foreground">{Math.round(city.revenue)} DZD</span>
                       <span className="font-bold bg-primary/10 px-1.5 py-0.5 rounded-full text-[10px]">{city.count}</span>
                     </div>
                   </div>

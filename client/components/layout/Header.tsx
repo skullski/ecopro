@@ -18,12 +18,27 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [storeSlug, setStoreSlug] = useState<string | null>(null);
   const prevUnreadCount = useRef(0);
 
   const user = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user") || "null") : null;
   const isAdmin = user?.role === "admin";
   const isSeller = user?.role === "seller";
   const isClient = !isAdmin && !isSeller;
+
+  // Fetch store slug for clients
+  useEffect(() => {
+    if (user && isClient) {
+      fetch('/api/client/store/settings', { credentials: 'include' })
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data?.store_slug) {
+            setStoreSlug(data.store_slug);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [user, isClient]);
 
   // Fetch unread messages count for clients
   const fetchUnreadCount = useCallback(async () => {
@@ -156,7 +171,7 @@ export default function Header() {
               {user && isClient && (
                 <>
                   <Link 
-                    to="/dashboard/preview" 
+                    to={storeSlug ? `/store/${storeSlug}` : "/dashboard/preview"} 
                     className="rounded-md font-semibold text-accent hover:bg-accent/10 transition-all border border-accent/20"
                     style={{ padding: 'clamp(0.375rem, 1vh, 0.5rem) clamp(0.625rem, 1.5vh, 0.875rem)', fontSize: 'clamp(0.8rem, 1.6vh, 0.875rem)' }}
                   >
@@ -381,7 +396,7 @@ export default function Header() {
                     </Link>
                   )}
                   {isClient && (
-                    <Link to="/dashboard/preview" onClick={() => setMobileMenuOpen(false)}>
+                    <Link to={storeSlug ? `/store/${storeSlug}` : "/dashboard/preview"} onClick={() => setMobileMenuOpen(false)}>
                       <Button variant="outline" className="justify-start border-2 border-primary/30 text-primary hover:bg-gradient-to-r hover:from-primary/15 hover:to-accent/10 hover:border-primary/45 font-bold w-full shadow-sm hover:shadow-md">
                         <ShoppingBag className="w-5 h-5 ml-2 drop-shadow" />
                         My Store

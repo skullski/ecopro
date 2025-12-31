@@ -1,0 +1,76 @@
+{
+  "layout": {
+    "header": {
+      "tagline": "Coffee · Pastries · Good Vibes",
+      "hoursText": "Open 7am - 10pm",
+      "searchLabel": "Search menu",
+      "cartLabel": "Order"
+    },
+    "hero": {
+      "kicker": "Welcome to",
+      "heading": "Your daily escape",
+      "subtitle": "Artisan coffee, freshly baked goods, and a cozy atmosphere. The perfect spot to recharge.",
+      "primaryCta": "Order ahead",
+      "secondaryCta": "View menu",
+      "bannerUrl": "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1600&q=80",
+      "heroVideoUrl": ""
+    },
+    "features": {
+      "title": "The cafe experience",
+      "items": [
+        { "icon": "coffee", "title": "Specialty coffee", "text": "Single-origin beans roasted in-house" },
+        { "icon": "croissant", "title": "Fresh pastries", "text": "Baked daily from scratch" },
+        { "icon": "wifi", "title": "Free WiFi", "text": "Work or relax with us" },
+        { "icon": "music", "title": "Curated music", "text": "Perfect ambient playlist" }
+      ]
+    },
+    "categories": {
+      "title": "Menu",
+      "categories": ["All", "Coffee", "Tea", "Pastries", "Breakfast", "Lunch", "Desserts"]
+    },
+    "featured": {
+      "kicker": "Barista picks",
+      "title": "Popular items",
+      "subtitle": "What our regulars can't live without"
+    },
+    "products": {
+      "orderLabel": "Order",
+      "customizeLabel": "Customize",
+      "sizeLabel": "Size",
+      "addOnsLabel": "Add-ons"
+    },
+    "drinks": {
+      "sizes": ["Small", "Medium", "Large"],
+      "milkOptions": ["Whole", "Oat", "Almond", "Soy", "None"],
+      "extras": ["Extra shot", "Vanilla", "Caramel", "Hazelnut", "Whipped cream"]
+    },
+    "atmosphere": {
+      "kicker": "More than coffee",
+      "title": "A space to connect",
+      "text": "Whether you're working, meeting friends, or just enjoying a quiet moment, our cafe is your second home.",
+      "features": ["Cozy seating", "Power outlets", "Natural light", "Art displays"]
+    },
+    "loyalty": {
+      "title": "Loyalty rewards",
+      "text": "Join our rewards program and earn points with every purchase",
+      "ctaLabel": "Join now"
+    },
+    "empty": {
+      "title": "Menu Coming Soon",
+      "subtitle": "We're brewing up something special.",
+      "hint": "Items will appear here once added."
+    },
+    "footer": {
+      "copyright": "© 2025 Cafe",
+      "links": ["Menu", "Location", "Hours", "Contact"]
+    }
+  },
+  "styles": {
+    "theme": "warm",
+    "primaryColor": "#92400e",
+    "secondaryColor": "#fef3c7",
+    "accentColor": "#78350f",
+    "textColor": "#1c1917",
+    "fontFamily": "DM Sans"
+  }
+}

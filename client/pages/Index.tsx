@@ -94,7 +94,7 @@ export default function Index() {
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">{t("home.salesToday")}</p>
-                      <p className="text-2xl font-bold">${(stats.totalRevenue / 100).toFixed(2)}</p>
+                      <p className="text-2xl font-bold">{Math.round(stats.totalRevenue / 100)}</p>
                     </div>
                   </div>
                   <div className="h-20 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg"></div>

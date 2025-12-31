@@ -1,0 +1,74 @@
+{
+  "layout": {
+    "header": {
+      "tagline": "Fine Jewelry · Watches · Accessories",
+      "announcementText": "Complimentary gift wrapping on all orders",
+      "searchLabel": "Search collection",
+      "cartLabel": "Bag"
+    },
+    "hero": {
+      "kicker": "The collection",
+      "heading": "Timeless elegance",
+      "subtitle": "Exquisite pieces crafted with precision. Discover jewelry that tells your story.",
+      "primaryCta": "Explore collection",
+      "secondaryCta": "Book appointment",
+      "bannerUrl": "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1600&q=80",
+      "heroVideoUrl": ""
+    },
+    "craftsmanship": {
+      "kicker": "Our craft",
+      "title": "Handcrafted excellence",
+      "subtitle": "Each piece is meticulously crafted by master artisans",
+      "features": [
+        { "title": "Ethically sourced", "text": "Conflict-free diamonds and responsibly mined gems" },
+        { "title": "Certified quality", "text": "All pieces come with authenticity certificates" },
+        { "title": "Lifetime warranty", "text": "We stand behind every piece we create" }
+      ]
+    },
+    "categories": {
+      "title": "Collections",
+      "categories": ["All", "Rings", "Necklaces", "Earrings", "Bracelets", "Watches"]
+    },
+    "featured": {
+      "kicker": "Signature pieces",
+      "title": "Featured collection",
+      "subtitle": "Our most sought-after designs"
+    },
+    "products": {
+      "buyNowLabel": "Purchase",
+      "inquireLabel": "Inquire",
+      "customizeLabel": "Customize",
+      "viewDetailsLabel": "View details"
+    },
+    "materials": {
+      "title": "Materials",
+      "items": ["18K Gold", "Platinum", "Sterling Silver", "Diamonds", "Precious Gems"]
+    },
+    "services": {
+      "title": "Our services",
+      "items": [
+        { "title": "Custom design", "text": "Create your dream piece" },
+        { "title": "Engraving", "text": "Personalize your jewelry" },
+        { "title": "Resizing", "text": "Perfect fit guaranteed" },
+        { "title": "Cleaning", "text": "Keep your pieces sparkling" }
+      ]
+    },
+    "empty": {
+      "title": "Collection Coming Soon",
+      "subtitle": "Our jewelry collection is being curated with care.",
+      "hint": "Pieces will be displayed here once added."
+    },
+    "footer": {
+      "copyright": "© 2025 Jewelry House",
+      "links": ["About", "Services", "Care Guide", "Contact"]
+    }
+  },
+  "styles": {
+    "theme": "light",
+    "primaryColor": "#d4af37",
+    "secondaryColor": "#fef3c7",
+    "accentColor": "#b8860b",
+    "textColor": "#1c1917",
+    "fontFamily": "Cormorant Garamond"
+  }
+}

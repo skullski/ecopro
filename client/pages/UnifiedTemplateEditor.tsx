@@ -423,13 +423,13 @@ export default function UnifiedTemplateEditor() {
     }
   };
 
-  // Format price helper
+  // Format price helper (no decimals)
   const formatPrice = React.useCallback((n: number) => {
     const code = settings.currency_code || 'DZD';
     try {
-      return new Intl.NumberFormat(undefined, { style: 'currency', currency: code }).format(n);
+      return new Intl.NumberFormat(undefined, { style: 'currency', currency: code, maximumFractionDigits: 0, minimumFractionDigits: 0 }).format(Math.round(n));
     } catch {
-      return `${n.toFixed(2)}`;
+      return `${Math.round(n)} ${code}`;
     }
   }, [settings.currency_code]);
 

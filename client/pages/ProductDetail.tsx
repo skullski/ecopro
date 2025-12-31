@@ -46,7 +46,7 @@ export default function ProductDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  const priceText = useMemo(() => (product ? `$${(product.price / 100).toFixed(2)}` : ""), [product]);
+  const priceText = useMemo(() => (product ? `${Math.round(product.price / 100)}` : ""), [product]);
 
   async function toggleLike() {
     if (!id) return;

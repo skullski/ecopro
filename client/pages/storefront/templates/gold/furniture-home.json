@@ -1,0 +1,91 @@
+{
+  "layout": {
+    "header": {
+      "tagline": "Living · Bedroom · Dining · Office",
+      "announcementText": "Free design consultation",
+      "searchLabel": "Search furniture",
+      "cartLabel": "Cart"
+    },
+    "hero": {
+      "kicker": "New arrivals",
+      "heading": "Design your space",
+      "subtitle": "Thoughtfully crafted furniture that transforms houses into homes. Timeless pieces for modern living.",
+      "primaryCta": "Shop collection",
+      "secondaryCta": "Book consultation",
+      "bannerUrl": "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1600&q=80",
+      "heroVideoUrl": ""
+    },
+    "values": {
+      "kicker": "Our philosophy",
+      "title": "Built with purpose",
+      "items": [
+        { "icon": "tree", "title": "Sustainable materials", "text": "Responsibly sourced wood and fabrics" },
+        { "icon": "hammer", "title": "Expert craftsmanship", "text": "Handcrafted by skilled artisans" },
+        { "icon": "truck", "title": "White glove delivery", "text": "Professional setup included" },
+        { "icon": "refresh", "title": "100-day trial", "text": "Love it or return it" }
+      ]
+    },
+    "categories": {
+      "title": "Shop by room",
+      "categories": ["All", "Living Room", "Bedroom", "Dining", "Office", "Outdoor", "Storage"]
+    },
+    "featured": {
+      "kicker": "Featured",
+      "title": "Editor's picks",
+      "subtitle": "Curated selections from our design team"
+    },
+    "products": {
+      "buyNowLabel": "Add to cart",
+      "customizeLabel": "Customize",
+      "viewInRoomLabel": "View in room",
+      "dimensionsLabel": "Dimensions"
+    },
+    "materials": {
+      "title": "Materials & finishes",
+      "woods": ["Oak", "Walnut", "Maple", "Teak", "Bamboo"],
+      "fabrics": ["Linen", "Velvet", "Leather", "Cotton", "Bouclé"],
+      "finishes": ["Natural", "Matte", "Glossy", "Distressed"]
+    },
+    "roomPlanner": {
+      "kicker": "Design tools",
+      "title": "Room planner",
+      "subtitle": "Visualize furniture in your space before you buy",
+      "ctaLabel": "Try room planner"
+    },
+    "collections": {
+      "title": "Collections",
+      "items": [
+        { "name": "Minimalist", "description": "Clean lines, simple forms" },
+        { "name": "Scandinavian", "description": "Light, airy, functional" },
+        { "name": "Mid-Century", "description": "Retro charm, modern comfort" },
+        { "name": "Industrial", "description": "Raw materials, urban edge" }
+      ]
+    },
+    "services": {
+      "title": "Our services",
+      "items": [
+        { "title": "Design consultation", "text": "Free expert advice" },
+        { "title": "Custom orders", "text": "Tailored to your needs" },
+        { "title": "Assembly", "text": "Professional setup" },
+        { "title": "Trade program", "text": "Designer discounts" }
+      ]
+    },
+    "empty": {
+      "title": "Collection Coming Soon",
+      "subtitle": "Beautiful furniture is being curated for you.",
+      "hint": "Products will appear here once added."
+    },
+    "footer": {
+      "copyright": "© 2025 Furniture Store",
+      "links": ["About", "Showroom", "Delivery", "Contact"]
+    }
+  },
+  "styles": {
+    "theme": "natural",
+    "primaryColor": "#65a30d",
+    "secondaryColor": "#f7fee7",
+    "accentColor": "#4d7c0f",
+    "textColor": "#1a2e05",
+    "fontFamily": "Libre Baskerville"
+  }
+}

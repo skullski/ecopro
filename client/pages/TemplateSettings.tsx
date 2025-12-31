@@ -1662,7 +1662,7 @@ export default function TemplateSettingsPage() {
                   // Preview-only placeholders (never real products).
                   products: previewProducts,
                   settings: effectiveSettings,
-                  formatPrice: (price: number) => `${price} ${effectiveSettings.currency_code || 'DZD'}`,
+                  formatPrice: (price: number) => `${Math.round(price)} ${effectiveSettings.currency_code || 'DZD'}`,
                   categories: previewCategories,
                   filters: {},
                   navigate: () => {},

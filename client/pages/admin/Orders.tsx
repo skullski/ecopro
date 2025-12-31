@@ -1,16 +1,25 @@
 import React, { useEffect, useState } from "react";
-import { MoreHorizontal, Download, Filter, ShoppingBag, TrendingUp, Plus, Settings, X, Trash2 } from "lucide-react";
+import { MoreHorizontal, Download, ShoppingBag, TrendingUp, Plus, Settings, X, Trash2, Truck, CheckSquare, Square, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "@/lib/i18n";
+import { OrderFulfillment } from "@/components/delivery/OrderFulfillment";
+
+interface DeliveryCompany {
+  id: number;
+  name: string;
+  features: any;
+  is_active: boolean;
+}
 
 interface OrderStatus {
   id: string | number;
   name: string;
-  key?: string; // English key like 'confirmed', 'completed'
+  key: string; // English key like 'confirmed', 'completed' - REQUIRED
   color: string;
   icon: string;
   sort_order: number;
   is_default: boolean;
+  is_system?: boolean;
   counts_as_revenue?: boolean;
 }
 
@@ -31,6 +40,20 @@ export default function OrdersAdmin() {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [filterTab, setFilterTab] = useState<string>('all');
   const [timeUpdate, setTimeUpdate] = useState<number>(0); // For triggering time updates
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const ordersPerPage = 20;
+  
+  // Bulk selection states
+  const [selectedOrders, setSelectedOrders] = useState<Set<number>>(new Set());
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
+  const [deliveryCompanies, setDeliveryCompanies] = useState<DeliveryCompany[]>([]);
+  const [selectedDeliveryCompany, setSelectedDeliveryCompany] = useState<number | null>(null);
+  const [generateLabels, setGenerateLabels] = useState(true);
+  const [bulkUploading, setBulkUploading] = useState(false);
+  const [bulkUploadResult, setBulkUploadResult] = useState<{ successCount: number; failCount: number; results: any[] } | null>(null);
+  
   const [newOrder, setNewOrder] = useState({
     customer_name: '',
     customer_email: '',
@@ -71,24 +94,34 @@ export default function OrdersAdmin() {
     }
   };
 
-  // Filter orders based on selected tab
+  // Filter orders based on selected tab (uses English key)
   const getFilteredOrders = () => {
     if (filterTab === 'all') return orders;
     if (filterTab === 'archived') {
-      return orders.filter(o => o.status === 'failed' || o.status === 'cancelled');
+      return orders.filter(o => o.status === 'failed' || o.status === 'cancelled' || o.status === 'fake' || o.status === 'duplicate');
     }
-    // Find the status to get its key for matching
-    const selectedStatus = customStatuses.find(s => s.name === filterTab || s.key === filterTab);
-    if (selectedStatus) {
-      // Match by key, name, or id
-      return orders.filter(o => 
-        o.status === selectedStatus.key || 
-        o.status === selectedStatus.name || 
-        o.status === String(selectedStatus.id)
-      );
-    }
+    // Filter by English key (stored in database)
     return orders.filter(o => o.status === filterTab);
   };
+
+  // Get paginated orders
+  const getPaginatedOrders = () => {
+    const filtered = getFilteredOrders();
+    const startIndex = (currentPage - 1) * ordersPerPage;
+    const endIndex = startIndex + ordersPerPage;
+    return filtered.slice(startIndex, endIndex);
+  };
+
+  // Calculate pagination info
+  const totalFilteredOrders = getFilteredOrders().length;
+  const totalPages = Math.ceil(totalFilteredOrders / ordersPerPage);
+  const startOrder = totalFilteredOrders === 0 ? 0 : (currentPage - 1) * ordersPerPage + 1;
+  const endOrder = Math.min(currentPage * ordersPerPage, totalFilteredOrders);
+
+  // Reset to page 1 when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterTab]);
 
   // Load custom statuses
   const loadStatuses = async () => {
@@ -100,6 +133,109 @@ export default function OrdersAdmin() {
       }
     } catch (error) {
       console.error('Failed to load statuses:', error);
+    }
+  };
+
+  // Load delivery companies with integration status
+  const loadDeliveryCompanies = async () => {
+    try {
+      const res = await fetch('/api/delivery/companies');
+      if (res.ok) {
+        const data = await res.json();
+        setDeliveryCompanies(data);
+        if (data.length > 0) {
+          setSelectedDeliveryCompany(data[0].id);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load delivery companies:', error);
+    }
+  };
+
+  // Toggle single order selection
+  const toggleOrderSelection = (rawId: number) => {
+    const newSelected = new Set(selectedOrders);
+    if (newSelected.has(rawId)) {
+      newSelected.delete(rawId);
+    } else {
+      newSelected.add(rawId);
+    }
+    setSelectedOrders(newSelected);
+  };
+
+  // Select all orders in current filter
+  const selectAllFiltered = () => {
+    const filtered = getFilteredOrders();
+    const allRawIds = filtered.map(o => o.raw_id);
+    const allSelected = allRawIds.every(id => selectedOrders.has(id));
+    
+    if (allSelected) {
+      // Deselect all filtered
+      const newSelected = new Set(selectedOrders);
+      allRawIds.forEach(id => newSelected.delete(id));
+      setSelectedOrders(newSelected);
+    } else {
+      // Select all filtered
+      const newSelected = new Set(selectedOrders);
+      allRawIds.forEach(id => newSelected.add(id));
+      setSelectedOrders(newSelected);
+    }
+  };
+
+  // Clear all selections
+  const clearSelection = () => {
+    setSelectedOrders(new Set());
+  };
+
+  // Bulk upload to delivery company
+  const handleBulkUpload = async () => {
+    if (selectedOrders.size === 0 || !selectedDeliveryCompany) return;
+    
+    setBulkUploading(true);
+    setBulkUploadResult(null);
+    
+    try {
+      const res = await fetch('/api/delivery/orders/bulk-assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          order_ids: Array.from(selectedOrders),
+          delivery_company_id: selectedDeliveryCompany,
+          generate_labels: generateLabels
+        })
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok) {
+        setBulkUploadResult({
+          successCount: data.successCount,
+          failCount: data.failCount,
+          results: data.results
+        });
+        // Reload orders to reflect changes
+        await loadOrders();
+        // Clear selection after successful upload
+        if (data.failCount === 0) {
+          setSelectedOrders(new Set());
+        }
+      } else {
+        // Show detailed error from server
+        setBulkUploadResult({
+          successCount: 0,
+          failCount: selectedOrders.size,
+          results: [{ orderId: 0, success: false, error: data.details || data.error || 'Failed to upload orders' }]
+        });
+      }
+    } catch (error) {
+      console.error('Bulk upload failed:', error);
+      setBulkUploadResult({
+        successCount: 0,
+        failCount: selectedOrders.size,
+        results: [{ orderId: 0, success: false, error: 'Network error - failed to connect to server' }]
+      });
+    } finally {
+      setBulkUploading(false);
     }
   };
 
@@ -145,31 +281,47 @@ export default function OrdersAdmin() {
     }
   };
 
-  // Get status display info
+  // Get status display info - uses key to find status, shows translated name
   const getStatusDisplay = (statusKey: string) => {
-    const status = customStatuses.find(s => 
-      s.name === statusKey || String(s.id) === statusKey
-    );
+    // First try to find in custom statuses by key
+    const status = customStatuses.find(s => s.key === statusKey);
     if (status) {
-      return { name: status.name, color: status.color, icon: status.icon };
+      // Use translation if available, fallback to status name
+      const translatedName = t(`orders.status.${status.key}`) || status.name;
+      return { name: translatedName, color: status.color, icon: status.icon };
     }
-    // Fallback to built-in statuses
-    const builtIn: Record<string, { name: string; color: string; icon: string }> = {
-      pending: { name: t('orders.status.pending') || 'Pending', color: '#eab308', icon: '●' },
-      confirmed: { name: t('orders.status.confirmed') || 'Confirmed', color: '#22c55e', icon: '✓' },
-      processing: { name: 'Processing', color: '#3b82f6', icon: '◐' },
-      shipped: { name: 'Shipped', color: '#8b5cf6', icon: '📦' },
-      delivered: { name: 'Delivered', color: '#10b981', icon: '✓' },
-      cancelled: { name: 'Cancelled', color: '#ef4444', icon: '✕' },
-      failed: { name: t('orders.status.failed') || 'Failed', color: '#ef4444', icon: '✕' },
-      followup: { name: t('orders.status.followup') || 'Follow-up', color: '#3b82f6', icon: '●' },
+    // Fallback to built-in statuses with translations
+    const builtIn: Record<string, { color: string; icon: string }> = {
+      pending: { color: '#eab308', icon: '●' },
+      confirmed: { color: '#22c55e', icon: '✓' },
+      completed: { color: '#10b981', icon: '✓' },
+      processing: { color: '#3b82f6', icon: '◐' },
+      shipped: { color: '#8b5cf6', icon: '📦' },
+      delivered: { color: '#10b981', icon: '✓' },
+      cancelled: { color: '#ef4444', icon: '✕' },
+      failed: { color: '#ef4444', icon: '✕' },
+      at_delivery: { color: '#8b5cf6', icon: '🚚' },
+      no_answer_1: { color: '#f59e0b', icon: '📞' },
+      no_answer_2: { color: '#f59e0b', icon: '📞' },
+      no_answer_3: { color: '#f59e0b', icon: '📞' },
+      waiting_callback: { color: '#3b82f6', icon: '📱' },
+      postponed: { color: '#6366f1', icon: '⏰' },
+      line_closed: { color: '#6b7280', icon: '📵' },
+      fake: { color: '#dc2626', icon: '⚠️' },
+      duplicate: { color: '#9ca3af', icon: '📋' },
+      returned: { color: '#f97316', icon: '↩️' },
+      refunded: { color: '#22c55e', icon: '💰' },
     };
-    return builtIn[statusKey] || { name: statusKey, color: '#6b7280', icon: '●' };
+    const info = builtIn[statusKey] || { color: '#6b7280', icon: '●' };
+    // Use translation, fallback to formatted key
+    const translatedName = t(`orders.status.${statusKey}`) || statusKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    return { name: translatedName, color: info.color, icon: info.icon };
   };
 
   useEffect(()=>{
     loadOrders();
     loadStatuses();
+    loadDeliveryCompanies();
   },[]);
 
   const [updatingOrderId, setUpdatingOrderId] = useState<number | null>(null);
@@ -261,7 +413,12 @@ export default function OrdersAdmin() {
           phone: order.customer_phone,
           email: order.customer_email,
           address: order.shipping_address,
-          raw_id: order.id
+          raw_id: order.id,
+          // Delivery fields
+          delivery_company_id: order.delivery_company_id,
+          tracking_number: order.tracking_number,
+          delivery_status: order.delivery_status,
+          shipping_label_url: order.shipping_label_url
         };
       });
       setOrders(transformedOrders);
@@ -382,18 +539,17 @@ export default function OrdersAdmin() {
             <div>
               <div className="text-sm font-semibold text-muted-foreground">Revenue</div>
               <div className="text-xl font-bold bg-gradient-to-r from-accent to-orange-500 bg-clip-text text-transparent">
-                {orders
+                {Math.round(orders
                   .filter(o => {
                     // Get statuses that count as revenue
                     const revenueStatuses = customStatuses
                       .filter(s => s.counts_as_revenue)
-                      .map(s => s.name);
-                    // Also include built-in 'delivered' status
-                    revenueStatuses.push('delivered');
+                      .map(s => s.key || s.name);
+                    // Also include built-in 'completed' status (مكتملة)
+                    revenueStatuses.push('completed');
                     return revenueStatuses.includes(o.status);
                   })
-                  .reduce((sum, o) => sum + (Number(o.total) || 0), 0)
-                  .toLocaleString()} DZD
+                  .reduce((sum, o) => sum + (Number(o.total) || 0), 0))} DZD
               </div>
             </div>
           </div>
@@ -430,9 +586,6 @@ export default function OrdersAdmin() {
               <button className="inline-flex items-center gap-1 rounded border border-primary/30 bg-background px-3 py-2 text-sm font-bold hover:bg-primary/10 transition-colors h-9">
                 <Download className="h-4 w-4"/> {t('orders.download')}
               </button>
-              <button className="inline-flex items-center gap-1 rounded bg-gradient-to-r from-primary to-accent text-white px-3 py-2 text-sm font-bold hover:from-primary/90 hover:to-accent/90 transition-colors shadow h-9">
-                <Filter className="h-4 w-4"/> {t('orders.filter')}
-              </button>
             </div>
           </div>
         </div>
@@ -447,25 +600,29 @@ export default function OrdersAdmin() {
                 : 'bg-background text-foreground hover:bg-primary/10'
             }`}
           >
-            All ({orders.length})
+            {t('orders.status.all')} ({orders.length})
           </button>
-          {customStatuses.map(status => (
-            <button
-              key={status.id}
-              onClick={() => setFilterTab(String(status.name))}
-              style={{ 
-                backgroundColor: filterTab === status.name ? status.color : undefined,
-                borderColor: status.color 
-              }}
-              className={`px-4 py-2 rounded text-sm font-bold transition-colors h-9 border ${
-                filterTab === status.name
-                  ? 'text-white'
-                  : 'bg-background text-foreground hover:opacity-80'
-              }`}
-            >
-              {status.icon} {status.name} ({orders.filter(o => o.status === status.key || o.status === status.name || o.status === String(status.id)).length})
-            </button>
-          ))}
+          {customStatuses.map(status => {
+            const statusCount = orders.filter(o => o.status === status.key).length;
+            const translatedName = t(`orders.status.${status.key}`) || status.name;
+            return (
+              <button
+                key={status.id}
+                onClick={() => setFilterTab(status.key)}
+                style={{ 
+                  backgroundColor: filterTab === status.key ? status.color : undefined,
+                  borderColor: status.color 
+                }}
+                className={`px-4 py-2 rounded text-sm font-bold transition-colors h-9 border ${
+                  filterTab === status.key
+                    ? 'text-white'
+                    : 'bg-background text-foreground hover:opacity-80'
+                }`}
+              >
+                {status.icon} {translatedName} ({statusCount})
+              </button>
+            );
+          })}
           <button
             onClick={() => setFilterTab('archived')}
             className={`px-3 py-1 rounded text-xs font-medium transition-colors h-7 ${
@@ -474,9 +631,34 @@ export default function OrdersAdmin() {
                 : 'bg-background text-foreground hover:bg-gray-500/10'
             }`}
           >
-            Archived ({orders.filter(o => o.status === 'failed' || o.status === 'cancelled').length})
+            {t('orders.status.archived')} ({orders.filter(o => o.status === 'failed' || o.status === 'cancelled' || o.status === 'fake' || o.status === 'duplicate').length})
           </button>
         </div>
+
+        {/* Bulk Selection Toolbar */}
+        {selectedOrders.size > 0 && (
+          <div className="border-b border-primary/10 bg-gradient-to-r from-blue-500/10 to-blue-500/5 p-2 flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              <CheckSquare className="h-4 w-4 text-blue-500" />
+              <span className="text-sm font-bold text-blue-600">{selectedOrders.size} order{selectedOrders.size > 1 ? 's' : ''} selected</span>
+            </div>
+            <div className="flex items-center gap-2 ml-auto">
+              <button
+                onClick={clearSelection}
+                className="px-3 py-1.5 rounded text-sm font-bold border border-gray-300 bg-background hover:bg-gray-100 transition-colors"
+              >
+                Clear
+              </button>
+              <button
+                onClick={() => setShowBulkUpload(true)}
+                className="px-4 py-1.5 rounded text-sm font-bold bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 transition-colors shadow flex items-center gap-2"
+              >
+                <Truck className="h-4 w-4" />
+                Upload to Delivery
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="overflow-x-auto">
           {/* Loading State */}
@@ -534,6 +716,19 @@ export default function OrdersAdmin() {
           <table className="w-full text-sm font-semibold">
             <thead>
               <tr className="border-b border-primary/10 bg-gradient-to-r from-muted/50 to-muted/30">
+                <th className="whitespace-nowrap p-2 text-center font-bold text-sm w-10">
+                  <button 
+                    onClick={selectAllFiltered}
+                    className="p-1 hover:bg-primary/10 rounded"
+                    title={getFilteredOrders().every(o => selectedOrders.has(o.raw_id)) ? "Deselect all" : "Select all"}
+                  >
+                    {getFilteredOrders().length > 0 && getFilteredOrders().every(o => selectedOrders.has(o.raw_id)) ? (
+                      <CheckSquare className="h-4 w-4 text-blue-500" />
+                    ) : (
+                      <Square className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </button>
+                </th>
                 <th className="whitespace-nowrap p-2 text-right font-bold text-sm">Image</th>
                 <th className="whitespace-nowrap p-2 text-right font-bold text-sm">{t('orders.orderNumber')}</th>
                 <th className="whitespace-nowrap p-2 text-right font-bold text-sm">Product</th>
@@ -545,12 +740,24 @@ export default function OrdersAdmin() {
               </tr>
             </thead>
             <tbody>
-              {getFilteredOrders().map((o:any)=> (
+              {getPaginatedOrders().map((o:any)=> (
                 <React.Fragment key={o.id}>
                   <tr 
                     onClick={() => setExpandedOrderId(expandedOrderId === o.id ? null : o.id)}
                     className="border-b border-primary/5 transition-all cursor-pointer hover:bg-primary/10"
                   >
+                    <td className="whitespace-nowrap p-2 text-center" onClick={(e) => e.stopPropagation()}>
+                      <button 
+                        onClick={() => toggleOrderSelection(o.raw_id)}
+                        className="p-1 hover:bg-primary/10 rounded"
+                      >
+                        {selectedOrders.has(o.raw_id) ? (
+                          <CheckSquare className="h-4 w-4 text-blue-500" />
+                        ) : (
+                          <Square className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </button>
+                    </td>
                     <td className="whitespace-nowrap p-2 text-right">
                       {o.product_image ? (
                         <img 
@@ -573,7 +780,7 @@ export default function OrdersAdmin() {
                     <td className="whitespace-nowrap p-2 text-right text-sm font-semibold">{o.customer}</td>
                     <td className="whitespace-nowrap p-2 text-right">
                       <span className="font-bold bg-gradient-to-r from-accent to-orange-500 bg-clip-text text-transparent text-sm">
-                        {o.total} DZD
+                        {Math.round(Number(o.total) || 0)} DZD
                       </span>
                     </td>
                     <td className="whitespace-nowrap p-2 text-right">
@@ -602,7 +809,7 @@ export default function OrdersAdmin() {
                   </tr>
                   {expandedOrderId === o.id && (
                     <tr className="bg-muted/30 border-b border-primary/10">
-                      <td colSpan={8} className="p-3">
+                      <td colSpan={9} className="p-3">
                         <div className="space-y-2">
                           {/* Order Details Grid */}
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
@@ -647,26 +854,47 @@ export default function OrdersAdmin() {
 
                           {/* Actions - Custom Statuses */}
                           <div className="flex flex-wrap gap-2">
-                            {customStatuses.map(status => (
-                              <button 
-                                key={status.id}
-                                onClick={() => setStatus(o.id, status.name)} 
-                                disabled={o.status === status.name}
-                                className="inline-flex items-center rounded px-3 py-2 text-sm font-bold transition-colors shadow h-9 disabled:opacity-30"
-                                style={{ 
-                                  backgroundColor: status.color,
-                                  color: 'white'
-                                }}
-                              >
-                                {status.icon} {status.name}
-                              </button>
-                            ))}
+                            {customStatuses.map(status => {
+                              const translatedName = t(`orders.status.${status.key}`) || status.name;
+                              return (
+                                <button 
+                                  key={status.id}
+                                  onClick={() => setStatus(o.id, status.key)} 
+                                  disabled={o.status === status.key}
+                                  className="inline-flex items-center rounded px-3 py-2 text-sm font-bold transition-colors shadow h-9 disabled:opacity-30"
+                                  style={{ 
+                                    backgroundColor: status.color,
+                                    color: 'white'
+                                  }}
+                                >
+                                  {status.icon} {translatedName}
+                                </button>
+                              );
+                            })}
                             <button 
                               onClick={() => setStatus(o.id, 'cancelled')} 
                               className="inline-flex items-center rounded bg-gradient-to-r from-red-500 to-red-600 px-3 py-2 text-sm font-bold text-white hover:from-red-600 hover:to-red-700 transition-colors shadow h-9"
                             >
-                              ✕ Cancel Order
+                              ✕ {t('orders.action.cancel')}
                             </button>
+                          </div>
+
+                          {/* Delivery Management Section */}
+                          <div className="mt-4 pt-4 border-t border-border/50">
+                            <OrderFulfillment 
+                              order={{
+                                id: o.raw_id,
+                                customer_name: o.customer,
+                                customer_phone: o.phone || '',
+                                customer_address: o.address || '',
+                                total_price: Number(o.total) || 0,
+                                delivery_company_id: o.delivery_company_id,
+                                tracking_number: o.tracking_number,
+                                delivery_status: o.delivery_status,
+                                shipping_label_url: o.shipping_label_url
+                              }}
+                              onDeliveryAssigned={() => loadOrders()}
+                            />
                           </div>
                         </div>
                       </td>
@@ -679,20 +907,26 @@ export default function OrdersAdmin() {
           )}
         </div>
 
+        {/* Pagination */}
         <div className="p-4 border-t-2 border-primary/10 flex items-center justify-between bg-muted/30">
           <div className="text-sm text-muted-foreground">
-            {orders.length === 0 ? 'Showing 0 orders' : t('orders.showing').replace('{start}', '1').replace('{end}', Math.min(15, orders.length).toString()).replace('{total}', orders.length.toString())}
+            {totalFilteredOrders === 0 ? 'Showing 0 orders' : t('orders.showing').replace('{start}', startOrder.toString()).replace('{end}', endOrder.toString()).replace('{total}', totalFilteredOrders.toString())}
           </div>
           <div className="flex items-center gap-2">
             <button 
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               className="rounded-lg border-2 border-primary/30 bg-background px-4 py-2 text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={orders.length <= 15}
+              disabled={currentPage === 1}
             >
               {t('orders.prev')}
             </button>
+            <span className="text-sm font-medium px-2">
+              {currentPage} / {Math.max(totalPages, 1)}
+            </span>
             <button 
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
               className="rounded-lg bg-gradient-to-r from-primary to-accent px-4 py-2 text-sm font-medium text-white hover:from-primary/90 hover:to-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
-              disabled={orders.length <= 15}
+              disabled={currentPage >= totalPages}
             >
               {t('orders.next')}
             </button>
@@ -809,12 +1043,15 @@ export default function OrdersAdmin() {
                     >
                       {status.icon}
                     </div>
-                    <span className="font-bold">{status.name}</span>
+                    <span className="font-bold">{t(`orders.status.${status.key}`) || status.name}</span>
+                    {status.is_system && (
+                      <span className="text-xs bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded">🔒 System</span>
+                    )}
                     {status.counts_as_revenue && (
                       <span className="text-xs bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded">💰 Revenue</span>
                     )}
                   </div>
-                  {!status.is_default && (
+                  {!status.is_system && (
                     <button
                       onClick={() => handleDeleteStatus(status.id)}
                       className="p-1 rounded hover:bg-red-500/20 text-red-500"
@@ -876,6 +1113,152 @@ export default function OrdersAdmin() {
               >
                 <Plus className="h-4 w-4 inline mr-1" /> Add Status
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Upload Modal */}
+      {showBulkUpload && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2">
+          <div className="bg-card rounded-lg border border-primary/20 shadow-xl max-w-lg w-full p-4 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold flex items-center gap-2">
+                <Truck className="h-5 w-5 text-blue-500" />
+                Upload to Delivery Company
+              </h2>
+              <button 
+                onClick={() => {
+                  setShowBulkUpload(false);
+                  setBulkUploadResult(null);
+                }}
+                className="p-1 rounded hover:bg-muted"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Selected Orders Summary */}
+            <div className="bg-blue-500/10 rounded-lg p-3 border border-blue-500/20">
+              <div className="flex items-center gap-2 mb-2">
+                <CheckSquare className="h-4 w-4 text-blue-500" />
+                <span className="font-bold text-blue-600">{selectedOrders.size} orders selected</span>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Total value: {orders.filter(o => selectedOrders.has(o.raw_id)).reduce((sum, o) => sum + (Number(o.total) || 0), 0).toLocaleString()} DZD
+              </div>
+            </div>
+
+            {/* Delivery Company Selection */}
+            <div className="space-y-2">
+              <label className="text-sm font-bold">Select Delivery Company</label>
+              {deliveryCompanies.length === 0 ? (
+                <div className="p-4 rounded bg-yellow-500/10 border border-yellow-500/20 text-center">
+                  <p className="text-sm text-yellow-600 font-bold mb-2">No delivery companies configured</p>
+                  <p className="text-xs text-muted-foreground">Go to Settings → Delivery Companies to add one</p>
+                </div>
+              ) : (
+                <div className="grid gap-2">
+                  {deliveryCompanies.map(company => (
+                    <button
+                      key={company.id}
+                      onClick={() => setSelectedDeliveryCompany(company.id)}
+                      className={`p-3 rounded border text-left transition-colors ${
+                        selectedDeliveryCompany === company.id
+                          ? 'border-blue-500 bg-blue-500/10'
+                          : 'border-border/50 bg-background hover:bg-muted'
+                      }`}
+                    >
+                      <div className="font-bold">{company.name}</div>
+                      {company.features && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {company.features.tracking && '📍 Tracking '}
+                          {company.features.cod && '💰 COD '}
+                          {company.features.labels && '🏷️ Labels'}
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Options */}
+            <div className="space-y-3 pt-2 border-t border-border/30">
+              <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded">
+                <strong>Note:</strong> "Assign only" just marks orders for this delivery company locally. 
+                To actually send orders to the courier API and get tracking numbers, enable "Generate labels" 
+                (requires API credentials configured in Settings → Delivery Companies).
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={generateLabels}
+                  onChange={(e) => setGenerateLabels(e.target.checked)}
+                  className="w-4 h-4 rounded border-border accent-blue-500"
+                />
+                <span className="text-sm">🏷️ Generate shipping labels (calls courier API - requires configured credentials)</span>
+              </label>
+            </div>
+
+            {/* Results */}
+            {bulkUploadResult && (
+              <div className={`p-3 rounded border ${
+                bulkUploadResult.failCount === 0 
+                  ? 'bg-green-500/10 border-green-500/20' 
+                  : 'bg-yellow-500/10 border-yellow-500/20'
+              }`}>
+                <div className="font-bold mb-2">
+                  {bulkUploadResult.failCount === 0 ? '✅ All orders uploaded successfully!' : '⚠️ Some orders failed'}
+                </div>
+                <div className="text-sm">
+                  <span className="text-green-600">{bulkUploadResult.successCount} successful</span>
+                  {bulkUploadResult.failCount > 0 && (
+                    <span className="text-red-600 ml-2">{bulkUploadResult.failCount} failed</span>
+                  )}
+                </div>
+                {bulkUploadResult.failCount > 0 && (
+                  <div className="mt-2 max-h-32 overflow-y-auto">
+                    {bulkUploadResult.results.filter(r => !r.success).map((r, i) => (
+                      <div key={i} className="text-xs text-red-600">
+                        Order #{r.orderId}: {r.error}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={() => {
+                  setShowBulkUpload(false);
+                  setBulkUploadResult(null);
+                }}
+                className="flex-1 px-3 py-2 rounded border border-primary/30 hover:bg-primary/10 transition-colors text-sm h-10 font-bold"
+              >
+                {bulkUploadResult ? 'Close' : 'Cancel'}
+              </button>
+              {!bulkUploadResult && (
+                <button
+                  onClick={handleBulkUpload}
+                  disabled={bulkUploading || deliveryCompanies.length === 0 || !selectedDeliveryCompany}
+                  className="flex-1 px-3 py-2 rounded bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm font-bold hover:from-blue-600 hover:to-blue-700 transition-colors shadow h-10 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {bulkUploading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4" />
+                      Upload {selectedOrders.size} Orders
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>

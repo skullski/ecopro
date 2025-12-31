@@ -319,7 +319,7 @@ export default function Checkout() {
                 <img src={product.imageUrl} alt={product.title} className="w-20 h-20 object-cover rounded-xl border border-[#23264a]" />
                 <div>
                   <div className="font-semibold text-white text-lg mb-1">{product.title}</div>
-                  <div className="text-cyan-400 text-xl md:text-2xl font-extrabold">${(product.price / 100).toFixed(2)}</div>
+                  <div className="text-cyan-400 text-xl md:text-2xl font-extrabold">{Math.round(product.price / 100)}</div>
                   <div className="text-gray-400 text-sm mt-1">{product.description}</div>
                 </div>
               </div>
@@ -329,7 +329,7 @@ export default function Checkout() {
               <div className="flex flex-col gap-2 text-base">
                 <div className="flex justify-between text-gray-300">
                   <span>Subtotal</span>
-                  <span className="font-medium text-white">${(product.price / 100).toFixed(2)}</span>
+                  <span className="font-medium text-white">{Math.round(product.price / 100)}</span>
                 </div>
                 <div className="flex justify-between text-gray-300">
                   <span>Shipping</span>
@@ -338,7 +338,7 @@ export default function Checkout() {
                 <div className="border-t border-[#23264a] my-2"></div>
                 <div className="flex justify-between text-lg">
                   <span className="font-bold text-white">Total</span>
-                  <span className="font-extrabold text-cyan-400">${(product.price / 100).toFixed(2)}</span>
+                  <span className="font-extrabold text-cyan-400">{Math.round(product.price / 100)}</span>
                 </div>
               </div>
             </div>

@@ -46,7 +46,13 @@ export default function StaffLogin() {
       localStorage.setItem('staffId', data.staffId);
       localStorage.setItem('isStaff', 'true');
       
-      navigate('/staff/dashboard');
+      // Store token if provided
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+      }
+      
+      // Redirect to main dashboard - staff sees same pages but with permission restrictions
+      navigate('/dashboard');
     } catch (err) {
       setError('Network error. Please try again.');
       console.error(err);

@@ -13,6 +13,15 @@ import { RenderStorefront } from './storefront/templates';
 import { getCurrentUser } from '@/lib/auth';
 import baseShiroHanaHome from './storefront/templates/gold/shiro-hana-home.json';
 import baseBabyHome from './storefront/templates/gold/baby-home.json';
+import baseFashionHome from './storefront/templates/gold/fashion-home.json';
+import baseElectronicsHome from './storefront/templates/gold/electronics-home.json';
+import baseBeautyHome from './storefront/templates/gold/beauty-home.json';
+import baseJewelryHome from './storefront/templates/gold/jewelry-home.json';
+import baseFoodHome from './storefront/templates/gold/food-home.json';
+import baseCafeHome from './storefront/templates/gold/cafe-home.json';
+import basePerfumeHome from './storefront/templates/gold/perfume-home.json';
+import baseBagsHome from './storefront/templates/gold/bags-home.json';
+import baseFurnitureHome from './storefront/templates/gold/furniture-home.json';
 import { uploadImage } from '@/lib/api';
 import { migrateShiroHanaDoc } from './storefront/templates/gold/shiro-hana/migrations';
 import type { EditorMode } from '@/lib/templateEditorSchema';
@@ -354,8 +363,9 @@ function normalizeTier(input?: string | null): string {
 }
 
 function canUseAdvancedEditor(tier: string): boolean {
-  const t = normalizeTier(tier);
-  return t === 'gold' || t === 'platinum';
+  // Allow all authenticated users to use advanced editor
+  // Previously required gold/platinum tier, now open to all
+  return true;
 }
 
 function isAdvancedSettingsKey(settingsKey: string): boolean {
@@ -689,6 +699,34 @@ function deriveBabySettingsFromDoc(doc: any): Record<string, any> {
   };
 }
 
+// Generic template doc getter - returns base schema merged with stored settings
+function getTemplateDocFromSettings(s: StoreSettings, templateKey: string, baseDoc: any): any {
+  const raw = (s as any)?.[templateKey];
+  const base = safeClone(baseDoc);
+  if (raw && typeof raw === 'object') {
+    return deepMerge(base, raw);
+  }
+  return base;
+}
+
+// Template to doc key mapping
+const TEMPLATE_DOC_KEYS: Record<string, { key: string; base: any }> = {
+  'shiro-hana': { key: 'gold_page_shiro_hana_home', base: baseShiroHanaHome },
+  'baby': { key: 'gold_page_baby_home', base: baseBabyHome },
+  'fashion': { key: 'gold_page_fashion_home', base: baseFashionHome },
+  'fashion2': { key: 'gold_page_fashion_home', base: baseFashionHome },
+  'fashion3': { key: 'gold_page_fashion_home', base: baseFashionHome },
+  'electronics': { key: 'gold_page_electronics_home', base: baseElectronicsHome },
+  'beauty': { key: 'gold_page_beauty_home', base: baseBeautyHome },
+  'beaty': { key: 'gold_page_beauty_home', base: baseBeautyHome }, // typo variant
+  'jewelry': { key: 'gold_page_jewelry_home', base: baseJewelryHome },
+  'food': { key: 'gold_page_food_home', base: baseFoodHome },
+  'cafe': { key: 'gold_page_cafe_home', base: baseCafeHome },
+  'perfume': { key: 'gold_page_perfume_home', base: basePerfumeHome },
+  'bags': { key: 'gold_page_bags_home', base: baseBagsHome },
+  'furniture': { key: 'gold_page_furniture_home', base: baseFurnitureHome },
+};
+
 function buildPublishPayload(s: StoreSettings, templateId: string, shiroDoc: any, babyDoc?: any): any {
   const base: any = {
     store_name: s.store_name || null,
@@ -711,18 +749,28 @@ function buildPublishPayload(s: StoreSettings, templateId: string, shiroDoc: any
     secondary_color: s.secondary_color || null,
   };
 
+  const normalizedId = String(templateId).replace(/^gold-/, '');
+  const templateConfig = TEMPLATE_DOC_KEYS[normalizedId];
+
   // For schema-driven gold templates (shiro-hana), include the page doc.
-  if (String(templateId) === 'gold-shiro-hana') {
+  if (normalizedId === 'shiro-hana') {
     base.gold_page_shiro_hana_home = (s as any).gold_page_shiro_hana_home || shiroDoc;
     return base;
   }
 
   // For gold-baby, persist its page doc and also keep the existing Baby settings keys in sync
   // so the Baby UI remains unchanged (it still reads template_* keys).
-  if (String(templateId) === 'gold-baby') {
+  if (normalizedId === 'baby' || normalizedId === 'baby-gold') {
     const doc = (s as any).gold_page_baby_home || babyDoc || getBabyDocFromSettings(s);
     base.gold_page_baby_home = doc;
     Object.assign(base, deriveBabySettingsFromDoc(doc));
+    return base;
+  }
+
+  // For all other schema-driven templates, include their page doc
+  if (templateConfig) {
+    const doc = (s as any)[templateConfig.key] || getTemplateDocFromSettings(s, templateConfig.key, templateConfig.base);
+    base[templateConfig.key] = doc;
     return base;
   }
 
@@ -905,9 +953,9 @@ export default function GoldTemplateEditor() {
     (n: number) => {
       const code = settings.currency_code || 'DZD';
       try {
-        return new Intl.NumberFormat(undefined, { style: 'currency', currency: code }).format(n);
+        return new Intl.NumberFormat(undefined, { style: 'currency', currency: code, maximumFractionDigits: 0, minimumFractionDigits: 0 }).format(Math.round(n));
       } catch {
-        return `${n.toFixed(2)}`;
+        return `${Math.round(n)} ${code}`;
       }
     },
     [settings.currency_code]
@@ -917,6 +965,10 @@ export default function GoldTemplateEditor() {
   const normalizedTemplate = String(templateId).replace(/^gold-/, '');
   const isShiro = normalizedTemplate === 'shiro-hana';
   const isGoldBaby = normalizedTemplate === 'baby' || normalizedTemplate === 'baby-gold';
+  
+  // Check if current template has a schema doc
+  const templateConfig = TEMPLATE_DOC_KEYS[normalizedTemplate];
+  const hasSchemaDoc = !!templateConfig;
 
   const canUndo = historyRef.current.length > 0;
   const canRedo = futureRef.current.length > 0;
@@ -1079,20 +1131,46 @@ export default function GoldTemplateEditor() {
     return getBabyDocFromSettings(settings);
   }, [settings]);
 
-  const schemaDoc = isShiro ? shiroDoc : (isGoldBaby ? babyDoc : null);
-  const schemaDocKey = isShiro ? 'gold_page_shiro_hana_home' : (isGoldBaby ? 'gold_page_baby_home' : null);
+  // Generic template doc for templates that have schemas
+  const genericTemplateDoc = React.useMemo(() => {
+    if (isShiro || isGoldBaby || !templateConfig) return null;
+    return getTemplateDocFromSettings(settings, templateConfig.key, templateConfig.base);
+  }, [isShiro, isGoldBaby, templateConfig, settings]);
+
+  // Determine schemaDoc and schemaDocKey for all templates with schemas
+  const schemaDoc = React.useMemo(() => {
+    if (isShiro) return shiroDoc;
+    if (isGoldBaby) return babyDoc;
+    if (templateConfig) return genericTemplateDoc;
+    return null;
+  }, [isShiro, isGoldBaby, templateConfig, shiroDoc, babyDoc, genericTemplateDoc]);
+
+  const schemaDocKey = React.useMemo(() => {
+    if (isShiro) return 'gold_page_shiro_hana_home';
+    if (isGoldBaby) return 'gold_page_baby_home';
+    if (templateConfig) return templateConfig.key;
+    return null;
+  }, [isShiro, isGoldBaby, templateConfig]);
 
   const previewSettings = React.useMemo(() => {
-    if (!isGoldBaby) return settings;
-    // Keep BabyTemplate unchanged: it still reads template_* settings keys.
-    // We derive them from the page doc for live preview.
-    const doc = (settings as any).gold_page_baby_home || babyDoc;
-    return {
-      ...settings,
-      gold_page_baby_home: doc,
-      ...deriveBabySettingsFromDoc(doc),
-    } as any;
-  }, [babyDoc, isGoldBaby, settings]);
+    // For Baby template, keep backward compatibility with template_* settings keys
+    if (isGoldBaby) {
+      const doc = (settings as any).gold_page_baby_home || babyDoc;
+      return {
+        ...settings,
+        gold_page_baby_home: doc,
+        ...deriveBabySettingsFromDoc(doc),
+      } as any;
+    }
+    // For other templates with schemas, include the doc in settings
+    if (schemaDocKey && schemaDoc) {
+      return {
+        ...settings,
+        [schemaDocKey]: schemaDoc,
+      } as any;
+    }
+    return settings;
+  }, [babyDoc, isGoldBaby, settings, schemaDocKey, schemaDoc]);
 
   const isDirty = React.useMemo(() => {
     if (!publishedSettings) return false;
@@ -1160,7 +1238,7 @@ export default function GoldTemplateEditor() {
 
   React.useEffect(() => {
     setJsonError('');
-    if ((!isShiro && !isGoldBaby) || !selectedPath) {
+    if (!hasSchemaDoc || !selectedPath) {
       setJsonDraft('');
       return;
     }
@@ -1173,7 +1251,7 @@ export default function GoldTemplateEditor() {
     } else {
       setJsonDraft('');
     }
-  }, [isGoldBaby, isShiro, selectedPath, selectedSchema]);
+  }, [hasSchemaDoc, selectedPath, selectedSchema]);
 
   const setSchemaValue = (path: string, next: any) => {
     if (!schemaEditorEnabled) return;
@@ -1390,18 +1468,26 @@ export default function GoldTemplateEditor() {
 
       {/* Template Selector - Scrolling Marquee */}
       <div className="border-b bg-card">
-        <div className="flex items-center justify-between px-4 py-2">
-          <h2 className="text-sm font-semibold">Choose Template</h2>
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-3">
+            <h2 className="text-base font-bold">🎨 Choose Your Store Template</h2>
+            {normalizedTemplate && (
+              <Badge variant="default" className="text-xs">
+                Active: {templateList.find(t => t.id === normalizedTemplate)?.label || normalizedTemplate}
+              </Badge>
+            )}
+          </div>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setTemplatesCollapsed(!templatesCollapsed)}
-            className="h-8 w-8 p-0"
+            className="h-8 px-3 gap-1"
           >
+            {templatesCollapsed ? 'Show Templates' : 'Hide'}
             {templatesCollapsed ? (
-              <ChevronDown className="w-5 h-5" />
+              <ChevronDown className="w-4 h-4" />
             ) : (
-              <ChevronUp className="w-5 h-5" />
+              <ChevronUp className="w-4 h-4" />
             )}
           </Button>
         </div>
@@ -1409,19 +1495,19 @@ export default function GoldTemplateEditor() {
         <div
           className={`overflow-hidden transition-all duration-300 ease-in-out ${
             templatesCollapsed
-              ? 'max-h-0 opacity-0'
-              : 'max-h-[220px] opacity-100'
+              ? 'max-h-0 opacity-0 pb-0'
+              : 'max-h-[220px] opacity-100 pb-4'
           }`}
         >
           {/* Infinite scrolling marquee */}
-          <div className="overflow-hidden relative pb-4">
+          <div className="overflow-hidden relative">
             <style>{`
               @keyframes marquee {
                 0% { transform: translateX(0); }
                 100% { transform: translateX(-50%); }
               }
               .animate-marquee {
-                animation: marquee 35s linear infinite;
+                animation: marquee 40s linear infinite;
               }
               .animate-marquee:hover {
                 animation-play-state: paused;
@@ -1429,103 +1515,109 @@ export default function GoldTemplateEditor() {
             `}</style>
             <div className="flex gap-3 px-4 animate-marquee" style={{ width: 'max-content' }}>
               {/* First set of templates */}
-              {templateList.map((tpl) => (
-                <button
-                  key={tpl.id}
-                  onClick={() => handleTemplateSwitch(tpl.id)}
-                  className={`flex-shrink-0 w-[120px] md:w-[140px] rounded-xl overflow-hidden transition-all duration-300 transform hover:scale-105 relative group ${
-                    normalizedTemplate === tpl.id
-                      ? 'ring-4 ring-primary shadow-2xl scale-105'
-                      : 'border-2 border-muted hover:border-muted-foreground/50 shadow-md hover:shadow-xl'
-                  }`}
-                >
-                  <div className="aspect-[3/4] relative">
-                    <img 
-                      src={tpl.preview} 
-                      alt={tpl.label}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        // Fallback gradient if image not found
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                        const parent = target.parentElement;
-                        if (parent) {
-                          parent.style.background = 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%)';
-                        }
-                      }}
-                    />
-                    <div className={`absolute inset-0 flex items-end justify-center pb-3 transition-all ${
-                      normalizedTemplate === tpl.id
-                        ? 'bg-gradient-to-t from-black/60 to-transparent'
-                        : 'bg-gradient-to-t from-black/40 to-transparent group-hover:from-black/60'
-                    }`}>
-                      <span className={`text-center font-semibold text-xs transition-colors ${
-                        normalizedTemplate === tpl.id
-                          ? 'text-white'
-                          : 'text-white/90 group-hover:text-white'
+              {templateList.map((tpl) => {
+                const isActive = normalizedTemplate === tpl.id;
+                return (
+                  <button
+                    key={tpl.id}
+                    onClick={() => handleTemplateSwitch(tpl.id)}
+                    className={`flex-shrink-0 w-[100px] rounded-xl overflow-hidden transition-all duration-200 transform hover:scale-105 group ${
+                      isActive
+                        ? 'ring-3 ring-primary ring-offset-2 shadow-lg scale-105'
+                        : 'border-2 border-muted hover:border-primary/50 shadow hover:shadow-md'
+                    }`}
+                  >
+                    <div className="aspect-[3/4] relative bg-gradient-to-br from-muted to-muted/50">
+                      <img 
+                        src={tpl.preview} 
+                        alt={tpl.label}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                        }}
+                      />
+                      <div className={`absolute inset-0 flex flex-col items-center justify-end pb-2 transition-all ${
+                        isActive
+                          ? 'bg-gradient-to-t from-primary/80 via-primary/40 to-transparent'
+                          : 'bg-gradient-to-t from-black/60 to-transparent group-hover:from-primary/60'
                       }`}>
-                        {tpl.label}
-                      </span>
-                    </div>
-                  </div>
-                  {normalizedTemplate === tpl.id && (
-                    <div className="absolute top-2 right-2 z-10">
-                      <div className="bg-primary text-primary-foreground rounded-full p-1">
-                        <Check className="w-4 h-4" />
+                        <span className="text-white font-semibold text-xs text-center px-1 drop-shadow">
+                          {tpl.label}
+                        </span>
                       </div>
+                      {isActive && (
+                        <div className="absolute top-1 right-1 z-10">
+                          <div className="bg-primary text-primary-foreground rounded-full p-0.5 shadow">
+                            <Check className="w-3 h-3" />
+                          </div>
+                        </div>
+                      )}
+                      {isActive && (
+                        <div className="absolute top-1 left-1 z-10">
+                          <Badge variant="secondary" className="text-[9px] px-1 py-0 bg-white/90 text-primary">
+                            ACTIVE
+                          </Badge>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </button>
-              ))}
+                  </button>
+                );
+              })}
               {/* Duplicate for seamless loop */}
-              {templateList.map((tpl) => (
-                <button
-                  key={`${tpl.id}-dup`}
-                  onClick={() => handleTemplateSwitch(tpl.id)}
-                  className={`flex-shrink-0 w-[120px] md:w-[140px] rounded-xl overflow-hidden transition-all duration-300 transform hover:scale-105 relative group ${
-                    normalizedTemplate === tpl.id
-                      ? 'ring-4 ring-primary shadow-2xl scale-105'
-                      : 'border-2 border-muted hover:border-muted-foreground/50 shadow-md hover:shadow-xl'
-                  }`}
-                >
-                  <div className="aspect-[3/4] relative">
-                    <img 
-                      src={tpl.preview} 
-                      alt={tpl.label}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                        const parent = target.parentElement;
-                        if (parent) {
-                          parent.style.background = 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%)';
-                        }
-                      }}
-                    />
-                    <div className={`absolute inset-0 flex items-end justify-center pb-3 transition-all ${
-                      normalizedTemplate === tpl.id
-                        ? 'bg-gradient-to-t from-black/60 to-transparent'
-                        : 'bg-gradient-to-t from-black/40 to-transparent group-hover:from-black/60'
-                    }`}>
-                      <span className={`text-center font-semibold text-xs transition-colors ${
-                        normalizedTemplate === tpl.id
-                          ? 'text-white'
-                          : 'text-white/90 group-hover:text-white'
+              {templateList.map((tpl) => {
+                const isActive = normalizedTemplate === tpl.id;
+                return (
+                  <button
+                    key={`${tpl.id}-dup`}
+                    onClick={() => handleTemplateSwitch(tpl.id)}
+                    className={`flex-shrink-0 w-[100px] rounded-xl overflow-hidden transition-all duration-200 transform hover:scale-105 group ${
+                      isActive
+                        ? 'ring-3 ring-primary ring-offset-2 shadow-lg scale-105'
+                        : 'border-2 border-muted hover:border-primary/50 shadow hover:shadow-md'
+                    }`}
+                  >
+                    <div className="aspect-[3/4] relative bg-gradient-to-br from-muted to-muted/50">
+                      <img 
+                        src={tpl.preview} 
+                        alt={tpl.label}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                        }}
+                      />
+                      <div className={`absolute inset-0 flex flex-col items-center justify-end pb-2 transition-all ${
+                        isActive
+                          ? 'bg-gradient-to-t from-primary/80 via-primary/40 to-transparent'
+                          : 'bg-gradient-to-t from-black/60 to-transparent group-hover:from-primary/60'
                       }`}>
-                        {tpl.label}
-                      </span>
-                    </div>
-                  </div>
-                  {normalizedTemplate === tpl.id && (
-                    <div className="absolute top-2 right-2 z-10">
-                      <div className="bg-primary text-primary-foreground rounded-full p-1">
-                        <Check className="w-4 h-4" />
+                        <span className="text-white font-semibold text-xs text-center px-1 drop-shadow">
+                          {tpl.label}
+                        </span>
                       </div>
+                      {isActive && (
+                        <div className="absolute top-1 right-1 z-10">
+                          <div className="bg-primary text-primary-foreground rounded-full p-0.5 shadow">
+                            <Check className="w-3 h-3" />
+                          </div>
+                        </div>
+                      )}
+                      {isActive && (
+                        <div className="absolute top-1 left-1 z-10">
+                          <Badge variant="secondary" className="text-[9px] px-1 py-0 bg-white/90 text-primary">
+                            ACTIVE
+                          </Badge>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
+            <p className="text-xs text-muted-foreground mt-3 text-center">
+              Hover to pause • Click a template to preview • Click <strong>Publish</strong> to apply
+            </p>
           </div>
         </div>
       </div>
@@ -1742,177 +1834,840 @@ export default function GoldTemplateEditor() {
             <CardHeader>
               <CardTitle>Properties</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-3 max-h-[70vh] overflow-y-auto">
               {editorMode === 'basic' ? (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div className="text-sm font-medium flex items-center gap-2">
                     <Sparkles className="h-4 w-4" />
-                    Basic edits
+                    Silver Editor - Quick Customization
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1 col-span-2">
-                      <div className="text-xs text-muted-foreground">Hero Title</div>
-                      <Input
-                        value={String((settings as any).template_hero_heading ?? '')}
-                        onChange={(e) => updateField('template_hero_heading' as any, e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-1 col-span-2">
-                      <div className="text-xs text-muted-foreground">Hero Subtitle</div>
-                      <Textarea
-                        value={String((settings as any).template_hero_subtitle ?? '')}
-                        onChange={(e) => updateField('template_hero_subtitle' as any, e.target.value)}
-                        rows={3}
-                      />
-                    </div>
-                    <div className="space-y-1 col-span-2">
-                      <div className="text-xs text-muted-foreground">Hero Button Text</div>
-                      <Input
-                        value={String((settings as any).template_button_text ?? '')}
-                        onChange={(e) => updateField('template_button_text' as any, e.target.value)}
-                      />
-                    </div>
-
-                    <Separator className="col-span-2" />
-
-                    <div className="space-y-1 col-span-2">
-                      <div className="text-xs text-muted-foreground">Store Logo</div>
-                      <Input
-                        type="url"
-                        value={String((settings as any).store_logo ?? '')}
-                        onChange={(e) => updateField('store_logo' as any, e.target.value)}
-                        placeholder="https://..."
-                      />
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          try {
-                            setBasicUploadError('');
-                            const uploaded = await uploadImage(file);
-                            updateField('store_logo' as any, uploaded.url);
-                          } catch (err) {
-                            setBasicUploadError((err as any)?.message || 'Upload failed');
-                          }
-                        }}
-                      />
-                    </div>
-
-                    <div className="space-y-1 col-span-2">
-                      <div className="text-xs text-muted-foreground">Hero Image</div>
-                      <Input
-                        type="url"
-                        value={String((settings as any).banner_url ?? '')}
-                        onChange={(e) => updateField('banner_url' as any, e.target.value)}
-                        placeholder="https://..."
-                      />
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          try {
-                            setBasicUploadError('');
-                            const uploaded = await uploadImage(file);
-                            updateField('banner_url' as any, uploaded.url);
-                          } catch (err) {
-                            setBasicUploadError((err as any)?.message || 'Upload failed');
-                          }
-                        }}
-                      />
-                    </div>
-
-                    <div className="space-y-1 col-span-2">
-                      <div className="text-xs text-muted-foreground">Hero Video URL (optional)</div>
-                      <Input
-                        type="url"
-                        value={String((settings as any).hero_video_url ?? '')}
-                        onChange={(e) => updateField('hero_video_url' as any, e.target.value)}
-                        placeholder="https://...mp4"
-                      />
-                      <div className="text-xs text-muted-foreground">When set, templates may render video instead of the hero image.</div>
-                    </div>
-
-                    <Separator className="col-span-2" />
-
-                    <div className="space-y-2 col-span-2">
-                      <div className="text-xs text-muted-foreground">Dark Mode</div>
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant={(settings as any).enable_dark_mode ? 'default' : 'outline'}
-                          onClick={() => updateField('enable_dark_mode' as any, !(settings as any).enable_dark_mode)}
-                        >
-                          {(settings as any).enable_dark_mode ? 'Enabled' : 'Disabled'}
-                        </Button>
-                      </div>
-                    </div>
-
-                    <Separator className="col-span-2" />
-
-                    <div className="space-y-1">
-                      <div className="text-xs text-muted-foreground">Primary</div>
-                      <div className="flex gap-2">
+                  {/* Store Info Section */}
+                  <details open className="group border rounded-lg">
+                    <summary className="flex items-center justify-between p-3 cursor-pointer bg-muted/30 rounded-t-lg hover:bg-muted/50">
+                      <span className="font-medium text-sm flex items-center gap-2">
+                        🏪 Store Info
+                      </span>
+                      <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" />
+                    </summary>
+                    <div className="p-3 space-y-3">
+                      <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">Store Name</div>
                         <Input
-                          type="color"
-                          className="w-12 h-10 p-1"
-                          value={String((settings as any).primary_color ?? '#16a34a')}
-                          onChange={(e) => updateField('primary_color' as any, e.target.value)}
+                          value={String((settings as any).store_name ?? '')}
+                          onChange={(e) => updateField('store_name' as any, e.target.value)}
+                          placeholder="My Store"
                         />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">Store Description</div>
+                        <Textarea
+                          value={String((settings as any).store_description ?? '')}
+                          onChange={(e) => updateField('store_description' as any, e.target.value)}
+                          rows={2}
+                          placeholder="Brief description of your store..."
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">Currency</div>
                         <Input
-                          value={String((settings as any).primary_color ?? '')}
-                          onChange={(e) => updateField('primary_color' as any, e.target.value)}
-                          placeholder="#16a34a"
+                          value={String((settings as any).currency ?? 'DZD')}
+                          onChange={(e) => updateField('currency' as any, e.target.value)}
+                          placeholder="DZD"
                         />
                       </div>
                     </div>
+                  </details>
 
-                    <div className="space-y-1">
-                      <div className="text-xs text-muted-foreground">Secondary</div>
-                      <div className="flex gap-2">
+                  {/* Hero Section */}
+                  <details open className="group border rounded-lg">
+                    <summary className="flex items-center justify-between p-3 cursor-pointer bg-muted/30 rounded-t-lg hover:bg-muted/50">
+                      <span className="font-medium text-sm flex items-center gap-2">
+                        🎯 Hero Section
+                      </span>
+                      <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" />
+                    </summary>
+                    <div className="p-3 space-y-3">
+                      <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">Hero Title</div>
                         <Input
-                          type="color"
-                          className="w-12 h-10 p-1"
-                          value={String((settings as any).secondary_color ?? '#0ea5e9')}
-                          onChange={(e) => updateField('secondary_color' as any, e.target.value)}
+                          value={String((settings as any).template_hero_heading ?? '')}
+                          onChange={(e) => updateField('template_hero_heading' as any, e.target.value)}
+                          placeholder="Welcome to Our Store"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">Hero Subtitle</div>
+                        <Textarea
+                          value={String((settings as any).template_hero_subtitle ?? '')}
+                          onChange={(e) => updateField('template_hero_subtitle' as any, e.target.value)}
+                          rows={2}
+                          placeholder="Discover amazing products..."
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">Hero Button Text</div>
+                        <Input
+                          value={String((settings as any).template_button_text ?? '')}
+                          onChange={(e) => updateField('template_button_text' as any, e.target.value)}
+                          placeholder="Shop Now"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Badge Left</div>
+                          <Input
+                            value={String((settings as any).template_hero_badge_left ?? '')}
+                            onChange={(e) => updateField('template_hero_badge_left' as any, e.target.value)}
+                            placeholder="Free Shipping"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Badge Right</div>
+                          <Input
+                            value={String((settings as any).template_hero_badge_right ?? '')}
+                            onChange={(e) => updateField('template_hero_badge_right' as any, e.target.value)}
+                            placeholder="24/7 Support"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </details>
+
+                  {/* Images Section */}
+                  <details open className="group border rounded-lg">
+                    <summary className="flex items-center justify-between p-3 cursor-pointer bg-muted/30 rounded-t-lg hover:bg-muted/50">
+                      <span className="font-medium text-sm flex items-center gap-2">
+                        🖼️ Images & Media
+                      </span>
+                      <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" />
+                    </summary>
+                    <div className="p-3 space-y-3">
+                      <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">Store Logo</div>
+                        <Input
+                          type="url"
+                          value={String((settings as any).store_logo ?? '')}
+                          onChange={(e) => updateField('store_logo' as any, e.target.value)}
+                          placeholder="https://..."
                         />
                         <Input
-                          value={String((settings as any).secondary_color ?? '')}
-                          onChange={(e) => updateField('secondary_color' as any, e.target.value)}
-                          placeholder="#0ea5e9"
+                          type="file"
+                          accept="image/*"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            try {
+                              setBasicUploadError('');
+                              const uploaded = await uploadImage(file);
+                              updateField('store_logo' as any, uploaded.url);
+                            } catch (err) {
+                              setBasicUploadError((err as any)?.message || 'Upload failed');
+                            }
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">Hero Banner Image</div>
+                        <Input
+                          type="url"
+                          value={String((settings as any).banner_url ?? '')}
+                          onChange={(e) => updateField('banner_url' as any, e.target.value)}
+                          placeholder="https://..."
+                        />
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            try {
+                              setBasicUploadError('');
+                              const uploaded = await uploadImage(file);
+                              updateField('banner_url' as any, uploaded.url);
+                            } catch (err) {
+                              setBasicUploadError((err as any)?.message || 'Upload failed');
+                            }
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">Hero Video URL (optional)</div>
+                        <Input
+                          type="url"
+                          value={String((settings as any).hero_video_url ?? '')}
+                          onChange={(e) => updateField('hero_video_url' as any, e.target.value)}
+                          placeholder="https://...mp4"
+                        />
+                        <div className="text-xs text-muted-foreground">Replaces hero image with video when set</div>
+                      </div>
+                    </div>
+                  </details>
+
+                  {/* Categories Section */}
+                  <details className="group border rounded-lg">
+                    <summary className="flex items-center justify-between p-3 cursor-pointer bg-muted/30 rounded-t-lg hover:bg-muted/50">
+                      <span className="font-medium text-sm flex items-center gap-2">
+                        📂 Categories & Products
+                      </span>
+                      <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" />
+                    </summary>
+                    <div className="p-3 space-y-3">
+                      <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">Browse by Category Label</div>
+                        <Input
+                          value={String((settings as any).template_browse_by_category_label ?? '')}
+                          onChange={(e) => updateField('template_browse_by_category_label' as any, e.target.value)}
+                          placeholder="Browse by Category"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">Featured Section Title</div>
+                        <Input
+                          value={String((settings as any).template_featured_title ?? '')}
+                          onChange={(e) => updateField('template_featured_title' as any, e.target.value)}
+                          placeholder="Featured Products"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">Grid Section Title</div>
+                        <Input
+                          value={String((settings as any).template_grid_title ?? '')}
+                          onChange={(e) => updateField('template_grid_title' as any, e.target.value)}
+                          placeholder="All Products"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Product Badge 1</div>
+                          <Input
+                            value={String((settings as any).template_product_badge_1 ?? '')}
+                            onChange={(e) => updateField('template_product_badge_1' as any, e.target.value)}
+                            placeholder="New"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Product Badge 2</div>
+                          <Input
+                            value={String((settings as any).template_product_badge_2 ?? '')}
+                            onChange={(e) => updateField('template_product_badge_2' as any, e.target.value)}
+                            placeholder="Sale"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">Buy Now Label</div>
+                        <Input
+                          value={String((settings as any).template_buy_now_label ?? '')}
+                          onChange={(e) => updateField('template_buy_now_label' as any, e.target.value)}
+                          placeholder="Buy Now"
                         />
                       </div>
                     </div>
+                  </details>
 
-                    <div className="space-y-1 col-span-2">
-                      <div className="text-xs text-muted-foreground">Accent (optional)</div>
-                      <div className="flex gap-2">
-                        <Input
-                          type="color"
-                          className="w-12 h-10 p-1"
-                          value={String((settings as any).template_accent_color ?? (settings as any).primary_color ?? '#16a34a')}
-                          onChange={(e) => updateField('template_accent_color' as any, e.target.value)}
-                        />
-                        <Input
-                          value={String((settings as any).template_accent_color ?? '')}
-                          onChange={(e) => updateField('template_accent_color' as any, e.target.value)}
-                          placeholder="(uses primary if empty)"
+                  {/* Colors Section */}
+                  <details open className="group border rounded-lg">
+                    <summary className="flex items-center justify-between p-3 cursor-pointer bg-muted/30 rounded-t-lg hover:bg-muted/50">
+                      <span className="font-medium text-sm flex items-center gap-2">
+                        🎨 Colors & Theme
+                      </span>
+                      <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" />
+                    </summary>
+                    <div className="p-3 space-y-3">
+                      <div className="space-y-2">
+                        <div className="text-xs text-muted-foreground">Dark Mode</div>
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={(settings as any).enable_dark_mode ? 'default' : 'outline'}
+                            onClick={() => updateField('enable_dark_mode' as any, !(settings as any).enable_dark_mode)}
+                          >
+                            {(settings as any).enable_dark_mode ? '🌙 Enabled' : '☀️ Disabled'}
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Primary Color</div>
+                          <div className="flex gap-2">
+                            <Input
+                              type="color"
+                              className="w-12 h-10 p-1"
+                              value={String((settings as any).primary_color ?? '#16a34a')}
+                              onChange={(e) => updateField('primary_color' as any, e.target.value)}
+                            />
+                            <Input
+                              value={String((settings as any).primary_color ?? '')}
+                              onChange={(e) => updateField('primary_color' as any, e.target.value)}
+                              placeholder="#16a34a"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Secondary Color</div>
+                          <div className="flex gap-2">
+                            <Input
+                              type="color"
+                              className="w-12 h-10 p-1"
+                              value={String((settings as any).secondary_color ?? '#0ea5e9')}
+                              onChange={(e) => updateField('secondary_color' as any, e.target.value)}
+                            />
+                            <Input
+                              value={String((settings as any).secondary_color ?? '')}
+                              onChange={(e) => updateField('secondary_color' as any, e.target.value)}
+                              placeholder="#0ea5e9"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">Accent Color (optional)</div>
+                        <div className="flex gap-2">
+                          <Input
+                            type="color"
+                            className="w-12 h-10 p-1"
+                            value={String((settings as any).template_accent_color ?? (settings as any).primary_color ?? '#16a34a')}
+                            onChange={(e) => updateField('template_accent_color' as any, e.target.value)}
+                          />
+                          <Input
+                            value={String((settings as any).template_accent_color ?? '')}
+                            onChange={(e) => updateField('template_accent_color' as any, e.target.value)}
+                            placeholder="(uses primary if empty)"
                         />
                       </div>
                     </div>
-                  </div>
+                    </div>
+                  </details>
+
+                  {/* Footer & Contact Section */}
+                  <details className="group border rounded-lg">
+                    <summary className="flex items-center justify-between p-3 cursor-pointer bg-muted/30 rounded-t-lg hover:bg-muted/50">
+                      <span className="font-medium text-sm flex items-center gap-2">
+                        📧 Contact & Footer
+                      </span>
+                      <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" />
+                    </summary>
+                    <div className="p-3 space-y-3">
+                      <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">Contact Phone</div>
+                        <Input
+                          value={String((settings as any).phone ?? '')}
+                          onChange={(e) => updateField('phone' as any, e.target.value)}
+                          placeholder="+213 123 456 789"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">Contact Email</div>
+                        <Input
+                          value={String((settings as any).seller_email ?? '')}
+                          onChange={(e) => updateField('seller_email' as any, e.target.value)}
+                          placeholder="contact@store.com"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">Store Address</div>
+                        <Input
+                          value={String((settings as any).address ?? '')}
+                          onChange={(e) => updateField('address' as any, e.target.value)}
+                          placeholder="123 Main St, City"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">Footer Text</div>
+                        <Input
+                          value={String((settings as any).template_footer_suffix ?? '')}
+                          onChange={(e) => updateField('template_footer_suffix' as any, e.target.value)}
+                          placeholder="© 2024 My Store. All rights reserved."
+                        />
+                      </div>
+                    </div>
+                  </details>
+
+                  {/* Social Media Section */}
+                  <details className="group border rounded-lg">
+                    <summary className="flex items-center justify-between p-3 cursor-pointer bg-muted/30 rounded-t-lg hover:bg-muted/50">
+                      <span className="font-medium text-sm flex items-center gap-2">
+                        🔗 Social Media
+                      </span>
+                      <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" />
+                    </summary>
+                    <div className="p-3 space-y-3">
+                      <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">Facebook</div>
+                        <Input
+                          value={String((settings as any).facebook ?? '')}
+                          onChange={(e) => updateField('facebook' as any, e.target.value)}
+                          placeholder="https://facebook.com/..."
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">Instagram</div>
+                        <Input
+                          value={String((settings as any).instagram ?? '')}
+                          onChange={(e) => updateField('instagram' as any, e.target.value)}
+                          placeholder="https://instagram.com/..."
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">Twitter / X</div>
+                        <Input
+                          value={String((settings as any).twitter ?? '')}
+                          onChange={(e) => updateField('twitter' as any, e.target.value)}
+                          placeholder="https://twitter.com/..."
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">WhatsApp Number</div>
+                        <Input
+                          value={String((settings as any).whatsapp ?? '')}
+                          onChange={(e) => updateField('whatsapp' as any, e.target.value)}
+                          placeholder="+213 123 456 789"
+                        />
+                      </div>
+                    </div>
+                  </details>
+
+                  {/* Template-Specific Settings based on selected template */}
+                  {(normalizedTemplate === 'fashion' || normalizedTemplate === 'fashion2' || normalizedTemplate === 'fashion3') && (
+                    <details className="group border rounded-lg border-orange-500/30">
+                      <summary className="flex items-center justify-between p-3 cursor-pointer bg-orange-500/10 rounded-t-lg hover:bg-orange-500/20">
+                        <span className="font-medium text-sm flex items-center gap-2">
+                          👗 Fashion Template Settings
+                        </span>
+                        <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" />
+                      </summary>
+                      <div className="p-3 space-y-3">
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Hero Kicker</div>
+                          <Input
+                            value={String((settings as any).template_hero_kicker ?? '')}
+                            onChange={(e) => updateField('template_hero_kicker' as any, e.target.value)}
+                            placeholder="System wardrobes / 2025"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Gender Tabs (comma separated)</div>
+                          <Input
+                            value={String((settings as any).template_genders ?? '')}
+                            onChange={(e) => updateField('template_genders' as any, e.target.value)}
+                            placeholder="Women, Men, Essentials"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Category Tabs (comma separated)</div>
+                          <Input
+                            value={String((settings as any).template_category_tabs ?? '')}
+                            onChange={(e) => updateField('template_category_tabs' as any, e.target.value)}
+                            placeholder="All, Outerwear, Tops, Bottoms"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Fit Tabs (comma separated)</div>
+                          <Input
+                            value={String((settings as any).template_fit_tabs ?? '')}
+                            onChange={(e) => updateField('template_fit_tabs' as any, e.target.value)}
+                            placeholder="All, Oversized, Relaxed, Regular"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <div className="text-xs text-muted-foreground">Nav: New</div>
+                            <Input
+                              value={String((settings as any).template_nav_new ?? '')}
+                              onChange={(e) => updateField('template_nav_new' as any, e.target.value)}
+                              placeholder="New"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <div className="text-xs text-muted-foreground">Nav: Collections</div>
+                            <Input
+                              value={String((settings as any).template_nav_collections ?? '')}
+                              onChange={(e) => updateField('template_nav_collections' as any, e.target.value)}
+                              placeholder="Collections"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Account Label</div>
+                          <Input
+                            value={String((settings as any).template_account_label ?? '')}
+                            onChange={(e) => updateField('template_account_label' as any, e.target.value)}
+                            placeholder="Account"
+                          />
+                        </div>
+                      </div>
+                    </details>
+                  )}
+
+                  {normalizedTemplate === 'electronics' && (
+                    <details className="group border rounded-lg border-cyan-500/30">
+                      <summary className="flex items-center justify-between p-3 cursor-pointer bg-cyan-500/10 rounded-t-lg hover:bg-cyan-500/20">
+                        <span className="font-medium text-sm flex items-center gap-2">
+                          📱 Electronics Template Settings
+                        </span>
+                        <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" />
+                      </summary>
+                      <div className="p-3 space-y-3">
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Header Tagline</div>
+                          <Input
+                            value={String((settings as any).template_header_tagline ?? '')}
+                            onChange={(e) => updateField('template_header_tagline' as any, e.target.value)}
+                            placeholder="Phones · Audio · Gaming · Accessories"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Header Status</div>
+                          <Input
+                            value={String((settings as any).template_header_status ?? '')}
+                            onChange={(e) => updateField('template_header_status' as any, e.target.value)}
+                            placeholder="24/7 online"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Hero Badge</div>
+                          <Input
+                            value={String((settings as any).template_hero_badge ?? '')}
+                            onChange={(e) => updateField('template_hero_badge' as any, e.target.value)}
+                            placeholder="2025 line-up"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Hero Kicker Label</div>
+                          <Input
+                            value={String((settings as any).template_hero_kicker_label ?? '')}
+                            onChange={(e) => updateField('template_hero_kicker_label' as any, e.target.value)}
+                            placeholder="New"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <div className="text-xs text-muted-foreground">Primary CTA</div>
+                            <Input
+                              value={String((settings as any).template_hero_primary_cta ?? '')}
+                              onChange={(e) => updateField('template_hero_primary_cta' as any, e.target.value)}
+                              placeholder="Shop flagship"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <div className="text-xs text-muted-foreground">Secondary CTA</div>
+                            <Input
+                              value={String((settings as any).template_hero_secondary_cta ?? '')}
+                              onChange={(e) => updateField('template_hero_secondary_cta' as any, e.target.value)}
+                              placeholder="View full catalog"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Featured Kicker</div>
+                          <Input
+                            value={String((settings as any).template_featured_kicker ?? '')}
+                            onChange={(e) => updateField('template_featured_kicker' as any, e.target.value)}
+                            placeholder="Featured products"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Categories Title</div>
+                          <Input
+                            value={String((settings as any).template_categories_title ?? '')}
+                            onChange={(e) => updateField('template_categories_title' as any, e.target.value)}
+                            placeholder="Categories"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Store Initials</div>
+                          <Input
+                            value={String((settings as any).store_initials ?? '')}
+                            onChange={(e) => updateField('store_initials' as any, e.target.value)}
+                            placeholder="EC"
+                          />
+                        </div>
+                      </div>
+                    </details>
+                  )}
+
+                  {(normalizedTemplate === 'beauty' || normalizedTemplate === 'beaty') && (
+                    <details className="group border rounded-lg border-pink-500/30">
+                      <summary className="flex items-center justify-between p-3 cursor-pointer bg-pink-500/10 rounded-t-lg hover:bg-pink-500/20">
+                        <span className="font-medium text-sm flex items-center gap-2">
+                          💄 Beauty Template Settings
+                        </span>
+                        <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" />
+                      </summary>
+                      <div className="p-3 space-y-3">
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Shade Bar Title</div>
+                          <Input
+                            value={String((settings as any).template_shade_bar_title ?? '')}
+                            onChange={(e) => updateField('template_shade_bar_title' as any, e.target.value)}
+                            placeholder="Find Your Perfect Shade"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Featured Badge</div>
+                          <Input
+                            value={String((settings as any).template_featured_badge ?? '')}
+                            onChange={(e) => updateField('template_featured_badge' as any, e.target.value)}
+                            placeholder="Bestseller"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Quick View Label</div>
+                          <Input
+                            value={String((settings as any).template_quick_view_label ?? '')}
+                            onChange={(e) => updateField('template_quick_view_label' as any, e.target.value)}
+                            placeholder="Quick View"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Filter Label</div>
+                          <Input
+                            value={String((settings as any).template_filter_label ?? '')}
+                            onChange={(e) => updateField('template_filter_label' as any, e.target.value)}
+                            placeholder="Filter by price"
+                          />
+                        </div>
+                      </div>
+                    </details>
+                  )}
+
+                  {normalizedTemplate === 'jewelry' && (
+                    <details className="group border rounded-lg border-yellow-500/30">
+                      <summary className="flex items-center justify-between p-3 cursor-pointer bg-yellow-500/10 rounded-t-lg hover:bg-yellow-500/20">
+                        <span className="font-medium text-sm flex items-center gap-2">
+                          💎 Jewelry Template Settings
+                        </span>
+                        <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" />
+                      </summary>
+                      <div className="p-3 space-y-3">
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Collection Title</div>
+                          <Input
+                            value={String((settings as any).template_collection_title ?? '')}
+                            onChange={(e) => updateField('template_collection_title' as any, e.target.value)}
+                            placeholder="Luxury Collection"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Featured Label</div>
+                          <Input
+                            value={String((settings as any).template_featured_label ?? '')}
+                            onChange={(e) => updateField('template_featured_label' as any, e.target.value)}
+                            placeholder="Featured Piece"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Craft Story Title</div>
+                          <Input
+                            value={String((settings as any).template_craft_story_title ?? '')}
+                            onChange={(e) => updateField('template_craft_story_title' as any, e.target.value)}
+                            placeholder="The Art of Fine Jewelry"
+                          />
+                        </div>
+                      </div>
+                    </details>
+                  )}
+
+                  {normalizedTemplate === 'food' && (
+                    <details className="group border rounded-lg border-red-500/30">
+                      <summary className="flex items-center justify-between p-3 cursor-pointer bg-red-500/10 rounded-t-lg hover:bg-red-500/20">
+                        <span className="font-medium text-sm flex items-center gap-2">
+                          🍕 Food Template Settings
+                        </span>
+                        <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" />
+                      </summary>
+                      <div className="p-3 space-y-3">
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Menu Title</div>
+                          <Input
+                            value={String((settings as any).template_menu_title ?? '')}
+                            onChange={(e) => updateField('template_menu_title' as any, e.target.value)}
+                            placeholder="Our Menu"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Seasonal Title</div>
+                          <Input
+                            value={String((settings as any).template_seasonal_title ?? '')}
+                            onChange={(e) => updateField('template_seasonal_title' as any, e.target.value)}
+                            placeholder="Seasonal Specials"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Delivery Badge</div>
+                          <Input
+                            value={String((settings as any).template_delivery_badge ?? '')}
+                            onChange={(e) => updateField('template_delivery_badge' as any, e.target.value)}
+                            placeholder="Free Delivery"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Order Now Label</div>
+                          <Input
+                            value={String((settings as any).template_order_now_label ?? '')}
+                            onChange={(e) => updateField('template_order_now_label' as any, e.target.value)}
+                            placeholder="Order Now"
+                          />
+                        </div>
+                      </div>
+                    </details>
+                  )}
+
+                  {normalizedTemplate === 'cafe' && (
+                    <details className="group border rounded-lg border-amber-500/30">
+                      <summary className="flex items-center justify-between p-3 cursor-pointer bg-amber-500/10 rounded-t-lg hover:bg-amber-500/20">
+                        <span className="font-medium text-sm flex items-center gap-2">
+                          ☕ Cafe Template Settings
+                        </span>
+                        <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" />
+                      </summary>
+                      <div className="p-3 space-y-3">
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Coffee Menu Title</div>
+                          <Input
+                            value={String((settings as any).template_coffee_menu_title ?? '')}
+                            onChange={(e) => updateField('template_coffee_menu_title' as any, e.target.value)}
+                            placeholder="Coffee & Espresso"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Bakery Title</div>
+                          <Input
+                            value={String((settings as any).template_bakery_title ?? '')}
+                            onChange={(e) => updateField('template_bakery_title' as any, e.target.value)}
+                            placeholder="Fresh Bakery"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Hours Label</div>
+                          <Input
+                            value={String((settings as any).template_hours_label ?? '')}
+                            onChange={(e) => updateField('template_hours_label' as any, e.target.value)}
+                            placeholder="Open 7am - 10pm"
+                          />
+                        </div>
+                      </div>
+                    </details>
+                  )}
+
+                  {normalizedTemplate === 'perfume' && (
+                    <details className="group border rounded-lg border-purple-500/30">
+                      <summary className="flex items-center justify-between p-3 cursor-pointer bg-purple-500/10 rounded-t-lg hover:bg-purple-500/20">
+                        <span className="font-medium text-sm flex items-center gap-2">
+                          🌸 Perfume Template Settings
+                        </span>
+                        <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" />
+                      </summary>
+                      <div className="p-3 space-y-3">
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Collection Title</div>
+                          <Input
+                            value={String((settings as any).template_collection_title ?? '')}
+                            onChange={(e) => updateField('template_collection_title' as any, e.target.value)}
+                            placeholder="Signature Scents"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Notes Label</div>
+                          <Input
+                            value={String((settings as any).template_notes_label ?? '')}
+                            onChange={(e) => updateField('template_notes_label' as any, e.target.value)}
+                            placeholder="Fragrance Notes"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Best Seller Badge</div>
+                          <Input
+                            value={String((settings as any).template_bestseller_badge ?? '')}
+                            onChange={(e) => updateField('template_bestseller_badge' as any, e.target.value)}
+                            placeholder="Best Seller"
+                          />
+                        </div>
+                      </div>
+                    </details>
+                  )}
+
+                  {normalizedTemplate === 'bags' && (
+                    <details className="group border rounded-lg border-gray-500/30">
+                      <summary className="flex items-center justify-between p-3 cursor-pointer bg-gray-500/10 rounded-t-lg hover:bg-gray-500/20">
+                        <span className="font-medium text-sm flex items-center gap-2">
+                          👜 Bags Template Settings
+                        </span>
+                        <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" />
+                      </summary>
+                      <div className="p-3 space-y-3">
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Collection Title</div>
+                          <Input
+                            value={String((settings as any).template_collection_title ?? '')}
+                            onChange={(e) => updateField('template_collection_title' as any, e.target.value)}
+                            placeholder="Premium Collection"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Materials Label</div>
+                          <Input
+                            value={String((settings as any).template_materials_label ?? '')}
+                            onChange={(e) => updateField('template_materials_label' as any, e.target.value)}
+                            placeholder="Crafted Materials"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">New Arrival Badge</div>
+                          <Input
+                            value={String((settings as any).template_new_arrival_badge ?? '')}
+                            onChange={(e) => updateField('template_new_arrival_badge' as any, e.target.value)}
+                            placeholder="New Arrival"
+                          />
+                        </div>
+                      </div>
+                    </details>
+                  )}
+
+                  {normalizedTemplate === 'furniture' && (
+                    <details className="group border rounded-lg border-emerald-500/30">
+                      <summary className="flex items-center justify-between p-3 cursor-pointer bg-emerald-500/10 rounded-t-lg hover:bg-emerald-500/20">
+                        <span className="font-medium text-sm flex items-center gap-2">
+                          🛋️ Furniture Template Settings
+                        </span>
+                        <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" />
+                      </summary>
+                      <div className="p-3 space-y-3">
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Room Categories</div>
+                          <Input
+                            value={String((settings as any).template_room_categories ?? '')}
+                            onChange={(e) => updateField('template_room_categories' as any, e.target.value)}
+                            placeholder="Living Room, Bedroom, Office"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Style Label</div>
+                          <Input
+                            value={String((settings as any).template_style_label ?? '')}
+                            onChange={(e) => updateField('template_style_label' as any, e.target.value)}
+                            placeholder="Modern Design"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground">Delivery Info</div>
+                          <Input
+                            value={String((settings as any).template_delivery_info ?? '')}
+                            onChange={(e) => updateField('template_delivery_info' as any, e.target.value)}
+                            placeholder="Free Assembly & Delivery"
+                          />
+                        </div>
+                      </div>
+                    </details>
+                  )}
 
                   {basicUploadError ? <div className="text-xs text-destructive">{basicUploadError}</div> : null}
-                  <Separator />
                 </div>
               ) : null}
 
-              {isShiro && schemaEditorEnabled ? (
+              {hasSchemaDoc && schemaEditorEnabled ? (
                 <div className="space-y-1">
                   <div className="text-xs text-muted-foreground">Edit values for</div>
                   <div className="flex flex-wrap gap-2">
@@ -1939,13 +2694,13 @@ export default function GoldTemplateEditor() {
                 </div>
               ) : null}
 
-              {isShiro && schemaEditorEnabled && guardrailNote ? (
+              {hasSchemaDoc && schemaEditorEnabled && guardrailNote ? (
                 <div className="text-xs text-muted-foreground">
                   {guardrailNote}
                 </div>
               ) : null}
 
-              {isShiro && schemaEditorEnabled && contentWarnings.length ? (
+              {hasSchemaDoc && schemaEditorEnabled && contentWarnings.length ? (
                 <div className="space-y-2">
                   <div className="text-sm font-medium">Warnings ({contentWarnings.length})</div>
                   <div className="space-y-1">
@@ -1970,7 +2725,7 @@ export default function GoldTemplateEditor() {
                 </div>
               ) : null}
 
-              {isShiro && schemaEditorEnabled && breadcrumbParts.length ? (
+              {hasSchemaDoc && schemaEditorEnabled && breadcrumbParts.length ? (
                 <div className="space-y-1">
                   <div className="text-xs text-muted-foreground">Selected</div>
                   <div className="flex flex-wrap gap-1">
@@ -1992,7 +2747,7 @@ export default function GoldTemplateEditor() {
                 </div>
               ) : null}
 
-              {isShiro && selectedPath ? (
+              {hasSchemaDoc && selectedPath ? (
                 selectedSettingsKey ? (
                   <>
                     <div className="text-sm font-medium">Store Setting</div>
@@ -2006,10 +2761,10 @@ export default function GoldTemplateEditor() {
                 ) : !schemaEditorEnabled ? (
                   <div className="rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
                     {!advancedAllowed
-                      ? 'Gold required: Shiro Hana layout controls are Advanced edits.'
-                      : 'Switch to Advanced mode to access Shiro Hana layout controls.'}
+                      ? 'Gold required: Template layout controls are Advanced edits.'
+                      : 'Switch to Advanced mode to access template layout controls.'}
                   </div>
-                ) : selectedPath === '__root' ? (
+                ) : selectedPath === '__root' && isShiro ? (
                   <>
                     <div className="space-y-3">
                       <div className="text-sm font-medium">Page Theme</div>
@@ -2017,7 +2772,7 @@ export default function GoldTemplateEditor() {
                         <Button
                           type="button"
                           size="sm"
-                          variant={String(resolveBySchemaPath(shiroDoc, 'styles.theme').value || 'light') === 'light' ? 'default' : 'outline'}
+                          variant={String(resolveBySchemaPath(schemaDoc, 'styles.theme').value || 'light') === 'light' ? 'default' : 'outline'}
                           onClick={() => setSchemaValue('styles.theme', 'light')}
                         >
                           Light
@@ -2025,7 +2780,7 @@ export default function GoldTemplateEditor() {
                         <Button
                           type="button"
                           size="sm"
-                          variant={String(resolveBySchemaPath(shiroDoc, 'styles.theme').value || 'light') === 'dark' ? 'default' : 'outline'}
+                          variant={String(resolveBySchemaPath(schemaDoc, 'styles.theme').value || 'light') === 'dark' ? 'default' : 'outline'}
                           onClick={() => setSchemaValue('styles.theme', 'dark')}
                         >
                           Dark
@@ -2038,7 +2793,7 @@ export default function GoldTemplateEditor() {
                         <div className="space-y-1">
                           <div className="text-xs text-muted-foreground">Background</div>
                           <Input
-                            value={String(resolveBySchemaPath(shiroDoc, 'styles.colors.background').value || '')}
+                            value={String(resolveBySchemaPath(schemaDoc, 'styles.colors.background').value || '')}
                             placeholder="(default)"
                             onChange={(e) => setSchemaValue('styles.colors.background', e.target.value)}
                           />
@@ -2046,7 +2801,7 @@ export default function GoldTemplateEditor() {
                         <div className="space-y-1">
                           <div className="text-xs text-muted-foreground">Text</div>
                           <Input
-                            value={String(resolveBySchemaPath(shiroDoc, 'styles.colors.text').value || '')}
+                            value={String(resolveBySchemaPath(schemaDoc, 'styles.colors.text').value || '')}
                             placeholder="(default)"
                             onChange={(e) => setSchemaValue('styles.colors.text', e.target.value)}
                           />
@@ -2054,7 +2809,7 @@ export default function GoldTemplateEditor() {
                         <div className="space-y-1">
                           <div className="text-xs text-muted-foreground">Surface</div>
                           <Input
-                            value={String(resolveBySchemaPath(shiroDoc, 'styles.colors.surface').value || '')}
+                            value={String(resolveBySchemaPath(schemaDoc, 'styles.colors.surface').value || '')}
                             placeholder="(default)"
                             onChange={(e) => setSchemaValue('styles.colors.surface', e.target.value)}
                           />
@@ -2062,7 +2817,7 @@ export default function GoldTemplateEditor() {
                         <div className="space-y-1">
                           <div className="text-xs text-muted-foreground">Muted Text</div>
                           <Input
-                            value={String(resolveBySchemaPath(shiroDoc, 'styles.colors.muted').value || '')}
+                            value={String(resolveBySchemaPath(schemaDoc, 'styles.colors.muted').value || '')}
                             placeholder="(default)"
                             onChange={(e) => setSchemaValue('styles.colors.muted', e.target.value)}
                           />
@@ -2070,7 +2825,7 @@ export default function GoldTemplateEditor() {
                         <div className="space-y-1">
                           <div className="text-xs text-muted-foreground">Accent</div>
                           <Input
-                            value={String(resolveBySchemaPath(shiroDoc, 'styles.colors.accent').value || '')}
+                            value={String(resolveBySchemaPath(schemaDoc, 'styles.colors.accent').value || '')}
                             placeholder="(default)"
                             onChange={(e) => setSchemaValue('styles.colors.accent', e.target.value)}
                           />
@@ -2083,7 +2838,7 @@ export default function GoldTemplateEditor() {
                         <div className="space-y-1">
                           <div className="text-xs text-muted-foreground">Heading</div>
                           <Input
-                            value={String(resolveBySchemaPath(shiroDoc, 'styles.fonts.heading').value || '')}
+                            value={String(resolveBySchemaPath(schemaDoc, 'styles.fonts.heading').value || '')}
                             placeholder="(inherit)"
                             onChange={(e) => setSchemaValue('styles.fonts.heading', e.target.value)}
                           />
@@ -2091,7 +2846,7 @@ export default function GoldTemplateEditor() {
                         <div className="space-y-1">
                           <div className="text-xs text-muted-foreground">Body</div>
                           <Input
-                            value={String(resolveBySchemaPath(shiroDoc, 'styles.fonts.body').value || '')}
+                            value={String(resolveBySchemaPath(schemaDoc, 'styles.fonts.body').value || '')}
                             placeholder="(inherit)"
                             onChange={(e) => setSchemaValue('styles.fonts.body', e.target.value)}
                           />
@@ -2105,7 +2860,7 @@ export default function GoldTemplateEditor() {
                           <div className="text-xs text-muted-foreground">Radius</div>
                           <Input
                             type="number"
-                            value={String(resolveBySchemaPath(shiroDoc, 'styles.tokens.radius').value ?? '')}
+                            value={String(resolveBySchemaPath(schemaDoc, 'styles.tokens.radius').value ?? '')}
                             placeholder="(default)"
                             onChange={(e) => setSchemaValue('styles.tokens.radius', e.target.value === '' ? null : Number(e.target.value))}
                           />
@@ -2114,7 +2869,7 @@ export default function GoldTemplateEditor() {
                           <div className="text-xs text-muted-foreground">Space</div>
                           <Input
                             type="number"
-                            value={String(resolveBySchemaPath(shiroDoc, 'styles.tokens.space').value ?? '')}
+                            value={String(resolveBySchemaPath(schemaDoc, 'styles.tokens.space').value ?? '')}
                             placeholder="(default)"
                             onChange={(e) => setSchemaValue('styles.tokens.space', e.target.value === '' ? null : Number(e.target.value))}
                           />
@@ -2128,10 +2883,10 @@ export default function GoldTemplateEditor() {
                           <Button
                             type="button"
                             size="sm"
-                            variant={resolveBySchemaPath(shiroDoc, 'styles.background.enabled').value ? 'default' : 'outline'}
-                            onClick={() => setSchemaValue('styles.background.enabled', !resolveBySchemaPath(shiroDoc, 'styles.background.enabled').value)}
+                            variant={resolveBySchemaPath(schemaDoc, 'styles.background.enabled').value ? 'default' : 'outline'}
+                            onClick={() => setSchemaValue('styles.background.enabled', !resolveBySchemaPath(schemaDoc, 'styles.background.enabled').value)}
                           >
-                            {resolveBySchemaPath(shiroDoc, 'styles.background.enabled').value ? 'Enabled' : 'Disabled'}
+                            {resolveBySchemaPath(schemaDoc, 'styles.background.enabled').value ? 'Enabled' : 'Disabled'}
                           </Button>
                           <div className="text-xs text-muted-foreground">Uses assets[assetKey].url</div>
                         </div>
@@ -2140,14 +2895,14 @@ export default function GoldTemplateEditor() {
                           <div className="space-y-1">
                             <div className="text-xs text-muted-foreground">Asset Key</div>
                             <Input
-                              value={String(resolveBySchemaPath(shiroDoc, 'styles.background.assetKey').value || 'page-bg')}
+                              value={String(resolveBySchemaPath(schemaDoc, 'styles.background.assetKey').value || 'page-bg')}
                               onChange={(e) => setSchemaValue('styles.background.assetKey', e.target.value || 'page-bg')}
                             />
                           </div>
                           <div className="space-y-1">
                             <div className="text-xs text-muted-foreground">Fit</div>
                             <Input
-                              value={String(resolveBySchemaPath(shiroDoc, 'styles.background.fit').value || 'cover')}
+                              value={String(resolveBySchemaPath(schemaDoc, 'styles.background.fit').value || 'cover')}
                               onChange={(e) => setSchemaValue('styles.background.fit', e.target.value)}
                               placeholder="cover | contain"
                             />
@@ -2162,7 +2917,7 @@ export default function GoldTemplateEditor() {
                             onChange={async (e) => {
                               const file = e.target.files?.[0];
                               if (!file) return;
-                              const key = String(resolveBySchemaPath(shiroDoc, 'styles.background.assetKey').value || 'page-bg');
+                              const key = String(resolveBySchemaPath(schemaDoc, 'styles.background.assetKey').value || 'page-bg');
                               if (!key) return;
                               try {
                                 const uploaded = await uploadImage(file);
@@ -2193,10 +2948,10 @@ export default function GoldTemplateEditor() {
                             <div className="text-xs text-muted-foreground">X (0..1)</div>
                             <Input
                               type="number"
-                                value={String(getResponsiveNumber(resolveBySchemaPath(shiroDoc, 'styles.background.posX').value, editBreakpoint) ?? 0.5)}
+                                value={String(getResponsiveNumber(resolveBySchemaPath(schemaDoc, 'styles.background.posX').value, editBreakpoint) ?? 0.5)}
                                 onChange={(e) => {
                                   const path = 'styles.background.posX';
-                                  const current = resolveBySchemaPath(shiroDoc, path).value;
+                                  const current = resolveBySchemaPath(schemaDoc, path).value;
                                   setSchemaValue(path, setResponsiveNumber(current, editBreakpoint, Number(e.target.value)));
                                 }}
                             />
@@ -2205,10 +2960,10 @@ export default function GoldTemplateEditor() {
                             <div className="text-xs text-muted-foreground">Y (0..1)</div>
                             <Input
                               type="number"
-                                value={String(getResponsiveNumber(resolveBySchemaPath(shiroDoc, 'styles.background.posY').value, editBreakpoint) ?? 0.5)}
+                                value={String(getResponsiveNumber(resolveBySchemaPath(schemaDoc, 'styles.background.posY').value, editBreakpoint) ?? 0.5)}
                                 onChange={(e) => {
                                   const path = 'styles.background.posY';
-                                  const current = resolveBySchemaPath(shiroDoc, path).value;
+                                  const current = resolveBySchemaPath(schemaDoc, path).value;
                                   setSchemaValue(path, setResponsiveNumber(current, editBreakpoint, Number(e.target.value)));
                                 }}
                             />
@@ -2217,10 +2972,10 @@ export default function GoldTemplateEditor() {
                             <div className="text-xs text-muted-foreground">Opacity (0..1)</div>
                             <Input
                               type="number"
-                                value={String(getResponsiveNumber(resolveBySchemaPath(shiroDoc, 'styles.background.opacity').value, editBreakpoint) ?? 1)}
+                                value={String(getResponsiveNumber(resolveBySchemaPath(schemaDoc, 'styles.background.opacity').value, editBreakpoint) ?? 1)}
                                 onChange={(e) => {
                                   const path = 'styles.background.opacity';
-                                  const current = resolveBySchemaPath(shiroDoc, path).value;
+                                  const current = resolveBySchemaPath(schemaDoc, path).value;
                                   setSchemaValue(path, setResponsiveNumber(current, editBreakpoint, Number(e.target.value)));
                                 }}
                             />
@@ -2229,7 +2984,120 @@ export default function GoldTemplateEditor() {
                       </div>
                     </div>
                   </>
-                ) : selectedPath === 'layout.featured' ? (
+                ) : selectedPath === '__root' && hasSchemaDoc && !isShiro ? (
+                  <>
+                    {/* Generic root editor for non-Shiro templates */}
+                    <div className="space-y-3">
+                      <div className="text-sm font-medium">Template Settings</div>
+                      <div className="text-xs text-muted-foreground">
+                        Click on any element in the preview to edit it, or browse the layout sections below.
+                      </div>
+                      
+                      <Separator />
+                      <div className="text-sm font-medium">Quick Access</div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {['layout.header', 'layout.hero', 'layout.featured', 'layout.categories', 'layout.products', 'layout.footer'].map((path) => {
+                          const val = resolveBySchemaPath(schemaDoc, path).value;
+                          if (!val || typeof val !== 'object') return null;
+                          return (
+                            <Button
+                              key={path}
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="justify-start"
+                              onClick={() => setSelectedPath(path)}
+                            >
+                              {path.replace('layout.', '').charAt(0).toUpperCase() + path.replace('layout.', '').slice(1)}
+                            </Button>
+                          );
+                        })}
+                      </div>
+
+                      <Separator />
+                      <div className="text-sm font-medium">Styles</div>
+                      {schemaDoc?.styles ? (
+                        <div className="grid grid-cols-2 gap-2">
+                          {schemaDoc.styles.theme !== undefined && (
+                            <div className="col-span-2 space-y-1">
+                              <div className="text-xs text-muted-foreground">Theme</div>
+                              <div className="flex gap-2">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant={String(schemaDoc.styles.theme || 'light') === 'light' ? 'default' : 'outline'}
+                                  onClick={() => setSchemaValue('styles.theme', 'light')}
+                                >
+                                  Light
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant={String(schemaDoc.styles.theme || 'light') === 'dark' ? 'default' : 'outline'}
+                                  onClick={() => setSchemaValue('styles.theme', 'dark')}
+                                >
+                                  Dark
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                          {schemaDoc.styles.primaryColor !== undefined && (
+                            <div className="space-y-1">
+                              <div className="text-xs text-muted-foreground">Primary Color</div>
+                              <Input
+                                type="color"
+                                value={String(schemaDoc.styles.primaryColor || '#000000')}
+                                onChange={(e) => setSchemaValue('styles.primaryColor', e.target.value)}
+                              />
+                            </div>
+                          )}
+                          {schemaDoc.styles.secondaryColor !== undefined && (
+                            <div className="space-y-1">
+                              <div className="text-xs text-muted-foreground">Secondary Color</div>
+                              <Input
+                                type="color"
+                                value={String(schemaDoc.styles.secondaryColor || '#ffffff')}
+                                onChange={(e) => setSchemaValue('styles.secondaryColor', e.target.value)}
+                              />
+                            </div>
+                          )}
+                          {schemaDoc.styles.accentColor !== undefined && (
+                            <div className="space-y-1">
+                              <div className="text-xs text-muted-foreground">Accent Color</div>
+                              <Input
+                                type="color"
+                                value={String(schemaDoc.styles.accentColor || '#000000')}
+                                onChange={(e) => setSchemaValue('styles.accentColor', e.target.value)}
+                              />
+                            </div>
+                          )}
+                          {schemaDoc.styles.textColor !== undefined && (
+                            <div className="space-y-1">
+                              <div className="text-xs text-muted-foreground">Text Color</div>
+                              <Input
+                                type="color"
+                                value={String(schemaDoc.styles.textColor || '#000000')}
+                                onChange={(e) => setSchemaValue('styles.textColor', e.target.value)}
+                              />
+                            </div>
+                          )}
+                          {schemaDoc.styles.fontFamily !== undefined && (
+                            <div className="col-span-2 space-y-1">
+                              <div className="text-xs text-muted-foreground">Font Family</div>
+                              <Input
+                                value={String(schemaDoc.styles.fontFamily || '')}
+                                placeholder="Inter, system-ui, sans-serif"
+                                onChange={(e) => setSchemaValue('styles.fontFamily', e.target.value)}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-xs text-muted-foreground">No style options available for this template.</div>
+                      )}
+                    </div>
+                  </>
+                ) : selectedPath === 'layout.featured' && isShiro ? (
                   <>
                     <div className="space-y-3">
                       <div className="text-sm font-medium">Featured Products Grid</div>
@@ -2239,10 +3107,10 @@ export default function GoldTemplateEditor() {
                           <div className="text-xs text-muted-foreground">Columns</div>
                           <Input
                             type="number"
-                            value={String(getResponsiveNumber(resolveBySchemaPath(shiroDoc, 'layout.featured.columns').value, editBreakpoint) ?? 3)}
+                            value={String(getResponsiveNumber(resolveBySchemaPath(schemaDoc, 'layout.featured.columns').value, editBreakpoint) ?? 3)}
                             onChange={(e) => {
                               const path = 'layout.featured.columns';
-                              const current = resolveBySchemaPath(shiroDoc, path).value;
+                              const current = resolveBySchemaPath(schemaDoc, path).value;
                               setSchemaValue(path, setResponsiveNumber(current, editBreakpoint, Number(e.target.value)));
                             }}
                           />
@@ -2251,10 +3119,10 @@ export default function GoldTemplateEditor() {
                           <div className="text-xs text-muted-foreground">Gap (px)</div>
                           <Input
                             type="number"
-                            value={String(getResponsiveNumber(resolveBySchemaPath(shiroDoc, 'layout.featured.gap').value, editBreakpoint) ?? 24)}
+                            value={String(getResponsiveNumber(resolveBySchemaPath(schemaDoc, 'layout.featured.gap').value, editBreakpoint) ?? 24)}
                             onChange={(e) => {
                               const path = 'layout.featured.gap';
-                              const current = resolveBySchemaPath(shiroDoc, path).value;
+                              const current = resolveBySchemaPath(schemaDoc, path).value;
                               setSchemaValue(path, setResponsiveNumber(current, editBreakpoint, Number(e.target.value)));
                             }}
                           />
@@ -2263,10 +3131,10 @@ export default function GoldTemplateEditor() {
                           <div className="text-xs text-muted-foreground">Padding Y (px)</div>
                           <Input
                             type="number"
-                            value={String(getResponsiveNumber(resolveBySchemaPath(shiroDoc, 'layout.featured.paddingY').value, editBreakpoint) ?? 48)}
+                            value={String(getResponsiveNumber(resolveBySchemaPath(schemaDoc, 'layout.featured.paddingY').value, editBreakpoint) ?? 48)}
                             onChange={(e) => {
                               const path = 'layout.featured.paddingY';
-                              const current = resolveBySchemaPath(shiroDoc, path).value;
+                              const current = resolveBySchemaPath(schemaDoc, path).value;
                               setSchemaValue(path, setResponsiveNumber(current, editBreakpoint, Number(e.target.value)));
                             }}
                           />
@@ -2275,10 +3143,10 @@ export default function GoldTemplateEditor() {
                           <div className="text-xs text-muted-foreground">Padding X (px)</div>
                           <Input
                             type="number"
-                            value={String(getResponsiveNumber(resolveBySchemaPath(shiroDoc, 'layout.featured.paddingX').value, editBreakpoint) ?? 24)}
+                            value={String(getResponsiveNumber(resolveBySchemaPath(schemaDoc, 'layout.featured.paddingX').value, editBreakpoint) ?? 24)}
                             onChange={(e) => {
                               const path = 'layout.featured.paddingX';
-                              const current = resolveBySchemaPath(shiroDoc, path).value;
+                              const current = resolveBySchemaPath(schemaDoc, path).value;
                               setSchemaValue(path, setResponsiveNumber(current, editBreakpoint, Number(e.target.value)));
                             }}
                           />
@@ -2288,7 +3156,7 @@ export default function GoldTemplateEditor() {
                       <div className="space-y-1">
                         <div className="text-xs text-muted-foreground">Section Background Color</div>
                         <Input
-                          value={String(resolveBySchemaPath(shiroDoc, 'layout.featured.backgroundColor').value ?? '')}
+                          value={String(resolveBySchemaPath(schemaDoc, 'layout.featured.backgroundColor').value ?? '')}
                           placeholder="(none)"
                           onChange={(e) => setSchemaValue('layout.featured.backgroundColor', e.target.value)}
                         />
@@ -2301,10 +3169,10 @@ export default function GoldTemplateEditor() {
                           <div className="text-xs text-muted-foreground">Radius (px)</div>
                           <Input
                             type="number"
-                            value={String(getResponsiveNumber(resolveBySchemaPath(shiroDoc, 'layout.featured.card.radius').value, editBreakpoint) ?? 12)}
+                            value={String(getResponsiveNumber(resolveBySchemaPath(schemaDoc, 'layout.featured.card.radius').value, editBreakpoint) ?? 12)}
                             onChange={(e) => {
                               const path = 'layout.featured.card.radius';
-                              const current = resolveBySchemaPath(shiroDoc, path).value;
+                              const current = resolveBySchemaPath(schemaDoc, path).value;
                               setSchemaValue(path, setResponsiveNumber(current, editBreakpoint, Number(e.target.value)));
                             }}
                           />
@@ -2313,10 +3181,10 @@ export default function GoldTemplateEditor() {
                           <div className="text-xs text-muted-foreground">Image Height (px)</div>
                           <Input
                             type="number"
-                            value={String(getResponsiveNumber(resolveBySchemaPath(shiroDoc, 'layout.featured.card.imageHeight').value, editBreakpoint) ?? 192)}
+                            value={String(getResponsiveNumber(resolveBySchemaPath(schemaDoc, 'layout.featured.card.imageHeight').value, editBreakpoint) ?? 192)}
                             onChange={(e) => {
                               const path = 'layout.featured.card.imageHeight';
-                              const current = resolveBySchemaPath(shiroDoc, path).value;
+                              const current = resolveBySchemaPath(schemaDoc, path).value;
                               setSchemaValue(path, setResponsiveNumber(current, editBreakpoint, Number(e.target.value)));
                             }}
                           />
@@ -2331,7 +3199,7 @@ export default function GoldTemplateEditor() {
                               key={v}
                               type="button"
                               size="sm"
-                              variant={String(resolveBySchemaPath(shiroDoc, 'layout.featured.card.shadow').value || 'sm') === v ? 'default' : 'outline'}
+                              variant={String(resolveBySchemaPath(schemaDoc, 'layout.featured.card.shadow').value || 'sm') === v ? 'default' : 'outline'}
                               onClick={() => setSchemaValue('layout.featured.card.shadow', v)}
                             >
                               {v}
@@ -2345,7 +3213,7 @@ export default function GoldTemplateEditor() {
                       <div className="text-xs text-muted-foreground">Changes the order items appear in the grid</div>
                       <div className="space-y-2">
                         {(() => {
-                          const items = resolveBySchemaPath(shiroDoc, 'layout.featured.items').value;
+                          const items = resolveBySchemaPath(schemaDoc, 'layout.featured.items').value;
                           if (!Array.isArray(items) || !items.length) return <div className="text-xs text-muted-foreground">No items</div>;
                           return items.map((it: any, i: number) => {
                             const label = String(it?.title?.value || it?.id || `Item ${i + 1}`);
@@ -2367,7 +3235,7 @@ export default function GoldTemplateEditor() {
                       </div>
                     </div>
                   </>
-                ) : selectedPath === 'layout.header' ? (
+                ) : selectedPath === 'layout.header' && isShiro ? (
                   <>
                     <div className="space-y-3">
                       <div className="text-sm font-medium">Header Layout</div>
@@ -2375,10 +3243,10 @@ export default function GoldTemplateEditor() {
                         <Button
                           type="button"
                           size="sm"
-                          variant={(resolveBySchemaPath(shiroDoc, 'layout.header.sticky').value ?? true) ? 'default' : 'outline'}
-                          onClick={() => setSchemaValue('layout.header.sticky', !(resolveBySchemaPath(shiroDoc, 'layout.header.sticky').value ?? true))}
+                          variant={(resolveBySchemaPath(schemaDoc, 'layout.header.sticky').value ?? true) ? 'default' : 'outline'}
+                          onClick={() => setSchemaValue('layout.header.sticky', !(resolveBySchemaPath(schemaDoc, 'layout.header.sticky').value ?? true))}
                         >
-                          {(resolveBySchemaPath(shiroDoc, 'layout.header.sticky').value ?? true) ? 'Sticky' : 'Not Sticky'}
+                          {(resolveBySchemaPath(schemaDoc, 'layout.header.sticky').value ?? true) ? 'Sticky' : 'Not Sticky'}
                         </Button>
                       </div>
 
@@ -2387,10 +3255,10 @@ export default function GoldTemplateEditor() {
                           <div className="text-xs text-muted-foreground">Padding Y (px)</div>
                           <Input
                             type="number"
-                            value={String(getResponsiveNumber(resolveBySchemaPath(shiroDoc, 'layout.header.paddingY').value, editBreakpoint) ?? 16)}
+                            value={String(getResponsiveNumber(resolveBySchemaPath(schemaDoc, 'layout.header.paddingY').value, editBreakpoint) ?? 16)}
                             onChange={(e) => {
                               const path = 'layout.header.paddingY';
-                              const current = resolveBySchemaPath(shiroDoc, path).value;
+                              const current = resolveBySchemaPath(schemaDoc, path).value;
                               setSchemaValue(path, setResponsiveNumber(current, editBreakpoint, Number(e.target.value)));
                             }}
                           />
@@ -2399,10 +3267,10 @@ export default function GoldTemplateEditor() {
                           <div className="text-xs text-muted-foreground">Padding X (px)</div>
                           <Input
                             type="number"
-                            value={String(getResponsiveNumber(resolveBySchemaPath(shiroDoc, 'layout.header.paddingX').value, editBreakpoint) ?? 24)}
+                            value={String(getResponsiveNumber(resolveBySchemaPath(schemaDoc, 'layout.header.paddingX').value, editBreakpoint) ?? 24)}
                             onChange={(e) => {
                               const path = 'layout.header.paddingX';
-                              const current = resolveBySchemaPath(shiroDoc, path).value;
+                              const current = resolveBySchemaPath(schemaDoc, path).value;
                               setSchemaValue(path, setResponsiveNumber(current, editBreakpoint, Number(e.target.value)));
                             }}
                           />
@@ -2414,7 +3282,7 @@ export default function GoldTemplateEditor() {
                       <div className="text-xs text-muted-foreground">Desktop nav order</div>
                       <div className="space-y-2">
                         {(() => {
-                          const nav = resolveBySchemaPath(shiroDoc, 'layout.header.nav').value;
+                          const nav = resolveBySchemaPath(schemaDoc, 'layout.header.nav').value;
                           if (!Array.isArray(nav) || !nav.length) return <div className="text-xs text-muted-foreground">No nav links</div>;
                           return nav.map((n: any, i: number) => {
                             const label = String((n?.label?.value ?? n?.value ?? n?.label ?? n) || `Link ${i + 1}`);
@@ -2440,7 +3308,7 @@ export default function GoldTemplateEditor() {
                       <div className="text-xs text-muted-foreground">CTA button order</div>
                       <div className="space-y-2">
                         {(() => {
-                          const ctas = resolveBySchemaPath(shiroDoc, 'layout.header.cta').value;
+                          const ctas = resolveBySchemaPath(schemaDoc, 'layout.header.cta').value;
                           if (!Array.isArray(ctas) || !ctas.length) return <div className="text-xs text-muted-foreground">No buttons</div>;
                           return ctas.map((c: any, i: number) => {
                             const label = String(c?.label?.value || `Button ${i + 1}`);
@@ -2462,7 +3330,7 @@ export default function GoldTemplateEditor() {
                       </div>
                     </div>
                   </>
-                ) : selectedPath === 'layout.hero' ? (
+                ) : selectedPath === 'layout.hero' && isShiro ? (
                   <>
                     <div className="space-y-3">
                       <div className="text-sm font-medium">Hero Layout</div>
@@ -2472,10 +3340,10 @@ export default function GoldTemplateEditor() {
                           <div className="text-xs text-muted-foreground">Padding Y (px)</div>
                           <Input
                             type="number"
-                            value={String(getResponsiveNumber(resolveBySchemaPath(shiroDoc, 'layout.hero.paddingY').value, editBreakpoint) ?? 48)}
+                            value={String(getResponsiveNumber(resolveBySchemaPath(schemaDoc, 'layout.hero.paddingY').value, editBreakpoint) ?? 48)}
                             onChange={(e) => {
                               const path = 'layout.hero.paddingY';
-                              const current = resolveBySchemaPath(shiroDoc, path).value;
+                              const current = resolveBySchemaPath(schemaDoc, path).value;
                               setSchemaValue(path, setResponsiveNumber(current, editBreakpoint, Number(e.target.value)));
                             }}
                           />
@@ -2484,10 +3352,10 @@ export default function GoldTemplateEditor() {
                           <div className="text-xs text-muted-foreground">Padding X (px)</div>
                           <Input
                             type="number"
-                            value={String(getResponsiveNumber(resolveBySchemaPath(shiroDoc, 'layout.hero.paddingX').value, editBreakpoint) ?? 24)}
+                            value={String(getResponsiveNumber(resolveBySchemaPath(schemaDoc, 'layout.hero.paddingX').value, editBreakpoint) ?? 24)}
                             onChange={(e) => {
                               const path = 'layout.hero.paddingX';
-                              const current = resolveBySchemaPath(shiroDoc, path).value;
+                              const current = resolveBySchemaPath(schemaDoc, path).value;
                               setSchemaValue(path, setResponsiveNumber(current, editBreakpoint, Number(e.target.value)));
                             }}
                           />
@@ -2496,10 +3364,10 @@ export default function GoldTemplateEditor() {
                           <div className="text-xs text-muted-foreground">Gap (px)</div>
                           <Input
                             type="number"
-                            value={String(getResponsiveNumber(resolveBySchemaPath(shiroDoc, 'layout.hero.gap').value, editBreakpoint) ?? 32)}
+                            value={String(getResponsiveNumber(resolveBySchemaPath(schemaDoc, 'layout.hero.gap').value, editBreakpoint) ?? 32)}
                             onChange={(e) => {
                               const path = 'layout.hero.gap';
-                              const current = resolveBySchemaPath(shiroDoc, path).value;
+                              const current = resolveBySchemaPath(schemaDoc, path).value;
                               setSchemaValue(path, setResponsiveNumber(current, editBreakpoint, Number(e.target.value)));
                             }}
                           />
@@ -2513,10 +3381,10 @@ export default function GoldTemplateEditor() {
                           <div className="text-xs text-muted-foreground">Height (px)</div>
                           <Input
                             type="number"
-                            value={String(getResponsiveNumber(resolveBySchemaPath(shiroDoc, 'layout.hero.imageHeight').value, editBreakpoint) ?? 320)}
+                            value={String(getResponsiveNumber(resolveBySchemaPath(schemaDoc, 'layout.hero.imageHeight').value, editBreakpoint) ?? 320)}
                             onChange={(e) => {
                               const path = 'layout.hero.imageHeight';
-                              const current = resolveBySchemaPath(shiroDoc, path).value;
+                              const current = resolveBySchemaPath(schemaDoc, path).value;
                               setSchemaValue(path, setResponsiveNumber(current, editBreakpoint, Number(e.target.value)));
                             }}
                           />
@@ -2525,7 +3393,7 @@ export default function GoldTemplateEditor() {
                           <div className="text-xs text-muted-foreground">Height md+ (px)</div>
                           <Input
                             type="number"
-                            value={String(resolveBySchemaPath(shiroDoc, 'layout.hero.imageHeightMd').value ?? 384)}
+                            value={String(resolveBySchemaPath(schemaDoc, 'layout.hero.imageHeightMd').value ?? 384)}
                             onChange={(e) => setSchemaValue('layout.hero.imageHeightMd', Number(e.target.value))}
                           />
                         </div>
@@ -2536,7 +3404,7 @@ export default function GoldTemplateEditor() {
                       <div className="text-xs text-muted-foreground">CTA button order</div>
                       <div className="space-y-2">
                         {(() => {
-                          const ctas = resolveBySchemaPath(shiroDoc, 'layout.hero.cta').value;
+                          const ctas = resolveBySchemaPath(schemaDoc, 'layout.hero.cta').value;
                           if (!Array.isArray(ctas) || !ctas.length) return <div className="text-xs text-muted-foreground">No buttons</div>;
                           return ctas.map((c: any, i: number) => {
                             const label = String(c?.label?.value || `Button ${i + 1}`);
@@ -2558,7 +3426,7 @@ export default function GoldTemplateEditor() {
                       </div>
                     </div>
                   </>
-                ) : selectedPath === 'layout.footer' ? (
+                ) : selectedPath === 'layout.footer' && isShiro ? (
                   <>
                     <div className="space-y-3">
                       <div className="text-sm font-medium">Footer Layout</div>
@@ -2567,10 +3435,10 @@ export default function GoldTemplateEditor() {
                           <div className="text-xs text-muted-foreground">Padding Y (px)</div>
                           <Input
                             type="number"
-                            value={String(getResponsiveNumber(resolveBySchemaPath(shiroDoc, 'layout.footer.paddingY').value, editBreakpoint) ?? 32)}
+                            value={String(getResponsiveNumber(resolveBySchemaPath(schemaDoc, 'layout.footer.paddingY').value, editBreakpoint) ?? 32)}
                             onChange={(e) => {
                               const path = 'layout.footer.paddingY';
-                              const current = resolveBySchemaPath(shiroDoc, path).value;
+                              const current = resolveBySchemaPath(schemaDoc, path).value;
                               setSchemaValue(path, setResponsiveNumber(current, editBreakpoint, Number(e.target.value)));
                             }}
                           />
@@ -2579,10 +3447,10 @@ export default function GoldTemplateEditor() {
                           <div className="text-xs text-muted-foreground">Padding X (px)</div>
                           <Input
                             type="number"
-                            value={String(getResponsiveNumber(resolveBySchemaPath(shiroDoc, 'layout.footer.paddingX').value, editBreakpoint) ?? 24)}
+                            value={String(getResponsiveNumber(resolveBySchemaPath(schemaDoc, 'layout.footer.paddingX').value, editBreakpoint) ?? 24)}
                             onChange={(e) => {
                               const path = 'layout.footer.paddingX';
-                              const current = resolveBySchemaPath(shiroDoc, path).value;
+                              const current = resolveBySchemaPath(schemaDoc, path).value;
                               setSchemaValue(path, setResponsiveNumber(current, editBreakpoint, Number(e.target.value)));
                             }}
                           />
@@ -2594,7 +3462,7 @@ export default function GoldTemplateEditor() {
                       <div className="text-xs text-muted-foreground">Link order</div>
                       <div className="space-y-2">
                         {(() => {
-                          const links = resolveBySchemaPath(shiroDoc, 'layout.footer.links').value;
+                          const links = resolveBySchemaPath(schemaDoc, 'layout.footer.links').value;
                           if (!Array.isArray(links) || !links.length) return <div className="text-xs text-muted-foreground">No links</div>;
                           return links.map((l: any, i: number) => {
                             const label = String((l?.label?.value ?? l?.value ?? l?.label ?? l) || `Link ${i + 1}`);
@@ -2656,10 +3524,10 @@ export default function GoldTemplateEditor() {
                             <div className="text-xs text-muted-foreground">Font Size</div>
                             <Input
                               type="number"
-                              value={String(getResponsiveNumber(resolveBySchemaPath(shiroDoc, `${selectedPath}.style.fontSize`).value, editBreakpoint) ?? '')}
+                              value={String(getResponsiveNumber(resolveBySchemaPath(schemaDoc, `${selectedPath}.style.fontSize`).value, editBreakpoint) ?? '')}
                               onChange={(e) => {
                                 const path = `${selectedPath}.style.fontSize`;
-                                const current = resolveBySchemaPath(shiroDoc, path).value;
+                                const current = resolveBySchemaPath(schemaDoc, path).value;
                                 if (!e.target.value) {
                                   setSchemaValue(path, undefined);
                                   return;
@@ -2677,10 +3545,10 @@ export default function GoldTemplateEditor() {
                             <div className="text-xs text-muted-foreground">Font Weight</div>
                             <Input
                               type="number"
-                              value={String(getResponsiveNumber(resolveBySchemaPath(shiroDoc, `${selectedPath}.style.fontWeight`).value, editBreakpoint) ?? '')}
+                              value={String(getResponsiveNumber(resolveBySchemaPath(schemaDoc, `${selectedPath}.style.fontWeight`).value, editBreakpoint) ?? '')}
                               onChange={(e) => {
                                 const path = `${selectedPath}.style.fontWeight`;
-                                const current = resolveBySchemaPath(shiroDoc, path).value;
+                                const current = resolveBySchemaPath(schemaDoc, path).value;
                                 if (!e.target.value) {
                                   setSchemaValue(path, undefined);
                                   return;
@@ -2698,10 +3566,10 @@ export default function GoldTemplateEditor() {
                             <div className="text-xs text-muted-foreground">Line Height</div>
                             <Input
                               type="number"
-                              value={String(getResponsiveNumber(resolveBySchemaPath(shiroDoc, `${selectedPath}.style.lineHeight`).value, editBreakpoint) ?? '')}
+                              value={String(getResponsiveNumber(resolveBySchemaPath(schemaDoc, `${selectedPath}.style.lineHeight`).value, editBreakpoint) ?? '')}
                               onChange={(e) => {
                                 const path = `${selectedPath}.style.lineHeight`;
-                                const current = resolveBySchemaPath(shiroDoc, path).value;
+                                const current = resolveBySchemaPath(schemaDoc, path).value;
                                 if (!e.target.value) {
                                   setSchemaValue(path, undefined);
                                   return;
@@ -2719,10 +3587,10 @@ export default function GoldTemplateEditor() {
                             <div className="text-xs text-muted-foreground">Letter Spacing</div>
                             <Input
                               type="number"
-                              value={String(getResponsiveNumber(resolveBySchemaPath(shiroDoc, `${selectedPath}.style.letterSpacing`).value, editBreakpoint) ?? '')}
+                              value={String(getResponsiveNumber(resolveBySchemaPath(schemaDoc, `${selectedPath}.style.letterSpacing`).value, editBreakpoint) ?? '')}
                               onChange={(e) => {
                                 const path = `${selectedPath}.style.letterSpacing`;
-                                const current = resolveBySchemaPath(shiroDoc, path).value;
+                                const current = resolveBySchemaPath(schemaDoc, path).value;
                                 if (!e.target.value) {
                                   setSchemaValue(path, undefined);
                                   return;
@@ -2747,10 +3615,10 @@ export default function GoldTemplateEditor() {
                             <div className="text-xs text-muted-foreground">Padding</div>
                             <Input
                               type="number"
-                              value={String(getResponsiveNumber(resolveBySchemaPath(shiroDoc, `${selectedPath}.style.padding`).value, editBreakpoint) ?? '')}
+                              value={String(getResponsiveNumber(resolveBySchemaPath(schemaDoc, `${selectedPath}.style.padding`).value, editBreakpoint) ?? '')}
                               onChange={(e) => {
                                 const path = `${selectedPath}.style.padding`;
-                                const current = resolveBySchemaPath(shiroDoc, path).value;
+                                const current = resolveBySchemaPath(schemaDoc, path).value;
                                 if (!e.target.value) {
                                   setSchemaValue(path, undefined);
                                   return;
@@ -2768,10 +3636,10 @@ export default function GoldTemplateEditor() {
                             <div className="text-xs text-muted-foreground">Margin</div>
                             <Input
                               type="number"
-                              value={String(getResponsiveNumber(resolveBySchemaPath(shiroDoc, `${selectedPath}.style.margin`).value, editBreakpoint) ?? '')}
+                              value={String(getResponsiveNumber(resolveBySchemaPath(schemaDoc, `${selectedPath}.style.margin`).value, editBreakpoint) ?? '')}
                               onChange={(e) => {
                                 const path = `${selectedPath}.style.margin`;
-                                const current = resolveBySchemaPath(shiroDoc, path).value;
+                                const current = resolveBySchemaPath(schemaDoc, path).value;
                                 if (!e.target.value) {
                                   setSchemaValue(path, undefined);
                                   return;
@@ -2786,7 +3654,7 @@ export default function GoldTemplateEditor() {
                             />
                           </div>
                         </div>
-                        {isShiro && editBreakpoint !== 'all' ? (
+                        {hasSchemaDoc && editBreakpoint !== 'all' ? (
                           <div className="text-xs text-muted-foreground">
                             Style numbers save as {editBreakpoint} overrides
                           </div>
@@ -2797,18 +3665,18 @@ export default function GoldTemplateEditor() {
                         <div className="text-sm font-medium">Number</div>
                         <Input
                           type="number"
-                          value={String(getResponsiveNumber(resolveBySchemaPath(shiroDoc, selectedPath).value, editBreakpoint) ?? selectedSchema)}
+                          value={String(getResponsiveNumber(resolveBySchemaPath(schemaDoc, selectedPath).value, editBreakpoint) ?? selectedSchema)}
                           onChange={(e) => {
                             const next = Number(e.target.value);
-                            if (isShiro && isResponsiveNumberPath(selectedPath)) {
-                              const current = resolveBySchemaPath(shiroDoc, selectedPath).value;
+                            if (hasSchemaDoc && isResponsiveNumberPath(selectedPath)) {
+                              const current = resolveBySchemaPath(schemaDoc, selectedPath).value;
                               setSchemaValue(selectedPath, setResponsiveNumber(current, editBreakpoint, next));
                               return;
                             }
                             setSchemaValue(selectedPath, next);
                           }}
                         />
-                        {isShiro && isResponsiveNumberPath(selectedPath) && editBreakpoint !== 'all' ? (
+                        {hasSchemaDoc && isResponsiveNumberPath(selectedPath) && editBreakpoint !== 'all' ? (
                           <div className="text-xs text-muted-foreground">
                             Saving as {editBreakpoint} override
                           </div>
@@ -2874,13 +3742,13 @@ export default function GoldTemplateEditor() {
 
                         <div className="text-sm font-medium">Image URL</div>
                         <Input
-                          value={String(((settings as any).gold_page_shiro_hana_home?.assets?.[selectedSchema.assetKey]?.url) ?? '')}
+                          value={String(((settings as any)[schemaDocKey || '']?.assets?.[selectedSchema.assetKey]?.url) ?? '')}
                           onChange={(e) => {
                             const key = String(selectedSchema.assetKey || '');
-                            if (!key) return;
+                            if (!key || !schemaDocKey) return;
                             const nextUrl = e.target.value;
                             pushHistory(settings);
-                            const current = (settings as any).gold_page_shiro_hana_home || shiroDoc;
+                            const current = (settings as any)[schemaDocKey] || schemaDoc;
                             const assets = (current.assets && typeof current.assets === 'object') ? current.assets : {};
                             const next = {
                               ...current,
@@ -2895,7 +3763,7 @@ export default function GoldTemplateEditor() {
                             setSettings((prev) =>
                               ({
                                 ...prev,
-                                gold_page_shiro_hana_home: next,
+                                [schemaDocKey]: next,
                                 ...(key === 'logo-main' ? { store_logo: nextUrl } : null),
                                 ...(key === 'hero-sushi' ? { banner_url: nextUrl } : null),
                               } as any)
@@ -2908,7 +3776,7 @@ export default function GoldTemplateEditor() {
                         <div className="text-sm font-medium">Asset Library</div>
                         <div className="text-xs text-muted-foreground">Click to use an existing uploaded asset</div>
                         <div className="max-h-40 overflow-auto rounded border p-2 space-y-2">
-                          {Object.entries(((shiroDoc as any)?.assets && typeof (shiroDoc as any).assets === 'object') ? (shiroDoc as any).assets : {}).map(([key, meta]: any) => {
+                          {Object.entries(((schemaDoc as any)?.assets && typeof (schemaDoc as any).assets === 'object') ? (schemaDoc as any).assets : {}).map(([key, meta]: any) => {
                             const url = meta?.url ? String(meta.url) : '';
                             return (
                               <button
@@ -2940,13 +3808,13 @@ export default function GoldTemplateEditor() {
                           accept="image/*"
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
-                            if (!file) return;
+                            if (!file || !schemaDocKey) return;
                             const key = String(selectedSchema.assetKey || '');
                             if (!key) return;
                             try {
                               const uploaded = await uploadImage(file);
                               pushHistory(settings);
-                              const current = (settings as any).gold_page_shiro_hana_home || shiroDoc;
+                              const current = (settings as any)[schemaDocKey] || schemaDoc;
                               const assets = (current.assets && typeof current.assets === 'object') ? current.assets : {};
                               const next = {
                                 ...current,
@@ -2961,7 +3829,7 @@ export default function GoldTemplateEditor() {
                               setSettings((prev) =>
                                 ({
                                   ...prev,
-                                  gold_page_shiro_hana_home: next,
+                                  [schemaDocKey]: next,
                                   ...(key === 'logo-main' ? { store_logo: uploaded.url } : null),
                                   ...(key === 'hero-sushi' ? { banner_url: uploaded.url } : null),
                                 } as any)
@@ -2982,7 +3850,7 @@ export default function GoldTemplateEditor() {
                               value={String(getResponsiveNumber((selectedSchema as any).posX, editBreakpoint) ?? 0.5)}
                               onChange={(e) => {
                                 const path = `${selectedPath}.posX`;
-                                const current = resolveBySchemaPath(shiroDoc, path).value;
+                                const current = resolveBySchemaPath(schemaDoc, path).value;
                                 setSchemaValue(path, setResponsiveNumber(current, editBreakpoint, Number(e.target.value)));
                               }}
                             />
@@ -2994,7 +3862,7 @@ export default function GoldTemplateEditor() {
                               value={String(getResponsiveNumber((selectedSchema as any).posY, editBreakpoint) ?? 0.5)}
                               onChange={(e) => {
                                 const path = `${selectedPath}.posY`;
-                                const current = resolveBySchemaPath(shiroDoc, path).value;
+                                const current = resolveBySchemaPath(schemaDoc, path).value;
                                 setSchemaValue(path, setResponsiveNumber(current, editBreakpoint, Number(e.target.value)));
                               }}
                             />
@@ -3006,7 +3874,7 @@ export default function GoldTemplateEditor() {
                               value={String(getResponsiveNumber((selectedSchema as any).scaleX ?? (selectedSchema as any).size, editBreakpoint) ?? 1)}
                               onChange={(e) => {
                                 const path = `${selectedPath}.scaleX`;
-                                const current = resolveBySchemaPath(shiroDoc, path).value;
+                                const current = resolveBySchemaPath(schemaDoc, path).value;
                                 setSchemaValue(path, setResponsiveNumber(current, editBreakpoint, Number(e.target.value)));
                               }}
                             />
@@ -3018,7 +3886,7 @@ export default function GoldTemplateEditor() {
                               value={String(getResponsiveNumber((selectedSchema as any).scaleY ?? (selectedSchema as any).size, editBreakpoint) ?? 1)}
                               onChange={(e) => {
                                 const path = `${selectedPath}.scaleY`;
-                                const current = resolveBySchemaPath(shiroDoc, path).value;
+                                const current = resolveBySchemaPath(schemaDoc, path).value;
                                 setSchemaValue(path, setResponsiveNumber(current, editBreakpoint, Number(e.target.value)));
                               }}
                             />
@@ -3037,7 +3905,7 @@ export default function GoldTemplateEditor() {
                             <Separator />
                             <div className="text-sm font-medium">Button Action (Route)</div>
                             <Input
-                              value={String(resolveBySchemaPath(shiroDoc, ctaActionPath).value ?? '')}
+                              value={String(resolveBySchemaPath(schemaDoc, ctaActionPath).value ?? '')}
                               onChange={(e) => setSchemaValue(ctaActionPath, e.target.value)}
                             />
                           </>
@@ -3055,7 +3923,7 @@ export default function GoldTemplateEditor() {
                             <Separator />
                             <div className="text-sm font-medium">Link Action (URL/Route)</div>
                             <Input
-                              value={String(resolveBySchemaPath(shiroDoc, linkActionPath).value ?? '')}
+                              value={String(resolveBySchemaPath(schemaDoc, linkActionPath).value ?? '')}
                               onChange={(e) => setSchemaValue(linkActionPath, e.target.value)}
                             />
                           </>

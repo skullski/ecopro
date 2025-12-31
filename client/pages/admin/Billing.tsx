@@ -377,7 +377,7 @@ const AdminBilling = () => {
                         })}
                       </td>
                       <td className="py-3 px-2 font-semibold text-gray-900 dark:text-gray-100">
-                        {payment.amount.toFixed(2)} {payment.currency}
+                        {Math.round(payment.amount)} {payment.currency}
                       </td>
                       <td className="py-3 px-2">{getPaymentStatusBadge(payment.status)}</td>
                       <td className="py-3 px-2 text-gray-600 dark:text-gray-400">
