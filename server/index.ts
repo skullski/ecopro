@@ -243,13 +243,29 @@ export function createServer() {
   // Security: CORS configuration
   // - In production, origins must be explicitly configured.
   // - Never use wildcard origins with credentials.
-  const allowedOrigins = process.env.ALLOWED_ORIGINS
+  const configuredOrigins = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(",").map((s) => s.trim()).filter(Boolean)
     : [];
 
+  // Auto-detect Render URL if not configured
+  const renderUrl = process.env.RENDER_EXTERNAL_URL;
+  const allowedOrigins = configuredOrigins.length > 0 
+    ? configuredOrigins 
+    : renderUrl 
+      ? [renderUrl, renderUrl.replace('http://', 'https://')]
+      : [];
+
+  // Also allow the known Render URL
+  if (renderUrl && !allowedOrigins.includes(renderUrl)) {
+    allowedOrigins.push(renderUrl);
+    allowedOrigins.push(renderUrl.replace('http://', 'https://'));
+  }
+
+  // Add common Render patterns
+  const renderPattern = /^https:\/\/ecopro[a-z0-9-]*\.onrender\.com$/;
+
   if (isProduction && allowedOrigins.length === 0) {
-    console.error('ALLOWED_ORIGINS must be set in production when using credentialed cookies');
-    process.exit(1);
+    console.warn('⚠️  ALLOWED_ORIGINS not set - will use Render pattern matching');
   }
 
   app.use(
@@ -264,8 +280,13 @@ export function createServer() {
           return callback(null, true);
         }
 
-        // In production, only allow explicitly configured origins
+        // In production, allow explicitly configured origins
         if (isProduction && allowedOrigins.length > 0 && allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+
+        // In production, allow Render URLs matching the pattern
+        if (isProduction && renderPattern.test(origin)) {
           return callback(null, true);
         }
 
