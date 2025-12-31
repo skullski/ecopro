@@ -133,6 +133,7 @@ interface LockedAccount {
 
 // Locked Accounts Manager Component - Subscription Lock Management
 function LockedAccountsManager() {
+  const { t } = useTranslation();
   const [allAccounts, setAllAccounts] = useState<LockedAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAccounts, setSelectedAccounts] = useState<number[]>([]);
@@ -348,33 +349,33 @@ function LockedAccountsManager() {
         style={{ padding: 'clamp(1rem, 2vh, 1.5rem)' }}>
         <h2 className="font-bold text-amber-300 flex items-center" style={{ fontSize: 'clamp(1.25rem, 2.5vh, 1.5rem)', gap: 'clamp(0.5rem, 1vh, 0.75rem)', marginBottom: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}>
           <Lock style={{ width: 'clamp(1.25rem, 2.5vh, 1.5rem)', height: 'clamp(1.25rem, 2.5vh, 1.5rem)' }} />
-          Subscription Lock Management
+          {t('platformAdmin.subscription.title')}
         </h2>
         <p className="text-amber-200/80" style={{ fontSize: 'clamp(0.875rem, 1.75vh, 1rem)' }}>
-          Manage subscription-locked accounts. Lock for payment issues, unlock and extend subscriptions.
+          {t('platformAdmin.subscription.desc')}
         </p>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-5" style={{ gap: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
         <div className="bg-slate-800/50 rounded-lg border border-slate-700/50" style={{ padding: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
-          <div className="text-slate-400" style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)' }}>Total</div>
+          <div className="text-slate-400" style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)' }}>{t('platformAdmin.subscription.total')}</div>
           <div className="font-bold text-white" style={{ fontSize: 'clamp(1.5rem, 3vh, 2rem)' }}>{allAccounts.length}</div>
         </div>
         <div className="bg-red-500/10 rounded-lg border border-red-500/30" style={{ padding: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
-          <div className="text-red-300" style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)' }}>🔒 Locked</div>
+          <div className="text-red-300" style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)' }}>🔒 {t('platformAdmin.subscription.locked')}</div>
           <div className="font-bold text-red-400" style={{ fontSize: 'clamp(1.5rem, 3vh, 2rem)' }}>{lockedCount}</div>
         </div>
         <div className="bg-green-500/10 rounded-lg border border-green-500/30" style={{ padding: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
-          <div className="text-green-300" style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)' }}>✅ Active</div>
+          <div className="text-green-300" style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)' }}>✅ {t('platformAdmin.subscription.active')}</div>
           <div className="font-bold text-green-400" style={{ fontSize: 'clamp(1.5rem, 3vh, 2rem)' }}>{activeCount}</div>
         </div>
         <div className={`rounded-lg border ${expiringCount > 0 ? 'bg-yellow-500/20 border-yellow-500/50' : 'bg-slate-800/50 border-slate-700/50'}`} style={{ padding: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
-          <div className="text-yellow-300" style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)' }}>⚠️ Expiring</div>
+          <div className="text-yellow-300" style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)' }}>⚠️ {t('platformAdmin.subscription.expiring')}</div>
           <div className={`font-bold ${expiringCount > 0 ? 'text-yellow-400' : 'text-slate-500'}`} style={{ fontSize: 'clamp(1.5rem, 3vh, 2rem)' }}>{expiringCount}</div>
         </div>
         <div className={`rounded-lg border ${hackerCount > 0 ? 'bg-orange-500/20 border-orange-500/50 animate-pulse' : 'bg-slate-800/50 border-slate-700/50'}`} style={{ padding: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
-          <div className="text-orange-300" style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)' }}>🚨 Hackers</div>
+          <div className="text-orange-300" style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)' }}>🚨 {t('platformAdmin.subscription.hackers')}</div>
           <div className={`font-bold ${hackerCount > 0 ? 'text-orange-400' : 'text-slate-500'}`} style={{ fontSize: 'clamp(1.5rem, 3vh, 2rem)' }}>{hackerCount}</div>
         </div>
       </div>
@@ -386,7 +387,7 @@ function LockedAccountsManager() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" style={{ width: 'clamp(1rem, 2vh, 1.25rem)', height: 'clamp(1rem, 2vh, 1.25rem)' }} />
           <input
             type="text"
-            placeholder="Search by email or name..."
+            placeholder={t('platformAdmin.subscription.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-slate-500"
@@ -397,10 +398,10 @@ function LockedAccountsManager() {
         {/* Filter Buttons */}
         <div className="flex flex-wrap" style={{ gap: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}>
           {[
-            { key: 'all', label: 'All', count: allAccounts.length, color: 'cyan' },
-            { key: 'locked', label: 'Locked', count: lockedCount, color: 'red' },
-            { key: 'active', label: 'Active', count: activeCount, color: 'green' },
-            { key: 'expiring', label: 'Expiring', count: expiringCount, color: 'yellow' },
+            { key: 'all', label: t('platformAdmin.subscription.all'), count: allAccounts.length, color: 'cyan' },
+            { key: 'locked', label: t('platformAdmin.subscription.locked'), count: lockedCount, color: 'red' },
+            { key: 'active', label: t('platformAdmin.subscription.active'), count: activeCount, color: 'green' },
+            { key: 'expiring', label: t('platformAdmin.subscription.expiring'), count: expiringCount, color: 'yellow' },
             { key: 'hackers', label: '🚨', count: hackerCount, color: 'orange' },
           ].map(f => (
             <button
@@ -433,7 +434,7 @@ function LockedAccountsManager() {
                 style={{ fontSize: 'clamp(0.85rem, 1.7vh, 1rem)', padding: 'clamp(0.375rem, 0.75vh, 0.5rem) clamp(0.75rem, 1.5vh, 1rem)', height: 'clamp(2.25rem, 4.5vh, 2.75rem)' }}
               >
                 <Unlock style={{ width: 'clamp(1rem, 2vh, 1.25rem)', height: 'clamp(1rem, 2vh, 1.25rem)', marginRight: 'clamp(0.375rem, 0.75vh, 0.5rem)' }} />
-                Unlock
+                {t('platformAdmin.subscription.unlock')}
               </Button>
               <Button
                 onClick={() => { setModalMode('lock'); setShowModal(true); }}
@@ -441,7 +442,7 @@ function LockedAccountsManager() {
                 style={{ fontSize: 'clamp(0.85rem, 1.7vh, 1rem)', padding: 'clamp(0.375rem, 0.75vh, 0.5rem) clamp(0.75rem, 1.5vh, 1rem)', height: 'clamp(2.25rem, 4.5vh, 2.75rem)' }}
               >
                 <Lock style={{ width: 'clamp(1rem, 2vh, 1.25rem)', height: 'clamp(1rem, 2vh, 1.25rem)', marginRight: 'clamp(0.375rem, 0.75vh, 0.5rem)' }} />
-                Lock
+                {t('platformAdmin.subscription.lock')}
               </Button>
             </div>
           </div>
@@ -551,7 +552,7 @@ function LockedAccountsManager() {
                             style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.9rem)', padding: 'clamp(0.25rem, 0.5vh, 0.375rem) clamp(0.5rem, 1vh, 0.75rem)', height: 'clamp(2rem, 4vh, 2.5rem)' }}
                           >
                             <Unlock style={{ width: 'clamp(0.875rem, 1.75vh, 1rem)', height: 'clamp(0.875rem, 1.75vh, 1rem)', marginRight: 'clamp(0.25rem, 0.5vh, 0.375rem)' }} />
-                            Unlock
+                            {t('platformAdmin.subscription.unlock')}
                           </Button>
                         ) : (
                           <Button
@@ -562,7 +563,7 @@ function LockedAccountsManager() {
                             style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.9rem)', padding: 'clamp(0.25rem, 0.5vh, 0.375rem) clamp(0.5rem, 1vh, 0.75rem)', height: 'clamp(2rem, 4vh, 2.5rem)' }}
                           >
                             <Lock style={{ width: 'clamp(0.875rem, 1.75vh, 1rem)', height: 'clamp(0.875rem, 1.75vh, 1rem)', marginRight: 'clamp(0.25rem, 0.5vh, 0.375rem)' }} />
-                            Lock
+                            {t('platformAdmin.subscription.lock')}
                           </Button>
                         )}
                       </td>
@@ -1352,7 +1353,7 @@ export default function PlatformAdmin() {
             style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.375rem, 0.8vh, 0.5rem) clamp(0.75rem, 1.5vh, 1rem)', height: 'clamp(2rem, 4vh, 2.5rem)' }}
           >
             <BarChart3 style={{ width: 'clamp(0.875rem, 1.8vh, 1rem)', height: 'clamp(0.875rem, 1.8vh, 1rem)', marginRight: 'clamp(0.375rem, 0.75vh, 0.5rem)' }} />
-            <span className="hidden sm:inline">Overview</span>
+            <span className="hidden sm:inline">{t('platformAdmin.tabs.overview')}</span>
             <span className="sm:hidden">OVR</span>
           </Button>
           <Button
@@ -1362,7 +1363,7 @@ export default function PlatformAdmin() {
             style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.375rem, 0.8vh, 0.5rem) clamp(0.75rem, 1.5vh, 1rem)', height: 'clamp(2rem, 4vh, 2.5rem)' }}
           >
             <Users style={{ width: 'clamp(0.875rem, 1.8vh, 1rem)', height: 'clamp(0.875rem, 1.8vh, 1rem)', marginRight: 'clamp(0.375rem, 0.75vh, 0.5rem)' }} />
-            <span className="hidden sm:inline">Users</span>
+            <span className="hidden sm:inline">{t('platformAdmin.tabs.users')}</span>
             <span className="sm:hidden">U</span>
           </Button>
           <Button
@@ -1372,7 +1373,7 @@ export default function PlatformAdmin() {
             style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.375rem, 0.8vh, 0.5rem) clamp(0.75rem, 1.5vh, 1rem)', height: 'clamp(2rem, 4vh, 2.5rem)' }}
           >
             <Store style={{ width: 'clamp(0.875rem, 1.8vh, 1rem)', height: 'clamp(0.875rem, 1.8vh, 1rem)', marginRight: 'clamp(0.375rem, 0.75vh, 0.5rem)' }} />
-            <span className="hidden sm:inline">Stores</span>
+            <span className="hidden sm:inline">{t('platformAdmin.tabs.stores')}</span>
             <span className="sm:hidden">S</span>
           </Button>
           <Button
@@ -1382,7 +1383,7 @@ export default function PlatformAdmin() {
             style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.375rem, 0.8vh, 0.5rem) clamp(0.75rem, 1.5vh, 1rem)', height: 'clamp(2rem, 4vh, 2.5rem)' }}
           >
             <Package style={{ width: 'clamp(0.875rem, 1.8vh, 1rem)', height: 'clamp(0.875rem, 1.8vh, 1rem)', marginRight: 'clamp(0.375rem, 0.75vh, 0.5rem)' }} />
-            <span className="hidden sm:inline">Products</span>
+            <span className="hidden sm:inline">{t('platformAdmin.tabs.products')}</span>
             <span className="sm:hidden">P</span>
           </Button>
           <Button
@@ -1396,7 +1397,7 @@ export default function PlatformAdmin() {
             style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.375rem, 0.8vh, 0.5rem) clamp(0.75rem, 1.5vh, 1rem)', height: 'clamp(2rem, 4vh, 2.5rem)' }}
           >
             <Activity style={{ width: 'clamp(0.875rem, 1.8vh, 1rem)', height: 'clamp(0.875rem, 1.8vh, 1rem)', marginRight: 'clamp(0.375rem, 0.75vh, 0.5rem)' }} />
-            <span className="hidden sm:inline">Activity</span>
+            <span className="hidden sm:inline">{t('platformAdmin.tabs.activity')}</span>
             <span className="sm:hidden">A</span>
           </Button>
           <Button
@@ -1410,7 +1411,7 @@ export default function PlatformAdmin() {
             style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.375rem, 0.8vh, 0.5rem) clamp(0.75rem, 1.5vh, 1rem)', height: 'clamp(2rem, 4vh, 2.5rem)' }}
           >
             <CreditCard style={{ width: 'clamp(0.875rem, 1.8vh, 1rem)', height: 'clamp(0.875rem, 1.8vh, 1rem)', marginRight: 'clamp(0.375rem, 0.75vh, 0.5rem)' }} />
-            <span className="hidden sm:inline">Billing</span>
+            <span className="hidden sm:inline">{t('platformAdmin.tabs.subscriptions')}</span>
             <span className="sm:hidden">B</span>
           </Button>
           <Button
@@ -1423,7 +1424,7 @@ export default function PlatformAdmin() {
             style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.375rem, 0.8vh, 0.5rem) clamp(0.75rem, 1.5vh, 1rem)', height: 'clamp(2rem, 4vh, 2.5rem)' }}
           >
             <Gift style={{ width: 'clamp(0.875rem, 1.8vh, 1rem)', height: 'clamp(0.875rem, 1.8vh, 1rem)', marginRight: 'clamp(0.375rem, 0.75vh, 0.5rem)' }} />
-            <span className="hidden md:inline">Codes</span>
+            <span className="hidden md:inline">{t('platformAdmin.tabs.codes')}</span>
             <span className="md:hidden">C</span>
           </Button>
           <Button
@@ -1456,9 +1457,9 @@ export default function PlatformAdmin() {
               <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg text-white shadow-md border border-blue-500/30 p-3">
                 <div className="flex items-center justify-between">
                   <div className="min-w-0">
-                    <p className="text-blue-200 font-medium truncate text-xs">Total Users</p>
+                    <p className="text-blue-200 font-medium truncate text-xs">{t('platformAdmin.stats.totalUsers')}</p>
                     <h3 className="font-black text-2xl">{stats.totalUsers}</h3>
-                    <p className="text-blue-300 truncate text-xs">{stats.totalClients} stores</p>
+                    <p className="text-blue-300 truncate text-xs">{stats.totalClients} {t('platformAdmin.tabs.stores')}</p>
                   </div>
                   <Users className="text-blue-300 opacity-20 flex-shrink-0 w-6 h-6" />
                 </div>
@@ -1467,9 +1468,9 @@ export default function PlatformAdmin() {
               <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-lg text-white shadow-md border border-emerald-500/30 p-3">
                 <div className="flex items-center justify-between">
                   <div className="min-w-0">
-                    <p className="text-emerald-200 font-medium truncate text-xs">Active Subs</p>
+                    <p className="text-emerald-200 font-medium truncate text-xs">{t('platformAdmin.stats.activeSubscriptions')}</p>
                     <h3 className="font-black text-2xl">{stats.activeSubscriptions}</h3>
-                    <p className="text-emerald-300 truncate text-xs">Paying</p>
+                    <p className="text-emerald-300 truncate text-xs">{t('platformAdmin.subscription.active')}</p>
                   </div>
                   <CheckCircle className="text-emerald-300 opacity-20 flex-shrink-0 w-6 h-6" />
                 </div>
@@ -1478,9 +1479,9 @@ export default function PlatformAdmin() {
               <div className="bg-gradient-to-br from-amber-600 to-amber-700 rounded-lg text-white shadow-md border border-amber-500/30 p-3">
                 <div className="flex items-center justify-between">
                   <div className="min-w-0">
-                    <p className="text-amber-200 font-medium truncate text-xs">Trial</p>
+                    <p className="text-amber-200 font-medium truncate text-xs">{t('platformAdmin.stats.trialSubscriptions')}</p>
                     <h3 className="font-black text-2xl">{stats.trialSubscriptions}</h3>
-                    <p className="text-amber-300 truncate text-xs">Free trial</p>
+                    <p className="text-amber-300 truncate text-xs">{t('platformAdmin.codes.type.trial')}</p>
                   </div>
                   <Clock className="text-amber-300 opacity-20 flex-shrink-0 w-6 h-6" />
                 </div>
@@ -1489,9 +1490,9 @@ export default function PlatformAdmin() {
               <div className="bg-gradient-to-br from-red-600 to-red-700 rounded-lg text-white shadow-md border border-red-500/30 p-3">
                 <div className="flex items-center justify-between">
                   <div className="min-w-0">
-                    <p className="text-red-200 font-medium truncate text-xs">Locked</p>
+                    <p className="text-red-200 font-medium truncate text-xs">{t('platformAdmin.stats.lockedAccounts')}</p>
                     <h3 className="font-black text-2xl">{stats.lockedAccounts}</h3>
-                    <p className="text-red-300 truncate text-xs">Attention</p>
+                    <p className="text-red-300 truncate text-xs">{t('platformAdmin.subscription.locked')}</p>
                   </div>
                   <Lock className="text-red-300 opacity-20 flex-shrink-0 w-6 h-6" />
                 </div>
