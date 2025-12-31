@@ -2,8 +2,10 @@ import { Clock, Download, Eye, ShoppingCart, Tag, DollarSign, Check, ChevronLeft
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { GradientCard } from "@/components/ui/GradientCard";
+import { useTranslation } from "@/lib/i18n";
 
 export default function EnhancedDashboard() {
+  const { t } = useTranslation();
   const [timeLeft, setTimeLeft] = useState({
     days: 1,
     hours: 22,

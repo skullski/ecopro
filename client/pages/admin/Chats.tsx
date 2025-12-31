@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { MessageCircle, Search, Plus, AlertCircle } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 
 interface Chat {
   id: number;
@@ -35,6 +36,7 @@ const TIERS = [
 ];
 
 export default function AdminChats() {
+  const { t } = useTranslation();
   const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChatId, setSelectedChatId] = useState<number | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -180,14 +182,14 @@ export default function AdminChats() {
       <div className="w-full md:w-1/3 bg-white border-r flex flex-col min-h-0 order-2 md:order-1">
         {/* Header */}
         <div className="p-4 border-b bg-white">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Chats</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-4">{t('admin.chats.title')}</h2>
           
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search chats..."
+              placeholder={t('admin.chats.searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-4 py-2 rounded-lg bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -207,7 +209,7 @@ export default function AdminChats() {
           {filteredChats.length === 0 ? (
             <div className="p-4 text-center text-gray-500">
               <MessageCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No chats found</p>
+              <p className="text-sm">{t('admin.chats.noChats')}</p>
             </div>
           ) : (
             filteredChats.map(chat => (
@@ -305,7 +307,7 @@ export default function AdminChats() {
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Write a message..."
+                  placeholder={t('admin.chats.messagePlaceholder')}
                   disabled={loading}
                   className="flex-1 px-4 py-2 rounded-lg bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -315,7 +317,7 @@ export default function AdminChats() {
                     disabled={loading}
                     className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400"
                   >
-                    Send
+                    {t('admin.chats.send')}
                   </button>
                 ) : null}
               </form>
@@ -325,8 +327,8 @@ export default function AdminChats() {
           <div className="flex-1 flex items-center justify-center flex-col gap-4 text-gray-500">
             <MessageCircle className="w-12 h-12 opacity-30" />
             <div className="text-center">
-              <h3 className="font-semibold mb-1 text-gray-700">Select a chat</h3>
-              <p className="text-sm">Choose a client to start messaging</p>
+              <h3 className="font-semibold mb-1 text-gray-700">{t('admin.chats.selectChat')}</h3>
+              <p className="text-sm">{t('admin.chats.selectChatDesc')}</p>
             </div>
           </div>
         )}

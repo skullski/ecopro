@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "@/lib/i18n";
 
 export default function CallsAdmin(){
+  const { t } = useTranslation();
   const [calls, setCalls] = useState<any[]>([]);
   const [customer, setCustomer] = useState('');
   const [product, setProduct] = useState('');
@@ -37,30 +39,30 @@ export default function CallsAdmin(){
 
   return (
     <div>
-      <h2 className="text-2xl font-bold mb-4">Call List</h2>
+      <h2 className="text-2xl font-bold mb-4">{t('admin.calls.title')}</h2>
       <div className="rounded-lg border bg-card p-4 mb-4">
-        <h3 className="font-bold">Schedule New Call</h3>
+        <h3 className="font-bold">{t('admin.calls.scheduleNew')}</h3>
         <div className="mt-2 grid gap-2 max-w-md">
           <input 
-            placeholder="Customer Name" 
+            placeholder={t('admin.calls.customerName')} 
             value={customer} 
             onChange={(e)=>setCustomer(e.target.value)} 
             className="rounded-md border bg-background px-3 py-2" 
           />
           <input 
-            placeholder="Product Name" 
+            placeholder={t('admin.calls.productName')} 
             value={product} 
             onChange={(e)=>setProduct(e.target.value)} 
             className="rounded-md border bg-background px-3 py-2" 
           />
           <div className="flex items-center gap-2">
-            <button onClick={queueCall} className="rounded-md bg-primary px-4 py-2 text-primary-foreground">Schedule</button>
+            <button onClick={queueCall} className="rounded-md bg-primary px-4 py-2 text-primary-foreground">{t('admin.calls.schedule')}</button>
           </div>
         </div>
       </div>
 
       <div>
-        {!calls.length && <div className="text-muted-foreground">No scheduled calls at the moment</div>}
+        {!calls.length && <div className="text-muted-foreground">{t('admin.calls.noCalls')}</div>}
         <div className="mt-4 space-y-3">
           {calls.map(c=> (
             <div key={c.id} className="rounded-md border bg-card p-3 flex items-center justify-between">
@@ -69,7 +71,7 @@ export default function CallsAdmin(){
                 <div className="text-sm text-muted-foreground">{c.status}</div>
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={()=>simulateCall(c.id)} className="rounded-md border bg-background hover:bg-muted px-3 py-1 text-sm">Simulate Call</button>
+                <button onClick={()=>simulateCall(c.id)} className="rounded-md border bg-background hover:bg-muted px-3 py-1 text-sm">{t('admin.calls.simulateCall')}</button>
                 <button onClick={()=>remove(c.id)} className="rounded-md border bg-background hover:bg-muted px-3 py-1 text-sm">Delete</button>
               </div>
             </div>

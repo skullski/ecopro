@@ -3,8 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FileSpreadsheet, Key, RefreshCw, Download, CheckCircle2, AlertCircle } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "@/lib/i18n";
 
 export default function GoogleSheetsIntegration() {
+  const { t } = useTranslation();
   const [connected, setConnected] = useState(false);
   const [syncing, setSyncing] = useState(false);
 
@@ -19,18 +21,18 @@ export default function GoogleSheetsIntegration() {
     <div className="space-y-3 md:space-y-4">
       <div>
         <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-          Google Sheets
+          {t('admin.addons.sheets.title')}
         </h1>
-        <p className="text-muted-foreground mt-2">Connect your store with Google Sheets to export data automatically</p>
+        <p className="text-muted-foreground mt-2">{t('admin.addons.sheets.subtitle')}</p>
       </div>
 
       <Card className="border-2 border-green-500/20 bg-green-500/5">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileSpreadsheet className="w-5 h-5 text-green-600" />
-            About Google Sheets Integration
+            {t('admin.addons.sheets.about')}
           </CardTitle>
-          <CardDescription>What you can do with this feature</CardDescription>
+          <CardDescription>{t('admin.addons.sheets.whatYouCanDo')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
@@ -57,16 +59,16 @@ export default function GoogleSheetsIntegration() {
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Key className="w-5 h-5 text-primary" />
-              Connection Settings
+              {t('admin.addons.sheets.connectionSettings')}
             </div>
             {connected && (
               <div className="flex items-center gap-2 text-green-600 text-sm">
                 <CheckCircle2 className="w-4 h-4" />
-                Connected
+                {t('admin.addons.sheets.connected')}
               </div>
             )}
           </CardTitle>
-          <CardDescription>Connect your Google account</CardDescription>
+          <CardDescription>{t('admin.addons.sheets.connectAccount')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex items-start gap-3">
@@ -119,10 +121,10 @@ export default function GoogleSheetsIntegration() {
               className="flex-1 bg-gradient-to-r from-green-500 to-green-600"
               onClick={() => setConnected(!connected)}
             >
-              {connected ? "Update Connection" : "Connect with Google Sheets"}
+              {connected ? t('admin.addons.sheets.updateConnection') : t('admin.addons.sheets.connect')}
             </Button>
             <Button variant="outline" className="flex-1">
-              Test Connection
+              {t('admin.addons.sheets.testConnection')}
             </Button>
           </div>
         </CardContent>
@@ -134,9 +136,9 @@ export default function GoogleSheetsIntegration() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Download className="w-5 h-5 text-accent" />
-                Data to Export
+                {t('admin.addons.sheets.dataToExport')}
               </CardTitle>
-              <CardDescription>Choose the data you want to sync</CardDescription>
+              <CardDescription>{t('admin.addons.sheets.sync')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {[

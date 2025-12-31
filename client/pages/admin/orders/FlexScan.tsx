@@ -1,20 +1,22 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3, TrendingUp, Package } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 export default function FlexScan() {
+  const { t } = useTranslation();
   return (
     <div className="space-y-3 md:space-y-4">
       <div>
         <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-          Flex Scan
+          {t('admin.orders.flexScan.title')}
         </h1>
-        <p className="text-muted-foreground mt-2">Smart analysis of orders and sales</p>
+        <p className="text-muted-foreground mt-2">{t('admin.orders.flexScan.subtitle')}</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="border-2 border-blue-500/20">
           <CardHeader className="pb-3">
-            <CardDescription>Order success rate</CardDescription>
+            <CardDescription>{t('admin.orders.flexScan.successRate')}</CardDescription>
             <CardTitle className="text-xl md:text-2xl text-blue-600">87%</CardTitle>
           </CardHeader>
           <CardContent>
@@ -24,7 +26,7 @@ export default function FlexScan() {
 
         <Card className="border-2 border-green-500/20">
           <CardHeader className="pb-3">
-            <CardDescription>Average order value</CardDescription>
+            <CardDescription>{t('admin.orders.flexScan.avgValue')}</CardDescription>
             <CardTitle className="text-2xl text-green-600">3,420 DZD</CardTitle>
           </CardHeader>
           <CardContent>
@@ -34,7 +36,7 @@ export default function FlexScan() {
 
         <Card className="border-2 border-purple-500/20">
           <CardHeader className="pb-3">
-            <CardDescription>Peak times</CardDescription>
+            <CardDescription>{t('admin.orders.flexScan.peakTimes')}</CardDescription>
             <CardTitle className="text-2xl text-purple-600">14:00-17:00</CardTitle>
           </CardHeader>
           <CardContent>
@@ -45,14 +47,14 @@ export default function FlexScan() {
 
       <Card className="border-2 border-primary/20">
         <CardHeader>
-          <CardTitle>Performance analysis</CardTitle>
-          <CardDescription>Advanced statistics about your store performance</CardDescription>
+          <CardTitle>{t('admin.orders.flexScan.performance')}</CardTitle>
+          <CardDescription>{t('admin.orders.flexScan.performanceDesc')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <div className="p-4 bg-gradient-to-r from-blue-500/5 to-blue-500/10 rounded-lg border border-blue-500/20">
               <div className="flex justify-between items-center mb-2">
-                <span className="font-medium">Order cancellation rate</span>
+                <span className="font-medium">{t('admin.orders.flexScan.cancellationRate')}</span>
                 <span className="font-bold text-blue-600">8.5%</span>
               </div>
               <div className="w-full bg-blue-500/20 rounded-full h-2">
@@ -62,7 +64,7 @@ export default function FlexScan() {
 
             <div className="p-4 bg-gradient-to-r from-green-500/5 to-green-500/10 rounded-lg border border-green-500/20">
               <div className="flex justify-between items-center mb-2">
-                <span className="font-medium">Repeat order rate</span>
+                <span className="font-medium">{t('admin.orders.flexScan.repeatRate')}</span>
                 <span className="font-bold text-green-600">34%</span>
               </div>
               <div className="w-full bg-green-500/20 rounded-full h-2">
@@ -72,7 +74,7 @@ export default function FlexScan() {
 
             <div className="p-4 bg-gradient-to-r from-purple-500/5 to-purple-500/10 rounded-lg border border-purple-500/20">
               <div className="flex justify-between items-center mb-2">
-                <span className="font-medium">Customer satisfaction</span>
+                <span className="font-medium">{t('admin.orders.flexScan.satisfaction')}</span>
                 <span className="font-bold text-purple-600">92%</span>
               </div>
               <div className="w-full bg-purple-500/20 rounded-full h-2">
@@ -85,8 +87,8 @@ export default function FlexScan() {
 
       <Card className="border-2 border-accent/20">
         <CardHeader>
-          <CardTitle>AI recommendations</CardTitle>
-          <CardDescription>Tips for improving performance</CardDescription>
+          <CardTitle>{t('admin.orders.flexScan.aiRecommendations')}</CardTitle>
+          <CardDescription>{t('admin.orders.flexScan.tips')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">

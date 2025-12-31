@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from '@/lib/i18n';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,6 +42,7 @@ function formatDate(input?: string | null): string {
 }
 
 export default function Profile() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { theme } = useTheme();
 
@@ -107,7 +109,7 @@ export default function Profile() {
         setVoucherCode('');
         setAttemptsRemaining(3);
         
-        toast({ title: 'Success!', description: 'Your subscription has been activated.' });
+        toast({ title: t('common.success'), description: t('admin.profile.subscriptionActivated') });
         
         // Refresh user data
         try {
@@ -183,7 +185,7 @@ export default function Profile() {
       }
     } catch (e) {
       console.error('Profile load error:', e);
-      toast({ variant: 'destructive', title: 'Error', description: 'Failed to load profile' });
+      toast({ variant: 'destructive', title: t('common.error'), description: t('admin.profile.loadError') });
     } finally {
       setLoading(false);
     }
@@ -209,7 +211,7 @@ export default function Profile() {
         localStorage.setItem('user', JSON.stringify(data.user));
       }
 
-      toast({ title: 'Saved', description: 'Profile updated successfully' });
+      toast({ title: t('common.saved'), description: t('admin.profile.updateSuccess') });
       await load();
     } catch (e) {
       toast({ variant: 'destructive', title: 'Error', description: (e as Error).message });
@@ -252,8 +254,8 @@ export default function Profile() {
 
         <div className="flex items-center justify-between backdrop-blur-md profile-glass rounded-lg p-3 border border-white/30 dark:border-slate-700/50">
           <div>
-            <h1 className="text-xl font-bold">Profile</h1>
-            <p className="text-muted-foreground text-sm">Manage your account details and subscription</p>
+            <h1 className="text-xl font-bold">{t('admin.profile.title')}</h1>
+            <p className="text-muted-foreground text-sm">{t('admin.profile.subtitle')}</p>
           </div>
           {hasAccess && (
             <Badge className="bg-amber-500/20 text-amber-300 border border-amber-500/30">
@@ -268,25 +270,25 @@ export default function Profile() {
             <CardHeader className="p-3 pb-2">
               <CardTitle className="flex items-center gap-2 text-base">
                 <User className="w-4 h-4" />
-                Account
+                {t('admin.profile.account')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 p-3 pt-0">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               <div className="space-y-1">
-                <Label htmlFor="name" className="text-xs">Name</Label>
+                <Label htmlFor="name" className="text-xs">{t('admin.profile.name')}</Label>
                 <Input id="name" className="h-8" value={form.name} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="email" className="text-xs">Email</Label>
+                <Label htmlFor="email" className="text-xs">{t('admin.profile.email')}</Label>
                 <Input id="email" className="h-8" value={form.email} onChange={(e) => setForm((s) => ({ ...s, email: e.target.value }))} />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="phone" className="text-xs">Phone / WhatsApp</Label>
+                <Label htmlFor="phone" className="text-xs">{t('admin.profile.phone')}</Label>
                 <Input id="phone" className="h-8" value={form.phone} onChange={(e) => setForm((s) => ({ ...s, phone: e.target.value }))} />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="business_name" className="text-xs">Business / Store Name</Label>
+                <Label htmlFor="business_name" className="text-xs">{t('admin.profile.businessName')}</Label>
                 <Input
                   id="business_name"
                   className="h-8"
@@ -295,21 +297,21 @@ export default function Profile() {
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="country" className="text-xs">Country</Label>
+                <Label htmlFor="country" className="text-xs">{t('admin.profile.country')}</Label>
                 <Input id="country" className="h-8" value={form.country} onChange={(e) => setForm((s) => ({ ...s, country: e.target.value }))} />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="city" className="text-xs">City</Label>
+                <Label htmlFor="city" className="text-xs">{t('admin.profile.city')}</Label>
                 <Input id="city" className="h-8" value={form.city} onChange={(e) => setForm((s) => ({ ...s, city: e.target.value }))} />
               </div>
             </div>
 
             <Button onClick={onSave} disabled={saving || loading} className="w-full h-8" size="sm">
               <Save className="w-3 h-3 mr-1" />
-              {saving ? 'Saving...' : 'Save Changes'}
+              {saving ? t('common.saving') : t('admin.profile.updateProfile')}
             </Button>
 
-            {loading && <div className="text-xs text-muted-foreground">Loading...</div>}
+            {loading && <div className="text-xs text-muted-foreground">{t('platformAdmin.loading')}</div>}
           </CardContent>
         </Card>
 

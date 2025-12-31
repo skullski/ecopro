@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from '@/lib/i18n';
 import {
   CreditCard,
   Calendar,
@@ -43,6 +44,7 @@ interface Payment {
 }
 
 const AdminBilling = () => {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
 
@@ -152,8 +154,8 @@ const AdminBilling = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Billing & Subscription</h1>
-        <p className="text-gray-600 dark:text-gray-300 mt-2">Manage your EcoPro subscription and payment history</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('admin.billing.title')}</h1>
+        <p className="text-gray-600 dark:text-gray-300 mt-2">{t('admin.billing.subtitle')}</p>
       </div>
 
       {/* Alert for expired subscription */}
@@ -161,7 +163,7 @@ const AdminBilling = () => {
         <Alert className="bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800">
           <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
           <AlertDescription className="text-red-700 dark:text-red-300">
-            Your subscription has expired. Renew now to continue using your store.
+            {t('admin.billing.expiredAlert')}
           </AlertDescription>
         </Alert>
       )}
@@ -173,9 +175,9 @@ const AdminBilling = () => {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Zap className="w-5 h-5 text-blue-600" />
-                Current Subscription
+                {t('admin.billing.currentSubscription')}
               </CardTitle>
-              <CardDescription>Your EcoPro subscription status and billing information</CardDescription>
+              <CardDescription>{t('admin.billing.subscriptionDesc')}</CardDescription>
             </div>
             {subscription && getStatusBadge(subscription.status)}
           </div>
@@ -344,9 +346,9 @@ const AdminBilling = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CreditCard className="w-5 h-5" />
-            Payment History
+            {t('admin.billing.paymentHistory')}
           </CardTitle>
-          <CardDescription>All your payments and transaction records</CardDescription>
+          <CardDescription>{t('admin.billing.subtitle')}</CardDescription>
         </CardHeader>
         <CardContent>
           {payLoading ? (

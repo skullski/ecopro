@@ -3,8 +3,10 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Users, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useTranslation } from '@/lib/i18n';
 
 export default function StaffLogin() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     username: '',
@@ -70,7 +72,7 @@ export default function StaffLogin() {
           className="inline-flex items-center text-slate-400 hover:text-slate-200 mb-8 transition-colors"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Home
+          {t('common.backToHome')}
         </Link>
 
         {/* Card */}
@@ -83,7 +85,7 @@ export default function StaffLogin() {
           </div>
 
           <h1 className="text-2xl font-bold text-center text-white mb-2">
-            Staff Login
+            {t('staff.login')}
           </h1>
           <p className="text-center text-slate-400 mb-8">
             Access your store management dashboard
@@ -100,7 +102,7 @@ export default function StaffLogin() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-slate-300 mb-2">
-                Username
+                {t('staff.username')}
               </label>
               <Input
                 id="username"
@@ -117,7 +119,7 @@ export default function StaffLogin() {
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-2">
-                Password
+                {t('staff.password')}
               </label>
               <Input
                 id="password"
@@ -137,7 +139,7 @@ export default function StaffLogin() {
               disabled={loading}
               className="w-full h-10 bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600 text-white font-medium transition-colors"
             >
-              {loading ? 'Logging in...' : 'Login'}
+              {loading ? t('common.processing') : t('staff.signIn')}
             </Button>
           </form>
 
