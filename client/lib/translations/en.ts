@@ -336,6 +336,11 @@ export const en = {
   "dashboard.noDataAvailable": "No data available",
   "dashboard.lastUpdated": "Last updated",
   "dashboard.revenueAndOrders": "{revenue} DZD - {orders} orders",
+  "dashboard.subtitle": "Here's your store performance summary",
+  "dashboard.ordersByCity": "Orders by City",
+  "dashboard.avgOrderValue": "Average Order Value",
+  "dashboard.successRate": "Success Rate",
+  "dashboard.conversionRate": "Conversion Rate",
 
   // Seller Dashboard
   "seller.dashboard": "Seller Dashboard",

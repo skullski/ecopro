@@ -148,9 +148,9 @@ export default function Dashboard() {
   // Get greeting based on time
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return '☀️ Good Morning';
-    if (hour < 18) return '🌤️ Good Afternoon';
-    return '🌙 Good Evening';
+    if (hour < 12) return t('dashboard.goodMorning');
+    if (hour < 18) return t('dashboard.goodAfternoon');
+    return t('dashboard.goodEvening');
   };
 
   return (
@@ -161,12 +161,12 @@ export default function Dashboard() {
         <div className="relative z-10 flex items-center justify-between">
           <div>
             <p className="text-white/80 text-xs sm:text-sm">{getGreeting()}</p>
-            <h1 className="text-lg sm:text-xl font-bold">Dashboard</h1>
-            <p className="text-white/70 text-xs sm:text-sm">Here's your store performance summary</p>
+            <h1 className="text-lg sm:text-xl font-bold">{t('dashboard.title')}</h1>
+            <p className="text-white/70 text-xs sm:text-sm">{t('dashboard.subtitle')}</p>
           </div>
           <div className="hidden md:flex items-center gap-2">
             <div className="text-right">
-              <p className="text-white/70 text-xs">Total Revenue</p>
+              <p className="text-white/70 text-xs">{t('dashboard.totalRevenue')}</p>
               <p className="text-lg sm:text-xl font-bold">{Math.round(stats.revenue)} DZD</p>
             </div>
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-white/20 backdrop-blur flex items-center justify-center">
@@ -183,9 +183,9 @@ export default function Dashboard() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-1 sm:gap-1.5 bg-muted/50 p-1 rounded-lg">
           {[
-            { key: 'today', label: 'Today', icon: Zap },
-            { key: 'thisWeek', label: 'This Week', icon: Activity },
-            { key: 'thisMonth', label: 'This Month', icon: BarChart3 },
+            { key: 'today', label: t('dashboard.today'), icon: Zap },
+            { key: 'thisWeek', label: t('dashboard.thisWeek'), icon: Activity },
+            { key: 'thisMonth', label: t('dashboard.thisMonth'), icon: BarChart3 },
           ].map(period => (
             <button
               key={period.key}
@@ -202,7 +202,7 @@ export default function Dashboard() {
           ))}
         </div>
         <div className="text-xs text-muted-foreground">
-          Last updated: {new Date().toLocaleTimeString('en-US')}
+          {t('dashboard.lastUpdated')}: {new Date().toLocaleTimeString('en-US')}
         </div>
       </div>
 
@@ -223,7 +223,7 @@ export default function Dashboard() {
               )}
             </div>
             <p className="text-xl sm:text-2xl font-bold">{loading ? '...' : currentComparison?.orders || stats.orders}</p>
-            <p className="text-white/70 text-xs sm:text-sm">Orders</p>
+            <p className="text-white/70 text-xs sm:text-sm">{t('dashboard.orders')}</p>
           </div>
         </Card>
 
@@ -242,7 +242,7 @@ export default function Dashboard() {
               )}
             </div>
             <p className="text-xl sm:text-2xl font-bold">{loading ? '...' : `${Math.round(currentComparison?.revenue || 0)}`}</p>
-            <p className="text-white/70 text-xs sm:text-sm">Revenue (DZD)</p>
+            <p className="text-white/70 text-xs sm:text-sm">{t('dashboard.revenue')} (DZD)</p>
           </div>
         </Card>
 
@@ -256,7 +256,7 @@ export default function Dashboard() {
               <div className="text-xs bg-white/20 px-1 py-0.5 rounded-full">Live</div>
             </div>
             <p className="text-xl sm:text-2xl font-bold">{loading ? '...' : stats.visitors.toLocaleString()}</p>
-            <p className="text-white/70 text-xs sm:text-sm">Views</p>
+            <p className="text-white/70 text-xs sm:text-sm">{t('dashboard.views')}</p>
           </div>
         </Card>
 
@@ -270,7 +270,7 @@ export default function Dashboard() {
               <Flame className="w-3 h-3 text-yellow-200" />
             </div>
             <p className="text-xl sm:text-2xl font-bold">{loading ? '...' : stats.products}</p>
-            <p className="text-white/70 text-xs sm:text-sm">Products</p>
+            <p className="text-white/70 text-xs sm:text-sm">{t('dashboard.products')}</p>
           </div>
         </Card>
       </div>
@@ -285,15 +285,15 @@ export default function Dashboard() {
                 <BarChart3 className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="font-bold text-sm sm:text-base">Revenue Last 12 Days</h3>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">Daily revenue</p>
+                <h3 className="font-bold text-sm sm:text-base">{t('dashboard.revenueLast12Days')}</h3>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">{t('dashboard.dailyRevenue')}</p>
               </div>
             </div>
             <div className="text-left bg-gradient-to-r from-emerald-500/10 to-green-500/10 px-2 sm:px-3 py-1.5 rounded-lg border border-emerald-500/20">
               <p className="text-sm sm:text-lg font-bold text-emerald-600 dark:text-emerald-400">
                 {Math.round(chartData.reduce((sum, d) => sum + d.revenue, 0))} DZD
               </p>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">Period total</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">{t('dashboard.periodTotal')}</p>
             </div>
           </div>
           
@@ -318,7 +318,7 @@ export default function Dashboard() {
               <div className="flex-1 flex items-center justify-center text-muted-foreground">
                 <div className="text-center">
                   <BarChart3 className="w-8 h-8 mx-auto mb-1.5 opacity-20" />
-                  <p className="text-sm">No data available</p>
+                  <p className="text-sm">{t('dashboard.noDataAvailable')}</p>
                 </div>
               </div>
             )}
@@ -331,7 +331,7 @@ export default function Dashboard() {
             <div className="p-2 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 text-white">
               <Target className="w-4 h-4" />
             </div>
-            <h3 className="font-bold text-sm sm:text-base">Status Distribution</h3>
+            <h3 className="font-bold text-sm sm:text-base">{t('dashboard.statusDistribution')}</h3>
           </div>
           <div className="space-y-2">
             {analytics?.statusBreakdown?.slice(0, 6).map((item, i) => {
@@ -372,7 +372,7 @@ export default function Dashboard() {
             <div className="p-2 rounded-lg bg-gradient-to-br from-yellow-500 to-orange-500 text-white">
               <Crown className="w-4 h-4" />
             </div>
-            <h3 className="font-bold text-sm sm:text-base">Top Products</h3>
+            <h3 className="font-bold text-sm sm:text-base">{t('dashboard.topProducts')}</h3>
           </div>
           <div className="space-y-2">
             {analytics?.topProducts?.slice(0, 5).map((product, i) => (
@@ -415,7 +415,7 @@ export default function Dashboard() {
             <div className="p-2 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 text-white">
               <Clock className="w-4 h-4" />
             </div>
-            <h3 className="font-bold text-sm sm:text-base">Recent Orders</h3>
+            <h3 className="font-bold text-sm sm:text-base">{t('dashboard.recentOrders')}</h3>
           </div>
           <div className="space-y-1.5">
             {analytics?.recentOrders?.slice(0, 5).map((order) => (
@@ -449,7 +449,7 @@ export default function Dashboard() {
             <div className="p-2 rounded-lg bg-gradient-to-br from-pink-500 to-rose-500 text-white">
               <MapPin className="w-4 h-4" />
             </div>
-            <h3 className="font-bold text-sm sm:text-base">Orders by City</h3>
+            <h3 className="font-bold text-sm sm:text-base">{t('dashboard.ordersByCity')}</h3>
           </div>
           <div className="space-y-2">
             {analytics?.cityBreakdown?.slice(0, 6).map((city, i) => {
@@ -490,7 +490,7 @@ export default function Dashboard() {
               <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-600 dark:text-cyan-400" />
             </div>
             <div>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">Average Order Value</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">{t('dashboard.avgOrderValue')}</p>
               <p className="text-sm sm:text-lg font-bold">
                 {stats.orders > 0 ? Math.round(stats.revenue / stats.orders).toLocaleString() : 0} <span className="text-xs font-normal text-muted-foreground">DZD</span>
               </p>
@@ -504,7 +504,7 @@ export default function Dashboard() {
               <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 dark:text-green-400" />
             </div>
             <div>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">Success Rate</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">{t('dashboard.successRate')}</p>
               <p className="text-sm sm:text-lg font-bold">
                 {stats.orders > 0 ? Math.round((stats.completedOrders / stats.orders) * 100) : 0}<span className="text-xs font-normal text-muted-foreground">%</span>
               </p>
@@ -518,7 +518,7 @@ export default function Dashboard() {
               <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 dark:text-amber-400" />
             </div>
             <div>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">Pending Orders</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">{t('dashboard.pendingOrders')}</p>
               <p className="text-sm sm:text-lg font-bold">{stats.pendingOrders}</p>
             </div>
           </div>
@@ -530,7 +530,7 @@ export default function Dashboard() {
               <Users className="w-4 h-4 sm:w-5 sm:h-5 text-rose-600 dark:text-rose-400" />
             </div>
             <div>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">Conversion Rate</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">{t('dashboard.conversionRate')}</p>
               <p className="text-sm sm:text-lg font-bold">
                 {stats.visitors > 0 ? ((stats.orders / stats.visitors) * 100).toFixed(1) : 0}<span className="text-xs font-normal text-muted-foreground">%</span>
               </p>
