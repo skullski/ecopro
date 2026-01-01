@@ -901,5 +901,38 @@ export const fr = {
   "tiers.platinum": "Platine",
 
   // Footer
-  "footer.copyright": "© {year} walidstore. Tous droits réservés"
+  "footer.copyright": "© {year} walidstore. Tous droits réservés",
+
+  // Sidebar Navigation
+  "sidebar.home": "Accueil",
+  "sidebar.profile": "Profil",
+  "sidebar.store": "Ma Boutique",
+  "sidebar.stock": "Stock",
+  "sidebar.orders": "Commandes",
+  "sidebar.delivery": "Livraison",
+  "sidebar.addons": "Extensions",
+  "sidebar.wasselni": "Wasselni",
+  "sidebar.staff": "Personnel",
+  "sidebar.brand": "walidstore",
+  "sidebar.controlPanel": "Panneau de contrôle",
+  "sidebar.selectTheme": "Choisir le thème",
+  "sidebar.expandMenu": "Développer le menu",
+  "sidebar.collapseMenu": "Réduire le menu",
+  "sidebar.staffMode": "Mode personnel",
+  "sidebar.noPermission": "Pas de permission",
+
+  // Header Navigation
+  "header.pricing": "Tarifs",
+  "header.about": "À propos",
+  "header.aboutUs": "À propos de nous",
+  "header.support": "Support",
+  "header.myStore": "Ma Boutique",
+  "header.chat": "Chat",
+  "header.admin": "Admin",
+  "header.dashboard": "Tableau de bord",
+  "header.ecommercePlatform": "Plateforme e-commerce",
+
+  // Layout
+  "layout.staffMode": "Mode personnel :",
+  "layout.logout": "Déconnexion"
 };

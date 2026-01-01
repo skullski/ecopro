@@ -869,5 +869,38 @@ export const en = {
   "tiers.platinum": "Platinum",
 
   // Footer
-  "footer.copyright": "© {year} walidstore. All rights reserved"
+  "footer.copyright": "© {year} walidstore. All rights reserved",
+
+  // Sidebar Navigation
+  "sidebar.home": "Home",
+  "sidebar.profile": "Profile",
+  "sidebar.store": "My Store",
+  "sidebar.stock": "Stock",
+  "sidebar.orders": "Orders",
+  "sidebar.delivery": "Delivery",
+  "sidebar.addons": "Add-ons",
+  "sidebar.wasselni": "Wasselni",
+  "sidebar.staff": "Staff",
+  "sidebar.brand": "walidstore",
+  "sidebar.controlPanel": "Control Panel",
+  "sidebar.selectTheme": "Select Theme",
+  "sidebar.expandMenu": "Expand Menu",
+  "sidebar.collapseMenu": "Collapse Menu",
+  "sidebar.staffMode": "Staff Mode",
+  "sidebar.noPermission": "No permission",
+
+  // Header Navigation
+  "header.pricing": "Pricing",
+  "header.about": "About",
+  "header.aboutUs": "About Us",
+  "header.support": "Support",
+  "header.myStore": "My Store",
+  "header.chat": "Chat",
+  "header.admin": "Admin",
+  "header.dashboard": "Dashboard",
+  "header.ecommercePlatform": "E-commerce Platform",
+
+  // Layout
+  "layout.staffMode": "Staff Mode:",
+  "layout.logout": "Logout"
 };

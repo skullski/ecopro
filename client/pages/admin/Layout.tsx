@@ -12,7 +12,7 @@ import { PermissionGate } from "@/components/PermissionGate";
 
 export default function AdminLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const { locale } = useTranslation();
+  const { locale, t } = useTranslation();
   const { toggle, theme } = useTheme();
   const isDark = theme === "dark";
   const isRTL = locale === "ar";
@@ -67,7 +67,7 @@ export default function AdminLayout() {
             <div className="flex items-center gap-2">
               <Shield className="w-4 h-4" />
               <span className="text-sm font-medium">
-                Staff Mode: {staffUser.email} ({staffUser.role})
+                {t("layout.staffMode")} {staffUser.email} ({staffUser.role})
               </span>
             </div>
             <Button
@@ -77,7 +77,7 @@ export default function AdminLayout() {
               className="text-white hover:bg-blue-700"
             >
               <LogOut className="w-4 h-4 mr-1" />
-              Logout
+              {t("layout.logout")}
             </Button>
           </div>
         )}

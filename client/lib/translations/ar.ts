@@ -921,5 +921,38 @@ export const ar = {
   "tiers.platinum": "بلاتيني",
 
   // Footer
-  "footer.copyright": "© {year} walidstore. جميع الحقوق محفوظة"
+  "footer.copyright": "© {year} walidstore. جميع الحقوق محفوظة",
+
+  // Sidebar Navigation
+  "sidebar.home": "الرئيسية",
+  "sidebar.profile": "الملف الشخصي",
+  "sidebar.store": "متجري",
+  "sidebar.stock": "المخزون",
+  "sidebar.orders": "الطلبات",
+  "sidebar.delivery": "التوصيل",
+  "sidebar.addons": "الإضافات",
+  "sidebar.wasselni": "وصلني",
+  "sidebar.staff": "الموظفون",
+  "sidebar.brand": "walidstore",
+  "sidebar.controlPanel": "لوحة التحكم",
+  "sidebar.selectTheme": "اختر المظهر",
+  "sidebar.expandMenu": "توسيع القائمة",
+  "sidebar.collapseMenu": "طي القائمة",
+  "sidebar.staffMode": "وضع الموظف",
+  "sidebar.noPermission": "لا توجد صلاحية",
+
+  // Header Navigation
+  "header.pricing": "الأسعار",
+  "header.about": "حولنا",
+  "header.aboutUs": "من نحن",
+  "header.support": "الدعم",
+  "header.myStore": "متجري",
+  "header.chat": "المحادثة",
+  "header.admin": "الإدارة",
+  "header.dashboard": "لوحة التحكم",
+  "header.ecommercePlatform": "منصة التجارة الإلكترونية",
+
+  // Layout
+  "layout.staffMode": "وضع الموظف:",
+  "layout.logout": "تسجيل الخروج"
 };
