@@ -34,12 +34,12 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
   function t(key: string, params?: Record<string, string | number>): string {
     // Prefer current locale; fallback to English; never expose raw keys to end-users
-    let value = translations[locale][key] || translations['en'][key];
+    let value = translations[locale]?.[key] ?? translations["en"]?.[key];
     if (!value) return "";
 
     if (params) {
-      Object.entries(params).forEach(([key, val]) => {
-        value = value.replace(`{${key}}`, val.toString());
+      Object.entries(params).forEach(([k, val]) => {
+        value = value.replace(`{${k}}`, val.toString());
       });
     }
 
