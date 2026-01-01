@@ -122,7 +122,7 @@ export default function Header() {
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center" style={{ gap: 'clamp(0.25rem, 0.6vh, 0.375rem)' }}>
+            <nav className="hidden md:flex items-center" style={{ gap: 'clamp(0.25rem, 0.6vh, 0.375rem)' }}>
               <Link 
                 to="/pricing" 
                 className="rounded-md font-semibold text-foreground hover:text-primary hover:bg-primary/10 transition-all"
@@ -308,7 +308,7 @@ export default function Header() {
               {/* Mobile Menu Button */}
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="lg:hidden rounded-md border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-all"
+                className="md:hidden rounded-md border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-all"
                 aria-label="Menu"
                 style={{ padding: 'clamp(0.375rem, 1vh, 0.5rem)' }}
               >
@@ -325,7 +325,7 @@ export default function Header() {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 top-20 z-40 bg-background/96 backdrop-blur-xl border-t border-primary/12">
+        <div className="md:hidden fixed inset-0 top-20 z-40 bg-background/96 backdrop-blur-xl border-t border-primary/12">
           <div className="container mx-auto px-4 py-6">
             <nav className="flex flex-col gap-2">
 
