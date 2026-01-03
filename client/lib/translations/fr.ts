@@ -153,7 +153,7 @@ export const fr = {
   "user.role.seller": "Vendeur",
 
   // Navigation & Brand
-  "brand": "walidstore",
+  "brand": "sahla-E",
   "dashboard.title": "Tableau de Bord",
   "dashboard.subtitle": "Résumé des performances de votre boutique",
   "dashboard.welcome": "Bienvenue",
@@ -327,51 +327,19 @@ export const fr = {
   "product.addToCart": "Ajouter au Panier",
 
   // Wasselni Integration
-  "wasselni.title": "Wasselni - Système de Confirmation d'Appel Intelligent",
+  "wasselni.title": "Bot - Système de Confirmation d'Appel Intelligent",
   "wasselni.desc": "Appels vocaux automatisés par IA pour la confirmation des commandes en dialecte local",
-  "wasselni.settings": "Paramètres Wasselni",
+  "wasselni.settings": "Paramètres Bot",
   "wasselni.calls": "Appels",
   "wasselni.calls.empty": "Aucun appel programmé",
 
   // Dashboard (Client/Seller)
-  "dashboard.welcome": "Bienvenue",
-  "dashboard.overview": "Aperçu",
-  "dashboard.totalProducts": "Total Produits",
-  "dashboard.totalOrders": "Total Commandes",
-  "dashboard.totalRevenue": "Revenu Total",
-  "dashboard.pendingOrders": "Commandes en Attente",
-  "dashboard.completedOrders": "Commandes Terminées",
-  "dashboard.visitors": "Visiteurs",
-  "dashboard.today": "Aujourd'hui",
-  "dashboard.thisWeek": "Cette Semaine",
-  "dashboard.thisMonth": "Ce Mois",
-  "dashboard.growth": "Croissance",
-  "dashboard.topProducts": "Meilleurs Produits",
-  "dashboard.recentOrders": "Commandes Récentes",
-  "dashboard.statusBreakdown": "Répartition des Statuts",
-  "dashboard.statusDistribution": "Distribution des Statuts",
-  "dashboard.cityBreakdown": "Commandes par Ville",
-  "dashboard.noOrders": "Aucune commande",
-  "dashboard.viewAll": "Voir Tout",
   "dashboard.subscriptions": "Abonnements",
   "dashboard.minutesAgo": "il y a {n} minutes",
   "dashboard.hoursAgo": "il y a {n} heures",
   "dashboard.daysAgo": "il y a {n} jours",
   "dashboard.justNow": "À l'instant",
-  "dashboard.goodMorning": "Bonjour",
-  "dashboard.goodAfternoon": "Bon après-midi",
-  "dashboard.goodEvening": "Bonsoir",
   "dashboard.performanceSummary": "Résumé des performances de votre boutique",
-  "dashboard.orders": "Commandes",
-  "dashboard.revenue": "Revenus",
-  "dashboard.products": "Produits",
-  "dashboard.views": "Vues",
-  "dashboard.live": "En direct",
-  "dashboard.revenueLast12Days": "Revenus des 12 derniers jours",
-  "dashboard.dailyRevenue": "Revenus quotidiens",
-  "dashboard.periodTotal": "Total de la période",
-  "dashboard.noDataAvailable": "Aucune donnée disponible",
-  "dashboard.lastUpdated": "Dernière mise à jour",
   "dashboard.revenueAndOrders": "{revenue} DZD - {orders} commandes",
 
   // Seller Dashboard
@@ -608,7 +576,7 @@ export const fr = {
 
   // Admin Panel - Billing
   "admin.billing.title": "Facturation et Abonnement",
-  "admin.billing.subtitle": "Gérez votre abonnement EcoPro et l'historique des paiements",
+  "admin.billing.subtitle": "Gérez votre abonnement sahla-E et l'historique des paiements",
   "admin.billing.currentSubscription": "Abonnement Actuel",
   "admin.billing.subscriptionDesc": "Statut de votre abonnement et informations de facturation",
   "admin.billing.expiredAlert": "Votre abonnement a expiré",
@@ -759,12 +727,12 @@ export const fr = {
 
   // Admin Orders - Wasselni
   "admin.orders.wasselni.title": "Qu'est-ce que tu livres ?",
-  "admin.orders.wasselni.subtitle": "Suivez les commandes de livraison avec Wasselni",
+  "admin.orders.wasselni.subtitle": "Suivez les commandes de livraison avec Bot",
   "admin.orders.wasselni.inDelivery": "En livraison",
   "admin.orders.wasselni.deliveredToday": "Livrées aujourd'hui",
   "admin.orders.wasselni.pending": "En attente",
-  "admin.orders.wasselni.listTitle": "Commandes Wasselni",
-  "admin.orders.wasselni.listDesc": "Commandes liées au service de livraison Wasselni",
+  "admin.orders.wasselni.listTitle": "Commandes Bot",
+  "admin.orders.wasselni.listDesc": "Commandes liées au service de livraison Bot",
   "admin.orders.wasselni.customer": "Client :",
   "admin.orders.wasselni.driver": "Chauffeur :",
   "admin.orders.wasselni.notSpecified": "Non spécifié",
@@ -901,7 +869,7 @@ export const fr = {
   "tiers.platinum": "Platine",
 
   // Footer
-  "footer.copyright": "© {year} walidstore. Tous droits réservés",
+  "footer.copyright": "© {year} sahla-E. Tous droits réservés",
 
   // Sidebar Navigation
   "sidebar.home": "Accueil",
@@ -911,9 +879,9 @@ export const fr = {
   "sidebar.orders": "Commandes",
   "sidebar.delivery": "Livraison",
   "sidebar.addons": "Extensions",
-  "sidebar.wasselni": "Wasselni",
+  "sidebar.wasselni": "Bot",
   "sidebar.staff": "Personnel",
-  "sidebar.brand": "walidstore",
+  "sidebar.brand": "sahla-E",
   "sidebar.controlPanel": "Panneau de contrôle",
   "sidebar.selectTheme": "Choisir le thème",
   "sidebar.expandMenu": "Développer le menu",

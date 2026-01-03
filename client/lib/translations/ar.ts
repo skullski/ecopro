@@ -1,15 +1,5 @@
 // Removed stray translation keys above. All keys should be inside export const ar = { ... }.
 export const ar = {
-  "cart.title": "سلة التسوق",
-  "cart.empty": "سلة التسوق فارغة.",
-  "cart.priceEach": "${price} لكل واحدة",
-  "cart.qty": "الكمية",
-  "cart.lineTotal": "${total}",
-  "cart.checkout": "الدفع",
-  "cart.remove": "إزالة",
-  "cart.total": "الإجمالي: ${total}",
-  "cart.clear": "إفراغ السلة",
-  "cart.proceed": "المتابعة للدفع",
   "buyerInfo.title": "معلوماتك الشخصية",
   "buyerInfo.fullNamePlaceholder": "الاسم الكامل",
   "buyerInfo.emailPlaceholder": "البريد الإلكتروني",
@@ -173,7 +163,7 @@ export const ar = {
   "user.role.seller": "بائع",
 
   // Navigation & Brand
-  "brand": "walidstore",
+  "brand": "sahla-E",
   "dashboard.title": "لوحة التحكم",
   "dashboard.subtitle": "ملخص أداء متجرك",
   "dashboard.welcome": "مرحباً",
@@ -195,6 +185,7 @@ export const ar = {
   "dashboard.cityBreakdown": "الطلبات حسب المدينة",
   "dashboard.ordersByCity": "الطلبات حسب المدينة",
   "dashboard.noOrders": "لا توجد طلبات بعد",
+  "dashboard.noProducts": "لا توجد منتجات",
   "dashboard.viewAll": "عرض الكل",
   "dashboard.goodMorning": "☀️ صباح الخير",
   "dashboard.goodAfternoon": "🌤️ مساء الخير",
@@ -334,6 +325,54 @@ export const ar = {
   "store.customers": "العملاء",
   "store.analytics": "التحليلات",
   "store.empty": "لا توجد منتجات",
+  "store.privateStore": "متجر خاص",
+  "store.manageExclusive": "إدارة منتجاتك الحصرية ومشاركة روابط فردية",
+  "store.viewStorefront": "عرض المتجر",
+  "store.templateEditor": "محرر القالب",
+  "store.addProduct": "إضافة منتج",
+  "store.totalProducts": "إجمالي المنتجات",
+  "store.active": "نشط",
+  "store.drafts": "مسودات",
+  "store.totalViews": "إجمالي المشاهدات",
+  "store.searchProducts": "البحث في المنتجات...",
+  "store.allStatus": "جميع الحالات",
+  "store.archived": "مؤرشف",
+  "store.noProductsYet": "لا توجد منتجات بعد",
+  "store.createFirstProduct": "أنشئ منتجك الأول لبدء بناء متجرك الخاص",
+  "store.addFirstProduct": "إضافة أول منتج",
+  "store.share": "مشاركة",
+  "store.views": "مشاهدات",
+  "store.storeSummary": "ملخص المتجر",
+  "store.howToUse": "كيفية استخدام متجرك",
+  "store.yourStoreUrl": "رابط متجرك",
+  "store.shareWithCustomers": "شارك هذا الرابط مع عملائك لتصفح واجهة متجرك",
+  "store.openStore": "فتح المتجر",
+  "store.shareYourStore": "شارك متجرك",
+  "store.shareStoreDesc": "شارك هذا الرابط ليتمكن العملاء من تصفح جميع منتجاتك في مكان واحد. استخدم قنوات التواصل الاجتماعي أو واتساب أو الرسائل المباشرة.",
+  "store.filterByStatus": "تصفية حسب الحالة",
+  "store.shareProduct": "مشاركة المنتج",
+  "store.shareProductDesc": "شارك هذا الرابط على وسائل التواصل الاجتماعي أو أرسله مباشرة للعملاء",
+  "store.copyLink": "نسخ الرابط",
+  "store.linkCopied": "تم نسخ الرابط!",
+  "store.selectFromInventory": "اختر من المخزون",
+  "store.selectProduct": "اختر منتجاً من مخزونك لإضافته إلى متجرك",
+  "store.quantity": "الكمية",
+  "store.addToStore": "إضافة للمتجر",
+  "store.createProduct": "إنشاء منتج جديد",
+  "store.updateProduct": "تحديث المنتج",
+  "store.deleteProduct": "حذف المنتج",
+  "store.deleteConfirm": "هل أنت متأكد من حذف هذا المنتج؟",
+  "store.deleteWarning": "هذا الإجراء لا يمكن التراجع عنه. سيتم حذف المنتج نهائياً.",
+  "store.productTitle": "عنوان المنتج",
+  "store.productDescription": "وصف المنتج",
+  "store.productPrice": "السعر",
+  "store.productStock": "كمية المخزون",
+  "store.productStatus": "الحالة",
+  "store.productImages": "صور المنتج",
+  "store.uploadImages": "رفع صور",
+  "store.isFeatured": "منتج مميز",
+  "store.creating": "جاري الإنشاء...",
+  "store.updating": "جاري التحديث...",
 
   // Products
   "product.add": "إضافة منتج",
@@ -347,51 +386,19 @@ export const ar = {
   "product.addToCart": "إضافة إلى السلة",
 
   // Wasselni Integration
-  "wasselni.title": "Wasselni - نظام تأكيد الطلبات الذكي",
+  "wasselni.title": "Bot - نظام تأكيد الطلبات الذكي",
   "wasselni.desc": "نظام ذكي للتأكيد الآلي للمكالمات الصوتية باللهجة المحلية",
-  "wasselni.settings": "إعدادات Wasselni",
+  "wasselni.settings": "إعدادات Bot",
   "wasselni.calls": "المكالمات",
   "wasselni.calls.empty": "لا توجد مكالمات مجدولة",
 
   // Dashboard (Client/Seller)
-  "dashboard.welcome": "مرحباً",
-  "dashboard.overview": "نظرة عامة",
-  "dashboard.totalProducts": "إجمالي المنتجات",
-  "dashboard.totalOrders": "إجمالي الطلبات",
-  "dashboard.totalRevenue": "إجمالي الإيرادات",
-  "dashboard.pendingOrders": "الطلبات المعلقة",
-  "dashboard.completedOrders": "الطلبات المكتملة",
-  "dashboard.visitors": "الزوار",
-  "dashboard.today": "اليوم",
-  "dashboard.thisWeek": "هذا الأسبوع",
-  "dashboard.thisMonth": "هذا الشهر",
-  "dashboard.growth": "النمو",
-  "dashboard.topProducts": "أفضل المنتجات",
-  "dashboard.recentOrders": "الطلبات الأخيرة",
-  "dashboard.statusBreakdown": "توزيع الحالات",
-  "dashboard.statusDistribution": "توزيع الحالات",
-  "dashboard.cityBreakdown": "الطلبات حسب المدينة",
-  "dashboard.noOrders": "لا توجد طلبات بعد",
-  "dashboard.viewAll": "عرض الكل",
   "dashboard.subscriptions": "الاشتراكات",
   "dashboard.minutesAgo": "منذ {n} دقيقة",
   "dashboard.hoursAgo": "منذ {n} ساعة",
   "dashboard.daysAgo": "منذ {n} يوم",
   "dashboard.justNow": "الآن",
-  "dashboard.goodMorning": "صباح الخير",
-  "dashboard.goodAfternoon": "مساء الخير",
-  "dashboard.goodEvening": "مساء الخير",
   "dashboard.performanceSummary": "ملخص أداء متجرك",
-  "dashboard.orders": "الطلبات",
-  "dashboard.revenue": "الإيرادات",
-  "dashboard.products": "المنتجات",
-  "dashboard.views": "المشاهدات",
-  "dashboard.live": "مباشر",
-  "dashboard.revenueLast12Days": "الإيرادات آخر 12 يوم",
-  "dashboard.dailyRevenue": "الإيرادات اليومية",
-  "dashboard.periodTotal": "إجمالي الفترة",
-  "dashboard.noDataAvailable": "لا توجد بيانات",
-  "dashboard.lastUpdated": "آخر تحديث",
   "dashboard.revenueAndOrders": "{revenue} دج - {orders} طلبات",
 
   // Seller Dashboard
@@ -410,6 +417,123 @@ export const ar = {
   "seller.productAdded": "تمت إضافة المنتج بنجاح",
   "seller.productUpdated": "تم تحديث المنتج بنجاح",
   "seller.productDeleted": "تم حذف المنتج بنجاح",
+
+  // Template Editor
+  "editor.title": "محرر القالب",
+  "editor.back": "رجوع",
+  "editor.preview": "معاينة",
+  "editor.settings": "إعدادات",
+  "editor.save": "حفظ",
+  "editor.saving": "جاري الحفظ...",
+  "editor.saved": "تم حفظ الإعدادات بنجاح!",
+  "editor.saveFailed": "فشل في الحفظ",
+  "editor.mobile": "جوال",
+  "editor.tablet": "تابلت",
+  "editor.desktop": "سطح المكتب",
+  "editor.edit": "تعديل",
+  "editor.clickToEdit": "انقر على أي عنصر في المعاينة لتعديله.",
+  "editor.selected": "المحدد",
+  "editor.notEditable": "هذا العنصر غير قابل للتعديل مباشرة بعد.",
+  "editor.storeInfo": "معلومات المتجر",
+  "editor.template": "القالب",
+  "editor.storeName": "اسم المتجر",
+  "editor.storeNamePlaceholder": "اسم متجرك",
+  "editor.storeDescription": "وصف المتجر",
+  "editor.storeDescPlaceholder": "وصف مختصر لمتجرك",
+  "editor.heroSection": "قسم البطل",
+  "editor.heroHeading": "عنوان البطل",
+  "editor.heroHeadingPlaceholder": "العنوان الرئيسي لمتجرك",
+  "editor.heroSubtitle": "العنوان الفرعي",
+  "editor.heroSubtitlePlaceholder": "عنوان فرعي أو شعار",
+  "editor.buttonText": "نص الزر",
+  "editor.branding": "العلامة التجارية",
+  "editor.logo": "الشعار",
+  "editor.bannerImage": "صورة البانر",
+  "editor.accentColor": "اللون المميز",
+  "editor.storeLogo": "شعار المتجر",
+  "editor.headerBg": "خلفية الهيدر",
+  "editor.headerTextColor": "لون نص الهيدر",
+  "editor.headingColor": "لون العنوان",
+  "editor.headingSize": "حجم العنوان (بكسل)",
+  "editor.subtitleColor": "لون العنوان الفرعي",
+  "editor.subtitleSize": "حجم العنوان الفرعي (بكسل)",
+  "editor.kickerText": "نص الشريط",
+  "editor.kickerColor": "لون الشريط",
+  "editor.primaryButton": "نص الزر الأساسي",
+  "editor.secondaryButton": "نص الزر الثانوي",
+  "editor.primaryButtonColor": "لون الزر الأساسي",
+  "editor.secondaryButtonBorder": "حدود الزر الثانوي",
+  "editor.heroImage": "صورة البطل (البانر)",
+  "editor.heroVideoUrl": "رابط فيديو البطل (اختياري)",
+  "editor.badgeTitle": "عنوان الشارة",
+  "editor.badgeSubtitle": "العنوان الفرعي للشارة",
+  "editor.badgeAccent": "لون الشارة",
+  "editor.bgColor": "لون الخلفية",
+  "editor.sectionTitle": "عنوان القسم",
+  "editor.titleColor": "لون العنوان",
+  "editor.titleSize": "حجم العنوان (بكسل)",
+  "editor.sectionSubtitle": "العنوان الفرعي للقسم",
+  "editor.productManaged": "يتم إدارة تفاصيل المنتج في قائمة المنتجات.",
+  "editor.productCardBg": "خلفية بطاقة المنتج",
+  "editor.productTagColor": "لون وسم المنتج",
+  "editor.productTitleColor": "لون عنوان المنتج",
+  "editor.productPriceColor": "لون سعر المنتج",
+  "editor.editProducts": "تعديل المنتجات",
+  "editor.productsGenerated": "يتم إنشاء المنتجات من قائمة منتجاتك.",
+  "editor.goToProducts": "الذهاب للمنتجات",
+  "editor.copyrightText": "نص حقوق النشر",
+  "editor.footerTextColor": "لون نص الفوتر",
+  "editor.socialLinks": "روابط التواصل الاجتماعي",
+  "editor.socialLinksJson": "إضافة روابط التواصل الاجتماعي بصيغة JSON.",
+  "editor.supportedPlatforms": "المنصات المدعومة: فيسبوك، تويتر، إنستغرام، يوتيوب، لينكدإن، تيكتوك، بنترست",
+  "editor.footerLinks": "روابط الفوتر",
+  "editor.footerLinksDesc": "يمكن تخصيص روابط الفوتر في الإعدادات المتقدمة.",
+  "editor.linkColor": "لون الرابط",
+  "editor.navLinks": "روابط التنقل",
+  "editor.navLinksJson": "إضافة روابط التنقل بصيغة JSON.",
+  "editor.categoryPills": "تنسيق أزرار التصنيفات",
+  "editor.pillBg": "خلفية الزر",
+  "editor.pillTextColor": "لون نص الزر",
+  "editor.activePillBg": "خلفية الزر النشط",
+  "editor.activePillText": "نص الزر النشط",
+  "editor.pillBorderRadius": "نصف قطر حدود الزر",
+  "editor.productGrid": "إعدادات شبكة المنتجات",
+  "editor.gridColumns": "عدد الأعمدة (سطح المكتب)",
+  "editor.columns2": "عمودان",
+  "editor.columns3": "3 أعمدة",
+  "editor.columns4": "4 أعمدة",
+  "editor.columns5": "5 أعمدة",
+  "editor.columns6": "6 أعمدة",
+  "editor.gridGap": "المسافة بين العناصر",
+  "editor.cardBorderRadius": "نصف قطر حدود البطاقة",
+  "editor.globalTypography": "الطباعة العامة",
+  "editor.fontFamily": "نوع الخط",
+  "editor.systemDefault": "النظام (افتراضي)",
+  "editor.bodyFontWeight": "وزن خط النص",
+  "editor.light": "خفيف (300)",
+  "editor.normal": "عادي (400)",
+  "editor.medium": "متوسط (500)",
+  "editor.headingFontWeight": "وزن خط العناوين",
+  "editor.semibold": "شبه عريض (600)",
+  "editor.bold": "عريض (700)",
+  "editor.extrabold": "عريض جداً (800)",
+  "editor.borderRadius": "نصف قطر الحدود",
+  "editor.globalBorderRadius": "نصف قطر الحدود العام",
+  "editor.buttonBorderRadius": "نصف قطر حدود الزر",
+  "editor.spacing": "المسافات",
+  "editor.baseSpacing": "المسافة الأساسية",
+  "editor.sectionSpacing": "مسافة الأقسام",
+  "editor.animations": "الحركات",
+  "editor.animationSpeed": "سرعة الحركة",
+  "editor.hoverScale": "تكبير عند التحويم",
+  "editor.none": "لا شيء",
+  "editor.subtle": "خفيف (1.02)",
+  "editor.mediumScale": "متوسط (1.05)",
+  "editor.strong": "قوي (1.1)",
+  "editor.customCss": "CSS مخصص",
+  "editor.textColor": "لون النص",
+  "editor.mutedColor": "لون النص الباهت",
+  "editor.jsonRequired": "صيغة JSON مطلوبة",
 
   // Cart
   "cart.title": "سلة التسوق",
@@ -628,7 +752,7 @@ export const ar = {
 
   // Admin Panel - Billing
   "admin.billing.title": "الفواتير والاشتراك",
-  "admin.billing.subtitle": "إدارة اشتراك EcoPro وسجل المدفوعات",
+  "admin.billing.subtitle": "إدارة اشتراك sahla-E وسجل المدفوعات",
   "admin.billing.currentSubscription": "الاشتراك الحالي",
   "admin.billing.subscriptionDesc": "حالة اشتراكك ومعلومات الفواتير",
   "admin.billing.expiredAlert": "انتهى اشتراكك",
@@ -779,12 +903,12 @@ export const ar = {
 
   // Admin Orders - Wasselni
   "admin.orders.wasselni.title": "ماذا تحضر؟",
-  "admin.orders.wasselni.subtitle": "تتبع طلبات التوصيل مع وصلني",
+  "admin.orders.wasselni.subtitle": "تتبع طلبات التوصيل مع Bot",
   "admin.orders.wasselni.inDelivery": "قيد التوصيل",
   "admin.orders.wasselni.deliveredToday": "تم توصيلها اليوم",
   "admin.orders.wasselni.pending": "معلق",
-  "admin.orders.wasselni.listTitle": "طلبات وصلني",
-  "admin.orders.wasselni.listDesc": "الطلبات المرتبطة بخدمة توصيل وصلني",
+  "admin.orders.wasselni.listTitle": "طلبات Bot",
+  "admin.orders.wasselni.listDesc": "الطلبات المرتبطة بخدمة توصيل Bot",
   "admin.orders.wasselni.customer": "العميل:",
   "admin.orders.wasselni.driver": "السائق:",
   "admin.orders.wasselni.notSpecified": "غير محدد",
@@ -795,14 +919,30 @@ export const ar = {
   "admin.addons.sheets.about": "حول تكامل جداول بيانات Google",
   "admin.addons.sheets.whatYouCanDo": "ما يمكنك فعله بهذه الميزة",
   "admin.addons.sheets.exportOrders": "تصدير الطلبات تلقائياً",
+  "admin.addons.sheets.exportOrdersDesc": "جميع الطلبات الجديدة تضاف تلقائياً لجدول Google",
   "admin.addons.sheets.exportProducts": "تصدير المنتجات",
+  "admin.addons.sheets.exportProductsDesc": "قائمة المنتجات مع الأسعار والمخزون",
   "admin.addons.sheets.exportCustomers": "تصدير العملاء",
+  "admin.addons.sheets.customerList": "قائمة العملاء",
+  "admin.addons.sheets.customerListDesc": "بيانات العملاء، الهاتف والعنوان",
   "admin.addons.sheets.dailyStats": "الإحصائيات اليومية",
+  "admin.addons.sheets.dailyStatsDesc": "المبيعات، الأرباح، عدد الطلبات",
   "admin.addons.sheets.connectionSettings": "إعدادات الاتصال",
   "admin.addons.sheets.connected": "متصل",
   "admin.addons.sheets.notConnected": "غير متصل",
   "admin.addons.sheets.connectAccount": "ربط الحساب",
   "admin.addons.sheets.apiCredentials": "كيفية الحصول على بيانات API",
+  "admin.addons.sheets.howToGetCredentials": "كيفية الحصول على بيانات الاعتماد",
+  "admin.addons.sheets.step1": "اذهب إلى Google Cloud Console",
+  "admin.addons.sheets.step2": "أنشئ مشروعًا جديدًا أو اختر موجود",
+  "admin.addons.sheets.step3": "فعّل Google Sheets API",
+  "admin.addons.sheets.step4": "أنشئ حساب خدمة وحمّل ملف JSON",
+  "admin.addons.sheets.step5": "شارك جدول Google مع بريد حساب الخدمة",
+  "admin.addons.sheets.spreadsheetId": "معرف جدول Google (Spreadsheet ID)",
+  "admin.addons.sheets.spreadsheetIdHelp": "يمكنك إيجاده في رابط الجدول",
+  "admin.addons.sheets.serviceAccountEmail": "بريد حساب الخدمة",
+  "admin.addons.sheets.privateKey": "المفتاح الخاص (JSON)",
+  "admin.addons.sheets.privateKeyHelp": "انسخ محتويات ملف JSON من Google Cloud Console",
   "admin.addons.sheets.testConnection": "اختبار الاتصال",
   "admin.addons.sheets.updateConnection": "تحديث الاتصال",
   "admin.addons.sheets.connect": "الربط مع جداول بيانات Google",
@@ -811,6 +951,17 @@ export const ar = {
   "admin.addons.sheets.syncNow": "مزامنة الآن",
   "admin.addons.sheets.syncing": "جاري المزامنة...",
   "admin.addons.sheets.autoSync": "المزامنة التلقائية",
+  "admin.addons.sheets.autoSyncDesc": "مزامنة عند إضافة طلب جديد",
+  "admin.addons.sheets.autoSyncOptions": "خيارات المزامنة التلقائية",
+  "admin.addons.sheets.productSync": "مزامنة المنتجات",
+  "admin.addons.sheets.productSyncDesc": "تحديث قائمة المنتجات يومياً",
+  "admin.addons.sheets.lastSync": "آخر مزامنة",
+  "admin.addons.sheets.fiveMinutesAgo": "منذ 5 دقائق",
+  "admin.addons.sheets.orders": "طلبات",
+  "admin.addons.sheets.products": "منتجات",
+  "admin.addons.sheets.customers": "عملاء",
+  "admin.addons.sheets.directLink": "رابط مباشر لجدول Google",
+  "admin.addons.sheets.open": "فتح",
   "admin.addons.sheets.syncDaily": "مزامنة يومية",
 
   // Admin Delivery
@@ -878,6 +1029,31 @@ export const ar = {
   "staff.noActivityLogs": "لا توجد سجلات نشاط",
   "staff.invited": "تمت دعوة الموظف",
   "staff.removed": "تمت إزالة الموظف",
+  "staff.management": "إدارة الموظفين",
+  "staff.manageDesc": "إدارة موظفي متجرك وصلاحياتهم",
+  "staff.members": "أعضاء الفريق",
+  "staff.activityLogs": "سجلات النشاط",
+  "staff.inviteAndManage": "دعوة وإدارة موظفي المتجر",
+  "staff.createAccount": "إنشاء حساب موظف",
+  "staff.createNew": "إنشاء حساب موظف جديد",
+  "staff.setupCredentials": "إعداد بيانات دخول وصلاحيات الموظف الجديد",
+  "staff.accountInfo": "معلومات الحساب",
+  "staff.usernameLabel": "اسم المستخدم",
+  "staff.usernameHint": "يستخدم لتسجيل الدخول",
+  "staff.passwordLabel": "كلمة المرور",
+  "staff.passwordHint": "6 أحرف على الأقل",
+  "staff.roleLabel": "الدور",
+  "staff.permissions": "الصلاحيات",
+  "staff.permissionsEnabled": "صلاحيات مفعلة",
+  "staff.lastLogin": "آخر دخول",
+  "staff.manager": "مدير",
+  "staff.active": "نشط",
+  "staff.inactive": "غير نشط",
+  "staff.viewActivity": "عرض النشاط",
+  "staff.edit": "تعديل",
+  "staff.delete": "حذف",
+  "staff.noStaff": "لا يوجد موظفين بعد",
+  "staff.addFirst": "أضف أول موظف للمتجر",
 
   // Billing Pages
   "billing.cancelled.title": "تم إلغاء الدفع",
@@ -921,7 +1097,7 @@ export const ar = {
   "tiers.platinum": "بلاتيني",
 
   // Footer
-  "footer.copyright": "© {year} walidstore. جميع الحقوق محفوظة",
+  "footer.copyright": "© {year} sahla-E. جميع الحقوق محفوظة",
 
   // Sidebar Navigation
   "sidebar.home": "الرئيسية",
@@ -931,9 +1107,9 @@ export const ar = {
   "sidebar.orders": "الطلبات",
   "sidebar.delivery": "التوصيل",
   "sidebar.addons": "الإضافات",
-  "sidebar.wasselni": "وصلني",
+  "sidebar.wasselni": "Bot",
   "sidebar.staff": "الموظفون",
-  "sidebar.brand": "walidstore",
+  "sidebar.brand": "sahla-E",
   "sidebar.controlPanel": "لوحة التحكم",
   "sidebar.selectTheme": "اختر المظهر",
   "sidebar.expandMenu": "توسيع القائمة",
@@ -954,5 +1130,265 @@ export const ar = {
 
   // Layout
   "layout.staffMode": "وضع الموظف:",
-  "layout.logout": "تسجيل الخروج"
+  "layout.logout": "تسجيل الخروج",
+
+  // Orders Page - Additional
+  "orders.totalOrders": "إجمالي الطلبات",
+  "orders.confirmedOrders": "الطلبات المؤكدة",
+  "orders.revenue": "الإيرادات",
+  "orders.refresh": "تحديث",
+  "orders.refreshing": "جاري التحديث...",
+  "orders.addOrder": "إضافة طلب",
+  "orders.statuses": "الحالات",
+  "orders.selected": "طلب محدد",
+  "orders.selectedPlural": "طلبات محددة",
+  "orders.clear": "مسح",
+  "orders.uploadToDelivery": "رفع للتوصيل",
+  "orders.loadingOrders": "جاري تحميل الطلبات...",
+  "orders.error": "خطأ",
+  "orders.retry": "إعادة المحاولة",
+  "orders.noOrders": "لا توجد طلبات",
+  "orders.noOrdersYet": "لم تصلك أي طلبات بعد",
+  "orders.addNewOrder": "إضافة طلب جديد",
+  "orders.noOrdersInCategory": "لا توجد طلبات في هذه الفئة",
+  "orders.tryChangingFilter": "حاول تغيير التصفية",
+  "orders.selectAll": "تحديد الكل",
+  "orders.deselectAll": "إلغاء تحديد الكل",
+  "orders.image": "الصورة",
+  "orders.product": "المنتج",
+  "orders.noProduct": "لا يوجد منتج",
+  "orders.orderDetails": "تفاصيل الطلب",
+  "orders.customerName": "اسم العميل",
+  "orders.phoneNumber": "رقم الهاتف",
+  "orders.email": "البريد الإلكتروني",
+  "orders.address": "العنوان",
+  "orders.notAvailable": "غير متوفر",
+  "orders.showingZero": "عرض 0 طلبات",
+  "orders.addNewOrderTitle": "إضافة طلب جديد",
+  "orders.customerNameRequired": "اسم العميل *",
+  "orders.enterCustomerName": "أدخل اسم العميل",
+  "orders.enterPhone": "أدخل رقم الهاتف",
+  "orders.enterEmail": "أدخل البريد الإلكتروني",
+  "orders.enterAddress": "أدخل العنوان",
+  "orders.totalRequired": "الإجمالي *",
+  "orders.create": "إنشاء",
+  "orders.statusManager": "إدارة الحالات",
+  "orders.customStatuses": "الحالات المخصصة",
+  "orders.addNewStatus": "إضافة حالة جديدة",
+  "orders.statusName": "اسم الحالة",
+  "orders.statusColor": "اللون",
+  "orders.statusIcon": "الأيقونة",
+  "orders.countsAsRevenue": "تحسب ضمن الإيرادات",
+  "orders.bulkUpload": "رفع جماعي للتوصيل",
+  "orders.selectDeliveryCompany": "اختر شركة التوصيل",
+  "orders.generateLabels": "إنشاء ملصقات الشحن",
+  "orders.uploadOrders": "رفع الطلبات",
+  "orders.uploading": "جاري الرفع...",
+  "orders.uploadSuccess": "تم الرفع بنجاح",
+  "orders.uploadFailed": "فشل الرفع",
+
+  // Bot Settings Page
+  "bot.title": "إعدادات البوت",
+  "bot.desc": "إعدادات بوتات التأكيد والتحديثات والتتبع",
+  "bot.confirmation": "بوت التأكيد",
+  "bot.confirmationDesc": "تأكيدات الطلبات",
+  "bot.updates": "بوت التحديثات",
+  "bot.updatesDesc": "الحملات والعروض",
+  "bot.tracking": "بوت التتبع",
+  "bot.trackingDesc": "تتبع التوصيل المباشر",
+  "bot.active": "نشط",
+  "bot.off": "معطل",
+  "bot.provider": "مزود الخدمة",
+  "bot.telegramBotToken": "توكن بوت تيليجرام",
+  "bot.telegramBotUsername": "اسم مستخدم البوت",
+  "bot.whatsappPhoneId": "معرف هاتف واتساب",
+  "bot.whatsappAccessToken": "توكن واتساب",
+  "bot.viberAuthToken": "توكن فايبر",
+  "bot.viberSenderName": "اسم المرسل فايبر",
+  "bot.greetingMessage": "رسالة الترحيب",
+  "bot.greetingDesc": "تُرسل عند ضغط العميل على زر تيليجرام ثم Start",
+  "bot.instantOrder": "إشعار الطلب الفوري",
+  "bot.instantOrderDesc": "يُرسل فوراً عند تقديم العميل للطلب (مع تفاصيل كاملة)",
+  "bot.pinInstructions": "تعليمات التثبيت",
+  "bot.pinInstructionsDesc": "تُرسل بعد إشعار الطلب - تخبر العميل بتثبيت الرسالة وتفعيل الإشعارات",
+  "bot.orderConfirmation": "تأكيد الطلب (مجدول مع أزرار)",
+  "bot.orderConfirmationDesc": "هذه الرسالة مع أزرار ✅ تأكيد / ❌ إلغاء تُرسل بعد فترة التأخير",
+  "bot.confirmationDelay": "تأخير التأكيد (دقائق)",
+  "bot.sendConfirmationAfter": "إرسال أزرار التأكيد بعد {n} دقائق من الطلب",
+  "bot.autoExpire": "انتهاء تلقائي لـ «لم يستلم» (ساعات)",
+  "bot.autoExpireDesc": "إذا لم يرد المشتري والطلب لا يزال معلقاً، يتغير تلقائياً لـ «لم يستلم»",
+  "bot.autoExpireAfter": "انتهاء تلقائي بعد {n} ساعة إذا لم يرد",
+  "bot.paymentConfirmation": "تأكيد الدفع",
+  "bot.shippingNotification": "إشعار الشحن",
+  "bot.availableVariables": "المتغيرات المتاحة",
+  "bot.customerName": "اسم العميل",
+  "bot.orderId": "رقم الطلب",
+  "bot.productName": "اسم المنتج",
+  "bot.totalPrice": "السعر الإجمالي",
+  "bot.deliveryAddress": "عنوان التوصيل",
+  "bot.companyName": "اسم الشركة",
+  "bot.supportPhone": "هاتف الدعم",
+  "bot.storeUrl": "رابط المتجر",
+  "bot.trackingNumber": "رقم التتبع",
+  "bot.saveChanges": "حفظ التغييرات",
+  "bot.saving": "جاري الحفظ...",
+  "bot.loadingSettings": "جاري تحميل الإعدادات...",
+  "bot.realTimeTracking": "تتبع الطلبات المباشر",
+  "bot.realTimeTrackingDesc": "إرسال تحديثات التتبع التلقائية للعملاء أثناء مراحل الشحن والتوصيل",
+  "bot.trackingStatusMessages": "رسائل حالة التتبع",
+  "bot.trackingStatusDesc": "إعداد الرسائل المرسلة في كل مرحلة توصيل. استخدم متغيرات مثل {customerName}، {orderId}، {trackingNumber}",
+  "bot.orderShipped": "تم شحن الطلب",
+  "bot.outForDelivery": "في طريقه للتوصيل",
+  "bot.delivered": "تم التوصيل",
+  "bot.deliveryFailed": "فشل التوصيل",
+  "bot.deliveryCompanySettings": "إعدادات شركة التوصيل",
+  "bot.deliveryCompanyDesc": "الاتصال بشركات التوصيل للحصول على تحديثات التتبع التلقائية",
+  "bot.defaultDeliveryCompany": "شركة التوصيل الافتراضية",
+  "bot.trackingUrlTemplate": "قالب رابط التتبع",
+  "bot.trackingVariables": "متغيرات التتبع",
+  "bot.deliveryCompany": "شركة التوصيل",
+  "bot.trackingUrl": "رابط التتبع",
+  "bot.estimatedTime": "الوقت المتوقع للتوصيل",
+  "bot.failureReason": "سبب فشل التوصيل",
+
+  // Delivery Companies Page
+  "delivery.title": "شركات التوصيل",
+  "delivery.subtitle": "اربط متجرك مع مزودي التوصيل الجزائريين. جميع الشركات أدناه لديها APIs موثقة.",
+  "delivery.recommended": "موصى به: استخدم Yalidine أو Dolivroo (مجمّع)",
+  "delivery.recommendedDesc": "Yalidine لديها أفضل توثيق API. Dolivroo توفر API واحد لجميع المزودين.",
+  "delivery.shipments": "الشحنات",
+  "delivery.tracking": "التتبع",
+  "delivery.labels": "الملصقات",
+  "delivery.cod": "الدفع عند الاستلام",
+  "delivery.webhooks": "Webhooks",
+  "delivery.connectedActive": "✓ متصل ونشط",
+  "delivery.clickToConfigure": "انقر للإعداد",
+  "delivery.aggregator": "مجمّع",
+  "delivery.apiQuality": "جودة API",
+  "delivery.supportedFeatures": "الميزات المدعومة",
+  "delivery.createShipments": "إنشاء الشحنات",
+  "delivery.cashOnDelivery": "الدفع عند الاستلام",
+  "delivery.getCredentials": "الحصول على بيانات API من لوحة تحكم المزود",
+  "delivery.docs": "التوثيق",
+  "delivery.disconnect": "قطع الاتصال",
+  "delivery.connectActivate": "الاتصال والتفعيل",
+
+  // Google Sheets Addon Page - Additional
+  "addons.sheets.exportOrdersAuto": "📊 تصدير الطلبات تلقائياً",
+  "addons.sheets.exportOrdersDesc": "جميع الطلبات الجديدة تُضاف تلقائياً إلى جدول Google",
+  "addons.sheets.exportProducts": "📦 تصدير المنتجات",
+  "addons.sheets.exportProductsDesc": "قائمة المنتجات مع الأسعار والمخزون",
+  "addons.sheets.customerList": "👥 قائمة العملاء",
+  "addons.sheets.customerListDesc": "معلومات العملاء والهواتف والعناوين",
+  "addons.sheets.dailyStatistics": "📈 الإحصائيات اليومية",
+  "addons.sheets.dailyStatisticsDesc": "المبيعات والأرباح وعدد الطلبات",
+  "addons.sheets.howToGetCredentials": "كيفية الحصول على بيانات API",
+  "addons.sheets.step1": "اذهب إلى Google Cloud Console",
+  "addons.sheets.step2": "أنشئ مشروعاً جديداً أو اختر مشروعاً موجوداً",
+  "addons.sheets.step3": "فعّل Google Sheets API",
+  "addons.sheets.step4": "أنشئ Service Account وحمّل ملف JSON",
+  "addons.sheets.step5": "شارك جدول Google مع بريد Service Account",
+  "addons.sheets.spreadsheetId": "معرف جدول Google (Spreadsheet ID)",
+  "addons.sheets.spreadsheetIdHint": "يمكنك إيجاده في رابط جدول Google: docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit",
+  "addons.sheets.serviceAccountEmail": "بريد Service Account",
+  "addons.sheets.privateKey": "المفتاح الخاص (JSON)",
+  "addons.sheets.privateKeyHint": "انسخ محتويات ملف JSON الذي حمّلته من Google Cloud Console",
+  "addons.sheets.newOrders": "الطلبات الجديدة",
+  "addons.sheets.products": "المنتجات",
+  "addons.sheets.customers": "العملاء",
+  "addons.sheets.inventory": "المخزون",
+  "addons.sheets.cancelledOrders": "الطلبات الملغاة",
+  "addons.sheets.productSync": "مزامنة المنتجات",
+  "addons.sheets.updateProductsDaily": "تحديث قائمة المنتجات يومياً",
+  "addons.sheets.lastSync": "آخر مزامنة",
+  "addons.sheets.minutesAgo": "منذ {n} دقائق",
+  "addons.sheets.ordersCount": "الطلبات",
+  "addons.sheets.productsCount": "المنتجات",
+  "addons.sheets.customersCount": "العملاء",
+  "addons.sheets.directLink": "رابط مباشر لجدول Google",
+  "addons.sheets.open": "فتح",
+  "addons.sheets.autoSyncWhenOrder": "المزامنة عند إضافة طلب جديد",
+  "addons.sheets.autoSyncOptions": "خيارات المزامنة التلقائية",
+
+  // Stock Management Page
+  "stock.title": "📦 إدارة المخزون",
+  "stock.subtitle": "تتبع وتحسين مخزونك",
+  "stock.categories": "التصنيفات",
+  "stock.export": "تصدير",
+  "stock.add": "إضافة",
+  "stock.items": "📦 العناصر",
+  "stock.lowStock": "⚠️ مخزون منخفض",
+  "stock.totalValue": "💰 القيمة",
+  "stock.outOfStock": "❌ نفذ المخزون",
+  "stock.searchPlaceholder": "بحث...",
+  "stock.allCategories": "جميع التصنيفات",
+  "stock.allStatuses": "الكل",
+  "stock.active": "نشط",
+  "stock.outStock": "نفذ المخزون",
+  "stock.discontinued": "متوقف",
+  "stock.low": "منخفض",
+  "stock.product": "المنتج",
+  "stock.sku": "SKU",
+  "stock.category": "التصنيف",
+  "stock.qty": "الكمية",
+  "stock.price": "السعر",
+  "stock.location": "الموقع",
+  "stock.status": "الحالة",
+  "stock.actions": "الإجراءات",
+  "stock.noProductsMatch": "لا توجد منتجات تطابق التصفية",
+  "stock.noStockItems": "لا توجد عناصر مخزون بعد",
+  "stock.addNewProduct": "➕ إضافة منتج جديد",
+  "stock.editProduct": "✏️ تعديل المنتج",
+  "stock.addToInventory": "إضافة عنصر جديد لمخزونك",
+  "stock.updateInfo": "تحديث معلومات المنتج",
+  "stock.basicInfo": "📋 المعلومات الأساسية",
+  "stock.productName": "اسم المنتج",
+  "stock.descriptionDetails": "📝 الوصف والتفاصيل",
+  "stock.description": "الوصف",
+  "stock.inventoryPricing": "📦 المخزون والتسعير",
+  "stock.quantity": "📊 الكمية",
+  "stock.unitPrice": "💰 سعر الوحدة",
+  "stock.reorderLevel": "⚠️ مستوى إعادة الطلب",
+  "stock.supplierInfo": "🤝 معلومات المورد",
+  "stock.supplierName": "اسم المورد",
+  "stock.supplierContact": "معلومات الاتصال",
+  "stock.productImage": "🖼️ صورة المنتج",
+  "stock.uploadImage": "رفع صورة",
+  "stock.uploading": "جاري الرفع...",
+  "stock.removeImage": "إزالة الصورة",
+  "stock.notes": "📝 ملاحظات",
+  "stock.additionalNotes": "ملاحظات أو معلومات إضافية",
+  "stock.createProduct": "✅ إنشاء المنتج",
+  "stock.saveChanges": "💾 حفظ التغييرات",
+  "stock.adjustQuantity": "📊 تعديل الكمية",
+  "stock.currentQuantity": "الكمية الحالية",
+  "stock.adjustment": "التعديل",
+  "stock.newQuantity": "الكمية الجديدة",
+  "stock.reason": "السبب",
+  "stock.reasonAdjustment": "تعديل",
+  "stock.reasonReceived": "استلام بضاعة",
+  "stock.reasonSold": "مبيع",
+  "stock.reasonDamaged": "تالف",
+  "stock.reasonReturned": "مرتجع",
+  "stock.reasonOther": "أخرى",
+  "stock.applyAdjustment": "تطبيق التعديل",
+  "stock.history": "📜 سجل التعديلات",
+  "stock.historyFor": "سجل تعديلات",
+  "stock.noHistory": "لا يوجد سجل تعديلات بعد",
+  "stock.before": "قبل",
+  "stock.after": "بعد",
+  "stock.change": "التغيير",
+  "stock.adjustedBy": "بواسطة",
+  "stock.deleteProduct": "حذف المنتج",
+  "stock.deleteConfirm": "هل أنت متأكد من حذف هذا المنتج؟ لا يمكن التراجع عن هذا الإجراء.",
+  "stock.manageCategories": "إدارة التصنيفات",
+  "stock.categoriesDesc": "تنظيم منتجاتك حسب التصنيفات",
+  "stock.createCategory": "إنشاء تصنيف",
+  "stock.categoryName": "اسم التصنيف",
+  "stock.categoryColor": "اللون",
+  "stock.categoryIcon": "الأيقونة",
+  "stock.noCategories": "لا توجد تصنيفات بعد. أنشئ واحداً أعلاه!",
+  "stock.clearCategory": "مسح التصنيف",
+  "stock.selectCategory": "اختر تصنيفاً...",
+  "stock.newCategoryName": "اسم التصنيف الجديد..."
 };

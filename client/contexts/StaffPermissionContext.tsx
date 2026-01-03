@@ -3,14 +3,14 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 // Permission mapping for routes/pages
 export const PAGE_PERMISSIONS: Record<string, string> = {
   '/dashboard': 'view_dashboard',
+  '/dashboard/profile': 'view_settings',
+  '/dashboard/preview': 'view_products_list',
+  '/dashboard/stock': 'view_inventory',
   '/dashboard/orders': 'view_orders_list',
-  '/dashboard/products': 'view_products_list',
-  '/dashboard/analytics': 'view_analytics',
-  '/dashboard/settings': 'view_settings',
+  '/dashboard/delivery': 'edit_delivery_settings',
+  '/dashboard/addons': 'view_settings',
+  '/dashboard/wasselni-settings': 'manage_bot_settings',
   '/dashboard/staff': 'view_staff',
-  '/dashboard/delivery': 'view_settings',
-  '/dashboard/categories': 'manage_categories',
-  '/dashboard/templates': 'access_templates',
 };
 
 // Action permissions mapping
@@ -106,12 +106,13 @@ export function StaffPermissionProvider({ children }: { children: ReactNode }) {
 
   const hasPagePermission = (path: string): boolean => {
     if (!isStaff) return true;
-    
-    // Find matching permission for path
-    for (const [route, perm] of Object.entries(PAGE_PERMISSIONS)) {
-      if (path === route || path.startsWith(route + '/')) {
-        return permissions[perm] === true;
-      }
+
+    // Find the most specific matching permission for path.
+    // Important: '/dashboard' must not shadow '/dashboard/preview', etc.
+    const entries = Object.entries(PAGE_PERMISSIONS).sort((a, b) => b[0].length - a[0].length);
+    for (const [route, perm] of entries) {
+      if (path === route) return permissions[perm] === true;
+      if (path.startsWith(route + '/')) return permissions[perm] === true;
     }
     
     // Default: allow if no specific permission defined

@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { Lock, CreditCard, AlertCircle } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * AccountLocked page - Shown when user's subscription has expired
@@ -8,6 +9,8 @@ import { Lock, CreditCard, AlertCircle } from "lucide-react";
  */
 const AccountLocked = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const supportEmail = t("contact.card.email.content") || "support@walidstore.com";
   
   useEffect(() => {
     console.log("[AccountLocked] User redirected due to expired subscription");
@@ -26,12 +29,12 @@ const AccountLocked = () => {
 
         {/* Heading */}
         <h1 className="text-3xl font-bold text-center mb-2 text-gray-900 dark:text-white">
-          Account Locked
+          {t("accountLocked.title") || "Account Locked"}
         </h1>
         
         {/* Subheading */}
         <p className="text-center text-gray-600 dark:text-gray-300 mb-6">
-          Your subscription has expired
+          {t("accountLocked.subtitle") || "Your subscription has expired"}
         </p>
 
         {/* Alert Box */}
@@ -40,10 +43,10 @@ const AccountLocked = () => {
             <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-medium text-red-900 dark:text-red-200">
-                Your free trial or subscription has ended.
+                {t("accountLocked.trialEnded") || "Your free trial or subscription has ended."}
               </p>
               <p className="text-sm text-red-700 dark:text-red-300 mt-1">
-                To continue using your store, please renew your subscription for $7/month.
+                {t("accountLocked.renewMessage") || "To continue using your store, please renew your subscription for $7/month."}
               </p>
             </div>
           </div>
@@ -52,24 +55,24 @@ const AccountLocked = () => {
         {/* Features that require subscription */}
         <div className="space-y-3 mb-8">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
-            With an active subscription, you get:
+            {t("accountLocked.benefitsTitle") || "With an active subscription, you get:"}
           </h3>
           <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
             <li className="flex items-center gap-2">
               <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-              <span>Full access to your store</span>
+              <span>{t("accountLocked.benefit1") || "Full access to your store"}</span>
             </li>
             <li className="flex items-center gap-2">
               <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-              <span>Manage unlimited products</span>
+              <span>{t("accountLocked.benefit2") || "Manage unlimited products"}</span>
             </li>
             <li className="flex items-center gap-2">
               <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-              <span>Process customer orders</span>
+              <span>{t("accountLocked.benefit3") || "Process customer orders"}</span>
             </li>
             <li className="flex items-center gap-2">
               <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-              <span>Bot notifications & more</span>
+              <span>{t("accountLocked.benefit4") || "Bot notifications & more"}</span>
             </li>
           </ul>
         </div>
@@ -78,10 +81,10 @@ const AccountLocked = () => {
         <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-8 border border-blue-200 dark:border-blue-800">
           <div className="text-center">
             <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-              $7<span className="text-lg text-gray-600 dark:text-gray-400">/month</span>
+              $7<span className="text-lg text-gray-600 dark:text-gray-400">/{t("billing.month") || "month"}</span>
             </p>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Billed monthly • Cancel anytime
+              {t("accountLocked.billingInfo") || "Billed monthly • Cancel anytime"}
             </p>
           </div>
         </div>
@@ -94,15 +97,15 @@ const AccountLocked = () => {
             className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 group"
           >
             <CreditCard className="w-5 h-5 group-hover:scale-110 transition-transform" />
-            Renew Subscription
+            {t("accountLocked.renewBtn") || "Renew Subscription"}
           </button>
 
           {/* Secondary: Contact Support */}
           <button
-            onClick={() => window.open("mailto:support@ecopro.com")}
+            onClick={() => window.open(`mailto:${supportEmail}`)}
             className="w-full bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold py-3 px-4 rounded-lg transition-colors border border-gray-200 dark:border-gray-700"
           >
-            Contact Support
+            {t("accountLocked.contactSupport") || "Contact Support"}
           </button>
 
           {/* Tertiary: Logout */}
@@ -113,14 +116,14 @@ const AccountLocked = () => {
             }}
             className="w-full text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 font-semibold py-2 px-4 transition-colors text-sm"
           >
-            Sign Out
+            {t("auth.logout") || "Sign Out"}
           </button>
         </div>
 
         {/* Footer text */}
         <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700 text-center text-xs text-gray-500 dark:text-gray-400">
           <p>
-            Need help? Check our <a href="/contact" className="text-blue-600 dark:text-blue-400 hover:underline">contact page</a> or email us.
+            {t("accountLocked.needHelp") || "Need help?"} <a href="/contact" className="text-blue-600 dark:text-blue-400 hover:underline">{t("accountLocked.contactPage") || "Check our contact page"}</a>
           </p>
         </div>
       </div>

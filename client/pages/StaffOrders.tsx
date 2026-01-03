@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, LogOut, ShoppingBag } from 'lucide-react';
+import { useTranslation } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -38,6 +39,7 @@ type StaffOrder = {
 const STATUSES = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'] as const;
 
 export default function StaffOrders() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const [me, setMe] = React.useState<StaffUser | null>(null);
@@ -149,7 +151,7 @@ export default function StaffOrders() {
       <div className="border-b sticky top-0 z-50 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Orders</h1>
+            <h1 className="text-2xl font-bold">{t("staff.orders") || "Orders"}</h1>
             <p className="text-sm text-muted-foreground mt-1">{storeName}</p>
           </div>
           <div className="flex items-center gap-2">
@@ -174,10 +176,10 @@ export default function StaffOrders() {
         {!canView ? (
           <Card>
             <CardHeader>
-              <CardTitle>Access restricted</CardTitle>
+              <CardTitle>{t("staff.permissionDenied") || "Access restricted"}</CardTitle>
             </CardHeader>
             <CardContent>
-              You don’t have permission to view orders.
+              {t("staff.noViewOrdersPermission") || "You don't have permission to view orders."}
             </CardContent>
           </Card>
         ) : (

@@ -71,7 +71,7 @@ export function ColumnMapper({
           Map Columns ({importType})
         </h3>
         <p className="text-sm text-gray-600 mt-1">
-          Match your spreadsheet columns to EcoPro fields
+          Match your spreadsheet columns to sahla-E fields
         </p>
       </div>
 

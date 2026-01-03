@@ -778,6 +778,18 @@ export const getStaffOrders: RequestHandler = async (req, res) => {
       return res.status(403).json({ error: 'You do not have access to this store' });
     }
 
+    // Verify staff has permission to view orders list
+    const staffPermsRes = await pool.query(
+      'SELECT permissions FROM staff WHERE id = $1 AND client_id = $2',
+      [staffId, clientId]
+    );
+    const staffPerms = staffPermsRes.rows[0]?.permissions;
+    const permissions = typeof staffPerms === 'string' ? JSON.parse(staffPerms) : (staffPerms || {});
+    const canViewOrders = permissions.view_orders_list === true || permissions.view_orders === true;
+    if (!canViewOrders) {
+      return res.status(403).json({ error: 'Permission denied: view_orders_list' });
+    }
+
     // Get all store orders for this client
     const orders = await pool.query(
       `SELECT 
@@ -869,8 +881,9 @@ export const updateStaffOrderStatus: RequestHandler = async (req, res) => {
       ? JSON.parse(staffRecord.rows[0].permissions)
       : staffRecord.rows[0].permissions;
 
-    if (permissions.edit_orders !== true) {
-      return res.status(403).json({ error: 'Permission denied: edit_orders' });
+    const canEditStatus = permissions.edit_order_status === true || permissions.edit_orders === true;
+    if (!canEditStatus) {
+      return res.status(403).json({ error: 'Permission denied: edit_order_status' });
     }
 
     // Get current order and verify it belongs to this store

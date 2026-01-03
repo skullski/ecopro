@@ -157,8 +157,12 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
     return (
       <div key={item.path}>
         <Link
-          to={hasChildren ? "#" : item.path}
+          to={hasChildren || !hasAccess ? "#" : item.path}
           onClick={(e) => {
+            if (!hasAccess) {
+              e.preventDefault();
+              return;
+            }
             if (hasChildren) {
               e.preventDefault();
               toggleExpand(item.path);

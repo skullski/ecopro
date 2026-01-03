@@ -123,7 +123,7 @@ export default function AdminWasselniSettings() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-slate-400 mx-auto mb-4" />
-          <p className="text-slate-600 dark:text-slate-400">Loading settings...</p>
+          <p className="text-slate-600 dark:text-slate-400">{t('bot.loadingSettings')}</p>
         </div>
       </div>
     );
@@ -181,13 +181,13 @@ export default function AdminWasselniSettings() {
                   <MessageSquare className={`h-5 w-5 ${settings.enabled || activeBot === 'confirmation' ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} />
                 </div>
                 <div>
-                  <p className={`text-sm font-bold ${settings.enabled || activeBot === 'confirmation' ? 'text-white' : 'text-slate-800 dark:text-white'}`}>Bot Confirmation</p>
-                  <p className={`text-xs ${settings.enabled || activeBot === 'confirmation' ? 'text-white/80' : 'text-slate-500 dark:text-slate-400'}`}>Order confirmations</p>
+                  <p className={`text-sm font-bold ${settings.enabled || activeBot === 'confirmation' ? 'text-white' : 'text-slate-800 dark:text-white'}`}>{t('bot.confirmation')}</p>
+                  <p className={`text-xs ${settings.enabled || activeBot === 'confirmation' ? 'text-white/80' : 'text-slate-500 dark:text-slate-400'}`}>{t('bot.confirmationDesc')}</p>
                 </div>
               </div>
               <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
                 <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${settings.enabled ? 'bg-white/25 text-white' : 'bg-slate-300 text-slate-600 dark:bg-slate-600 dark:text-slate-300'}`}>
-                  {settings.enabled ? '● Active' : '○ Off'}
+                  {settings.enabled ? `● ${t('bot.active')}` : `○ ${t('bot.off')}`}
                 </span>
                 <Switch
                   checked={settings.enabled}
@@ -220,13 +220,13 @@ export default function AdminWasselniSettings() {
                   <Users className={`h-5 w-5 ${settings.updatesEnabled || activeBot === 'updates' ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} />
                 </div>
                 <div>
-                  <p className={`text-sm font-bold ${settings.updatesEnabled || activeBot === 'updates' ? 'text-white' : 'text-slate-800 dark:text-white'}`}>Bot Updates</p>
-                  <p className={`text-xs ${settings.updatesEnabled || activeBot === 'updates' ? 'text-white/80' : 'text-slate-500 dark:text-slate-400'}`}>Campaigns & promos</p>
+                  <p className={`text-sm font-bold ${settings.updatesEnabled || activeBot === 'updates' ? 'text-white' : 'text-slate-800 dark:text-white'}`}>{t('bot.updates')}</p>
+                  <p className={`text-xs ${settings.updatesEnabled || activeBot === 'updates' ? 'text-white/80' : 'text-slate-500 dark:text-slate-400'}`}>{t('bot.updatesDesc')}</p>
                 </div>
               </div>
               <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
                 <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${settings.updatesEnabled ? 'bg-white/25 text-white' : 'bg-slate-300 text-slate-600 dark:bg-slate-600 dark:text-slate-300'}`}>
-                  {settings.updatesEnabled ? '● Active' : '○ Off'}
+                  {settings.updatesEnabled ? `● ${t('bot.active')}` : `○ ${t('bot.off')}`}
                 </span>
                 <Switch
                   checked={settings.updatesEnabled || false}
@@ -259,13 +259,13 @@ export default function AdminWasselniSettings() {
                   <MapPin className={`h-5 w-5 ${settings.trackingEnabled || activeBot === 'tracking' ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} />
                 </div>
                 <div>
-                  <p className={`text-sm font-bold ${settings.trackingEnabled || activeBot === 'tracking' ? 'text-white' : 'text-slate-800 dark:text-white'}`}>Bot Tracking</p>
-                  <p className={`text-xs ${settings.trackingEnabled || activeBot === 'tracking' ? 'text-white/80' : 'text-slate-500 dark:text-slate-400'}`}>Real-time delivery</p>
+                  <p className={`text-sm font-bold ${settings.trackingEnabled || activeBot === 'tracking' ? 'text-white' : 'text-slate-800 dark:text-white'}`}>{t('bot.tracking')}</p>
+                  <p className={`text-xs ${settings.trackingEnabled || activeBot === 'tracking' ? 'text-white/80' : 'text-slate-500 dark:text-slate-400'}`}>{t('bot.trackingDesc')}</p>
                 </div>
               </div>
               <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
                 <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${settings.trackingEnabled ? 'bg-white/25 text-white' : 'bg-slate-300 text-slate-600 dark:bg-slate-600 dark:text-slate-300'}`}>
-                  {settings.trackingEnabled ? '● Active' : '○ Off'}
+                  {settings.trackingEnabled ? `● ${t('bot.active')}` : `○ ${t('bot.off')}`}
                 </span>
                 <Switch
                   checked={settings.trackingEnabled || false}
@@ -287,7 +287,7 @@ export default function AdminWasselniSettings() {
                 <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20">
                   <Globe className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                 </div>
-                Provider
+                {t('bot.provider')}
               </h3>
               <div className="grid grid-cols-3 gap-3 mb-4">
                 {[
@@ -313,7 +313,7 @@ export default function AdminWasselniSettings() {
               {settings.provider === 'telegram' && (
                 <div className="space-y-3 pt-3 border-t border-slate-200 dark:border-slate-700">
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-900 dark:text-white">Telegram Bot Token</Label>
+                    <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.telegramBotToken')}</Label>
                     <Input
                       value={settings.telegramBotToken || ''}
                       onChange={(e) => updateSetting('telegramBotToken', e.target.value)}
@@ -321,7 +321,7 @@ export default function AdminWasselniSettings() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-900 dark:text-white">Telegram Bot Username</Label>
+                    <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.telegramBotUsername')}</Label>
                     <Input
                       value={settings.telegramBotUsername || ''}
                       onChange={(e) => updateSetting('telegramBotUsername', e.target.value)}
@@ -334,7 +334,7 @@ export default function AdminWasselniSettings() {
               {settings.provider === 'whatsapp_cloud' && (
                 <div className="space-y-3 pt-3 border-t border-slate-200 dark:border-slate-700">
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-900 dark:text-white">WhatsApp Phone ID</Label>
+                    <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.whatsappPhoneId')}</Label>
                     <Input
                       value={settings.whatsappPhoneId}
                       onChange={(e) => updateSetting('whatsappPhoneId', e.target.value)}
@@ -342,7 +342,7 @@ export default function AdminWasselniSettings() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-900 dark:text-white">WhatsApp Access Token</Label>
+                    <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.whatsappAccessToken')}</Label>
                     <Input
                       type="password"
                       value={settings.whatsappToken}
@@ -356,7 +356,7 @@ export default function AdminWasselniSettings() {
               {settings.provider === 'viber' && (
                 <div className="space-y-3 pt-3 border-t border-slate-200 dark:border-slate-700">
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-900 dark:text-white">Viber Auth Token</Label>
+                    <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.viberAuthToken')}</Label>
                     <Input
                       value={settings.viberAuthToken || ''}
                       onChange={(e) => updateSetting('viberAuthToken', e.target.value)}
@@ -364,11 +364,11 @@ export default function AdminWasselniSettings() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-900 dark:text-white">Viber Sender Name</Label>
+                    <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.viberSenderName')}</Label>
                     <Input
                       value={settings.viberSenderName || ''}
                       onChange={(e) => updateSetting('viberSenderName', e.target.value)}
-                      placeholder="EcoPro"
+                      placeholder="sahla-E"
                     />
                   </div>
                 </div>
@@ -381,9 +381,9 @@ export default function AdminWasselniSettings() {
                 <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-500/20">
                   <MessageSquare className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                 </div>
-                Greeting Message
+                {t('bot.greetingMessage')}
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Sent when customer clicks Telegram button and presses Start</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">{t('bot.greetingDesc')}</p>
               <Textarea
                 value={settings.templateGreeting || ''}
                 onChange={(e) => updateSetting('templateGreeting', e.target.value)}
@@ -398,9 +398,9 @@ export default function AdminWasselniSettings() {
                 <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20">
                   <Package className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                 </div>
-                📦 Instant Order Notification
+                📦 {t('bot.instantOrder')}
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Sent IMMEDIATELY when customer places an order (with full order details)</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">{t('bot.instantOrderDesc')}</p>
               <Textarea
                 value={settings.templateInstantOrder || ''}
                 onChange={(e) => updateSetting('templateInstantOrder', e.target.value)}
@@ -415,9 +415,9 @@ export default function AdminWasselniSettings() {
                 <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-500/20">
                   <MapPin className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                 </div>
-                📌 Pin Instructions
+                📌 {t('bot.pinInstructions')}
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">Sent after order notification - tells customer to pin message and enable notifications</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">{t('bot.pinInstructionsDesc')}</p>
               <Textarea
                 value={settings.templatePinInstructions || ''}
                 onChange={(e) => updateSetting('templatePinInstructions', e.target.value)}
@@ -432,14 +432,14 @@ export default function AdminWasselniSettings() {
                 <div className="p-2 rounded-lg bg-green-100 dark:bg-green-500/20">
                   <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
                 </div>
-                ⏱️ Order Confirmation (Scheduled with Buttons)
+                ⏱️ {t('bot.orderConfirmation')}
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">This message with ✅ Confirm / ❌ Cancel buttons is sent AFTER the delay time</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">{t('bot.orderConfirmationDesc')}</p>
               
               {/* Delay Setting */}
               <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
                 <Label className="text-sm font-semibold text-green-800 dark:text-green-300 mb-2 block">
-                  ⏰ Confirmation Delay (minutes)
+                  ⏰ {t('bot.confirmationDelay')}
                 </Label>
                 <div className="flex items-center gap-3">
                   <Input
@@ -466,7 +466,7 @@ export default function AdminWasselniSettings() {
                     className="w-24 bg-white dark:bg-slate-800 border-green-300 dark:border-green-700"
                   />
                   <span className="text-xs text-green-700 dark:text-green-400">
-                    Send confirmation buttons {settings.telegramDelayMinutes || 5} minutes after order
+                    {t('bot.sendConfirmationAfter').replace('{n}', (settings.telegramDelayMinutes || 5).toString())}
                   </span>
                 </div>
               </div>
@@ -474,10 +474,10 @@ export default function AdminWasselniSettings() {
               {/* Auto-Expire Setting */}
               <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
                 <Label className="text-sm font-semibold text-red-800 dark:text-red-300 mb-2 block">
-                  ⏱️ Auto-Expire to "Didn't Pickup" (hours)
+                  ⏱️ {t('bot.autoExpire')}
                 </Label>
                 <p className="text-xs text-red-600 dark:text-red-400 mb-2">
-                  If buyer doesn't respond and order is still pending, auto-change to "didn't pickup"
+                  {t('bot.autoExpireDesc')}
                 </p>
                 <div className="flex items-center gap-3">
                   <Input
@@ -503,7 +503,7 @@ export default function AdminWasselniSettings() {
                     className="w-24 bg-white dark:bg-slate-800 border-red-300 dark:border-red-700"
                   />
                   <span className="text-xs text-red-700 dark:text-red-400">
-                    Auto-expire after {settings.autoExpireHours || 24} hours if no response
+                    {t('bot.autoExpireAfter').replace('{n}', (settings.autoExpireHours || 24).toString())}
                   </span>
                 </div>
               </div>
@@ -522,7 +522,7 @@ export default function AdminWasselniSettings() {
                 <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-500/20">
                   <CreditCard className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                 </div>
-                Payment Confirmation
+                {t('bot.paymentConfirmation')}
               </h3>
               <Textarea
                 value={settings.templatePayment}
@@ -538,7 +538,7 @@ export default function AdminWasselniSettings() {
                 <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-500/20">
                   <Truck className="h-4 w-4 text-orange-600 dark:text-orange-400" />
                 </div>
-                Shipping Notification
+                {t('bot.shippingNotification')}
               </h3>
               <Textarea
                 value={settings.templateShipping}
@@ -554,7 +554,7 @@ export default function AdminWasselniSettings() {
                 <div className="p-2 rounded-lg bg-indigo-100 dark:bg-indigo-500/20">
                   <Code2 className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
                 </div>
-                <h4 className="font-bold text-base text-slate-900 dark:text-white">Available Variables</h4>
+                <h4 className="font-bold text-base text-slate-900 dark:text-white">{t('bot.availableVariables')}</h4>
               </div>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 {variables.map((v) => (
@@ -587,9 +587,9 @@ export default function AdminWasselniSettings() {
                   <Navigation className="h-6 w-6 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Real-Time Order Tracking</h3>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">{t('bot.realTimeTracking')}</h3>
                   <p className="text-sm text-slate-600 dark:text-slate-400">
-                    Send automatic tracking updates to customers as their orders progress through shipping and delivery stages.
+                    {t('bot.realTimeTrackingDesc')}
                   </p>
                 </div>
               </div>
@@ -741,12 +741,12 @@ export default function AdminWasselniSettings() {
             {saving ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Saving...
+                {t('bot.saving')}
               </>
             ) : (
               <>
                 <Save className="h-5 w-5" />
-                Save Changes
+                {t('bot.saveChanges')}
               </>
             )}
           </button>

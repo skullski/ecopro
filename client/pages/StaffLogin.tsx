@@ -31,6 +31,7 @@ export default function StaffLogin() {
       const res = await fetch('/api/staff/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           username: formData.username,
           password: formData.password,
@@ -53,7 +54,7 @@ export default function StaffLogin() {
         localStorage.setItem('token', data.token);
       }
       
-      // Redirect to main dashboard - staff sees same pages but with permission restrictions
+      // Redirect to main dashboard (staff uses same UI with permission locks)
       navigate('/dashboard');
     } catch (err) {
       setError('Network error. Please try again.');

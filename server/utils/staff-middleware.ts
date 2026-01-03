@@ -128,7 +128,17 @@ export function requireStaffPermission(permission: string): RequestHandler {
         ? JSON.parse(result.rows[0].permissions)
         : result.rows[0].permissions;
 
-      if (permissions[permission] !== true) {
+      // Backward-compatible permission aliases
+      // The UI uses shared/staff.ts keys (e.g. view_orders_list, edit_order_status),
+      // while some older routes/middleware used legacy keys (e.g. view_orders, edit_orders).
+      const permissionAliases: Record<string, string[]> = {
+        view_orders: ['view_orders_list'],
+        edit_orders: ['edit_order_status'],
+      };
+
+      const hasDirect = permissions?.[permission] === true;
+      const hasAlias = (permissionAliases[permission] || []).some((p) => permissions?.[p] === true);
+      if (!hasDirect && !hasAlias) {
         return res.status(403).json({ error: `Permission denied: ${permission}` });
       }
 

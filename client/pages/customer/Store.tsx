@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { TemplatesTab } from '@/components/TemplatesTab';
 import { generateStoreUrl, storeNameToSlug } from '@/utils/storeUrl';
+import { useTranslation } from '@/lib/i18n';
 import {
   Dialog,
   DialogContent,
@@ -59,6 +60,7 @@ interface StoreProduct {
 
 export default function Store() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   // Products Management was duplicated with Overview; keep a single Store page.
   // Copy store link to clipboard
   // This must be above all JSX usage
@@ -580,10 +582,10 @@ export default function Store() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
-              Private Store
+              {t('store.privateStore')}
             </h1>
             <p className="text-muted-foreground mt-1">
-              Manage your exclusive products and share individual links
+              {t('store.manageExclusive')}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -597,21 +599,14 @@ export default function Store() {
               disabled={!storeSettings.store_name}
             >
               <StoreIcon className="w-4 h-4 mr-2" />
-              View Storefront
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => navigate('/silver-editor')}
-            >
-              <Settings className="w-4 h-4 mr-2" />
-              Silver Editor
+              {t('store.viewStorefront')}
             </Button>
             <Button
               variant="outline"
               onClick={() => navigate('/template-editor')}
             >
               <Settings className="w-4 h-4 mr-2" />
-              Gold Editor
+              {t('store.templateEditor')}
             </Button>
             <Button 
               onClick={() => {
@@ -622,7 +617,7 @@ export default function Store() {
               className="bg-gradient-to-r from-primary to-purple-600"
             >
               <Plus className="w-4 h-4 mr-2" />
-              Add Product
+              {t('store.addProduct')}
             </Button>
           </div>
         </div>
@@ -632,7 +627,7 @@ export default function Store() {
           <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm opacity-90">Total Products</p>
+                <p className="text-sm opacity-90">{t('store.totalProducts')}</p>
                 <p className="text-xl md:text-2xl font-bold mt-1">{stats.total}</p>
               </div>
               <Package className="w-10 h-10 opacity-80" />
@@ -642,7 +637,7 @@ export default function Store() {
           <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm opacity-90">Active</p>
+                <p className="text-sm opacity-90">{t('store.active')}</p>
                 <p className="text-xl md:text-2xl font-bold mt-1">{stats.active}</p>
               </div>
               <Check className="w-10 h-10 opacity-80" />
@@ -652,7 +647,7 @@ export default function Store() {
           <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-4 text-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm opacity-90">Drafts</p>
+                <p className="text-sm opacity-90">{t('store.drafts')}</p>
                 <p className="text-xl md:text-2xl font-bold mt-1">{stats.draft}</p>
               </div>
               <Edit className="w-10 h-10 opacity-80" />
@@ -662,7 +657,7 @@ export default function Store() {
           <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm opacity-90">Total Views</p>
+                <p className="text-sm opacity-90">{t('store.totalViews')}</p>
                 <p className="text-xl md:text-2xl font-bold mt-1">{stats.totalViews}</p>
               </div>
               <Eye className="w-10 h-10 opacity-80" />
@@ -732,7 +727,7 @@ export default function Store() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search products..."
+                  placeholder={t('store.searchProducts')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
@@ -742,13 +737,13 @@ export default function Store() {
 
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by status" />
+                <SelectValue placeholder={t('store.filterByStatus')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="archived">Archived</SelectItem>
+                <SelectItem value="all">{t('store.allStatus')}</SelectItem>
+                <SelectItem value="active">{t('store.active')}</SelectItem>
+                <SelectItem value="draft">{t('store.drafts')}</SelectItem>
+                <SelectItem value="archived">{t('store.archived')}</SelectItem>
               </SelectContent>
             </Select>
 
@@ -776,13 +771,13 @@ export default function Store() {
         {filteredProducts.length === 0 ? (
           <div className="bg-card rounded-xl border p-6 md:p-6 text-center">
             <Package className="w-12 md:w-16 h-12 md:h-16 mx-auto text-muted-foreground opacity-20 mb-3" />
-            <h3 className="text-base md:text-lg font-semibold mb-2">No products yet</h3>
+            <h3 className="text-base md:text-lg font-semibold mb-2">{t('store.noProductsYet')}</h3>
             <p className="text-muted-foreground mb-4">
-              Create your first product to start building your private store
+              {t('store.createFirstProduct')}
             </p>
             <Button onClick={() => setShowAddModal(true)}>
               <Plus className="w-4 h-4 mr-2" />
-              Add Your First Product
+              {t('store.addFirstProduct')}
             </Button>
           </div>
         ) : viewMode === 'grid' ? (
@@ -815,7 +810,9 @@ export default function Store() {
                     product.status === 'active' ? 'default' :
                     product.status === 'draft' ? 'secondary' : 'outline'
                   }>
-                    {product.status}
+                    {product.status === 'active' ? t('store.active') : 
+                     product.status === 'draft' ? t('store.drafts') : 
+                     t('store.archived')}
                   </Badge>
                   
                   <div className="flex items-center justify-between">
@@ -844,7 +841,7 @@ export default function Store() {
                       onClick={() => handleGetShareLink(product)}
                     >
                       <Share2 className="w-3 h-3 mr-1" />
-                      Share
+                      {t('store.share')}
                     </Button>
                     <Button
                       size="sm"
@@ -1307,9 +1304,9 @@ export default function Store() {
       <Dialog open={showShareModal} onOpenChange={setShowShareModal}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Share Product Link</DialogTitle>
+            <DialogTitle>{t('store.shareProduct')}</DialogTitle>
             <DialogDescription>
-              Copy this link to share {selectedProduct?.title} anywhere
+              {t('store.shareProductDesc')}
             </DialogDescription>
           </DialogHeader>
 
@@ -1332,7 +1329,7 @@ export default function Store() {
             {linkCopied && (
               <p className="text-sm text-green-600 flex items-center gap-2">
                 <Check className="w-4 h-4" />
-                Link copied to clipboard!
+                {t('store.linkCopied')}
               </p>
             )}
 
@@ -1362,15 +1359,15 @@ export default function Store() {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Product?</AlertDialogTitle>
+            <AlertDialogTitle>{t('store.deleteProduct')}?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{selectedProduct?.title}"? This action cannot be undone.
+              {t('store.deleteWarning')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteProduct} className="bg-red-600 hover:bg-red-700">
-              Delete
+              {t('delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1382,12 +1379,12 @@ export default function Store() {
       <div className="max-w-7xl mx-auto mt-4 md:mt-6">
         <div className="bg-card rounded-xl border p-4">
           <div className="flex items-center justify-between mb-3">
-            <Label className="text-sm font-semibold">Store Summary</Label>
+            <Label className="text-sm font-semibold">{t('store.storeSummary')}</Label>
           </div>
         
 
           <div>
-            <Label className="text-sm font-semibold">How to Use Your Store</Label>
+            <Label className="text-sm font-semibold">{t('store.howToUse')}</Label>
             <ol className="mt-2 text-sm space-y-2">
               <li className="flex gap-2 items-start"><div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">1</div><div><span className="font-medium">Add Products</span><div className="text-muted-foreground">Create products with images, prices, and descriptions</div></div></li>
               <li className="flex gap-2 items-start"><div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">2</div><div><span className="font-medium">Share Your Store Link</span><div className="text-muted-foreground">Copy the store URL above and share it with customers on social media, WhatsApp, email, etc.</div></div></li>

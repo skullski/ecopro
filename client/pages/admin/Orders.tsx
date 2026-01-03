@@ -371,8 +371,8 @@ export default function OrdersAdmin() {
         setIsLoading(true);
       }
       setError(null);
-      const res = await fetch('/api/client/orders?limit=100', {
-      });
+      const isStaff = localStorage.getItem('isStaff') === 'true';
+      const res = await fetch(isStaff ? '/api/staff/orders' : '/api/client/orders?limit=100', {});
 
       if (res.status === 401) {
         setError('Authentication failed. Please log in again.');
@@ -439,7 +439,9 @@ export default function OrdersAdmin() {
       const rawId = orders.find(o => o.id === id)?.raw_id;
       if (!rawId) return;
 
-      const res = await fetch(`/api/client/orders/${rawId}/status`, {
+      const isStaff = localStorage.getItem('isStaff') === 'true';
+
+      const res = await fetch(isStaff ? `/api/staff/orders/${rawId}/status` : `/api/client/orders/${rawId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -515,7 +517,7 @@ export default function OrdersAdmin() {
               <ShoppingBag className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <div className="text-sm font-semibold text-muted-foreground">Total Orders</div>
+              <div className="text-sm font-semibold text-muted-foreground">{t('orders.totalOrders')}</div>
               <div className="text-2xl font-bold">{orders.length}</div>
             </div>
           </div>
@@ -526,7 +528,7 @@ export default function OrdersAdmin() {
               <TrendingUp className="h-4 w-4 text-accent" />
             </div>
             <div>
-              <div className="text-sm font-semibold text-muted-foreground">Confirmed Orders</div>
+              <div className="text-sm font-semibold text-muted-foreground">{t('orders.confirmedOrders')}</div>
               <div className="text-2xl font-bold">{orders.filter(o => o.status === 'confirmed').length}</div>
             </div>
           </div>
@@ -537,7 +539,7 @@ export default function OrdersAdmin() {
               <span className="text-lg">💰</span>
             </div>
             <div>
-              <div className="text-sm font-semibold text-muted-foreground">Revenue</div>
+              <div className="text-sm font-semibold text-muted-foreground">{t('orders.revenue')}</div>
               <div className="text-xl font-bold bg-gradient-to-r from-accent to-orange-500 bg-clip-text text-transparent">
                 {Math.round(orders
                   .filter(o => {
@@ -569,19 +571,19 @@ export default function OrdersAdmin() {
                 className="inline-flex items-center gap-1 rounded border border-primary/30 bg-background px-3 py-2 text-sm font-bold hover:bg-primary/10 transition-colors disabled:opacity-50 h-9"
                 disabled={isRefreshing}
               >
-                {isRefreshing ? t('orders.refreshing') || 'Refreshing…' : t('orders.refresh') || 'Refresh'}
+                {isRefreshing ? t('orders.refreshing') : t('orders.refresh')}
               </button>
               <button 
                 onClick={() => setShowAddOrder(true)}
                 className="inline-flex items-center gap-1 rounded bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-2 text-sm font-bold hover:from-green-600 hover:to-green-700 transition-colors shadow h-9"
               >
-                <Plus className="h-4 w-4"/> {t('orders.addOrder') || 'Add Order'}
+                <Plus className="h-4 w-4"/> {t('orders.addOrder')}
               </button>
               <button 
                 onClick={() => setShowStatusManager(true)}
                 className="inline-flex items-center gap-1 rounded border border-purple-500/30 bg-purple-500/10 text-purple-600 px-3 py-2 text-sm font-bold hover:bg-purple-500/20 transition-colors h-9"
               >
-                <Settings className="h-4 w-4"/> Statuses
+                <Settings className="h-4 w-4"/> {t('orders.statuses')}
               </button>
               <button className="inline-flex items-center gap-1 rounded border border-primary/30 bg-background px-3 py-2 text-sm font-bold hover:bg-primary/10 transition-colors h-9">
                 <Download className="h-4 w-4"/> {t('orders.download')}
@@ -640,21 +642,21 @@ export default function OrdersAdmin() {
           <div className="border-b border-primary/10 bg-gradient-to-r from-blue-500/10 to-blue-500/5 p-2 flex items-center gap-3 flex-wrap">
             <div className="flex items-center gap-2">
               <CheckSquare className="h-4 w-4 text-blue-500" />
-              <span className="text-sm font-bold text-blue-600">{selectedOrders.size} order{selectedOrders.size > 1 ? 's' : ''} selected</span>
+              <span className="text-sm font-bold text-blue-600">{selectedOrders.size} {selectedOrders.size > 1 ? t('orders.selectedPlural') : t('orders.selected')}</span>
             </div>
             <div className="flex items-center gap-2 ml-auto">
               <button
                 onClick={clearSelection}
                 className="px-3 py-1.5 rounded text-sm font-bold border border-gray-300 bg-background hover:bg-gray-100 transition-colors"
               >
-                Clear
+                {t('orders.clear')}
               </button>
               <button
                 onClick={() => setShowBulkUpload(true)}
                 className="px-4 py-1.5 rounded text-sm font-bold bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 transition-colors shadow flex items-center gap-2"
               >
                 <Truck className="h-4 w-4" />
-                Upload to Delivery
+                {t('orders.uploadToDelivery')}
               </button>
             </div>
           </div>
@@ -667,7 +669,7 @@ export default function OrdersAdmin() {
               <div className="inline-flex items-center justify-center">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
               </div>
-              <p className="mt-1 md:mt-2 text-muted-foreground text-xs">Loading orders...</p>
+              <p className="mt-1 md:mt-2 text-muted-foreground text-xs">{t('orders.loadingOrders')}</p>
             </div>
           )}
 
@@ -675,14 +677,14 @@ export default function OrdersAdmin() {
           {error && !isLoading && (
             <div className="p-3 md:p-3 text-center">
               <div className="rounded bg-red-500/10 border border-red-500/30 p-2 md:p-3 mb-2">
-                <p className="text-red-600 font-semibold text-xs">⚠️ Error</p>
+                <p className="text-red-600 font-semibold text-xs">⚠️ {t('orders.error')}</p>
                 <p className="text-red-600 text-xs mt-1">{error}</p>
               </div>
               <button
                 onClick={() => loadOrders()}
                 className="inline-flex items-center gap-1 rounded bg-primary text-white px-2 py-1 text-xs font-medium hover:bg-primary/90 transition-colors h-8"
               >
-                Retry
+                {t('orders.retry')}
               </button>
             </div>
           )}
@@ -691,13 +693,13 @@ export default function OrdersAdmin() {
           {!isLoading && !error && orders.length === 0 && (
             <div className="p-6 md:p-8 text-center">
               <div className="text-lg mb-2">📭</div>
-              <p className="text-xs md:text-sm font-semibold text-muted-foreground mb-1">No orders</p>
-              <p className="text-xs text-muted-foreground mb-2">No orders received yet</p>
+              <p className="text-xs md:text-sm font-semibold text-muted-foreground mb-1">{t('orders.noOrders')}</p>
+              <p className="text-xs text-muted-foreground mb-2">{t('orders.noOrdersYet')}</p>
               <button
                 onClick={() => setShowAddOrder(true)}
                 className="inline-flex items-center gap-1 rounded bg-green-500 text-white px-2 py-1 text-xs font-medium hover:bg-green-600 transition-colors h-8"
               >
-                <Plus className="h-3 w-3"/> Add new order
+                <Plus className="h-3 w-3"/> {t('orders.addNewOrder')}
               </button>
             </div>
           )}
@@ -706,8 +708,8 @@ export default function OrdersAdmin() {
           {!isLoading && !error && orders.length > 0 && getFilteredOrders().length === 0 && (
             <div className="p-6 md:p-8 text-center">
               <div className="text-lg mb-2">🔍</div>
-              <p className="text-xs md:text-sm font-semibold text-muted-foreground mb-1">No orders in this category</p>
-              <p className="text-xs text-muted-foreground">Try changing the filter</p>
+              <p className="text-xs md:text-sm font-semibold text-muted-foreground mb-1">{t('orders.noOrdersInCategory')}</p>
+              <p className="text-xs text-muted-foreground">{t('orders.tryChangingFilter')}</p>
             </div>
           )}
 
@@ -729,9 +731,9 @@ export default function OrdersAdmin() {
                     )}
                   </button>
                 </th>
-                <th className="whitespace-nowrap p-2 text-right font-bold text-sm">Image</th>
+                <th className="whitespace-nowrap p-2 text-right font-bold text-sm">{t('orders.image')}</th>
                 <th className="whitespace-nowrap p-2 text-right font-bold text-sm">{t('orders.orderNumber')}</th>
-                <th className="whitespace-nowrap p-2 text-right font-bold text-sm">Product</th>
+                <th className="whitespace-nowrap p-2 text-right font-bold text-sm">{t('orders.product')}</th>
                 <th className="whitespace-nowrap p-2 text-right font-bold text-sm">{t('orders.customer')}</th>
                 <th className="whitespace-nowrap p-2 text-right font-bold text-sm">{t('orders.amount')}</th>
                 <th className="whitespace-nowrap p-2 text-right font-bold text-sm">{t('orders.status')}</th>
@@ -774,7 +776,7 @@ export default function OrdersAdmin() {
                     <td className="whitespace-nowrap p-2 text-right font-bold text-sm">{o.id}</td>
                     <td className="whitespace-nowrap p-2 text-right">
                       <span className="text-sm font-semibold max-w-[150px] truncate block" title={o.product_title}>
-                        {o.product_title || 'No product'}
+                        {o.product_title || t('orders.noProduct')}
                       </span>
                     </td>
                     <td className="whitespace-nowrap p-2 text-right text-sm font-semibold">{o.customer}</td>
@@ -814,27 +816,27 @@ export default function OrdersAdmin() {
                           {/* Order Details Grid */}
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                             <div className="bg-background rounded p-2 border border-border/50">
-                              <div className="text-sm font-semibold text-muted-foreground mb-0.5">Order Number</div>
+                              <div className="text-sm font-semibold text-muted-foreground mb-0.5">{t('orders.orderNumber')}</div>
                               <div className="font-bold text-sm">{o.id}</div>
                             </div>
                             <div className="bg-background rounded p-2 border border-border/50">
-                              <div className="text-sm font-semibold text-muted-foreground mb-0.5">Customer Name</div>
+                              <div className="text-sm font-semibold text-muted-foreground mb-0.5">{t('orders.customerName')}</div>
                               <div className="font-bold text-sm">{o.customer}</div>
                             </div>
                             <div className="bg-background rounded p-2 border border-border/50">
-                              <div className="text-sm font-semibold text-muted-foreground mb-0.5">Phone Number</div>
-                              <div className="font-bold text-sm">{o.phone || 'Not available'}</div>
+                              <div className="text-sm font-semibold text-muted-foreground mb-0.5">{t('orders.phoneNumber')}</div>
+                              <div className="font-bold text-sm">{o.phone || t('orders.notAvailable')}</div>
                             </div>
                             <div className="bg-background rounded p-2 border border-border/50">
-                              <div className="text-sm font-semibold text-muted-foreground mb-0.5">Email</div>
-                              <div className="font-bold text-sm">{o.email || 'Not available'}</div>
+                              <div className="text-sm font-semibold text-muted-foreground mb-0.5">{t('orders.email')}</div>
+                              <div className="font-bold text-sm">{o.email || t('orders.notAvailable')}</div>
                             </div>
                             <div className="bg-background rounded p-2 border border-border/50">
-                              <div className="text-sm font-semibold text-muted-foreground mb-0.5">Address</div>
-                              <div className="font-bold text-sm">{o.address || 'Not available'}</div>
+                              <div className="text-sm font-semibold text-muted-foreground mb-0.5">{t('orders.address')}</div>
+                              <div className="font-bold text-sm">{o.address || t('orders.notAvailable')}</div>
                             </div>
                             <div className="bg-background rounded p-2 border border-border/50">
-                              <div className="text-sm font-semibold text-muted-foreground mb-0.5">Product</div>
+                              <div className="text-sm font-semibold text-muted-foreground mb-0.5">{t('orders.product')}</div>
                               <div className="flex items-center gap-2">
                                 {o.product_image ? (
                                   <img 
@@ -847,7 +849,7 @@ export default function OrdersAdmin() {
                                     <ShoppingBag className="w-6 h-6 text-muted-foreground" />
                                   </div>
                                 )}
-                                <div className="font-bold text-sm">{o.product_title || 'Not available'}</div>
+                                <div className="font-bold text-sm">{o.product_title || t('orders.notAvailable')}</div>
                               </div>
                             </div>
                           </div>
@@ -910,7 +912,7 @@ export default function OrdersAdmin() {
         {/* Pagination */}
         <div className="p-4 border-t-2 border-primary/10 flex items-center justify-between bg-muted/30">
           <div className="text-sm text-muted-foreground">
-            {totalFilteredOrders === 0 ? 'Showing 0 orders' : t('orders.showing').replace('{start}', startOrder.toString()).replace('{end}', endOrder.toString()).replace('{total}', totalFilteredOrders.toString())}
+            {totalFilteredOrders === 0 ? t('orders.showingZero') : t('orders.showing').replace('{start}', startOrder.toString()).replace('{end}', endOrder.toString()).replace('{total}', totalFilteredOrders.toString())}
           </div>
           <div className="flex items-center gap-2">
             <button 
@@ -938,21 +940,21 @@ export default function OrdersAdmin() {
       {showAddOrder && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2">
           <div className="bg-card rounded-lg border border-primary/20 shadow-xl max-w-xs w-full p-3 space-y-2">
-            <h2 className="text-lg font-bold">Add New Order</h2>
+            <h2 className="text-lg font-bold">{t('orders.addNewOrderTitle')}</h2>
             
             <div>
-              <label className="text-sm font-bold">Customer Name *</label>
+              <label className="text-sm font-bold">{t('orders.customerNameRequired')}</label>
               <input
                 type="text"
                 value={newOrder.customer_name}
                 onChange={(e) => setNewOrder({...newOrder, customer_name: e.target.value})}
                 className="w-full mt-0.5 px-2 py-1 rounded border border-border/50 bg-background focus:outline-none focus:ring-1 focus:ring-primary h-9 text-sm"
-                placeholder="Enter customer name"
+                placeholder={t('orders.enterCustomerName')}
               />
             </div>
 
             <div>
-              <label className="text-sm font-bold">Phone Number</label>
+              <label className="text-sm font-bold">{t('orders.phoneNumber')}</label>
               <input
                 type="tel"
                 value={newOrder.customer_phone}
@@ -963,29 +965,29 @@ export default function OrdersAdmin() {
             </div>
 
             <div>
-              <label className="text-sm font-bold">Email</label>
+              <label className="text-sm font-bold">{t('orders.email')}</label>
               <input
                 type="email"
                 value={newOrder.customer_email}
                 onChange={(e) => setNewOrder({...newOrder, customer_email: e.target.value})}
                 className="w-full mt-0.5 px-2 py-1 rounded border border-border/50 bg-background focus:outline-none focus:ring-1 focus:ring-primary h-9 text-sm"
-                placeholder="example@email.com"
+                placeholder={t('orders.enterEmail')}
               />
             </div>
 
             <div>
-              <label className="text-sm font-bold">Address</label>
+              <label className="text-sm font-bold">{t('orders.address')}</label>
               <input
                 type="text"
                 value={newOrder.customer_address}
                 onChange={(e) => setNewOrder({...newOrder, customer_address: e.target.value})}
                 className="w-full mt-0.5 px-2 py-1 rounded border border-border/50 bg-background focus:outline-none focus:ring-1 focus:ring-primary h-9 text-sm"
-                placeholder="Enter address"
+                placeholder={t('orders.enterAddress')}
               />
             </div>
 
             <div>
-              <label className="text-sm font-bold">Total *</label>
+              <label className="text-sm font-bold">{t('orders.totalRequired')}</label>
               <input
                 type="number"
                 value={newOrder.total_price}
@@ -1001,13 +1003,13 @@ export default function OrdersAdmin() {
                 onClick={() => setShowAddOrder(false)}
                 className="flex-1 px-3 py-2 rounded border border-primary/30 hover:bg-primary/10 transition-colors text-sm h-9 font-bold"
               >
-                Cancel
+                {t('cancel')}
               </button>
               <button
                 onClick={handleAddOrder}
                 className="flex-1 px-3 py-2 rounded bg-gradient-to-r from-green-500 to-green-600 text-white text-sm font-bold hover:from-green-600 hover:to-green-700 transition-colors shadow h-9"
               >
-                Add Order
+                {t('orders.addOrder')}
               </button>
             </div>
           </div>
@@ -1019,7 +1021,7 @@ export default function OrdersAdmin() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2">
           <div className="bg-card rounded-lg border border-primary/20 shadow-xl max-w-md w-full p-4 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold">Manage Order Statuses</h2>
+              <h2 className="text-lg font-bold">{t('orders.statusManager')}</h2>
               <button 
                 onClick={() => setShowStatusManager(false)}
                 className="p-1 rounded hover:bg-muted"
@@ -1030,7 +1032,7 @@ export default function OrdersAdmin() {
             
             {/* Existing Statuses */}
             <div className="space-y-2">
-              <h3 className="text-sm font-bold text-muted-foreground">Current Statuses</h3>
+              <h3 className="text-sm font-bold text-muted-foreground">{t('orders.customStatuses')}</h3>
               {customStatuses.map(status => (
                 <div 
                   key={status.id}
@@ -1065,7 +1067,7 @@ export default function OrdersAdmin() {
 
             {/* Add New Status */}
             <div className="space-y-3 pt-3 border-t border-border/50">
-              <h3 className="text-sm font-bold text-muted-foreground">Add New Status</h3>
+              <h3 className="text-sm font-bold text-muted-foreground">{t('orders.addNewStatus')}</h3>
               <div className="flex gap-2">
                 <input
                   type="text"

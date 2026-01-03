@@ -9,6 +9,11 @@ interface PermissionGateProps {
   action?: string;
   fallback?: ReactNode;
   showBlurred?: boolean;
+  /**
+   * When true, still renders children behind a blur for a preview.
+   * When false (default), restricted pages do not render at all.
+   */
+  renderLockedContent?: boolean;
 }
 
 /**
@@ -27,7 +32,8 @@ export function PermissionGate({
   permission, 
   action,
   fallback,
-  showBlurred = true 
+  showBlurred = true,
+  renderLockedContent = false,
 }: PermissionGateProps) {
   const { isStaff, hasPermission, hasActionPermission, loading } = useStaffPermissions();
   const location = useLocation();
@@ -48,16 +54,21 @@ export function PermissionGate({
 
   // Check permission
   let hasAccess = true;
+  let requiredPermission: string | undefined;
   
   if (permission) {
     hasAccess = hasPermission(permission);
+    requiredPermission = permission;
   } else if (action) {
     hasAccess = hasActionPermission(action);
+    requiredPermission = ACTION_PERMISSIONS[action] || action;
   } else {
     // Auto-detect from route
     const path = location.pathname;
-    for (const [route, perm] of Object.entries(PAGE_PERMISSIONS)) {
+    const entries = Object.entries(PAGE_PERMISSIONS).sort((a, b) => b[0].length - a[0].length);
+    for (const [route, perm] of entries) {
       if (path === route || path.startsWith(route + '/')) {
+        requiredPermission = perm;
         hasAccess = hasPermission(perm);
         break;
       }
@@ -68,15 +79,18 @@ export function PermissionGate({
     return <>{children}</>;
   }
 
-  // No permission - show blurred content with lock
-  if (showBlurred) {
+  const requiredPermissionLabel = requiredPermission || 'view access';
+
+  // Restricted: optionally show a blurred preview, but by default DO NOT render the page.
+  // This prevents data fetching/effects and stops any interaction from running.
+  if (showBlurred && renderLockedContent) {
     return (
       <div className="relative min-h-[400px]">
         {/* Blurred content */}
         <div className="blur-md pointer-events-none select-none opacity-50">
           {children}
         </div>
-        
+
         {/* Lock overlay */}
         <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm">
           <div className="text-center p-8 max-w-md">
@@ -89,7 +103,10 @@ export function PermissionGate({
             </p>
             <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
               <EyeOff className="w-4 h-4" />
-              <span>Permission required: <code className="text-xs bg-muted px-2 py-1 rounded">{permission || 'view access'}</code></span>
+              <span>
+                Permission required:{' '}
+                <code className="text-xs bg-muted px-2 py-1 rounded">{requiredPermissionLabel}</code>
+              </span>
             </div>
           </div>
         </div>
@@ -97,8 +114,28 @@ export function PermissionGate({
     );
   }
 
-  // Custom fallback or null
-  return <>{fallback || null}</>;
+  // Default lock screen (no page rendered)
+  return (
+    <div className="min-h-[400px] flex items-center justify-center">
+      <div className="text-center p-8 max-w-md">
+        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-500/10 flex items-center justify-center">
+          <Lock className="w-10 h-10 text-red-500" />
+        </div>
+        <h2 className="text-2xl font-bold text-foreground mb-2">Access Restricted</h2>
+        <p className="text-muted-foreground mb-4">
+          You don't have permission to access this page. Contact your store owner to request access.
+        </p>
+        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+          <EyeOff className="w-4 h-4" />
+          <span>
+            Permission required:{' '}
+            <code className="text-xs bg-muted px-2 py-1 rounded">{requiredPermissionLabel}</code>
+          </span>
+        </div>
+      </div>
+      {fallback ? <div className="hidden">{fallback}</div> : null}
+    </div>
+  );
 }
 
 interface RequirePermissionProps {

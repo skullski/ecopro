@@ -122,4 +122,22 @@ describe('staff-middleware', () => {
     expect(res.statusCode).toBe(403);
     expect(next).not.toHaveBeenCalled();
   });
+
+  it('requireStaffPermission: accepts aliases for legacy keys', async () => {
+    poolQuery = vi.fn(async (sql: string) => {
+      if (sql.includes('SELECT permissions FROM staff')) {
+        return { rows: [{ permissions: { view_orders_list: true } }] };
+      }
+      return { rows: [] };
+    });
+
+    const req: any = { user: { staffId: 1, clientId: 10 } };
+    const res = makeRes();
+    const next = vi.fn();
+
+    await requireStaffPermission('view_orders')(req, res as any, next as any);
+
+    expect(res.statusCode).toBe(200);
+    expect(next).toHaveBeenCalledTimes(1);
+  });
 });

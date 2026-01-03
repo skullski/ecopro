@@ -124,15 +124,14 @@ function RequirePaidClient({ children }: { children: JSX.Element }) {
     return <Navigate to="/login" replace />;
   }
   
-  // Staff members CAN access dashboard - they'll see permission-gated content
-  // The StaffPermissionProvider and PermissionGate components handle restrictions
+  // Staff members can access the main dashboard UI, but must be permission-gated.
+  // Individual pages should use staff-safe endpoints where needed.
   if (isStaff) {
     // Validate staff session exists
     const staffId = localStorage.getItem('staffId');
     if (!staffId) {
       return <Navigate to="/staff/login" replace />;
     }
-    // Allow staff to access dashboard pages - permissions handled by PermissionGate
     return children;
   }
   
@@ -590,7 +589,7 @@ const App = () => (
         <I18nProvider>
           <PermissionProvider>
             <StaffPermissionProvider>
-            <BrowserRouter>
+            <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
               <NotificationProvider>
               <Layout>
                 <CartProvider>
@@ -692,12 +691,12 @@ const App = () => (
                   <Route path="/guest-checkout/:productId" element={<GuestCheckout />} />
                   {/* My Store - logged in client viewing their own store */}
                   <Route path="/my-store" element={<MyStore />} />
-                  {/* Template Editor - use ?mode=basic or ?mode=advanced */}
+                  {/* Template Editor */}
                   <Route path="/template-editor" element={<RequirePaidClient><GoldTemplateEditor /></RequirePaidClient>} />
                   {/* Backwards compatibility routes (redirect to editor) */}
-                  <Route path="/silver-editor" element={<Navigate to="/template-editor?mode=basic" replace />} />
-                  <Route path="/gold-editor" element={<Navigate to="/template-editor?mode=advanced" replace />} />
-                  <Route path="/template-settings" element={<Navigate to="/template-editor?mode=basic" replace />} />
+                  <Route path="/silver-editor" element={<Navigate to="/template-editor" replace />} />
+                  <Route path="/gold-editor" element={<Navigate to="/template-editor" replace />} />
+                  <Route path="/template-settings" element={<Navigate to="/template-editor" replace />} />
                   {/* Public storefront routes (client's store by store name or store_slug) with persistent header */}
                   <Route path="/store/:storeSlug" element={<StoreLayout />}>
                     <Route index element={<Storefront />} />

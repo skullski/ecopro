@@ -9,6 +9,7 @@ const BillingCancelled = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const sessionToken = searchParams.get('session');
+  const supportEmail = t("contact.card.email.content") || "support@walidstore.com";
 
   useEffect(() => {
     // Redirect after 8 seconds if user doesn't click button
@@ -99,9 +100,12 @@ const BillingCancelled = () => {
           <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
             {t('billing.cancelled.troublePayment')}
           </p>
-          <p className="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
-            contact support@ecopro.com
-          </p>
+          <a
+            className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+            href={`mailto:${supportEmail}`}
+          >
+            contact {supportEmail}
+          </a>
         </div>
 
         {/* Redirect Notice */}

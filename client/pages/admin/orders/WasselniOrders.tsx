@@ -1,19 +1,38 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Truck, Package, Clock } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 export default function WasselniOrders() {
+  const { t } = useTranslation();
+
   const wasselniOrders = [
-    { id: "WN001", customer: "Ahmed Mohammed", status: "In Delivery", total: "3,500 DZD", driver: "Karim Larbi" },
-    { id: "WN002", customer: "Fatima Zahra", status: "Delivered", total: "2,800 DZD", driver: "Youssef Ben Ali" },
-    { id: "WN003", customer: "Mohamed Amine", status: "Pending", total: "4,200 DZD", driver: "Not specified" },
+    { id: "WN001", customer: "Ahmed Mohammed", status: "inDelivery" as const, total: "3,500 DZD", driver: "Karim Larbi" },
+    { id: "WN002", customer: "Fatima Zahra", status: "delivered" as const, total: "2,800 DZD", driver: "Youssef Ben Ali" },
+    { id: "WN003", customer: "Mohamed Amine", status: "pending" as const, total: "4,200 DZD", driver: "Not specified" },
   ];
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: "inDelivery" | "delivered" | "pending") => {
     switch (status) {
-      case "In Delivery": return "bg-blue-500/10 text-blue-600 border-blue-500/20";
-      case "Delivered": return "bg-green-500/10 text-green-600 border-green-500/20";
-      case "Pending": return "bg-yellow-500/10 text-yellow-600 border-yellow-500/20";
+      case "inDelivery":
+        return "bg-blue-500/10 text-blue-600 border-blue-500/20";
+      case "delivered":
+        return "bg-green-500/10 text-green-600 border-green-500/20";
+      case "pending":
+        return "bg-yellow-500/10 text-yellow-600 border-yellow-500/20";
       default: return "bg-gray-500/10 text-gray-600 border-gray-500/20";
+    }
+  };
+
+  const getStatusLabel = (status: "inDelivery" | "delivered" | "pending") => {
+    switch (status) {
+      case "inDelivery":
+        return t("admin.orders.wasselni.inDelivery");
+      case "delivered":
+        return t("admin.orders.wasselni.deliveredToday");
+      case "pending":
+        return t("admin.orders.wasselni.pending");
+      default:
+        return "";
     }
   };
 
@@ -21,15 +40,15 @@ export default function WasselniOrders() {
     <div className="space-y-3 md:space-y-4">
       <div>
         <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-          What to prepare?
+          {t("admin.orders.wasselni.title")}
         </h1>
-        <p className="text-muted-foreground mt-2">Track delivery orders with Wasselni</p>
+        <p className="text-muted-foreground mt-2">{t("admin.orders.wasselni.subtitle")}</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="border-2 border-blue-500/20">
           <CardHeader className="pb-3">
-            <CardDescription>In Delivery</CardDescription>
+            <CardDescription>{t("admin.orders.wasselni.inDelivery")}</CardDescription>
             <CardTitle className="text-xl md:text-2xl text-blue-600">12</CardTitle>
           </CardHeader>
           <CardContent>
@@ -39,7 +58,7 @@ export default function WasselniOrders() {
 
         <Card className="border-2 border-green-500/20">
           <CardHeader className="pb-3">
-            <CardDescription>Delivered Today</CardDescription>
+            <CardDescription>{t("admin.orders.wasselni.deliveredToday")}</CardDescription>
             <CardTitle className="text-xl md:text-2xl text-green-600">28</CardTitle>
           </CardHeader>
           <CardContent>
@@ -49,7 +68,7 @@ export default function WasselniOrders() {
 
         <Card className="border-2 border-yellow-500/20">
           <CardHeader className="pb-3">
-            <CardDescription>Pending</CardDescription>
+            <CardDescription>{t("admin.orders.wasselni.pending")}</CardDescription>
             <CardTitle className="text-xl md:text-2xl text-yellow-600">5</CardTitle>
           </CardHeader>
           <CardContent>
@@ -60,8 +79,8 @@ export default function WasselniOrders() {
 
       <Card className="border-2 border-primary/20">
         <CardHeader>
-          <CardTitle>Wasselni Orders</CardTitle>
-          <CardDescription>Orders linked to Wasselni delivery service</CardDescription>
+          <CardTitle>{t("admin.orders.wasselni.listTitle")}</CardTitle>
+          <CardDescription>{t("admin.orders.wasselni.listDesc")}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
@@ -72,11 +91,15 @@ export default function WasselniOrders() {
                     <div className="flex items-center gap-3 mb-2">
                       <span className="font-bold text-primary">#{order.id}</span>
                       <span className={`text-xs px-3 py-1 rounded-full border ${getStatusColor(order.status)}`}>
-                        {order.status}
+                        {getStatusLabel(order.status)}
                       </span>
                     </div>
-                    <p className="text-sm text-muted-foreground">Customer: {order.customer}</p>
-                    <p className="text-sm text-muted-foreground">Driver: {order.driver}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {t("admin.orders.wasselni.customer")} {order.customer}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {t("admin.orders.wasselni.driver")} {order.driver}
+                    </p>
                   </div>
                   <div className="text-left">
                     <p className="font-bold text-lg">{order.total}</p>

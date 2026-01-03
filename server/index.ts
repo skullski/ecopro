@@ -505,7 +505,7 @@ export function createServer() {
   app.get(
     "/api/staff/orders",
     authenticateStaff,
-    requireStaffPermission('view_orders'),
+    requireStaffPermission('view_orders_list'),
     staffRoutes.getStaffOrders
   );
 
@@ -520,7 +520,7 @@ export function createServer() {
   app.patch(
     "/api/staff/orders/:orderId/status",
     authenticateStaff,
-    requireStaffPermission('edit_orders'),
+    requireStaffPermission('edit_order_status'),
     staffRoutes.updateStaffOrderStatus
   );
 

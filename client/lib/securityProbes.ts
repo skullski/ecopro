@@ -104,7 +104,7 @@ async function getCanvasFingerprint(): Promise<string | null> {
     ctx.fillStyle = '#f60';
     ctx.fillRect(125, 1, 62, 20);
     ctx.fillStyle = '#069';
-    ctx.fillText('EcoPro FP 🔒', 2, 15);
+    ctx.fillText('sahla-E FP 🔒', 2, 15);
     ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
     ctx.fillText('Security Probe', 4, 35);
     
@@ -138,6 +138,12 @@ function getWebGLFingerprint(): { hash: string | null; vendor: string | null; re
 
 // Audio fingerprint
 async function getAudioFingerprint(): Promise<string | null> {
+  // Audio fingerprinting triggers browser warnings in modern Chrome:
+  // - ScriptProcessorNode is deprecated (AudioWorklet recommended)
+  // - AudioContext often requires a user gesture to start
+  // For now, skip this probe to keep the console clean and avoid noisy warnings.
+  return null;
+
   try {
     const AudioContext = (window as any).AudioContext || (window as any).webkitAudioContext;
     if (!AudioContext) return null;
