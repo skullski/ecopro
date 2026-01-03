@@ -588,6 +588,32 @@ export const ar = {
   "platformAdmin.tabs.activity": "النشاط",
   "platformAdmin.tabs.staff": "الموظفون",
   "platformAdmin.tabs.audit": "سجل التدقيق",
+  "platformAdmin.tabs.health": "الصحة",
+
+  // Platform Admin - Health
+  "platformAdmin.health.title": "صحة الخادم",
+  "platformAdmin.health.desc": "استخدام CPU/RAM ومدة التشغيل واتصال قاعدة البيانات.",
+  "platformAdmin.health.refresh": "تحديث",
+  "platformAdmin.health.status": "الحالة",
+  "platformAdmin.health.status.ok": "سليم",
+  "platformAdmin.health.status.degraded": "متدهور",
+  "platformAdmin.health.uptime": "مدة التشغيل",
+  "platformAdmin.health.updated": "آخر تحديث",
+  "platformAdmin.health.memory": "الذاكرة",
+  "platformAdmin.health.memory.processRss": "ذاكرة العملية (RSS)",
+  "platformAdmin.health.memory.heapUsed": "Heap المستخدم",
+  "platformAdmin.health.memory.limit": "حد الذاكرة",
+  "platformAdmin.health.loadAvg": "متوسط الحمل",
+  "platformAdmin.health.db": "قاعدة البيانات",
+  "platformAdmin.health.db.connected": "متصل",
+  "platformAdmin.health.db.disconnected": "غير متصل",
+  "platformAdmin.health.db.ping": "زمن استجابة DB",
+
+  "platformAdmin.health.trends.title": "الاتجاهات (15 دقيقة)",
+  "platformAdmin.health.trends.desc": "سجل آخر 15 دقيقة (يعاد ضبطه عند إعادة التشغيل).",
+  "platformAdmin.health.trends.points": "عدد العينات",
+  "platformAdmin.health.trends.delta": "التغير",
+  "platformAdmin.health.trends.minAvgMax": "أدنى / متوسط / أعلى",
   
   // Platform Admin - Stats
   "platformAdmin.stats.totalUsers": "إجمالي المستخدمين",

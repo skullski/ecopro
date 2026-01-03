@@ -578,6 +578,32 @@ export const en = {
   "platformAdmin.tabs.activity": "Activity",
   "platformAdmin.tabs.staff": "Staff",
   "platformAdmin.tabs.audit": "Audit Log",
+  "platformAdmin.tabs.health": "Health",
+
+  // Platform Admin - Health
+  "platformAdmin.health.title": "Server Health",
+  "platformAdmin.health.desc": "CPU/RAM usage, uptime, and database connectivity.",
+  "platformAdmin.health.refresh": "Refresh",
+  "platformAdmin.health.status": "Status",
+  "platformAdmin.health.status.ok": "Healthy",
+  "platformAdmin.health.status.degraded": "Degraded",
+  "platformAdmin.health.uptime": "Uptime",
+  "platformAdmin.health.updated": "Updated",
+  "platformAdmin.health.memory": "Memory",
+  "platformAdmin.health.memory.processRss": "Process RSS",
+  "platformAdmin.health.memory.heapUsed": "Heap Used",
+  "platformAdmin.health.memory.limit": "Memory Limit",
+  "platformAdmin.health.loadAvg": "Load Average",
+  "platformAdmin.health.db": "Database",
+  "platformAdmin.health.db.connected": "Connected",
+  "platformAdmin.health.db.disconnected": "Disconnected",
+  "platformAdmin.health.db.ping": "DB Ping",
+
+  "platformAdmin.health.trends.title": "Trends (15m)",
+  "platformAdmin.health.trends.desc": "Rolling history from the last 15 minutes (resets on restart).",
+  "platformAdmin.health.trends.points": "Samples",
+  "platformAdmin.health.trends.delta": "Delta",
+  "platformAdmin.health.trends.minAvgMax": "Min / Avg / Max",
   
   // Platform Admin - Stats
   "platformAdmin.stats.totalUsers": "Total Users",

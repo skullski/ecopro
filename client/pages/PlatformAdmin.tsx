@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from '@/lib/i18n';
 import { useNavigate } from 'react-router-dom';
+import { removeAuthToken } from '@/lib/auth';
 import {
   Activity,
   AlertCircle,
@@ -14,6 +15,7 @@ import {
   DollarSign,
   Eye,
   Gift,
+  HeartPulse,
   Lock,
   LogOut,
   Package,
@@ -51,6 +53,137 @@ interface PlatformStats {
   newSignupsWeek: number;
   newSignupsMonth: number;
   totalProducts?: number;
+}
+
+interface ServerHealth {
+  ok: boolean;
+  timestamp: string;
+  uptimeSec: number;
+  node: {
+    version: string;
+    env: string | null;
+    pid: number;
+    ppid: number;
+    versions: Record<string, string>;
+  };
+  process: {
+    memory: {
+      rss: number;
+      heapUsed: number;
+      heapTotal: number;
+      external: number;
+      arrayBuffers?: number;
+    };
+    cpuUsage: {
+      user: number;
+      system: number;
+    };
+    resourceUsage?: any;
+    heap?: {
+      statistics: any;
+      spaces: any;
+    };
+  };
+  os: {
+    platform: string;
+    arch: string;
+    loadavg: number[];
+    totalmem: number;
+    freemem: number;
+    uptime: number;
+    cpuCount: number | null;
+    hostname?: string;
+    cpuModel?: string | null;
+    cpuSpeedMhz?: number | null;
+  };
+  cgroup?: {
+    memoryLimitBytes?: number | null;
+    cpu?: {
+      quota: number | null;
+      period: number | null;
+      cpus: number | null;
+    };
+  };
+  derived?: {
+    memoryLimitBytes: number;
+    rssPctOfLimit: number | null;
+    heapPctOfHeapTotal: number | null;
+    loadPerCpu: number[] | null;
+  };
+  eventLoop?: {
+    utilization: number;
+    active: number;
+    idle: number;
+  };
+  disk?: {
+    cwd?: { path: string; total: number | null; free: number | null; available: number | null };
+    uploads?: { path: string; total: number | null; free: number | null; available: number | null };
+  };
+  network?: {
+    interfaces?: Array<{
+      name: string;
+      addresses: number;
+      internal: boolean;
+      rxBytes?: number | null;
+      txBytes?: number | null;
+      rxBps?: number | null;
+      txBps?: number | null;
+    }>;
+    totals?: {
+      rxBps: number | null;
+      txBps: number | null;
+      intervalSec: number | null;
+    };
+  };
+  db: {
+    ok: boolean;
+    latencyMs: number | null;
+    error: string | null;
+    pool?: {
+      totalCount: number | null;
+      idleCount: number | null;
+      waitingCount: number | null;
+    };
+  };
+  alerts?: string[];
+  thresholds?: {
+    dbSlowMs: number;
+    memoryHighPct: number;
+    eventLoopHighUtil: number;
+    cpuPressureLoadPerCpu: number;
+  };
+  recommendations?: Array<{ severity: 'info' | 'warn' | 'critical'; code: string; message: string }>;
+  trend?: {
+    windowSec: number;
+    points: number;
+    fromTs: number | null;
+    toTs: number | null;
+    series: Array<{
+      ts: number;
+      rssPct: number | null;
+      heapPct: number | null;
+      elu: number;
+      dbLatencyMs: number | null;
+      load1PerCpu: number | null;
+      dbPoolWaiting: number | null;
+    }>;
+    summary: {
+      rssPct: { min: number | null; avg: number | null; max: number | null };
+      heapPct: { min: number | null; avg: number | null; max: number | null };
+      elu: { min: number | null; avg: number | null; max: number | null };
+      dbLatencyMs: { min: number | null; avg: number | null; max: number | null };
+      load1PerCpu: { min: number | null; avg: number | null; max: number | null };
+      dbPoolWaiting: { min: number | null; avg: number | null; max: number | null };
+    };
+    delta: {
+      rssPct: number | null;
+      heapPct: number | null;
+      elu: number | null;
+      dbLatencyMs: number | null;
+      load1PerCpu: number | null;
+      dbPoolWaiting: number | null;
+    };
+  };
 }
 
 interface User {
@@ -697,7 +830,10 @@ export default function PlatformAdmin() {
   const [adminAuditLogs, setAdminAuditLogs] = useState<AdminAuditLog[]>([]);
   const [logMode, setLogMode] = useState<'staff' | 'admin'>('staff');
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stores' | 'products' | 'activity' | 'settings' | 'billing' | 'payment-failures' | 'codes' | 'tools'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stores' | 'products' | 'activity' | 'health' | 'settings' | 'billing' | 'payment-failures' | 'codes' | 'tools'>('overview');
+  const [serverHealth, setServerHealth] = useState<ServerHealth | null>(null);
+  const [healthLoading, setHealthLoading] = useState(false);
+  const [healthError, setHealthError] = useState<string | null>(null);
   const [billingMetrics, setBillingMetrics] = useState<any>(null);
   const [billingLoading, setBillingLoading] = useState(false);
   const [platformSettings, setPlatformSettings] = useState<any>(null);
@@ -760,7 +896,8 @@ export default function PlatformAdmin() {
       ]);
 
       if (usersRes.status === 401 || usersRes.status === 403) {
-        window.location.href = '/login';
+        removeAuthToken();
+        navigate('/login');
         return;
       }
 
@@ -818,6 +955,73 @@ export default function PlatformAdmin() {
       console.error('Failed to load platform data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const formatBytes = (bytes: number | null | undefined) => {
+    if (bytes == null || !Number.isFinite(bytes)) return '-';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    let value = bytes;
+    let unitIndex = 0;
+    while (value >= 1024 && unitIndex < units.length - 1) {
+      value /= 1024;
+      unitIndex += 1;
+    }
+    return `${value.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+  };
+
+  const formatDuration = (totalSeconds: number | null | undefined) => {
+    if (totalSeconds == null || !Number.isFinite(totalSeconds)) return '-';
+    const seconds = Math.max(0, Math.floor(totalSeconds));
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    if (days > 0) return `${days}d ${hours}h ${minutes}m`;
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+  };
+
+  const formatPercent = (value: number | null | undefined) => {
+    if (value == null || !Number.isFinite(value)) return '-';
+    return `${value.toFixed(1)}%`;
+  };
+
+  const formatNumber = (value: number | null | undefined, digits = 2) => {
+    if (value == null || !Number.isFinite(value)) return '-';
+    return value.toFixed(digits);
+  };
+
+  const formatBps = (bps: number | null | undefined) => {
+    if (bps == null || !Number.isFinite(bps)) return '-';
+    // Use SI units for network speeds
+    const units = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
+    let value = bps;
+    let unitIndex = 0;
+    while (value >= 1000 && unitIndex < units.length - 1) {
+      value /= 1000;
+      unitIndex += 1;
+    }
+    return `${value.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+  };
+
+  const loadServerHealth = async () => {
+    setHealthLoading(true);
+    setHealthError(null);
+    try {
+      const res = await fetch('/api/admin/health');
+      if (!res.ok) {
+        setHealthError(`${res.status} ${res.statusText}`);
+        setServerHealth(null);
+        return;
+      }
+      const data = (await res.json()) as ServerHealth;
+      setServerHealth(data);
+    } catch (error) {
+      console.error('Failed to load server health:', error);
+      setHealthError(error instanceof Error ? error.message : 'Failed to load health');
+      setServerHealth(null);
+    } finally {
+      setHealthLoading(false);
     }
   };
 
@@ -1413,6 +1617,19 @@ export default function PlatformAdmin() {
             <CreditCard style={{ width: 'clamp(0.875rem, 1.8vh, 1rem)', height: 'clamp(0.875rem, 1.8vh, 1rem)', marginRight: 'clamp(0.375rem, 0.75vh, 0.5rem)' }} />
             <span className="hidden sm:inline">{t('platformAdmin.tabs.subscriptions')}</span>
             <span className="sm:hidden">B</span>
+          </Button>
+          <Button
+            variant={activeTab === 'health' ? 'default' : 'ghost'}
+            onClick={() => {
+              setActiveTab('health');
+              loadServerHealth();
+            }}
+            className="whitespace-nowrap text-slate-200"
+            style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.375rem, 0.8vh, 0.5rem) clamp(0.75rem, 1.5vh, 1rem)', height: 'clamp(2rem, 4vh, 2.5rem)' }}
+          >
+            <HeartPulse style={{ width: 'clamp(0.875rem, 1.8vh, 1rem)', height: 'clamp(0.875rem, 1.8vh, 1rem)', marginRight: 'clamp(0.375rem, 0.75vh, 0.5rem)' }} />
+            <span className="hidden md:inline">{t('platformAdmin.tabs.health')}</span>
+            <span className="md:hidden">H</span>
           </Button>
           <Button
             variant={activeTab === 'codes' ? 'default' : 'ghost'}
@@ -2400,6 +2617,240 @@ export default function PlatformAdmin() {
                       </div>
                     );
                   })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Health Tab */}
+        {activeTab === 'health' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.875rem, 1.75vh, 1.25rem)' }}>
+            <div className="bg-slate-800/50 backdrop-blur-md rounded-lg border border-slate-700/50 shadow-md"
+              style={{ padding: 'clamp(0.875rem, 1.75vh, 1.25rem)' }}>
+              <div className="flex items-start justify-between" style={{ gap: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
+                <div className="min-w-0">
+                  <h3 className="font-bold text-white flex items-center"
+                    style={{ fontSize: 'clamp(1rem, 2vh, 1.15rem)', gap: 'clamp(0.5rem, 1vh, 0.625rem)' }}>
+                    <HeartPulse className="text-red-400" style={{ width: 'clamp(1.125rem, 2.25vh, 1.375rem)', height: 'clamp(1.125rem, 2.25vh, 1.375rem)' }} />
+                    {t('platformAdmin.health.title')}
+                  </h3>
+                  <p className="text-slate-400" style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)' }}>{t('platformAdmin.health.desc')}</p>
+                </div>
+                <Button
+                  onClick={loadServerHealth}
+                  disabled={healthLoading}
+                  className="bg-white/10 hover:bg-white/20 border border-white/10 text-white"
+                >
+                  {healthLoading ? '...' : t('platformAdmin.health.refresh')}
+                </Button>
+              </div>
+
+              {healthError && (
+                <div className="mt-3 bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-red-200 text-sm">
+                  {healthError}
+                </div>
+              )}
+
+              {serverHealth && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.625rem, 1.25vh, 0.875rem)', marginTop: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
+                  <div className="grid grid-cols-1 lg:grid-cols-3" style={{ gap: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
+                  <div className="bg-slate-900/30 rounded-lg border border-slate-600/30 p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="text-slate-300 font-medium text-sm">{t('platformAdmin.health.status')}</div>
+                      <Badge className={serverHealth.ok ? 'bg-emerald-600/20 text-emerald-200 border border-emerald-500/30' : 'bg-amber-600/20 text-amber-200 border border-amber-500/30'}>
+                        {serverHealth.ok ? t('platformAdmin.health.status.ok') : t('platformAdmin.health.status.degraded')}
+                      </Badge>
+                    </div>
+                    <div className="mt-2 text-slate-200 text-sm">
+                      {t('platformAdmin.health.uptime')}: <span className="font-semibold">{formatDuration(serverHealth.uptimeSec)}</span>
+                    </div>
+                    <div className="mt-1 text-slate-400 text-xs">
+                      {t('platformAdmin.health.updated')}: {new Date(serverHealth.timestamp).toLocaleString()}
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-900/30 rounded-lg border border-slate-600/30 p-3">
+                    <div className="text-slate-300 font-medium text-sm">{t('platformAdmin.health.memory')}</div>
+                    <div className="mt-2 text-slate-200 text-sm">
+                      {t('platformAdmin.health.memory.processRss')}: <span className="font-semibold">{formatBytes(serverHealth.process.memory.rss)}</span>
+                    </div>
+                    <div className="mt-1 text-slate-400 text-xs">
+                      RSS %: {formatPercent(serverHealth.derived?.rssPctOfLimit)}
+                    </div>
+                    <div className="mt-1 text-slate-200 text-sm">
+                      {t('platformAdmin.health.memory.heapUsed')}: <span className="font-semibold">{formatBytes(serverHealth.process.memory.heapUsed)}</span>
+                    </div>
+                    <div className="mt-1 text-slate-400 text-xs">
+                      Heap %: {formatPercent(serverHealth.derived?.heapPctOfHeapTotal)}
+                    </div>
+                    <div className="mt-1 text-slate-400 text-xs">
+                      {t('platformAdmin.health.memory.limit')}: {formatBytes(serverHealth.derived?.memoryLimitBytes ?? serverHealth.cgroup?.memoryLimitBytes ?? serverHealth.os.totalmem)}
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-900/30 rounded-lg border border-slate-600/30 p-3">
+                    <div className="text-slate-300 font-medium text-sm">{t('platformAdmin.health.db')}</div>
+                    <div className="mt-2 text-slate-200 text-sm">
+                      {serverHealth.db.ok ? t('platformAdmin.health.db.connected') : t('platformAdmin.health.db.disconnected')}
+                    </div>
+                    <div className="mt-1 text-slate-200 text-sm">
+                      {t('platformAdmin.health.db.ping')}: <span className="font-semibold">{serverHealth.db.latencyMs != null ? `${serverHealth.db.latencyMs.toFixed(0)} ms` : '-'}</span>
+                    </div>
+                    <div className="mt-1 text-slate-400 text-xs">
+                      Pool: {serverHealth.db.pool?.totalCount ?? '-'} total / {serverHealth.db.pool?.idleCount ?? '-'} idle / {serverHealth.db.pool?.waitingCount ?? '-'} waiting
+                    </div>
+                    <div className="mt-1 text-slate-400 text-xs">
+                      Event loop: {formatPercent((serverHealth.eventLoop?.utilization ?? 0) * 100)}
+                    </div>
+                    <div className="mt-1 text-slate-400 text-xs">
+                      {t('platformAdmin.health.loadAvg')}: {Array.isArray(serverHealth.os.loadavg) ? serverHealth.os.loadavg.map((n) => n.toFixed(2)).join(' / ') : '-'}
+                    </div>
+                    <div className="mt-1 text-slate-400 text-xs">
+                      Load/CPU: {Array.isArray(serverHealth.derived?.loadPerCpu) ? serverHealth.derived!.loadPerCpu!.map((n) => n.toFixed(2)).join(' / ') : '-'}
+                    </div>
+                  </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-3" style={{ gap: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
+                    <div className="bg-slate-900/30 rounded-lg border border-slate-600/30 p-3">
+                      <div className="text-slate-300 font-medium text-sm">Node</div>
+                      <div className="mt-2 text-slate-200 text-sm">v{serverHealth.node.version}</div>
+                      <div className="mt-1 text-slate-400 text-xs">PID: {serverHealth.node.pid} / PPID: {serverHealth.node.ppid}</div>
+                      <div className="mt-1 text-slate-400 text-xs">ENV: {serverHealth.node.env ?? '-'}</div>
+                      <div className="mt-2 text-slate-400 text-xs">
+                        v8: {serverHealth.node.versions?.v8 ?? '-'} / openssl: {serverHealth.node.versions?.openssl ?? '-'}
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-900/30 rounded-lg border border-slate-600/30 p-3">
+                      <div className="text-slate-300 font-medium text-sm">System</div>
+                      <div className="mt-2 text-slate-200 text-sm">{serverHealth.os.platform} / {serverHealth.os.arch}</div>
+                      <div className="mt-1 text-slate-400 text-xs">Host: {serverHealth.os.hostname ?? '-'}</div>
+                      <div className="mt-1 text-slate-400 text-xs">CPU: {serverHealth.os.cpuModel ?? '-'} ({serverHealth.os.cpuCount ?? '-'} cores)</div>
+                      <div className="mt-1 text-slate-400 text-xs">CPU limit: {serverHealth.cgroup?.cpu?.cpus != null ? serverHealth.cgroup.cpu.cpus.toFixed(2) : '-'} cores</div>
+                    </div>
+
+                    <div className="bg-slate-900/30 rounded-lg border border-slate-600/30 p-3">
+                      <div className="text-slate-300 font-medium text-sm">Disk</div>
+                      <div className="mt-2 text-slate-200 text-sm">CWD free: <span className="font-semibold">{formatBytes(serverHealth.disk?.cwd?.available)}</span></div>
+                      <div className="mt-1 text-slate-400 text-xs">CWD total: {formatBytes(serverHealth.disk?.cwd?.total)}</div>
+                      <div className="mt-2 text-slate-200 text-sm">Uploads free: <span className="font-semibold">{formatBytes(serverHealth.disk?.uploads?.available)}</span></div>
+                      <div className="mt-1 text-slate-400 text-xs">Uploads total: {formatBytes(serverHealth.disk?.uploads?.total)}</div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-3" style={{ gap: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
+                    <div className="bg-slate-900/30 rounded-lg border border-slate-600/30 p-3">
+                      <div className="text-slate-300 font-medium text-sm">Network</div>
+                      <div className="mt-2 text-slate-200 text-sm">Interfaces: <span className="font-semibold">{serverHealth.network?.interfaces?.length ?? '-'}</span></div>
+                      <div className="mt-1 text-slate-400 text-xs">
+                        Speed (RX/TX){serverHealth.network?.totals?.intervalSec != null ? ` over ${serverHealth.network.totals.intervalSec.toFixed(1)}s` : ''}: <span className="font-semibold">{formatBps(serverHealth.network?.totals?.rxBps)}</span> / <span className="font-semibold">{formatBps(serverHealth.network?.totals?.txBps)}</span>
+                      </div>
+                      <div className="mt-1 text-slate-400 text-xs">
+                        {Array.isArray(serverHealth.network?.interfaces)
+                          ? serverHealth.network!.interfaces!
+                              .slice(0, 6)
+                              .map((i) => `${i.name} (${i.addresses})${i.rxBps != null || i.txBps != null ? ` RX ${formatBps(i.rxBps)} / TX ${formatBps(i.txBps)}` : ''}`)
+                              .join(' · ')
+                          : '-'}
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-900/30 rounded-lg border border-slate-600/30 p-3">
+                      <div className="text-slate-300 font-medium text-sm">Runtime</div>
+                      <div className="mt-2 text-slate-200 text-sm">ELU: <span className="font-semibold">{formatPercent((serverHealth.eventLoop?.utilization ?? 0) * 100)}</span></div>
+                      <div className="mt-1 text-slate-400 text-xs">Active: {serverHealth.eventLoop?.active != null ? `${serverHealth.eventLoop.active.toFixed(0)}ms` : '-'}</div>
+                      <div className="mt-1 text-slate-400 text-xs">Idle: {serverHealth.eventLoop?.idle != null ? `${serverHealth.eventLoop.idle.toFixed(0)}ms` : '-'}</div>
+                    </div>
+
+                    <div className="bg-slate-900/30 rounded-lg border border-slate-600/30 p-3">
+                      <div className="text-slate-300 font-medium text-sm">Alerts</div>
+                      <div className="mt-2 text-slate-200 text-sm">
+                        {serverHealth.alerts && serverHealth.alerts.length > 0 ? serverHealth.alerts.join(' · ') : 'None'}
+                      </div>
+                      {Array.isArray(serverHealth.recommendations) && serverHealth.recommendations.length > 0 && (
+                        <div className="mt-3 space-y-1">
+                          {serverHealth.recommendations.slice(0, 6).map((r) => (
+                            <div
+                              key={r.code}
+                              className={
+                                r.severity === 'critical'
+                                  ? 'text-red-200 text-xs'
+                                  : r.severity === 'warn'
+                                    ? 'text-amber-200 text-xs'
+                                    : 'text-slate-300 text-xs'
+                              }
+                            >
+                              <span className="text-slate-500">[{r.code}]</span> {r.message}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {serverHealth.thresholds && (
+                        <div className="mt-3 text-slate-400 text-xs">
+                          Thresholds: DB slow &gt; {serverHealth.thresholds.dbSlowMs}ms · Memory high &gt; {serverHealth.thresholds.memoryHighPct}% · ELU high &gt; {(serverHealth.thresholds.eventLoopHighUtil * 100).toFixed(0)}% · CPU pressure &gt; {serverHealth.thresholds.cpuPressureLoadPerCpu}
+                        </div>
+                      )}
+                      {!serverHealth.ok && serverHealth.db.error && (
+                        <div className="mt-1 text-slate-400 text-xs">DB error: {serverHealth.db.error}</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {serverHealth.trend && (
+                    <div className="bg-slate-900/30 rounded-lg border border-slate-600/30 p-3">
+                      <div className="flex items-start justify-between" style={{ gap: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
+                        <div className="min-w-0">
+                          <div className="text-slate-300 font-medium text-sm">{t('platformAdmin.health.trends.title')}</div>
+                          <div className="text-slate-400 text-xs mt-1">{t('platformAdmin.health.trends.desc')}</div>
+                        </div>
+                        <div className="text-slate-400 text-xs">
+                          {t('platformAdmin.health.trends.points')}: {serverHealth.trend.points}
+                        </div>
+                      </div>
+
+                      <div className="mt-3 grid grid-cols-1 lg:grid-cols-3" style={{ gap: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
+                        <div className="bg-slate-900/20 rounded-lg border border-slate-600/20 p-3">
+                          <div className="text-slate-300 text-sm font-medium">DB Ping (ms)</div>
+                          <div className="text-slate-400 text-xs mt-1">{t('platformAdmin.health.trends.minAvgMax')}: {formatNumber(serverHealth.trend.summary.dbLatencyMs.min, 0)} / {formatNumber(serverHealth.trend.summary.dbLatencyMs.avg, 0)} / {formatNumber(serverHealth.trend.summary.dbLatencyMs.max, 0)}</div>
+                          <div className="text-slate-400 text-xs mt-1">{t('platformAdmin.health.trends.delta')}: {serverHealth.trend.delta.dbLatencyMs != null ? `${serverHealth.trend.delta.dbLatencyMs.toFixed(0)} ms` : '-'}</div>
+                        </div>
+
+                        <div className="bg-slate-900/20 rounded-lg border border-slate-600/20 p-3">
+                          <div className="text-slate-300 text-sm font-medium">Memory RSS (%)</div>
+                          <div className="text-slate-400 text-xs mt-1">{t('platformAdmin.health.trends.minAvgMax')}: {formatNumber(serverHealth.trend.summary.rssPct.min, 1)} / {formatNumber(serverHealth.trend.summary.rssPct.avg, 1)} / {formatNumber(serverHealth.trend.summary.rssPct.max, 1)}</div>
+                          <div className="text-slate-400 text-xs mt-1">{t('platformAdmin.health.trends.delta')}: {serverHealth.trend.delta.rssPct != null ? `${serverHealth.trend.delta.rssPct.toFixed(1)}%` : '-'}</div>
+                        </div>
+
+                        <div className="bg-slate-900/20 rounded-lg border border-slate-600/20 p-3">
+                          <div className="text-slate-300 text-sm font-medium">Event Loop Utilization</div>
+                          <div className="text-slate-400 text-xs mt-1">{t('platformAdmin.health.trends.minAvgMax')}: {serverHealth.trend.summary.elu.min != null ? formatPercent(serverHealth.trend.summary.elu.min * 100) : '-'} / {serverHealth.trend.summary.elu.avg != null ? formatPercent(serverHealth.trend.summary.elu.avg * 100) : '-'} / {serverHealth.trend.summary.elu.max != null ? formatPercent(serverHealth.trend.summary.elu.max * 100) : '-'}</div>
+                          <div className="text-slate-400 text-xs mt-1">{t('platformAdmin.health.trends.delta')}: {serverHealth.trend.delta.elu != null ? `${(serverHealth.trend.delta.elu * 100).toFixed(1)}%` : '-'}</div>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 grid grid-cols-1 lg:grid-cols-3" style={{ gap: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
+                        <div className="bg-slate-900/20 rounded-lg border border-slate-600/20 p-3">
+                          <div className="text-slate-300 text-sm font-medium">Load / CPU (1m)</div>
+                          <div className="text-slate-400 text-xs mt-1">{t('platformAdmin.health.trends.minAvgMax')}: {formatNumber(serverHealth.trend.summary.load1PerCpu.min)} / {formatNumber(serverHealth.trend.summary.load1PerCpu.avg)} / {formatNumber(serverHealth.trend.summary.load1PerCpu.max)}</div>
+                          <div className="text-slate-400 text-xs mt-1">{t('platformAdmin.health.trends.delta')}: {formatNumber(serverHealth.trend.delta.load1PerCpu)}</div>
+                        </div>
+
+                        <div className="bg-slate-900/20 rounded-lg border border-slate-600/20 p-3">
+                          <div className="text-slate-300 text-sm font-medium">DB Pool Waiting</div>
+                          <div className="text-slate-400 text-xs mt-1">{t('platformAdmin.health.trends.minAvgMax')}: {formatNumber(serverHealth.trend.summary.dbPoolWaiting.min, 0)} / {formatNumber(serverHealth.trend.summary.dbPoolWaiting.avg, 1)} / {formatNumber(serverHealth.trend.summary.dbPoolWaiting.max, 0)}</div>
+                          <div className="text-slate-400 text-xs mt-1">{t('platformAdmin.health.trends.delta')}: {formatNumber(serverHealth.trend.delta.dbPoolWaiting, 0)}</div>
+                        </div>
+
+                        <div className="bg-slate-900/20 rounded-lg border border-slate-600/20 p-3">
+                          <div className="text-slate-300 text-sm font-medium">Heap Used (%)</div>
+                          <div className="text-slate-400 text-xs mt-1">{t('platformAdmin.health.trends.minAvgMax')}: {formatNumber(serverHealth.trend.summary.heapPct.min, 1)} / {formatNumber(serverHealth.trend.summary.heapPct.avg, 1)} / {formatNumber(serverHealth.trend.summary.heapPct.max, 1)}</div>
+                          <div className="text-slate-400 text-xs mt-1">{t('platformAdmin.health.trends.delta')}: {serverHealth.trend.delta.heapPct != null ? `${serverHealth.trend.delta.heapPct.toFixed(1)}%` : '-'}</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

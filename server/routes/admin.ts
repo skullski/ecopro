@@ -5,6 +5,11 @@ import { requireAdmin } from "../middleware/auth";
 import { findUserByEmail, updateUser } from "../utils/database";
 import { clearSecurityBlockCache } from '../utils/security';
 import { clearBruteForceMemory } from '../utils/brute-force';
+import os from 'os';
+import fs from 'fs';
+import { performance } from 'perf_hooks';
+import v8 from 'v8';
+import path from 'path';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -130,6 +135,433 @@ export const getPlatformStats: RequestHandler = async (_req, res) => {
   } catch (err) {
     console.error('Get stats error:', err);
     return jsonError(res, 500, "Failed to get platform stats");
+  }
+};
+
+const safeReadFileTrim = (filePath: string): string | null => {
+  try {
+    return fs.readFileSync(filePath, 'utf8').trim();
+  } catch {
+    return null;
+  }
+};
+
+const getCgroupMemoryLimitBytes = (): number | null => {
+  // cgroup v2 (common on modern Linux/container hosts)
+  const v2 = safeReadFileTrim('/sys/fs/cgroup/memory.max');
+  if (v2 && v2 !== 'max') {
+    const parsed = Number(v2);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  }
+
+  // cgroup v1 (older)
+  const v1 = safeReadFileTrim('/sys/fs/cgroup/memory/memory.limit_in_bytes');
+  if (!v1) return null;
+  const parsed = Number(v1);
+  if (!Number.isFinite(parsed) || parsed <= 0) return null;
+
+  // Some hosts return a huge sentinel value when “unlimited”
+  if (parsed > Number.MAX_SAFE_INTEGER) return null;
+  return parsed;
+};
+
+const getCgroupCpuLimit = (): { quota: number | null; period: number | null; cpus: number | null } => {
+  // cgroup v2 cpu.max => "max 100000" or "200000 100000"
+  const v2 = safeReadFileTrim('/sys/fs/cgroup/cpu.max');
+  if (v2) {
+    const [quotaStr, periodStr] = v2.split(/\s+/);
+    const period = periodStr ? Number(periodStr) : null;
+    if (quotaStr === 'max') {
+      return { quota: null, period, cpus: null };
+    }
+    const quota = Number(quotaStr);
+    const cpus = quota && period ? quota / period : null;
+    return {
+      quota: Number.isFinite(quota) ? quota : null,
+      period: Number.isFinite(period as number) ? (period as number) : null,
+      cpus: cpus != null && Number.isFinite(cpus) ? cpus : null,
+    };
+  }
+
+  // cgroup v1: cpu.cfs_quota_us + cpu.cfs_period_us
+  const quotaStr = safeReadFileTrim('/sys/fs/cgroup/cpu/cpu.cfs_quota_us');
+  const periodStr = safeReadFileTrim('/sys/fs/cgroup/cpu/cpu.cfs_period_us');
+  const quota = quotaStr ? Number(quotaStr) : null;
+  const period = periodStr ? Number(periodStr) : null;
+  if (quota == null || period == null) return { quota: null, period: null, cpus: null };
+  if (!Number.isFinite(quota) || !Number.isFinite(period) || period <= 0) return { quota: null, period: null, cpus: null };
+  if (quota < 0) return { quota, period, cpus: null };
+  return { quota, period, cpus: quota / period };
+};
+
+const getDiskStats = (pathToCheck: string): { path: string; total: number | null; free: number | null; available: number | null } => {
+  try {
+    // Node 18+: fs.statfsSync
+    const statfs = (fs as any).statfsSync?.(pathToCheck);
+    if (!statfs) return { path: pathToCheck, total: null, free: null, available: null };
+    const total = Number(statfs.blocks) * Number(statfs.bsize);
+    const free = Number(statfs.bfree) * Number(statfs.bsize);
+    const available = Number(statfs.bavail) * Number(statfs.bsize);
+    return {
+      path: pathToCheck,
+      total: Number.isFinite(total) ? total : null,
+      free: Number.isFinite(free) ? free : null,
+      available: Number.isFinite(available) ? available : null,
+    };
+  } catch {
+    return { path: pathToCheck, total: null, free: null, available: null };
+  }
+};
+
+type NetDevCounters = { rxBytes: number; txBytes: number };
+
+const readProcNetDev = (): Record<string, NetDevCounters> | null => {
+  // Linux only. Format: https://man7.org/linux/man-pages/man5/proc.5.html
+  try {
+    const raw = fs.readFileSync('/proc/net/dev', 'utf8');
+    const lines = raw.split('\n').map((l) => l.trim()).filter(Boolean);
+    // Skip headers (first 2 lines)
+    const dataLines = lines.slice(2);
+    const result: Record<string, NetDevCounters> = {};
+    for (const line of dataLines) {
+      // Example: "eth0: 123 0 0 0 0 0 0 0 456 0 0 0 0 0 0 0"
+      const [ifPart, rest] = line.split(':');
+      if (!ifPart || !rest) continue;
+      const name = ifPart.trim();
+      const cols = rest.trim().split(/\s+/);
+      // Receive bytes is col 0, transmit bytes is col 8
+      const rxBytes = Number(cols[0]);
+      const txBytes = Number(cols[8]);
+      if (!Number.isFinite(rxBytes) || !Number.isFinite(txBytes)) continue;
+      result[name] = { rxBytes, txBytes };
+    }
+    return result;
+  } catch {
+    return null;
+  }
+};
+
+let lastNetDevSnapshot: { ts: number; counters: Record<string, NetDevCounters> } | null = null;
+
+type HealthSample = {
+  ts: number; // epoch ms
+  rssPct: number | null;
+  heapPct: number | null;
+  elu: number; // 0..1
+  dbLatencyMs: number | null;
+  load1PerCpu: number | null;
+  dbPoolWaiting: number | null;
+};
+
+const HEALTH_TREND_WINDOW_MS = 15 * 60 * 1000;
+const HEALTH_TREND_MAX_SAMPLES = 180; // safety cap
+const healthSamples: HealthSample[] = [];
+
+const pruneHealthSamples = (now: number) => {
+  const cutoff = now - HEALTH_TREND_WINDOW_MS;
+  while (healthSamples.length > 0 && healthSamples[0].ts < cutoff) {
+    healthSamples.shift();
+  }
+  if (healthSamples.length > HEALTH_TREND_MAX_SAMPLES) {
+    healthSamples.splice(0, healthSamples.length - HEALTH_TREND_MAX_SAMPLES);
+  }
+};
+
+const summarizeNumbers = (values: Array<number | null | undefined>) => {
+  const nums = values.filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
+  if (nums.length === 0) return { min: null as number | null, avg: null as number | null, max: null as number | null };
+  const min = Math.min(...nums);
+  const max = Math.max(...nums);
+  const avg = nums.reduce((a, b) => a + b, 0) / nums.length;
+  return { min, avg, max };
+};
+
+// Admin-only: server health snapshot (no secrets)
+export const getServerHealth: RequestHandler = async (_req, res) => {
+  try {
+    const mem = process.memoryUsage();
+    const loadavg = os.loadavg();
+    const cpuCount = os.cpus()?.length ?? null;
+    const cgroupMemoryLimitBytes = getCgroupMemoryLimitBytes();
+    const memoryLimitBytes = cgroupMemoryLimitBytes ?? os.totalmem();
+
+    const cgroupCpu = getCgroupCpuLimit();
+    const cpuInfo = os.cpus();
+    const cpuModel = cpuInfo?.[0]?.model ?? null;
+    const cpuSpeedMhz = cpuInfo?.[0]?.speed ?? null;
+
+    const rssPctOfLimit = memoryLimitBytes > 0 ? (mem.rss / memoryLimitBytes) * 100 : null;
+    const heapPctOfHeapTotal = mem.heapTotal > 0 ? (mem.heapUsed / mem.heapTotal) * 100 : null;
+
+    const eventLoopUtil = performance.eventLoopUtilization();
+    const resourceUsage = process.resourceUsage();
+    const heapStats = v8.getHeapStatistics();
+    const heapSpaces = v8.getHeapSpaceStatistics();
+
+    const network = os.networkInterfaces();
+
+    const netDev = readProcNetDev();
+    const nowForNet = Date.now();
+    const prevNet = lastNetDevSnapshot;
+    const dtSec = prevNet ? Math.max(0.001, (nowForNet - prevNet.ts) / 1000) : null;
+
+    const networkSummary = Object.entries(network).map(([name, addrs]) => {
+      const internal = (addrs ?? []).every((a) => a.internal);
+      const counters = netDev?.[name] ?? null;
+      const prevCounters = prevNet?.counters?.[name] ?? null;
+      const rxBps =
+        dtSec != null && counters && prevCounters ? Math.max(0, (counters.rxBytes - prevCounters.rxBytes) / dtSec) : null;
+      const txBps =
+        dtSec != null && counters && prevCounters ? Math.max(0, (counters.txBytes - prevCounters.txBytes) / dtSec) : null;
+      return {
+        name,
+        addresses: (addrs ?? []).length,
+        internal,
+        rxBytes: counters?.rxBytes ?? null,
+        txBytes: counters?.txBytes ?? null,
+        rxBps,
+        txBps,
+      };
+    });
+
+    if (netDev) {
+      lastNetDevSnapshot = { ts: nowForNet, counters: netDev };
+    }
+
+    const diskCwd = getDiskStats(process.cwd());
+    const diskUploads = getDiskStats(path.resolve(process.cwd(), 'uploads'));
+
+    let dbOk = false;
+    let dbLatencyMs: number | null = null;
+    let dbError: string | null = null;
+
+    try {
+      const start = process.hrtime.bigint();
+      await pool.query('SELECT 1');
+      const end = process.hrtime.bigint();
+      dbLatencyMs = Number(end - start) / 1e6;
+      dbOk = true;
+    } catch (err) {
+      dbOk = false;
+      dbError = err instanceof Error ? err.message : 'DB ping failed';
+    }
+
+    const thresholds = {
+      dbSlowMs: 500,
+      memoryHighPct: 80,
+      eventLoopHighUtil: 0.8,
+      cpuPressureLoadPerCpu: 1.0,
+    };
+
+    const poolWaiting = (pool as any).waitingCount;
+    const load1PerCpu = cpuCount && cpuCount > 0 ? loadavg[0] / cpuCount : null;
+
+    const recommendations: Array<{ severity: 'info' | 'warn' | 'critical'; code: string; message: string }> = [];
+    if (!dbOk) {
+      recommendations.push({
+        severity: 'critical',
+        code: 'DB_DISCONNECTED',
+        message: 'Database is not reachable. Check Render DB status, connection limits, and DATABASE_URL.',
+      });
+    } else if (dbLatencyMs != null && dbLatencyMs > thresholds.dbSlowMs) {
+      recommendations.push({
+        severity: 'warn',
+        code: 'DB_SLOW',
+        message: 'Database ping is high. Consider upgrading DB, adding indexes, or reducing peak load.',
+      });
+    }
+
+    if (typeof poolWaiting === 'number' && poolWaiting > 0) {
+      recommendations.push({
+        severity: 'warn',
+        code: 'DB_POOL_WAITING',
+        message: 'DB pool has waiting requests. Consider increasing pool size, optimizing queries, or upgrading DB concurrency.',
+      });
+    }
+
+    if (eventLoopUtil.utilization > thresholds.eventLoopHighUtil) {
+      recommendations.push({
+        severity: 'warn',
+        code: 'EVENT_LOOP_HIGH',
+        message: 'Event loop utilization is high. Consider upgrading CPU or reducing synchronous/blocking work.',
+      });
+    }
+
+    if (rssPctOfLimit != null && rssPctOfLimit > thresholds.memoryHighPct) {
+      recommendations.push({
+        severity: 'warn',
+        code: 'MEMORY_HIGH',
+        message: 'Memory usage is high. Consider upgrading RAM or investigating memory leaks / large payloads.',
+      });
+    }
+
+    if (load1PerCpu != null && load1PerCpu > thresholds.cpuPressureLoadPerCpu) {
+      recommendations.push({
+        severity: 'warn',
+        code: 'CPU_PRESSURE',
+        message: 'CPU pressure is high (load per CPU > 1). Consider upgrading CPU or scaling horizontally.',
+      });
+    }
+
+    // Provide a positive signal when everything is calm
+    if (recommendations.length === 0) {
+      recommendations.push({
+        severity: 'info',
+        code: 'OK',
+        message: 'No issues detected by current thresholds.',
+      });
+    }
+
+    // Store a sample for 15-minute trends (in-memory; resets on deploy/restart)
+    const now = Date.now();
+    pruneHealthSamples(now);
+    healthSamples.push({
+      ts: now,
+      rssPct: rssPctOfLimit,
+      heapPct: heapPctOfHeapTotal,
+      elu: eventLoopUtil.utilization,
+      dbLatencyMs,
+      load1PerCpu,
+      dbPoolWaiting: typeof poolWaiting === 'number' ? poolWaiting : null,
+    });
+    pruneHealthSamples(now);
+
+    const trendSeries = healthSamples.map((s) => ({
+      ts: s.ts,
+      rssPct: s.rssPct,
+      heapPct: s.heapPct,
+      elu: s.elu,
+      dbLatencyMs: s.dbLatencyMs,
+      load1PerCpu: s.load1PerCpu,
+      dbPoolWaiting: s.dbPoolWaiting,
+    }));
+
+    const first = healthSamples[0] ?? null;
+    const last = healthSamples[healthSamples.length - 1] ?? null;
+    const trend = {
+      windowSec: Math.floor(HEALTH_TREND_WINDOW_MS / 1000),
+      points: healthSamples.length,
+      fromTs: first?.ts ?? null,
+      toTs: last?.ts ?? null,
+      series: trendSeries,
+      summary: {
+        rssPct: summarizeNumbers(healthSamples.map((s) => s.rssPct)),
+        heapPct: summarizeNumbers(healthSamples.map((s) => s.heapPct)),
+        elu: summarizeNumbers(healthSamples.map((s) => s.elu)),
+        dbLatencyMs: summarizeNumbers(healthSamples.map((s) => s.dbLatencyMs)),
+        load1PerCpu: summarizeNumbers(healthSamples.map((s) => s.load1PerCpu)),
+        dbPoolWaiting: summarizeNumbers(healthSamples.map((s) => s.dbPoolWaiting)),
+      },
+      delta: {
+        rssPct: first && last && first.rssPct != null && last.rssPct != null ? last.rssPct - first.rssPct : null,
+        heapPct: first && last && first.heapPct != null && last.heapPct != null ? last.heapPct - first.heapPct : null,
+        elu: first && last ? last.elu - first.elu : null,
+        dbLatencyMs:
+          first && last && first.dbLatencyMs != null && last.dbLatencyMs != null ? last.dbLatencyMs - first.dbLatencyMs : null,
+        load1PerCpu:
+          first && last && first.load1PerCpu != null && last.load1PerCpu != null ? last.load1PerCpu - first.load1PerCpu : null,
+        dbPoolWaiting:
+          first && last && first.dbPoolWaiting != null && last.dbPoolWaiting != null ? last.dbPoolWaiting - first.dbPoolWaiting : null,
+      },
+    };
+
+    res.json({
+      ok: dbOk,
+      timestamp: new Date().toISOString(),
+      uptimeSec: Math.floor(process.uptime()),
+      node: {
+        version: process.version,
+        env: process.env.NODE_ENV ?? null,
+        pid: process.pid,
+        ppid: process.ppid,
+        versions: process.versions,
+      },
+      process: {
+        memory: {
+          rss: mem.rss,
+          heapUsed: mem.heapUsed,
+          heapTotal: mem.heapTotal,
+          external: mem.external,
+          arrayBuffers: (mem as any).arrayBuffers ?? undefined,
+        },
+        cpuUsage: process.cpuUsage(),
+        resourceUsage,
+        heap: {
+          statistics: heapStats,
+          spaces: heapSpaces,
+        },
+      },
+      os: {
+        platform: os.platform(),
+        arch: os.arch(),
+        loadavg,
+        totalmem: os.totalmem(),
+        freemem: os.freemem(),
+        uptime: Math.floor(os.uptime()),
+        cpuCount,
+        hostname: os.hostname(),
+        cpuModel,
+        cpuSpeedMhz,
+      },
+      cgroup: {
+        memoryLimitBytes: cgroupMemoryLimitBytes,
+        cpu: cgroupCpu,
+      },
+      derived: {
+        memoryLimitBytes,
+        rssPctOfLimit,
+        heapPctOfHeapTotal,
+        loadPerCpu: cpuCount && cpuCount > 0 ? loadavg.map((v) => v / cpuCount) : null,
+      },
+      eventLoop: {
+        utilization: eventLoopUtil.utilization,
+        active: eventLoopUtil.active,
+        idle: eventLoopUtil.idle,
+      },
+      disk: {
+        cwd: diskCwd,
+        uploads: diskUploads,
+      },
+      network: {
+        interfaces: networkSummary,
+        totals: (() => {
+          const ext = networkSummary.filter((i) => !i.internal);
+          const rxBpsTotal = ext.reduce((sum, i) => sum + (typeof i.rxBps === 'number' ? i.rxBps : 0), 0);
+          const txBpsTotal = ext.reduce((sum, i) => sum + (typeof i.txBps === 'number' ? i.txBps : 0), 0);
+          return {
+            rxBps: Number.isFinite(rxBpsTotal) ? rxBpsTotal : null,
+            txBps: Number.isFinite(txBpsTotal) ? txBpsTotal : null,
+            intervalSec: dtSec,
+          };
+        })(),
+      },
+      db: {
+        ok: dbOk,
+        latencyMs: dbLatencyMs,
+        error: dbError,
+        pool: {
+          totalCount: (pool as any).totalCount ?? null,
+          idleCount: (pool as any).idleCount ?? null,
+          waitingCount: poolWaiting ?? null,
+        },
+      },
+      alerts: (() => {
+        const list: string[] = [];
+        if (!dbOk) list.push('DB_DISCONNECTED');
+        if (dbLatencyMs != null && dbLatencyMs > thresholds.dbSlowMs) list.push('DB_SLOW');
+        if (typeof poolWaiting === 'number' && poolWaiting > 0) list.push('DB_POOL_WAITING');
+        if (eventLoopUtil.utilization > thresholds.eventLoopHighUtil) list.push('EVENT_LOOP_HIGH');
+        if (rssPctOfLimit != null && rssPctOfLimit > thresholds.memoryHighPct) list.push('MEMORY_HIGH');
+        if (load1PerCpu != null && load1PerCpu > thresholds.cpuPressureLoadPerCpu) list.push('CPU_PRESSURE');
+        return list;
+      })(),
+      thresholds,
+      recommendations,
+      trend,
+    });
+  } catch (err) {
+    console.error('getServerHealth error:', err);
+    return jsonError(res, 500, 'Failed to get server health');
   }
 };
 

@@ -654,6 +654,13 @@ export function createServer() {
   );
 
   app.get(
+    "/api/admin/health",
+    authenticate,
+    requireAdmin,
+    adminRoutes.getServerHealth
+  );
+
+  app.get(
     "/api/admin/staff",
     authenticate,
     requireAdmin,

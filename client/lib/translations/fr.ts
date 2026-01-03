@@ -412,6 +412,32 @@ export const fr = {
   "platformAdmin.tabs.activity": "Activité",
   "platformAdmin.tabs.staff": "Personnel",
   "platformAdmin.tabs.audit": "Journal d'Audit",
+  "platformAdmin.tabs.health": "Santé",
+
+  // Platform Admin - Health
+  "platformAdmin.health.title": "Santé du Serveur",
+  "platformAdmin.health.desc": "Utilisation CPU/RAM, uptime et connectivité base de données.",
+  "platformAdmin.health.refresh": "Actualiser",
+  "platformAdmin.health.status": "Statut",
+  "platformAdmin.health.status.ok": "Sain",
+  "platformAdmin.health.status.degraded": "Dégradé",
+  "platformAdmin.health.uptime": "Uptime",
+  "platformAdmin.health.updated": "Mis à jour",
+  "platformAdmin.health.memory": "Mémoire",
+  "platformAdmin.health.memory.processRss": "RSS du Process",
+  "platformAdmin.health.memory.heapUsed": "Heap Utilisé",
+  "platformAdmin.health.memory.limit": "Limite Mémoire",
+  "platformAdmin.health.loadAvg": "Charge Moyenne",
+  "platformAdmin.health.db": "Base de Données",
+  "platformAdmin.health.db.connected": "Connectée",
+  "platformAdmin.health.db.disconnected": "Déconnectée",
+  "platformAdmin.health.db.ping": "Ping DB",
+
+  "platformAdmin.health.trends.title": "Tendances (15m)",
+  "platformAdmin.health.trends.desc": "Historique glissant sur 15 minutes (réinitialisé au redémarrage).",
+  "platformAdmin.health.trends.points": "Échantillons",
+  "platformAdmin.health.trends.delta": "Delta",
+  "platformAdmin.health.trends.minAvgMax": "Min / Moy / Max",
   
   // Platform Admin - Stats
   "platformAdmin.stats.totalUsers": "Total Utilisateurs",

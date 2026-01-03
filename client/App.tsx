@@ -12,7 +12,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams, useNavigate } from "react-router-dom";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, removeAuthToken } from "@/lib/auth";
 import Layout from "@/components/layout/Layout";
 import Index from "./pages/Index";
 // import AppPlaceholder from "./pages/AppPlaceholder";
@@ -215,11 +215,42 @@ function RequireStaff({ children }: { children: JSX.Element }) {
 // Simple cross-area guards to avoid wrong redirects when token persists
 function GuardPlatformAuthPages({ children }: { children: JSX.Element }) {
   const user = getCurrentUser();
-  const userType = (user as any)?.user_type || 'client';
-  // If an admin tries to access platform login/signup, redirect to platform
-  if (user && user.role === 'admin') {
-    return <Navigate to="/platform-admin" replace />;
-  }
+  const [mode, setMode] = React.useState<'checking' | 'show' | 'redirect'>('checking');
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    const run = async () => {
+      // Only guard the auth pages for admins.
+      if (!user || user.role !== 'admin') {
+        if (!cancelled) setMode('show');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/auth/me', { credentials: 'include' });
+        if (!res.ok) {
+          // LocalStorage says “admin”, but cookie is invalid/expired → clear stale state.
+          removeAuthToken();
+          if (!cancelled) setMode('show');
+          return;
+        }
+
+        if (!cancelled) setMode('redirect');
+      } catch {
+        // Network/server hiccup: do not force redirect loops.
+        if (!cancelled) setMode('show');
+      }
+    };
+
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.role]);
+
+  if (mode === 'checking') return null;
+  if (mode === 'redirect') return <Navigate to="/platform-admin" replace />;
   return children;
 }
 
