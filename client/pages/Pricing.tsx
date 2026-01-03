@@ -5,6 +5,7 @@ import {
   MessageCircle, Loader, Check, Clock, Rocket, Gift, 
   Shield, Crown, Star
 } from 'lucide-react';
+import { useTranslation } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/api';
 
@@ -64,6 +65,7 @@ const PLANS = [
 ];
 
 export default function Pricing() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -122,16 +124,16 @@ export default function Pricing() {
           <div className="text-center mb-6 sm:mb-8">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border shadow-sm mb-3 sm:mb-4">
               <Gift className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
-              <span className="text-xs sm:text-sm font-medium text-green-700 dark:text-green-400">30 days free trial</span>
+              <span className="text-xs sm:text-sm font-medium text-green-700 dark:text-green-400">{t("pricing.freeTrial") || "30 days free trial"}</span>
             </div>
             
             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2">
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-600">
-                Simple & Transparent Pricing
+                {t("pricing.title") || "Simple & Transparent Pricing"}
               </span>
             </h1>
             <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">
-              No hidden fees. No commissions. Keep 100% of your profits.
+              {t("pricing.subtitle") || "No hidden fees. No commissions. Keep 100% of your profits."}
             </p>
           </div>
 

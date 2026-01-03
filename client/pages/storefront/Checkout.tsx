@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, Plus, Minus, Trash2, Lock, Truck } from 'lucide-react';
+import { useTranslation } from '@/lib/i18n';
 import {
   formatWilayaLabel,
   getAlgeriaCommuneById,
@@ -149,6 +150,7 @@ const TEMPLATE_STYLES: Record<string, Record<string, string>> = {
 };
 
 export default function Checkout() {
+  const { t } = useTranslation();
   const { productId } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -531,10 +533,10 @@ export default function Checkout() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5 sm:gap-2 md:gap-1.5 lg:gap-4">
                   <div className="space-y-0.5 sm:space-y-0.5 md:space-y-0.5">
-                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">Full Name *</label>
+                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">{t("checkout.fullName") || "Full Name"} *</label>
                     <input
                       type="text"
-                      placeholder="Enter your full name"
+                      placeholder={t("checkout.enterFullName") || "Enter your full name"}
                       value={formData.fullName}
                       onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                       className={`w-full px-2 sm:px-3 md:px-2 lg:px-4 py-1 sm:py-1.5 md:py-1.5 lg:py-3 rounded-lg border-2 text-xs sm:text-sm md:text-xs lg:text-sm ${style.inputBg} focus:outline-none focus:ring-2 focus:ring-offset-1 transition shadow-sm`}
@@ -543,10 +545,10 @@ export default function Checkout() {
                   </div>
 
                   <div className="space-y-0.5 sm:space-y-0.5 md:space-y-0.5">
-                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">Email *</label>
+                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">{t("checkout.email") || "Email"} *</label>
                     <input
                       type="email"
-                      placeholder="your@email.com"
+                      placeholder={t("checkout.emailPlaceholder") || "your@email.com"}
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       className={`w-full px-2 sm:px-3 md:px-2 lg:px-4 py-1 sm:py-1.5 md:py-1.5 lg:py-3 rounded-lg border-2 text-xs sm:text-sm md:text-xs lg:text-sm ${style.inputBg} focus:outline-none focus:ring-2 focus:ring-offset-1 transition shadow-sm`}
@@ -555,10 +557,10 @@ export default function Checkout() {
                   </div>
 
                   <div className="space-y-0.5 sm:space-y-0.5 md:space-y-0.5">
-                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">Phone Number *</label>
+                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">{t("checkout.phone") || "Phone Number"} *</label>
                     <input
                       type="tel"
-                      placeholder="+213 5XX XXX XXX"
+                      placeholder={t("checkout.phonePlaceholder") || "+213 5XX XXX XXX"}
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       className={`w-full px-2 sm:px-3 md:px-2 lg:px-4 py-1 sm:py-1.5 md:py-1.5 lg:py-3 rounded-lg border-2 text-xs sm:text-sm md:text-xs lg:text-sm ${style.inputBg} focus:outline-none focus:ring-2 focus:ring-offset-1 transition shadow-sm`}
@@ -599,7 +601,7 @@ export default function Checkout() {
                   </div>
 
                   <div className="space-y-0.5 sm:space-y-0.5 md:space-y-0.5">
-                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">Wilaya *</label>
+                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">{t("checkout.wilaya") || "Wilaya"} *</label>
                     <Select
                       value={formData.wilayaId}
                       onValueChange={(nextId) => {
@@ -610,7 +612,7 @@ export default function Checkout() {
                         className={`w-full px-2 sm:px-3 md:px-2 lg:px-4 py-1 sm:py-1.5 md:py-1.5 lg:py-3 rounded-lg border-2 text-xs sm:text-sm md:text-xs lg:text-sm ${style.inputBg} focus:outline-none focus:ring-2 focus:ring-offset-1 transition shadow-sm h-auto`}
                         style={{ '--tw-ring-color': accentColor } as any}
                       >
-                        <SelectValue placeholder="Select Wilaya" />
+                        <SelectValue placeholder={t("checkout.selectWilaya") || "Select Wilaya"} />
                       </SelectTrigger>
                       <SelectContent>
                         {dzWilayas.map((w) => (
@@ -623,7 +625,7 @@ export default function Checkout() {
                   </div>
 
                   <div className="space-y-0.5 sm:space-y-0.5 md:space-y-0.5">
-                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">Baladia/Commune *</label>
+                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">{t("checkout.commune") || "Baladia/Commune"} *</label>
                     <Select
                       value={formData.communeId}
                       disabled={!formData.wilayaId}
@@ -636,7 +638,7 @@ export default function Checkout() {
                         className={`w-full px-2 sm:px-3 md:px-2 lg:px-4 py-1 sm:py-1.5 md:py-1.5 lg:py-3 rounded-lg border-2 text-xs sm:text-sm md:text-xs lg:text-sm ${style.inputBg} focus:outline-none focus:ring-2 focus:ring-offset-1 transition shadow-sm disabled:opacity-60 h-auto`}
                         style={{ '--tw-ring-color': accentColor } as any}
                       >
-                        <SelectValue placeholder={formData.wilayaId ? 'Select Baladia/Commune' : 'Select Wilaya first'} />
+                        <SelectValue placeholder={formData.wilayaId ? (t("checkout.selectCommune") || 'Select Baladia/Commune') : (t("checkout.selectWilayaFirst") || 'Select Wilaya first')} />
                       </SelectTrigger>
                       <SelectContent>
                         {dzCommunes.map((c) => (
@@ -684,10 +686,10 @@ export default function Checkout() {
                   </div>
 
                   <div className="space-y-0.5 sm:space-y-0.5 md:space-y-0.5 md:col-span-2">
-                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">Delivery Address *</label>
+                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">{t("checkout.address") || "Delivery Address"} *</label>
                     <input
                       type="text"
-                      placeholder="Street address, building, apartment number, etc."
+                      placeholder={t("checkout.addressPlaceholder") || "Street address, building, apartment number, etc."}
                       value={formData.address}
                       onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                       className={`w-full px-2 sm:px-3 md:px-2 lg:px-4 py-1 sm:py-1.5 md:py-1.5 lg:py-3 rounded-lg border-2 text-xs sm:text-sm md:text-xs lg:text-sm ${style.inputBg} focus:outline-none focus:ring-2 focus:ring-offset-1 transition shadow-sm`}
@@ -738,7 +740,7 @@ export default function Checkout() {
             {/* Step 3: Review */}
             {currentStep === 3 && (
               <div className={`border-2 ${style.border} rounded-xl p-2 sm:p-3 md:p-2 lg:p-3 space-y-1.5 sm:space-y-2 md:space-y-1.5 lg:space-y-2 md:space-y-3 shadow-lg`}>
-                <h2 className="text-base sm:text-lg md:text-lg lg:text-xl md:text-2xl font-bold mb-1 sm:mb-2 md:mb-2 lg:mb-4">Order Review</h2>
+                <h2 className="text-base sm:text-lg md:text-lg lg:text-xl md:text-2xl font-bold mb-1 sm:mb-2 md:mb-2 lg:mb-4">{t("checkout.orderSummary") || "Order Review"}</h2>
                 <div className="bg-gradient-to-r from-green-50 to-transparent border-l-4 border-green-500 p-2 sm:p-3 md:p-4 lg:p-5 rounded-lg mb-2 sm:mb-3 md:mb-4 lg:mb-4 shadow-sm">
                   <p className="text-green-700 font-bold text-sm sm:text-base md:text-base lg:text-lg">✓ Ready to complete your order</p>
                   <p className="text-xs sm:text-xs md:text-xs lg:text-sm text-green-600 mt-1">Payment will be collected upon delivery</p>

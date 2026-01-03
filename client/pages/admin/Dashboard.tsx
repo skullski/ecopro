@@ -18,7 +18,7 @@ interface DashboardStats {
 
 interface Analytics {
   dailyRevenue: { date: string; orders: number; revenue: number }[];
-  customStatuses: { name: string; color: string; icon: string }[];
+  customStatuses: { key?: string; name: string; color: string; icon: string }[];
   comparisons: {
     today: { orders: number; revenue: number; ordersGrowth: number; revenueGrowth: number };
     thisWeek: { orders: number; revenue: number; ordersGrowth: number; revenueGrowth: number };
@@ -253,7 +253,7 @@ export default function Dashboard() {
               <div className="p-0.5 rounded bg-white/20 backdrop-blur">
                 <Eye className="w-3 h-3" />
               </div>
-              <div className="text-xs bg-white/20 px-1 py-0.5 rounded-full">Live</div>
+              <div className="text-xs bg-white/20 px-1 py-0.5 rounded-full">{t('dashboard.live')}</div>
             </div>
             <p className="text-xl sm:text-2xl font-bold">{loading ? '...' : stats.visitors.toLocaleString()}</p>
             <p className="text-white/70 text-xs sm:text-sm">{t('dashboard.views')}</p>
@@ -358,7 +358,7 @@ export default function Dashboard() {
                 </div>
               );
             }) || (
-              <p className="text-xs text-muted-foreground text-center py-6">No data available</p>
+              <p className="text-xs text-muted-foreground text-center py-6">{t('dashboard.noDataAvailable')}</p>
             )}
           </div>
         </Card>
@@ -404,7 +404,7 @@ export default function Dashboard() {
                 </div>
               </div>
             )) || (
-              <p className="text-xs text-muted-foreground text-center py-6">No products</p>
+              <p className="text-xs text-muted-foreground text-center py-6">{t('dashboard.noProducts')}</p>
             )}
           </div>
         </Card>
@@ -438,7 +438,7 @@ export default function Dashboard() {
                 </div>
               </div>
             )) || (
-              <p className="text-xs text-muted-foreground text-center py-6">No orders</p>
+              <p className="text-xs text-muted-foreground text-center py-6">{t('dashboard.noOrders')}</p>
             )}
           </div>
         </Card>

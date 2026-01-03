@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Badge } from "@/components/ui/badge";
 import { Truck, Key, CheckCircle2, X, ExternalLink, Zap, Globe } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "@/lib/i18n";
 
 interface DeliveryCompany {
   id: string;
@@ -34,6 +35,7 @@ interface DeliveryCompany {
 }
 
 export default function DeliveryCompanies() {
+  const { t } = useTranslation();
   const [selectedCompany, setSelectedCompany] = useState<DeliveryCompany | null>(null);
   const [showConfigDialog, setShowConfigDialog] = useState(false);
   const [credentials, setCredentials] = useState<Record<string, string>>({});
@@ -139,6 +141,22 @@ export default function DeliveryCompanies() {
       docsUrl: "https://dolivroo.com/docs",
       apiRating: 5,
     },
+
+    // 🧾 LABEL-READY (Manual): Noest
+    {
+      id: "noest",
+      name: "Noest",
+      logo: "/delivery-logos/noest.png",
+      description: "Manual workflow: upload orders in Noest portal; labels are downloaded from your Noest dashboard.",
+      apiFields: [
+        { label: "API Token", placeholder: "Your Noest API Token", field: "apiToken" },
+        { label: "API Key", placeholder: "Your Noest API Key", field: "apiKey" },
+      ],
+      enabled: false,
+      hasApi: false,
+      features: { createShipment: false, tracking: false, labels: false, cod: true, webhooks: false },
+      apiRating: 2,
+    },
   ]);
 
   const handleCardClick = (company: DeliveryCompany) => {
@@ -190,10 +208,10 @@ export default function DeliveryCompanies() {
           </div>
           <div>
             <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-              Delivery Companies
+              {t('delivery.title')}
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Connect your store with Algerian delivery providers. All companies below have verified APIs.
+              {t('delivery.subtitle')}
             </p>
           </div>
         </div>
@@ -205,10 +223,10 @@ export default function DeliveryCompanies() {
           <Zap className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
           <div className="space-y-1">
             <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
-              Recommended: Use Yalidine or Dolivroo (Aggregator)
+              {t('delivery.recommended')}
             </p>
             <p className="text-xs text-blue-600 dark:text-blue-300">
-              Yalidine has the best API documentation. Dolivroo provides a single API for all providers.
+              {t('delivery.recommendedDesc')}
             </p>
           </div>
         </div>
@@ -296,11 +314,11 @@ export default function DeliveryCompanies() {
               {/* Status */}
               {company.enabled ? (
                 <div className="text-xs text-emerald-700 dark:text-emerald-300 font-medium px-2 py-1 bg-emerald-100/60 dark:bg-emerald-900/40 rounded-md text-center">
-                  ✓ Connected & Active
+                  {t('delivery.connectedActive')}
                 </div>
               ) : (
                 <div className="text-xs text-muted-foreground px-2 py-1 bg-muted/50 rounded-md text-center">
-                  Click to configure
+                  {t('delivery.clickToConfigure')}
                 </div>
               )}
             </CardContent>
@@ -333,7 +351,7 @@ export default function DeliveryCompanies() {
                   {selectedCompany?.name}
                   {selectedCompany?.id === 'dolivroo' && (
                     <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200">
-                      Aggregator
+                      {t('delivery.aggregator')}
                     </Badge>
                   )}
                 </DialogTitle>
@@ -343,7 +361,7 @@ export default function DeliveryCompanies() {
                 {selectedCompany && (
                   <div className="flex items-center gap-1 mt-1">
                     {renderStars(selectedCompany.apiRating)}
-                    <span className="text-xs text-muted-foreground ml-1">API Quality</span>
+                    <span className="text-xs text-muted-foreground ml-1">{t('delivery.apiQuality')}</span>
                   </div>
                 )}
               </div>
@@ -354,22 +372,22 @@ export default function DeliveryCompanies() {
             {/* API Features Summary */}
             {selectedCompany && (
               <div className="bg-muted/30 rounded-lg p-3 space-y-2">
-                <p className="text-xs font-medium text-muted-foreground">Supported Features:</p>
+                <p className="text-xs font-medium text-muted-foreground">{t('delivery.supportedFeatures')}:</p>
                 <div className="flex flex-wrap gap-2">
                   <Badge variant={selectedCompany.features.createShipment ? "default" : "secondary"} className="text-xs">
-                    {selectedCompany.features.createShipment ? "✓" : "✗"} Create Shipments
+                    {selectedCompany.features.createShipment ? "✓" : "✗"} {t('delivery.createShipments')}
                   </Badge>
                   <Badge variant={selectedCompany.features.tracking ? "default" : "secondary"} className="text-xs">
-                    {selectedCompany.features.tracking ? "✓" : "✗"} Tracking
+                    {selectedCompany.features.tracking ? "✓" : "✗"} {t('delivery.tracking')}
                   </Badge>
                   <Badge variant={selectedCompany.features.labels ? "default" : "secondary"} className="text-xs">
-                    {selectedCompany.features.labels ? "✓" : "✗"} Labels
+                    {selectedCompany.features.labels ? "✓" : "✗"} {t('delivery.labels')}
                   </Badge>
                   <Badge variant={selectedCompany.features.cod ? "default" : "secondary"} className="text-xs">
-                    {selectedCompany.features.cod ? "✓" : "✗"} Cash on Delivery
+                    {selectedCompany.features.cod ? "✓" : "✗"} {t('delivery.cashOnDelivery')}
                   </Badge>
                   <Badge variant={selectedCompany.features.webhooks ? "default" : "secondary"} className="text-xs">
-                    {selectedCompany.features.webhooks ? "✓" : "✗"} Webhooks
+                    {selectedCompany.features.webhooks ? "✓" : "✗"} {t('delivery.webhooks')}
                   </Badge>
                 </div>
               </div>
@@ -399,7 +417,7 @@ export default function DeliveryCompanies() {
                   <div className="flex gap-2.5">
                     <Key className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                     <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
-                      Get API credentials from the provider's dashboard
+                      {t('delivery.getCredentials')}
                     </p>
                   </div>
                   <Button 
@@ -409,7 +427,7 @@ export default function DeliveryCompanies() {
                     onClick={() => window.open(selectedCompany.docsUrl, '_blank')}
                   >
                     <ExternalLink className="w-3 h-3 mr-1" />
-                    Docs
+                    {t('delivery.docs')}
                   </Button>
                 </div>
               </div>
@@ -430,7 +448,7 @@ export default function DeliveryCompanies() {
                 className="hover:bg-destructive/90"
               >
                 <X className="w-4 h-4 mr-1.5" />
-                Disconnect
+                {t('delivery.disconnect')}
               </Button>
             )}
             <Button 
@@ -439,7 +457,7 @@ export default function DeliveryCompanies() {
               onClick={() => setShowConfigDialog(false)}
               className="border-border/60 hover:bg-muted/50"
             >
-              Cancel
+              {t('cancel')}
             </Button>
             <Button 
               size="sm"
@@ -447,7 +465,7 @@ export default function DeliveryCompanies() {
               className="bg-gradient-to-r from-primary to-accent hover:shadow-lg"
             >
               <CheckCircle2 className="w-4 h-4 mr-1.5" />
-              Connect & Activate
+              {t('delivery.connectActivate')}
             </Button>
           </DialogFooter>
         </DialogContent>

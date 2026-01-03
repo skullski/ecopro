@@ -117,6 +117,12 @@ export class DeliveryService {
 
       const order = orderResult.rows[0];
 
+      // Manual workflow: Noest labels are generated inside the Noest portal.
+      // EcoPro should not attempt to generate labels automatically.
+      if (String(order.company_name || '').trim().toLowerCase() === 'noest') {
+        throw new Error('Noest labels are generated inside your Noest account dashboard. Upload the order in Noest to download labels.');
+      }
+
       // Get delivery integration credentials
       const integrationResult = await pool.query(
         `SELECT id, api_key_encrypted, api_secret_encrypted, webhook_secret_encrypted

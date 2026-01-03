@@ -36,20 +36,20 @@ export default function GoogleSheetsIntegration() {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-            <p className="text-sm font-medium mb-1">📊 Export Orders Automatically</p>
-            <p className="text-sm text-muted-foreground">All new orders are automatically added to Google Sheet</p>
+            <p className="text-sm font-medium mb-1">📊 {t('admin.addons.sheets.exportOrders')}</p>
+            <p className="text-sm text-muted-foreground">{t('admin.addons.sheets.exportOrdersDesc')}</p>
           </div>
           <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg">
-            <p className="text-sm font-medium mb-1">📦 Export Products</p>
-            <p className="text-sm text-muted-foreground">Product list with prices and stock</p>
+            <p className="text-sm font-medium mb-1">📦 {t('admin.addons.sheets.exportProducts')}</p>
+            <p className="text-sm text-muted-foreground">{t('admin.addons.sheets.exportProductsDesc')}</p>
           </div>
           <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
-            <p className="text-sm font-medium mb-1">👥 Customer List</p>
-            <p className="text-sm text-muted-foreground">Customer info, phone and address</p>
+            <p className="text-sm font-medium mb-1">👥 {t('admin.addons.sheets.customerList')}</p>
+            <p className="text-sm text-muted-foreground">{t('admin.addons.sheets.customerListDesc')}</p>
           </div>
           <div className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg">
-            <p className="text-sm font-medium mb-1">📈 Daily Statistics</p>
-            <p className="text-sm text-muted-foreground">Sales, profits, order count</p>
+            <p className="text-sm font-medium mb-1">📈 {t('admin.addons.sheets.dailyStats')}</p>
+            <p className="text-sm text-muted-foreground">{t('admin.addons.sheets.dailyStatsDesc')}</p>
           </div>
         </CardContent>
       </Card>
@@ -74,30 +74,30 @@ export default function GoogleSheetsIntegration() {
           <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
             <div className="text-sm">
-              <p className="font-medium text-yellow-700 dark:text-yellow-600 mb-1">How to get API Credentials</p>
+              <p className="font-medium text-yellow-700 dark:text-yellow-600 mb-1">{t('admin.addons.sheets.howToGetCredentials')}</p>
               <ol className="text-muted-foreground space-y-1 list-decimal list-inside">
-                <li>Go to <a href="https://console.cloud.google.com" target="_blank" className="text-primary underline">Google Cloud Console</a></li>
-                <li>Create a new project or select an existing one</li>
-                <li>Enable Google Sheets API</li>
-                <li>Create a Service Account and download the JSON file</li>
-                <li>Share Google Sheet with the Service Account email</li>
+                <li>{t('admin.addons.sheets.step1')}</li>
+                <li>{t('admin.addons.sheets.step2')}</li>
+                <li>{t('admin.addons.sheets.step3')}</li>
+                <li>{t('admin.addons.sheets.step4')}</li>
+                <li>{t('admin.addons.sheets.step5')}</li>
               </ol>
             </div>
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-2 block">Google Sheet ID (Spreadsheet ID)</label>
+            <label className="text-sm font-medium mb-2 block">{t('admin.addons.sheets.spreadsheetId')}</label>
             <Input 
               placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
               defaultValue={connected ? "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms" : ""}
             />
             <p className="text-xs text-muted-foreground mt-1">
-              You can find it in the Google Sheet URL: docs.google.com/spreadsheets/d/<span className="text-primary font-mono">SPREADSHEET_ID</span>/edit
+              {t('admin.addons.sheets.spreadsheetIdHelp')}
             </p>
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-2 block">Service Account Email</label>
+            <label className="text-sm font-medium mb-2 block">{t('admin.addons.sheets.serviceAccountEmail')}</label>
             <Input 
               type="email"
               placeholder="your-service-account@project-id.iam.gserviceaccount.com"
@@ -106,13 +106,13 @@ export default function GoogleSheetsIntegration() {
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-2 block">Private Key (JSON)</label>
+            <label className="text-sm font-medium mb-2 block">{t('admin.addons.sheets.privateKey')}</label>
             <textarea
               className="w-full min-h-[120px] px-3 py-2 border rounded-lg font-mono text-xs bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               placeholder='{"type": "service_account", "project_id": "...", "private_key": "..."}'
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Copy the contents of the JSON file you downloaded from Google Cloud Console
+              {t('admin.addons.sheets.privateKeyHelp')}
             </p>
           </div>
 
@@ -165,7 +165,7 @@ export default function GoogleSheetsIntegration() {
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <RefreshCw className="w-5 h-5 text-purple-500" />
-                  Sync
+                  {t('admin.addons.sheets.sync')}
                 </div>
                 <Button 
                   size="sm" 
@@ -176,52 +176,52 @@ export default function GoogleSheetsIntegration() {
                   {syncing ? (
                     <>
                       <RefreshCw className="w-4 h-4 ml-2 animate-spin" />
-                      Syncing...
+                      {t('admin.addons.sheets.syncing')}
                     </>
                   ) : (
                     <>
                       <RefreshCw className="w-4 h-4 ml-2" />
-                      Sync Now
+                      {t('admin.addons.sheets.syncNow')}
                     </>
                   )}
                 </Button>
               </CardTitle>
-              <CardDescription>Auto-sync options</CardDescription>
+              <CardDescription>{t('admin.addons.sheets.autoSyncOptions')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                 <div>
-                  <p className="font-medium">Auto Sync</p>
-                  <p className="text-sm text-muted-foreground">Sync when a new order is added</p>
+                  <p className="font-medium">{t('admin.addons.sheets.autoSync')}</p>
+                  <p className="text-sm text-muted-foreground">{t('admin.addons.sheets.autoSyncDesc')}</p>
                 </div>
                 <input type="checkbox" className="w-5 h-5" defaultChecked />
               </div>
 
               <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
                 <div>
-                  <p className="font-medium">Product Sync</p>
-                  <p className="text-sm text-muted-foreground">Update product list daily</p>
+                  <p className="font-medium">{t('admin.addons.sheets.productSync')}</p>
+                  <p className="text-sm text-muted-foreground">{t('admin.addons.sheets.productSyncDesc')}</p>
                 </div>
                 <input type="checkbox" className="w-5 h-5" defaultChecked />
               </div>
 
               <div className="p-4 bg-gradient-to-r from-green-500/10 to-green-500/5 rounded-lg border border-green-500/20">
                 <div className="flex items-center justify-between mb-3">
-                  <p className="font-medium text-green-700 dark:text-green-600">Last Sync</p>
-                  <span className="text-sm text-muted-foreground">5 minutes ago</span>
+                  <p className="font-medium text-green-700 dark:text-green-600">{t('admin.addons.sheets.lastSync')}</p>
+                  <span className="text-sm text-muted-foreground">{t('admin.addons.sheets.fiveMinutesAgo')}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-3 text-center">
                   <div>
                     <p className="text-2xl font-bold text-green-600">248</p>
-                    <p className="text-xs text-muted-foreground">Orders</p>
+                    <p className="text-xs text-muted-foreground">{t('admin.addons.sheets.orders')}</p>
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-green-600">86</p>
-                    <p className="text-xs text-muted-foreground">products</p>
+                    <p className="text-xs text-muted-foreground">{t('admin.addons.sheets.products')}</p>
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-green-600">142</p>
-                    <p className="text-xs text-muted-foreground">customers</p>
+                    <p className="text-xs text-muted-foreground">{t('admin.addons.sheets.customers')}</p>
                   </div>
                 </div>
               </div>
@@ -230,7 +230,7 @@ export default function GoogleSheetsIntegration() {
 
           <Card className="border-2 border-blue-500/20">
             <CardHeader>
-              <CardTitle>Direct Link to Google Sheet</CardTitle>
+              <CardTitle>{t('admin.addons.sheets.directLink')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex gap-2">
@@ -240,7 +240,7 @@ export default function GoogleSheetsIntegration() {
                   className="font-mono text-sm"
                 />
                 <Button variant="outline">
-                  Open
+                  {t('admin.addons.sheets.open')}
                 </Button>
               </div>
             </CardContent>

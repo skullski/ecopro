@@ -139,6 +139,8 @@ export function OrderFulfillment({ order, onDeliveryAssigned }: OrderFulfillment
   };
 
   const selectedCompanyData = companies.find(c => c.id === selectedCompany);
+  const canGenerateLabel = !!selectedCompanyData?.features?.supports_labels;
+  const isNoest = String(selectedCompanyData?.name || '').trim().toLowerCase() === 'noest';
 
   return (
     <div className="space-y-4">
@@ -212,7 +214,7 @@ export function OrderFulfillment({ order, onDeliveryAssigned }: OrderFulfillment
               <Button
                 onClick={handleGenerateLabel}
                 variant="outline"
-                disabled={labelGenerating}
+                disabled={labelGenerating || !selectedCompanyData || !canGenerateLabel}
                 className="flex-1"
               >
                 {labelGenerating ? (
@@ -229,6 +231,14 @@ export function OrderFulfillment({ order, onDeliveryAssigned }: OrderFulfillment
               </Button>
             )}
           </div>
+
+          {order.delivery_company_id && selectedCompanyData && !canGenerateLabel && (
+            <div className="text-xs text-muted-foreground">
+              {isNoest
+                ? 'Noest labels are available inside your Noest account dashboard.'
+                : 'This courier provides labels in their own dashboard.'}
+            </div>
+          )}
 
           {order.shipping_label_url && (
             <Button

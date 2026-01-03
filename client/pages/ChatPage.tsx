@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChatList, ChatWindow } from '../components/chat';
 import { apiFetch } from '@/lib/api';
+import { useTranslation } from '@/lib/i18n';
 
 interface User {
   id: number;
@@ -13,6 +14,7 @@ interface User {
 }
 
 export function ChatPage() {
+  const { t } = useTranslation();
   const [user, setUser] = useState<User | null>(null);
   const [selectedChatId, setSelectedChatId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -92,7 +94,7 @@ export function ChatPage() {
       <div className="flex items-center justify-center h-screen bg-gray-50 overflow-hidden">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">{creatingChat ? 'Connecting to support...' : 'Loading...'}</p>
+          <p className="mt-4 text-gray-600">{creatingChat ? (t("chat.connecting") || 'Connecting to support...') : (t("chat.loading") || 'Loading...')}</p>
         </div>
       </div>
     );

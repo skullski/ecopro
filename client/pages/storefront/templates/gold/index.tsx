@@ -1,30 +1,19 @@
 import { TemplateProps } from '../types';
-
 import ShiroHanaTemplate from './shiro-hana/ShiroHanaTemplate';
-import BabyGoldTemplate from '@/components/templates/baby_gold';
+import BabyosTemplate from './babyos/BabyosTemplate';
 
 /**
- * @deprecated Gold template distinction is removed.
- * All templates are now equal - just different renderers.
- * Use the main template index instead.
+ * Gold templates index.
+ * Currently only Shiro Hana is available.
  */
-export type GoldTemplateId = 'gold-shiro-hana' | 'gold-baby';
+export type GoldTemplateId = 'shiro-hana' | 'babyos';
 
-/**
- * @deprecated Use RenderStorefront from '../index' instead.
- * This is kept for backward compatibility only.
- */
-export function RenderGoldStorefront(t: GoldTemplateId, props: TemplateProps) {
-  console.warn('[DEPRECATED] RenderGoldStorefront is deprecated. Use RenderStorefront instead.');
-  switch (t) {
-    case 'gold-shiro-hana':
-      return <ShiroHanaTemplate {...props} />;
-    case 'gold-baby':
-      return <BabyGoldTemplate {...props} />;
-    default:
-      return <ShiroHanaTemplate {...props} />;
-  }
+export function RenderGoldStorefront(t: GoldTemplateId | string, props: TemplateProps) {
+  const raw = String(t || '').trim().replace(/^gold-/, '');
+  if (raw === 'babyos') return <BabyosTemplate {...props} />;
+  return <ShiroHanaTemplate {...props} />;
 }
 
-// Re-export templates directly (new way)
-export { ShiroHanaTemplate, BabyGoldTemplate };
+// Re-export template
+export { ShiroHanaTemplate };
+export { BabyosTemplate };

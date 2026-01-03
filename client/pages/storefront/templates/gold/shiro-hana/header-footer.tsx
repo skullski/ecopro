@@ -1,17 +1,18 @@
 import { resolveResponsiveNumber, resolveResponsiveStyle, type Breakpoint } from './responsive';
 
 export function Header({ node, onSelect, resolveAssetUrl, theme, responsive }: any) {
-  const logo = node.logo;
+  const safeNode = node || {};
+  const logo = safeNode.logo || null;
   const logoFit = logo?.fit === 'contain' ? 'contain' : 'cover';
 
-  const sticky = node?.sticky !== false;
+  const sticky = safeNode?.sticky !== false;
   const isMd = !!responsive?.isMd;
 
   const bp = (responsive?.breakpoint || (isMd ? 'desktop' : (responsive?.isSm ? 'tablet' : 'mobile'))) as Breakpoint;
   const resolveNumber = (v: any): number | undefined => resolveResponsiveNumber(v, bp);
 
-  const padY = resolveNumber(node?.paddingY);
-  const padX = resolveNumber(node?.paddingX);
+  const padY = resolveNumber(safeNode?.paddingY);
+  const padX = resolveNumber(safeNode?.paddingX);
 
   const logoPosXRaw = resolveNumber(logo?.posX);
   const logoPosYRaw = resolveNumber(logo?.posY);
@@ -23,6 +24,9 @@ export function Header({ node, onSelect, resolveAssetUrl, theme, responsive }: a
   const logoPosY = typeof logoPosYRaw === 'number' ? Math.max(0, Math.min(1, logoPosYRaw)) : 0.5;
   const logoScaleX = typeof logoScaleXRaw === 'number' ? logoScaleXRaw : (typeof logoSize === 'number' ? logoSize : 1);
   const logoScaleY = typeof logoScaleYRaw === 'number' ? logoScaleYRaw : (typeof logoSize === 'number' ? logoSize : 1);
+
+  const logoAssetKey = typeof (logo as any)?.assetKey === 'string' ? (logo as any).assetKey : '';
+  const logoAlt = typeof (logo as any)?.alt === 'string' ? (logo as any).alt : '';
 
   return (
     <header
@@ -43,21 +47,23 @@ export function Header({ node, onSelect, resolveAssetUrl, theme, responsive }: a
         }}
       >
         <div className="flex items-center gap-4">
-          <img
-            src={resolveAssetUrl ? resolveAssetUrl(node.logo.assetKey) : `/assets/${node.logo.assetKey}`}
-            alt={node.logo.alt}
-            className="h-10"
-            style={{
-              objectFit: logoFit,
-              objectPosition: `${Math.round(logoPosX * 100)}% ${Math.round(logoPosY * 100)}%`,
-              transform: `scaleX(${logoScaleX}) scaleY(${logoScaleY})`,
-            }}
-            data-edit-path="layout.header.logo"
-            onClick={() => onSelect("layout.header.logo")}
-          />
+          {logoAssetKey ? (
+            <img
+              src={resolveAssetUrl ? resolveAssetUrl(logoAssetKey) : `/assets/${logoAssetKey}`}
+              alt={logoAlt}
+              className="h-10"
+              style={{
+                objectFit: logoFit,
+                objectPosition: `${Math.round(logoPosX * 100)}% ${Math.round(logoPosY * 100)}%`,
+                transform: `scaleX(${logoScaleX}) scaleY(${logoScaleY})`,
+              }}
+              data-edit-path="layout.header.logo"
+              onClick={() => onSelect('layout.header.logo')}
+            />
+          ) : null}
           {isMd ? (
             <nav className="flex gap-4">
-            {node.nav.map((n: any, i: number) => {
+            {(safeNode.nav || []).map((n: any, i: number) => {
               const label = n?.label && typeof n.label === 'object' ? n.label : n;
               const action = typeof n?.action === 'string' ? n.action : '#';
               return (
@@ -76,7 +82,7 @@ export function Header({ node, onSelect, resolveAssetUrl, theme, responsive }: a
           ) : null}
         </div>
         <div>
-          {node.cta?.map((c: any, i: number) => (
+          {(safeNode.cta || []).map((c: any, i: number) => (
             <a
               key={i}
               href={c.action}
@@ -95,12 +101,13 @@ export function Header({ node, onSelect, resolveAssetUrl, theme, responsive }: a
 }
 
 export function Footer({ node, onSelect, theme, responsive }: any) {
+  const safeNode = node || {};
   const isMd = !!responsive?.isMd;
   const bp = (responsive?.breakpoint || (isMd ? 'desktop' : (responsive?.isSm ? 'tablet' : 'mobile'))) as Breakpoint;
   const resolveNumber = (v: any): number | undefined => resolveResponsiveNumber(v, bp);
 
-  const padY = resolveNumber(node?.paddingY);
-  const padX = resolveNumber(node?.paddingX);
+  const padY = resolveNumber(safeNode?.paddingY);
+  const padX = resolveNumber(safeNode?.paddingX);
   return (
     <footer
       className=""
@@ -121,7 +128,7 @@ export function Footer({ node, onSelect, theme, responsive }: any) {
       >
         <div className="flex justify-between">
           <div>
-            {node.links.map((l: any, i: number) => {
+            {(safeNode.links || []).map((l: any, i: number) => {
               const label = l?.label && typeof l.label === 'object' ? l.label : l;
               const action = typeof l?.action === 'string' ? l.action : '#';
               return (

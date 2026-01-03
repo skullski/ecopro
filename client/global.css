@@ -4,6 +4,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Euphoria+Script&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Allura&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Satisfy&display=swap');
+/* Arabic-friendly font */
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap');
 
 /* Horror glowing effect for admin panel */
 .drop-shadow-glow {
@@ -356,4 +358,86 @@ html.dark body[data-profile-wallpaper="true"] .profile-glass {
   background-color: rgba(15, 23, 42, 0.5) !important;
   backdrop-filter: blur(16px) !important;
   -webkit-backdrop-filter: blur(16px) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RTL (Right-to-Left) Support for Arabic
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* RTL base styles */
+[dir="rtl"] {
+  font-family: 'Tajawal', 'Cairo', system-ui, -apple-system, sans-serif;
+}
+
+/* Flip flexbox direction */
+[dir="rtl"] .flex-row {
+  flex-direction: row-reverse;
+}
+
+/* Keep some elements LTR (numbers, code, etc) */
+[dir="rtl"] .ltr,
+[dir="rtl"] code,
+[dir="rtl"] pre,
+[dir="rtl"] .font-mono {
+  direction: ltr;
+  text-align: left;
+}
+
+/* RTL spacing adjustments */
+[dir="rtl"] .ml-auto {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+[dir="rtl"] .mr-auto {
+  margin-right: 0;
+  margin-left: auto;
+}
+
+/* RTL text alignment */
+[dir="rtl"] .text-left {
+  text-align: right;
+}
+
+[dir="rtl"] .text-right {
+  text-align: left;
+}
+
+/* RTL icon flipping */
+[dir="rtl"] .rtl-flip {
+  transform: scaleX(-1);
+}
+
+/* RTL sidebar */
+[dir="rtl"] aside {
+  border-right: none;
+  border-left: 1px solid hsl(var(--border));
+}
+
+/* RTL form inputs */
+[dir="rtl"] input,
+[dir="rtl"] textarea,
+[dir="rtl"] select {
+  text-align: right;
+}
+
+/* RTL dropdown menus */
+[dir="rtl"] [data-radix-popper-content-wrapper] {
+  direction: rtl;
+}
+
+/* RTL tables */
+[dir="rtl"] table {
+  direction: rtl;
+}
+
+[dir="rtl"] th,
+[dir="rtl"] td {
+  text-align: right;
+}
+
+/* Preserve LTR for specific content */
+[dir="rtl"] .preserve-ltr {
+  direction: ltr;
+  unicode-bidi: embed;
 }

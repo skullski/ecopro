@@ -225,32 +225,32 @@ export default function StaffManagement() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Staff Management</h1>
-        <p className="text-muted-foreground mt-2">Manage your store staff and their permissions</p>
+        <h1 className="text-3xl font-bold tracking-tight">{t('staff.management')}</h1>
+        <p className="text-muted-foreground mt-2">{t('staff.manageDesc')}</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList>
-          <TabsTrigger value="staff">Staff Members</TabsTrigger>
-          <TabsTrigger value="activity">Activity Logs</TabsTrigger>
+          <TabsTrigger value="staff">{t('staff.members')}</TabsTrigger>
+          <TabsTrigger value="activity">{t('staff.activityLogs')}</TabsTrigger>
         </TabsList>
 
         {/* Staff Members Tab */}
         <TabsContent value="staff" className="space-y-4">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-2xl font-bold">Staff</h2>
-              <p className="text-sm text-muted-foreground">Invite and manage store staff</p>
+              <h2 className="text-2xl font-bold">{t('staff.members')}</h2>
+              <p className="text-sm text-muted-foreground">{t('staff.inviteAndManage')}</p>
             </div>
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
               <DialogTrigger asChild>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white"><Plus className="w-4 h-4 mr-2" /> Create Staff Account</Button>
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white"><Plus className="w-4 h-4 mr-2" /> {t('staff.createAccount')}</Button>
               </DialogTrigger>
               <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-700">
                 <DialogHeader className="border-b border-gray-200 dark:border-slate-700 pb-4">
-                  <DialogTitle className="text-gray-900 dark:text-white text-xl">Create New Staff Account</DialogTitle>
+                  <DialogTitle className="text-gray-900 dark:text-white text-xl">{t('staff.createNew')}</DialogTitle>
                   <DialogDescription className="text-gray-600 dark:text-slate-400">
-                    Set up a new staff member with login credentials and permissions
+                    {t('staff.setupCredentials')}
                   </DialogDescription>
                 </DialogHeader>
 
@@ -259,11 +259,11 @@ export default function StaffManagement() {
                   <div className="bg-gray-50 dark:bg-slate-800 rounded-lg p-4 border border-gray-200 dark:border-slate-700">
                     <h3 className="font-semibold text-sm text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                       <div className="w-1 h-4 bg-blue-500 rounded"></div>
-                      Account Information
+                      {t('staff.accountInfo')}
                     </h3>
                     <div className="space-y-3">
                       <div>
-                        <label className="text-xs font-medium text-gray-700 dark:text-slate-300 mb-1 block">Username</label>
+                        <label className="text-xs font-medium text-gray-700 dark:text-slate-300 mb-1 block">{t('staff.usernameLabel')}</label>
                         <Input
                           type="text"
                           placeholder="john_staff"
@@ -271,28 +271,28 @@ export default function StaffManagement() {
                           onChange={(e) => setStaffUsername(e.target.value)}
                           className="h-8 bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 text-sm"
                         />
-                        <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Used for login</p>
+                        <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">{t('staff.usernameHint')}</p>
                       </div>
                       <div>
-                        <label className="text-xs font-medium text-gray-700 dark:text-slate-300 mb-1 block">Password</label>
+                        <label className="text-xs font-medium text-gray-700 dark:text-slate-300 mb-1 block">{t('staff.passwordLabel')}</label>
                         <Input
                           type="password"
-                          placeholder="Min 6 characters"
+                          placeholder={t('staff.passwordHint')}
                           value={staffPassword}
                           onChange={(e) => setStaffPassword(e.target.value)}
                           className="h-8 bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-600 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-slate-500 text-sm"
                         />
-                        <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Must be at least 6 characters</p>
+                        <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">{t('staff.passwordHint')}</p>
                       </div>
                       <div>
-                        <label className="text-xs font-medium text-gray-700 dark:text-slate-300 mb-1 block">Role</label>
+                        <label className="text-xs font-medium text-gray-700 dark:text-slate-300 mb-1 block">{t('staff.roleLabel')}</label>
                         <select
                           className="w-full h-8 px-2 text-sm border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                           value={staffRole}
                           onChange={(e) => setStaffRole(e.target.value as 'manager' | 'staff')}
                         >
-                          <option value="manager">Manager</option>
-                          <option value="staff">Staff</option>
+                          <option value="manager">{t('staff.manager')}</option>
+                          <option value="staff">{t('staff.members')}</option>
                         </select>
                       </div>
                     </div>
@@ -377,14 +377,14 @@ export default function StaffManagement() {
                         
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 text-sm">
                           <div>
-                            <p className="text-muted-foreground">Invited</p>
+                            <p className="text-muted-foreground">{t('staff.invited')}</p>
                             <p className="font-medium">
                               {new Date(staff.invited_at).toLocaleDateString()}
                             </p>
                           </div>
                           {staff.activated_at && (
                             <div>
-                              <p className="text-muted-foreground">Activated</p>
+                              <p className="text-muted-foreground">{t('staff.active')}</p>
                               <p className="font-medium">
                                 {new Date(staff.activated_at).toLocaleDateString()}
                               </p>
@@ -392,16 +392,16 @@ export default function StaffManagement() {
                           )}
                           {staff.last_login && (
                             <div>
-                              <p className="text-muted-foreground">Last Login</p>
+                              <p className="text-muted-foreground">{t('staff.lastLogin')}</p>
                               <p className="font-medium">
                                 {new Date(staff.last_login).toLocaleDateString()}
                               </p>
                             </div>
                           )}
                           <div>
-                            <p className="text-muted-foreground">Permissions</p>
+                            <p className="text-muted-foreground">{t('staff.permissions')}</p>
                             <p className="font-medium">
-                              {Object.values(staff.permissions).filter(Boolean).length} enabled
+                              {Object.values(staff.permissions).filter(Boolean).length} {t('staff.permissionsEnabled')}
                             </p>
                           </div>
                         </div>

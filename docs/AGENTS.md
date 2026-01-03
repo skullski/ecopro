@@ -296,6 +296,53 @@ Must support:
 - Whether overrides are stored as full documents vs patches.
 - How many pages per template (home/product/category/checkout/etc.) and how routing maps to page IDs.
 
+---
+
+# 🚨 TEMPLATE BUILDING REFERENCE - READ BEFORE CREATING NEW TEMPLATES
+
+**MANDATORY: Before building ANY new template, read `/docs/TEMPLATE_EDITS_REFERENCE.md`**
+
+This file contains:
+- Complete list of all editable features and their setting keys
+- ThemeColors interface with 40+ properties to implement
+- Database whitelist of allowed columns (server/routes/client-store.ts)
+- Edit panel binding functions (bindText, bindColor, bindSelect, bindRange, etc.)
+- Step-by-step guide for adding new editable fields
+- CSS variables system for custom styling
+
+## Quick Checklist for New Templates
+
+1. **Read** `/docs/TEMPLATE_EDITS_REFERENCE.md` completely
+2. **Implement** the full `ThemeColors` interface for consistency
+3. **Use** the same setting keys (template_*) so edits persist correctly
+4. **Add** `data-edit-path` attributes to all clickable/editable elements
+5. **Register** any new settings in server whitelist (client-store.ts allowedCols)
+6. **Test** all edit paths work in GoldTemplateEditor
+
+## Required Template Files
+```
+client/pages/storefront/templates/gold/{template-name}/
+├── {TemplateName}Template.tsx    # Main component with ThemeColors
+├── schema-types.ts               # TypeScript types
+└── {template-name}-home.json     # Default layout (optional)
+```
+
+## Core Edit Features Every Template Must Support
+- Logo upload & store name
+- Header/footer colors
+- Hero section (title, subtitle, kicker, buttons, image/video)
+- Product grid with configurable columns
+- Category pills styling
+- Typography (font family, weights)
+- Border radius controls
+- Spacing controls
+- Animation controls
+- Custom CSS injection
+- Social links
+- Navigation menu
+
+---
+
 12. **Order Statuses**
     - pending (default when order created, waiting for customer confirmation via bot)
     - confirmed (customer approved via bot confirmation link)

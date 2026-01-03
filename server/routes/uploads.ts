@@ -96,11 +96,11 @@ export const uploadImage: RequestHandler = async (req, res) => {
     const finalPath = path.join(UPLOAD_DIR, finalName);
     await fs.rename(req.file.path, finalPath);
 
-    const { exp, sig } = signUploadPath({ filename: finalName, expiresInSeconds: 10 * 60 });
-    const signedUrl = `/uploads/${finalName}?exp=${exp}&sig=${sig}`;
+    // Return clean URL without signature (files are publicly accessible)
+    const publicUrl = `/uploads/${finalName}`;
 
     return res.status(200).json({
-      url: signedUrl,
+      url: publicUrl,
       filename: finalName,
       size: req.file.size,
       mimetype: detected.mime,
@@ -115,20 +115,26 @@ export const uploadImage: RequestHandler = async (req, res) => {
 export const serveSignedUpload: RequestHandler = async (req, res) => {
   try {
     const filename = String((req.params as any).filename || '');
-    const exp = Number.parseInt(String((req.query as any).exp || ''), 10);
-    const sig = String((req.query as any).sig || '');
 
     if (!isSafeUploadName(filename)) return res.status(404).end();
-    if (!sig || !Number.isFinite(exp)) return res.status(404).end();
-    if (!verifyUploadSignature({ filename, exp, sig })) return res.status(404).end();
 
+    // Allow public access to uploaded files (logos, banners, product images)
+    // These are user-uploaded content that should be publicly accessible
     const filePath = path.join(UPLOAD_DIR, filename);
+    
     // Prevent path traversal
     if (!filePath.startsWith(UPLOAD_DIR)) return res.status(404).end();
 
+    // Check if file exists
+    try {
+      await fs.access(filePath);
+    } catch {
+      return res.status(404).end();
+    }
+
     return res.sendFile(filePath, {
       headers: {
-        'Cache-Control': 'private, max-age=300',
+        'Cache-Control': 'public, max-age=31536000', // Cache for 1 year
       },
     });
   } catch (e) {

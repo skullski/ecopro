@@ -7,6 +7,7 @@ import { Header, Footer } from './header-footer';
 import type { FeaturedGridNode, FooterNode, HeaderNode, HeroNode, ProductNode } from './schema-types';
 import { migrateShiroHanaDoc } from './migrations';
 import { resolveResponsiveNumber } from './responsive';
+import { buildUniversalSchemaFromSettingsAndProducts, looksLikeUniversalStoreSchema } from '@/lib/storeSchema';
 
 type ResponsiveInfo = {
   width: number;
@@ -28,12 +29,16 @@ function resolveAssetUrl(assetKey: string, overrides: Record<string, string>, as
   if (direct) return direct;
   if (isHttpUrl(assetKey)) return assetKey;
   if (assetKey.startsWith('/')) return assetKey;
-  return asString(assets?.[assetKey]?.url) || `/assets/${assetKey}`;
+  const url = asString(assets?.[assetKey]?.url) || `/assets/${assetKey}`;
+  // The shipped template JSON uses example CDN URLs which are not real.
+  // Fall back to our local placeholder so the preview never looks broken.
+  if (/^https?:\/\/cdn\.example\.com\//i.test(url) || /^https?:\/\/[^/]*example\.com\//i.test(url)) {
+    return '/placeholder.png';
+  }
+  return url || '/placeholder.png';
 }
 
 function overridesForBackground(settings: any): Record<string, string> {
-  // Background image is controlled by schema assets (or a direct URL assetKey).
-  // We intentionally do NOT bind it to store_logo/banner_url.
   void settings;
   return {};
 }
@@ -48,22 +53,42 @@ export default function ShiroHanaTemplate(props: TemplateProps) {
 
     const compute = () => {
       const w = el.getBoundingClientRect().width;
+      // Treat tablet as a real middle breakpoint (e.g., 768–1023px).
+      // Keep `isSm` aligned with Tailwind's sm (>=640).
+      // Make `isMd` represent desktop-only so tablet doesn't render desktop layout.
       const isSm = w >= 640;
-      const isMd = w >= 768;
-      const breakpoint: ResponsiveInfo['breakpoint'] = isMd ? 'desktop' : isSm ? 'tablet' : 'mobile';
+      const isMd = w >= 1024;
+      const breakpoint: ResponsiveInfo['breakpoint'] = isMd ? 'desktop' : w >= 768 ? 'tablet' : 'mobile';
       setResponsive({ width: w, isSm, isMd, breakpoint });
     };
 
     compute();
 
-    // ResizeObserver for container-width responsive behavior in editor preview frames.
     const ro = new ResizeObserver(() => compute());
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
 
-  const rawPage: any = (props.settings as any)?.gold_page_shiro_hana_home || (shiroHanaHome as any);
-  const page: any = migrateShiroHanaDoc(rawPage).doc || rawPage;
+  // Single template - always use shiro-hana
+  const legacyDocKey = 'gold_page_shiro_hana_home';
+  const defaultLegacyPage = shiroHanaHome as any;
+
+  const storedSchema = (props.settings as any)?.store_schema;
+  const rawLegacyPage: any = (props.settings as any)?.[legacyDocKey] || defaultLegacyPage;
+
+  const schemaCandidate = looksLikeUniversalStoreSchema(storedSchema)
+    ? storedSchema
+    : (looksLikeUniversalStoreSchema(rawLegacyPage)
+        ? rawLegacyPage
+        : buildUniversalSchemaFromSettingsAndProducts(props.settings as any, 'shiro-hana', props.products as any));
+
+  const legacyPage: any = looksLikeUniversalStoreSchema(rawLegacyPage)
+    ? rawLegacyPage
+    : (migrateShiroHanaDoc(rawLegacyPage).doc || rawLegacyPage);
+
+  const isUsingUniversalSchema = looksLikeUniversalStoreSchema(schemaCandidate);
+  const page: any = isUsingUniversalSchema ? schemaCandidate : legacyPage;
+
   const layout = page?.layout || {};
   const assets = page?.assets || {};
 
@@ -81,16 +106,21 @@ export default function ShiroHanaTemplate(props: TemplateProps) {
 
   const enableDarkModeSetting = (props.settings as any)?.enable_dark_mode;
   const forcedMode = typeof enableDarkModeSetting === 'boolean' ? (enableDarkModeSetting ? 'dark' : 'light') : null;
-  const mode = forcedMode ?? (String(page?.styles?.theme || 'light').toLowerCase() === 'dark' ? 'dark' : 'light');
+  const mode = forcedMode ?? (String(page?.styles?.theme || page?.styles?.themeMode || 'light').toLowerCase() === 'dark' ? 'dark' : 'light');
   const cssVar = (name: string) => `hsl(var(--${name}))`;
 
   const theme = {
     colors: {
-      background: page?.styles?.colors?.background || cssVar('background'),
+      background: page?.styles?.backgroundColor || page?.styles?.colors?.background || cssVar('background'),
       surface: page?.styles?.colors?.surface || cssVar('card'),
-      text: page?.styles?.colors?.text || cssVar('foreground'),
+      text: page?.styles?.textColor || page?.styles?.colors?.text || cssVar('foreground'),
       muted: page?.styles?.colors?.muted || cssVar('muted-foreground'),
-      accent: page?.styles?.colors?.accent || page?.styles?.accent || cssVar('primary'),
+      accent:
+        page?.styles?.accentColor ||
+        page?.styles?.primaryColor ||
+        page?.styles?.colors?.accent ||
+        page?.styles?.accent ||
+        cssVar('primary'),
     },
     fonts: {
       heading: page?.styles?.fonts?.heading,
@@ -102,13 +132,15 @@ export default function ShiroHanaTemplate(props: TemplateProps) {
 
   const headerNode = layout.header as HeaderNode;
   const heroNode = layout.hero as HeroNode;
-  const featuredNode = layout.featured as FeaturedGridNode;
+  const featuredNode = (layout.featured || (Array.isArray(layout.sections) ? layout.sections.find((s: any) => s?.type === 'grid' || s?.type === 'product-grid') : null)) as FeaturedGridNode;
   const footerNode = layout.footer as FooterNode;
 
   const storeName = (props.settings.store_name || '').trim();
   const storeDescription = (props.settings.store_description || '').trim();
 
   const overrides: Record<string, string> = {
+    logo: asString(props.settings.store_logo),
+    hero: asString(props.settings.banner_url),
     'logo-main': asString(props.settings.store_logo),
     'hero-sushi': asString(props.settings.banner_url),
   };
@@ -116,13 +148,21 @@ export default function ShiroHanaTemplate(props: TemplateProps) {
   const accent =
     asString(props.settings.template_accent_color) ||
     asString(props.primaryColor) ||
+    (page?.styles?.accentColor ? String(page.styles.accentColor) : '') ||
+    (page?.styles?.primaryColor ? String(page.styles.primaryColor) : '') ||
     (page?.styles?.accent ? String(page.styles.accent) : '');
 
-  const resolvedHeroTitle = (props.settings.template_hero_heading || '').trim() || asString(heroNode?.title?.value);
-  const resolvedHeroSubtitle = (props.settings.template_hero_subtitle || '').trim() || storeDescription || asString(heroNode?.subtitle?.value);
-  const resolvedHeroButtonText =
-    (props.settings.template_button_text || '').trim() ||
-    (heroNode?.cta?.[0]?.label?.value ? String(heroNode.cta[0].label.value) : '');
+  const docHeroTitle = asString(heroNode?.title?.value).trim();
+  const docHeroSubtitle = asString(heroNode?.subtitle?.value).trim();
+  const docHeroButtonText = asString(heroNode?.cta?.[0]?.label?.value).trim();
+
+  const settingsHeroTitle = (props.settings.template_hero_heading || '').trim();
+  const settingsHeroSubtitle = (props.settings.template_hero_subtitle || '').trim();
+  const settingsHeroButtonText = (props.settings.template_button_text || '').trim();
+
+  const resolvedHeroTitle = docHeroTitle || settingsHeroTitle;
+  const resolvedHeroSubtitle = docHeroSubtitle || settingsHeroSubtitle || storeDescription;
+  const resolvedHeroButtonText = docHeroButtonText || settingsHeroButtonText;
 
   const heroVideoUrl = asString((props.settings as any)?.hero_video_url);
 
@@ -174,64 +214,64 @@ export default function ShiroHanaTemplate(props: TemplateProps) {
           responsive={responsive}
         />
 
-      <main>
-        <section className="w-full py-3">
-          <div className="container mx-auto px-6 flex items-center gap-3">
-            {storeName ? (
-              <div
-                className="text-sm font-semibold"
-                data-edit-path="__settings.store_name"
-              >
-                {storeName}
-              </div>
-            ) : null}
-          </div>
-        </section>
+        <main>
+          <section className="w-full py-3">
+            <div className="container mx-auto px-6 flex items-center gap-3">
+              {storeName ? (
+                <div
+                  className="text-sm font-semibold"
+                  data-edit-path="__settings.store_name"
+                >
+                  {storeName}
+                </div>
+              ) : null}
+            </div>
+          </section>
 
-        <Hero
-          node={{
-            ...heroNode,
-            title: { type: 'text', value: resolvedHeroTitle },
-            subtitle: resolvedHeroSubtitle ? { type: 'text', value: resolvedHeroSubtitle } : undefined,
-            cta: heroNode?.cta?.length
-              ? [
-                  {
-                    ...heroNode.cta[0],
-                    label: {
-                      ...(heroNode.cta[0].label && typeof heroNode.cta[0].label === 'object' ? heroNode.cta[0].label : { type: 'text', value: '' }),
-                      value: resolvedHeroButtonText || String(heroNode.cta[0].label?.value || ''),
+          <Hero
+            node={{
+              ...heroNode,
+              title: { type: 'text', value: resolvedHeroTitle },
+              subtitle: resolvedHeroSubtitle ? { type: 'text', value: resolvedHeroSubtitle } : undefined,
+              cta: heroNode?.cta?.length
+                ? [
+                    {
+                      ...heroNode.cta[0],
+                      label: {
+                        ...(heroNode.cta[0].label && typeof heroNode.cta[0].label === 'object' ? heroNode.cta[0].label : { type: 'text', value: '' }),
+                        value: resolvedHeroButtonText || String(heroNode.cta[0].label?.value || ''),
+                      },
                     },
-                  },
-                ]
-              : resolvedHeroButtonText
-              ? [{ label: { type: 'text', value: resolvedHeroButtonText }, action: '/reserve' }]
-              : [],
-          }}
-          onSelect={() => null}
-          resolveAssetUrl={(k: string) => resolveAssetUrl(k, overrides, assets)}
-          ctaStyle={accent ? { backgroundColor: accent } : undefined}
-          theme={theme}
-          responsive={responsive}
-          videoUrl={heroVideoUrl}
-        />
+                  ]
+                : resolvedHeroButtonText
+                ? [{ label: { type: 'text', value: resolvedHeroButtonText }, action: '/reserve' }]
+                : [],
+            }}
+            onSelect={() => null}
+            resolveAssetUrl={(k: string) => resolveAssetUrl(k, overrides, assets)}
+            ctaStyle={accent ? { backgroundColor: accent } : undefined}
+            theme={theme}
+            responsive={responsive}
+            videoUrl={heroVideoUrl}
+          />
 
-        <ProductGrid
-          items={featuredItems}
-          columns={(featuredNode as any)?.columns || 3}
-          gap={(featuredNode as any)?.gap}
-          paddingY={(featuredNode as any)?.paddingY}
-          paddingX={(featuredNode as any)?.paddingX}
-          backgroundColor={String((featuredNode as any)?.backgroundColor || '') || undefined}
-          card={(featuredNode as any)?.card}
-          onSelect={() => null}
-          resolveAssetUrl={(k: string) => resolveAssetUrl(k, overrides, assets)}
-          formatPrice={props.formatPrice}
-          ctaStyle={accent ? { backgroundColor: accent } : undefined}
-          addLabel={addLabel}
-          theme={theme}
-          responsive={responsive}
-        />
-      </main>
+          <ProductGrid
+            items={featuredItems}
+            columns={(featuredNode as any)?.columns || 3}
+            gap={(featuredNode as any)?.gap}
+            paddingY={(featuredNode as any)?.paddingY}
+            paddingX={(featuredNode as any)?.paddingX}
+            backgroundColor={String((featuredNode as any)?.backgroundColor || '') || undefined}
+            card={(featuredNode as any)?.card}
+            onSelect={() => null}
+            resolveAssetUrl={(k: string) => resolveAssetUrl(k, overrides, assets)}
+            formatPrice={props.formatPrice}
+            ctaStyle={accent ? { backgroundColor: accent } : undefined}
+            addLabel={addLabel}
+            theme={theme}
+            responsive={responsive}
+          />
+        </main>
 
         <Footer node={footerNode} onSelect={() => null} theme={theme} responsive={responsive} />
       </div>

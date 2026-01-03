@@ -309,24 +309,36 @@ export const getStoreSettings: RequestHandler = async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      // Check platform store limit before creating new store
-      const storeCountResult = await pool.query(
-        "SELECT COUNT(*) as count FROM client_store_settings WHERE client_id IS NOT NULL"
-      );
-      const currentStoreCount = parseInt(storeCountResult.rows[0].count);
-      
-      const maxStoresResult = await pool.query(
-        "SELECT setting_value FROM platform_settings WHERE setting_key = 'max_stores'"
-      );
-      const maxStores = maxStoresResult.rows.length > 0 
-        ? parseInt(maxStoresResult.rows[0].setting_value) 
-        : 1000; // Default to 1000 if not set
-      
+      // Check platform store limit before creating new store.
+      // This must never hard-fail (some deployments may not have platform_settings).
+      let currentStoreCount = 0;
+      let maxStores = 1000; // Default if not set
+
+      try {
+        const storeCountResult = await pool.query(
+          "SELECT COUNT(*) as count FROM client_store_settings WHERE client_id IS NOT NULL"
+        );
+        currentStoreCount = parseInt(storeCountResult.rows?.[0]?.count, 10) || 0;
+      } catch (e) {
+        console.warn('[STORE] Store count check failed:', (e as any)?.message);
+      }
+
+      try {
+        const maxStoresResult = await pool.query(
+          "SELECT setting_value FROM platform_settings WHERE setting_key = 'max_stores'"
+        );
+        if (maxStoresResult.rows.length > 0) {
+          maxStores = parseInt(maxStoresResult.rows[0].setting_value, 10) || maxStores;
+        }
+      } catch (e) {
+        console.warn('[STORE] max_stores setting read failed:', (e as any)?.message);
+      }
+
       if (currentStoreCount >= maxStores) {
         console.log("[STORE] Store limit reached. Current:", currentStoreCount, "Max:", maxStores);
-        return res.status(429).json({ 
+        return res.status(429).json({
           error: `Platform store limit reached. Maximum stores: ${maxStores}`,
-          code: "STORE_LIMIT_REACHED"
+          code: 'STORE_LIMIT_REACHED',
         });
       }
 
@@ -501,6 +513,32 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
       'hero_main_url', 'hero_tile1_url', 'hero_tile2_url', 'owner_name', 'owner_email', 'store_images',
       // Template customization fields
       'template_hero_heading', 'template_hero_subtitle', 'template_button_text', 'template_accent_color',
+      'template_bg_color', 'template_text_color', 'template_muted_color',
+      'template_header_bg', 'template_header_text',
+      'template_hero_title_color', 'template_hero_title_size',
+      'template_hero_subtitle_color', 'template_hero_subtitle_size',
+      'template_hero_kicker', 'template_hero_kicker_color',
+      'template_button2_text', 'template_button2_border',
+      'template_hero_badge_title', 'template_hero_badge_subtitle',
+      'template_featured_title', 'template_featured_subtitle',
+      'template_section_title_color', 'template_section_title_size', 'template_section_subtitle_color',
+      'template_card_bg', 'template_product_title_color', 'template_product_price_color',
+      'template_copyright', 'template_footer_text', 'template_footer_link_color',
+      // Typography
+      'template_font_family', 'template_font_weight', 'template_heading_font_weight',
+      // Border radius
+      'template_border_radius', 'template_card_border_radius', 'template_button_border_radius',
+      // Spacing
+      'template_spacing', 'template_section_spacing',
+      // Animations
+      'template_animation_speed', 'template_hover_scale',
+      // Grid
+      'template_grid_columns', 'template_grid_gap',
+      // Category pills
+      'template_category_pill_bg', 'template_category_pill_text',
+      'template_category_pill_active_bg', 'template_category_pill_active_text', 'template_category_pill_border_radius',
+      // Custom CSS and links (stored as JSON strings)
+      'template_custom_css', 'template_social_links', 'template_nav_links',
       // allow older/client payloads to include seller fields without failing
       'seller_name', 'seller_email'
     ]);
@@ -617,10 +655,36 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
       nextTemplateByTemplate = map;
     }
 
+    // Temporary: only allow a small subset of templates while schema migration is in progress.
+    // - Existing stores can keep their current template.
+    // - Switching/saving to a disabled template returns a friendly error.
+    const ENABLED_TEMPLATE_IDS = new Set<string>(['shiro-hana', 'babyos', 'baby', 'fashion', 'electronics']);
+    const normalizeTemplateIdForAvailability = (id: any): string => {
+      return String(id || '')
+        .trim()
+        .replace(/^gold-/, '')
+        .replace(/-gold$/, '');
+    };
+    const requestedTemplate = typeof columnUpdates.template === 'string' ? String(columnUpdates.template) : null;
+    if (requestedTemplate) {
+      const normalizedRequested = normalizeTemplateIdForAvailability(requestedTemplate);
+      const normalizedExisting = normalizeTemplateIdForAvailability(existingTemplate);
+      const isEnabled = ENABLED_TEMPLATE_IDS.has(normalizedRequested);
+      const isSameAsExisting = normalizedRequested === normalizedExisting;
+
+      if (!isEnabled && !isSameAsExisting) {
+        return res.status(400).json({
+          error: 'This template is coming soon',
+          template: normalizedRequested,
+        });
+      }
+    }
+
     // Enforce Gold template access server-side.
     // Any template id starting with "gold-" requires subscription tier "gold".
-    const requestedTemplate = typeof columnUpdates.template === 'string' ? String(columnUpdates.template) : null;
-    if (requestedTemplate && requestedTemplate.startsWith('gold-')) {
+    // Note: this is separate from the Coming Soon guard above.
+    const requestedTemplateForGold = typeof columnUpdates.template === 'string' ? String(columnUpdates.template) : null;
+    if (requestedTemplateForGold && requestedTemplateForGold.startsWith('gold-')) {
       const email = String((user as any)?.email || '').trim().toLowerCase();
       const allowSkull = email === 'skull@gmail.com' || Number(clientId) === 10;
       if (!allowSkull) {

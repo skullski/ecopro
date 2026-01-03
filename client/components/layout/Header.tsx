@@ -94,6 +94,8 @@ export default function Header() {
     }
   }
 
+  const tr = (key: string, fallback: string) => t(key) || fallback;
+
   return (
     <>
       <header className="sticky top-0 z-50 w-full border-b border-primary/20 bg-gradient-to-r from-primary/10 via-accent/5 to-primary/10 backdrop-blur-xl supports-[backdrop-filter]:bg-background/90 shadow-lg shadow-primary/10 dark:bg-gradient-to-r dark:from-primary/15 dark:via-accent/10 dark:to-primary/15">
@@ -117,7 +119,9 @@ export default function Header() {
                 <span className="font-black text-foreground drop-shadow bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent" style={{ fontSize: 'clamp(1rem, 2.2vh, 1.125rem)' }}>
                   {t("brand")}
                 </span>
-                <div className="text-foreground/70 font-semibold" style={{ fontSize: 'clamp(0.6rem, 1.1vh, 0.625rem)', marginTop: '-0.125rem' }}>{t("header.ecommercePlatform")}</div>
+                <div className="text-foreground/70 font-semibold" style={{ fontSize: 'clamp(0.6rem, 1.1vh, 0.625rem)', marginTop: '-0.125rem' }}>
+                  {t("header.ecommercePlatform") || t("home.featuresSubtitle") || "E-commerce Platform"}
+                </div>
               </div>
             </Link>
 
@@ -128,14 +132,14 @@ export default function Header() {
                 className="rounded-md font-semibold text-foreground hover:text-primary hover:bg-primary/10 transition-all"
                 style={{ padding: 'clamp(0.375rem, 1vh, 0.5rem) clamp(0.625rem, 1.5vh, 0.875rem)', fontSize: 'clamp(0.8rem, 1.6vh, 0.875rem)' }}
               >
-                {t("header.pricing")}
+                {t("header.pricing") || t("menu.pricing") || "Pricing"}
               </Link>
               <Link 
                 to="/about" 
                 className="rounded-md font-semibold text-foreground hover:text-primary hover:bg-primary/10 transition-all"
                 style={{ padding: 'clamp(0.375rem, 1vh, 0.5rem) clamp(0.625rem, 1.5vh, 0.875rem)', fontSize: 'clamp(0.8rem, 1.6vh, 0.875rem)' }}
               >
-                {t("header.about")}
+                {tr("header.about", "About")}
               </Link>
               {user && isClient ? (
                 <Link 
@@ -144,7 +148,7 @@ export default function Header() {
                   style={{ padding: 'clamp(0.375rem, 1vh, 0.5rem) clamp(0.625rem, 1.5vh, 0.875rem)', fontSize: 'clamp(0.8rem, 1.6vh, 0.875rem)', gap: 'clamp(0.25rem, 0.5vh, 0.375rem)' }}
                 >
                   <MessageCircle style={{ width: 'clamp(0.9rem, 1.8vh, 1rem)', height: 'clamp(0.9rem, 1.8vh, 1rem)' }} />
-                  {t("header.support")}
+                  {tr("header.support", "Support")}
                   {unreadCount > 0 && (
                     <span 
                       className="absolute -top-1 -right-1 flex items-center justify-center rounded-full bg-red-500 text-white font-bold animate-pulse"
@@ -165,7 +169,7 @@ export default function Header() {
                   className="rounded-md font-semibold text-foreground hover:text-primary hover:bg-primary/10 transition-all"
                   style={{ padding: 'clamp(0.375rem, 1vh, 0.5rem) clamp(0.625rem, 1.5vh, 0.875rem)', fontSize: 'clamp(0.8rem, 1.6vh, 0.875rem)' }}
                 >
-                  {t("header.support")}
+                  {tr("header.support", "Support")}
                 </Link>
               )}
               {user && isClient && (
@@ -175,7 +179,7 @@ export default function Header() {
                     className="rounded-md font-semibold text-accent hover:bg-accent/10 transition-all border border-accent/20"
                     style={{ padding: 'clamp(0.375rem, 1vh, 0.5rem) clamp(0.625rem, 1.5vh, 0.875rem)', fontSize: 'clamp(0.8rem, 1.6vh, 0.875rem)' }}
                   >
-                    {t("header.myStore")}
+                    {tr("header.myStore", "My Store")}
                   </Link>
                 </>
               )}
@@ -267,7 +271,7 @@ export default function Header() {
                           style={{ padding: 'clamp(0.375rem, 1vh, 0.5rem) clamp(0.625rem, 1.2vh, 0.75rem)', fontSize: 'clamp(0.8rem, 1.5vh, 0.875rem)', height: 'auto' }}
                         >
                           <MessageCircle style={{ width: 'clamp(0.85rem, 1.6vh, 0.95rem)', height: 'clamp(0.85rem, 1.6vh, 0.95rem)', marginRight: 'clamp(0.2rem, 0.4vh, 0.25rem)' }} />
-                          {t("header.chat")}
+                          {tr("header.chat", "Chat")}
                         </Button>
                       </Link>
                       <Link to="/platform-admin">
@@ -277,7 +281,7 @@ export default function Header() {
                           style={{ padding: 'clamp(0.375rem, 1vh, 0.5rem) clamp(0.625rem, 1.2vh, 0.75rem)', fontSize: 'clamp(0.8rem, 1.5vh, 0.875rem)', height: 'auto' }}
                         >
                           <Crown style={{ width: 'clamp(0.85rem, 1.6vh, 0.95rem)', height: 'clamp(0.85rem, 1.6vh, 0.95rem)', marginRight: 'clamp(0.2rem, 0.4vh, 0.25rem)' }} />
-                          {t("header.admin")}
+                          {tr("header.admin", "Admin")}
                         </Button>
                       </Link>
                     </>
@@ -289,7 +293,7 @@ export default function Header() {
                         style={{ padding: 'clamp(0.375rem, 1vh, 0.5rem) clamp(0.625rem, 1.2vh, 0.75rem)', fontSize: 'clamp(0.8rem, 1.5vh, 0.875rem)', height: 'auto' }}
                       >
                         <LayoutDashboard style={{ width: 'clamp(0.85rem, 1.6vh, 0.95rem)', height: 'clamp(0.85rem, 1.6vh, 0.95rem)', marginRight: 'clamp(0.2rem, 0.4vh, 0.25rem)' }} />
-                        {t("header.dashboard")}
+                        {t("header.dashboard") || t("dashboard.title") || "Dashboard"}
                       </Button>
                     </Link>
                   )}
@@ -334,14 +338,14 @@ export default function Header() {
                 onClick={() => setMobileMenuOpen(false)}
                 className="px-4 py-3 rounded-lg text-base font-bold text-foreground hover:text-primary hover:bg-gradient-to-r hover:from-primary/12 hover:to-accent/10 transition-all border border-transparent hover:border-primary/15 shadow-sm hover:shadow-md"
               >
-                {t("header.pricing")}
+                {t("header.pricing") || t("menu.pricing") || "Pricing"}
               </Link>
               <Link 
                 to="/about" 
                 onClick={() => setMobileMenuOpen(false)}
                 className="px-4 py-3 rounded-lg text-base font-bold text-foreground hover:text-primary hover:bg-gradient-to-r hover:from-primary/12 hover:to-accent/10 transition-all border border-transparent hover:border-primary/15 shadow-sm hover:shadow-md"
               >
-                {t("header.aboutUs")}
+                {t("header.aboutUs") || t("header.about") || "About Us"}
               </Link>
               {user && isClient ? (
                 <Link 
@@ -351,7 +355,7 @@ export default function Header() {
                 >
                   <span className="flex items-center gap-2">
                     <MessageCircle className="w-5 h-5" />
-                    {t("header.support")}
+                    {tr("header.support", "Support")}
                   </span>
                   {unreadCount > 0 && (
                     <span className="flex items-center justify-center rounded-full bg-red-500 text-white font-bold text-xs animate-pulse min-w-[1.25rem] h-5 px-1">
@@ -365,7 +369,7 @@ export default function Header() {
                   onClick={() => setMobileMenuOpen(false)}
                   className="px-4 py-3 rounded-lg text-base font-bold text-foreground hover:text-primary hover:bg-gradient-to-r hover:from-primary/12 hover:to-accent/10 transition-all border border-transparent hover:border-primary/15 shadow-sm hover:shadow-md"
                 >
-                  {t("header.support")}
+                  {tr("header.support", "Support")}
                 </Link>
               )}
 
@@ -377,13 +381,13 @@ export default function Header() {
                       <Link to="/platform-admin/chat" onClick={() => setMobileMenuOpen(false)}>
                         <Button variant="outline" className="justify-start border-2 border-blue-400/30 text-blue-600 hover:bg-gradient-to-r hover:from-blue-400/15 hover:to-blue-400/10 hover:border-blue-400/45 font-bold w-full shadow-sm hover:shadow-md">
                           <MessageCircle className="w-5 h-5 ml-2 drop-shadow" />
-                          {t("header.chat")}
+                          {tr("header.chat", "Chat")}
                         </Button>
                       </Link>
                       <Link to="/platform-admin" onClick={() => setMobileMenuOpen(false)}>
                         <Button variant="outline" className="justify-start border-2 border-primary/30 text-primary hover:bg-gradient-to-r hover:from-primary/15 hover:to-accent/10 hover:border-primary/45 font-bold w-full shadow-sm hover:shadow-md">
                           <Crown className="w-5 h-5 ml-2 drop-shadow" />
-                          {t("header.admin")}
+                          {tr("header.admin", "Admin")}
                         </Button>
                       </Link>
                     </>
@@ -391,7 +395,7 @@ export default function Header() {
                     <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>
                       <Button variant="outline" className="justify-start border-2 border-primary/30 text-primary hover:bg-gradient-to-r hover:from-primary/15 hover:to-accent/10 hover:border-primary/45 font-bold w-full shadow-sm hover:shadow-md">
                         <LayoutDashboard className="w-5 h-5 ml-2 drop-shadow" />
-                        {t("header.dashboard")}
+                        {t("header.dashboard") || t("dashboard.title") || "Dashboard"}
                       </Button>
                     </Link>
                   )}
@@ -399,7 +403,7 @@ export default function Header() {
                     <Link to={storeSlug ? `/store/${storeSlug}` : "/dashboard/preview"} onClick={() => setMobileMenuOpen(false)}>
                       <Button variant="outline" className="justify-start border-2 border-primary/30 text-primary hover:bg-gradient-to-r hover:from-primary/15 hover:to-accent/10 hover:border-primary/45 font-bold w-full shadow-sm hover:shadow-md">
                         <ShoppingBag className="w-5 h-5 ml-2 drop-shadow" />
-                        {t("header.myStore")}
+                        {tr("header.myStore", "My Store")}
                       </Button>
                     </Link>
                   )}

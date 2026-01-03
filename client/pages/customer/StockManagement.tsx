@@ -39,6 +39,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { useTranslation } from '@/lib/i18n';
 
 interface StockItem {
   id: number;
@@ -81,6 +82,7 @@ interface StockCategory {
 }
 
 export default function StockManagement() {
+  const { t } = useTranslation();
   const [stock, setStock] = useState<StockItem[]>([]);
   const [filteredStock, setFilteredStock] = useState<StockItem[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
@@ -548,9 +550,9 @@ export default function StockManagement() {
         <div className="flex items-center justify-between gap-2 bg-gradient-to-r from-primary/10 to-purple-600/10 dark:from-primary/5 dark:to-purple-600/5 rounded-lg border border-primary/20 p-3">
           <div>
             <h1 className="text-lg md:text-xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
-              📦 Stock Management
+              {t('stock.title')}
             </h1>
-            <p className="text-muted-foreground text-base font-semibold">Track and optimize your inventory</p>
+            <p className="text-muted-foreground text-base font-semibold">{t('stock.subtitle')}</p>
           </div>
           <div className="flex gap-1 md:gap-2">
             <Button 
@@ -559,7 +561,7 @@ export default function StockManagement() {
               className="border-primary/30 hover:bg-primary/10 transition-all gap-1 text-sm font-bold py-2 px-3 h-9"
             >
               <Tag className="w-3 h-3 md:w-4 md:h-4" />
-              <span className="hidden sm:inline">Categories</span>
+              <span className="hidden sm:inline">{t('stock.categories')}</span>
             </Button>
             <Button 
               variant="outline" 
@@ -567,7 +569,7 @@ export default function StockManagement() {
               className="border-primary/30 hover:bg-primary/10 transition-all gap-1 text-sm font-bold py-2 px-3 h-9"
             >
               <Download className="w-3 h-3 md:w-4 md:h-4" />
-              <span className="hidden sm:inline">Export</span>
+              <span className="hidden sm:inline">{t('stock.export')}</span>
             </Button>
             <Button 
               onClick={() => {
@@ -577,7 +579,7 @@ export default function StockManagement() {
               className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all gap-1 text-base font-bold py-2 px-4 h-10"
             >
               <Plus className="w-3 h-3 md:w-4 md:h-4" />
-              <span className="hidden sm:inline">Add</span>
+              <span className="hidden sm:inline">{t('stock.add')}</span>
             </Button>
           </div>
         </div>
@@ -587,7 +589,7 @@ export default function StockManagement() {
           <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 dark:from-blue-900/20 dark:to-blue-900/5 rounded border border-blue-500/30 p-2 md:p-3 hover:border-blue-500/50 transition-all hover:shadow-md">
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
-                <p className="text-xs text-muted-foreground font-medium truncate">📦 Items</p>
+                <p className="text-xs text-muted-foreground font-medium truncate">{t('stock.items')}</p>
                 <p className="text-lg md:text-xl font-bold text-blue-600 dark:text-blue-400">{stock.length}</p>
               </div>
               <div className="bg-blue-500/20 dark:bg-blue-500/10 p-2 rounded flex-shrink-0">
@@ -599,7 +601,7 @@ export default function StockManagement() {
           <div className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 dark:from-orange-900/20 dark:to-orange-900/5 rounded border border-orange-500/30 p-2 md:p-3 hover:border-orange-500/50 transition-all hover:shadow-md">
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
-                <p className="text-xs text-muted-foreground font-medium truncate">⚠️ Low Stock</p>
+                <p className="text-xs text-muted-foreground font-medium truncate">{t('stock.lowStock')}</p>
                 <p className="text-lg md:text-xl font-bold text-orange-600 dark:text-orange-400">{lowStockCount}</p>
               </div>
               <div className="bg-orange-500/20 dark:bg-orange-500/10 p-2 rounded flex-shrink-0">
@@ -611,7 +613,7 @@ export default function StockManagement() {
           <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 dark:from-emerald-900/20 dark:to-emerald-900/5 rounded border border-emerald-500/30 p-2 md:p-3 hover:border-emerald-500/50 transition-all hover:shadow-md">
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
-                <p className="text-xs text-muted-foreground font-medium truncate">💰 Value</p>
+                <p className="text-xs text-muted-foreground font-medium truncate">{t('stock.totalValue')}</p>
                 <p className="text-lg md:text-xl font-bold text-emerald-600 dark:text-emerald-400">{Math.round(totalValue)}</p>
               </div>
               <div className="bg-emerald-500/20 dark:bg-emerald-500/10 p-2 rounded flex-shrink-0">
@@ -623,7 +625,7 @@ export default function StockManagement() {
           <div className="bg-gradient-to-br from-red-500/10 to-red-600/5 dark:from-red-900/20 dark:to-red-900/5 rounded border border-red-500/30 p-2 md:p-3 hover:border-red-500/50 transition-all hover:shadow-md">
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
-                <p className="text-xs text-muted-foreground font-medium truncate">❌ Out Stock</p>
+                <p className="text-xs text-muted-foreground font-medium truncate">{t('stock.outOfStock')}</p>
                 <p className="text-lg md:text-xl font-bold text-red-600 dark:text-red-400">
                   {stock.filter(i => i.status === 'out_of_stock').length}
                 </p>
@@ -642,7 +644,7 @@ export default function StockManagement() {
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 md:w-4 md:h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search..."
+                  placeholder={t('stock.searchPlaceholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-8 border-primary/30 focus:border-primary/60 transition-colors h-9 text-base"
@@ -652,10 +654,10 @@ export default function StockManagement() {
 
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
               <SelectTrigger className="w-full md:w-[140px] border-primary/30 focus:border-primary/60 h-8 text-sm">
-                <SelectValue placeholder="Category" />
+                <SelectValue placeholder={t('stock.category')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
+                <SelectItem value="all">{t('stock.allCategories')}</SelectItem>
                 {categories.map(cat => (
                   <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                 ))}
@@ -664,13 +666,13 @@ export default function StockManagement() {
 
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full md:w-[140px] border-primary/30 focus:border-primary/60 h-9 text-base font-semibold">
-                <SelectValue placeholder="Status" />
+                <SelectValue placeholder={t('stock.status')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="out_of_stock">Out Stock</SelectItem>
-                <SelectItem value="discontinued">Discontinued</SelectItem>
+                <SelectItem value="all">{t('stock.allStatuses')}</SelectItem>
+                <SelectItem value="active">{t('stock.active')}</SelectItem>
+                <SelectItem value="out_of_stock">{t('stock.outStock')}</SelectItem>
+                <SelectItem value="discontinued">{t('stock.discontinued')}</SelectItem>
               </SelectContent>
             </Select>
 
@@ -681,7 +683,7 @@ export default function StockManagement() {
               size="sm"
             >
               <Filter className="w-3 h-3 md:w-4 md:h-4" />
-              <span className="hidden md:inline ml-1 text-xs">Low</span>
+              <span className="hidden md:inline ml-1 text-xs">{t('stock.low')}</span>
             </Button>
 
             <Button 
@@ -701,14 +703,14 @@ export default function StockManagement() {
             <table className="w-full text-base font-semibold table-fixed">
               <thead className="bg-gradient-to-r from-primary/15 to-purple-600/15 dark:from-primary/10 dark:to-purple-600/10 border-b border-primary/20">
                 <tr>
-                  <th className="text-left p-2 font-bold text-primary dark:text-primary/90 text-sm whitespace-nowrap w-[180px]">Product</th>
-                  <th className="text-center p-2 font-bold text-primary dark:text-primary/90 text-sm whitespace-nowrap w-[60px]">SKU</th>
-                  <th className="text-center p-2 font-bold text-primary dark:text-primary/90 text-sm whitespace-nowrap w-[80px]">Category</th>
-                  <th className="text-center p-2 font-bold text-primary dark:text-primary/90 text-sm whitespace-nowrap w-[70px]">Qty</th>
-                  <th className="text-right p-2 font-bold text-primary dark:text-primary/90 text-sm whitespace-nowrap w-[70px]">Price</th>
-                  <th className="text-center p-2 font-bold text-primary dark:text-primary/90 text-sm whitespace-nowrap w-[70px]">Location</th>
-                  <th className="text-center p-2 font-bold text-primary dark:text-primary/90 text-sm whitespace-nowrap w-[50px]">Status</th>
-                  <th className="text-right p-2 font-bold text-primary dark:text-primary/90 text-sm whitespace-nowrap w-[140px]">Actions</th>
+                  <th className="text-left p-2 font-bold text-primary dark:text-primary/90 text-sm whitespace-nowrap w-[180px]">{t('stock.product')}</th>
+                  <th className="text-center p-2 font-bold text-primary dark:text-primary/90 text-sm whitespace-nowrap w-[60px]">{t('stock.sku')}</th>
+                  <th className="text-center p-2 font-bold text-primary dark:text-primary/90 text-sm whitespace-nowrap w-[80px]">{t('stock.category')}</th>
+                  <th className="text-center p-2 font-bold text-primary dark:text-primary/90 text-sm whitespace-nowrap w-[70px]">{t('stock.qty')}</th>
+                  <th className="text-right p-2 font-bold text-primary dark:text-primary/90 text-sm whitespace-nowrap w-[70px]">{t('stock.price')}</th>
+                  <th className="text-center p-2 font-bold text-primary dark:text-primary/90 text-sm whitespace-nowrap w-[70px]">{t('stock.location')}</th>
+                  <th className="text-center p-2 font-bold text-primary dark:text-primary/90 text-sm whitespace-nowrap w-[50px]">{t('stock.status')}</th>
+                  <th className="text-right p-2 font-bold text-primary dark:text-primary/90 text-sm whitespace-nowrap w-[140px]">{t('stock.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -718,8 +720,8 @@ export default function StockManagement() {
                       <Package className="w-6 h-6 mx-auto opacity-50 mb-2" />
                       <p className="text-base font-semibold">
                         {searchQuery || categoryFilter !== 'all' || statusFilter !== 'all'
-                          ? 'No products match your filters'
-                          : 'No stock items yet'}
+                          ? t('stock.noProductsMatch')
+                          : t('stock.noStockItems')}
                       </p>
                     </td>
                   </tr>
@@ -834,37 +836,37 @@ export default function StockManagement() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-background via-background to-primary/5 dark:from-slate-950 dark:to-slate-900/30 p-3 md:p-4">
           <DialogHeader className="space-y-1 pb-2 md:pb-3 border-b border-border/50">
             <DialogTitle className="text-lg md:text-xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
-              {showAddModal ? '➕ Add New Product' : '✏️ Edit Product'}
+              {showAddModal ? t('stock.addNewProduct') : t('stock.editProduct')}
             </DialogTitle>
             <DialogDescription className="text-base font-semibold">
-              {showAddModal ? 'Add a new item to your stock inventory' : 'Update product information'}
+              {showAddModal ? t('stock.addToInventory') : t('stock.updateInfo')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-2 md:gap-3 py-2 md:py-3">
             <div className="space-y-2 bg-primary/5 dark:bg-slate-800/30 p-2 md:p-3 rounded border border-primary/20">
               <h3 className="text-lg font-bold text-primary flex items-center gap-2">
-                📋 Basic Information
+                {t('stock.basicInfo')}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
                 <div className="space-y-1">
-                  <Label htmlFor="name" className="text-base font-bold">Product Name</Label>
+                  <Label htmlFor="name" className="text-base font-bold">{t('stock.productName')}</Label>
                   <Input
                     id="name"
                     value={formData.name || ''}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Product name"
+                    placeholder={t('stock.productName')}
                     className="border-primary/30 focus:border-primary/60 transition-colors h-9 text-base"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="sku" className="text-base font-bold">SKU</Label>
+                  <Label htmlFor="sku" className="text-base font-bold">{t('stock.sku')}</Label>
                   <Input
                     id="sku"
                     value={formData.sku || ''}
                     onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                    placeholder="Product SKU"
+                    placeholder={t('stock.sku')}
                     className="border-primary/30 focus:border-primary/60 transition-colors h-9 text-base"
                   />
                 </div>
@@ -873,16 +875,16 @@ export default function StockManagement() {
 
             <div className="space-y-2 bg-blue-500/5 dark:bg-blue-900/10 p-2 md:p-3 rounded border border-blue-500/20">
               <h3 className="text-lg font-bold text-blue-600 dark:text-blue-400 flex items-center gap-2">
-                📝 Description & Details
+                {t('stock.descriptionDetails')}
               </h3>
               <div className="space-y-2">
                 <div className="space-y-1">
-                  <Label htmlFor="description" className="text-base font-bold">Description</Label>
+                  <Label htmlFor="description" className="text-base font-bold">{t('stock.description')}</Label>
                   <Textarea
                     id="description"
                     value={formData.description || ''}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Product description"
+                    placeholder={t('stock.description')}
                     rows={3}
                     className="border-blue-500/30 focus:border-blue-500/60 transition-colors resize-none text-base"
                   />
@@ -891,7 +893,7 @@ export default function StockManagement() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
                   <div className="space-y-1">
                     <Label htmlFor="category" className="text-base font-bold flex items-center gap-2">
-                      <Tag className="w-4 h-4" /> Category
+                      <Tag className="w-4 h-4" /> {t('stock.category')}
                     </Label>
                     <Popover open={categoryPopoverOpen} onOpenChange={setCategoryPopoverOpen}>
                       <PopoverTrigger asChild>
@@ -900,7 +902,7 @@ export default function StockManagement() {
                           role="combobox"
                           className="w-full justify-between border-blue-500/30 hover:border-blue-500/60 h-9 text-base font-normal"
                         >
-                          {formData.category || "Select category..."}
+                          {formData.category || t('stock.selectCategory')}
                           <Tag className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </PopoverTrigger>
@@ -908,7 +910,7 @@ export default function StockManagement() {
                         <div className="p-2 border-b">
                           <div className="flex gap-2">
                             <Input
-                              placeholder="New category name..."
+                              placeholder={t('stock.newCategoryName')}
                               value={newCategoryName}
                               onChange={(e) => setNewCategoryName(e.target.value)}
                               className="h-8 text-sm"
@@ -932,7 +934,7 @@ export default function StockManagement() {
                         <div className="max-h-[200px] overflow-y-auto p-1">
                           {allCategories.length === 0 && categories.length === 0 ? (
                             <p className="text-sm text-muted-foreground p-2 text-center">
-                              No categories yet. Create one above!
+                              {t('stock.noCategories')}
                             </p>
                           ) : (
                             <>
@@ -997,7 +999,7 @@ export default function StockManagement() {
                                 setCategoryPopoverOpen(false);
                               }}
                             >
-                              <X className="w-4 h-4 mr-2" /> Clear category
+                              <X className="w-4 h-4 mr-2" /> {t('stock.clearCategory')}
                             </Button>
                           </div>
                         )}
@@ -1006,12 +1008,12 @@ export default function StockManagement() {
                   </div>
 
                   <div className="space-y-1">
-                    <Label htmlFor="location" className="text-base font-bold">📍 Location</Label>
+                    <Label htmlFor="location" className="text-base font-bold">📍 {t('stock.location')}</Label>
                     <Input
                       id="location"
                       value={formData.location || ''}
                       onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                      placeholder="e.g., Warehouse A"
+                      placeholder={t('stock.location')}
                       className="border-blue-500/30 focus:border-blue-500/60 transition-colors h-9 text-base"
                     />
                   </div>
@@ -1021,11 +1023,11 @@ export default function StockManagement() {
 
             <div className="space-y-2 bg-emerald-500/5 dark:bg-emerald-900/10 p-2 md:p-3 rounded border border-emerald-500/20">
               <h3 className="text-lg font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
-                📦 Inventory & Pricing
+                {t('stock.inventoryPricing')}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-3">
                 <div className="space-y-1">
-                  <Label htmlFor="quantity" className="text-base font-bold">📊 Quantity</Label>
+                  <Label htmlFor="quantity" className="text-base font-bold">{t('stock.quantity')}</Label>
                   <Input
                     id="quantity"
                     type="number"
@@ -1037,7 +1039,7 @@ export default function StockManagement() {
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="unit_price" className="text-base font-bold">💰 Unit Price</Label>
+                  <Label htmlFor="unit_price" className="text-base font-bold">{t('stock.unitPrice')}</Label>
                   <Input
                     id="unit_price"
                     type="number"
@@ -1050,7 +1052,7 @@ export default function StockManagement() {
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="reorder_level" className="text-base font-bold">⚠️ Reorder Level</Label>
+                  <Label htmlFor="reorder_level" className="text-base font-bold">{t('stock.reorderLevel')}</Label>
                   <Input
                     id="reorder_level"
                     type="number"
@@ -1065,27 +1067,27 @@ export default function StockManagement() {
 
             <div className="space-y-2 bg-amber-500/5 dark:bg-amber-900/10 p-2 md:p-3 rounded border border-amber-500/20">
               <h3 className="text-lg font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">
-                🤝 Supplier Information
+                {t('stock.supplierInfo')}
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
                 <div className="space-y-1">
-                  <Label htmlFor="supplier_name" className="text-base font-bold">Supplier Name</Label>
+                  <Label htmlFor="supplier_name" className="text-base font-bold">{t('stock.supplierName')}</Label>
                   <Input
                     id="supplier_name"
                     value={formData.supplier_name || ''}
                     onChange={(e) => setFormData({ ...formData, supplier_name: e.target.value })}
-                    placeholder="Supplier name"
+                    placeholder={t('stock.supplierName')}
                     className="border-amber-500/30 focus:border-amber-500/60 transition-colors h-9 text-base"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="supplier_contact" className="text-base font-bold">Contact Info</Label>
+                  <Label htmlFor="supplier_contact" className="text-base font-bold">{t('stock.supplierContact')}</Label>
                   <Input
                     id="supplier_contact"
                     value={formData.supplier_contact || ''}
                     onChange={(e) => setFormData({ ...formData, supplier_contact: e.target.value })}
-                    placeholder="Email or phone"
+                    placeholder={t('stock.supplierContact')}
                     className="border-amber-500/30 focus:border-amber-500/60 transition-colors h-9 text-base"
                   />
                 </div>
@@ -1094,7 +1096,7 @@ export default function StockManagement() {
 
             <div className="space-y-2 bg-indigo-500/5 dark:bg-indigo-900/10 p-2 md:p-3 rounded border border-indigo-500/20">
               <Label htmlFor="images" className="text-lg font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
-                🖼️ Product Image
+                {t('stock.productImage')}
               </Label>
               <div className="space-y-3">
                 {formData.images?.[0] && (
@@ -1110,7 +1112,7 @@ export default function StockManagement() {
                       className="absolute top-2 right-2"
                       onClick={() => setFormData({ ...formData, images: [] })}
                     >
-                      Remove
+                      {t('stock.removeImage')}
                     </Button>
                   </div>
                 )}
@@ -1123,7 +1125,7 @@ export default function StockManagement() {
                     className="cursor-pointer"
                   />
                   <p className="text-xs text-muted-foreground">
-                    Upload product image (2MB max). Images will appear when you add this stock item to your store.
+                    {t('stock.uploadImage')}
                   </p>
                 </div>
               </div>
@@ -1131,11 +1133,11 @@ export default function StockManagement() {
 
             <div className="space-y-2 bg-purple-500/5 dark:bg-purple-900/10 p-2 md:p-3 rounded border border-purple-500/20">
               <h3 className="text-lg font-bold text-purple-600 dark:text-purple-400 flex items-center gap-2">
-                ⚙️ Status & Notes
+                ⚙️ {t('stock.status')} & {t('stock.notes')}
               </h3>
               <div className="space-y-2">
                 <div className="space-y-1">
-                  <Label htmlFor="status" className="text-base font-bold">Status</Label>
+                  <Label htmlFor="status" className="text-base font-bold">{t('stock.status')}</Label>
                   <Select
                     value={formData.status || 'active'}
                     onValueChange={(value: any) => setFormData({ ...formData, status: value })}
@@ -1144,19 +1146,19 @@ export default function StockManagement() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="active">✅ Active</SelectItem>
-                      <SelectItem value="discontinued">❌ Discontinued</SelectItem>
+                      <SelectItem value="active">✅ {t('stock.active')}</SelectItem>
+                      <SelectItem value="discontinued">❌ {t('stock.discontinued')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="notes" className="text-base font-bold">📌 Additional Notes</Label>
+                  <Label htmlFor="notes" className="text-base font-bold">📌 {t('stock.additionalNotes')}</Label>
                   <Textarea
                     id="notes"
                     value={formData.notes || ''}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    placeholder="Add any additional notes or observations..."
+                    placeholder={t('stock.additionalNotes')}
                     rows={3}
                     className="border-purple-500/30 focus:border-purple-500/60 transition-colors resize-none text-base"
                   />
@@ -1170,7 +1172,7 @@ export default function StockManagement() {
               onClick={showAddModal ? handleCreateStock : handleUpdateStock}
               className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-700 text-white shadow hover:shadow-md transition-all text-base font-bold h-10"
             >
-              {showAddModal ? '➕ Add Product' : '💾 Save Changes'}
+              {showAddModal ? t('stock.createProduct') : t('stock.saveChanges')}
             </Button>
             <Button 
               variant="outline" 
@@ -1181,7 +1183,7 @@ export default function StockManagement() {
               }}
               className="border-muted-foreground/30 hover:bg-muted/50 text-base font-bold h-10"
             >
-              ❌ Cancel
+              ❌ {t('cancel')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1197,31 +1199,31 @@ export default function StockManagement() {
       }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Adjust Stock Quantity</DialogTitle>
+            <DialogTitle>{t('stock.adjustQuantity')}</DialogTitle>
             <DialogDescription>
-              {selectedItem && `Current stock: ${selectedItem.quantity} units`}
+              {selectedItem && `${t('stock.currentQuantity')}: ${selectedItem.quantity}`}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="adjustment">Adjustment</Label>
+              <Label htmlFor="adjustment">{t('stock.adjustment')}</Label>
               <Input
                 id="adjustment"
                 type="number"
                 value={adjustData.adjustment}
                 onChange={(e) => setAdjustData({ ...adjustData, adjustment: parseInt(e.target.value) || 0 })}
-                placeholder="Enter quantity (positive to add, negative to remove)"
+                placeholder={t('stock.adjustment')}
               />
               {selectedItem && (
                 <p className="text-sm text-muted-foreground">
-                  New quantity will be: {selectedItem.quantity + adjustData.adjustment}
+                  {t('stock.newQuantity')}: {selectedItem.quantity + adjustData.adjustment}
                 </p>
               )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="reason">Reason</Label>
+              <Label htmlFor="reason">{t('stock.reason')}</Label>
               <Select
                 value={adjustData.reason}
                 onValueChange={(value) => setAdjustData({ ...adjustData, reason: value })}
@@ -1230,23 +1232,23 @@ export default function StockManagement() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="sale">Sale</SelectItem>
-                  <SelectItem value="purchase">Purchase</SelectItem>
-                  <SelectItem value="return">Return</SelectItem>
-                  <SelectItem value="damage">Damage/Loss</SelectItem>
-                  <SelectItem value="stocktake">Stocktake</SelectItem>
-                  <SelectItem value="adjustment">Manual Adjustment</SelectItem>
+                  <SelectItem value="sale">{t('stock.reasonSold')}</SelectItem>
+                  <SelectItem value="purchase">{t('stock.reasonReceived')}</SelectItem>
+                  <SelectItem value="return">{t('stock.reasonReturned')}</SelectItem>
+                  <SelectItem value="damage">{t('stock.reasonDamaged')}</SelectItem>
+                  <SelectItem value="stocktake">{t('stock.reasonAdjustment')}</SelectItem>
+                  <SelectItem value="adjustment">{t('stock.reasonOther')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="adjust_notes">Notes</Label>
+              <Label htmlFor="adjust_notes">{t('stock.notes')}</Label>
               <Textarea
                 id="adjust_notes"
                 value={adjustData.notes}
                 onChange={(e) => setAdjustData({ ...adjustData, notes: e.target.value })}
-                placeholder="Additional details about this adjustment"
+                placeholder={t('stock.additionalNotes')}
                 rows={3}
               />
             </div>
@@ -1254,10 +1256,10 @@ export default function StockManagement() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAdjustModal(false)}>
-              Cancel
+              {t('cancel')}
             </Button>
             <Button onClick={handleAdjustQuantity}>
-              Adjust Quantity
+              {t('stock.applyAdjustment')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1273,15 +1275,15 @@ export default function StockManagement() {
       }}>
         <DialogContent className="max-w-3xl max-h-[80vh]">
           <DialogHeader>
-            <DialogTitle>Stock History</DialogTitle>
+            <DialogTitle>{t('stock.history')}</DialogTitle>
             <DialogDescription>
-              {selectedItem && `History for: ${selectedItem.name}`}
+              {selectedItem && `${t('stock.historyFor')}: ${selectedItem.name}`}
             </DialogDescription>
           </DialogHeader>
 
           <div className="overflow-y-auto max-h-96">
             {stockHistory.length === 0 ? (
-              <p className="text-center py-4 md:py-6 text-muted-foreground">No history records</p>
+              <p className="text-center py-4 md:py-6 text-muted-foreground">{t('stock.noHistory')}</p>
             ) : (
               <div className="space-y-4">
                 {stockHistory.map((record) => (
@@ -1322,16 +1324,15 @@ export default function StockManagement() {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Stock Item?</AlertDialogTitle>
+            <AlertDialogTitle>{t('stock.deleteProduct')}?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{selectedItem?.name}"? This action cannot be undone
-              and will also delete all associated history records.
+              {t('stock.deleteConfirm')} "{selectedItem?.name}"
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteStock} className="bg-red-600 hover:bg-red-700">
-              Delete
+              {t('delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1342,20 +1343,20 @@ export default function StockManagement() {
         <DialogContent className="max-w-md bg-gradient-to-br from-background via-background to-primary/5 dark:from-slate-950 dark:to-slate-900/30">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent flex items-center gap-2">
-              <Tag className="w-5 h-5 text-primary" /> Manage Categories
+              <Tag className="w-5 h-5 text-primary" /> {t('stock.manageCategories')}
             </DialogTitle>
             <DialogDescription>
-              Create and manage categories for your stock items
+              {t('stock.categoriesDesc')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             {/* Create new category */}
             <div className="space-y-2">
-              <Label className="font-bold">Create New Category</Label>
+              <Label className="font-bold">{t('stock.createCategory')}</Label>
               <div className="flex gap-2">
                 <Input
-                  placeholder="Category name..."
+                  placeholder={t('stock.categoryName')}
                   value={newCategoryName}
                   onChange={(e) => setNewCategoryName(e.target.value)}
                   className="flex-1"
@@ -1372,18 +1373,18 @@ export default function StockManagement() {
                   className="bg-primary"
                 >
                   <Plus className="w-4 h-4 mr-1" />
-                  Add
+                  {t('stock.add')}
                 </Button>
               </div>
             </div>
 
             {/* Categories list */}
             <div className="space-y-2">
-              <Label className="font-bold">Your Categories ({allCategories.length})</Label>
+              <Label className="font-bold">{t('stock.categories')} ({allCategories.length})</Label>
               <div className="max-h-[300px] overflow-y-auto space-y-2">
                 {allCategories.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-4">
-                    No categories yet. Create one above!
+                    {t('stock.noCategories')}
                   </p>
                 ) : (
                   allCategories.map((cat) => (
@@ -1417,7 +1418,7 @@ export default function StockManagement() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCategoryModal(false)}>
-              Close
+              {t('close')}
             </Button>
           </DialogFooter>
         </DialogContent>
