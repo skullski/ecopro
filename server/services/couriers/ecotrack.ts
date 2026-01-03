@@ -27,6 +27,22 @@ interface EcotrackOrderResponse {
 export class EcotrackService implements CourierService {
   private readonly apiUrl = 'https://api.ecotrack.dz/v1';
 
+  private async readApiResponse(response: Response): Promise<{ json: any | null; text: string; contentType: string }> {
+    const contentType = response.headers.get('content-type') || '';
+    const text = await response.text();
+
+    const looksJson = contentType.includes('application/json') || /^[\s\r\n]*[\[{]/.test(text);
+    if (!looksJson) {
+      return { json: null, text, contentType };
+    }
+
+    try {
+      return { json: JSON.parse(text), text, contentType };
+    } catch {
+      return { json: null, text, contentType };
+    }
+  }
+
   async createShipment(
     shipment: ShipmentInput,
     apiKey: string,
@@ -51,24 +67,42 @@ export class EcotrackService implements CourierService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
           'Authorization': `Bearer ${apiKey}`,
           'X-Account-ID': accountId || '',
         },
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
+      const { json, text, contentType } = await this.readApiResponse(response);
+      const data = json ?? {};
 
       if (!response.ok) {
-        console.error('[Ecotrack] Create order error:', data);
+        const snippet = text.slice(0, 400);
+        console.error('[Ecotrack] Create order error:', {
+          status: response.status,
+          contentType,
+          bodySnippet: snippet,
+          data,
+        });
         return {
           success: false,
           tracking_number: '',
-          error: data.message || data.error || `API Error ${response.status}`,
+          error:
+            (data?.message || data?.error) ??
+            `API Error ${response.status} (${contentType || 'unknown content-type'}): ${snippet || 'empty response'}`,
         };
       }
 
-      const order: EcotrackOrderResponse = data;
+      if (!json) {
+        return {
+          success: false,
+          tracking_number: '',
+          error: `API returned non-JSON success response (${contentType || 'unknown'}): ${text.slice(0, 200)}`,
+        };
+      }
+
+      const order: EcotrackOrderResponse = json;
 
       return {
         success: true,
@@ -95,22 +129,34 @@ export class EcotrackService implements CourierService {
       const response = await fetch(`${this.apiUrl}/orders/${trackingNumber}`, {
         method: 'GET',
         headers: {
+          'Accept': 'application/json',
           'Authorization': `Bearer ${apiKey}`,
           'X-Account-ID': accountId || '',
         },
       });
 
-      const data = await response.json();
+      const { json, text, contentType } = await this.readApiResponse(response);
+      const data = json ?? {};
 
       if (!response.ok) {
         return {
           tracking_number: trackingNumber,
           status: 'unknown',
-          error: data.message || 'Failed to fetch status',
+          error:
+            (data?.message || data?.error) ??
+            `Failed to fetch status: HTTP ${response.status} (${contentType || 'unknown'}): ${text.slice(0, 200)}`,
         };
       }
 
-      const order: EcotrackOrderResponse = data;
+      if (!json) {
+        return {
+          tracking_number: trackingNumber,
+          status: 'unknown',
+          error: `API returned non-JSON success response (${contentType || 'unknown'}): ${text.slice(0, 200)}`,
+        };
+      }
+
+      const order: EcotrackOrderResponse = json;
 
       return {
         tracking_number: trackingNumber,

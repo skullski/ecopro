@@ -22,6 +22,23 @@ export async function logDeliveryEvent(
       [orderId, clientId, companyId, `${requestId}`, eventType, 'completed', description, requestId]
     );
   } catch (err) {
+    const msg = String((err as any)?.message || '');
+    // Backward compatibility: some DBs may not have request_id column yet.
+    if (msg.includes('request_id') && msg.includes('does not exist')) {
+      try {
+        await pool.query(
+          `INSERT INTO delivery_events
+           (order_id, client_id, delivery_company_id, tracking_number, event_type, event_status, description, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
+          [orderId, clientId, companyId, `${requestId}`, eventType, 'completed', description]
+        );
+        return;
+      } catch (err2) {
+        console.error('[LogDeliveryEvent] Failed to log event (fallback):', err2);
+        return;
+      }
+    }
+
     console.error('[LogDeliveryEvent] Failed to log event:', err);
   }
 }

@@ -53,6 +53,13 @@ export default function OrdersAdmin() {
   const [generateLabels, setGenerateLabels] = useState(true);
   const [bulkUploading, setBulkUploading] = useState(false);
   const [bulkUploadResult, setBulkUploadResult] = useState<{ successCount: number; failCount: number; results: any[] } | null>(null);
+
+  const selectedDeliveryCompanyData = deliveryCompanies.find(c => c.id === selectedDeliveryCompany) || null;
+  const isNoestSelected = String(selectedDeliveryCompanyData?.name || '').trim().toLowerCase() === 'noest';
+  const canGenerateLabels = Boolean(
+    (selectedDeliveryCompanyData as any)?.features?.labels ??
+    (selectedDeliveryCompanyData as any)?.features?.supports_labels
+  ) || isNoestSelected;
   
   const [newOrder, setNewOrder] = useState({
     customer_name: '',
@@ -1188,15 +1195,17 @@ export default function OrdersAdmin() {
             {/* Options */}
             <div className="space-y-3 pt-2 border-t border-border/30">
               <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded">
-                <strong>Note:</strong> "Assign only" just marks orders for this delivery company locally. 
-                To actually send orders to the courier API and get tracking numbers, enable "Generate labels" 
-                (requires API credentials configured in Settings → Delivery Companies).
+                <strong>Note:</strong>{' '}
+                {isNoestSelected
+                  ? 'Noest uses an Ecotrack-powered API. Configure your Noest Token + GUID in Settings → Delivery Companies, then enable "Generate labels".'
+                  : '"Assign only" just marks orders for this delivery company locally. To actually send orders to the courier API and get tracking numbers, enable "Generate labels" (requires API credentials configured in Settings → Delivery Companies).'}
               </div>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={generateLabels}
                   onChange={(e) => setGenerateLabels(e.target.checked)}
+                  disabled={!canGenerateLabels}
                   className="w-4 h-4 rounded border-border accent-blue-500"
                 />
                 <span className="text-sm">🏷️ Generate shipping labels (calls courier API - requires configured credentials)</span>

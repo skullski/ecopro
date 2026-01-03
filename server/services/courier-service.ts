@@ -10,7 +10,11 @@ export interface CourierService {
    * @param apiKey API key for the courier
    * @returns Tracking number and label URL/data
    */
-  createShipment(shipment: ShipmentInput, apiKey: string): Promise<CourierShipmentResponse>;
+  createShipment(
+    shipment: ShipmentInput,
+    apiKey: string,
+    secondaryCredential?: string
+  ): Promise<CourierShipmentResponse>;
 
   /**
    * Get delivery status for a shipment
@@ -18,7 +22,11 @@ export interface CourierService {
    * @param apiKey API key for the courier
    * @returns Current status and events
    */
-  getStatus(trackingNumber: string, apiKey: string): Promise<CourierStatusResponse>;
+  getStatus(
+    trackingNumber: string,
+    apiKey: string,
+    secondaryCredential?: string
+  ): Promise<CourierStatusResponse>;
 
   /**
    * Verify webhook signature from courier

@@ -24,6 +24,9 @@ registerCourierService('yalidine', YalidineService);
 registerCourierService('yalidine express', YalidineService);
 registerCourierService('guepex', GuepexService);
 registerCourierService('ecotrack', EcotrackService);
+// Noest portal is powered by Ecotrack (token + GUID). Treat Noest as Ecotrack API.
+registerCourierService('noest', EcotrackService);
+registerCourierService('noest express', EcotrackService);
 registerCourierService('zr express', ZRExpressService);
 registerCourierService('zr-express', ZRExpressService);
 registerCourierService('maystro', MaystroService);
@@ -31,6 +34,115 @@ registerCourierService('maystro delivery', MaystroService);
 registerCourierService('dolivroo', DolivrooService); // Aggregator - recommended
 
 export class DeliveryService {
+  /**
+   * Upload an order to the courier (create shipment) without requiring/storing a label.
+   * This is what the UI calls "Upload to Delivery" when labels are not requested.
+   */
+  static async createShipment(
+    orderId: number,
+    clientId: number,
+    companyId: number
+  ): Promise<{ success: boolean; tracking_number?: string; label_url?: string; courier_response?: any; error?: string }> {
+    const requestId = generateRequestId();
+
+    try {
+      const orderResult = await pool.query(
+        `SELECT so.*, dc.name as company_name 
+         FROM store_orders so
+         LEFT JOIN delivery_companies dc ON so.delivery_company_id = dc.id
+         WHERE so.id = $1 AND so.client_id = $2`,
+        [orderId, clientId]
+      );
+
+      if (orderResult.rows.length === 0) {
+        throw new Error('Order not found');
+      }
+
+      const order = orderResult.rows[0];
+
+      const integrationResult = await pool.query(
+        `SELECT id, api_key_encrypted, api_secret_encrypted
+         FROM delivery_integrations
+         WHERE client_id = $1 AND delivery_company_id = $2 AND is_enabled = true`,
+        [clientId, companyId]
+      );
+
+      if (integrationResult.rows.length === 0) {
+        throw new Error('Delivery integration not configured for this company');
+      }
+
+      const integration = integrationResult.rows[0];
+      const apiKey = decryptData(integration.api_key_encrypted);
+      const secondaryCredential = integration.api_secret_encrypted
+        ? decryptData(integration.api_secret_encrypted)
+        : undefined;
+
+      const service = getCourierService(order.company_name);
+      if (!service) {
+        throw new Error(`No service found for ${order.company_name}`);
+      }
+
+      const shipmentResponse = await service.createShipment(
+        {
+          customer_name: order.customer_name,
+          customer_phone: order.customer_phone,
+          customer_email: order.customer_email,
+          delivery_address: order.customer_address,
+          product_description: `Order #${orderId}`,
+          quantity: order.quantity,
+          cod_amount: order.cod_amount,
+          reference_id: `ORDER-${orderId}`,
+        },
+        apiKey,
+        secondaryCredential
+      );
+
+      if (!shipmentResponse.success) {
+        throw new Error(shipmentResponse.error || 'Failed to create shipment');
+      }
+
+      const trackingNumber = shipmentResponse.tracking_number;
+
+      await pool.query(
+        `UPDATE store_orders
+         SET tracking_number = $1,
+             delivery_status = $2,
+             shipping_label_url = COALESCE($3, shipping_label_url),
+             courier_response = $4::jsonb,
+             updated_at = NOW()
+         WHERE id = $5 AND client_id = $6`,
+        [
+          trackingNumber,
+          DeliveryStatus.IN_TRANSIT,
+          shipmentResponse.label_url || null,
+          JSON.stringify(shipmentResponse),
+          orderId,
+          clientId,
+        ]
+      );
+
+      await logDeliveryEvent(
+        orderId,
+        clientId,
+        companyId,
+        'uploaded',
+        `Shipment created with ${order.company_name}`,
+        requestId
+      );
+
+      return {
+        success: true,
+        tracking_number: trackingNumber,
+        label_url: shipmentResponse.label_url,
+        courier_response: shipmentResponse,
+      };
+    } catch (error: any) {
+      console.error(`[DeliveryService] createShipment failed:`, error);
+      await this.logError(orderId, clientId, companyId, 'shipment_create_failed', error.message, requestId);
+      return { success: false, error: error.message };
+    }
+  }
+
   /**
    * Assign a delivery company to an order
    */
@@ -43,7 +155,6 @@ export class DeliveryService {
     const requestId = generateRequestId();
 
     try {
-      // Validate order exists and belongs to client
       const orderResult = await pool.query(
         'SELECT id FROM store_orders WHERE id = $1 AND client_id = $2',
         [orderId, clientId]
@@ -53,7 +164,6 @@ export class DeliveryService {
         throw new Error('Order not found');
       }
 
-      // Validate delivery company exists
       const companyResult = await pool.query(
         'SELECT id, name FROM delivery_companies WHERE id = $1 AND is_active = true',
         [companyId]
@@ -63,7 +173,6 @@ export class DeliveryService {
         throw new Error('Delivery company not found or inactive');
       }
 
-      // Update order with delivery company
       await pool.query(
         `UPDATE store_orders 
          SET delivery_company_id = $1, 
@@ -102,95 +211,28 @@ export class DeliveryService {
     const requestId = generateRequestId();
 
     try {
-      // Get order details
-      const orderResult = await pool.query(
-        `SELECT so.*, dc.name as company_name 
-         FROM store_orders so
-         LEFT JOIN delivery_companies dc ON so.delivery_company_id = dc.id
-         WHERE so.id = $1 AND so.client_id = $2`,
-        [orderId, clientId]
-      );
-
-      if (orderResult.rows.length === 0) {
-        throw new Error('Order not found');
+      const shipmentResult = await this.createShipment(orderId, clientId, companyId);
+      if (!shipmentResult.success) {
+        throw new Error(shipmentResult.error || 'Failed to create shipment');
       }
 
-      const order = orderResult.rows[0];
+      const trackingNumber = shipmentResult.tracking_number!;
 
-      // Manual workflow: Noest labels are generated inside the Noest portal.
-      // EcoPro should not attempt to generate labels automatically.
-      if (String(order.company_name || '').trim().toLowerCase() === 'noest') {
-        throw new Error('Noest labels are generated inside your Noest account dashboard. Upload the order in Noest to download labels.');
-      }
-
-      // Get delivery integration credentials
-      const integrationResult = await pool.query(
-        `SELECT id, api_key_encrypted, api_secret_encrypted, webhook_secret_encrypted
-         FROM delivery_integrations
-         WHERE client_id = $1 AND delivery_company_id = $2 AND is_enabled = true`,
-        [clientId, companyId]
-      );
-
-      if (integrationResult.rows.length === 0) {
-        throw new Error('Delivery integration not configured for this company');
-      }
-
-      const integration = integrationResult.rows[0];
-      const apiKey = decryptData(integration.api_key_encrypted);
-
-      // Get courier service
-      const service = getCourierService(order.company_name);
-      if (!service) {
-        throw new Error(`No service found for ${order.company_name}`);
-      }
-
-      // Create shipment with courier
-      const shipmentResponse = await service.createShipment(
-        {
-          customer_name: order.customer_name,
-          customer_phone: order.customer_phone,
-          customer_email: order.customer_email,
-          delivery_address: order.customer_address,
-          product_description: `Order #${orderId}`,
-          quantity: order.quantity,
-          cod_amount: order.cod_amount,
-          reference_id: `ORDER-${orderId}`,
-        },
-        apiKey
-      );
-
-      if (!shipmentResponse.success) {
-        throw new Error(shipmentResponse.error || 'Failed to create shipment');
-      }
-
-      const trackingNumber = shipmentResponse.tracking_number;
-
-      // Save label to database
-      const labelResult = await pool.query(
+      await pool.query(
         `INSERT INTO delivery_labels 
          (order_id, client_id, delivery_company_id, tracking_number, label_url, generated_at, label_format)
-         VALUES ($1, $2, $3, $4, $5, NOW(), $6)
-         RETURNING id`,
-        [orderId, clientId, companyId, trackingNumber, shipmentResponse.label_url || null, 'pdf']
+         VALUES ($1, $2, $3, $4, $5, NOW(), $6)`,
+        [orderId, clientId, companyId, trackingNumber, shipmentResult.label_url || null, 'pdf']
       );
 
-      // Update order with tracking info
+      // createShipment already updated tracking/status; only ensure label fields are stamped.
       await pool.query(
         `UPDATE store_orders
-         SET tracking_number = $1,
-             delivery_status = $2,
-             shipping_label_url = $3,
+         SET shipping_label_url = $1,
              label_generated_at = NOW(),
-             courier_response = $4::jsonb,
              updated_at = NOW()
-         WHERE id = $5`,
-        [
-          trackingNumber,
-          DeliveryStatus.IN_TRANSIT,
-          shipmentResponse.label_url,
-          JSON.stringify(shipmentResponse),
-          orderId,
-        ]
+         WHERE id = $2 AND client_id = $3`,
+        [shipmentResult.label_url || null, orderId, clientId]
       );
 
       await logDeliveryEvent(
@@ -205,7 +247,7 @@ export class DeliveryService {
       return {
         success: true,
         tracking_number: trackingNumber,
-        label_url: shipmentResponse.label_url,
+        label_url: shipmentResult.label_url,
       };
     } catch (error: any) {
       console.error(`[DeliveryService] generateLabel failed:`, error);

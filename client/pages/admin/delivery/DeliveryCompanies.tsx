@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Truck, Key, CheckCircle2, X, ExternalLink, Zap, Globe } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "@/lib/i18n";
 
 interface DeliveryCompany {
@@ -39,6 +39,10 @@ export default function DeliveryCompanies() {
   const [selectedCompany, setSelectedCompany] = useState<DeliveryCompany | null>(null);
   const [showConfigDialog, setShowConfigDialog] = useState(false);
   const [credentials, setCredentials] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+  const [companyIdByName, setCompanyIdByName] = useState<Record<string, number>>({});
   
   // ========================================
   // REAL ALGERIAN DELIVERY COMPANIES WITH APIs
@@ -147,17 +151,37 @@ export default function DeliveryCompanies() {
       id: "noest",
       name: "Noest",
       logo: "/delivery-logos/noest.png",
-      description: "Manual workflow: upload orders in Noest portal; labels are downloaded from your Noest dashboard.",
+      description: "Noest uses an Ecotrack-powered API. Use your Noest Token + GUID to create shipments and generate labels.",
       apiFields: [
         { label: "API Token", placeholder: "Your Noest API Token", field: "apiToken" },
-        { label: "API Key", placeholder: "Your Noest API Key", field: "apiKey" },
+        { label: "GUID", placeholder: "Your Noest GUID", field: "apiKey" },
       ],
       enabled: false,
-      hasApi: false,
-      features: { createShipment: false, tracking: false, labels: false, cod: true, webhooks: false },
+      hasApi: true,
+      features: { createShipment: true, tracking: true, labels: true, cod: true, webhooks: false },
       apiRating: 2,
     },
   ]);
+
+  useEffect(() => {
+    // Fetch DB-backed delivery company IDs so we can save integrations.
+    (async () => {
+      try {
+        const res = await fetch('/api/delivery/companies');
+        if (!res.ok) return;
+        const data = await res.json();
+        const map: Record<string, number> = {};
+        for (const c of Array.isArray(data) ? data : []) {
+          const key = String(c?.name || '').trim().toLowerCase();
+          const id = Number(c?.id);
+          if (key && Number.isFinite(id)) map[key] = id;
+        }
+        setCompanyIdByName(map);
+      } catch {
+        // Silent; page can still render, but saving integrations may fail.
+      }
+    })();
+  }, []);
 
   const handleCardClick = (company: DeliveryCompany) => {
     setSelectedCompany(company);
@@ -165,16 +189,56 @@ export default function DeliveryCompanies() {
     setShowConfigDialog(true);
   };
 
-  const handleSaveCredentials = () => {
+  const handleSaveCredentials = async () => {
     if (!selectedCompany) return;
-    
-    setCompanies(companies.map(company => 
-      company.id === selectedCompany.id 
-        ? { ...company, enabled: true, credentials } 
-        : company
-    ));
-    setShowConfigDialog(false);
-    setCredentials({});
+
+    setSaveError(null);
+    setSaveSuccess(null);
+    setSaving(true);
+
+    try {
+      const dbId = companyIdByName[String(selectedCompany.name || '').trim().toLowerCase()];
+      if (!dbId) {
+        throw new Error('Delivery company not found on server. Make sure migrations are applied and the company exists.');
+      }
+
+      // Map UI credentials → backend schema
+      // - api_key: primary token
+      // - api_secret: secondary credential (e.g., GUID / API ID / Account ID)
+      const apiKey = (credentials.apiToken || credentials.apiKey || '').trim();
+      const apiSecret = (credentials.apiId || credentials.accountId || '').trim() || (credentials.apiKey || '').trim();
+
+      if (!apiKey) {
+        throw new Error('API Token is required');
+      }
+
+      const res = await fetch('/api/delivery/integrations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          delivery_company_id: dbId,
+          api_key: apiKey,
+          api_secret: apiSecret || undefined,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data?.error || 'Failed to save integration');
+      }
+
+      setCompanies(companies.map(company => 
+        company.id === selectedCompany.id 
+          ? { ...company, enabled: true, credentials } 
+          : company
+      ));
+      setSelectedCompany({ ...selectedCompany, enabled: true, credentials });
+      setSaveSuccess('Saved successfully');
+    } catch (e: any) {
+      setSaveError(e?.message || 'Failed to save');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDisable = (companyId: string) => {
@@ -435,6 +499,18 @@ export default function DeliveryCompanies() {
           </div>
 
           <DialogFooter className="gap-2 border-t border-border/50 pt-4">
+            <div className="flex-1">
+              {saveError && (
+                <p className="text-sm text-destructive">
+                  {saveError}
+                </p>
+              )}
+              {saveSuccess && (
+                <p className="text-sm text-primary">
+                  {saveSuccess}
+                </p>
+              )}
+            </div>
             {selectedCompany?.enabled && (
               <Button
                 variant="destructive"
@@ -462,6 +538,7 @@ export default function DeliveryCompanies() {
             <Button 
               size="sm"
               onClick={handleSaveCredentials}
+              disabled={saving}
               className="bg-gradient-to-r from-primary to-accent hover:shadow-lg"
             >
               <CheckCircle2 className="w-4 h-4 mr-1.5" />

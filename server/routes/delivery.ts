@@ -229,8 +229,22 @@ export const bulkAssignDelivery: RequestHandler = async (req, res) => {
       return;
     }
 
-    // If generating labels, check if integration is configured FIRST
-    if (generate_labels) {
+    // Determine whether this company supports API shipment creation.
+    const companyInfo = await pool.query(
+      'SELECT name, features FROM delivery_companies WHERE id = $1 AND is_active = true',
+      [delivery_company_id]
+    );
+    if (companyInfo.rows.length === 0) {
+      res.status(404).json({ error: 'Delivery company not found or inactive' });
+      return;
+    }
+
+    const companyName = String(companyInfo.rows[0]?.name || '');
+    const companyFeatures = companyInfo.rows[0]?.features || {};
+    const supportsApiUpload = Boolean(companyFeatures?.createShipment) || companyName.trim().toLowerCase().includes('noest');
+
+    // If we need to talk to the courier API (upload and/or labels), ensure integration exists first.
+    if (supportsApiUpload) {
       const integrationCheck = await pool.query(
         `SELECT di.id, dc.name as company_name
          FROM delivery_integrations di
@@ -242,13 +256,13 @@ export const bulkAssignDelivery: RequestHandler = async (req, res) => {
       if (integrationCheck.rows.length === 0) {
         res.status(400).json({ 
           error: 'Delivery integration not configured',
-          details: 'You need to configure API credentials for this delivery company in Settings → Delivery Companies before generating labels.'
+          details: 'You need to configure API credentials for this delivery company in Settings → Delivery Companies before uploading orders.'
         });
         return;
       }
     }
 
-    const results: { orderId: number; success: boolean; error?: string; tracking_number?: string }[] = [];
+    const results: { orderId: number; success: boolean; error?: string; tracking_number?: string; label_url?: string }[] = [];
 
     // Process each order
     for (const orderId of order_ids) {
@@ -279,28 +293,50 @@ export const bulkAssignDelivery: RequestHandler = async (req, res) => {
           continue;
         }
 
-        // Generate label if requested
-        if (generate_labels) {
-          const labelResult = await DeliveryService.generateLabel(
-            orderId,
-            clientId as number,
-            Number(delivery_company_id)
-          );
-
-          if (labelResult.success) {
-            results.push({
+        // Upload shipment to courier API (if supported). Labels are optional.
+        if (supportsApiUpload) {
+          if (generate_labels) {
+            const labelResult = await DeliveryService.generateLabel(
               orderId,
-              success: true,
-              tracking_number: labelResult.tracking_number,
-            });
+              clientId as number,
+              Number(delivery_company_id)
+            );
+            if (labelResult.success) {
+              results.push({
+                orderId,
+                success: true,
+                tracking_number: labelResult.tracking_number,
+                label_url: labelResult.label_url,
+              });
+            } else {
+              results.push({
+                orderId,
+                success: true, // Assignment succeeded
+                error: `Upload failed: ${labelResult.error}`,
+              });
+            }
           } else {
-            results.push({
+            const uploadResult = await DeliveryService.createShipment(
               orderId,
-              success: true, // Assignment succeeded
-              error: `Label generation failed: ${labelResult.error}`,
-            });
+              clientId as number,
+              Number(delivery_company_id)
+            );
+            if (uploadResult.success) {
+              results.push({
+                orderId,
+                success: true,
+                tracking_number: uploadResult.tracking_number,
+              });
+            } else {
+              results.push({
+                orderId,
+                success: true, // Assignment succeeded
+                error: `Upload failed: ${uploadResult.error}`,
+              });
+            }
           }
         } else {
+          // Manual/non-API couriers: assignment only.
           results.push({ orderId, success: true });
         }
       } catch (err: any) {
