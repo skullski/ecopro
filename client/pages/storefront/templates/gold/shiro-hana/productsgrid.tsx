@@ -31,12 +31,17 @@ export function ProductGrid({ items, columns = 3, gap, paddingY, paddingX, backg
   const resolveNumber = (v: any): number | undefined => resolveResponsiveNumber(v, bp);
 
   const resolvedColumns = resolveNumber(columns);
-  const mdCols = Math.min(6, Math.max(1, Number(resolvedColumns ?? columns) || 3));
+  const themeCols = parseInt(String((theme as any)?.gridColumns || ''), 10);
+  const mdCols = Math.min(6, Math.max(1, Number(resolvedColumns ?? columns ?? themeCols) || themeCols || 3));
 
-  const gapPx = resolveNumber(gap);
+  const gapPx = resolveNumber(gap) ?? parseInt(String((theme as any)?.gridGap || ''), 10);
   const padXPx = resolveNumber(paddingX);
   const padYPx = resolveNumber(paddingY);
   const colCount = isMd ? mdCols : (isSm ? Math.min(2, mdCols) : 1);
+
+  const title = String((theme as any)?.featuredTitle || '').trim();
+  const subtitle = String((theme as any)?.featuredSubtitle || '').trim();
+  const sectionTitleSize = parseInt(String((theme as any)?.sectionTitleSize || ''), 10);
 
   return (
     <section
@@ -47,31 +52,81 @@ export function ProductGrid({ items, columns = 3, gap, paddingY, paddingX, backg
         backgroundColor: backgroundColor || undefined,
       }}
       data-edit-path="layout.featured"
-      onClick={() => onSelect('layout.featured')}
+      onClick={(e) => {
+        if ((theme as any)?.canManage === false) return;
+        e.preventDefault();
+        e.stopPropagation();
+        onSelect('layout.featured');
+      }}
     >
-      <div
-        className="container mx-auto px-6 grid"
-        style={{
-          gap: gapPx,
-          paddingLeft: padXPx,
-          paddingRight: padXPx,
-          gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))`,
-        }}
-      >
-        {items.map((p) => (
-          <ProductCard
-            key={p.id}
-            product={p}
-            onSelect={onSelect}
-            resolveAssetUrl={resolveAssetUrl}
-            formatPrice={formatPrice}
-            ctaStyle={ctaStyle}
-            addLabel={addLabel}
-            theme={theme}
-            card={card}
-            responsive={responsive}
-          />
-        ))}
+      <div className="container mx-auto px-6" style={{ paddingLeft: padXPx, paddingRight: padXPx }}>
+        {(title || subtitle) ? (
+          <div className="mb-6">
+            {title ? (
+              <h2
+                className="font-semibold"
+                style={{
+                  fontSize: Number.isFinite(sectionTitleSize) ? `${sectionTitleSize}px` : undefined,
+                  color: (theme as any)?.sectionTitleColor || theme?.colors?.text || undefined,
+                }}
+                data-edit-path="layout.featured.title"
+                onClick={(e) => {
+                  if ((theme as any)?.canManage === false) return;
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onSelect('layout.featured.title');
+                }}
+              >
+                {title}
+              </h2>
+            ) : null}
+            {subtitle ? (
+              <p
+                className="mt-2 text-sm"
+                style={{ color: (theme as any)?.sectionSubtitleColor || theme?.colors?.muted || undefined }}
+                data-edit-path="layout.featured.subtitle"
+                onClick={(e) => {
+                  if ((theme as any)?.canManage === false) return;
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onSelect('layout.featured.subtitle');
+                }}
+              >
+                {subtitle}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
+        <div
+          className="grid"
+          style={{
+            gap: gapPx,
+            gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))`,
+          }}
+          data-edit-path="layout.grid"
+          onClick={(e) => {
+            if ((theme as any)?.canManage === false) return;
+            e.preventDefault();
+            e.stopPropagation();
+            onSelect('layout.grid');
+          }}
+        >
+          {items.map((p) => (
+            <ProductCard
+              key={p.id}
+              product={p}
+              onSelect={onSelect}
+              resolveAssetUrl={resolveAssetUrl}
+              formatPrice={formatPrice}
+              ctaStyle={ctaStyle}
+              addLabel={addLabel}
+              theme={theme}
+              card={card}
+              responsive={responsive}
+            />
+          ))}
+        </div>
       </div>
     </section>
   );

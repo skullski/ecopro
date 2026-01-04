@@ -448,8 +448,7 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
         console.log('[createPublicStoreOrder] Found client store, client_id:', clientId);
       }
     } else {
-      // NOTE: Seller storefront orders are handled via marketplace guest checkout (/api/guest/orders).
-      // This endpoint is for client storefronts only.
+      // NOTE: This endpoint is for client storefronts only.
       if (!isProduction) {
         console.log('[createPublicStoreOrder] Client store not found for slug:', storeSlug);
       }

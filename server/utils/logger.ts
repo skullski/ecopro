@@ -1,7 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 
-const logsDir = path.resolve(process.cwd(), 'server', 'logs');
+// Keep runtime logs outside the watched source tree.
+// Nodemon watches `server/**/*` in dev; writing logs under `server/` causes restart loops.
+const logsDir = path.resolve(process.cwd(), 'logs');
 const storeSettingsLog = path.join(logsDir, 'store-settings.log');
 
 const SENSITIVE_KEY_RE = /(authorization|cookie|token|secret|password|api[_-]?key|private[_-]?key)/i;

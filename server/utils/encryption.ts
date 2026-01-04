@@ -1,10 +1,20 @@
 // Encryption utilities for sensitive delivery data
 import crypto from 'crypto';
-import { getOrGenerateSecret } from './required-env';
 
 function getEncryptionKey(): string {
-  // Use the centralized secret manager which auto-generates in production if needed
-  return getOrGenerateSecret('ENCRYPTION_KEY') || 'dev-encryption-key-change-me';
+  // Prefer an explicit, stable key.
+  const explicit = process.env.ENCRYPTION_KEY;
+  if (explicit && explicit.trim()) return explicit;
+
+  // Fallback: derive a deterministic key from DATABASE_URL so encrypted fields remain
+  // decryptable across restarts even if ENCRYPTION_KEY is not set.
+  const dbUrl = process.env.DATABASE_URL;
+  if (dbUrl && dbUrl.trim()) {
+    return crypto.createHash('sha256').update(dbUrl).digest('hex');
+  }
+
+  // Last resort for local/dev.
+  return 'dev-encryption-key-change-me';
 }
 const ALGORITHM = 'aes-256-gcm';
 

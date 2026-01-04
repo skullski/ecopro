@@ -59,6 +59,26 @@ interface ServerHealth {
   ok: boolean;
   timestamp: string;
   uptimeSec: number;
+  htop?: {
+    cpu?: {
+      totalPct: number | null;
+      perCorePct: number[] | null;
+      intervalMs: number | null;
+      mode: 'delta' | 'avg' | null;
+    };
+    memory?: {
+      totalBytes: number;
+      usedBytes: number;
+      availableBytes: number;
+      pctUsed: number;
+    };
+    swap?: {
+      totalBytes: number;
+      usedBytes: number;
+      freeBytes: number;
+      pctUsed: number;
+    } | null;
+  };
   node: {
     version: string;
     env: string | null;
@@ -875,6 +895,30 @@ export default function PlatformAdmin() {
   }, [activeTab]);
 
   useEffect(() => {
+    if (activeTab !== 'health') return;
+    let alive = true;
+
+    const tick = async () => {
+      if (!alive) return;
+      try {
+        const res = await fetch('/api/admin/health');
+        if (!res.ok) return;
+        const data = (await res.json()) as ServerHealth;
+        if (alive) setServerHealth(data);
+      } catch {
+        // ignore background polling errors
+      }
+    };
+
+    void tick();
+    const id = window.setInterval(() => void tick(), 1000);
+    return () => {
+      alive = false;
+      window.clearInterval(id);
+    };
+  }, [activeTab]);
+
+  useEffect(() => {
     if (!platformSettings) return;
     setSettingsForm({
       max_users: Number(platformSettings.max_users ?? 1000) || 0,
@@ -1002,6 +1046,25 @@ export default function PlatformAdmin() {
       unitIndex += 1;
     }
     return `${value.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+  };
+
+  const formatBytesShort = (bytes: number | null | undefined) => {
+    if (bytes == null || !Number.isFinite(bytes)) return '-';
+    const abs = Math.max(0, bytes);
+    const gib = abs / (1024 * 1024 * 1024);
+    if (gib >= 1) return `${gib.toFixed(2)}G`;
+    const mib = abs / (1024 * 1024);
+    if (mib >= 1) return `${mib.toFixed(0)}M`;
+    const kib = abs / 1024;
+    if (kib >= 1) return `${kib.toFixed(0)}K`;
+    return `${abs.toFixed(0)}B`;
+  };
+
+  const renderHtopBar = (pct: number | null | undefined, width = 22) => {
+    const p = pct == null || !Number.isFinite(pct) ? 0 : Math.max(0, Math.min(100, pct));
+    const filled = Math.round((p / 100) * width);
+    const empty = Math.max(0, width - filled);
+    return `${'|'.repeat(filled)}${' '.repeat(empty)}`;
   };
 
   const loadServerHealth = async () => {
@@ -2654,6 +2717,51 @@ export default function PlatformAdmin() {
 
               {serverHealth && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.625rem, 1.25vh, 0.875rem)', marginTop: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
+                  {serverHealth.htop && (
+                    <div className="bg-slate-950/60 rounded-lg border border-slate-700/50 p-3 font-mono">
+                      <div className="text-slate-400 text-xs mb-2">$ htop (live)</div>
+                      <div className="space-y-1 text-xs">
+                        {Array.isArray(serverHealth.htop.cpu?.perCorePct) && serverHealth.htop.cpu!.perCorePct!.length > 0 ? (
+                          serverHealth.htop.cpu!.perCorePct!.slice(0, 32).map((pct, idx) => (
+                            <div key={idx} className="flex items-center justify-between gap-3">
+                              <div className="text-slate-300 flex items-center gap-2 min-w-0">
+                                <span className="text-slate-500 w-4">{idx}</span>
+                                <span className="text-red-300">[{renderHtopBar(pct)}]</span>
+                              </div>
+                              <div className="text-fuchsia-300 tabular-nums">{formatPercent(pct)}</div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-slate-500">CPU: -</div>
+                        )}
+
+                        {serverHealth.htop.memory && (
+                          <div className="flex items-center justify-between gap-3 pt-1">
+                            <div className="text-slate-300 flex items-center gap-2 min-w-0">
+                              <span className="text-slate-500 w-6">Mem</span>
+                              <span className="text-cyan-300">[{renderHtopBar(serverHealth.htop.memory.pctUsed)}]</span>
+                            </div>
+                            <div className="text-fuchsia-300 tabular-nums">
+                              {formatBytesShort(serverHealth.htop.memory.usedBytes)}/{formatBytesShort(serverHealth.htop.memory.totalBytes)}
+                            </div>
+                          </div>
+                        )}
+
+                        {serverHealth.htop.swap && (
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="text-slate-300 flex items-center gap-2 min-w-0">
+                              <span className="text-slate-500 w-6">Swp</span>
+                              <span className="text-cyan-300">[{renderHtopBar(serverHealth.htop.swap.pctUsed)}]</span>
+                            </div>
+                            <div className="text-fuchsia-300 tabular-nums">
+                              {formatBytesShort(serverHealth.htop.swap.usedBytes)}/{formatBytesShort(serverHealth.htop.swap.totalBytes)}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 lg:grid-cols-3" style={{ gap: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
                   <div className="bg-slate-900/30 rounded-lg border border-slate-600/30 p-3">
                     <div className="flex items-center justify-between">

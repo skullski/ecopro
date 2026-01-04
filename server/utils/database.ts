@@ -14,14 +14,21 @@ function readIntEnv(name: string, fallback: number): number {
 
 function getDbDefaults() {
   const isProd = process.env.NODE_ENV === 'production';
-  const connectTimeoutMs = readIntEnv('DB_CONNECT_TIMEOUT_MS', isProd ? 30000 : 4000);
-  const statementTimeoutMs = readIntEnv('DB_STATEMENT_TIMEOUT_MS', isProd ? 30000 : 15000);
-  const queryTimeoutMs = readIntEnv('DB_QUERY_TIMEOUT_MS', isProd ? 30000 : 8000);
-  const max = readIntEnv('DB_POOL_MAX', isProd ? 10 : 15);
+  // DEV_DB_INIT controls whether dev boot runs migrations/background jobs.
+  // It should NOT implicitly change whether the app can reliably connect to Render Postgres.
+  // If you want fast-fail behavior in dev, set DB_FAST_FAIL=1 explicitly.
+  const devFastFailRaw = String(process.env.DB_FAST_FAIL || '').toLowerCase();
+  const devFastFail = !isProd && (devFastFailRaw === '1' || devFastFailRaw === 'true' || devFastFailRaw === 'yes');
+  // Render Postgres can be slow/variable from local dev networks.
+  // Use more forgiving defaults in dev to avoid flapping/crashes.
+  const connectTimeoutMs = readIntEnv('DB_CONNECT_TIMEOUT_MS', isProd ? 30000 : (devFastFail ? 2000 : 20000));
+  const statementTimeoutMs = readIntEnv('DB_STATEMENT_TIMEOUT_MS', isProd ? 30000 : (devFastFail ? 5000 : 60000));
+  const queryTimeoutMs = readIntEnv('DB_QUERY_TIMEOUT_MS', isProd ? 30000 : (devFastFail ? 5000 : 30000));
+  const max = readIntEnv('DB_POOL_MAX', isProd ? 10 : (devFastFail ? 5 : 15));
   const idleTimeoutMs = readIntEnv('DB_IDLE_TIMEOUT_MS', 30000);
-  const retries = readIntEnv('DB_CONNECT_RETRIES', isProd ? 5 : 1);
-  const retryBaseDelayMs = readIntEnv('DB_RETRY_BASE_DELAY_MS', 250);
-  const retryMaxDelayMs = readIntEnv('DB_RETRY_MAX_DELAY_MS', 1000);
+  const retries = readIntEnv('DB_CONNECT_RETRIES', isProd ? 5 : (devFastFail ? 0 : 6));
+  const retryBaseDelayMs = readIntEnv('DB_RETRY_BASE_DELAY_MS', 500);
+  const retryMaxDelayMs = readIntEnv('DB_RETRY_MAX_DELAY_MS', 4000);
   return {
     connectTimeoutMs,
     statementTimeoutMs,

@@ -172,10 +172,6 @@ export default function ProductCheckout() {
       response = await fetch(`/api/product/${productIdentifier}`);
       if (response.ok) return response.json();
       
-      // Try products endpoint
-      response = await fetch(`/api/products/${productIdentifier}`);
-      if (response.ok) return response.json();
-      
       // Try client store products (for store checkout)
       response = await fetch(`/api/client/store/products/${productIdentifier}`);
       if (response.ok) return response.json();

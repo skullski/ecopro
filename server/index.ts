@@ -11,7 +11,6 @@ import crypto from 'crypto';
 import fs from 'fs/promises';
 import { handleDemo } from "./routes/demo";
 import * as authRoutes from "./routes/auth";
-import * as productRoutes from "./routes/products";
 import * as stockRoutes from "./routes/stock";
 import * as clientStoreRoutes from "./routes/client-store";
 import * as publicStoreRoutes from "./routes/public-store";
@@ -57,7 +56,7 @@ import { validateProductionEnv } from "./utils/required-env";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export function createServer() {
+export function createServer(options?: { skipDbInit?: boolean }) {
   const app = express();
   const isProduction = process.env.NODE_ENV === 'production';
 
@@ -90,7 +89,10 @@ export function createServer() {
     console.log('🗄️ DATABASE_URL:', hasDatabaseUrl ? masked : '(not set)');
   }
 
-  if (hasDatabaseUrl || isProduction) {
+  const skipDbInit = Boolean(options?.skipDbInit);
+  if (skipDbInit && !isProduction) {
+    console.log('⏭️ SKIP_DB_INIT (dev) — skipping database initialization in createServer');
+  } else if (hasDatabaseUrl || isProduction) {
     initializeDatabase()
       .then(async () => {
         if (process.env.SKIP_MIGRATIONS === 'true') {
@@ -105,8 +107,11 @@ export function createServer() {
         startScheduledMessageWorker();
       })
       .catch((err) => {
-        console.error("Failed to initialize database:", err);
-        process.exit(1);
+        console.error('Failed to initialize database:', err);
+        if (isProduction) {
+          process.exit(1);
+        }
+        console.warn('⚠️ Dev mode: continuing without DB (routes that require DB will fail until DB is reachable)');
       });
   } else {
     console.log('⚠️  No DATABASE_URL set; skipping database initialization');
@@ -484,22 +489,10 @@ export function createServer() {
   // Client profile APIs
   app.use('/api/users', authenticate, usersRouter);
 
-  // Public product routes
-  app.get(
-    "/api/products/categories/counts",
-    apiLimiter,
-    productRoutes.getCategoryCounts
-  );
-  app.get("/api/products", apiLimiter, productRoutes.getAllProducts);
-  app.get("/api/products/:id", apiLimiter, productRoutes.getProductById);
-
   // Templates API (public)
   app.get("/api/templates", apiLimiter, templateRoutes.getTemplates);
   app.get("/api/templates/:id", apiLimiter, templateRoutes.getTemplateById);
   app.get("/api/templates/category/:category", apiLimiter, templateRoutes.getTemplatesByCategory);
-
-  // Guest checkout (no auth)
-  app.post("/api/guest/orders", apiLimiter, productRoutes.createGuestOrder);
 
   // Staff orders route (staff members can access their store's orders)
   app.get(

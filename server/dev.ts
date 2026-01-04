@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 8080;
 
 async function startServer() {
   // Start server immediately (don't block boot on remote DB + migrations).
-  const app = createServer();
+  const app = createServer({ skipDbInit: true });
   app.listen(PORT, () => {
     console.log(`\n🚀 API Server running on http://localhost:${PORT}`);
     console.log(`📡 API endpoints available at http://localhost:${PORT}/api`);
@@ -17,6 +17,14 @@ async function startServer() {
   // Initialize DB + migrations + background jobs asynchronously.
   (async () => {
     try {
+      const devDbInit = String(process.env.DEV_DB_INIT || '').toLowerCase();
+      const shouldInitDb = devDbInit === '1' || devDbInit === 'true' || devDbInit === 'yes';
+
+      if (!shouldInitDb) {
+        console.log('⏭️ DEV_DB_INIT disabled — skipping database init/migrations/background jobs in dev');
+        return;
+      }
+
       if (process.env.DATABASE_URL) {
         const url = process.env.DATABASE_URL || '';
         const masked = url.replace(/:(.*?)@/, ':****@');

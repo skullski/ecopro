@@ -339,19 +339,13 @@ export default function Checkout() {
         if (typeof parsed?.stock_quantity === 'number') return parsed;
       }
       
-      // Try marketplace product first
-      let response = await fetch(`/api/products/${productId}`);
+      // Fetch from store product endpoint (products added from stock)
+      const response = await fetch(`/api/client/store/products/${productId}`);
       if (response.ok) {
         return response.json();
       }
       
-      // Fallback to store product endpoint (for products added from stock)
-      response = await fetch(`/api/client/store/products/${productId}`);
-      if (response.ok) {
-        return response.json();
-      }
-      
-      throw new Error('Failed to fetch product from marketplace or store');
+      throw new Error('Failed to fetch product');
     },
     enabled: !!productId,
   });

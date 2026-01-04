@@ -224,6 +224,10 @@ export default function GoldTemplateEditor() {
       settings: {
         ...settings,
         template: String(settings.template || 'shiro-hana'),
+        // New unified editor keys
+        template_page_shiro_hana_home: baseShiroHanaHome,
+        template_page_babyos_home: baseBabyosHome,
+        // Legacy keys (older data/templates)
         gold_page_shiro_hana_home: baseShiroHanaHome,
         gold_page_babyos_home: baseBabyosHome,
       },
@@ -486,6 +490,15 @@ export default function GoldTemplateEditor() {
           <Button variant="outline" size="sm" onClick={() => navigate('/dashboard/store')}>Edit Products</Button>
         </div>
       );
+    } else if (path.startsWith('layout.featured.addLabel')) {
+      body = (
+        <div className="space-y-4">
+          {bindText('Add Button Label', 'template_add_to_cart_label' as any, 'Add')}
+          <div className="text-xs text-muted-foreground">
+            This label is used on product cards (e.g., Add/View).
+          </div>
+        </div>
+      );
     } else if (path.startsWith('layout.featured')) {
       body = (
         <div className="space-y-4">
@@ -526,7 +539,7 @@ export default function GoldTemplateEditor() {
           {bindColor('Link Color', 'template_footer_link_color' as any, '#78716C')}
         </div>
       );
-    } else if (path === 'layout.header.nav') {
+    } else if (path.startsWith('layout.header.nav')) {
       body = (
         <div className="space-y-4">
           <div className="text-sm text-muted-foreground">
@@ -665,6 +678,8 @@ export default function GoldTemplateEditor() {
             >
               <option value="shiro-hana">Shiro Hana</option>
               <option value="babyos">Babyos</option>
+              <option value="bags">Bags Editorial</option>
+              <option value="jewelry">JewelryOS</option>
             </select>
             <Button
               variant={activeTab === 'preview' ? 'default' : 'outline'}
@@ -834,6 +849,8 @@ export default function GoldTemplateEditor() {
                   >
                     <option value="shiro-hana">Shiro Hana</option>
                     <option value="babyos">Babyos</option>
+                    <option value="bags">Bags Editorial</option>
+                    <option value="jewelry">JewelryOS</option>
                   </select>
                 </div>
                 <div>

@@ -4,6 +4,13 @@ import { ensureConnection } from "../utils/database";
 // Returns basic DB connectivity details to confirm target database
 export const handleDbCheck: RequestHandler = async (_req, res) => {
   try {
+    const isProduction = process.env.NODE_ENV === 'production';
+    const devDbInit = String(process.env.DEV_DB_INIT || '').toLowerCase();
+    const devDbInitEnabled = devDbInit === '1' || devDbInit === 'true' || devDbInit === 'yes';
+    if (!isProduction && !devDbInitEnabled) {
+      return res.json({ ok: false, skipped: true, error: 'DB check skipped in dev (set DEV_DB_INIT=1 to enable)' });
+    }
+
     const pool = await ensureConnection(2);
     const dbNameResult = await pool.query("SELECT current_database() as db");
     const versionResult = await pool.query("SELECT version() as version");

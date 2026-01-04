@@ -43,6 +43,9 @@ export default function DeliveryCompanies() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
   const [companyIdByName, setCompanyIdByName] = useState<Record<string, number>>({});
+  const [integrationMetaByCompanyId, setIntegrationMetaByCompanyId] = useState<
+    Record<number, { is_enabled: boolean; has_api_key: boolean; has_api_secret: boolean; updated_at?: string; configured_at?: string }>
+  >({});
   
   // ========================================
   // REAL ALGERIAN DELIVERY COMPANIES WITH APIs
@@ -177,6 +180,40 @@ export default function DeliveryCompanies() {
           if (key && Number.isFinite(id)) map[key] = id;
         }
         setCompanyIdByName(map);
+
+        // Load configured integrations (no secrets) so enabled state persists after refresh.
+        const integRes = await fetch('/api/delivery/integrations');
+        if (integRes.ok) {
+          const integrations = await integRes.json().catch(() => []);
+          const enabledIds = new Set<number>();
+          const meta: Record<
+            number,
+            { is_enabled: boolean; has_api_key: boolean; has_api_secret: boolean; updated_at?: string; configured_at?: string }
+          > = {};
+          for (const row of Array.isArray(integrations) ? integrations : []) {
+            const idNum = Number(row?.delivery_company_id);
+            if (!Number.isFinite(idNum)) continue;
+            const isEnabled = Boolean(row?.is_enabled);
+            if (isEnabled) enabledIds.add(idNum);
+            meta[idNum] = {
+              is_enabled: isEnabled,
+              has_api_key: Boolean(row?.has_api_key),
+              has_api_secret: Boolean(row?.has_api_secret),
+              updated_at: row?.updated_at,
+              configured_at: row?.configured_at,
+            };
+          }
+
+          setIntegrationMetaByCompanyId(meta);
+
+          setCompanies((prev) =>
+            prev.map((company) => {
+              const dbId = map[String(company.name || '').trim().toLowerCase()];
+              if (!dbId) return company;
+              return enabledIds.has(dbId) ? { ...company, enabled: true } : { ...company, enabled: false };
+            })
+          );
+        }
       } catch {
         // Silent; page can still render, but saving integrations may fail.
       }
@@ -185,7 +222,8 @@ export default function DeliveryCompanies() {
 
   const handleCardClick = (company: DeliveryCompany) => {
     setSelectedCompany(company);
-    setCredentials(company.credentials || {});
+    // Never pre-fill saved secrets; keep fields empty for security.
+    setCredentials({});
     setShowConfigDialog(true);
   };
 
@@ -202,14 +240,32 @@ export default function DeliveryCompanies() {
         throw new Error('Delivery company not found on server. Make sure migrations are applied and the company exists.');
       }
 
+      const existing = integrationMetaByCompanyId[dbId];
+
       // Map UI credentials → backend schema
       // - api_key: primary token
       // - api_secret: secondary credential (e.g., GUID / API ID / Account ID)
       const apiKey = (credentials.apiToken || credentials.apiKey || '').trim();
       const apiSecret = (credentials.apiId || credentials.accountId || '').trim() || (credentials.apiKey || '').trim();
 
+      // If already configured, don't force re-entry. Secrets are intentionally not shown.
       if (!apiKey) {
+        if (existing?.is_enabled && existing?.has_api_key) {
+          setSaveSuccess('Already connected (credentials are saved and hidden).');
+          setShowConfigDialog(false);
+          return;
+        }
         throw new Error('API Token is required');
+      }
+
+      // Noest requires GUID/user_guid.
+      const isNoest = selectedCompany.id === 'noest' || selectedCompany.name.trim().toLowerCase() === 'noest';
+      if (isNoest && !apiSecret) {
+        if (existing?.is_enabled && existing?.has_api_secret) {
+          // Allow keeping the saved GUID if user isn't changing it.
+        } else {
+          throw new Error('GUID is required for Noest');
+        }
       }
 
       const res = await fetch('/api/delivery/integrations', {
@@ -233,6 +289,15 @@ export default function DeliveryCompanies() {
           : company
       ));
       setSelectedCompany({ ...selectedCompany, enabled: true, credentials });
+      setIntegrationMetaByCompanyId((prev) => ({
+        ...prev,
+        [dbId]: {
+          is_enabled: true,
+          has_api_key: true,
+          has_api_secret: Boolean(apiSecret || prev?.[dbId]?.has_api_secret),
+          updated_at: new Date().toISOString(),
+        },
+      }));
       setSaveSuccess('Saved successfully');
     } catch (e: any) {
       setSaveError(e?.message || 'Failed to save');
@@ -261,6 +326,15 @@ export default function DeliveryCompanies() {
       </div>
     );
   };
+
+  const selectedCompanyDbId = selectedCompany
+    ? companyIdByName[String(selectedCompany.name || '').trim().toLowerCase()]
+    : undefined;
+
+  const selectedIntegrationMeta =
+    selectedCompanyDbId && Number.isFinite(selectedCompanyDbId)
+      ? integrationMetaByCompanyId[selectedCompanyDbId]
+      : undefined;
 
   return (
     <div className="space-y-6">
@@ -463,14 +537,43 @@ export default function DeliveryCompanies() {
                 <Label htmlFor={field.field} className="text-sm font-medium">
                   {field.label}
                 </Label>
+                {(() => {
+                  const isTokenField = field.field === 'apiToken';
+                  const isSavedHidden =
+                    Boolean(selectedCompany?.enabled) &&
+                    Boolean(selectedIntegrationMeta) &&
+                    (isTokenField ? Boolean(selectedIntegrationMeta?.has_api_key) : Boolean(selectedIntegrationMeta?.has_api_secret));
+
+                  const currentValue = credentials[field.field] || '';
+                  const placeholder = isSavedHidden && !currentValue ? 'Saved (hidden)' : field.placeholder;
+
+                  return (
                 <Input
                   id={field.field}
                   type={field.type || "text"}
-                  placeholder={field.placeholder}
+                  placeholder={placeholder}
                   value={credentials[field.field] || ''}
                   onChange={(e) => setCredentials({ ...credentials, [field.field]: e.target.value })}
                   className="border-border/60 focus:border-primary/50 focus:ring-primary/20"
                 />
+                  );
+                })()}
+                {(() => {
+                  const isTokenField = field.field === 'apiToken';
+                  const isSavedHidden =
+                    Boolean(selectedCompany?.enabled) &&
+                    Boolean(selectedIntegrationMeta) &&
+                    (isTokenField ? Boolean(selectedIntegrationMeta?.has_api_key) : Boolean(selectedIntegrationMeta?.has_api_secret));
+
+                  const currentValue = credentials[field.field] || '';
+                  if (!isSavedHidden || currentValue) return null;
+
+                  return (
+                    <p className="text-xs text-muted-foreground">
+                      Saved and hidden for security. Leave blank to keep it.
+                    </p>
+                  );
+                })()}
               </div>
             ))}
             

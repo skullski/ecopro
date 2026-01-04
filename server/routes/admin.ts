@@ -243,6 +243,89 @@ const readProcNetDev = (): Record<string, NetDevCounters> | null => {
 
 let lastNetDevSnapshot: { ts: number; counters: Record<string, NetDevCounters> } | null = null;
 
+type ProcMeminfo = {
+  memTotalBytes: number;
+  memFreeBytes: number;
+  memAvailableBytes: number | null;
+  swapTotalBytes: number;
+  swapFreeBytes: number;
+};
+
+const readProcMeminfo = (): ProcMeminfo | null => {
+  try {
+    const raw = fs.readFileSync('/proc/meminfo', 'utf8');
+    const map: Record<string, number> = {};
+    for (const line of raw.split('\n')) {
+      // Example: "MemTotal:       16277080 kB"
+      const m = line.match(/^([A-Za-z0-9_()]+):\s+(\d+)\s+kB\s*$/);
+      if (!m) continue;
+      map[m[1]] = Number(m[2]);
+    }
+    const toBytes = (kib: number | undefined) => (typeof kib === 'number' && Number.isFinite(kib) ? kib * 1024 : 0);
+    const memTotalBytes = toBytes(map.MemTotal);
+    const memFreeBytes = toBytes(map.MemFree);
+    const memAvailableBytes = map.MemAvailable != null ? toBytes(map.MemAvailable) : null;
+    const swapTotalBytes = toBytes(map.SwapTotal);
+    const swapFreeBytes = toBytes(map.SwapFree);
+
+    if (!Number.isFinite(memTotalBytes) || memTotalBytes <= 0) return null;
+
+    return {
+      memTotalBytes,
+      memFreeBytes,
+      memAvailableBytes,
+      swapTotalBytes,
+      swapFreeBytes,
+    };
+  } catch {
+    return null;
+  }
+};
+
+type CpuSnapshot = { ts: number; perCore: Array<{ idle: number; total: number }> };
+let lastCpuSnapshot: CpuSnapshot | null = null;
+
+const clampPct = (v: number) => Math.max(0, Math.min(100, v));
+
+const sampleCpuPercents = (): { perCorePct: number[]; totalPct: number; intervalMs: number | null; mode: 'delta' | 'avg' } | null => {
+  const cpuInfo = os.cpus();
+  if (!cpuInfo || cpuInfo.length === 0) return null;
+
+  const now = Date.now();
+  const perCore = cpuInfo.map((c) => {
+    const t = c.times;
+    const total = t.user + t.nice + t.sys + t.idle + t.irq;
+    return { idle: t.idle, total };
+  });
+
+  const prev = lastCpuSnapshot;
+  lastCpuSnapshot = { ts: now, perCore };
+
+  // First sample: return average since boot (still useful), interval null.
+  if (!prev || prev.perCore.length !== perCore.length) {
+    const perCorePct = perCore.map((c) => (c.total > 0 ? clampPct((1 - c.idle / c.total) * 100) : 0));
+    const totalIdle = perCore.reduce((s, c) => s + c.idle, 0);
+    const totalAll = perCore.reduce((s, c) => s + c.total, 0);
+    const totalPct = totalAll > 0 ? clampPct((1 - totalIdle / totalAll) * 100) : 0;
+    return { perCorePct, totalPct, intervalMs: null, mode: 'avg' };
+  }
+
+  const intervalMs = Math.max(1, now - prev.ts);
+  const perCorePct: number[] = perCore.map((curr, i) => {
+    const prevCore = prev.perCore[i];
+    const totalDelta = curr.total - prevCore.total;
+    const idleDelta = curr.idle - prevCore.idle;
+    if (totalDelta <= 0) return 0;
+    return clampPct((1 - idleDelta / totalDelta) * 100);
+  });
+
+  const totalDeltaAll = perCore.reduce((s, c, i) => s + (c.total - prev.perCore[i].total), 0);
+  const idleDeltaAll = perCore.reduce((s, c, i) => s + (c.idle - prev.perCore[i].idle), 0);
+  const totalPct = totalDeltaAll > 0 ? clampPct((1 - idleDeltaAll / totalDeltaAll) * 100) : 0;
+
+  return { perCorePct, totalPct, intervalMs, mode: 'delta' };
+};
+
 type HealthSample = {
   ts: number; // epoch ms
   rssPct: number | null;
@@ -297,6 +380,19 @@ export const getServerHealth: RequestHandler = async (_req, res) => {
     const resourceUsage = process.resourceUsage();
     const heapStats = v8.getHeapStatistics();
     const heapSpaces = v8.getHeapSpaceStatistics();
+
+    // htop-like sampling: CPU per-core %, memory + swap
+    const cpuSample = sampleCpuPercents();
+    const meminfo = readProcMeminfo();
+    const memTotalBytes = meminfo?.memTotalBytes ?? os.totalmem();
+    const memAvailableBytes = meminfo?.memAvailableBytes ?? os.freemem();
+    const memUsedBytes = Math.max(0, memTotalBytes - memAvailableBytes);
+    const memPctUsed = memTotalBytes > 0 ? (memUsedBytes / memTotalBytes) * 100 : 0;
+
+    const swapTotalBytes = meminfo?.swapTotalBytes ?? 0;
+    const swapFreeBytes = meminfo?.swapFreeBytes ?? 0;
+    const swapUsedBytes = Math.max(0, swapTotalBytes - swapFreeBytes);
+    const swapPctUsed = swapTotalBytes > 0 ? (swapUsedBytes / swapTotalBytes) * 100 : 0;
 
     const network = os.networkInterfaces();
 
@@ -469,6 +565,29 @@ export const getServerHealth: RequestHandler = async (_req, res) => {
       ok: dbOk,
       timestamp: new Date().toISOString(),
       uptimeSec: Math.floor(process.uptime()),
+      htop: {
+        cpu: {
+          totalPct: cpuSample?.totalPct ?? null,
+          perCorePct: cpuSample?.perCorePct ?? null,
+          intervalMs: cpuSample?.intervalMs ?? null,
+          mode: cpuSample?.mode ?? null,
+        },
+        memory: {
+          totalBytes: memTotalBytes,
+          usedBytes: memUsedBytes,
+          availableBytes: memAvailableBytes,
+          pctUsed: memPctUsed,
+        },
+        swap:
+          meminfo
+            ? {
+                totalBytes: swapTotalBytes,
+                usedBytes: swapUsedBytes,
+                freeBytes: swapFreeBytes,
+                pctUsed: swapPctUsed,
+              }
+            : null,
+      },
       node: {
         version: process.version,
         env: process.env.NODE_ENV ?? null,

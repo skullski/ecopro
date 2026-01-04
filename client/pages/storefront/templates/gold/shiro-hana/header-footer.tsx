@@ -28,16 +28,26 @@ export function Header({ node, onSelect, resolveAssetUrl, theme, responsive }: a
   const logoAssetKey = typeof (logo as any)?.assetKey === 'string' ? (logo as any).assetKey : '';
   const logoAlt = typeof (logo as any)?.alt === 'string' ? (logo as any).alt : '';
 
+  const navLinks = Array.isArray(theme?.navLinks) && theme.navLinks.length
+    ? theme.navLinks
+    : (Array.isArray(safeNode.nav) ? safeNode.nav : []);
+
   return (
     <header
       className={`shadow-sm top-0 z-40 ${sticky ? 'sticky' : ''}`}
       style={{
-        backgroundColor: theme?.colors?.background || undefined,
-        color: theme?.colors?.text || undefined,
+        backgroundColor: theme?.headerBg || theme?.colors?.background || undefined,
+        color: theme?.headerText || theme?.colors?.text || undefined,
         paddingTop: padY,
         paddingBottom: padY,
       }}
       data-edit-path="layout.header"
+      onClick={(e) => {
+        if (theme?.canManage === false) return;
+        e.preventDefault();
+        e.stopPropagation();
+        onSelect('layout.header');
+      }}
     >
       <div
         className="container mx-auto flex items-center justify-between"
@@ -58,26 +68,49 @@ export function Header({ node, onSelect, resolveAssetUrl, theme, responsive }: a
                 transform: `scaleX(${logoScaleX}) scaleY(${logoScaleY})`,
               }}
               data-edit-path="layout.header.logo"
-              onClick={() => onSelect('layout.header.logo')}
+              onClick={(e) => {
+                if (theme?.canManage === false) return;
+                e.preventDefault();
+                e.stopPropagation();
+                onSelect('layout.header.logo');
+              }}
             />
           ) : null}
           {isMd ? (
-            <nav className="flex gap-4">
-            {(safeNode.nav || []).map((n: any, i: number) => {
-              const label = n?.label && typeof n.label === 'object' ? n.label : n;
-              const action = typeof n?.action === 'string' ? n.action : '#';
-              return (
-                <a
-                  key={i}
-                  href={action || '#'}
-                  data-edit-path={n?.label ? `layout.header.nav.${i}.label` : `layout.header.nav.${i}`}
-                  onClick={() => onSelect(n?.label ? `layout.header.nav.${i}.label` : `layout.header.nav.${i}`)}
-                  style={resolveResponsiveStyle(label?.style, bp) || undefined}
-                >
-                  {label?.value}
-                </a>
-              );
-            })}
+            <nav
+              className="flex gap-4"
+              data-edit-path="layout.header.nav"
+              onClick={(e) => {
+                if (theme?.canManage === false) return;
+                e.preventDefault();
+                e.stopPropagation();
+                onSelect('layout.header.nav');
+              }}
+            >
+              {navLinks.map((n: any, i: number) => {
+                const label = n?.label && typeof n.label === 'object' ? n.label : n;
+                const labelValue = typeof label?.value === 'string' ? label.value : (typeof n?.label === 'string' ? n.label : String(label || ''));
+                const href = typeof n?.url === 'string' ? n.url : (typeof n?.action === 'string' ? n.action : '#');
+                return (
+                  <a
+                    key={i}
+                    href={href || '#'}
+                    data-edit-path={n?.label ? `layout.header.nav.${i}.label` : `layout.header.nav.${i}`}
+                    onClick={(e) => {
+                      if (theme?.canManage === false) return;
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onSelect('layout.header.nav');
+                    }}
+                    style={{
+                      color: theme?.headerText || theme?.colors?.text || undefined,
+                      ...(resolveResponsiveStyle(label?.style, bp) || {}),
+                    }}
+                  >
+                    {labelValue}
+                  </a>
+                );
+              })}
             </nav>
           ) : null}
         </div>
@@ -88,7 +121,12 @@ export function Header({ node, onSelect, resolveAssetUrl, theme, responsive }: a
               href={c.action}
               className="px-3 py-1 border rounded"
               data-edit-path={`layout.header.cta.${i}.label`}
-              onClick={() => onSelect(`layout.header.cta.${i}.label`)}
+              onClick={(e) => {
+                if (theme?.canManage === false) return;
+                e.preventDefault();
+                e.stopPropagation();
+                onSelect(`layout.header.cta.${i}.label`);
+              }}
               style={resolveResponsiveStyle(c?.label?.style, bp) || undefined}
             >
               {c?.label?.value}
@@ -113,11 +151,17 @@ export function Footer({ node, onSelect, theme, responsive }: any) {
       className=""
       style={{
         backgroundColor: theme?.colors?.surface || undefined,
-        color: theme?.colors?.muted || undefined,
+        color: theme?.footerText || theme?.colors?.muted || undefined,
         paddingTop: padY,
         paddingBottom: padY,
       }}
       data-edit-path="layout.footer"
+      onClick={(e) => {
+        if (theme?.canManage === false) return;
+        e.preventDefault();
+        e.stopPropagation();
+        onSelect('layout.footer');
+      }}
     >
       <div
         className="container mx-auto text-sm"
@@ -127,7 +171,15 @@ export function Footer({ node, onSelect, theme, responsive }: any) {
         }}
       >
         <div className="flex justify-between">
-          <div>
+          <div
+            data-edit-path="layout.footer.links"
+            onClick={(e) => {
+              if (theme?.canManage === false) return;
+              e.preventDefault();
+              e.stopPropagation();
+              onSelect('layout.footer.links');
+            }}
+          >
             {(safeNode.links || []).map((l: any, i: number) => {
               const label = l?.label && typeof l.label === 'object' ? l.label : l;
               const action = typeof l?.action === 'string' ? l.action : '#';
@@ -137,17 +189,60 @@ export function Footer({ node, onSelect, theme, responsive }: any) {
                   href={action || '#'}
                   className="mr-4"
                   data-edit-path={l?.label ? `layout.footer.links.${i}.label` : `layout.footer.links.${i}`}
-                  onClick={() => onSelect(l?.label ? `layout.footer.links.${i}.label` : `layout.footer.links.${i}`)}
-                  style={resolveResponsiveStyle(label?.style, bp) || undefined}
+                  onClick={(e) => {
+                    if (theme?.canManage === false) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onSelect('layout.footer.links');
+                  }}
+                  style={{
+                    color: theme?.footerLinkColor || theme?.colors?.muted || undefined,
+                    ...(resolveResponsiveStyle(label?.style, bp) || {}),
+                  }}
                 >
                   {label?.value}
                 </a>
               );
             })}
+
+            {Array.isArray(theme?.socialLinks) && theme.socialLinks.length ? (
+              <div
+                className="mt-3 flex flex-wrap gap-3"
+                data-edit-path="layout.footer.social"
+                onClick={(e) => {
+                  if (theme?.canManage === false) return;
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onSelect('layout.footer.social');
+                }}
+              >
+                {theme.socialLinks.map((s: any, idx: number) => (
+                  <a
+                    key={`${s.platform}-${idx}`}
+                    href={s.url}
+                    className="underline-offset-2 hover:underline"
+                    style={{ color: theme?.footerLinkColor || theme?.colors?.muted || undefined }}
+                    onClick={(e) => {
+                      if (theme?.canManage === false) return;
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onSelect('layout.footer.social');
+                    }}
+                  >
+                    {String(s.platform)}
+                  </a>
+                ))}
+              </div>
+            ) : null}
           </div>
           <div
             data-edit-path="layout.footer.copyright"
-            onClick={() => onSelect('layout.footer.copyright')}
+            onClick={(e) => {
+              if (theme?.canManage === false) return;
+              e.preventDefault();
+              e.stopPropagation();
+              onSelect('layout.footer.copyright');
+            }}
             style={resolveResponsiveStyle(node?.copyright?.style, bp) || undefined}
           >
             {node?.copyright?.value}

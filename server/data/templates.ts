@@ -1,97 +1,60 @@
-// Template definitions for store storefronts
+// Template definitions for store storefronts.
+// IMPORTANT: Only include template IDs that are actually renderable by the storefront.
 export interface Template {
   id: string;
   name: string;
   category: string;
+  icon: string;
   description: string;
-  thumbnail?: string;
+  image: string;
+  colors: {
+    primary: string;
+    secondary: string;
+    accent: string;
+  };
   features: string[];
 }
 
 const templates: Template[] = [
   {
+    id: 'shiro-hana',
+    name: 'Shiro Hana',
+    category: 'Storefront',
+    icon: '🍣',
+    description: 'Clean modern storefront with hero + product grid.',
+    image: '/template-previews/store.png',
+    colors: { primary: '#111827', secondary: '#f8fafc', accent: '#22c55e' },
+    features: ['Hero', 'Product grid', 'Header & footer', 'Universal schema'],
+  },
+  {
+    id: 'babyos',
+    name: 'Babyos',
+    category: 'Storefront',
+    icon: '👶',
+    description: 'Playful baby-storefront with editable layout and colors.',
+    image: '/template-previews/baby.png',
+    colors: { primary: '#F97316', secondary: '#FDF8F3', accent: '#F97316' },
+    features: ['Hero', 'Category pills', 'Product grid', 'Fully editable tokens'],
+  },
+  {
     id: 'bags',
-    name: 'Bags',
-    category: 'fashion',
-    description: 'Modern bag store template with product showcase',
-    features: ['Product grid', 'Cart integration', 'Filter by category'],
-  },
-  {
-    id: 'fashion-minimal',
-    name: 'Fashion Minimal',
-    category: 'fashion',
-    description: 'Clean and minimal fashion store design',
-    features: ['Minimalist design', 'Product details', 'Customer reviews'],
-  },
-  {
-    id: 'fashion-modern',
-    name: 'Fashion Modern',
-    category: 'fashion',
-    description: 'Modern fashion store with trending products',
-    features: ['Trending section', 'Sale indicators', 'Size/color options'],
-  },
-  {
-    id: 'fashion-premium',
-    name: 'Fashion Premium',
-    category: 'fashion',
-    description: 'Premium luxury fashion template',
-    features: ['Luxury styling', 'Product gallery', 'Premium checkout'],
-  },
-  {
-    id: 'electronics',
-    name: 'Electronics',
-    category: 'tech',
-    description: 'Electronics store with detailed specs',
-    features: ['Tech specs', 'Comparison tool', 'Reviews section'],
-  },
-  {
-    id: 'furniture',
-    name: 'Furniture',
-    category: 'home',
-    description: 'Furniture showroom template',
-    features: ['3D preview', 'Room planner', 'Material options'],
+    name: 'Bags Editorial',
+    category: 'Storefront',
+    icon: '👜',
+    description: 'Editorial layout with spotlight cards and collection grid.',
+    image: '/template-previews/bags.png',
+    colors: { primary: '#111827', secondary: '#ffffff', accent: '#111827' },
+    features: ['Editorial hero', 'Spotlight cards', 'Collection grid', 'Shared edit contract'],
   },
   {
     id: 'jewelry',
-    name: 'Jewelry',
-    category: 'luxury',
-    description: 'Jewelry store with detailed product images',
-    features: ['High-res images', 'Material info', 'Certificate display'],
-  },
-  {
-    id: 'perfume',
-    name: 'Perfume',
-    category: 'beauty',
-    description: 'Perfume/fragrance store template',
-    features: ['Scent notes', 'Size options', 'Sample requests'],
-  },
-  {
-    id: 'beauty',
-    name: 'Beauty',
-    category: 'beauty',
-    description: 'Cosmetics and beauty products store',
-    features: ['Product benefits', 'How-to guides', 'Reviews'],
-  },
-  {
-    id: 'food',
-    name: 'Food',
-    category: 'food',
-    description: 'Food delivery and restaurant template',
-    features: ['Menu management', 'Delivery tracking', 'Special offers'],
-  },
-  {
-    id: 'cafe',
-    name: 'Cafe',
-    category: 'food',
-    description: 'Cafe and coffee shop template',
-    features: ['Menu display', 'Reservation system', 'Special events'],
-  },
-  {
-    id: 'baby',
-    name: 'Baby Products',
-    category: 'kids',
-    description: 'Baby products and accessories store',
-    features: ['Safety info', 'Age guides', 'Bundle deals'],
+    name: 'JewelryOS',
+    category: 'Storefront',
+    icon: '💍',
+    description: 'Minimal luxury jewelry with gold glow and collection filtering.',
+    image: '/template-previews/jewelry.png',
+    colors: { primary: '#111827', secondary: '#ffffff', accent: '#d4af37' },
+    features: ['Sticky header', 'Hero highlight', 'Collection filters', 'Product grid'],
   },
 ];
 

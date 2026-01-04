@@ -73,9 +73,21 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
     return Array.from(new Set(keys));
   };
 
+  const normalizeTemplateId = (id: any): string => {
+    const raw = String(id || '')
+      .trim()
+      .replace(/^gold-/, '')
+      .replace(/-gold$/, '');
+    if (raw === 'baby') return 'babyos';
+    if (!raw) return 'shiro-hana';
+    return raw;
+  };
+
   const openTemplateSwitch = (templateId: string) => {
-    if ((storeSettings?.template || '') === templateId) return;
-    setPendingTemplateId(templateId);
+    const nextId = normalizeTemplateId(templateId);
+    const currentId = normalizeTemplateId(storeSettings?.template);
+    if (currentId === nextId) return;
+    setPendingTemplateId(nextId);
     setSwitchMode('import');
     setSwitchOpen(true);
   };
@@ -116,125 +128,45 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
   // Fallback templates in case API fails
   const FALLBACK_TEMPLATES: Template[] = [
     {
-      id: 'fashion',
-      name: 'Fashion Premium',
-      category: 'Fashion',
-      icon: '👗',
-      description: 'Modern fashion store',
-      image: '/template-previews/fashion-premium.png',
-      colors: { primary: '#000000', secondary: '#f5f5f5', accent: '#ffc107' },
-      features: ['Product Grid', 'Collections', 'Lookbooks', 'Filters']
+      id: 'shiro-hana',
+      name: 'Shiro Hana',
+      category: 'Storefront',
+      icon: '🍣',
+      description: 'Clean modern storefront with hero + product grid.',
+      image: '/template-previews/store.png',
+      colors: { primary: '#111827', secondary: '#f8fafc', accent: '#22c55e' },
+      features: ['Hero', 'Product grid', 'Header & footer', 'Universal schema']
     },
     {
-      id: 'fashion2',
-      name: 'Fashion Modern',
-      category: 'Fashion',
-      icon: '👔',
-      description: 'Contemporary fashion',
-      image: '/template-previews/fashion-modern.png',
-      colors: { primary: '#ffffff', secondary: '#1a1a1a', accent: '#ff6b35' },
-      features: ['Dark Mode', 'Featured Products', 'Categories', 'Trending']
-    },
-    {
-      id: 'fashion3',
-      name: 'Fashion Minimal',
-      category: 'Fashion',
-      icon: '✨',
-      description: 'Minimalist fashion',
-      image: '/template-previews/fashion-minimal.png',
-      colors: { primary: '#ffffff', secondary: '#f0f0f0', accent: '#333333' },
-      features: ['Clean Layout', 'Grid View', 'Product Details', 'Reviews']
-    },
-    {
-      id: 'electronics',
-      name: 'Electronics',
-      category: 'Tech',
-      icon: '🔌',
-      description: 'Tech store',
-      image: '/template-previews/electronics.png',
-      colors: { primary: '#0ea5e9', secondary: '#0f172a', accent: '#38bdf8' },
-      features: ['Product Specs', 'Comparisons', 'Categories', 'Dark Theme']
-    },
-    {
-      id: 'food',
-      name: 'Cafe & Coffee',
-      category: 'Food',
-      icon: '☕',
-      description: 'Premium food and beverage',
-      image: '/template-previews/food.png',
-      colors: { primary: '#6f4e37', secondary: '#fef9f3', accent: '#d4a574' },
-      features: ['Menu Items', 'Descriptions', 'Pricing', 'Availability']
-    },
-    {
-      id: 'furniture',
-      name: 'Furniture',
-      category: 'Home',
-      icon: '🛋️',
-      description: 'Modern furniture',
-      image: '/template-previews/furniture.png',
-      colors: { primary: '#4b5563', secondary: '#f5f5f5', accent: '#8b7355' },
-      features: ['Product Grid', 'Categories', 'Favorites', 'Reviews']
-    },
-    {
-      id: 'jewelry',
-      name: 'Jewelry',
-      category: 'Luxury',
-      icon: '💎',
-      description: 'Luxury jewelry',
-      image: '/template-previews/jewelry.png',
-      colors: { primary: '#1a1a1a', secondary: '#ffd700', accent: '#c0c0c0' },
-      features: ['Collection View', 'Product Details', 'Gallery', 'Reviews']
-    },
-    {
-      id: 'perfume',
-      name: 'Perfume',
-      category: 'Beauty',
-      icon: '🌸',
-      description: 'Fragrance store',
-      image: '/template-previews/perfume.png',
-      colors: { primary: '#2d3436', secondary: '#ffe6e9', accent: '#ff7675' },
-      features: ['Product Grid', 'Scent Notes', 'Price Range', 'Reviews']
-    },
-    {
-      id: 'baby',
-      name: 'Baby Products',
-      category: 'Family',
+      id: 'babyos',
+      name: 'Babyos',
+      category: 'Storefront',
       icon: '👶',
-      description: 'Baby products store',
+      description: 'Playful baby-storefront with editable layout and colors.',
       image: '/template-previews/baby.png',
-      colors: { primary: '#74b9ff', secondary: '#fffacd', accent: '#a29bfe' },
-      features: ['Safe Products', 'Age Groups', 'Safety Tips', 'Reviews']
+      colors: { primary: '#F97316', secondary: '#FDF8F3', accent: '#F97316' },
+      features: ['Hero', 'Category pills', 'Product grid', 'Fully editable tokens']
     },
     {
       id: 'bags',
-      name: 'Bags & Accessories',
-      category: 'Fashion',
+      name: 'Bags Editorial',
+      category: 'Storefront',
       icon: '👜',
-      description: 'Bags and accessories',
+      description: 'Editorial layout with spotlight cards and collection grid.',
       image: '/template-previews/bags.png',
-      colors: { primary: '#2d3436', secondary: '#f5f6fa', accent: '#636e72' },
-      features: ['Collection View', 'Material Info', 'Size Guide', 'Reviews']
+      colors: { primary: '#111827', secondary: '#ffffff', accent: '#111827' },
+      features: ['Editorial hero', 'Spotlight cards', 'Collection grid', 'Shared edit contract']
     },
     {
-      id: 'beauty',
-      name: 'Beauty & Cosmetics',
-      category: 'Beauty',
-      icon: '💄',
-      description: 'Beauty and cosmetics',
-      image: '/template-previews/beauty.png',
-      colors: { primary: '#d63031', secondary: '#fff5f7', accent: '#ff7675' },
-      features: ['Product Grid', 'Ingredients', 'Swatches', 'Reviews']
+      id: 'jewelry',
+      name: 'JewelryOS',
+      category: 'Storefront',
+      icon: '💍',
+      description: 'Minimal luxury jewelry with gold glow and collection filtering.',
+      image: '/template-previews/jewelry.png',
+      colors: { primary: '#111827', secondary: '#ffffff', accent: '#d4af37' },
+      features: ['Sticky header', 'Hero highlight', 'Collection filters', 'Product grid']
     },
-    {
-      id: 'cafe',
-      name: 'Cafe',
-      category: 'Food',
-      icon: '☕',
-      description: 'Coffee shop',
-      image: '/template-previews/cafe.png',
-      colors: { primary: '#6f4e37', secondary: '#fef9f3', accent: '#d4a574' },
-      features: ['Menu Items', 'Descriptions', 'Pricing', 'Availability']
-    }
   ];
 
   useEffect(() => {
@@ -367,7 +299,7 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
             key={template.id}
             onClick={() => openTemplateSwitch(template.id)}
             className={`text-left rounded-lg border-2 transition-all overflow-hidden hover:shadow-lg ${
-              storeSettings.template === template.id
+              normalizeTemplateId(storeSettings.template) === normalizeTemplateId(template.id)
                 ? 'border-blue-500 shadow-xl ring-2 ring-blue-400 ring-offset-2 dark:ring-offset-slate-900 bg-blue-50 dark:bg-slate-700'
                 : 'border-slate-300 hover:border-slate-400 dark:border-slate-600 dark:hover:border-slate-500 bg-white dark:bg-slate-800 hover:shadow-md'
             }`}
@@ -394,7 +326,7 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
               />
 
               {/* Selected indicator */}
-              {storeSettings.template === template.id && (
+              {normalizeTemplateId(storeSettings.template) === normalizeTemplateId(template.id) && (
                 <div className="absolute top-2 right-2 bg-primary text-white rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold shadow-lg">
                   ✓
                 </div>

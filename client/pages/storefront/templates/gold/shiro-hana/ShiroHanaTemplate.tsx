@@ -43,6 +43,86 @@ function overridesForBackground(settings: any): Record<string, string> {
   return {};
 }
 
+const DEFAULTS = {
+  bg: '#FDF8F3',
+  accent: '#F97316',
+  text: '#1C1917',
+  muted: '#78716C',
+  mutedLight: '#A8A29E',
+  border: '#E7E5E4',
+  borderLight: '#F5F5F4',
+  cardBg: '#FFFFFF',
+  fontFamily: 'system-ui, -apple-system, sans-serif',
+  fontWeight: '400',
+  headingFontWeight: '600',
+  borderRadius: '8',
+  cardBorderRadius: '12',
+  buttonBorderRadius: '9999',
+  spacing: '16',
+  sectionSpacing: '48',
+  animationSpeed: '200',
+  hoverScale: '1.02',
+  gridColumns: '4',
+  gridGap: '24',
+  categoryPillBg: '#F5F5F4',
+  categoryPillText: '#78716C',
+  categoryPillActiveBg: '#F97316',
+  categoryPillActiveText: '#FFFFFF',
+  categoryPillBorderRadius: '9999',
+};
+
+type SocialLink = { platform: string; url: string; icon?: string };
+type NavLink = { label: string; url: string };
+
+function safeParseJsonArray<T = any>(raw: unknown): T[] {
+  if (Array.isArray(raw)) return raw as T[];
+  if (typeof raw !== 'string') return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as T[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function CategoryPills({ categories, active, theme, onPick, onSelect }: { categories: string[]; active: string; theme: any; onPick: (c: string) => void; onSelect: (p: string) => void }) {
+  const defaultCats = ['All', 'New', 'Popular', 'Gifts'];
+  const displayCats = categories.length > 0 ? ['All', ...categories.filter((c) => String(c).toLowerCase() !== 'all')] : defaultCats;
+  const activeKey = String(active || '').trim() || 'All';
+
+  const pillRadius = `${parseInt(String(theme?.categoryPillBorderRadius || DEFAULTS.categoryPillBorderRadius), 10) || 9999}px`;
+  return (
+    <section className="w-full py-3" data-edit-path="layout.categories" onClick={() => onSelect('layout.categories')}>
+      <div className="container mx-auto px-6 flex flex-wrap gap-2">
+        {displayCats.map((c) => {
+          const isActive = String(c).toLowerCase() === String(activeKey).toLowerCase();
+          return (
+            <button
+              key={c}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onPick(c);
+              }}
+              style={{
+                borderRadius: pillRadius,
+                backgroundColor: isActive ? (theme?.categoryPillActiveBg || DEFAULTS.categoryPillActiveBg) : (theme?.categoryPillBg || DEFAULTS.categoryPillBg),
+                color: isActive ? (theme?.categoryPillActiveText || DEFAULTS.categoryPillActiveText) : (theme?.categoryPillText || DEFAULTS.categoryPillText),
+                padding: '6px 12px',
+                fontSize: '12px',
+                border: `1px solid ${theme?.borderLight || DEFAULTS.borderLight}`,
+              }}
+            >
+              {c}
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 export default function ShiroHanaTemplate(props: TemplateProps) {
   const rootRef = React.useRef<HTMLDivElement | null>(null);
   const [responsive, setResponsive] = React.useState<ResponsiveInfo>({ width: 0, isSm: false, isMd: false, breakpoint: 'mobile' });
@@ -69,12 +149,13 @@ export default function ShiroHanaTemplate(props: TemplateProps) {
     return () => ro.disconnect();
   }, []);
 
-  // Single template - always use shiro-hana
+  // Single template editor: support both new + legacy stored schema keys.
+  const docKey = 'template_page_shiro_hana_home';
   const legacyDocKey = 'gold_page_shiro_hana_home';
   const defaultLegacyPage = shiroHanaHome as any;
 
   const storedSchema = (props.settings as any)?.store_schema;
-  const rawLegacyPage: any = (props.settings as any)?.[legacyDocKey] || defaultLegacyPage;
+  const rawLegacyPage: any = (props.settings as any)?.[docKey] || (props.settings as any)?.[legacyDocKey] || defaultLegacyPage;
 
   const schemaCandidate = looksLikeUniversalStoreSchema(storedSchema)
     ? storedSchema
@@ -109,25 +190,93 @@ export default function ShiroHanaTemplate(props: TemplateProps) {
   const mode = forcedMode ?? (String(page?.styles?.theme || page?.styles?.themeMode || 'light').toLowerCase() === 'dark' ? 'dark' : 'light');
   const cssVar = (name: string) => `hsl(var(--${name}))`;
 
+  const navLinks = safeParseJsonArray<NavLink>((props.settings as any)?.template_nav_links)
+    .map((l) => ({ label: asString((l as any)?.label), url: asString((l as any)?.url) }))
+    .filter((l) => l.label && l.url);
+  const socialLinks = safeParseJsonArray<SocialLink>((props.settings as any)?.template_social_links)
+    .map((l) => ({ platform: asString((l as any)?.platform), url: asString((l as any)?.url), icon: asString((l as any)?.icon) }))
+    .filter((l) => l.platform && l.url);
+
+  const onSelect = (path: string) => {
+    const anyProps = props as any;
+    if (typeof anyProps.onSelect === 'function') anyProps.onSelect(path);
+  };
+
+  const canManage = typeof (props as any)?.onSelect === 'function';
+
+  const resolvedBg = asString((props.settings as any)?.template_bg_color) || page?.styles?.backgroundColor || page?.styles?.colors?.background || cssVar('background');
+  const resolvedText = asString((props.settings as any)?.template_text_color) || page?.styles?.textColor || page?.styles?.colors?.text || cssVar('foreground');
+  const resolvedMuted = asString((props.settings as any)?.template_muted_color) || page?.styles?.colors?.muted || cssVar('muted-foreground');
+  const resolvedAccent = asString((props.settings as any)?.template_accent_color) || page?.styles?.accentColor || page?.styles?.primaryColor || page?.styles?.colors?.accent || page?.styles?.accent || cssVar('primary');
+  const resolvedSurface = asString((props.settings as any)?.template_card_bg) || page?.styles?.colors?.surface || cssVar('card');
+
   const theme = {
     colors: {
-      background: page?.styles?.backgroundColor || page?.styles?.colors?.background || cssVar('background'),
-      surface: page?.styles?.colors?.surface || cssVar('card'),
-      text: page?.styles?.textColor || page?.styles?.colors?.text || cssVar('foreground'),
-      muted: page?.styles?.colors?.muted || cssVar('muted-foreground'),
-      accent:
-        page?.styles?.accentColor ||
-        page?.styles?.primaryColor ||
-        page?.styles?.colors?.accent ||
-        page?.styles?.accent ||
-        cssVar('primary'),
+      background: resolvedBg,
+      surface: resolvedSurface,
+      text: resolvedText,
+      muted: resolvedMuted,
+      accent: resolvedAccent,
     },
     fonts: {
       heading: page?.styles?.fonts?.heading,
-      body: page?.styles?.fonts?.body,
+      body: asString((props.settings as any)?.template_font_family) || page?.styles?.fonts?.body,
     },
     radius: page?.styles?.tokens?.radius,
     space: page?.styles?.tokens?.space,
+
+    // Babyos-compatible theme keys (used by editor bindings)
+    bg: resolvedBg,
+    accent: resolvedAccent,
+    text: resolvedText,
+    muted: resolvedMuted,
+    mutedLight: asString((props.settings as any)?.template_footer_text) || DEFAULTS.mutedLight,
+    border: DEFAULTS.border,
+    borderLight: DEFAULTS.borderLight,
+    cardBg: resolvedSurface,
+    headerBg: asString((props.settings as any)?.template_header_bg) || resolvedBg,
+    headerText: asString((props.settings as any)?.template_header_text) || resolvedAccent,
+    heroTitleColor: asString((props.settings as any)?.template_hero_title_color) || resolvedText,
+    heroTitleSize: asString((props.settings as any)?.template_hero_title_size) || '32',
+    heroSubtitleColor: asString((props.settings as any)?.template_hero_subtitle_color) || resolvedMuted,
+    heroSubtitleSize: asString((props.settings as any)?.template_hero_subtitle_size) || '13',
+    heroKickerColor: asString((props.settings as any)?.template_hero_kicker_color) || resolvedMuted,
+    heroKickerText: asString((props.settings as any)?.template_hero_kicker),
+    heroBadgeTitle: asString((props.settings as any)?.template_hero_badge_title),
+    heroBadgeSubtitle: asString((props.settings as any)?.template_hero_badge_subtitle),
+    button2Border: asString((props.settings as any)?.template_button2_border) || DEFAULTS.border,
+    sectionTitleColor: asString((props.settings as any)?.template_section_title_color) || resolvedText,
+    sectionTitleSize: asString((props.settings as any)?.template_section_title_size) || '20',
+    sectionSubtitleColor: asString((props.settings as any)?.template_section_subtitle_color) || resolvedMuted,
+    featuredTitle: asString((props.settings as any)?.template_featured_title),
+    featuredSubtitle: asString((props.settings as any)?.template_featured_subtitle),
+    productTitleColor: asString((props.settings as any)?.template_product_title_color) || resolvedText,
+    productPriceColor: asString((props.settings as any)?.template_product_price_color) || resolvedText,
+    footerText: asString((props.settings as any)?.template_footer_text) || DEFAULTS.mutedLight,
+    footerLinkColor: asString((props.settings as any)?.template_footer_link_color) || resolvedMuted,
+    fontFamily: asString((props.settings as any)?.template_font_family) || DEFAULTS.fontFamily,
+    fontWeight: asString((props.settings as any)?.template_font_weight) || DEFAULTS.fontWeight,
+    headingFontWeight: asString((props.settings as any)?.template_heading_font_weight) || DEFAULTS.headingFontWeight,
+    borderRadius: asString((props.settings as any)?.template_border_radius) || DEFAULTS.borderRadius,
+    cardBorderRadius: asString((props.settings as any)?.template_card_border_radius) || DEFAULTS.cardBorderRadius,
+    buttonBorderRadius: asString((props.settings as any)?.template_button_border_radius) || DEFAULTS.buttonBorderRadius,
+    spacing: asString((props.settings as any)?.template_spacing) || DEFAULTS.spacing,
+    sectionSpacing: asString((props.settings as any)?.template_section_spacing) || DEFAULTS.sectionSpacing,
+    animationSpeed: asString((props.settings as any)?.template_animation_speed) || DEFAULTS.animationSpeed,
+    hoverScale: asString((props.settings as any)?.template_hover_scale) || DEFAULTS.hoverScale,
+    gridColumns: asString((props.settings as any)?.template_grid_columns) || DEFAULTS.gridColumns,
+    gridGap: asString((props.settings as any)?.template_grid_gap) || DEFAULTS.gridGap,
+    categoryPillBg: asString((props.settings as any)?.template_category_pill_bg) || DEFAULTS.categoryPillBg,
+    categoryPillText: asString((props.settings as any)?.template_category_pill_text) || DEFAULTS.categoryPillText,
+    categoryPillActiveBg: asString((props.settings as any)?.template_category_pill_active_bg) || DEFAULTS.categoryPillActiveBg,
+    categoryPillActiveText: asString((props.settings as any)?.template_category_pill_active_text) || DEFAULTS.categoryPillActiveText,
+    categoryPillBorderRadius: asString((props.settings as any)?.template_category_pill_border_radius) || DEFAULTS.categoryPillBorderRadius,
+    customCss: asString((props.settings as any)?.template_custom_css),
+    navLinks,
+    socialLinks,
+
+    // Gate edit-click interception outside the editor
+    canManage,
   };
 
   const headerNode = layout.header as HeaderNode;
@@ -159,17 +308,23 @@ export default function ShiroHanaTemplate(props: TemplateProps) {
   const settingsHeroTitle = (props.settings.template_hero_heading || '').trim();
   const settingsHeroSubtitle = (props.settings.template_hero_subtitle || '').trim();
   const settingsHeroButtonText = (props.settings.template_button_text || '').trim();
+  const settingsHeroButton2Text = asString((props.settings as any)?.template_button2_text).trim();
 
   const resolvedHeroTitle = docHeroTitle || settingsHeroTitle;
   const resolvedHeroSubtitle = docHeroSubtitle || settingsHeroSubtitle || storeDescription;
   const resolvedHeroButtonText = docHeroButtonText || settingsHeroButtonText;
+  const resolvedHeroButton2Text = asString(heroNode?.cta?.[1]?.label?.value).trim() || settingsHeroButton2Text;
+
+  const cta0LabelBase: any = heroNode?.cta?.[0]?.label && typeof heroNode.cta[0].label === 'object' ? heroNode.cta[0].label : null;
+  const cta1LabelBase: any = heroNode?.cta?.[1]?.label && typeof heroNode.cta[1].label === 'object' ? heroNode.cta[1].label : null;
 
   const heroVideoUrl = asString((props.settings as any)?.hero_video_url);
 
   const schemaFeaturedItems = Array.isArray(featuredNode?.items) ? featuredNode.items : [];
 
-  const addLabel = asString(featuredNode?.addLabel?.value) || 'Add';
-  const productItems: ProductNode[] = (props.products || []).slice(0, 6).map((p) => ({
+  const addLabel = asString((props.settings as any)?.template_add_to_cart_label) || asString(featuredNode?.addLabel?.value) || 'Add';
+  const listForDisplay = (Array.isArray(props.filtered) && props.filtered.length ? props.filtered : props.products) || [];
+  const productItems: ProductNode[] = listForDisplay.slice(0, 6).map((p) => ({
     id: String(p.id),
     title: { type: 'text', value: String(p.title || '') },
     description: p.description ? { type: 'text', value: String(p.description) } : undefined,
@@ -188,9 +343,30 @@ export default function ShiroHanaTemplate(props: TemplateProps) {
         backgroundColor: theme.colors.background || undefined,
         color: theme.colors.text || undefined,
         fontFamily: theme.fonts.body || undefined,
+        ['--theme-bg' as any]: theme.bg,
+        ['--theme-accent' as any]: theme.accent,
+        ['--theme-text' as any]: theme.text,
+        ['--theme-muted' as any]: theme.muted,
+        ['--theme-border' as any]: theme.border,
+        ['--theme-border-light' as any]: theme.borderLight,
+        ['--theme-card-bg' as any]: theme.cardBg,
+        ['--theme-font-family' as any]: theme.fontFamily,
+        ['--theme-font-weight' as any]: theme.fontWeight,
+        ['--theme-heading-font-weight' as any]: theme.headingFontWeight,
+        ['--theme-border-radius' as any]: `${theme.borderRadius}px`,
+        ['--theme-card-border-radius' as any]: `${theme.cardBorderRadius}px`,
+        ['--theme-button-border-radius' as any]: `${theme.buttonBorderRadius}px`,
+        ['--theme-spacing' as any]: `${theme.spacing}px`,
+        ['--theme-section-spacing' as any]: `${theme.sectionSpacing}px`,
+        ['--theme-animation-speed' as any]: `${theme.animationSpeed}ms`,
+        ['--theme-hover-scale' as any]: theme.hoverScale,
+        ['--theme-grid-columns' as any]: theme.gridColumns,
+        ['--theme-grid-gap' as any]: `${theme.gridGap}px`,
       }}
       data-edit-path="__root"
+      onClick={() => onSelect('__root')}
     >
+      {theme.customCss ? <style>{theme.customCss}</style> : null}
       {bgEnabled && bgUrl ? (
         <div
           aria-hidden="true"
@@ -208,25 +384,34 @@ export default function ShiroHanaTemplate(props: TemplateProps) {
       <div className="relative z-10">
         <Header
           node={headerNode}
-          onSelect={() => null}
+          onSelect={onSelect}
           resolveAssetUrl={(k: string) => resolveAssetUrl(k, overrides, assets)}
           theme={theme}
           responsive={responsive}
         />
 
         <main>
-          <section className="w-full py-3">
-            <div className="container mx-auto px-6 flex items-center gap-3">
-              {storeName ? (
+          {storeName ? (
+            <section className="w-full py-3">
+              <div className="container mx-auto px-6 flex items-center gap-3">
                 <div
                   className="text-sm font-semibold"
                   data-edit-path="__settings.store_name"
+                  onClick={() => onSelect('__settings.store_name')}
                 >
                   {storeName}
                 </div>
-              ) : null}
-            </div>
-          </section>
+              </div>
+            </section>
+          ) : null}
+
+          <CategoryPills
+            categories={Array.isArray(props.categories) ? props.categories.filter(Boolean) : []}
+            active={props.categoryFilter || ''}
+            theme={theme}
+            onPick={(c) => props.setCategoryFilter?.(c)}
+            onSelect={onSelect}
+          />
 
           <Hero
             node={{
@@ -238,32 +423,50 @@ export default function ShiroHanaTemplate(props: TemplateProps) {
                     {
                       ...heroNode.cta[0],
                       label: {
-                        ...(heroNode.cta[0].label && typeof heroNode.cta[0].label === 'object' ? heroNode.cta[0].label : { type: 'text', value: '' }),
+                        ...(cta0LabelBase || {}),
+                        type: 'text' as const,
                         value: resolvedHeroButtonText || String(heroNode.cta[0].label?.value || ''),
                       },
                     },
+                    ...(resolvedHeroButton2Text
+                      ? [
+                          {
+                            ...(heroNode.cta[1] || {}),
+                            label: {
+                              ...(cta1LabelBase || {}),
+                              type: 'text' as const,
+                              value: resolvedHeroButton2Text,
+                            },
+                            action: typeof heroNode?.cta?.[1]?.action === 'string' ? heroNode.cta[1].action : '/products',
+                          },
+                        ]
+                      : []),
                   ]
                 : resolvedHeroButtonText
-                ? [{ label: { type: 'text', value: resolvedHeroButtonText }, action: '/reserve' }]
+                ? [
+                    { label: { type: 'text', value: resolvedHeroButtonText }, action: '/reserve' },
+                    ...(resolvedHeroButton2Text ? [{ label: { type: 'text', value: resolvedHeroButton2Text }, action: '/products' }] : []),
+                  ]
                 : [],
             }}
-            onSelect={() => null}
+            onSelect={onSelect}
             resolveAssetUrl={(k: string) => resolveAssetUrl(k, overrides, assets)}
             ctaStyle={accent ? { backgroundColor: accent } : undefined}
             theme={theme}
             responsive={responsive}
             videoUrl={heroVideoUrl}
+            canManage={canManage}
           />
 
           <ProductGrid
             items={featuredItems}
-            columns={(featuredNode as any)?.columns || 3}
-            gap={(featuredNode as any)?.gap}
+            columns={asString((props.settings as any)?.template_grid_columns) || (featuredNode as any)?.columns || 3}
+            gap={asString((props.settings as any)?.template_grid_gap) || (featuredNode as any)?.gap}
             paddingY={(featuredNode as any)?.paddingY}
             paddingX={(featuredNode as any)?.paddingX}
             backgroundColor={String((featuredNode as any)?.backgroundColor || '') || undefined}
             card={(featuredNode as any)?.card}
-            onSelect={() => null}
+            onSelect={onSelect}
             resolveAssetUrl={(k: string) => resolveAssetUrl(k, overrides, assets)}
             formatPrice={props.formatPrice}
             ctaStyle={accent ? { backgroundColor: accent } : undefined}
@@ -273,7 +476,7 @@ export default function ShiroHanaTemplate(props: TemplateProps) {
           />
         </main>
 
-        <Footer node={footerNode} onSelect={() => null} theme={theme} responsive={responsive} />
+        <Footer node={footerNode} onSelect={onSelect} theme={theme} responsive={responsive} />
       </div>
     </div>
   );

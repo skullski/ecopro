@@ -92,6 +92,39 @@ export const configureDeliveryIntegration: RequestHandler = async (req, res) => 
 };
 
 /**
+ * GET /api/delivery/integrations
+ * List enabled/disabled integrations for the authenticated client.
+ * Note: Does NOT return any secrets.
+ */
+export const listDeliveryIntegrations: RequestHandler = async (req, res) => {
+  try {
+    const clientId = req.user?.id || (req.query.client_id ? Number(req.query.client_id) : undefined);
+    if (!clientId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const result = await pool.query(
+      `SELECT delivery_company_id,
+              is_enabled,
+              (api_key_encrypted IS NOT NULL AND api_key_encrypted <> '') AS has_api_key,
+              (api_secret_encrypted IS NOT NULL AND api_secret_encrypted <> '') AS has_api_secret,
+              configured_at,
+              updated_at
+       FROM delivery_integrations
+       WHERE client_id = $1
+       ORDER BY updated_at DESC NULLS LAST, configured_at DESC NULLS LAST`,
+      [clientId]
+    );
+
+    res.json(result.rows);
+  } catch (error: any) {
+    console.error('[Delivery] listDeliveryIntegrations error:', error);
+    res.status(500).json({ error: 'Failed to fetch integrations' });
+  }
+};
+
+/**
  * POST /api/orders/:id/assign-delivery
  * Assign delivery company to an order
  */
@@ -178,6 +211,88 @@ export const getOrderTracking: RequestHandler = async (req, res) => {
   } catch (error: any) {
     console.error('[Delivery] getOrderTracking error:', error);
     res.status(500).json({ error: 'Failed to fetch tracking' });
+  }
+};
+
+/**
+ * GET /api/delivery/orders/:id/label
+ * Download/stream the shipping label (PDF) for an order.
+ * - For Noest: proxied from Noest API using stored encrypted credentials.
+ */
+export const downloadShippingLabel: RequestHandler = async (req, res) => {
+  try {
+    const orderId = parseInt(req.params.id);
+    const clientId = req.user?.id || (req.query.client_id ? Number(req.query.client_id) : undefined);
+
+    if (!clientId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const orderResult = await pool.query(
+      `SELECT so.id, so.client_id, so.delivery_company_id, so.tracking_number, dc.name as company_name
+       FROM store_orders so
+       JOIN delivery_companies dc ON dc.id = so.delivery_company_id
+       WHERE so.id = $1 AND so.client_id = $2`,
+      [orderId, clientId]
+    );
+
+    if (orderResult.rows.length === 0) {
+      res.status(404).json({ error: 'Order not found' });
+      return;
+    }
+
+    const order = orderResult.rows[0];
+    const companyName = String(order.company_name || '').trim().toLowerCase();
+    const tracking = String(order.tracking_number || '').trim();
+
+    if (!tracking) {
+      res.status(400).json({ error: 'No tracking number on this order' });
+      return;
+    }
+
+    // Only Noest label proxy is implemented for now.
+    if (companyName !== 'noest' && companyName !== 'noest express') {
+      res.status(400).json({ error: 'Label download not supported for this courier' });
+      return;
+    }
+
+    // Load integration credentials
+    const integrationResult = await pool.query(
+      `SELECT api_key_encrypted
+       FROM delivery_integrations
+       WHERE client_id = $1 AND delivery_company_id = $2 AND is_enabled = true`,
+      [clientId, Number(order.delivery_company_id)]
+    );
+
+    if (integrationResult.rows.length === 0) {
+      res.status(400).json({ error: 'Delivery integration not configured for this company' });
+      return;
+    }
+
+    // Decrypt token and fetch label via courier service
+    const { decryptData } = await import('../utils/encryption');
+    const { getCourierService } = await import('../services/courier-service');
+    const token = decryptData(integrationResult.rows[0].api_key_encrypted);
+
+    const service = getCourierService(order.company_name);
+    if (!service || typeof (service as any).getLabelPdf !== 'function') {
+      res.status(400).json({ error: 'Courier label service unavailable' });
+      return;
+    }
+
+    const labelResult = await (service as any).getLabelPdf(tracking, token);
+    if (!labelResult?.ok) {
+      res.status(400).json({ error: labelResult?.error || 'Failed to fetch label' });
+      return;
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="label-order-${orderId}.pdf"`);
+    res.send(labelResult.pdf);
+  } catch (error: any) {
+    console.error('[Delivery] downloadShippingLabel error:', error);
+    res.status(500).json({ error: 'Failed to download label' });
   }
 };
 
@@ -362,11 +477,13 @@ export const bulkAssignDelivery: RequestHandler = async (req, res) => {
 
 // Register routes
 deliveryRouter.get('/companies', getDeliveryCompanies);
+deliveryRouter.get('/integrations', listDeliveryIntegrations);
 deliveryRouter.post('/integrations', configureDeliveryIntegration);
 deliveryRouter.post('/orders/bulk-assign', bulkAssignDelivery);
 deliveryRouter.post('/orders/:id/assign', assignDeliveryToOrder);
 deliveryRouter.post('/orders/:id/generate-label', generateShippingLabel);
 deliveryRouter.get('/orders/:id/tracking', getOrderTracking);
+deliveryRouter.get('/orders/:id/label', downloadShippingLabel);
 deliveryRouter.post('/webhooks/:company', handleDeliveryWebhook);
 
 export default deliveryRouter;

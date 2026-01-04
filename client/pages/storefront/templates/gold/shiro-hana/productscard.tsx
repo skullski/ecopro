@@ -18,7 +18,7 @@ type Props = {
   responsive?: { isSm?: boolean; isMd?: boolean; width?: number; breakpoint?: 'mobile' | 'tablet' | 'desktop' };
 };
 
-export function ProductCard({ product, onSelect, resolveAssetUrl, formatPrice, ctaStyle, addLabel, card, responsive }: Props) {
+export function ProductCard({ product, onSelect, resolveAssetUrl, formatPrice, ctaStyle, addLabel, theme, card, responsive }: Props) {
     const shadow = card?.shadow || 'sm';
     const boxShadow =
       shadow === 'none'
@@ -52,9 +52,15 @@ export function ProductCard({ product, onSelect, resolveAssetUrl, formatPrice, c
     <article
       className="rounded-lg shadow-sm overflow-hidden"
       data-edit-path={`layout.featured.items.${product.id}`}
+      onClick={(e) => {
+        if ((theme as any)?.canManage === false) return;
+        e.preventDefault();
+        e.stopPropagation();
+        onSelect(`layout.featured.items.${product.id}`);
+      }}
       style={{
-        backgroundColor: (product as any)?.theme?.colors?.surface || undefined,
-        color: (product as any)?.theme?.colors?.text || undefined,
+        backgroundColor: (theme as any)?.cardBg || theme?.colors?.surface || undefined,
+        color: (theme as any)?.text || theme?.colors?.text || undefined,
         borderRadius: radius,
         boxShadow,
       }}
@@ -62,7 +68,12 @@ export function ProductCard({ product, onSelect, resolveAssetUrl, formatPrice, c
       <div
         className="w-full overflow-hidden"
         style={{ height: imageHeight }}
-        onClick={() => onSelect(`layout.featured.items.${product.id}.image`)}
+        onClick={(e) => {
+          if ((theme as any)?.canManage === false) return;
+          e.preventDefault();
+          e.stopPropagation();
+          onSelect(`layout.featured.items.${product.id}.image`);
+        }}
         data-edit-path={`layout.featured.items.${product.id}.image`}
       >
         <img
@@ -80,7 +91,12 @@ export function ProductCard({ product, onSelect, resolveAssetUrl, formatPrice, c
         <h3
           className="font-medium text-lg"
           style={resolveResponsiveStyle((product.title as any)?.style, bp) || undefined}
-          onClick={() => onSelect(`layout.featured.items.${product.id}.title`)}
+          onClick={(e) => {
+            if ((theme as any)?.canManage === false) return;
+            e.preventDefault();
+            e.stopPropagation();
+            onSelect(`layout.featured.items.${product.id}.title`);
+          }}
           data-edit-path={`layout.featured.items.${product.id}.title`}
         >
           {product.title.value}
@@ -88,11 +104,16 @@ export function ProductCard({ product, onSelect, resolveAssetUrl, formatPrice, c
         <p
           className="text-sm mt-1"
           style={{
-            color: (product as any)?.theme?.colors?.muted || undefined,
+            color: (theme as any)?.muted || theme?.colors?.muted || undefined,
             ...(resolveResponsiveStyle((product.description as any)?.style, bp) || {}),
           }}
           data-edit-path={`layout.featured.items.${product.id}.description`}
-          onClick={() => onSelect(`layout.featured.items.${product.id}.description`)}
+          onClick={(e) => {
+            if ((theme as any)?.canManage === false) return;
+            e.preventDefault();
+            e.stopPropagation();
+            onSelect(`layout.featured.items.${product.id}.description`);
+          }}
         >
           {product.description?.value}
         </p>
@@ -100,7 +121,13 @@ export function ProductCard({ product, onSelect, resolveAssetUrl, formatPrice, c
           <span
             className="font-semibold"
             data-edit-path={`layout.featured.items.${product.id}.price`}
-            onClick={() => onSelect(`layout.featured.items.${product.id}.price`)}
+            style={{ color: (theme as any)?.productPriceColor || theme?.colors?.text || undefined }}
+            onClick={(e) => {
+              if ((theme as any)?.canManage === false) return;
+              e.preventDefault();
+              e.stopPropagation();
+              onSelect(`layout.featured.items.${product.id}.price`);
+            }}
           >
             {formatPrice ? formatPrice(product.price) : String(product.price)}
           </span>
@@ -108,7 +135,12 @@ export function ProductCard({ product, onSelect, resolveAssetUrl, formatPrice, c
             className="px-3 py-1 text-white rounded"
             style={ctaStyle}
             data-edit-path="layout.featured.addLabel"
-            onClick={() => onSelect('layout.featured.addLabel')}
+            onClick={(e) => {
+              if ((theme as any)?.canManage === false) return;
+              e.preventDefault();
+              e.stopPropagation();
+              onSelect('layout.featured.addLabel');
+            }}
           >
             {String(addLabel || 'Add')}
           </button>

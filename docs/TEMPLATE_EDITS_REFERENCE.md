@@ -63,12 +63,13 @@ This document lists all editable features implemented in the Babyos template. Us
 ---
 
 ### 4. Product Grid Section
-**Edit Path:** `layout.grid`, `layout.featured`, `layout.featured.title`, `layout.featured.subtitle`, `layout.featured.items`
+**Edit Path:** `layout.grid`, `layout.featured`, `layout.featured.title`, `layout.featured.subtitle`, `layout.featured.items`, `layout.featured.addLabel`
 
 | Feature | Setting Key | Type | Default | Description |
 |---------|-------------|------|---------|-------------|
 | Section Title | `template_featured_title` | Text | "Soft & snugly picks" | Section heading |
 | Section Subtitle | `template_featured_subtitle` | Text | "A small edit of plush toys..." | Section description |
+| Add Button Label | `template_add_to_cart_label` | Text | "VIEW" (Babyos) / "Add" (Shiro Hana) | Label for the product CTA button |
 | Title Color | `template_section_title_color` | Color | `#1C1917` | Section title color |
 | Title Size | `template_section_title_size` | Number (px) | `20` | Section title font size |
 | Subtitle Color | `template_section_subtitle_color` | Color | `#78716C` | Section subtitle color |

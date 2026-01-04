@@ -7,11 +7,13 @@ import { generateRequestId, logDeliveryEvent } from '../utils/delivery-logging';
 import { getCourierService } from './courier-service';
 import { registerCourierService } from './courier-service';
 import { CourierShipmentResponse, DeliveryStatus } from '../types/delivery';
+import { getAlgeriaCommuneNameById, getAlgeriaWilayaNameById, getDefaultCommuneNameForWilayaId } from '../utils/algeria-geo';
 
 // Import real courier services (verified APIs only)
 import { YalidineService } from './couriers/yalidine';
 import { GuepexService } from './couriers/guepex';
 import { EcotrackService } from './couriers/ecotrack';
+import { NoestService } from './couriers/noest';
 import { ZRExpressService } from './couriers/zr-express';
 import { MaystroService } from './couriers/maystro';
 import { DolivrooService } from './couriers/dolivroo';
@@ -24,9 +26,9 @@ registerCourierService('yalidine', YalidineService);
 registerCourierService('yalidine express', YalidineService);
 registerCourierService('guepex', GuepexService);
 registerCourierService('ecotrack', EcotrackService);
-// Noest portal is powered by Ecotrack (token + GUID). Treat Noest as Ecotrack API.
-registerCourierService('noest', EcotrackService);
-registerCourierService('noest express', EcotrackService);
+// Noest uses token + GUID; implement its own header scheme.
+registerCourierService('noest', NoestService);
+registerCourierService('noest express', NoestService);
 registerCourierService('zr express', ZRExpressService);
 registerCourierService('zr-express', ZRExpressService);
 registerCourierService('maystro', MaystroService);
@@ -87,7 +89,20 @@ export class DeliveryService {
           customer_name: order.customer_name,
           customer_phone: order.customer_phone,
           customer_email: order.customer_email,
-          delivery_address: order.customer_address,
+          delivery_address: order.shipping_address,
+          wilaya: (() => {
+            const wilayaName = getAlgeriaWilayaNameById(order.shipping_wilaya_id);
+            return wilayaName || undefined;
+          })(),
+          commune: (() => {
+            const byId = getAlgeriaCommuneNameById(order.shipping_commune_id);
+            if (byId) return byId;
+            const fallback = getDefaultCommuneNameForWilayaId(order.shipping_wilaya_id);
+            return fallback || undefined;
+          })(),
+          // Some courier APIs (e.g. Noest) need numeric IDs; keep these as extra fields.
+          ...(order.shipping_wilaya_id ? { wilaya_id: Number(order.shipping_wilaya_id) } : {}),
+          ...(order.shipping_commune_id ? { commune_id: Number(order.shipping_commune_id) } : {}),
           product_description: `Order #${orderId}`,
           quantity: order.quantity,
           cod_amount: order.cod_amount,
@@ -107,6 +122,10 @@ export class DeliveryService {
         `UPDATE store_orders
          SET tracking_number = $1,
              delivery_status = $2,
+             status = CASE
+               WHEN COALESCE(status, '') IN ('delivered','completed','cancelled','failed','returned','refunded') THEN status
+               ELSE 'at_delivery'
+             END,
              shipping_label_url = COALESCE($3, shipping_label_url),
              courier_response = $4::jsonb,
              updated_at = NOW()
@@ -177,6 +196,10 @@ export class DeliveryService {
         `UPDATE store_orders 
          SET delivery_company_id = $1, 
              delivery_status = $2,
+             status = CASE
+               WHEN COALESCE(status, '') IN ('delivered','completed','cancelled','failed','returned','refunded') THEN status
+               ELSE 'at_delivery'
+             END,
              cod_amount = $3,
              updated_at = NOW()
          WHERE id = $4 AND client_id = $5`,
@@ -218,11 +241,17 @@ export class DeliveryService {
 
       const trackingNumber = shipmentResult.tracking_number!;
 
+      // Noest provides labels via a token-gated endpoint; serve it through our authenticated proxy.
+      const companyRow = await pool.query('SELECT name FROM delivery_companies WHERE id = $1', [companyId]);
+      const companyName = String(companyRow.rows?.[0]?.name || '').trim().toLowerCase();
+      const isNoest = companyName === 'noest' || companyName === 'noest express';
+      const labelUrl = shipmentResult.label_url || (isNoest ? `/api/delivery/orders/${orderId}/label` : null);
+
       await pool.query(
         `INSERT INTO delivery_labels 
          (order_id, client_id, delivery_company_id, tracking_number, label_url, generated_at, label_format)
          VALUES ($1, $2, $3, $4, $5, NOW(), $6)`,
-        [orderId, clientId, companyId, trackingNumber, shipmentResult.label_url || null, 'pdf']
+        [orderId, clientId, companyId, trackingNumber, labelUrl, 'pdf']
       );
 
       // createShipment already updated tracking/status; only ensure label fields are stamped.
@@ -232,7 +261,7 @@ export class DeliveryService {
              label_generated_at = NOW(),
              updated_at = NOW()
          WHERE id = $2 AND client_id = $3`,
-        [shipmentResult.label_url || null, orderId, clientId]
+        [labelUrl, orderId, clientId]
       );
 
       await logDeliveryEvent(
@@ -247,7 +276,7 @@ export class DeliveryService {
       return {
         success: true,
         tracking_number: trackingNumber,
-        label_url: shipmentResult.label_url,
+        label_url: labelUrl || undefined,
       };
     } catch (error: any) {
       console.error(`[DeliveryService] generateLabel failed:`, error);

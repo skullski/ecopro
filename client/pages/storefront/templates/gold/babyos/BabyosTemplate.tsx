@@ -508,7 +508,7 @@ const CATEGORY_ICONS: Record<string, string> = {
   gift: '🎁',
 };
 
-function CategoryPills({ categories, active, theme, onPick }: { categories: string[]; active: string; theme: ThemeColors; onPick: (c: string) => void }) {
+function CategoryPills({ categories, active, theme, onPick, onSelect }: { categories: string[]; active: string; theme: ThemeColors; onPick: (c: string) => void; onSelect: (p: string) => void }) {
   const defaultCats = ['All', 'Toys', 'Clothing', 'Feeding', 'Strollers', 'Nursery', 'Bath', 'Gift'];
   const displayCats = categories.length > 0 ? ['All', ...categories.filter(c => c.toLowerCase() !== 'all')] : defaultCats;
 
@@ -516,6 +516,7 @@ function CategoryPills({ categories, active, theme, onPick }: { categories: stri
     <div 
       style={{ backgroundColor: theme.bg, borderBottom: `1px solid ${theme.borderLight}`, padding: '16px 0' }}
       data-edit-path="layout.categories"
+      onClick={() => onSelect('layout.categories')}
     >
       <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -529,7 +530,11 @@ function CategoryPills({ categories, active, theme, onPick }: { categories: stri
               return (
                 <button
                   key={cat}
-                  onClick={() => onPick(cat.toLowerCase() === 'all' ? '' : cat)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onPick(cat.toLowerCase() === 'all' ? '' : cat);
+                  }}
                   className="theme-hover-scale"
                   style={{
                     display: 'flex',
@@ -584,6 +589,7 @@ function FeaturedSection({ node, responsive, theme, settings, onSelect, resolveA
     const posY = clamp01(resolveNumber((img as any)?.posY), 0.5);
     const tag = String(p?.tags?.[0] || p?.category || '').trim().toUpperCase().slice(0, 8) || 'SOFT';
     const price = formatPrice ? formatPrice(Number(p.price || 0)) : String(p.price || '');
+    const addLabel = String(settings?.template_add_to_cart_label || 'VIEW');
 
     return (
       <div
@@ -684,8 +690,10 @@ function FeaturedSection({ node, responsive, theme, settings, onSelect, resolveA
                 border: 'none',
                 cursor: 'pointer',
               }}
+              data-edit-path="layout.featured.addLabel"
+              onClick={(e) => { e.stopPropagation(); onSelect('layout.featured.addLabel'); }}
             >
-              VIEW
+              {addLabel}
             </button>
           </div>
         </div>
@@ -786,6 +794,7 @@ function ProductGrid({ node, responsive, theme, settings, onSelect, resolveAsset
     const posY = clamp01(resolveNumber((img as any)?.posY), 0.5);
     const tag = String(p?.tags?.[0] || p?.category || '').trim().toUpperCase().slice(0, 8) || 'NEW';
     const price = formatPrice ? formatPrice(Number(p.price || 0)) : String(p.price || '');
+    const addLabel = String(settings?.template_add_to_cart_label || 'VIEW');
 
     return (
       <div
@@ -845,7 +854,7 @@ function ProductGrid({ node, responsive, theme, settings, onSelect, resolveAsset
             >
               {p.title?.value || 'Product'}
             </div>
-            <span style={{ fontSize: '9px', color: theme.mutedLight, letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>VIEW</span>
+            <span style={{ fontSize: '9px', color: theme.mutedLight, letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{addLabel}</span>
           </div>
 
           {/* Bottom row */}
@@ -890,8 +899,10 @@ function ProductGrid({ node, responsive, theme, settings, onSelect, resolveAsset
                 border: 'none',
                 cursor: 'pointer',
               }}
+              data-edit-path="layout.featured.addLabel"
+              onClick={(e) => { e.stopPropagation(); onSelect('layout.featured.addLabel'); }}
             >
-              VIEW
+              {addLabel}
             </button>
           </div>
         </div>
@@ -924,6 +935,7 @@ function ProductGrid({ node, responsive, theme, settings, onSelect, resolveAsset
             gap: `${gap}px`,
           }}
           data-edit-path="layout.grid"
+          onClick={() => onSelect('layout.grid')}
         >
           {gridItems.map(renderCard)}
         </div>
@@ -1236,13 +1248,14 @@ export default function BabyosTemplate(props: TemplateProps) {
         fontWeight: theme.fontWeight as any,
       }}
       data-edit-path="__root"
+      onClick={() => onSelect('__root')}
     >
       {/* Inject CSS variables and custom CSS */}
       <style dangerouslySetInnerHTML={{ __html: cssVariables }} />
       
       <Header storeName={storeName} logoUrl={settings?.store_logo} theme={theme} onSelect={onSelect} />
       <Hero node={composedHero} responsive={responsive} theme={theme} settings={settings} onSelect={onSelect} resolveAsset={resolveAsset} />
-      <CategoryPills categories={categories} active={props.categoryFilter || ''} theme={theme} onPick={(c) => props.setCategoryFilter?.(c)} />
+      <CategoryPills categories={categories} active={props.categoryFilter || ''} theme={theme} onPick={(c) => props.setCategoryFilter?.(c)} onSelect={onSelect} />
       <FeaturedSection node={featuredNode} responsive={responsive} theme={theme} settings={settings} onSelect={onSelect} resolveAsset={resolveAsset} formatPrice={props.formatPrice} />
       <ProductGrid node={featuredNode} responsive={responsive} theme={theme} settings={settings} onSelect={onSelect} resolveAsset={resolveAsset} formatPrice={props.formatPrice} />
       <Footer node={footerNode} theme={theme} settings={settings} onSelect={onSelect} />
