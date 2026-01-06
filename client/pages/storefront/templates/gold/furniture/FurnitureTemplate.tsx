@@ -83,6 +83,20 @@ export default function FurnitureTemplate(props: TemplateProps) {
   const headingWeight = asString(settings.template_heading_font_weight) || '500';
   const cardRadius = resolveInt(settings.template_card_border_radius, 8, 0, 32);
 
+  // Advanced settings
+  const spacing = asString(settings.template_spacing) || 'normal';
+  const animationSpeed = asString(settings.template_animation_speed) || '0.3s';
+  const hoverScale = asString(settings.template_hover_scale) || '1.02';
+  const gridColumns = resolveInt(settings.template_grid_columns, 4, 1, 6);
+  const customCss = asString(settings.template_custom_css);
+
+  // Category pill settings
+  const categoryPillBg = asString(settings.template_category_pill_bg) || 'rgba(120,113,108,0.1)';
+  const categoryPillText = asString(settings.template_category_pill_text) || muted;
+  const categoryPillActiveBg = asString(settings.template_category_pill_active_bg) || accent;
+  const categoryPillActiveText = asString(settings.template_category_pill_active_text) || '#ffffff';
+  const categoryPillRadius = resolveInt(settings.template_category_pill_border_radius, 8, 0, 9999);
+
   // Hero content
   const heroTitle = asString(settings.template_hero_heading) || 'Design your\nperfect space';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Thoughtfully designed furniture for modern living. Sustainable materials, timeless aesthetics.';
@@ -234,12 +248,13 @@ export default function FurnitureTemplate(props: TemplateProps) {
                 style={{
                   textAlign: 'left',
                   padding: '8px 12px',
-                  borderRadius: '6px',
+                  borderRadius: `${categoryPillRadius}px`,
                   border: 'none',
-                  backgroundColor: categoryFilter === '' ? '#e7e5e4' : 'transparent',
-                  color: categoryFilter === '' ? text : muted,
+                  backgroundColor: categoryFilter === '' ? categoryPillActiveBg : categoryPillBg,
+                  color: categoryFilter === '' ? categoryPillActiveText : categoryPillText,
                   cursor: 'pointer',
                   fontSize: '14px',
+                  transition: `all ${animationSpeed} ease`,
                 }}
               >
                 All Products
@@ -251,12 +266,13 @@ export default function FurnitureTemplate(props: TemplateProps) {
                   style={{
                     textAlign: 'left',
                     padding: '8px 12px',
-                    borderRadius: '6px',
+                    borderRadius: `${categoryPillRadius}px`,
                     border: 'none',
-                    backgroundColor: categoryFilter === cat ? '#e7e5e4' : 'transparent',
-                    color: categoryFilter === cat ? text : muted,
+                    backgroundColor: categoryFilter === cat ? categoryPillActiveBg : categoryPillBg,
+                    color: categoryFilter === cat ? categoryPillActiveText : categoryPillText,
                     cursor: 'pointer',
                     fontSize: '14px',
+                    transition: `all ${animationSpeed} ease`,
                   }}
                 >
                   {cat}
@@ -456,7 +472,7 @@ export default function FurnitureTemplate(props: TemplateProps) {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : isTablet ? 'repeat(3, 1fr)' : 'repeat(5, 1fr)',
+                gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : isTablet ? 'repeat(3, 1fr)' : `repeat(${gridColumns}, 1fr)`,
                 gap: isMobile ? '12px' : '20px',
               }}
               data-edit-path="layout.grid"
@@ -470,7 +486,7 @@ export default function FurnitureTemplate(props: TemplateProps) {
                     borderRadius: `${cardRadius}px`,
                     overflow: 'hidden',
                     cursor: 'pointer',
-                    transition: 'transform 0.2s ease',
+                    transition: `all ${animationSpeed} ease`,
                   }}
                   data-edit-path={`layout.featured.items.${product.id}`}
                   onClick={(e) => clickGuard(e, `layout.featured.items.${product.id}`)}
@@ -598,6 +614,9 @@ export default function FurnitureTemplate(props: TemplateProps) {
           )}
         </div>
       </footer>
+
+      {/* Custom CSS */}
+      {customCss && <style>{customCss}</style>}
     </div>
   );
 }

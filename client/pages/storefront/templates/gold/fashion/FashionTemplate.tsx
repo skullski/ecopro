@@ -83,6 +83,20 @@ export default function FashionTemplate(props: TemplateProps) {
   const headingWeight = asString(settings.template_heading_font_weight) || '600';
   const cardRadius = resolveInt(settings.template_card_border_radius, 18, 0, 32);
 
+  // Advanced settings
+  const spacing = asString(settings.template_spacing) || 'normal';
+  const animationSpeed = asString(settings.template_animation_speed) || '0.3s';
+  const hoverScale = asString(settings.template_hover_scale) || '1.02';
+  const gridColumns = resolveInt(settings.template_grid_columns, 3, 1, 6);
+  const customCss = asString(settings.template_custom_css);
+
+  // Category pill settings
+  const categoryPillBg = asString(settings.template_category_pill_bg) || 'rgba(255,255,255,0.1)';
+  const categoryPillText = asString(settings.template_category_pill_text) || muted;
+  const categoryPillActiveBg = asString(settings.template_category_pill_active_bg) || accent;
+  const categoryPillActiveText = asString(settings.template_category_pill_active_text) || '#ffffff';
+  const categoryPillRadius = resolveInt(settings.template_category_pill_border_radius, 9999, 0, 9999);
+
   // Hero content
   const heroTitle = asString(settings.template_hero_heading) || 'Modern wardrobe,\nbuilt in cold tones.';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'A curated selection of structured coats, minimal sneakers, and statement pieces. Designed for the modern minimalist.';
@@ -334,13 +348,14 @@ export default function FashionTemplate(props: TemplateProps) {
           <button
             onClick={(e) => { e.stopPropagation(); setCategoryFilter(''); }}
             style={{
-              borderRadius: '999px',
-              border: `1px solid ${categoryFilter === '' ? accent : '#3f3f46'}`,
+              borderRadius: `${categoryPillRadius}px`,
+              border: `1px solid ${categoryFilter === '' ? categoryPillActiveBg : '#3f3f46'}`,
               padding: '6px 14px',
               fontSize: '11px',
               cursor: 'pointer',
-              backgroundColor: categoryFilter === '' ? `${accent}22` : '#09090f',
-              color: categoryFilter === '' ? accent : muted,
+              backgroundColor: categoryFilter === '' ? categoryPillActiveBg : categoryPillBg,
+              color: categoryFilter === '' ? categoryPillActiveText : categoryPillText,
+              transition: `all ${animationSpeed} ease`,
             }}
           >
             All
@@ -350,13 +365,14 @@ export default function FashionTemplate(props: TemplateProps) {
               key={cat}
               onClick={(e) => { e.stopPropagation(); setCategoryFilter(cat); }}
               style={{
-                borderRadius: '999px',
-                border: `1px solid ${categoryFilter === cat ? accent : '#3f3f46'}`,
+                borderRadius: `${categoryPillRadius}px`,
+                border: `1px solid ${categoryFilter === cat ? categoryPillActiveBg : '#3f3f46'}`,
                 padding: '6px 14px',
                 fontSize: '11px',
                 cursor: 'pointer',
-                backgroundColor: categoryFilter === cat ? `${accent}22` : '#09090f',
-                color: categoryFilter === cat ? accent : muted,
+                backgroundColor: categoryFilter === cat ? categoryPillActiveBg : categoryPillBg,
+                color: categoryFilter === cat ? categoryPillActiveText : categoryPillText,
+                transition: `all ${animationSpeed} ease`,
               }}
             >
               {cat}
@@ -392,7 +408,7 @@ export default function FashionTemplate(props: TemplateProps) {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : isTablet ? 'repeat(3, 1fr)' : 'repeat(5, 1fr)',
+              gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : isTablet ? 'repeat(3, 1fr)' : `repeat(${gridColumns}, 1fr)`,
               gap: isMobile ? '12px' : '20px',
             }}
             data-edit-path="layout.grid"
@@ -406,7 +422,7 @@ export default function FashionTemplate(props: TemplateProps) {
                   borderRadius: `${cardRadius}px`,
                   border: '1px solid #1f2933',
                   overflow: 'hidden',
-                  transition: '0.22s',
+                  transition: animationSpeed,
                   cursor: 'pointer',
                 }}
                 data-edit-path={`layout.featured.items.${product.id}`}
@@ -528,6 +544,9 @@ export default function FashionTemplate(props: TemplateProps) {
           )}
         </div>
       </footer>
+
+      {/* Custom CSS */}
+      {customCss && <style>{customCss}</style>}
     </div>
   );
 }

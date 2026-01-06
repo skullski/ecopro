@@ -83,6 +83,20 @@ export default function ElectronicsTemplate(props: TemplateProps) {
   const headingWeight = asString(settings.template_heading_font_weight) || '600';
   const cardRadius = resolveInt(settings.template_card_border_radius, 16, 0, 32);
 
+  // Advanced settings
+  const spacing = asString(settings.template_spacing) || 'normal';
+  const animationSpeed = asString(settings.template_animation_speed) || '0.3s';
+  const hoverScale = asString(settings.template_hover_scale) || '1.02';
+  const gridColumns = resolveInt(settings.template_grid_columns, 4, 1, 6);
+  const customCss = asString(settings.template_custom_css);
+
+  // Category pill settings
+  const categoryPillBg = asString(settings.template_category_pill_bg) || 'rgba(56,189,248,0.1)';
+  const categoryPillText = asString(settings.template_category_pill_text) || muted;
+  const categoryPillActiveBg = asString(settings.template_category_pill_active_bg) || accent;
+  const categoryPillActiveText = asString(settings.template_category_pill_active_text) || '#020617';
+  const categoryPillRadius = resolveInt(settings.template_category_pill_border_radius, 9999, 0, 9999);
+
   // Hero content
   const heroTitle = asString(settings.template_hero_heading) || 'Next-Gen Tech\nAt Your Fingertips';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Discover cutting-edge gadgets, premium accessories, and innovative devices. Experience the future today.';
@@ -348,14 +362,15 @@ export default function ElectronicsTemplate(props: TemplateProps) {
           <button
             onClick={(e) => { e.stopPropagation(); setCategoryFilter(''); }}
             style={{
-              borderRadius: '10px',
-              border: `1px solid ${categoryFilter === '' ? accent : '#334155'}`,
+              borderRadius: `${categoryPillRadius}px`,
+              border: `1px solid ${categoryFilter === '' ? categoryPillActiveBg : '#334155'}`,
               padding: '8px 16px',
               fontSize: '13px',
               cursor: 'pointer',
-              backgroundColor: categoryFilter === '' ? `${accent}15` : 'transparent',
-              color: categoryFilter === '' ? accent : muted,
+              backgroundColor: categoryFilter === '' ? categoryPillActiveBg : categoryPillBg,
+              color: categoryFilter === '' ? categoryPillActiveText : categoryPillText,
               fontWeight: 500,
+              transition: `all ${animationSpeed} ease`,
             }}
           >
             All
@@ -365,14 +380,15 @@ export default function ElectronicsTemplate(props: TemplateProps) {
               key={cat}
               onClick={(e) => { e.stopPropagation(); setCategoryFilter(cat); }}
               style={{
-                borderRadius: '10px',
-                border: `1px solid ${categoryFilter === cat ? accent : '#334155'}`,
+                borderRadius: `${categoryPillRadius}px`,
+                border: `1px solid ${categoryFilter === cat ? categoryPillActiveBg : '#334155'}`,
                 padding: '8px 16px',
                 fontSize: '13px',
                 cursor: 'pointer',
-                backgroundColor: categoryFilter === cat ? `${accent}15` : 'transparent',
-                color: categoryFilter === cat ? accent : muted,
+                backgroundColor: categoryFilter === cat ? categoryPillActiveBg : categoryPillBg,
+                color: categoryFilter === cat ? categoryPillActiveText : categoryPillText,
                 fontWeight: 500,
+                transition: `all ${animationSpeed} ease`,
               }}
             >
               {cat}
@@ -408,7 +424,7 @@ export default function ElectronicsTemplate(props: TemplateProps) {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : isTablet ? 'repeat(3, 1fr)' : 'repeat(5, 1fr)',
+              gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : isTablet ? 'repeat(3, 1fr)' : `repeat(${gridColumns}, 1fr)`,
               gap: isMobile ? '12px' : '20px',
             }}
             data-edit-path="layout.grid"
@@ -422,7 +438,7 @@ export default function ElectronicsTemplate(props: TemplateProps) {
                   borderRadius: `${cardRadius}px`,
                   border: '1px solid #1e293b',
                   overflow: 'hidden',
-                  transition: 'all 0.3s ease',
+                  transition: `all ${animationSpeed} ease`,
                   cursor: 'pointer',
                 }}
                 data-edit-path={`layout.featured.items.${product.id}`}
@@ -548,6 +564,9 @@ export default function ElectronicsTemplate(props: TemplateProps) {
           )}
         </div>
       </footer>
+
+      {/* Custom CSS */}
+      {customCss && <style>{customCss}</style>}
     </div>
   );
 }

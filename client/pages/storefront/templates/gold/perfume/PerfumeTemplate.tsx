@@ -82,6 +82,20 @@ export default function PerfumeTemplate(props: TemplateProps) {
   const headingWeight = asString(settings.template_heading_font_weight) || '400';
   const cardRadius = resolveInt(settings.template_card_border_radius, 4, 0, 32);
 
+  // Advanced settings
+  const spacing = asString(settings.template_spacing) || 'normal';
+  const animationSpeed = asString(settings.template_animation_speed) || '0.3s';
+  const hoverScale = asString(settings.template_hover_scale) || '1.02';
+  const gridColumns = resolveInt(settings.template_grid_columns, 3, 1, 6);
+  const customCss = asString(settings.template_custom_css);
+
+  // Category pill settings
+  const categoryPillBg = asString(settings.template_category_pill_bg) || 'rgba(245,158,11,0.1)';
+  const categoryPillText = asString(settings.template_category_pill_text) || muted;
+  const categoryPillActiveBg = asString(settings.template_category_pill_active_bg) || accent;
+  const categoryPillActiveText = asString(settings.template_category_pill_active_text) || '#ffffff';
+  const categoryPillRadius = resolveInt(settings.template_category_pill_border_radius, 9999, 0, 9999);
+
   // Hero content
   const heroTitle = asString(settings.template_hero_heading) || 'The Art of\nFragrance';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Discover our curated collection of rare and exquisite perfumes. Each scent tells a story.';
@@ -356,7 +370,7 @@ export default function PerfumeTemplate(props: TemplateProps) {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : isTablet ? 'repeat(3, 1fr)' : 'repeat(5, 1fr)',
+              gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : isTablet ? 'repeat(3, 1fr)' : `repeat(${gridColumns}, 1fr)`,
               gap: isMobile ? '16px' : '24px',
             }}
             data-edit-path="layout.grid"
@@ -370,7 +384,7 @@ export default function PerfumeTemplate(props: TemplateProps) {
                   borderRadius: `${cardRadius}px`,
                   overflow: 'hidden',
                   cursor: 'pointer',
-                  transition: 'transform 0.3s ease',
+                  transition: `all ${animationSpeed} ease`,
                   border: '1px solid rgba(255,255,255,0.05)',
                 }}
                 data-edit-path={`layout.featured.items.${product.id}`}
@@ -492,6 +506,9 @@ export default function PerfumeTemplate(props: TemplateProps) {
           </div>
         </div>
       </footer>
+
+      {/* Custom CSS */}
+      {customCss && <style>{customCss}</style>}
     </div>
   );
 }

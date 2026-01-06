@@ -142,6 +142,13 @@ export default function BagsTemplate(props: TemplateProps) {
   const chapterProducts = products.slice(0, 3);
   const gridProducts = products;
 
+  // Advanced settings
+  const spacing = asString((settings as any).template_spacing) || 'normal';
+  const animationSpeed = asString((settings as any).template_animation_speed) || '0.3s';
+  const hoverScale = asString((settings as any).template_hover_scale) || '1.02';
+  const gridColumns = resolveInt((settings as any).template_grid_columns, 4, 1, 6);
+  const customCss = asString((settings as any).template_custom_css);
+
   const categoryPillBg = asString((settings as any).template_category_pill_bg) || 'rgba(255,255,255,0.7)';
   const categoryPillText = asString((settings as any).template_category_pill_text) || '#6b7280';
   const categoryPillActiveBg = asString((settings as any).template_category_pill_active_bg) || '#111827';
@@ -503,6 +510,7 @@ export default function BagsTemplate(props: TemplateProps) {
                   background: active ? categoryPillActiveBg : categoryPillBg,
                   color: active ? categoryPillActiveText : categoryPillText,
                   backdropFilter: 'blur(6px)',
+                  transition: `all ${animationSpeed} ease`,
                 }}
               >
                 {label}
@@ -545,13 +553,14 @@ export default function BagsTemplate(props: TemplateProps) {
           <div
             className="grid gap-5"
             style={{
-              gridTemplateColumns: breakpoint === 'desktop' ? 'repeat(5, 1fr)' : breakpoint === 'tablet' ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)'
+              gridTemplateColumns: breakpoint === 'desktop' ? `repeat(${gridColumns}, 1fr)` : breakpoint === 'tablet' ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)'
             }}
           >
             {chapterProducts.length
               ? chapterProducts.map((p, i) => (
                   <div
                     key={p.id}
+                    style={{ transition: `all ${animationSpeed} ease` }}
                     data-edit-path={`layout.featured.items.${p.id}`}
                     onClick={(e) => clickGuard(e, `layout.featured.items.${p.id}`)}
                   >
@@ -595,12 +604,13 @@ export default function BagsTemplate(props: TemplateProps) {
         <div
           className="grid gap-8"
           style={{
-            gridTemplateColumns: breakpoint === 'desktop' ? 'repeat(5, 1fr)' : breakpoint === 'tablet' ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)'
+            gridTemplateColumns: breakpoint === 'desktop' ? `repeat(${gridColumns}, 1fr)` : breakpoint === 'tablet' ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)'
           }}
         >
           {gridProducts.map((p, index) => (
             <div
               key={p.id}
+              style={{ transition: `all ${animationSpeed} ease` }}
               data-edit-path={`layout.featured.items.${p.id}`}
               onClick={(e) => clickGuard(e, `layout.featured.items.${p.id}`)}
             >
@@ -662,6 +672,9 @@ export default function BagsTemplate(props: TemplateProps) {
         </div>
       </footer>
       </div>
+      
+      {/* Custom CSS */}
+      {customCss && <style>{customCss}</style>}
       </div>
     </div>
   );

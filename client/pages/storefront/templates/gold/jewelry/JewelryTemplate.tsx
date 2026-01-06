@@ -66,6 +66,19 @@ export default function JewelryTemplate(props: TemplateProps) {
 
   const storeName = asString(settings.store_name) || 'JEWELRYOS';
 
+  // Advanced settings
+  const spacing = asString((settings as any).template_spacing) || 'normal';
+  const animationSpeed = asString((settings as any).template_animation_speed) || '0.3s';
+  const hoverScale = asString((settings as any).template_hover_scale) || '1.02';
+  const gridColumns = Number(asString((settings as any).template_grid_columns)) || 4;
+
+  // Category pill settings
+  const categoryPillBg = asString((settings as any).template_category_pill_bg) || 'rgba(212,175,55,0.1)';
+  const categoryPillText = asString((settings as any).template_category_pill_text) || '#6b7280';
+  const categoryPillActiveBg = asString((settings as any).template_category_pill_active_bg) || '#d4af37';
+  const categoryPillActiveText = asString((settings as any).template_category_pill_active_text) || '#ffffff';
+  const categoryPillRadius = Number(asString((settings as any).template_category_pill_border_radius)) || 9999;
+
   const heroKicker = asString(settings.template_hero_kicker) || 'Gold & silver jewelry / 2025';
   const heroTitle = asString(settings.template_hero_heading) || 'Timeless jewelry,\ndesigned in gold and light.';
   const heroSubtitle =
@@ -408,7 +421,7 @@ export default function JewelryTemplate(props: TemplateProps) {
         <div
           className="grid gap-4 sm:gap-6"
           style={{
-            gridTemplateColumns: breakpoint === 'desktop' ? 'repeat(5, 1fr)' : breakpoint === 'tablet' ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)'
+            gridTemplateColumns: breakpoint === 'desktop' ? `repeat(${gridColumns}, 1fr)` : breakpoint === 'tablet' ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)'
           }}
         >
           {products.map((p) => {
@@ -416,7 +429,8 @@ export default function JewelryTemplate(props: TemplateProps) {
             return (
               <div
                 key={p.id}
-                className="bg-white rounded-[18px] border border-gray-200 overflow-hidden transition"
+                className="bg-white rounded-[18px] border border-gray-200 overflow-hidden"
+                style={{ transition: `all ${animationSpeed} ease` }}
                 data-edit-path={`layout.featured.items.${p.id}`}
                 onClick={(e) => clickGuard(e, `layout.featured.items.${p.id}`)}
               >
