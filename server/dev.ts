@@ -1,11 +1,20 @@
 import { createServer } from "./index";
-import { initializeDatabase, runPendingMigrations } from "./utils/database";
+import { initializeDatabase, runPendingMigrations, ensureConnection } from "./utils/database";
 import { processPendingMessages, cleanupOldOrders } from "./utils/bot-messaging";
 import { cleanupExpiredCodes } from "./utils/code-utils";
 
 const PORT = process.env.PORT || 8080;
 
 async function startServer() {
+  // Warm up DB connection before starting server to avoid first-request timeout
+  console.log("🔄 Warming up database connection...");
+  try {
+    await ensureConnection();
+    console.log("✅ Database connection ready");
+  } catch (err) {
+    console.error("⚠️ Database warm-up failed (will retry on first request):", (err as any)?.message);
+  }
+
   // Start server immediately (don't block boot on remote DB + migrations).
   const app = createServer({ skipDbInit: true });
   app.listen(PORT, () => {

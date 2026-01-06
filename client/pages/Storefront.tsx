@@ -140,11 +140,16 @@ export default function Storefront() {
       try {
         setLoading(true);
         setError('');
-        // Race with a timeout to avoid infinite spinner
-        const timeout = new Promise<Response>((_, reject) => setTimeout(() => reject(new Error('Request timed out')), 9000));
+        // Race with a timeout to avoid infinite spinner - increased to 20s for slow DB
+        const timeout = new Promise<Response>((_, reject) => setTimeout(() => reject(new Error('Request timed out')), 20000));
+        
+        // Fetch settings and products in parallel
+        const settingsPromise = fetch(`/api/storefront/${storeSlug}/settings`);
+        const productsPromise = fetch(`/api/storefront/${storeSlug}/products`);
+        
         const [settingsRes, productsRes] = await Promise.all([
-          Promise.race([fetch(`/api/storefront/${storeSlug}/settings`), timeout]) as Promise<Response>,
-          Promise.race([fetch(`/api/storefront/${storeSlug}/products`), timeout]) as Promise<Response>,
+          Promise.race([settingsPromise, timeout]) as Promise<Response>,
+          Promise.race([productsPromise, timeout]) as Promise<Response>,
         ]);
         if (!settingsRes.ok || !productsRes.ok) {
           throw new Error('Failed to load store');
@@ -222,10 +227,18 @@ export default function Storefront() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">{t('storefront.loading')}</p>
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
+        <div className="text-center space-y-6">
+          <div className="relative">
+            <div className="w-20 h-20 border-4 border-primary/30 border-t-primary rounded-full animate-spin mx-auto"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-10 h-10 border-4 border-secondary/30 border-b-secondary rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '0.8s' }}></div>
+            </div>
+          </div>
+          <div>
+            <p className="text-white font-semibold text-lg">{t('storefront.loading')}</p>
+            <p className="text-white/60 text-sm mt-1">Connecting to store...</p>
+          </div>
         </div>
       </div>
     );

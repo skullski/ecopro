@@ -18,6 +18,7 @@ const ProductIdSchema = z.preprocess((v) => Number(v), z.number().int().positive
 // Get all products for a storefront
 export const getStorefrontProducts: RequestHandler = async (req, res) => {
   const isProduction = process.env.NODE_ENV === 'production';
+  const startTime = Date.now();
   let storeSlug: string;
   try {
     storeSlug = StoreSlugSchema.parse(req.params.storeSlug);
@@ -26,7 +27,13 @@ export const getStorefrontProducts: RequestHandler = async (req, res) => {
   }
 
   try {
+    if (!isProduction) {
+      console.log(`[Storefront] Fetching products for store: ${storeSlug}`);
+    }
     const pool = await ensureConnection();
+    if (!isProduction) {
+      console.log(`[Storefront] DB connection established in ${Date.now() - startTime}ms`);
+    }
     // First try client storefronts (client_store_settings)
     // Match by exact store_slug OR by store_name (case-insensitive, spaces/special chars removed)
     const clientCheck = await pool.query(
@@ -100,6 +107,7 @@ export const getStorefrontProducts: RequestHandler = async (req, res) => {
 // Get store settings for a storefront
 export const getStorefrontSettings: RequestHandler = async (req, res) => {
   const isProduction = process.env.NODE_ENV === 'production';
+  const startTime = Date.now();
   let storeSlug: string;
   try {
     storeSlug = StoreSlugSchema.parse(req.params.storeSlug);
@@ -108,6 +116,10 @@ export const getStorefrontSettings: RequestHandler = async (req, res) => {
   }
 
   try {
+    if (!isProduction) {
+      console.log(`[Storefront] Fetching settings for store: ${storeSlug}`);
+    }
+    
     // Helper function to convert store name to clean format (same as client-side)
     // Preserves case, removes spaces only
     const storeNameToClean = (name: string): string => {
@@ -122,6 +134,9 @@ export const getStorefrontSettings: RequestHandler = async (req, res) => {
     let querySlug = storeSlug;
     
     const pool = await ensureConnection();
+    if (!isProduction) {
+      console.log(`[Storefront] DB connection established in ${Date.now() - startTime}ms`);
+    }
     // Try client storefront settings first
     let clientRes;
     try {
