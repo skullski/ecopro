@@ -78,21 +78,27 @@ export default function Store() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch store settings
-        const settingsRes = await fetch('/api/client/store/settings');
+        // Fetch all data in PARALLEL for faster loading
+        const [settingsRes, productsRes, inventoryRes] = await Promise.all([
+          fetch('/api/client/store/settings'),
+          fetch('/api/client/store/products'),
+          fetch('/api/client/stock'),
+        ]);
+        
+        // Process settings
         if (settingsRes.ok) {
           const settingsData = await settingsRes.json();
           setStoreSettings(settingsData);
         }
-        // Fetch products
-        const productsRes = await fetch('/api/client/store/products');
+        
+        // Process products
         if (productsRes.ok) {
           const productsData = await productsRes.json();
           setProducts(productsData);
           setFilteredProducts(productsData);
         }
-        // Fetch all available products from inventory (stock) for selection
-        const inventoryRes = await fetch('/api/client/stock');
+        
+        // Process inventory
         if (inventoryRes.ok) {
           const inventoryData = await inventoryRes.json();
           setInventoryProducts(inventoryData);

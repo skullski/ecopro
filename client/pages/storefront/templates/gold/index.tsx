@@ -5,8 +5,7 @@ import BagsTemplate from './bags/BagsTemplate';
 import JewelryTemplate from './jewelry/JewelryTemplate';
 
 /**
- * Gold templates index.
- * Currently only Shiro Hana is available.
+ * Storefront templates (legacy folder name).
  */
 export type GoldTemplateId = 'shiro-hana' | 'babyos' | 'bags' | 'jewelry';
 

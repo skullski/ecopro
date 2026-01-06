@@ -6,12 +6,13 @@ import {
   ChevronDown, ChevronRight, Menu, X, Package, Bot,
   Divide, Palette, User, Lock
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { AnimatedLogo } from "@/components/ui/animated-logo";
 import { useTranslation } from "@/lib/i18n";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useStaffPermissions } from "@/contexts/StaffPermissionContext";
+import { prefetchRouteData } from "@/lib/prefetch";
 
 interface MenuItem {
   titleKey: string;
@@ -71,6 +72,12 @@ const menuItems: MenuItem[] = [
     titleKey: "sidebar.addons", 
     path: "/dashboard/addons/google-sheets", 
     icon: <Puzzle className="w-5 h-5" />,
+    permission: "view_settings"
+  },
+  { 
+    titleKey: "sidebar.pixels", 
+    path: "/pixel-statistics", 
+    icon: <BarChart3 className="w-5 h-5" />,
     permission: "view_settings"
   },
   { 
@@ -141,6 +148,11 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
   const isParentActive = (item: MenuItem) => 
     item.children?.some(child => location.pathname === child.path);
 
+  // Prefetch data on hover for instant navigation
+  const handlePrefetch = useCallback((path: string) => {
+    prefetchRouteData(path);
+  }, []);
+
   const renderMenuItem = (item: MenuItem, level = 0) => {
     const hasChildren = item.children && item.children.length > 0;
     const isExpanded = expandedItems.includes(item.path);
@@ -158,6 +170,7 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
       <div key={item.path}>
         <Link
           to={hasChildren || !hasAccess ? "#" : item.path}
+          onMouseEnter={() => hasAccess && !hasChildren && handlePrefetch(item.path)}
           onClick={(e) => {
             if (!hasAccess) {
               e.preventDefault();

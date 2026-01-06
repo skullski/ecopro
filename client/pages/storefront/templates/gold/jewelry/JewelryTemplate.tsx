@@ -152,10 +152,17 @@ export default function JewelryTemplate(props: TemplateProps) {
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-x-8 gap-y-3">
           <div
-            className="text-xs tracking-[0.3em] uppercase text-gray-700 whitespace-nowrap"
+            className="flex items-center gap-3 text-xs tracking-[0.3em] uppercase text-gray-700 whitespace-nowrap"
             data-edit-path="layout.header.logo"
             onClick={(e) => clickGuard(e, 'layout.header.logo')}
           >
+            {settings.store_logo && (
+              <img
+                src={settings.store_logo}
+                alt={storeName}
+                style={{ height: '36px', width: '36px', objectFit: 'contain', borderRadius: '4px' }}
+              />
+            )}
             {storeName.toUpperCase()}
           </div>
 
@@ -398,7 +405,12 @@ export default function JewelryTemplate(props: TemplateProps) {
           </span>
         </div>
 
-        <div className="grid gap-4 sm:gap-6 [grid-template-columns:repeat(auto-fit,minmax(160px,1fr))]">
+        <div
+          className="grid gap-4 sm:gap-6"
+          style={{
+            gridTemplateColumns: breakpoint === 'desktop' ? 'repeat(5, 1fr)' : breakpoint === 'tablet' ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)'
+          }}
+        >
           {products.map((p) => {
             const img = asString(p?.images?.[0]) || '/placeholder.png';
             return (

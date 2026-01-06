@@ -37,6 +37,7 @@ import googleSheetsRouter from "./routes/google-sheets";
 import chatRouter from "./routes/chat";
 import codesRouter from "./routes/codes";
 import customerBotRouter from "./routes/customer-bot";
+import pixelsRouter from "./routes/pixels";
 import { authenticateStaff, requireStaffPermission, requireStaffClientAccess } from "./utils/staff-middleware";
 import { initializeDatabase, createDefaultAdmin, runPendingMigrations } from "./utils/database";
 import { handleHealth } from "./routes/health";
@@ -469,6 +470,17 @@ export function createServer(options?: { skipDbInit?: boolean }) {
     "/api/auth/logout",
     authLimiter,
     authRoutes.logout
+  );
+  // Password reset flow
+  app.post(
+    "/api/auth/forgot-password",
+    authLimiter,
+    authRoutes.forgotPassword
+  );
+  app.post(
+    "/api/auth/reset-password",
+    authLimiter,
+    authRoutes.resetPassword
   );
   // Admin 2FA (TOTP)
   app.post('/api/auth/2fa/setup', authenticate, requireAdmin, authRoutes.setupAdmin2FA);
@@ -1069,6 +1081,9 @@ export function createServer(options?: { skipDbInit?: boolean }) {
 
   // Customer Bot routes (authenticated - for store owners to message customers)
   app.use('/api/customer-bot', authenticate, requireClient, customerBotRouter);
+
+  // Pixel tracking routes (mixed - some public, some authenticated)
+  app.use('/api/pixels', pixelsRouter);  // Router handles auth internally
 
   // Checkout session routes (database-backed, not localStorage)
   app.post("/api/checkout/save-product", orderRoutes.saveProductForCheckout); // Public - save product for checkout

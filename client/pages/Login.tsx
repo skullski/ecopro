@@ -98,10 +98,15 @@ export default function Login() {
               />
             </div>
             <div>
-              <label className="block text-xs sm:text-sm font-medium mb-1.5 flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-primary" />
-                {t("auth.password") || "Password"}
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs sm:text-sm font-medium flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-primary" />
+                  {t("auth.password") || "Password"}
+                </label>
+                <Link to="/forgot-password" className="text-xs text-primary hover:underline">
+                  {t("auth.forgotPassword") || "Forgot Password?"}
+                </Link>
+              </div>
               <input 
                 type="password" 
                 value={password} 

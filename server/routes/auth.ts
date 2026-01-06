@@ -13,6 +13,7 @@ import {
   createDefaultAdmin,
   ensureConnection,
 } from "../utils/database";
+import { sendPasswordResetEmail } from "../utils/email";
 import { logSecurityEvent, getClientIp, getGeo, computeFingerprint, parseCookie } from "../utils/security";
 import { checkLoginAllowed, recordFailedLogin, recordSuccessfulLogin } from "../utils/brute-force";
 import { checkPasswordPolicy } from '../utils/password-policy';
@@ -916,5 +917,115 @@ export const verifyAndRegister: RequestHandler = async (req, res) => {
   } catch (error) {
     console.error('[AUTH] Verify and register error:', error);
     return jsonError(res, 500, 'Registration failed');
+  }
+};
+
+/**
+ * Forgot password - sends reset email
+ * POST /api/auth/forgot-password
+ */
+export const forgotPassword: RequestHandler = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email || typeof email !== 'string') {
+      return jsonError(res, 400, 'Email is required');
+    }
+
+    const user = await findUserByEmail(email.toLowerCase().trim());
+    
+    // Always return success to prevent email enumeration
+    if (!user) {
+      return res.json({ message: 'If an account exists, a reset link has been sent.' });
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    // Store reset token in database
+    const pool = await ensureConnection();
+    await pool.query(`
+      INSERT INTO password_resets (email, token_hash, expires_at)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (email) DO UPDATE SET token_hash = $2, expires_at = $3, created_at = NOW()
+    `, [email.toLowerCase().trim(), resetTokenHash, expiresAt]);
+
+    // Build reset URL
+    const baseUrl = process.env.BASE_URL || 'http://localhost:5173';
+    const resetUrl = `${baseUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
+
+    // Send email
+    await sendPasswordResetEmail(email, resetToken, resetUrl);
+
+    res.json({ message: 'If an account exists, a reset link has been sent.' });
+  } catch (error) {
+    console.error('[AUTH] Forgot password error:', error);
+    return jsonError(res, 500, 'Failed to process request');
+  }
+};
+
+/**
+ * Reset password - sets new password using token
+ * POST /api/auth/reset-password
+ */
+export const resetPassword: RequestHandler = async (req, res) => {
+  try {
+    const { email, token, newPassword } = req.body;
+    
+    if (!email || !token || !newPassword) {
+      return jsonError(res, 400, 'Email, token, and new password are required');
+    }
+
+    if (newPassword.length < 8) {
+      return jsonError(res, 400, 'Password must be at least 8 characters');
+    }
+
+    const pool = await ensureConnection();
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    // Find valid reset token
+    const result = await pool.query(`
+      SELECT * FROM password_resets 
+      WHERE email = $1 AND token_hash = $2 AND expires_at > NOW()
+    `, [email.toLowerCase().trim(), tokenHash]);
+
+    if (result.rows.length === 0) {
+      return jsonError(res, 400, 'Invalid or expired reset token');
+    }
+
+    // Hash new password
+    const hashedPassword = await hashPassword(newPassword);
+
+    // Update password in clients table
+    await pool.query(`
+      UPDATE clients SET password = $1, updated_at = NOW() WHERE email = $2
+    `, [hashedPassword, email.toLowerCase().trim()]);
+
+    // Delete used reset token
+    await pool.query('DELETE FROM password_resets WHERE email = $1', [email.toLowerCase().trim()]);
+
+    // Log security event
+    try {
+      const ip = getClientIp(req as any);
+      await logSecurityEvent({
+        event_type: 'password_reset_success',
+        severity: 'info',
+        request_id: (req as any).requestId || null,
+        method: req.method,
+        path: req.path,
+        status_code: 200,
+        ip,
+        user_agent: req.headers['user-agent'] || null,
+        metadata: { email },
+      });
+    } catch (e) {
+      console.warn('[AUTH] Failed to log security event:', e);
+    }
+
+    res.json({ message: 'Password reset successfully. You can now log in.' });
+  } catch (error) {
+    console.error('[AUTH] Reset password error:', error);
+    return jsonError(res, 500, 'Failed to reset password');
   }
 };

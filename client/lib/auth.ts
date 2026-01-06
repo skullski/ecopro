@@ -54,6 +54,39 @@ export function removeAuthToken(): void {
 }
 
 /**
+ * Sync auth state with server - validates session and updates localStorage
+ * Call this on app startup to keep client state in sync with server cookies
+ */
+export async function syncAuthState(): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/me`, {
+      credentials: 'include',
+    });
+    
+    if (response.ok) {
+      const userData = await response.json();
+      // Update localStorage with fresh user data from server
+      localStorage.setItem("user", JSON.stringify(userData));
+      if (userData.role === "admin") {
+        localStorage.setItem("isAdmin", "true");
+      }
+      return true;
+    } else {
+      // Session invalid - clear stale localStorage
+      const currentUser = localStorage.getItem("user");
+      if (currentUser) {
+        // Only clear if we had a user before (avoid clearing on first visit)
+        removeAuthToken();
+      }
+      return false;
+    }
+  } catch {
+    // Network error - don't clear localStorage, user might just be offline
+    return !!localStorage.getItem("user");
+  }
+}
+
+/**
  * Make authenticated API request
  */
 async function apiRequest<T>(

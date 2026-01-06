@@ -94,7 +94,23 @@ export async function ensureConnection(retries = getDbDefaults().retries): Promi
 
     pool.on('error', (err) => {
       console.error('Unexpected DB pool error:', (err as any)?.message || err);
+      // If connection terminated unexpectedly, try to gracefully end the pool
+      if ((err as any)?.message?.includes('Connection terminated')) {
+        console.log('Connection terminated - pool will be recreated on next query');
+        const oldPool = pool;
+        pool = null;
+        // Try to gracefully end the old pool (don't await, just let it clean up)
+        if (oldPool) {
+          oldPool.end().catch(() => {});
+        }
+      }
     });
+  }
+
+  // Store reference to current pool for this function scope
+  const currentPool = pool;
+  if (!currentPool) {
+    throw new Error('Pool was reset during initialization - retrying');
   }
 
   let attempt = 0;
@@ -102,22 +118,37 @@ export async function ensureConnection(retries = getDbDefaults().retries): Promi
   const defaults = getDbDefaults();
   while (attempt <= retries) {
     try {
+      // Check if pool was reset by error handler
+      if (!pool || pool !== currentPool) {
+        throw new Error('Pool was reset - need to reinitialize');
+      }
       const start = Date.now();
-      await pool!.query('SELECT 1');
+      await currentPool.query('SELECT 1');
       const elapsedMs = Date.now() - start;
       if (elapsedMs > 2000) {
         console.warn(`DB ping succeeded but was slow (${elapsedMs}ms).`);
       }
-      return pool!;
+      return currentPool;
     } catch (err) {
       lastError = err;
       console.error(`DB connect attempt ${attempt + 1} failed:`, (err as any)?.message || err);
+      
+      // If pool was reset, break out and let caller retry
+      if (!pool || pool !== currentPool) {
+        throw new Error('Pool reset during connection attempt');
+      }
+      
       const delay = Math.min(defaults.retryBaseDelayMs * Math.pow(2, attempt), defaults.retryMaxDelayMs);
       await new Promise(res => setTimeout(res, delay));
       attempt++;
     }
   }
   throw lastError || new Error('Failed to establish database connection');
+}
+
+// Get the current pool, ensuring connection first
+export async function getPool(): Promise<Pool> {
+  return ensureConnection();
 }
 
 export async function initializeDatabase(): Promise<void> {
@@ -408,13 +439,6 @@ export async function createDefaultAdmin(
     );
     console.log(`✅ Default admin user created: ${email}`);
   }
-}
-
-/**
- * Get database pool - ensures connection before returning
- */
-export async function getPool(): Promise<Pool> {
-  return ensureConnection();
 }
 
 /**

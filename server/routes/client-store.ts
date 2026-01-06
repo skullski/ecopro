@@ -1,9 +1,47 @@
 import { Router, RequestHandler } from "express";
 import { randomBytes } from "crypto";
-import { pool } from "../utils/database";
+import { pool, ensureConnection, getPool } from "../utils/database";
 import { logStoreSettings } from "../utils/logger";
 
 const router = Router();
+
+// Simple in-memory cache for slow remote DB
+const settingsCache = new Map<number, { data: any; expires: number }>();
+const productsCache = new Map<number, { data: any; expires: number }>();
+const CACHE_TTL_MS = 30000; // 30 seconds cache
+const PRODUCTS_CACHE_TTL_MS = 15000; // 15 seconds for products (shorter since they change more)
+
+function getCachedSettings(clientId: number) {
+  const cached = settingsCache.get(clientId);
+  if (cached && cached.expires > Date.now()) {
+    return cached.data;
+  }
+  return null;
+}
+
+function setCachedSettings(clientId: number, data: any) {
+  settingsCache.set(clientId, { data, expires: Date.now() + CACHE_TTL_MS });
+}
+
+function invalidateSettingsCache(clientId: number) {
+  settingsCache.delete(clientId);
+}
+
+function getCachedProducts(clientId: number) {
+  const cached = productsCache.get(clientId);
+  if (cached && cached.expires > Date.now()) {
+    return cached.data;
+  }
+  return null;
+}
+
+function setCachedProducts(clientId: number, data: any) {
+  productsCache.set(clientId, { data, expires: Date.now() + PRODUCTS_CACHE_TTL_MS });
+}
+
+function invalidateProductsCache(clientId: number) {
+  productsCache.delete(clientId);
+}
 
 // Get all store products for client
 export const getStoreProducts: RequestHandler = async (req, res) => {
@@ -13,6 +51,15 @@ export const getStoreProducts: RequestHandler = async (req, res) => {
     if (user && (user.role === 'admin' || user.user_type === 'admin')) return res.status(403).json({ error: 'Admins are not allowed to manage client storefronts' });
     const clientId = (req as any).user.id;
     const { status, category, search } = req.query;
+
+    // Use cache only for unfiltered requests (most common case)
+    const hasFilters = status || category || search;
+    if (!hasFilters) {
+      const cached = getCachedProducts(clientId);
+      if (cached) {
+        return res.json(cached);
+      }
+    }
 
     let query = `
       SELECT id, title, description, price, original_price, images, 
@@ -45,6 +92,12 @@ export const getStoreProducts: RequestHandler = async (req, res) => {
     query += ` ORDER BY created_at DESC`;
 
     const result = await pool.query(query, params);
+    
+    // Cache unfiltered results
+    if (!hasFilters) {
+      setCachedProducts(clientId, result.rows);
+    }
+    
     res.json(result.rows);
   } catch (error) {
     console.error("Get store products error:", error);
@@ -153,6 +206,10 @@ export const createStoreProduct: RequestHandler = async (req, res) => {
       // Non-fatal
       console.error('Audit log (create_store_product) failed:', (e as any).message);
     }
+    
+    // Invalidate products cache after creation
+    invalidateProductsCache(clientId);
+    
     res.status(201).json(product);
   } catch (error) {
     if (inTransaction && client) {
@@ -231,6 +288,10 @@ export const updateStoreProduct: RequestHandler = async (req, res) => {
     } catch (e) {
       console.error('Audit log (update_store_product) failed:', (e as any).message);
     }
+    
+    // Invalidate products cache after update
+    invalidateProductsCache(clientId);
+    
     res.json(result.rows[0]);
   } catch (error) {
     const isProduction = process.env.NODE_ENV === 'production';
@@ -272,6 +333,10 @@ export const deleteStoreProduct: RequestHandler = async (req, res) => {
     } catch (e) {
       console.error('Audit log (delete_store_product) failed:', (e as any).message);
     }
+    
+    // Invalidate products cache after deletion
+    invalidateProductsCache(clientId);
+    
     res.json({ success: true, id: result.rows[0].id });
   } catch (error) {
     console.error("Delete store product error:", error);
@@ -307,6 +372,13 @@ export const getStoreSettings: RequestHandler = async (req, res) => {
     const user = (req as any).user;
     if (user && (user.role === 'admin' || user.user_type === 'admin')) return res.status(403).json({ error: 'Admins do not have a client store' });
     const clientId = (req as any).user.id;
+    
+    // Check cache first for faster response
+    const cached = getCachedSettings(clientId);
+    if (cached) {
+      return res.json(cached);
+    }
+    
     logStoreSettings('getStoreSettings:start', { clientId });
 
     let result = await pool.query(
@@ -372,8 +444,13 @@ export const getStoreSettings: RequestHandler = async (req, res) => {
     const row = result.rows[0];
     const templateSettings = row?.template_settings && typeof row.template_settings === 'object' ? row.template_settings : {};
     const globalSettings = row?.global_settings && typeof row.global_settings === 'object' ? row.global_settings : {};
-    const merged = { ...globalSettings, ...templateSettings, ...row };
+    // IMPORTANT: Ensure row.template is NOT overridden by templateSettings/globalSettings
+    const dbTemplate = row.template;
+    const merged = { ...globalSettings, ...templateSettings, ...row, template: dbTemplate };
 
+    // Cache the result for faster subsequent requests
+    setCachedSettings(clientId, merged);
+    
     logStoreSettings('getStoreSettings:success', { clientId, store_slug: merged.store_slug, template: merged.template });
     res.json(merged);
   } catch (error) {
@@ -409,6 +486,35 @@ export const getStoreSettings: RequestHandler = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch store settings" });
   }
 };
+
+// Helper function to retry database operations on transient errors
+// Operations should use the pool parameter, not the module-level pool import
+async function withRetry<T>(operation: (db: typeof pool) => Promise<T>, maxRetries = 3): Promise<T> {
+  let lastError: any;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      // Get a fresh pool connection for each attempt
+      const db = await getPool();
+      return await operation(db);
+    } catch (err: any) {
+      lastError = err;
+      const isRetryable = err?.message?.includes('Connection terminated') ||
+                          err?.message?.includes('ECONNRESET') ||
+                          err?.message?.includes('Cannot read properties of null') ||
+                          err?.message?.includes('Pool was reset') ||
+                          err?.message?.includes('connection') ||
+                          err?.code === 'ECONNRESET';
+      if (!isRetryable || attempt === maxRetries) {
+        throw err;
+      }
+      console.log(`Retrying database operation (attempt ${attempt + 2}/${maxRetries + 1})...`);
+      // Exponential backoff with jitter
+      const delay = Math.min(1000 * Math.pow(2, attempt) + Math.random() * 500, 5000);
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+  throw lastError;
+}
 
 // Update store settings
 export const updateStoreSettings: RequestHandler = async (req, res) => {
@@ -474,14 +580,15 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
     }
 
     // Load current row so we can merge JSON settings and support template switching.
-    let existingRes = await pool.query('SELECT * FROM client_store_settings WHERE client_id = $1', [clientId]);
+    // Wrap in retry for transient connection errors
+    let existingRes = await withRetry((db) => db.query('SELECT * FROM client_store_settings WHERE client_id = $1', [clientId]));
     if (existingRes.rows.length === 0) {
       const randomSlug = 'store-' + randomBytes(6).toString('base64url');
-      existingRes = await pool.query(
+      existingRes = await withRetry((db) => db.query(
         `INSERT INTO client_store_settings (client_id, store_slug)
          VALUES ($1, $2) RETURNING *`,
         [clientId, randomSlug]
-      );
+      ));
     }
     const existingRow = existingRes.rows[0];
 
@@ -544,6 +651,7 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
       'store_name', 'store_description', 'store_logo', 'primary_color', 'secondary_color',
       'custom_domain', 'is_public', 'store_slug', 'template', 'banner_url', 'currency_code',
       'hero_main_url', 'hero_tile1_url', 'hero_tile2_url', 'owner_name', 'owner_email', 'store_images',
+      'hero_video_url', // Video hero support
       // Template customization fields
       'template_hero_heading', 'template_hero_subtitle', 'template_button_text', 'template_accent_color',
       'template_bg_color', 'template_text_color', 'template_muted_color',
@@ -556,7 +664,7 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
       'template_featured_title', 'template_featured_subtitle',
       'template_section_title_color', 'template_section_title_size', 'template_section_subtitle_color',
       'template_card_bg', 'template_product_title_color', 'template_product_price_color',
-      'template_copyright', 'template_footer_text', 'template_footer_link_color',
+      'template_copyright', 'template_footer_text', 'template_footer_link_color', 'template_footer_bg',
       // Typography
       'template_font_family', 'template_font_weight', 'template_heading_font_weight',
       // Border radius
@@ -566,12 +674,14 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
       // Animations
       'template_animation_speed', 'template_hover_scale',
       // Grid
-      'template_grid_columns', 'template_grid_gap',
+      'template_grid_columns', 'template_grid_gap', 'template_grid_title',
       // Category pills
       'template_category_pill_bg', 'template_category_pill_text',
       'template_category_pill_active_bg', 'template_category_pill_active_text', 'template_category_pill_border_radius',
       // Custom CSS and links (stored as JSON strings)
       'template_custom_css', 'template_social_links', 'template_nav_links',
+      // Product card settings
+      'template_add_to_cart_label',
       // allow older/client payloads to include seller fields without failing
       'seller_name', 'seller_email'
     ]);
@@ -644,6 +754,14 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
         ? templateSwitch.importKeys.map((k: any) => String(k))
         : [];
 
+      logStoreSettings('templateSwitch:start', { 
+        clientId, 
+        fromTemplate: existingTemplate, 
+        toTemplate, 
+        mode, 
+        importKeys 
+      });
+
       const oldSnapshot = buildTemplateSnapshot(existingRow);
       const map = { ...safeObject(existingTemplateByTemplate) };
       map[existingTemplate] = oldSnapshot;
@@ -660,6 +778,11 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
       // Apply new template + snapshot.
       columnUpdates.template = toTemplate;
 
+      logStoreSettings('templateSwitch:columnUpdates', { 
+        clientId, 
+        template: columnUpdates.template 
+      });
+
       // Template-scoped columns: set to snapshot value, or NULL on defaults.
       for (const col of templateScopedCols) {
         if (Object.prototype.hasOwnProperty.call(baseTargetSnapshot, col)) {
@@ -673,6 +796,8 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
       // JSON settings are snapshot minus template-scoped columns.
       const { ...snapshotCopy } = baseTargetSnapshot;
       for (const col of templateScopedCols) delete snapshotCopy[col];
+      // Never store 'template' in JSON settings (it's a DB column)
+      delete snapshotCopy.template;
       nextTemplateSettings = snapshotCopy;
 
       // Persist updated snapshot map.
@@ -681,6 +806,8 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
     } else {
       // Normal save: merge extra updates into JSON template settings, and refresh per-template snapshot.
       const mergedTemplateSettings = { ...safeObject(existingTemplateSettings), ...extraUpdates };
+      // Ensure 'template' key is never stored in JSON settings (it's a DB column)
+      delete mergedTemplateSettings.template;
       nextTemplateSettings = mergedTemplateSettings;
 
       const snapshot = buildTemplateSnapshot({ ...existingRow, template_settings: mergedTemplateSettings, ...columnUpdates });
@@ -688,10 +815,16 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
       nextTemplateByTemplate = map;
     }
 
-    // Temporary: only allow a small subset of templates while schema migration is in progress.
-    // - Existing stores can keep their current template.
-    // - Switching/saving to a disabled template returns a friendly error.
-    const ENABLED_TEMPLATE_IDS = new Set<string>(['shiro-hana', 'babyos', 'bags', 'jewelry']);
+    // Clean any 'template' key from JSON settings before saving (it's a DB column, not JSON)
+    if (nextTemplateSettings && typeof nextTemplateSettings === 'object') {
+      delete nextTemplateSettings.template;
+    }
+
+    // All templates are now enabled
+    const ENABLED_TEMPLATE_IDS = new Set<string>([
+      'shiro-hana', 'babyos', 'bags', 'jewelry',
+      'fashion', 'electronics', 'beauty', 'food', 'cafe', 'furniture', 'perfume'
+    ]);
     const normalizeTemplateIdForAvailability = (id: any): string => {
       const normalized = String(id || '')
         .trim()
@@ -713,6 +846,10 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
           template: normalizedRequested,
         });
       }
+
+      // Persist normalized template IDs (unified template category), while still
+      // accepting legacy values like gold-shiro-hana.
+      columnUpdates.template = normalizedRequested;
     }
 
     // Apply computed + direct column updates
@@ -737,14 +874,15 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
 
     if (fields.length === 0) {
       // No fields to update - still return success with current settings
-      const result = await pool.query(
+      const result = await withRetry((db) => db.query(
         'SELECT * FROM client_store_settings WHERE client_id = $1',
         [clientId]
-      );
+      ));
       const row = result.rows[0];
       const templateSettings = row?.template_settings && typeof row.template_settings === 'object' ? row.template_settings : {};
       const globalSettings = row?.global_settings && typeof row.global_settings === 'object' ? row.global_settings : {};
-      return res.json({ ...globalSettings, ...templateSettings, ...row });
+      const dbTemplate = row?.template;
+      return res.json({ ...globalSettings, ...templateSettings, ...row, template: dbTemplate });
     }
 
     fields.push(`updated_at = CURRENT_TIMESTAMP`);
@@ -754,13 +892,39 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
        SET ${fields.join(", ")}
        WHERE client_id = $${paramCount}
        RETURNING *`;
-    const result = await pool.query(queryText, values);
+    
+    logStoreSettings('updateStoreSettings:query', { 
+      clientId, 
+      fields: fields.length, 
+      hasTemplate: fields.some(f => f.startsWith('template =')),
+      queryPreview: queryText.substring(0, 200)
+    });
+    
+    const result = await withRetry((db) => db.query(queryText, values));
 
     const updatedRow = result.rows[0];
+    
+    // Verify template was saved correctly
+    if (updatedRow) {
+      logStoreSettings('updateStoreSettings:dbResult', { 
+        clientId, 
+        savedTemplate: updatedRow.template,
+        rowCount: result.rowCount
+      });
+    }
+    
     const templateSettings = updatedRow?.template_settings && typeof updatedRow.template_settings === 'object' ? updatedRow.template_settings : {};
     const globalSettings = updatedRow?.global_settings && typeof updatedRow.global_settings === 'object' ? updatedRow.global_settings : {};
-    const merged = { ...globalSettings, ...templateSettings, ...updatedRow };
-     logStoreSettings('updateStoreSettings:success', { clientId, keys: Object.keys(updates), store_slug: merged.store_slug, template: merged.template });
+    // IMPORTANT: Ensure template from DB is NOT overridden by templateSettings/globalSettings
+    const dbTemplate = updatedRow?.template;
+    const merged = { ...globalSettings, ...templateSettings, ...updatedRow, template: dbTemplate };
+    
+    // Invalidate cache after update
+    invalidateSettingsCache(clientId);
+    // Also update cache with new data
+    setCachedSettings(clientId, merged);
+    
+    logStoreSettings('updateStoreSettings:success', { clientId, keys: Object.keys(updates), store_slug: merged.store_slug, template: merged.template });
 
     // Audit log settings update
     const changedSettings = Object.keys(updates);

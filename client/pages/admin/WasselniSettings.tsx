@@ -12,7 +12,7 @@ interface BotSettings {
   enabled: boolean;
   updatesEnabled?: boolean;
   trackingEnabled?: boolean;
-  provider: 'whatsapp_cloud' | 'telegram' | 'viber' | string;
+  provider: 'whatsapp_cloud' | 'telegram' | 'viber' | 'facebook' | string;
   whatsappPhoneId: string;
   whatsappToken: string;
   telegramBotToken?: string;
@@ -21,6 +21,8 @@ interface BotSettings {
   autoExpireHours?: number;
   viberAuthToken?: string;
   viberSenderName?: string;
+  facebookPageId?: string;
+  facebookAccessToken?: string;
   templateGreeting?: string;
   templateInstantOrder?: string;
   templatePinInstructions?: string;
@@ -48,6 +50,8 @@ export default function AdminWasselniSettings() {
     autoExpireHours: 24,
     viberAuthToken: '',
     viberSenderName: '',
+    facebookPageId: '',
+    facebookAccessToken: '',
     templateGreeting: `Thank you for ordering from {storeName}, {customerName}!\n\n✅ Enable notifications on Telegram to receive order confirmation and tracking updates.`,
     templateInstantOrder: `🎉 Thank you, {customerName}!\n\nYour order has been received successfully ✅\n\n━━━━━━━━━━━━━━━━\n📦 Order Details\n━━━━━━━━━━━━━━━━\n🔢 Order ID: #{orderId}\n📱 Product: {productName}\n💰 Price: {totalPrice} DZD\n📍 Quantity: {quantity}\n\n━━━━━━━━━━━━━━━━\n👤 Delivery Information\n━━━━━━━━━━━━━━━━\n📛 Name: {customerName}\n📞 Phone: {customerPhone}\n🏠 Address: {address}\n\n━━━━━━━━━━━━━━━━\n🚚 Order Status: Processing\n━━━━━━━━━━━━━━━━\n\nWe will contact you soon for confirmation 📞\n\n⭐ From {storeName}`,
     templatePinInstructions: `📌 Important tip:\n\nLong press on the previous message and select "Pin" to easily track your order!\n\n🔔 Make sure to:\n• Enable notifications for the bot\n• Don't mute the conversation\n• You will receive order status updates here directly`,
@@ -289,8 +293,9 @@ export default function AdminWasselniSettings() {
                 </div>
                 {t('bot.provider')}
               </h3>
-              <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="grid grid-cols-4 gap-3 mb-4">
                 {[
+                  { value: 'facebook', label: 'Facebook' },
                   { value: 'telegram', label: 'Telegram' },
                   { value: 'whatsapp_cloud', label: 'WhatsApp' },
                   { value: 'viber', label: 'Viber' }
@@ -369,6 +374,28 @@ export default function AdminWasselniSettings() {
                       value={settings.viberSenderName || ''}
                       onChange={(e) => updateSetting('viberSenderName', e.target.value)}
                       placeholder="sahla-E"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {settings.provider === 'facebook' && (
+                <div className="space-y-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.facebookPageId')}</Label>
+                    <Input
+                      value={settings.facebookPageId || ''}
+                      onChange={(e) => updateSetting('facebookPageId', e.target.value)}
+                      placeholder="e.g. 123456789012345"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.facebookAccessToken')}</Label>
+                    <Input
+                      type="password"
+                      value={settings.facebookAccessToken || ''}
+                      onChange={(e) => updateSetting('facebookAccessToken', e.target.value)}
+                      placeholder="Paste Facebook access token"
                     />
                   </div>
                 </div>

@@ -69,162 +69,178 @@ export const getDashboardStats: RequestHandler = async (req, res) => {
   }
 };
 
+// In-memory cache for dashboard analytics (per-client)
+const analyticsCache = new Map<number, { data: any; timestamp: number }>();
+const ANALYTICS_CACHE_TTL = 10 * 1000; // 10 seconds cache
+
 // GET /api/dashboard/analytics
 // Rich analytics data for dashboard
 export const getDashboardAnalytics: RequestHandler = async (req, res) => {
   try {
     const clientId = (req as any).user?.id;
     
-    // Get custom statuses that count as revenue
+    // Check cache first
+    const cached = analyticsCache.get(clientId);
+    if (cached && Date.now() - cached.timestamp < ANALYTICS_CACHE_TTL) {
+      return res.json(cached.data);
+    }
+    
+    // Get revenue statuses first (needed for other queries)
     const revenueStatusesRes = await pool.query(
       `SELECT key, name FROM order_statuses WHERE client_id = $1 AND counts_as_revenue = true`,
       [clientId]
     );
     const revenueStatuses = revenueStatusesRes.rows.map(r => r.key || r.name);
-    // Include built-in 'completed' status (مكتملة) for revenue calculation
     revenueStatuses.push('completed');
 
-    // Get all custom statuses for breakdown
-    const customStatusesRes = await pool.query(
-      `SELECT name, color, icon FROM order_statuses WHERE client_id = $1 ORDER BY sort_order`,
-      [clientId]
-    );
-
-    // Daily revenue for last 30 days (only count revenue from revenue-counting statuses)
-    const dailyRevenueRes = await pool.query(
-      `SELECT 
-        DATE(created_at) as date,
-        COUNT(*)::int as orders,
-        COALESCE(SUM(CASE WHEN status = ANY($2) THEN total_price ELSE 0 END), 0)::float as revenue
-       FROM store_orders 
-       WHERE client_id = $1 AND created_at >= NOW() - INTERVAL '30 days'
-       GROUP BY DATE(created_at)
-       ORDER BY date ASC`,
-      [clientId, revenueStatuses]
-    );
-
-    // Today vs Yesterday comparison
-    const todayRes = await pool.query(
-      `SELECT 
-        COUNT(*)::int as orders,
-        COALESCE(SUM(CASE WHEN status = ANY($2) THEN total_price ELSE 0 END), 0)::float as revenue
-       FROM store_orders 
-       WHERE client_id = $1 AND DATE(created_at) = CURRENT_DATE`,
-      [clientId, revenueStatuses]
-    );
-
-    const yesterdayRes = await pool.query(
-      `SELECT 
-        COUNT(*)::int as orders,
-        COALESCE(SUM(CASE WHEN status = ANY($2) THEN total_price ELSE 0 END), 0)::float as revenue
-       FROM store_orders 
-       WHERE client_id = $1 AND DATE(created_at) = CURRENT_DATE - INTERVAL '1 day'`,
-      [clientId, revenueStatuses]
-    );
-
-    // This week vs last week
-    const thisWeekRes = await pool.query(
-      `SELECT 
-        COUNT(*)::int as orders,
-        COALESCE(SUM(CASE WHEN status = ANY($2) THEN total_price ELSE 0 END), 0)::float as revenue
-       FROM store_orders 
-       WHERE client_id = $1 AND created_at >= DATE_TRUNC('week', CURRENT_DATE)`,
-      [clientId, revenueStatuses]
-    );
-
-    const lastWeekRes = await pool.query(
-      `SELECT 
-        COUNT(*)::int as orders,
-        COALESCE(SUM(CASE WHEN status = ANY($2) THEN total_price ELSE 0 END), 0)::float as revenue
-       FROM store_orders 
-       WHERE client_id = $1 
-         AND created_at >= DATE_TRUNC('week', CURRENT_DATE) - INTERVAL '1 week'
-         AND created_at < DATE_TRUNC('week', CURRENT_DATE)`,
-      [clientId, revenueStatuses]
-    );
-
-    // This month vs last month
-    const thisMonthRes = await pool.query(
-      `SELECT 
-        COUNT(*)::int as orders,
-        COALESCE(SUM(CASE WHEN status = ANY($2) THEN total_price ELSE 0 END), 0)::float as revenue
-       FROM store_orders 
-       WHERE client_id = $1 AND created_at >= DATE_TRUNC('month', CURRENT_DATE)`,
-      [clientId, revenueStatuses]
-    );
-
-    const lastMonthRes = await pool.query(
-      `SELECT 
-        COUNT(*)::int as orders,
-        COALESCE(SUM(CASE WHEN status = ANY($2) THEN total_price ELSE 0 END), 0)::float as revenue
-       FROM store_orders 
-       WHERE client_id = $1 
-         AND created_at >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '1 month'
-         AND created_at < DATE_TRUNC('month', CURRENT_DATE)`,
-      [clientId, revenueStatuses]
-    );
-
-    // Top selling products - use images[1] for first image as image_url
-    const topProductsRes = await pool.query(
-      `SELECT 
-        p.id, p.title, p.price, 
-        COALESCE(p.images[1], '') as image_url,
-        COUNT(o.id)::int as total_orders,
-        COALESCE(SUM(o.quantity), 0)::int as total_quantity,
-        COALESCE(SUM(CASE WHEN o.status = ANY($2) THEN o.total_price ELSE 0 END), 0)::float as total_revenue
-       FROM client_store_products p
-       LEFT JOIN store_orders o ON o.product_id = p.id AND o.client_id = $1
-       WHERE p.client_id = $1
-       GROUP BY p.id, p.title, p.price, p.images
-       ORDER BY total_orders DESC
-       LIMIT 5`,
-      [clientId, revenueStatuses]
-    );
-
-    // Recent orders - join with client_store_products to get product title
-    const recentOrdersRes = await pool.query(
-      `SELECT 
-        o.id, o.customer_name, o.customer_phone, o.total_price, o.status, o.created_at,
-        COALESCE(p.title, 'Unknown Product') as product_title
-       FROM store_orders o
-       LEFT JOIN client_store_products p ON o.product_id = p.id
-       WHERE o.client_id = $1 
-       ORDER BY o.created_at DESC 
-       LIMIT 10`,
-      [clientId]
-    );
-
-    // Orders by status (using custom statuses)
-    const statusBreakdownRes = await pool.query(
-      `SELECT 
-        status,
-        COUNT(*)::int as count,
-        COALESCE(SUM(total_price), 0)::float as revenue
-       FROM store_orders 
-       WHERE client_id = $1
-       GROUP BY status
-       ORDER BY count DESC`,
-      [clientId]
-    );
-
-    // Orders by city - use shipping_wilaya_id since shipping_city doesn't exist
-    // Map wilaya IDs to names (Algeria wilayas)
-    const cityBreakdownRes = await pool.query(
-      `SELECT 
-        CASE 
-          WHEN shipping_wilaya_id IS NOT NULL THEN shipping_wilaya_id::text
-          ELSE 'Not specified'
-        END as city,
-        shipping_wilaya_id,
-        COUNT(*)::int as count,
-        COALESCE(SUM(total_price), 0)::float as revenue
-       FROM store_orders 
-       WHERE client_id = $1
-       GROUP BY shipping_wilaya_id
-       ORDER BY count DESC
-       LIMIT 10`,
-      [clientId]
-    );
+    // Run ALL analytics queries in parallel for maximum speed
+    const [
+      customStatusesRes,
+      dailyRevenueRes,
+      todayRes,
+      yesterdayRes,
+      thisWeekRes,
+      lastWeekRes,
+      thisMonthRes,
+      lastMonthRes,
+      topProductsRes,
+      recentOrdersRes,
+      statusBreakdownRes,
+      cityBreakdownRes
+    ] = await Promise.all([
+      // Custom statuses
+      pool.query(
+        `SELECT key, name, color, icon FROM order_statuses WHERE client_id = $1 ORDER BY sort_order`,
+        [clientId]
+      ),
+      // Daily revenue for last 30 days
+      pool.query(
+        `SELECT 
+          DATE(created_at) as date,
+          COUNT(*)::int as orders,
+          COALESCE(SUM(CASE WHEN status = ANY($2) THEN total_price ELSE 0 END), 0)::float as revenue
+         FROM store_orders 
+         WHERE client_id = $1 AND created_at >= NOW() - INTERVAL '30 days'
+         GROUP BY DATE(created_at)
+         ORDER BY date ASC`,
+        [clientId, revenueStatuses]
+      ),
+      // Today
+      pool.query(
+        `SELECT 
+          COUNT(*)::int as orders,
+          COALESCE(SUM(CASE WHEN status = ANY($2) THEN total_price ELSE 0 END), 0)::float as revenue
+         FROM store_orders 
+         WHERE client_id = $1 AND DATE(created_at) = CURRENT_DATE`,
+        [clientId, revenueStatuses]
+      ),
+      // Yesterday
+      pool.query(
+        `SELECT 
+          COUNT(*)::int as orders,
+          COALESCE(SUM(CASE WHEN status = ANY($2) THEN total_price ELSE 0 END), 0)::float as revenue
+         FROM store_orders 
+         WHERE client_id = $1 AND DATE(created_at) = CURRENT_DATE - INTERVAL '1 day'`,
+        [clientId, revenueStatuses]
+      ),
+      // This week
+      pool.query(
+        `SELECT 
+          COUNT(*)::int as orders,
+          COALESCE(SUM(CASE WHEN status = ANY($2) THEN total_price ELSE 0 END), 0)::float as revenue
+         FROM store_orders 
+         WHERE client_id = $1 AND created_at >= DATE_TRUNC('week', CURRENT_DATE)`,
+        [clientId, revenueStatuses]
+      ),
+      // Last week
+      pool.query(
+        `SELECT 
+          COUNT(*)::int as orders,
+          COALESCE(SUM(CASE WHEN status = ANY($2) THEN total_price ELSE 0 END), 0)::float as revenue
+         FROM store_orders 
+         WHERE client_id = $1 
+           AND created_at >= DATE_TRUNC('week', CURRENT_DATE) - INTERVAL '1 week'
+           AND created_at < DATE_TRUNC('week', CURRENT_DATE)`,
+        [clientId, revenueStatuses]
+      ),
+      // This month
+      pool.query(
+        `SELECT 
+          COUNT(*)::int as orders,
+          COALESCE(SUM(CASE WHEN status = ANY($2) THEN total_price ELSE 0 END), 0)::float as revenue
+         FROM store_orders 
+         WHERE client_id = $1 AND created_at >= DATE_TRUNC('month', CURRENT_DATE)`,
+        [clientId, revenueStatuses]
+      ),
+      // Last month
+      pool.query(
+        `SELECT 
+          COUNT(*)::int as orders,
+          COALESCE(SUM(CASE WHEN status = ANY($2) THEN total_price ELSE 0 END), 0)::float as revenue
+         FROM store_orders 
+         WHERE client_id = $1 
+           AND created_at >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '1 month'
+           AND created_at < DATE_TRUNC('month', CURRENT_DATE)`,
+        [clientId, revenueStatuses]
+      ),
+      // Top products
+      pool.query(
+        `SELECT 
+          p.id, p.title, p.price, 
+          COALESCE(p.images[1], '') as image_url,
+          COUNT(o.id)::int as total_orders,
+          COALESCE(SUM(o.quantity), 0)::int as total_quantity,
+          COALESCE(SUM(CASE WHEN o.status = ANY($2) THEN o.total_price ELSE 0 END), 0)::float as total_revenue
+         FROM client_store_products p
+         LEFT JOIN store_orders o ON o.product_id = p.id AND o.client_id = $1
+         WHERE p.client_id = $1
+         GROUP BY p.id, p.title, p.price, p.images
+         ORDER BY total_orders DESC
+         LIMIT 5`,
+        [clientId, revenueStatuses]
+      ),
+      // Recent orders
+      pool.query(
+        `SELECT 
+          o.id, o.customer_name, o.customer_phone, o.total_price, o.status, o.created_at,
+          COALESCE(p.title, 'Unknown Product') as product_title
+         FROM store_orders o
+         LEFT JOIN client_store_products p ON o.product_id = p.id
+         WHERE o.client_id = $1 
+         ORDER BY o.created_at DESC 
+         LIMIT 10`,
+        [clientId]
+      ),
+      // Status breakdown
+      pool.query(
+        `SELECT 
+          status,
+          COUNT(*)::int as count,
+          COALESCE(SUM(total_price), 0)::float as revenue
+         FROM store_orders 
+         WHERE client_id = $1
+         GROUP BY status
+         ORDER BY count DESC`,
+        [clientId]
+      ),
+      // City breakdown
+      pool.query(
+        `SELECT 
+          CASE 
+            WHEN shipping_wilaya_id IS NOT NULL THEN shipping_wilaya_id::text
+            ELSE 'Not specified'
+          END as city,
+          shipping_wilaya_id,
+          COUNT(*)::int as count,
+          COALESCE(SUM(total_price), 0)::float as revenue
+         FROM store_orders 
+         WHERE client_id = $1
+         GROUP BY shipping_wilaya_id
+         ORDER BY count DESC
+         LIMIT 10`,
+        [clientId]
+      )
+    ]);
 
     // Map wilaya IDs to names
     const algeriaWilayas: Record<number, string> = {
@@ -261,7 +277,7 @@ export const getDashboardAnalytics: RequestHandler = async (req, res) => {
     const thisMonth = thisMonthRes.rows[0] || { orders: 0, revenue: 0 };
     const lastMonth = lastMonthRes.rows[0] || { orders: 0, revenue: 0 };
 
-    res.json({
+    const responseData = {
       dailyRevenue: dailyRevenueRes.rows,
       customStatuses: customStatusesRes.rows,
       comparisons: {
@@ -288,7 +304,12 @@ export const getDashboardAnalytics: RequestHandler = async (req, res) => {
       recentOrders: recentOrdersRes.rows,
       statusBreakdown: statusBreakdownRes.rows,
       cityBreakdown: cityBreakdown,
-    });
+    };
+
+    // Cache the response
+    analyticsCache.set(clientId, { data: responseData, timestamp: Date.now() });
+    
+    res.json(responseData);
   } catch (error) {
     console.error("Dashboard analytics error:", error);
     res.status(500).json({ error: "Failed to fetch analytics" });

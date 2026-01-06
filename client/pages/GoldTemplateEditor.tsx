@@ -60,8 +60,13 @@ export default function GoldTemplateEditor() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch settings
-        const settingsRes = await fetch('/api/client/store/settings', { credentials: 'include' });
+        // Fetch settings and products in PARALLEL for faster loading
+        const [settingsRes, productsRes] = await Promise.all([
+          fetch('/api/client/store/settings', { credentials: 'include' }),
+          fetch('/api/client/store/products', { credentials: 'include' }),
+        ]);
+        
+        // Handle settings
         if (!settingsRes.ok) {
           if (settingsRes.status === 401) {
             navigate('/login');
@@ -74,8 +79,7 @@ export default function GoldTemplateEditor() {
         const settingsData = await settingsRes.json();
         setSettings(settingsData || {});
 
-        // Fetch products
-        const productsRes = await fetch('/api/client/store/products', { credentials: 'include' });
+        // Handle products
         if (!productsRes.ok) {
           const detail = await productsRes.json().catch(() => null);
           const msg = (detail && (detail.error || detail.message)) ? String(detail.error || detail.message) : `HTTP ${productsRes.status}`;
@@ -116,6 +120,10 @@ export default function GoldTemplateEditor() {
         throw new Error((data && (data.error || data.message)) ? String(data.error || data.message) : t('editor.saveFailed'));
       }
 
+      // Update local settings with response from server to ensure consistency
+      const savedData = await res.json();
+      setSettings(savedData);
+      
       setSuccess(t('editor.saved'));
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
@@ -559,10 +567,11 @@ export default function GoldTemplateEditor() {
           {bindRange('Pill Border Radius', 'template_category_pill_border_radius', 0, 50, 9999, 'px')}
         </div>
       );
-    } else if (path === 'layout.grid') {
+    } else if (path === 'layout.grid' || path.startsWith('layout.grid.')) {
       body = (
         <div className="space-y-4">
           <div className="font-medium text-sm">Product Grid Settings</div>
+          {bindText('Grid Section Title', 'template_grid_title' as any, 'Our Products')}
           {bindSelect('Grid Columns (Desktop)', 'template_grid_columns', [
             { value: '2', label: '2 Columns' },
             { value: '3', label: '3 Columns' },
@@ -572,6 +581,17 @@ export default function GoldTemplateEditor() {
           ], '4')}
           {bindRange('Grid Gap', 'template_grid_gap', 8, 48, 24, 'px')}
           {bindRange('Card Border Radius', 'template_card_border_radius', 0, 32, 12, 'px')}
+          {bindColor('Card Background', 'template_card_bg' as any, '#FFFFFF')}
+        </div>
+      );
+    } else if (path === 'layout.footer') {
+      body = (
+        <div className="space-y-4">
+          {bindText('Copyright Text', 'template_copyright' as any, '© 2026 Your Store')}
+          {bindColor('Footer Background', 'template_footer_bg' as any, '#FDF8F3')}
+          {bindColor('Footer Text Color', 'template_footer_text' as any, '#A8A29E')}
+          {bindColor('Footer Link Color', 'template_footer_link_color' as any, '#78716C')}
+          {bindJsonArray('Social Links', 'template_social_links', '[{"platform":"instagram","url":"https://instagram.com/..."}]')}
         </div>
       );
     } else if (path === '__root' || path === '__settings') {
@@ -680,6 +700,13 @@ export default function GoldTemplateEditor() {
               <option value="babyos">Babyos</option>
               <option value="bags">Bags Editorial</option>
               <option value="jewelry">JewelryOS</option>
+              <option value="fashion">Fashion</option>
+              <option value="electronics">Electronics</option>
+              <option value="beauty">Beauty</option>
+              <option value="food">Food & Restaurant</option>
+              <option value="cafe">Cafe & Bakery</option>
+              <option value="furniture">Furniture</option>
+              <option value="perfume">Perfume</option>
             </select>
             <Button
               variant={activeTab === 'preview' ? 'default' : 'outline'}
@@ -851,6 +878,13 @@ export default function GoldTemplateEditor() {
                     <option value="babyos">Babyos</option>
                     <option value="bags">Bags Editorial</option>
                     <option value="jewelry">JewelryOS</option>
+                    <option value="fashion">Fashion</option>
+                    <option value="electronics">Electronics</option>
+                    <option value="beauty">Beauty</option>
+                    <option value="food">Food & Restaurant</option>
+                    <option value="cafe">Cafe & Bakery</option>
+                    <option value="furniture">Furniture</option>
+                    <option value="perfume">Perfume</option>
                   </select>
                 </div>
                 <div>

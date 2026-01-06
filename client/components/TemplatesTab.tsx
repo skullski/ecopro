@@ -89,11 +89,15 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
     if (currentId === nextId) return;
     setPendingTemplateId(nextId);
     setSwitchMode('import');
+    setSwitchError(null);
     setSwitchOpen(true);
   };
 
+  const [switchError, setSwitchError] = useState<string | null>(null);
+
   const applyTemplateSwitch = async () => {
     if (!pendingTemplateId) return;
+    setSwitchError(null);
     try {
       setSavingSwitch(true);
       const importKeys = switchMode === 'import' ? computeImportKeys() : [];
@@ -102,6 +106,7 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           __templateSwitch: {
             toTemplate: pendingTemplateId,
@@ -110,16 +115,22 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
           },
         }),
       });
-      if (!res.ok) throw new Error(`Switch failed (${res.status})`);
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `Switch failed (${res.status})`);
+      }
       const data = await res.json();
+      // Verify the template was actually saved
+      if (data.template !== pendingTemplateId) {
+        console.warn('Template mismatch: expected', pendingTemplateId, 'got', data.template);
+      }
       setStoreSettings(() => data);
       setSwitchOpen(false);
       setPendingTemplateId(null);
-    } catch (e) {
-      // Fallback: switch locally so user is not blocked.
-      setStoreSettings((s: any) => ({ ...s, template: pendingTemplateId }));
-      setSwitchOpen(false);
-      setPendingTemplateId(null);
+    } catch (e: any) {
+      console.error('Template switch failed:', e);
+      setSwitchError(e.message || 'Failed to switch template. Please try again.');
+      // Don't close dialog on error - let user retry
     } finally {
       setSavingSwitch(false);
     }
@@ -139,7 +150,7 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
     },
     {
       id: 'babyos',
-      name: 'Babyos',
+      name: 'Baby',
       category: 'Storefront',
       icon: '👶',
       description: 'Playful baby-storefront with editable layout and colors.',
@@ -149,7 +160,7 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
     },
     {
       id: 'bags',
-      name: 'Bags Editorial',
+      name: 'Bags',
       category: 'Storefront',
       icon: '👜',
       description: 'Editorial layout with spotlight cards and collection grid.',
@@ -159,13 +170,83 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
     },
     {
       id: 'jewelry',
-      name: 'JewelryOS',
+      name: 'Jewelry',
       category: 'Storefront',
       icon: '💍',
       description: 'Minimal luxury jewelry with gold glow and collection filtering.',
       image: '/template-previews/jewelry.png',
       colors: { primary: '#111827', secondary: '#ffffff', accent: '#d4af37' },
       features: ['Sticky header', 'Hero highlight', 'Collection filters', 'Product grid']
+    },
+    {
+      id: 'fashion',
+      name: 'Fashion',
+      category: 'Storefront',
+      icon: '👗',
+      description: 'Modern fashion storefront with editorial layout.',
+      image: '/template-previews/fashion.png',
+      colors: { primary: '#111827', secondary: '#ffffff', accent: '#ef4444' },
+      features: ['Editorial hero', 'Fashion grid', 'Dual CTAs', 'Badge editing']
+    },
+    {
+      id: 'electronics',
+      name: 'Electronics',
+      category: 'Storefront',
+      icon: '📱',
+      description: 'Tech-focused store with dark theme and glass effects.',
+      image: '/template-previews/electronics.png',
+      colors: { primary: '#020617', secondary: '#0f172a', accent: '#38bdf8' },
+      features: ['Tech hero', 'Glass cards', 'Grid layout', 'Modern design']
+    },
+    {
+      id: 'beauty',
+      name: 'Beauty',
+      category: 'Storefront',
+      icon: '💄',
+      description: 'Elegant beauty store with soft pink tones.',
+      image: '/template-previews/beauty.png',
+      colors: { primary: '#fff6fb', secondary: '#ffffff', accent: '#b91c1c' },
+      features: ['Soft aesthetics', 'Beauty grid', 'Elegant fonts', 'Pink theme']
+    },
+    {
+      id: 'food',
+      name: 'Food',
+      category: 'Storefront',
+      icon: '🍔',
+      description: 'Restaurant-style food store with dark warm theme.',
+      image: '/template-previews/food.png',
+      colors: { primary: '#1a1a1a', secondary: '#2a2a2a', accent: '#ef4444' },
+      features: ['Parallax hero', 'Menu cards', 'Food grid', 'Dark theme']
+    },
+    {
+      id: 'cafe',
+      name: 'Cafe',
+      category: 'Storefront',
+      icon: '☕',
+      description: 'Warm bakery-style cafe with cozy aesthetics.',
+      image: '/template-previews/food.png',
+      colors: { primary: '#fef7ed', secondary: '#ffffff', accent: '#d97706' },
+      features: ['Warm colors', 'Bakery style', 'Cozy design', 'Menu layout']
+    },
+    {
+      id: 'furniture',
+      name: 'Furniture',
+      category: 'Storefront',
+      icon: '🛋️',
+      description: 'Minimal furniture store with sidebar categories.',
+      image: '/template-previews/furniture.png',
+      colors: { primary: '#f5f5f4', secondary: '#ffffff', accent: '#78716c' },
+      features: ['Sidebar nav', 'Category filters', 'Minimal design', 'Stone theme']
+    },
+    {
+      id: 'perfume',
+      name: 'Perfume',
+      category: 'Storefront',
+      icon: '🌸',
+      description: 'Ultra-luxury perfume store with dark theme.',
+      image: '/template-previews/perfume.png',
+      colors: { primary: '#000000', secondary: '#18181b', accent: '#f59e0b' },
+      features: ['Full hero', 'Luxury feel', 'Gold accents', 'Dark elegance']
     },
   ];
 
@@ -267,6 +348,12 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
                 </div>
               </div>
             )}
+
+            {switchError && (
+              <div className="text-sm text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 p-3 rounded-md">
+                {switchError}
+              </div>
+            )}
           </div>
 
           <DialogFooter>
@@ -292,51 +379,106 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
         <p className="text-sm text-slate-700 dark:text-slate-300">Select how your store should appear to customers. Each template is fully customizable.</p>
       </div>
 
-      {/* Template Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto pr-2 bg-slate-50 dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+      {/* Template Carousel - Infinite scroll */}
+      <div className="relative overflow-hidden rounded-lg bg-gradient-to-b from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 p-4">
+        <style>{`
+          @keyframes scrollCarousel {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+          }
+          .carousel-track {
+            display: flex;
+            gap: 16px;
+            animation: scrollCarousel 30s linear infinite;
+          }
+          .carousel-track:hover {
+            animation-play-state: paused;
+          }
+        `}</style>
+        
+        <div className="carousel-track" style={{ width: 'fit-content' }}>
+          {/* Double the templates for seamless loop */}
+          {[...templates, ...templates].map((template, idx) => (
+            <button
+              key={`${template.id}-${idx}`}
+              onClick={() => openTemplateSwitch(template.id)}
+              className={`flex-shrink-0 w-40 rounded-lg border-2 transition-all overflow-hidden hover:scale-105 hover:z-10 ${
+                normalizeTemplateId(storeSettings.template) === normalizeTemplateId(template.id)
+                  ? 'border-blue-500 ring-2 ring-blue-400 shadow-lg shadow-blue-500/30'
+                  : 'border-slate-600 hover:border-slate-400'
+              }`}
+            >
+              <div className="relative h-48 bg-slate-800 overflow-hidden">
+                <img 
+                  src={template.image} 
+                  alt={template.name}
+                  className="w-full h-full object-cover object-top"
+                  onError={(e) => {
+                    const img = e.target as HTMLImageElement;
+                    img.style.display = 'none';
+                    const parent = img.parentElement;
+                    if (parent) {
+                      parent.innerHTML = `
+                        <div class="flex items-center justify-center h-full w-full flex-col gap-2 bg-slate-700">
+                          <div class="text-3xl">${template.icon}</div>
+                        </div>
+                      `;
+                    }
+                  }}
+                />
+                {/* Selected indicator */}
+                {normalizeTemplateId(storeSettings.template) === normalizeTemplateId(template.id) && (
+                  <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow-lg">
+                    ✓
+                  </div>
+                )}
+              </div>
+              <div className="p-2 bg-slate-800/90 backdrop-blur text-center">
+                <h4 className="text-sm font-semibold text-white truncate">{template.name}</h4>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Quick Select Grid - Compact view */}
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 bg-slate-50 dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
         {templates.map((template) => (
           <button
             key={template.id}
             onClick={() => openTemplateSwitch(template.id)}
             className={`text-left rounded-lg border-2 transition-all overflow-hidden hover:shadow-lg ${
               normalizeTemplateId(storeSettings.template) === normalizeTemplateId(template.id)
-                ? 'border-blue-500 shadow-xl ring-2 ring-blue-400 ring-offset-2 dark:ring-offset-slate-900 bg-blue-50 dark:bg-slate-700'
+                ? 'border-blue-500 shadow-xl ring-2 ring-blue-400 ring-offset-1 dark:ring-offset-slate-900 bg-blue-50 dark:bg-slate-700'
                 : 'border-slate-300 hover:border-slate-400 dark:border-slate-600 dark:hover:border-slate-500 bg-white dark:bg-slate-800 hover:shadow-md'
             }`}
           >
-            {/* Template image preview */}
-            <div className="relative h-56 bg-gray-100 dark:bg-gray-800 overflow-hidden flex items-center justify-center">
+            <div className="relative aspect-[3/4] bg-gray-100 dark:bg-gray-800 overflow-hidden flex items-center justify-center">
               <img 
                 src={template.image} 
                 alt={template.name}
-                className="w-full h-full object-cover object-center"
+                className="w-full h-full object-cover object-top"
                 onError={(e) => {
                   const img = e.target as HTMLImageElement;
                   img.style.display = 'none';
                   const parent = img.parentElement;
                   if (parent) {
                     parent.innerHTML = `
-                      <div class="flex items-center justify-center h-full w-full flex-col gap-2">
-                        <div class="text-2xl md:text-xl md:text-2xl">${template.icon}</div>
-                        <div class="text-sm font-medium text-center px-2">${template.name}</div>
+                      <div class="flex items-center justify-center h-full w-full flex-col gap-1 bg-slate-100 dark:bg-slate-700">
+                        <div class="text-xl">${template.icon}</div>
                       </div>
                     `;
                   }
                 }}
               />
-
-              {/* Selected indicator */}
               {normalizeTemplateId(storeSettings.template) === normalizeTemplateId(template.id) && (
-                <div className="absolute top-2 right-2 bg-primary text-white rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold shadow-lg">
+                <div className="absolute top-1 right-1 bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold shadow">
                   ✓
                 </div>
               )}
             </div>
-
-            {/* Template name footer */}
-            <div className="p-3 bg-gradient-to-r from-slate-100 to-slate-50 dark:from-slate-700 dark:to-slate-800 border-t-2 border-slate-200 dark:border-slate-600">
-              <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{template.name}</h4>
-              <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">{template.category}</p>
+            <div className="p-1.5 bg-gradient-to-r from-slate-100 to-slate-50 dark:from-slate-700 dark:to-slate-800 border-t border-slate-200 dark:border-slate-600">
+              <h4 className="text-xs font-semibold text-slate-900 dark:text-white truncate text-center">{template.name}</h4>
             </div>
           </button>
         ))}

@@ -117,6 +117,17 @@ export default function Storefront() {
 
   // Fetch store settings and products by slug (with timeout guard)
   useEffect(() => {
+    // Clear any corrupted localStorage on mount
+    try {
+      const stored = localStorage.getItem('storeSettings');
+      if (stored && stored.length > 500000) {
+        // Data too large, clear it
+        localStorage.removeItem('storeSettings');
+      }
+    } catch {
+      localStorage.removeItem('storeSettings');
+    }
+    
     let isMounted = true;
     async function fetchAll() {
       if (!storeSlug) {
@@ -159,8 +170,32 @@ export default function Storefront() {
         setStoreSettings(newSettings);
         
         // Save template and settings to localStorage for product pages
+        // Exclude large base64 images to avoid quota exceeded errors
         localStorage.setItem('template', newSettings.template);
-        localStorage.setItem('storeSettings', JSON.stringify(newSettings));
+        try {
+          // Create a lightweight version without large base64 data
+          const lightSettings = { ...newSettings };
+          // If logo/banner are base64 (data:), replace with empty to save space
+          if (lightSettings.store_logo?.startsWith('data:')) {
+            lightSettings.store_logo = '';
+          }
+          if (lightSettings.banner_url?.startsWith('data:')) {
+            lightSettings.banner_url = '';
+          }
+          localStorage.setItem('storeSettings', JSON.stringify(lightSettings));
+        } catch (e) {
+          // Quota exceeded - clear and try again with minimal data
+          console.warn('localStorage quota exceeded, storing minimal settings');
+          localStorage.removeItem('storeSettings');
+          localStorage.setItem('storeSettings', JSON.stringify({
+            template: newSettings.template,
+            store_slug: newSettings.store_slug,
+            store_name: newSettings.store_name,
+            currency_code: newSettings.currency_code,
+            primary_color: newSettings.primary_color,
+            secondary_color: newSettings.secondary_color,
+          }));
+        }
         
         const items = productsData?.products || productsData || [];
         setProducts(items);
@@ -197,6 +232,13 @@ export default function Storefront() {
   }
 
   if (error) {
+    // Clear localStorage to help recovery from quota errors
+    const handleRetry = () => {
+      localStorage.removeItem('storeSettings');
+      localStorage.removeItem('template');
+      window.location.reload();
+    };
+    
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="text-center space-y-4 p-6 max-w-md">
@@ -207,7 +249,7 @@ export default function Storefront() {
           <p className="text-muted-foreground text-sm">{error}</p>
           <p className="text-muted-foreground text-xs">The store link may be incorrect or the store is temporarily unavailable.</p>
           <div className="flex gap-2 pt-4">
-            <button onClick={() => window.location.reload()} className="flex-1 px-4 py-2 border rounded-md font-semibold hover:bg-muted transition">🔄 Retry</button>
+            <button onClick={handleRetry} className="flex-1 px-4 py-2 border rounded-md font-semibold hover:bg-muted transition">🔄 Retry</button>
             <a href="/" className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-md font-semibold hover:opacity-90 transition">Back to Home</a>
           </div>
         </div>

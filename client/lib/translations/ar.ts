@@ -110,8 +110,12 @@ export const ar = {
   "contact.location.value": "الجزائر",
 
   // NotFound Page
+  "notfound.title": "الصفحة غير موجودة",
   "notfound.message": "عذراً! الصفحة غير موجودة. إذا كنت بحاجة للمساعدة أخبرنا بما كنت تبحث عنه.",
   "notfound.cta": "العودة للرئيسية",
+  "notfound.goBack": "رجوع",
+  "notfound.needHelp": "تحتاج مساعدة؟",
+  "notfound.contactUs": "تواصل مع الدعم",
 
   // Login Page
   "login.subtitle": "مرحباً بعودتك! سجل الدخول للمتابعة",
@@ -165,6 +169,22 @@ export const ar = {
   // Navigation & Brand
   "brand": "sahla-E",
   "dashboard.title": "لوحة التحكم",
+  
+  // Onboarding Guide
+  "onboarding.title": "هيا نبدأ! 🚀",
+  "onboarding.subtitle": "أكمل هذه الخطوات لإطلاق متجرك",
+  "onboarding.setupStore": "إعداد متجرك",
+  "onboarding.setupStoreDesc": "خصص اسم متجرك وشعاره وألوانه",
+  "onboarding.addProducts": "أضف منتجاتك",
+  "onboarding.addProductsDesc": "ارفع المنتجات مع الصور والأسعار والأوصاف",
+  "onboarding.chooseTemplate": "اختر قالباً",
+  "onboarding.chooseTemplateDesc": "اختر تصميماً جميلاً لواجهة متجرك",
+  "onboarding.shareStore": "شارك متجرك",
+  "onboarding.shareStoreDesc": "احصل على رابط متجرك وابدأ البيع",
+  "onboarding.of": "من",
+  "onboarding.completed": "مكتمل",
+  "onboarding.addFirstProduct": "أضف منتجك الأول",
+  
   "dashboard.subtitle": "ملخص أداء متجرك",
   "dashboard.welcome": "مرحباً",
   "dashboard.overview": "نظرة عامة",
@@ -244,6 +264,19 @@ export const ar = {
   "auth.password": "كلمة المرور",
   "auth.confirmPassword": "تأكيد كلمة المرور",
   "auth.forgotPassword": "نسيت كلمة المرور؟",
+  "auth.forgotPasswordDesc": "أدخل بريدك الإلكتروني وسنرسل لك رابط إعادة التعيين",
+  "auth.sendResetLink": "إرسال رابط إعادة التعيين",
+  "auth.checkEmail": "تحقق من بريدك الإلكتروني",
+  "auth.resetLinkSent": "إذا كان هناك حساب بهذا البريد، فقد أرسلنا رابط إعادة تعيين كلمة المرور.",
+  "auth.backToLogin": "العودة لتسجيل الدخول",
+  "auth.resetPassword": "إعادة تعيين كلمة المرور",
+  "auth.newPassword": "كلمة المرور الجديدة",
+  "auth.enterNewPassword": "أدخل كلمة المرور الجديدة أدناه",
+  "auth.passwordResetSuccess": "تم إعادة تعيين كلمة المرور!",
+  "auth.redirectingToLogin": "تم إعادة تعيين كلمة المرور. جاري التوجيه لتسجيل الدخول...",
+  "auth.invalidResetLink": "رابط غير صالح",
+  "auth.requestNewLink": "هذا الرابط غير صالح أو منتهي الصلاحية. يرجى طلب رابط جديد.",
+  "auth.requestNewResetLink": "طلب رابط جديد",
   "auth.rememberMe": "تذكرني",
   "auth.name": "الاسم",
   "auth.phone": "رقم الهاتف",
@@ -1133,6 +1166,7 @@ export const ar = {
   "sidebar.orders": "الطلبات",
   "sidebar.delivery": "التوصيل",
   "sidebar.addons": "الإضافات",
+  "sidebar.pixels": "إحصائيات البكسل",
   "sidebar.wasselni": "Bot",
   "sidebar.staff": "الموظفون",
   "sidebar.brand": "sahla-E",
@@ -1231,6 +1265,8 @@ export const ar = {
   "bot.whatsappAccessToken": "توكن واتساب",
   "bot.viberAuthToken": "توكن فايبر",
   "bot.viberSenderName": "اسم المرسل فايبر",
+  "bot.facebookPageId": "معرف صفحة فيسبوك",
+  "bot.facebookAccessToken": "توكن فيسبوك",
   "bot.greetingMessage": "رسالة الترحيب",
   "bot.greetingDesc": "تُرسل عند ضغط العميل على زر تيليجرام ثم Start",
   "bot.instantOrder": "إشعار الطلب الفوري",
@@ -1416,5 +1452,49 @@ export const ar = {
   "stock.noCategories": "لا توجد تصنيفات بعد. أنشئ واحداً أعلاه!",
   "stock.clearCategory": "مسح التصنيف",
   "stock.selectCategory": "اختر تصنيفاً...",
-  "stock.newCategoryName": "اسم التصنيف الجديد..."
+  "stock.newCategoryName": "اسم التصنيف الجديد...",
+
+  // Pixel Statistics
+  "pixels.title": "إحصائيات البكسل",
+  "pixels.description": "تتبع وتحليل أداء بكسل فيسبوك وتيك توك",
+  "pixels.settingsTab": "الإعدادات",
+  "pixels.overviewTab": "نظرة عامة",
+  "pixels.facebookTab": "فيسبوك",
+  "pixels.tiktokTab": "تيك توك",
+  "pixels.eventsTab": "الأحداث",
+  "pixels.facebookSettings": "إعدادات بكسل فيسبوك",
+  "pixels.facebookSettingsDesc": "قم بتكوين معرف بكسل فيسبوك ورمز الوصول",
+  "pixels.tiktokSettings": "إعدادات بكسل تيك توك",
+  "pixels.tiktokSettingsDesc": "قم بتكوين معرف بكسل تيك توك ورمز الوصول",
+  "pixels.pixelId": "معرف البكسل",
+  "pixels.accessToken": "رمز الوصول (اختياري)",
+  "pixels.enabled": "مفعل",
+  "pixels.saveSettings": "حفظ الإعدادات",
+  "pixels.saving": "جاري الحفظ...",
+  "pixels.period": "الفترة",
+  "pixels.last7Days": "آخر 7 أيام",
+  "pixels.last30Days": "آخر 30 يوم",
+  "pixels.last90Days": "آخر 90 يوم",
+  "pixels.pageViews": "مشاهدات الصفحة",
+  "pixels.viewContent": "مشاهدة المحتوى",
+  "pixels.addToCart": "إضافة للسلة",
+  "pixels.checkout": "الدفع",
+  "pixels.purchases": "المشتريات",
+  "pixels.revenue": "الإيرادات",
+  "pixels.conversionRate": "معدل التحويل",
+  "pixels.cartRate": "معدل السلة",
+  "pixels.conversionFunnel": "قمع التحويل",
+  "pixels.recentEvents": "الأحداث الأخيرة",
+  "pixels.eventName": "اسم الحدث",
+  "pixels.timestamp": "الوقت",
+  "pixels.productId": "معرف المنتج",
+  "pixels.orderId": "معرف الطلب",
+  "pixels.noEvents": "لم يتم تسجيل أي أحداث بعد",
+  "pixels.noData": "لا توجد بيانات متاحة لهذه الفترة",
+  "pixels.configured": "مكون",
+  "pixels.notConfigured": "غير مكون",
+  "pixels.installInstructions": "تعليمات التثبيت",
+  "pixels.installDesc": "أضف هذا الكود إلى متجرك لبدء التتبع",
+  "pixels.copyCode": "نسخ الكود",
+  "pixels.codeCopied": "تم نسخ الكود إلى الحافظة!"
 };

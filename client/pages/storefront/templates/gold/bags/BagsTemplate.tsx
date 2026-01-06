@@ -302,10 +302,17 @@ export default function BagsTemplate(props: TemplateProps) {
         onClick={() => onSelect('layout.header')}
       >
         <div
-          style={{ fontSize: 12, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#374151', whiteSpace: 'nowrap' }}
+          style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: 12, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#374151', whiteSpace: 'nowrap' }}
           data-edit-path="layout.header.logo"
           onClick={(e) => clickGuard(e, 'layout.header.logo')}
         >
+          {settings.store_logo && (
+            <img
+              src={settings.store_logo}
+              alt={storeName}
+              style={{ height: '36px', width: '36px', objectFit: 'contain', borderRadius: '4px' }}
+            />
+          )}
           {storeName}
         </div>
 
@@ -535,7 +542,12 @@ export default function BagsTemplate(props: TemplateProps) {
             </div>
           </div>
 
-          <div className="grid gap-5 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
+          <div
+            className="grid gap-5"
+            style={{
+              gridTemplateColumns: breakpoint === 'desktop' ? 'repeat(5, 1fr)' : breakpoint === 'tablet' ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)'
+            }}
+          >
             {chapterProducts.length
               ? chapterProducts.map((p, i) => (
                   <div
@@ -580,7 +592,12 @@ export default function BagsTemplate(props: TemplateProps) {
           </div>
         </div>
 
-        <div className="grid gap-8 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
+        <div
+          className="grid gap-8"
+          style={{
+            gridTemplateColumns: breakpoint === 'desktop' ? 'repeat(5, 1fr)' : breakpoint === 'tablet' ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)'
+          }}
+        >
           {gridProducts.map((p, index) => (
             <div
               key={p.id}

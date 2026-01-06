@@ -61,7 +61,7 @@ const makeBaseProps = (): TemplateProps => {
     filtered: products,
     settings: {
       store_name: 'Test Store',
-      template: 'gold',
+      template: 'shiro-hana',
     },
     categories: ['Test'],
     searchQuery: '',
@@ -81,17 +81,54 @@ const makeBaseProps = (): TemplateProps => {
   };
 };
 
+function EditCaptureHarness({ children, onSelect }: { children: React.ReactNode; onSelect: (path: string) => void }) {
+  const handleClickCapture = React.useCallback(
+    (e: React.MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      const el = target.closest('[data-edit-path]') as HTMLElement | null;
+      if (!el) return;
+      const path = el.getAttribute('data-edit-path');
+      if (!path) return;
+      onSelect(path);
+    },
+    [onSelect]
+  );
+
+  return (
+    <div data-testid="harness" onClickCapture={handleClickCapture}>
+      {children}
+    </div>
+  );
+}
+
+function pickClickTarget(node: HTMLElement): HTMLElement {
+  // Prefer a descendant click target that still resolves to this node as the closest
+  // [data-edit-path] ancestor. This simulates the real editor where the user
+  // clicks inside a column/row (not necessarily the wrapper).
+  const descendants = Array.from(node.querySelectorAll<HTMLElement>('*'));
+  for (const el of descendants) {
+    const closest = el.closest('[data-edit-path]');
+    if (closest === node) return el;
+  }
+  return node;
+}
+
 function expectAllEditHooksClickable(Template: React.ComponentType<any>) {
   const onSelect = vi.fn();
   const props = { ...makeBaseProps(), onSelect, canManage: true };
 
-  const { container } = render(<Template {...props} />);
+  const { container } = render(
+    <EditCaptureHarness onSelect={onSelect}>
+      <Template {...props} />
+    </EditCaptureHarness>
+  );
 
   const editNodes = Array.from(container.querySelectorAll<HTMLElement>('[data-edit-path]'));
   expect(editNodes.length).toBeGreaterThan(0);
 
   // Verify "one by one" that every distinct edit path is reachable via clicking
-  // at least one element that declares that data-edit-path.
+  // inside (not just on) an element that declares that data-edit-path.
   const nodesByPath = new Map<string, HTMLElement[]>();
   for (const node of editNodes) {
     const path = node.getAttribute('data-edit-path');
@@ -106,7 +143,8 @@ function expectAllEditHooksClickable(Template: React.ComponentType<any>) {
     onSelect.mockClear();
     let hit = false;
     for (const node of nodes) {
-      fireEvent.click(node);
+      const clickTarget = pickClickTarget(node);
+      fireEvent.click(clickTarget);
       const calledPaths = onSelect.mock.calls.map((c) => String(c[0] ?? ''));
       if (calledPaths.includes(path)) {
         hit = true;
@@ -117,9 +155,31 @@ function expectAllEditHooksClickable(Template: React.ComponentType<any>) {
   }
 
   expect(missing).toEqual([]);
+
+  // Special case: nested edit targets (e.g., columns inside a row).
+  // Clicking inside the inner target should select the inner path (closest match).
+  const nested = editNodes
+    .map((outer) => {
+      const inner = outer.querySelector<HTMLElement>('[data-edit-path]');
+      if (!inner) return null;
+      const outerPath = outer.getAttribute('data-edit-path');
+      const innerPath = inner.getAttribute('data-edit-path');
+      if (!outerPath || !innerPath) return null;
+      if (outerPath === innerPath) return null;
+      return { outer, inner, outerPath, innerPath };
+    })
+    .filter(Boolean) as Array<{ outer: HTMLElement; inner: HTMLElement; outerPath: string; innerPath: string }>;
+
+  if (nested.length > 0) {
+    const { inner, innerPath } = nested[0];
+    onSelect.mockClear();
+    fireEvent.click(pickClickTarget(inner));
+    const calledPaths = onSelect.mock.calls.map((c) => String(c[0] ?? ''));
+    expect(calledPaths.includes(innerPath)).toBe(true);
+  }
 }
 
-describe('Gold templates: edit hooks', () => {
+describe('Templates: edit hooks', () => {
   it('Bags: clicking each data-edit-path triggers onSelect(path)', () => {
     expectAllEditHooksClickable(BagsTemplate);
   });

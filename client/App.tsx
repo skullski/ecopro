@@ -3,8 +3,6 @@ import Pricing from "./pages/Pricing";
 import SubscriptionTiers from "./pages/SubscriptionTiers";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
-import ChatPage from "./pages/ChatPage";
-import CustomerBot from "./pages/CustomerBot";
 import { Toaster } from "@/components/ui/toaster";
 
 import "./global.css";
@@ -12,77 +10,70 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { getCurrentUser, removeAuthToken } from "@/lib/auth";
+import { getCurrentUser, removeAuthToken, syncAuthState } from "@/lib/auth";
 import Layout from "@/components/layout/Layout";
 import Index from "./pages/Index";
 // import AppPlaceholder from "./pages/AppPlaceholder";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
-import PlatformAdmin from "./pages/PlatformAdmin";
-import Kernel from "./pages/Kernel";
-import React, { Suspense } from "react";
-// QuickSell removed
-// MyItems page removed
-import AdminLayout from "./pages/admin/Layout";
-import AdminDashboard from "./pages/admin/Dashboard";
-import EnhancedDashboard from "./pages/admin/EnhancedDashboard";
-import AdminOrders from "./pages/admin/Orders";
-// AdminAnalytics removed - merged into Dashboard
-// AdminProducts removed - now integrated into Store page
-// AdminSettings removed - merged into Profile page
-// StorePreview removed
-// OrderSuccess, AdminProducts, and top-level Billing pages were removed.
-// AdminBilling removed - billing page removed from dashboard
-import AdminCalls from "./pages/admin/Calls";
-import AdminWasselniSettings from "./pages/admin/WasselniSettings";
-import AdminChats from "./pages/admin/Chats";
-import AdminChat from "./pages/admin/Chat";
-import Profile from "./pages/admin/Profile";
-// AdminStores removed
-// Storefront page removed
-import LogoDemo from "./pages/LogoDemo";
-// Vendor pages removed
-import DataMigration from "./pages/DataMigration";
-// PostItem and MyListings pages removed
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import React, { Suspense, lazy } from "react";
 
-// Admin store pages removed
+// Lazy load heavy pages for faster initial load
+const PlatformAdmin = lazy(() => import("./pages/PlatformAdmin"));
+const Kernel = lazy(() => import("./pages/Kernel"));
+const AdminLayout = lazy(() => import("./pages/admin/Layout"));
+const AdminDashboard = lazy(() => import("./pages/admin/Dashboard"));
+const EnhancedDashboard = lazy(() => import("./pages/admin/EnhancedDashboard"));
+const AdminOrders = lazy(() => import("./pages/admin/Orders"));
+const AdminCalls = lazy(() => import("./pages/admin/Calls"));
+const AdminWasselniSettings = lazy(() => import("./pages/admin/WasselniSettings"));
+const AdminChats = lazy(() => import("./pages/admin/Chats"));
+const AdminChat = lazy(() => import("./pages/admin/Chat"));
+const Profile = lazy(() => import("./pages/admin/Profile"));
+const ChatPage = lazy(() => import("./pages/ChatPage"));
+const CustomerBot = lazy(() => import("./pages/CustomerBot"));
+const PixelStatistics = lazy(() => import("./pages/PixelStatistics"));
+const LogoDemo = lazy(() => import("./pages/LogoDemo"));
+const DataMigration = lazy(() => import("./pages/DataMigration"));
 
-// Customer pages
-import StockManagement from "./pages/customer/StockManagement";
-import Store from "./pages/customer/Store";
-import PublicProduct from "./pages/PublicProduct";
-import Storefront from "./pages/Storefront";
-import Checkout from "./pages/Checkout";
-import MyStore from "./pages/MyStore";
-import StoreLayout from "./pages/StoreLayout";
-import GoldTemplateEditor from "./pages/GoldTemplateEditor"; // Main template editor (handles both basic/advanced modes)
-import BuildPage from "./pages/storefront/BuildPage";
-import StaffManagement from "./pages/seller/StaffManagement";
-import StaffLogin from "./pages/StaffLogin";
-import StaffDashboard from "./pages/StaffDashboard";
-import StaffOrders from "./pages/StaffOrders";
-import ProductDetail from "./pages/storefront/ProductDetail";
-import ProductCheckout from "./pages/storefront/ProductCheckout";
-import StorefrontCheckout from "./pages/storefront/Checkout";
-import OrderConfirmation from "./pages/storefront/OrderConfirmation";
-import AccountLocked from "./pages/AccountLocked";
-import BillingSuccess from "./pages/BillingSuccess";
-import BillingCancelled from "./pages/BillingCancelled";
+// Customer pages - lazy loaded
+const StockManagement = lazy(() => import("./pages/customer/StockManagement"));
+const Store = lazy(() => import("./pages/customer/Store"));
+const PublicProduct = lazy(() => import("./pages/PublicProduct"));
+const Storefront = lazy(() => import("./pages/Storefront"));
+const Checkout = lazy(() => import("./pages/Checkout"));
+const MyStore = lazy(() => import("./pages/MyStore"));
+const StoreLayout = lazy(() => import("./pages/StoreLayout"));
+const GoldTemplateEditor = lazy(() => import("./pages/GoldTemplateEditor"));
+const BuildPage = lazy(() => import("./pages/storefront/BuildPage"));
+const StaffManagement = lazy(() => import("./pages/seller/StaffManagement"));
+const StaffLogin = lazy(() => import("./pages/StaffLogin"));
+const StaffDashboard = lazy(() => import("./pages/StaffDashboard"));
+const StaffOrders = lazy(() => import("./pages/StaffOrders"));
+const ProductDetail = lazy(() => import("./pages/storefront/ProductDetail"));
+const ProductCheckout = lazy(() => import("./pages/storefront/ProductCheckout"));
+const StorefrontCheckout = lazy(() => import("./pages/storefront/Checkout"));
+const OrderConfirmation = lazy(() => import("./pages/storefront/OrderConfirmation"));
+const AccountLocked = lazy(() => import("./pages/AccountLocked"));
+const BillingSuccess = lazy(() => import("./pages/BillingSuccess"));
+const BillingCancelled = lazy(() => import("./pages/BillingCancelled"));
 
-// Orders submenu pages
-import AddOrder from "./pages/admin/orders/AddOrder";
-import AbandonedOrders from "./pages/admin/orders/AbandonedOrders";
-import FlexScan from "./pages/admin/orders/FlexScan";
+// Orders submenu pages - lazy loaded
+const AddOrder = lazy(() => import("./pages/admin/orders/AddOrder"));
+const AbandonedOrders = lazy(() => import("./pages/admin/orders/AbandonedOrders"));
+const FlexScan = lazy(() => import("./pages/admin/orders/FlexScan"));
 
-// Delivery submenu pages
-import DeliveryCompanies from "./pages/admin/delivery/DeliveryCompanies";
+// Delivery submenu pages - lazy loaded
+const DeliveryCompanies = lazy(() => import("./pages/admin/delivery/DeliveryCompanies"));
 
-// Addons submenu pages
-import GoogleSheetsIntegration from "./pages/admin/addons/GoogleSheets";
+// Addons submenu pages - lazy loaded
+const GoogleSheetsIntegration = lazy(() => import("./pages/admin/addons/GoogleSheets"));
 
-// Subscription pages
-import RenewSubscription from "./pages/RenewSubscription";
+// Subscription pages - lazy loaded
+const RenewSubscription = lazy(() => import("./pages/RenewSubscription"));
 import SubscriptionPageLock from "./components/SubscriptionPageLock";
 
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -91,11 +82,24 @@ import { CartProvider } from "@/state/CartContext";
 import { PermissionProvider } from "@/context/PermissionContext";
 import { StaffPermissionProvider } from "@/contexts/StaffPermissionContext";
 import { initSecurityProbes } from "@/lib/securityProbes";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 import { NotificationProvider } from "./contexts/NotificationContext";
 
 // Initialize security probes (fingerprinting, WebRTC leak detection)
 initSecurityProbes({ autoSend: true });
+
+// Sync auth state on app load/HMR to keep localStorage in sync with server session
+// This prevents "logged out" state after hot module reload
+if (typeof window !== 'undefined') {
+  // Only sync if we think we're logged in (have user in localStorage)
+  const hasUser = localStorage.getItem('user');
+  if (hasUser) {
+    syncAuthState().catch(() => {
+      // Silent fail - user will be redirected to login if needed
+    });
+  }
+}
 
 // REMOVE non-existent pages to avoid build errors
 // import ProductDetail from "@/pages/ProductDetail";
@@ -105,7 +109,17 @@ initSecurityProbes({ autoSend: true });
 // import SellerDashboard from "@/pages/SellerDashboard";
 // import BuyerInfo from "@/pages/BuyerInfo";
 
-const queryClient = new QueryClient();
+// Configure QueryClient with aggressive caching for faster navigation
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30 * 1000, // Data stays fresh for 30 seconds
+      gcTime: 5 * 60 * 1000, // Keep unused data in cache for 5 minutes
+      refetchOnWindowFocus: false, // Don't refetch when user returns to tab
+      retry: 1, // Only retry once on failure
+    },
+  },
+});
 
 function RedirectAdmin() {
   const loc = useLocation();
@@ -115,30 +129,63 @@ function RedirectAdmin() {
 
 // Route guard for dashboard: allow logged-in clients AND staff members
 function RequirePaidClient({ children }: { children: JSX.Element }) {
-  const user = getCurrentUser();
+  const [authState, setAuthState] = React.useState<'checking' | 'authenticated' | 'unauthenticated'>('checking');
   const isStaff = localStorage.getItem('isStaff') === 'true';
+  const staffId = localStorage.getItem('staffId');
   
-  // If not logged in at all, redirect to login
-  if (!user && !isStaff) {
+  React.useEffect(() => {
+    let cancelled = false;
+    
+    const checkAuth = async () => {
+      // Staff members don't need server validation here
+      if (isStaff && staffId) {
+        if (!cancelled) setAuthState('authenticated');
+        return;
+      }
+      
+      // Check localStorage first
+      const user = getCurrentUser();
+      if (!user) {
+        if (!cancelled) setAuthState('unauthenticated');
+        return;
+      }
+      
+      // Validate with server (will update localStorage if needed)
+      const isValid = await syncAuthState();
+      if (!cancelled) {
+        setAuthState(isValid ? 'authenticated' : 'unauthenticated');
+      }
+    };
+    
+    checkAuth();
+    return () => { cancelled = true; };
+  }, [isStaff, staffId]);
+  
+  // Show nothing while checking (prevents flash)
+  if (authState === 'checking') {
+    return null;
+  }
+  
+  // Redirect to login if not authenticated
+  if (authState === 'unauthenticated') {
     return <Navigate to="/login" replace />;
   }
   
-  // Staff members can access the main dashboard UI, but must be permission-gated.
-  // Individual pages should use staff-safe endpoints where needed.
+  // Staff path
   if (isStaff) {
-    // Validate staff session exists
-    const staffId = localStorage.getItem('staffId');
     if (!staffId) {
       return <Navigate to="/staff/login" replace />;
     }
     return children;
   }
   
-  // Check user_type, not role
-  const userType = (user as any).user_type || user.role || 'client';
-  if (userType === "admin" || user.role === "admin") {
+  // Check user_type for admin redirect
+  const user = getCurrentUser();
+  const userType = (user as any)?.user_type || user?.role || 'client';
+  if (userType === "admin" || user?.role === "admin") {
     return <Navigate to="/platform-admin" replace />;
   }
+  
   return children;
 }
 
@@ -266,7 +313,17 @@ function RequireAdmin({ children }: { children: JSX.Element }) {
   }
 }
 
+// Loading spinner for lazy-loaded pages
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center min-h-[50vh]">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+    </div>
+  );
+}
+
 const App = () => (
+  <ErrorBoundary>
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <TooltipProvider>
@@ -279,11 +336,14 @@ const App = () => (
               <NotificationProvider>
               <Layout>
                 <CartProvider>
+                <Suspense fallback={<PageLoader />}>
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/product/:id" element={<ProductCheckout />} />
                   <Route path="/login" element={<GuardPlatformAuthPages><Login /></GuardPlatformAuthPages>} />
                   <Route path="/signup" element={<GuardPlatformAuthPages><Signup /></GuardPlatformAuthPages>} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
                   {/* Staff routes */}
                   <Route path="/staff/login" element={<StaffLogin />} />
                   {/* Subscription renewal route */}
@@ -373,6 +433,7 @@ const App = () => (
                   <Route path="/codes" element={<Navigate to="/pricing" replace />} />
                   <Route path="/chat" element={<RequirePaidClient><ChatPage /></RequirePaidClient>} />
                   <Route path="/customer-bot" element={<RequirePaidClient><SubscriptionPageLock><CustomerBot /></SubscriptionPageLock></RequirePaidClient>} />
+                  <Route path="/pixel-statistics" element={<RequirePaidClient><PixelStatistics /></RequirePaidClient>} />
                   {/* My Store - logged in client viewing their own store */}
                   <Route path="/my-store" element={<MyStore />} />
                   {/* Template Editor */}
@@ -398,6 +459,7 @@ const App = () => (
                   {/* <Route path="/buyer-info" element={<BuyerInfo />} /> */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
+                </Suspense>
               </CartProvider>
             </Layout>
             </NotificationProvider>
@@ -408,6 +470,7 @@ const App = () => (
       </TooltipProvider>
     </ThemeProvider>
   </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

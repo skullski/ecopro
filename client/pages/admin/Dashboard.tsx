@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { useTranslation } from "@/lib/i18n";
+import OnboardingGuide from "@/components/OnboardingGuide";
 
 interface DashboardStats {
   products: number;
@@ -155,6 +156,13 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-5 p-2 sm:p-3">
+      {/* Onboarding Guide for New Users */}
+      <OnboardingGuide 
+        hasProducts={stats.products > 0}
+        hasStoreSettings={true}
+        hasOrders={stats.orders > 0}
+      />
+
       {/* Welcome Header */}
       <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 p-3 sm:p-4 text-white">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRoLTJ2LTRoMnY0em0wLTZ2LTRoLTJ2NGgyem0tNiA2di00aC00djRoNHptMC02di00aC00djRoNHoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-30" />

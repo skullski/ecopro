@@ -136,14 +136,15 @@ export const getStorefrontSettings: RequestHandler = async (req, res) => {
                  template_settings, template_settings_by_template, global_settings,
                 store_slug
          FROM client_store_settings
-         WHERE store_slug = $1 OR REPLACE(store_name, ' ', '') = $1`,
+         WHERE store_slug = $1
+            OR LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1)`,
         [querySlug]
       );
     } catch (err: any) {
       // If query fails (columns don't exist yet), try without new columns
       if (err.code === '42703') {
           clientRes = await pool.query(
-            "SELECT store_name, store_description, store_logo, primary_color, secondary_color, template, banner_url, currency_code, NULL as hero_main_url, NULL as hero_tile1_url, NULL as hero_tile2_url, store_images, owner_name, owner_email, NULL as template_hero_heading, NULL as template_hero_subtitle, NULL as template_button_text, NULL as template_accent_color, NULL as template_settings, NULL as template_settings_by_template, NULL as global_settings, store_slug FROM client_store_settings WHERE store_slug = $1",
+            "SELECT store_name, store_description, store_logo, primary_color, secondary_color, template, banner_url, currency_code, NULL as hero_main_url, NULL as hero_tile1_url, NULL as hero_tile2_url, store_images, owner_name, owner_email, NULL as template_hero_heading, NULL as template_hero_subtitle, NULL as template_button_text, NULL as template_accent_color, NULL as template_settings, NULL as template_settings_by_template, NULL as global_settings, store_slug FROM client_store_settings WHERE store_slug = $1 OR LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1)",
             [querySlug]
           );
       } else {
@@ -161,15 +162,17 @@ export const getStorefrontSettings: RequestHandler = async (req, res) => {
         sellerRes = await pool.query(
           `SELECT store_name, store_description, store_logo, primary_color, secondary_color, template, banner_url, currency_code, 
                   hero_main_url, hero_tile1_url, hero_tile2_url, store_images
-           FROM seller_store_settings WHERE store_slug = $1`,
+           FROM seller_store_settings
+           WHERE store_slug = $1
+              OR LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1)`,
           [querySlug]
         );
       } catch (err: any) {
         // If query fails (columns don't exist), try without them
         if (err.code === '42703') {
           sellerRes = await pool.query(
-            'SELECT store_name, store_description, store_logo, primary_color, secondary_color, template, banner_url, currency_code, NULL as hero_main_url, NULL as hero_tile1_url, NULL as hero_tile2_url, store_images FROM seller_store_settings WHERE store_slug = $1',
-            [storeSlug]
+            "SELECT store_name, store_description, store_logo, primary_color, secondary_color, template, banner_url, currency_code, NULL as hero_main_url, NULL as hero_tile1_url, NULL as hero_tile2_url, store_images FROM seller_store_settings WHERE store_slug = $1 OR LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1)",
+            [querySlug]
           );
         } else {
           throw err;
@@ -219,10 +222,20 @@ export const getStorefrontSettings: RequestHandler = async (req, res) => {
     const templateSettings = row?.template_settings && typeof row.template_settings === 'object' ? row.template_settings : {};
     const globalSettings = row?.global_settings && typeof row.global_settings === 'object' ? row.global_settings : {};
 
+    // Debug: log what template is being returned
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[storefront:${storeSlug}] template from DB: ${row.template}`);
+    }
+
+    // IMPORTANT: Ensure row.template is NOT overridden by templateSettings/globalSettings
+    // The template field from the database row takes precedence
+    const dbTemplate = row.template;
+
     res.json({
       ...globalSettings,
       ...templateSettings,
       ...row,
+      template: dbTemplate, // Explicitly set to ensure it's not overridden
       store_slug: storeSlug,
       banner_url: sanitize(row.banner_url),
       hero_main_url: sanitize(row.hero_main_url),

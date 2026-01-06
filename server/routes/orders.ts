@@ -370,6 +370,15 @@ Press one of the buttons to confirm or cancel:`;
   }
 };
 
+// In-memory cache for orders (per-client)
+const ordersCache = new Map<number, { data: any; timestamp: number }>();
+const ORDERS_CACHE_TTL = 5 * 1000; // 5 seconds cache - orders need to be more real-time
+
+// Clear orders cache when an order is modified
+export function clearOrdersCache(clientId: number) {
+  ordersCache.delete(clientId);
+}
+
 /**
  * Get all orders for a client (dashboard)
  * GET /api/client/orders
@@ -385,50 +394,66 @@ export const getClientOrders: RequestHandler = async (req, res) => {
     // Get pagination params
     const limit = Math.min(parseInt(req.query.limit as string) || 100, 500); // Max 500 to prevent huge queries
     const offset = parseInt(req.query.offset as string) || 0;
+    
+    // Check cache (only for initial page loads with no offset)
+    const cacheKey = req.user.id;
+    if (offset === 0 && limit === 100) {
+      const cached = ordersCache.get(cacheKey);
+      if (cached && Date.now() - cached.timestamp < ORDERS_CACHE_TTL) {
+        return res.json(cached.data);
+      }
+    }
 
-    // Optimized query: use client_id directly and LEFT JOIN for products (handles deleted products)
-    const result = await pool.query(
-      `SELECT 
-        o.id,
-        o.product_id,
-        o.client_id,
-        o.quantity,
-        o.total_price,
-        o.status,
-        o.customer_name,
-        o.customer_email,
-        o.customer_phone,
-        o.shipping_address,
-        o.created_at,
-        o.updated_at,
-        o.delivery_company_id,
-        o.tracking_number,
-        o.delivery_status,
-        o.shipping_label_url,
-        COALESCE(cp.title, 'Deleted Product') as product_title,
-        COALESCE(cp.price, 0) as product_price,
-        COALESCE(cp.images, '{}') as product_images
-      FROM store_orders o
-      LEFT JOIN client_store_products cp ON o.product_id = cp.id
-      WHERE o.client_id = $1
-      ORDER BY o.created_at DESC
-      LIMIT $2 OFFSET $3`,
-      [req.user.id, limit, offset]
-    );
+    // Optimized query using Promise.all for parallel execution
+    const [result, countResult] = await Promise.all([
+      pool.query(
+        `SELECT 
+          o.id,
+          o.product_id,
+          o.client_id,
+          o.quantity,
+          o.total_price,
+          o.status,
+          o.customer_name,
+          o.customer_email,
+          o.customer_phone,
+          o.shipping_address,
+          o.created_at,
+          o.updated_at,
+          o.delivery_company_id,
+          o.tracking_number,
+          o.delivery_status,
+          o.shipping_label_url,
+          COALESCE(cp.title, 'Deleted Product') as product_title,
+          COALESCE(cp.price, 0) as product_price,
+          COALESCE(cp.images, '{}') as product_images
+        FROM store_orders o
+        LEFT JOIN client_store_products cp ON o.product_id = cp.id
+        WHERE o.client_id = $1
+        ORDER BY o.created_at DESC
+        LIMIT $2 OFFSET $3`,
+        [req.user.id, limit, offset]
+      ),
+      pool.query(
+        'SELECT COUNT(*) as total FROM store_orders WHERE client_id = $1',
+        [req.user.id]
+      )
+    ]);
 
-    // Get total count for pagination
-    const countResult = await pool.query(
-      'SELECT COUNT(*) as total FROM store_orders WHERE client_id = $1',
-      [req.user.id]
-    );
-
-    res.json({
+    const responseData = {
       orders: result.rows,
       total: parseInt(countResult.rows[0].total),
       limit,
       offset,
       hasMore: offset + limit < parseInt(countResult.rows[0].total)
-    });
+    };
+
+    // Cache the response for default pagination
+    if (offset === 0 && limit === 100) {
+      ordersCache.set(cacheKey, { data: responseData, timestamp: Date.now() });
+    }
+
+    res.json(responseData);
   } catch (error) {
     console.error("Get client orders error:", error);
     res.status(500).json({ error: "Failed to fetch orders" });

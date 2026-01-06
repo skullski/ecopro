@@ -32,12 +32,13 @@ export function ProductGrid({ items, columns = 3, gap, paddingY, paddingX, backg
 
   const resolvedColumns = resolveNumber(columns);
   const themeCols = parseInt(String((theme as any)?.gridColumns || ''), 10);
-  const mdCols = Math.min(6, Math.max(1, Number(resolvedColumns ?? columns ?? themeCols) || themeCols || 3));
+  const mdCols = Math.min(6, Math.max(1, Number(resolvedColumns ?? columns ?? themeCols) || themeCols || 5));
 
   const gapPx = resolveNumber(gap) ?? parseInt(String((theme as any)?.gridGap || ''), 10);
   const padXPx = resolveNumber(paddingX);
   const padYPx = resolveNumber(paddingY);
-  const colCount = isMd ? mdCols : (isSm ? Math.min(2, mdCols) : 1);
+  // Desktop: 5 cols, Tablet: 3 cols, Mobile: 2 cols
+  const colCount = isMd ? 5 : (isSm ? 3 : 2);
 
   const title = String((theme as any)?.featuredTitle || '').trim();
   const subtitle = String((theme as any)?.featuredSubtitle || '').trim();
