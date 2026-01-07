@@ -1068,19 +1068,15 @@ export default function PlatformAdmin() {
 
   const renderHtopBar = (pct: number | null | undefined, color: 'red' | 'cyan' = 'cyan') => {
     const p = pct == null || !Number.isFinite(pct) ? 0 : Math.max(0, Math.min(100, pct));
-    const barColor = color === 'red' ? 'bg-red-400' : 'bg-cyan-400';
-    const glowColor = color === 'red' ? 'shadow-red-500/50' : 'shadow-cyan-500/50';
+    const textColor = color === 'red' ? 'text-red-400' : 'text-cyan-400';
+    // Calculate how many chars to fill based on percentage
+    const totalChars = 50;
+    const filled = Math.round((p / 100) * totalChars);
+    const empty = Math.max(0, totalChars - filled);
     return (
-      <div className="flex-1 h-4 relative mx-2">
-        <div className="absolute inset-0 bg-slate-800/50 rounded-sm" />
-        <div 
-          className={`absolute left-0 top-0 bottom-0 ${barColor} rounded-sm shadow-lg ${glowColor}`}
-          style={{ 
-            width: `${p}%`,
-            animation: p > 0 ? 'htop-pulse 2s ease-in-out infinite' : 'none',
-          }}
-        />
-      </div>
+      <span className={`flex-1 ${textColor}`} style={{ animation: p > 0 ? 'htop-pulse 2s ease-in-out infinite' : 'none' }}>
+        [{'|'.repeat(filled)}{' '.repeat(empty)}]
+      </span>
     );
   };
 
