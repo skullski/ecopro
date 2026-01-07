@@ -151,6 +151,30 @@ async function main() {
     throw new Error('Could not determine store_slug from /api/client/store/settings');
   }
 
+  // 3b) Switch storefront template and verify it persists + is visible publicly
+  const targetTemplate = 'fashion';
+  await http(jar, 'PUT', '/api/client/store/settings', {
+    json: {
+      __templateSwitch: {
+        toTemplate: targetTemplate,
+        mode: 'defaults',
+        importKeys: [],
+      },
+    },
+  });
+
+  const settingsAfterSwitch = await http(jar, 'GET', '/api/client/store/settings');
+  const savedTemplate = settingsAfterSwitch?.data?.template;
+  if (savedTemplate !== targetTemplate) {
+    throw new Error(`Template switch did not persist: expected ${targetTemplate}, got ${savedTemplate}`);
+  }
+
+  const publicSettings = await http(new CookieJar(), 'GET', `/api/storefront/${encodeURIComponent(storeSlug)}/settings`);
+  const publicTemplate = publicSettings?.data?.template;
+  if (publicTemplate !== targetTemplate) {
+    throw new Error(`Public storefront settings did not return selected template: expected ${targetTemplate}, got ${publicTemplate}`);
+  }
+
   // 4) Create product (owner API)
   const productRes = await http(jar, 'POST', `/api/client/store/products`, {
     json: {
@@ -216,7 +240,7 @@ async function main() {
       username: staffEmail,
       password: staffPassword,
       role: 'staff',
-      permissions: { view_orders: true, edit_orders: false },
+      permissions: { view_orders: true, view_orders_list: true, edit_orders: false },
     },
   });
 

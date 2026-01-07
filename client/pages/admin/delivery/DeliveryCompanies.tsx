@@ -84,21 +84,21 @@ export default function DeliveryCompanies() {
       docsUrl: "https://guepex.app/app/dev/docs/",
       apiRating: 4,
     },
-    // ⭐ TIER 2: ZR Express / Procolis
+    // ⭐ TIER 2: ZR Express - Official API
     {
       id: "zr-express",
       name: "ZR Express",
       logo: "/delivery-logos/zr-express.png",
-      description: "Fast & reliable delivery. API via Procolis platform.",
+      description: "Official ZR Express API. Requires API Key + Tenant ID for full parcel management.",
       apiFields: [
-        { label: "API ID", placeholder: "Your Procolis API ID", field: "apiId" },
-        { label: "API Token", placeholder: "Your API Token", field: "apiToken" },
+        { label: "API Key", placeholder: "Your ZR Express API Key", field: "apiKey" },
+        { label: "Tenant ID", placeholder: "Your Tenant ID (X-Tenant)", field: "apiId" },
       ],
       enabled: false,
       hasApi: true,
-      features: { createShipment: true, tracking: true, labels: true, cod: true, webhooks: false },
-      docsUrl: "https://procolis.com/api-docs",
-      apiRating: 3,
+      features: { createShipment: true, tracking: true, labels: false, cod: true, webhooks: true },
+      docsUrl: "https://docs.zrexpress.app/reference",
+      apiRating: 4,
     },
     // ⭐ TIER 2: Ecotrack - Logistics platform + Aggregator
     {
@@ -163,6 +163,37 @@ export default function DeliveryCompanies() {
       hasApi: true,
       features: { createShipment: true, tracking: true, labels: true, cod: true, webhooks: false },
       apiRating: 2,
+    },
+    // ⭐ TIER 2: Zimou Express
+    {
+      id: "zimou-express",
+      name: "Zimou Express",
+      logo: "/delivery-logos/zimou.png",
+      description: "Fast delivery across Algeria. Express & standard shipping options.",
+      apiFields: [
+        { label: "API Token", placeholder: "Your Zimou API Token (Bearer)", field: "apiToken" },
+      ],
+      enabled: false,
+      hasApi: true,
+      features: { createShipment: true, tracking: true, labels: false, cod: true, webhooks: true },
+      docsUrl: "https://zimou.express/docs",
+      apiRating: 3,
+    },
+    // ⭐ TIER 2: Anderson Ecommerce (Ecotrack platform)
+    {
+      id: "anderson",
+      name: "Anderson Ecommerce",
+      logo: "/delivery-logos/anderson.png",
+      description: "Ecotrack-powered delivery. Full API for shipments, tracking & labels.",
+      apiFields: [
+        { label: "API Token", placeholder: "Your Anderson API Token", field: "apiToken" },
+        { label: "Account ID", placeholder: "Your Account ID (optional)", field: "accountId" },
+      ],
+      enabled: false,
+      hasApi: true,
+      features: { createShipment: true, tracking: true, labels: true, cod: true, webhooks: true },
+      docsUrl: "https://anderson-ecommerce.ecotrack.dz",
+      apiRating: 4,
     },
   ]);
 

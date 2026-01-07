@@ -37,24 +37,31 @@ function normalizeUrl(url: string): string {
 export default function FoodTemplate(props: TemplateProps) {
   const settings = props.settings || ({} as any);
   const canManage = props.canManage !== false;
+  const forcedBreakpoint = (props as any).forcedBreakpoint as Breakpoint | undefined;
 
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [breakpoint, setBreakpoint] = useState<Breakpoint>('desktop');
+  const [detectedBreakpoint, setDetectedBreakpoint] = useState<Breakpoint>(() => {
+    if (typeof window !== 'undefined') {
+      const w = window.innerWidth;
+      return w >= 1024 ? 'desktop' : w >= 768 ? 'tablet' : 'mobile';
+    }
+    return 'desktop';
+  });
   const [categoryFilter, setCategoryFilter] = useState('');
 
   useEffect(() => {
-    if (!containerRef.current) return;
-    if (typeof ResizeObserver === 'undefined') return;
-
-    const el = containerRef.current;
-    const ro = new ResizeObserver((entries) => {
-      const w = Math.round(entries[0]?.contentRect?.width || el.getBoundingClientRect().width || 0);
+    if (forcedBreakpoint) return;
+    const updateBreakpoint = () => {
+      const w = window.innerWidth;
       const bp: Breakpoint = w >= 1024 ? 'desktop' : w >= 768 ? 'tablet' : 'mobile';
-      setBreakpoint(bp);
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
+      setDetectedBreakpoint(bp);
+    };
+    updateBreakpoint();
+    window.addEventListener('resize', updateBreakpoint);
+    return () => window.removeEventListener('resize', updateBreakpoint);
+  }, [forcedBreakpoint]);
+
+  const breakpoint = forcedBreakpoint || detectedBreakpoint;
 
   const onSelect = (path: string) => {
     const anyProps = props as any;
@@ -87,7 +94,7 @@ export default function FoodTemplate(props: TemplateProps) {
   const spacing = asString(settings.template_spacing) || 'normal';
   const animationSpeed = asString(settings.template_animation_speed) || '0.3s';
   const hoverScale = asString(settings.template_hover_scale) || '1.02';
-  const gridColumns = resolveInt(settings.template_grid_columns, 3, 1, 6);
+  const gridColumns = resolveInt(settings.template_grid_columns, 4, 1, 6);
   const customCss = asString(settings.template_custom_css);
 
   // Category pill settings
@@ -440,21 +447,22 @@ export default function FoodTemplate(props: TemplateProps) {
                   backgroundColor: cardBg,
                   borderRadius: `${cardRadius}px`,
                   overflow: 'hidden',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  flexDirection: isMobile ? 'row' : 'column',
+                  cursor: canManage ? 'default' : 'pointer',
                   transition: `all ${animationSpeed} ease`,
                 }}
                 data-edit-path={`layout.featured.items.${product.id}`}
-                onClick={(e) => clickGuard(e, `layout.featured.items.${product.id}`)}
+                onClick={(e) => {
+                  if (!canManage && product?.slug) {
+                    props.navigate(product.slug);
+                  } else if (canManage) {
+                    clickGuard(e, `layout.featured.items.${product.id}`);
+                  }
+                }}
               >
                 <div style={{ 
                   position: 'relative', 
-                  aspectRatio: isMobile ? 'auto' : '16/10', 
+                  aspectRatio: '16/10', 
                   overflow: 'hidden',
-                  width: isMobile ? '120px' : '100%',
-                  minHeight: isMobile ? '120px' : 'auto',
-                  flexShrink: 0,
                 }}>
                   <img
                     src={product.images?.[0] || '/placeholder.png'}
@@ -470,33 +478,27 @@ export default function FoodTemplate(props: TemplateProps) {
                         left: '8px',
                         backgroundColor: accent,
                         color: '#fff',
-                        padding: '4px 10px',
+                        padding: '4px 8px',
                         borderRadius: '6px',
-                        fontSize: '10px',
+                        fontSize: '9px',
                         fontWeight: 700,
+                        whiteSpace: 'nowrap',
                       }}
                     >
                       🔥 POPULAR
                     </span>
                   )}
                 </div>
-                <div style={{ padding: isMobile ? '12px 16px' : '16px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <div>
-                    <h3
-                      style={{ fontSize: isMobile ? '15px' : '17px', fontWeight: 600, marginBottom: '6px', color: text }}
-                      data-edit-path={`layout.featured.items.${product.id}.title`}
-                      onClick={(e) => clickGuard(e, `layout.featured.items.${product.id}.title`)}
-                    >
-                      {product.title}
-                    </h3>
-                    {product.description && (
-                      <p style={{ fontSize: '13px', color: muted, marginBottom: '10px', lineHeight: 1.4 }}>
-                        {product.description.substring(0, 60)}...
-                      </p>
-                    )}
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ color: accent, fontSize: '18px', fontWeight: 700 }}>
+                <div style={{ padding: '12px' }}>
+                  <h3
+                    style={{ fontSize: '13px', fontWeight: 600, marginBottom: '4px', color: text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                    data-edit-path={`layout.featured.items.${product.id}.title`}
+                    onClick={(e) => clickGuard(e, `layout.featured.items.${product.id}.title`)}
+                  >
+                    {product.title}
+                  </h3>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ color: accent, fontSize: '14px', fontWeight: 700, whiteSpace: 'nowrap' }}>
                       {props.formatPrice?.(product.price) || `${product.price} DZD`}
                     </span>
                     <button
@@ -504,11 +506,13 @@ export default function FoodTemplate(props: TemplateProps) {
                         backgroundColor: accent,
                         border: 'none',
                         color: '#fff',
-                        padding: '8px 16px',
+                        padding: '6px 10px',
                         borderRadius: '999px',
-                        fontSize: '12px',
+                        fontSize: '10px',
                         fontWeight: 600,
                         cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
                       }}
                       data-edit-path="layout.featured.addLabel"
                       onClick={(e) => clickGuard(e, 'layout.featured.addLabel')}

@@ -982,54 +982,92 @@ export default function Store() {
               </div>
             ) : (
               <>
-                <div className="space-y-2 max-h-96 overflow-y-auto border rounded-lg p-3">
-                  {inventoryProducts.map((product) => (
-                    <div
-                      key={product.id}
-                      onClick={() => setSelectedInventoryProduct(product)}
-                      className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                        selectedInventoryProduct?.id === product.id
-                          ? 'border-primary bg-primary/5'
-                          : 'border-transparent hover:border-muted'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        {product.images?.[0] ? (
-                          <div className="w-16 h-16 rounded overflow-hidden flex-shrink-0">
-                            <img
-                              src={product.images[0]}
-                              alt={product.title || product.name}
-                              className="w-full h-full object-cover"
-                            />
+                <div className="grid gap-3 max-h-96 overflow-y-auto p-1">
+                  {inventoryProducts.map((product: any) => {
+                    const imageUrl = product.images?.[0] 
+                      ? (product.images[0].startsWith('http') ? product.images[0] : product.images[0])
+                      : null;
+                    const stockQty = product.quantity ?? product.stock_quantity ?? 0;
+                    const price = product.unit_price ?? product.price ?? 0;
+                    const name = product.name || product.title || 'Unnamed Product';
+                    
+                    return (
+                      <div
+                        key={product.id}
+                        onClick={() => setSelectedInventoryProduct(product)}
+                        className={`p-4 rounded-xl border-2 cursor-pointer transition-all hover:shadow-md ${
+                          selectedInventoryProduct?.id === product.id
+                            ? 'border-primary bg-primary/10 shadow-lg'
+                            : 'border-border/50 hover:border-primary/50 bg-card'
+                        }`}
+                      >
+                        <div className="flex items-center gap-4">
+                          {imageUrl ? (
+                            <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-muted shadow-sm">
+                              <img
+                                src={imageUrl}
+                                alt={name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                  (e.target as HTMLImageElement).parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center text-2xl">📦</div>';
+                                }}
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-muted/50 flex items-center justify-center text-3xl">
+                              📦
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-base truncate">{name}</p>
+                            {product.description && (
+                              <p className="text-sm text-muted-foreground truncate mt-0.5">{product.description}</p>
+                            )}
+                            <div className="flex items-center gap-3 mt-2">
+                              {Number(price) > 0 && (
+                                <span className="font-bold text-primary text-lg">{Math.round(Number(price))} DA</span>
+                              )}
+                              <Badge variant={stockQty > 0 ? 'secondary' : 'destructive'} className="text-xs">
+                                {stockQty > 0 ? `${stockQty} in stock` : 'Out of stock'}
+                              </Badge>
+                            </div>
                           </div>
-                        ) : (
-                          <div className="w-16 h-16 rounded overflow-hidden flex-shrink-0 bg-muted flex items-center justify-center text-muted-foreground">
-                            🖼️
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{product.title || product.name}</p>
-                          <p className="text-sm text-muted-foreground truncate">{product.description}</p>
-                          <div className="flex items-center gap-3 mt-1">
-                            <span className="font-semibold text-primary">{product.price ? Math.round(Number(product.price)) : '0'}</span>
-                            <Badge variant="outline" className="text-xs">
-                              Stock: {product.stock_quantity}
-                            </Badge>
-                          </div>
+                          {selectedInventoryProduct?.id === product.id && (
+                            <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                              <svg className="w-4 h-4 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {selectedInventoryProduct && (
-                  <div className="space-y-3 border-t pt-4">
+                  <div className="space-y-4 border-t pt-4 bg-muted/30 rounded-lg p-4 -mx-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                        {(selectedInventoryProduct as any).images?.[0] ? (
+                          <img src={(selectedInventoryProduct as any).images[0]} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-xl">📦</div>
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-semibold">{(selectedInventoryProduct as any).name || (selectedInventoryProduct as any).title}</p>
+                        <p className="text-sm text-muted-foreground">Selected product</p>
+                      </div>
+                    </div>
                     <div className="space-y-2">
-                      <Label>Quantity to Add</Label>
-                      <div className="flex items-center gap-2">
+                      <Label>Quantity to Add to Store</Label>
+                      <div className="flex items-center gap-3">
                         <Button
-                          size="sm"
+                          size="icon"
                           variant="outline"
+                          className="h-10 w-10"
                           onClick={() => setInventoryStockQuantity(Math.max(1, inventoryStockQuantity - 1))}
                         >
                           -
@@ -1037,22 +1075,24 @@ export default function Store() {
                         <Input
                           type="number"
                           min="1"
-                          max={selectedInventoryProduct.stock_quantity}
+                          max={(selectedInventoryProduct as any).quantity ?? (selectedInventoryProduct as any).stock_quantity ?? 999}
                           value={inventoryStockQuantity}
                           onChange={(e) => setInventoryStockQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                          className="w-16 text-center"
+                          className="w-20 text-center text-lg font-semibold"
                         />
                         <Button
-                          size="sm"
+                          size="icon"
                           variant="outline"
-                          onClick={() =>
-                            setInventoryStockQuantity(Math.min(selectedInventoryProduct.stock_quantity, inventoryStockQuantity + 1))
-                          }
+                          className="h-10 w-10"
+                          onClick={() => {
+                            const maxQty = (selectedInventoryProduct as any).quantity ?? (selectedInventoryProduct as any).stock_quantity ?? 999;
+                            setInventoryStockQuantity(Math.min(maxQty, inventoryStockQuantity + 1));
+                          }}
                         >
                           +
                         </Button>
                         <span className="text-sm text-muted-foreground ml-2">
-                          of {selectedInventoryProduct.stock_quantity} available
+                          of {(selectedInventoryProduct as any).quantity ?? (selectedInventoryProduct as any).stock_quantity ?? 0} available
                         </span>
                       </div>
                     </div>
@@ -1069,6 +1109,7 @@ export default function Store() {
             <Button
               onClick={async () => {
                 if (!selectedInventoryProduct) return;
+                const inv = selectedInventoryProduct as any;
                 try {
                   const res = await fetch('/api/client/store/products', {
                     method: 'POST',
@@ -1076,12 +1117,12 @@ export default function Store() {
                       'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                      title: selectedInventoryProduct.name || selectedInventoryProduct.title,
-                      description: selectedInventoryProduct.description,
-                      price: selectedInventoryProduct.unit_price || selectedInventoryProduct.price,
-                      original_price: selectedInventoryProduct.original_price,
-                      images: selectedInventoryProduct.images,
-                      category: selectedInventoryProduct.category,
+                      title: inv.name || inv.title,
+                      description: inv.description,
+                      price: inv.unit_price || inv.price,
+                      original_price: inv.original_price,
+                      images: inv.images,
+                      category: inv.category,
                       stock_quantity: inventoryStockQuantity,
                       status: 'active',
                       is_featured: false

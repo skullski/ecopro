@@ -7,6 +7,34 @@ import { createCheckoutSession, handlePaymentCompleted, handlePaymentFailed, ver
 const isProduction = process.env.NODE_ENV === 'production';
 
 /**
+ * Create a 30-day trial subscription for a new user
+ * Called during registration to ensure all new users get their trial
+ */
+export async function createTrialSubscription(userId: number): Promise<void> {
+  try {
+    // Check if subscription already exists
+    const existing = await pool.query(
+      `SELECT id FROM subscriptions WHERE user_id = $1`,
+      [userId]
+    );
+    
+    if (existing.rows.length === 0) {
+      await pool.query(
+        `INSERT INTO subscriptions (user_id, status, trial_started_at, trial_ends_at)
+         VALUES ($1, 'trial', NOW(), NOW() + INTERVAL '30 days')`,
+        [userId]
+      );
+      if (!isProduction) {
+        console.log(`[Billing] Created 30-day trial subscription for user ${userId}`);
+      }
+    }
+  } catch (error) {
+    console.error('[Billing] Failed to create trial subscription:', error);
+    // Non-critical - don't throw, the user can still use the platform
+  }
+}
+
+/**
  * Get subscription status for current user
  * GET /api/billing/subscription
  */
@@ -21,10 +49,10 @@ export const getSubscription: RequestHandler = async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      // Create new subscription if doesn't exist
+      // Create new subscription with 30-day trial
       const newSub = await pool.query(
-        `INSERT INTO subscriptions (user_id, trial_started_at, trial_ends_at)
-         VALUES ($1, NOW(), NOW() + INTERVAL '30 days')
+        `INSERT INTO subscriptions (user_id, status, trial_started_at, trial_ends_at)
+         VALUES ($1, 'trial', NOW(), NOW() + INTERVAL '30 days')
          RETURNING *`,
         [userId]
       );

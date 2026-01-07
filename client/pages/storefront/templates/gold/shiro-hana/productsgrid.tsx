@@ -4,7 +4,7 @@ import { ProductCard } from "./productscard";
 import { resolveResponsiveNumber, type Breakpoint } from './responsive';
 
 type Props = {
-  items: ProductNode[];
+  items: (ProductNode & { slug?: string })[];
   columns?: any;
   gap?: any;
   paddingY?: any;
@@ -22,9 +22,10 @@ type Props = {
   addLabel?: string;
   theme?: any;
   responsive?: { isSm?: boolean; isMd?: boolean; width?: number; breakpoint?: 'mobile' | 'tablet' | 'desktop' };
+  navigate?: (to: string | number) => void;
 };
 
-export function ProductGrid({ items, columns = 3, gap, paddingY, paddingX, backgroundColor, card, onSelect, resolveAssetUrl, formatPrice, ctaStyle, addLabel, theme, responsive }: Props) {
+export function ProductGrid({ items, columns = 3, gap, paddingY, paddingX, backgroundColor, card, onSelect, resolveAssetUrl, formatPrice, ctaStyle, addLabel, theme, responsive, navigate }: Props) {
   const isSm = !!responsive?.isSm;
   const isMd = !!responsive?.isMd;
   const bp = (responsive?.breakpoint || (isMd ? 'desktop' : (isSm ? 'tablet' : 'mobile'))) as Breakpoint;
@@ -32,13 +33,13 @@ export function ProductGrid({ items, columns = 3, gap, paddingY, paddingX, backg
 
   const resolvedColumns = resolveNumber(columns);
   const themeCols = parseInt(String((theme as any)?.gridColumns || ''), 10);
-  const mdCols = Math.min(6, Math.max(1, Number(resolvedColumns ?? columns ?? themeCols) || themeCols || 5));
+  const mdCols = Math.min(6, Math.max(1, Number(resolvedColumns ?? columns ?? themeCols) || themeCols || 4));
 
   const gapPx = resolveNumber(gap) ?? parseInt(String((theme as any)?.gridGap || ''), 10);
   const padXPx = resolveNumber(paddingX);
   const padYPx = resolveNumber(paddingY);
-  // Desktop: 5 cols, Tablet: 3 cols, Mobile: 2 cols
-  const colCount = isMd ? 5 : (isSm ? 3 : 2);
+  // Desktop: 4 cols, Tablet: 3 cols, Mobile: 2 cols
+  const colCount = isMd ? 4 : (isSm ? 3 : 2);
 
   const title = String((theme as any)?.featuredTitle || '').trim();
   const subtitle = String((theme as any)?.featuredSubtitle || '').trim();
@@ -125,6 +126,7 @@ export function ProductGrid({ items, columns = 3, gap, paddingY, paddingX, backg
               theme={theme}
               card={card}
               responsive={responsive}
+              navigate={navigate}
             />
           ))}
         </div>

@@ -64,6 +64,8 @@ export interface TemplateProps {
   bannerUrl: string | null;
   navigate: (to: string | number) => void;
   canManage?: boolean;
+  /** Force a specific breakpoint for preview mode (overrides window.innerWidth detection) */
+  forcedBreakpoint?: 'mobile' | 'tablet' | 'desktop';
 }
 
 /**

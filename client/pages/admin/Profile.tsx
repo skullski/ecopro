@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Gift, Lock, CheckCircle, AlertCircle, Loader, Ticket, Save, User } from 'lucide-react';
+import { Gift, Lock, CheckCircle, AlertCircle, Loader, Ticket, Save, User, Key, Eye, EyeOff } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 
 type SubscriptionRow = {
@@ -73,6 +73,18 @@ export default function Profile() {
   const [voucherSuccess, setVoucherSuccess] = useState(false);
   const [attemptsRemaining, setAttemptsRemaining] = useState(3);
 
+  // Password change state
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+
   const handleFormatVoucherCode = (value: string) => {
     // Normalize input (supports pasting with spaces/dashes) into XXXX-XXXX-XXXX-XXXX.
     const cleaned = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16);
@@ -131,6 +143,58 @@ export default function Profile() {
       setVoucherError(err.message || 'Failed to redeem code');
     } finally {
       setVoucherLoading(false);
+    }
+  };
+
+  // Handle password change
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError(null);
+    setPasswordSuccess(false);
+
+    const { currentPassword, newPassword, confirmPassword } = passwordForm;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordError('All fields are required');
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setPasswordError('New password must be at least 8 characters');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError('New passwords do not match');
+      return;
+    }
+
+    setPasswordLoading(true);
+
+    try {
+      const res = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(data?.error || data?.message || 'Failed to change password');
+      }
+
+      setPasswordSuccess(true);
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      toast({ title: t('common.success'), description: t('auth.passwordChanged') || 'Password changed successfully!' });
+
+      // Hide success message after 3 seconds
+      setTimeout(() => setPasswordSuccess(false), 3000);
+    } catch (err: any) {
+      setPasswordError(err.message || 'Failed to change password');
+    } finally {
+      setPasswordLoading(false);
     }
   };
 
@@ -312,6 +376,99 @@ export default function Profile() {
             </Button>
 
             {loading && <div className="text-xs text-muted-foreground">{t('platformAdmin.loading')}</div>}
+          </CardContent>
+        </Card>
+
+        {/* Change Password */}
+        <Card className="p-0 backdrop-blur-md profile-glass border-white/30 dark:border-slate-700/50">
+          <CardHeader className="p-3 pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Key className="w-4 h-4" />
+              {t('auth.changePassword') || 'Change Password'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 p-3 pt-0">
+            {passwordSuccess && (
+              <div className="flex items-center gap-2 p-2 bg-green-500/20 border border-green-500/30 rounded-lg">
+                <CheckCircle className="w-4 h-4 text-green-400" />
+                <span className="text-sm text-green-300">{t('auth.passwordChanged') || 'Password changed successfully!'}</span>
+              </div>
+            )}
+
+            {passwordError && (
+              <div className="flex items-center gap-2 p-2 bg-red-500/20 border border-red-500/30 rounded-lg">
+                <AlertCircle className="w-4 h-4 text-red-400" />
+                <span className="text-sm text-red-300">{passwordError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleChangePassword} className="space-y-2">
+              <div className="space-y-1">
+                <Label htmlFor="currentPassword" className="text-xs">{t('auth.currentPassword') || 'Current Password'}</Label>
+                <div className="relative">
+                  <Input 
+                    id="currentPassword" 
+                    type={showCurrentPassword ? 'text' : 'password'}
+                    className="h-8 pr-10" 
+                    value={passwordForm.currentPassword} 
+                    onChange={(e) => setPasswordForm((s) => ({ ...s, currentPassword: e.target.value }))}
+                    disabled={passwordLoading}
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="newPassword" className="text-xs">{t('auth.newPassword') || 'New Password'}</Label>
+                <div className="relative">
+                  <Input 
+                    id="newPassword" 
+                    type={showNewPassword ? 'text' : 'password'}
+                    className="h-8 pr-10" 
+                    value={passwordForm.newPassword} 
+                    onChange={(e) => setPasswordForm((s) => ({ ...s, newPassword: e.target.value }))}
+                    disabled={passwordLoading}
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <p className="text-[10px] text-muted-foreground">{t('auth.passwordHint') || 'At least 8 characters'}</p>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="confirmPassword" className="text-xs">{t('auth.confirmPassword') || 'Confirm New Password'}</Label>
+                <Input 
+                  id="confirmPassword" 
+                  type="password"
+                  className="h-8" 
+                  value={passwordForm.confirmPassword} 
+                  onChange={(e) => setPasswordForm((s) => ({ ...s, confirmPassword: e.target.value }))}
+                  disabled={passwordLoading}
+                />
+              </div>
+              <Button type="submit" disabled={passwordLoading} className="w-full h-8" size="sm">
+                {passwordLoading ? (
+                  <>
+                    <Loader className="w-3 h-3 mr-1 animate-spin" />
+                    {t('common.saving') || 'Saving...'}
+                  </>
+                ) : (
+                  <>
+                    <Key className="w-3 h-3 mr-1" />
+                    {t('auth.changePassword') || 'Change Password'}
+                  </>
+                )}
+              </Button>
+            </form>
           </CardContent>
         </Card>
 

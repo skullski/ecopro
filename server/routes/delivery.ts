@@ -13,12 +13,24 @@ export const deliveryRouter = Router();
 
 /**
  * GET /api/delivery/companies
- * Get list of available delivery companies
+ * Get list of available delivery companies with integration status for current user
  */
 export const getDeliveryCompanies: RequestHandler = async (req, res) => {
   try {
+    const clientId = req.user?.id;
+    
+    // Get all active companies and check if user has configured integration
     const result = await pool.query(
-      'SELECT id, name, features, is_active FROM delivery_companies WHERE is_active = true ORDER BY name'
+      `SELECT dc.id, dc.name, dc.features, dc.is_active,
+              CASE WHEN di.id IS NOT NULL AND di.is_enabled THEN true ELSE false END as is_configured,
+              CASE WHEN di.api_key_encrypted IS NOT NULL THEN true ELSE false END as has_api_key
+       FROM delivery_companies dc
+       LEFT JOIN delivery_integrations di ON dc.id = di.delivery_company_id AND di.client_id = $1
+       WHERE dc.is_active = true 
+       ORDER BY 
+         CASE WHEN di.id IS NOT NULL AND di.is_enabled THEN 0 ELSE 1 END,
+         dc.name`,
+      [clientId || 0]
     );
     res.json(result.rows);
   } catch (error: any) {
@@ -424,10 +436,11 @@ export const bulkAssignDelivery: RequestHandler = async (req, res) => {
                 label_url: labelResult.label_url,
               });
             } else {
+              // Upload failed - mark as failure, not partial success
               results.push({
                 orderId,
-                success: true, // Assignment succeeded
-                error: `Upload failed: ${labelResult.error}`,
+                success: false,
+                error: labelResult.error || 'Failed to upload to courier',
               });
             }
           } else {
@@ -443,10 +456,11 @@ export const bulkAssignDelivery: RequestHandler = async (req, res) => {
                 tracking_number: uploadResult.tracking_number,
               });
             } else {
+              // Upload failed - mark as failure, not partial success
               results.push({
                 orderId,
-                success: true, // Assignment succeeded
-                error: `Upload failed: ${uploadResult.error}`,
+                success: false,
+                error: uploadResult.error || 'Failed to upload to courier',
               });
             }
           }

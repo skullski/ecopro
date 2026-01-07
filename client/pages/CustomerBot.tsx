@@ -81,6 +81,7 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
   const [campaignName, setCampaignName] = useState("");
   const [campaignMessage, setCampaignMessage] = useState("");
   const [targetSegment, setTargetSegment] = useState("all");
+  const [campaignChannel, setCampaignChannel] = useState("auto");
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
@@ -145,7 +146,7 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
           name: campaignName,
           message: campaignMessage,
           target_category: targetSegment,
-          channel: "whatsapp",
+          channel: campaignChannel,
         }),
       });
 
@@ -350,8 +351,24 @@ export default function CustomerBot({ embedded = false }: CustomerBotProps) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Message
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">                    Send via Channel
+                  </label>
+                  <select
+                    value={campaignChannel}
+                    onChange={(e) => setCampaignChannel(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
+                  >
+                    <option value="auto">🔄 Auto (Smart Detection)</option>
+                    <option value="telegram">📱 Telegram</option>
+                    <option value="whatsapp_cloud">💬 WhatsApp</option>
+                  </select>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Auto mode sends via the channel each customer is connected to
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">                    Message
                   </label>
                   <textarea
                     value={campaignMessage}

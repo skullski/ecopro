@@ -14,9 +14,11 @@ import { YalidineService } from './couriers/yalidine';
 import { GuepexService } from './couriers/guepex';
 import { EcotrackService } from './couriers/ecotrack';
 import { NoestService } from './couriers/noest';
-import { ZRExpressService } from './couriers/zr-express';
+import { ZRExpressOfficialService } from './couriers/zrexpress';
 import { MaystroService } from './couriers/maystro';
 import { DolivrooService } from './couriers/dolivroo';
+import { ZimouExpressService } from './couriers/zimou-express';
+import { AndersonService } from './couriers/anderson';
 
 // ========================================
 // REGISTER REAL ALGERIAN DELIVERY PROVIDERS
@@ -29,11 +31,22 @@ registerCourierService('ecotrack', EcotrackService);
 // Noest uses token + GUID; implement its own header scheme.
 registerCourierService('noest', NoestService);
 registerCourierService('noest express', NoestService);
-registerCourierService('zr express', ZRExpressService);
-registerCourierService('zr-express', ZRExpressService);
+// ZR Express - Official API (docs.zrexpress.app)
+registerCourierService('zr express', ZRExpressOfficialService);
+registerCourierService('zr-express', ZRExpressOfficialService);
+registerCourierService('zrexpress', ZRExpressOfficialService);
+registerCourierService('zr express official', ZRExpressOfficialService);
 registerCourierService('maystro', MaystroService);
 registerCourierService('maystro delivery', MaystroService);
 registerCourierService('dolivroo', DolivrooService); // Aggregator - recommended
+// Zimou Express - Algerian delivery company
+registerCourierService('zimou', ZimouExpressService);
+registerCourierService('zimou express', ZimouExpressService);
+registerCourierService('zimou-express', ZimouExpressService);
+// Anderson - Uses Ecotrack platform
+registerCourierService('anderson', AndersonService);
+registerCourierService('anderson ecommerce', AndersonService);
+registerCourierService('anderson-ecommerce', AndersonService);
 
 export class DeliveryService {
   /**

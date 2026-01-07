@@ -33,23 +33,30 @@ function normalizeUrl(url: string): string {
 export default function JewelryTemplate(props: TemplateProps) {
   const settings = props.settings || ({} as any);
   const canManage = props.canManage !== false;
+  const forcedBreakpoint = (props as any).forcedBreakpoint as Breakpoint | undefined;
 
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [breakpoint, setBreakpoint] = useState<Breakpoint>('desktop');
+  const [detectedBreakpoint, setDetectedBreakpoint] = useState<Breakpoint>(() => {
+    if (typeof window !== 'undefined') {
+      const w = window.innerWidth;
+      return w >= 1024 ? 'desktop' : w >= 768 ? 'tablet' : 'mobile';
+    }
+    return 'desktop';
+  });
 
   useEffect(() => {
-    if (!containerRef.current) return;
-    if (typeof ResizeObserver === 'undefined') return;
-
-    const el = containerRef.current;
-    const ro = new ResizeObserver((entries) => {
-      const w = Math.round(entries[0]?.contentRect?.width || el.getBoundingClientRect().width || 0);
+    if (forcedBreakpoint) return;
+    const updateBreakpoint = () => {
+      const w = window.innerWidth;
       const bp: Breakpoint = w >= 1024 ? 'desktop' : w >= 768 ? 'tablet' : 'mobile';
-      setBreakpoint(bp);
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
+      setDetectedBreakpoint(bp);
+    };
+    updateBreakpoint();
+    window.addEventListener('resize', updateBreakpoint);
+    return () => window.removeEventListener('resize', updateBreakpoint);
+  }, [forcedBreakpoint]);
+
+  const breakpoint = forcedBreakpoint || detectedBreakpoint;
 
   const onSelect = (path: string) => {
     const anyProps = props as any;
@@ -430,9 +437,15 @@ export default function JewelryTemplate(props: TemplateProps) {
               <div
                 key={p.id}
                 className="bg-white rounded-[18px] border border-gray-200 overflow-hidden"
-                style={{ transition: `all ${animationSpeed} ease` }}
+                style={{ transition: `all ${animationSpeed} ease`, cursor: canManage ? 'default' : 'pointer' }}
                 data-edit-path={`layout.featured.items.${p.id}`}
-                onClick={(e) => clickGuard(e, `layout.featured.items.${p.id}`)}
+                onClick={(e) => {
+                  if (!canManage && p?.slug) {
+                    props.navigate(p.slug);
+                  } else if (canManage) {
+                    clickGuard(e, `layout.featured.items.${p.id}`);
+                  }
+                }}
               >
                 <img
                   src={img}
@@ -442,12 +455,10 @@ export default function JewelryTemplate(props: TemplateProps) {
                     if (!e.currentTarget.src.endsWith('/placeholder.png')) e.currentTarget.src = '/placeholder.png';
                   }}
                 />
-                <div className="p-4 flex items-start justify-between gap-3">
-                  <div>
-                    <div className="text-sm font-serif text-gray-900">{p.title}</div>
-                    {p.category ? <div className="text-[11px] text-gray-500 mt-1">{p.category}</div> : null}
-                  </div>
-                  <div className="text-right text-[12px] font-semibold" style={{ color: accent }}>
+                <div className="p-4">
+                  <div className="text-sm font-serif text-gray-900" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</div>
+                  {p.category ? <div className="text-[11px] text-gray-500 mt-1" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.category}</div> : null}
+                  <div className="text-[12px] font-semibold mt-2" style={{ color: accent, whiteSpace: 'nowrap' }}>
                     {props.formatPrice(p.price)}
                   </div>
                 </div>

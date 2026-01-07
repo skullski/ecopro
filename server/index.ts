@@ -45,6 +45,9 @@ import { handleDbCheck } from "./routes/db-check";
 import { hashPassword } from "./utils/auth";
 import { purgeOldSecurityEvents, securityMiddleware } from "./utils/security";
 import { startScheduledMessageWorker } from "./utils/scheduled-messages";
+import oauthRouter from "./routes/oauth";
+import messengerRouter from "./routes/messenger";
+import deliveryPricesRouter, { getStorefrontDeliveryPrices } from "./routes/delivery-prices";
 import {
   validate,
   registerValidation,
@@ -488,6 +491,12 @@ export function createServer(options?: { skipDbInit?: boolean }) {
   app.post('/api/auth/2fa/disable', authenticate, requireAdmin, authRoutes.disableAdmin2FA);
   app.get("/api/auth/me", authenticate, authRoutes.getCurrentUser);
   app.post("/api/auth/change-password", authenticate, authRoutes.changePassword);
+
+  // OAuth Social Login routes (public)
+  app.use('/api/oauth', oauthRouter);
+
+  // Facebook Messenger webhook (public for FB verification)
+  app.use('/api/messenger', messengerRouter);
 
   // Kernel (root-only) APIs
   app.use('/api/kernel', kernelRouter);
@@ -1069,6 +1078,10 @@ export function createServer(options?: { skipDbInit?: boolean }) {
 
   // Delivery routes (authenticated)
   app.use('/api/delivery', authenticate, deliveryRouter);
+
+  // Delivery pricing routes (authenticated for sellers, public endpoint for storefront)
+  app.use('/api/delivery-prices', authenticate, deliveryPricesRouter);
+  app.get('/api/storefront/:storeSlug/delivery-prices', getStorefrontDeliveryPrices);
 
   // Google Sheets integration routes (authenticated)
   app.use('/api/google', authenticate, googleSheetsRouter);

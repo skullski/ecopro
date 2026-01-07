@@ -31,7 +31,12 @@ export type TemplateId =
  * Normalize template ID.
  */
 export function normalizeTemplateId(t: string): TemplateId {
-  const raw = String(t || '').trim().replace(/^gold-/, '').toLowerCase();
+  const raw = String(t || '')
+    .trim()
+    .toLowerCase()
+    .replace(/^gold-/, '')
+    .replace(/-gold$/, '');
+  if (!raw || raw === 'classic') return 'shiro-hana';
   if (raw === 'jewelry') return 'jewelry';
   if (raw === 'bags') return 'bags';
   if (raw === 'babyos' || raw === 'baby') return 'babyos';

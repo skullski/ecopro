@@ -19,6 +19,8 @@ const createOrderBodySchema = z
     // Client-provided total_price is accepted for backward-compatibility but ignored.
     // Total is computed server-side from the current product price.
     total_price: z.preprocess((v) => (typeof v === 'string' ? Number(v) : v), z.number().finite().positive().max(1_000_000_000)).optional(),
+    delivery_fee: z.preprocess((v) => (typeof v === 'string' ? Number(v) : v), z.number().finite().nonnegative().max(1_000_000_000)).optional(),
+    delivery_type: z.enum(['home', 'desk']).optional(),
     customer_name: z.string().trim().min(1).max(255),
     customer_email: z.string().trim().email().max(255).optional().nullable(),
     customer_phone: z.string().trim().min(7).max(50),
@@ -34,6 +36,38 @@ const createOrderBodySchema = z
     shipping_hai: z.string().trim().max(120).optional().nullable(),
   })
   .strict();
+
+async function resolveDeliveryFee(params: {
+  clientId: number;
+  wilayaId?: number | null;
+  deliveryType?: 'home' | 'desk';
+}): Promise<{ deliveryFee: number; deliveryType: 'home' | 'desk' }>{
+  const deliveryType = params.deliveryType || 'home';
+  const wilayaId = params.wilayaId ? Number(params.wilayaId) : null;
+
+  if (!wilayaId || !Number.isFinite(wilayaId) || wilayaId <= 0) {
+    return { deliveryFee: 0, deliveryType };
+  }
+
+  const res = await pool.query(
+    `SELECT home_delivery_price, desk_delivery_price
+     FROM delivery_prices
+     WHERE client_id = $1 AND wilaya_id = $2 AND is_active = true
+     ORDER BY home_delivery_price ASC
+     LIMIT 1`,
+    [params.clientId, wilayaId]
+  );
+
+  if (res.rows.length === 0) {
+    return { deliveryFee: 500, deliveryType };
+  }
+
+  const row = res.rows[0];
+  const home = Number(row.home_delivery_price ?? 0);
+  const desk = row.desk_delivery_price == null ? null : Number(row.desk_delivery_price);
+  const chosen = deliveryType === 'desk' && desk != null ? desk : home;
+  return { deliveryFee: Number.isFinite(chosen) && chosen >= 0 ? chosen : 0, deliveryType };
+}
 
 /**
  * Create a new order from a buyer
@@ -53,6 +87,8 @@ export const createOrder: RequestHandler = async (req, res) => {
       store_slug,
       quantity,
       total_price: _ignoredTotalPrice,
+      delivery_fee: _ignoredDeliveryFee,
+      delivery_type,
       customer_name,
       customer_email,
       customer_phone,
@@ -120,7 +156,13 @@ export const createOrder: RequestHandler = async (req, res) => {
       return res.status(400).json({ error: 'Insufficient stock' });
     }
 
-    const expectedTotalPrice = unitPrice * Number(quantity);
+    const { deliveryFee, deliveryType } = await resolveDeliveryFee({
+      clientId: Number(resolvedClientId),
+      wilayaId: shipping_wilaya_id ?? null,
+      deliveryType: delivery_type,
+    });
+
+    const expectedTotalPrice = (unitPrice * Number(quantity)) + deliveryFee;
 
     if (!resolvedClientId) {
       return res.status(400).json({ error: 'Could not determine store owner' });
@@ -136,17 +178,19 @@ export const createOrder: RequestHandler = async (req, res) => {
     inTransaction = true;
     const result = await client.query(
       `INSERT INTO store_orders (
-        product_id, client_id, quantity, total_price, 
+        product_id, client_id, quantity, total_price, delivery_fee, delivery_type,
         customer_name, customer_email, customer_phone, shipping_address,
         shipping_wilaya_id, shipping_commune_id, shipping_hai,
         status, payment_status, created_at
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,TIMEZONE('UTC', NOW())) 
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,TIMEZONE('UTC', NOW())) 
       RETURNING *`,
       [
         product_id || null,
         resolvedClientId,
         quantity,
         expectedTotalPrice,
+        deliveryFee,
+        deliveryType,
         customer_name,
         customer_email || null,
         normalizedPhone || null,
@@ -327,17 +371,17 @@ Press one of the buttons to confirm or cancel:`;
           // Always schedule confirmation message with buttons (worker will wait for chat link if needed)
           if (botToken) {
             const delayMinutes = bot?.telegram_delay_minutes || 5;
-            const scheduledTime = new Date(Date.now() + Number(delayMinutes) * 60 * 1000);
-            console.log(`[Orders] Scheduling confirmation for order ${order.id} in ${delayMinutes} minutes (at ${scheduledTime.toISOString()}, db value: ${bot?.telegram_delay_minutes})`);
+            console.log(`[Orders] Scheduling confirmation for order ${order.id} in ${delayMinutes} minutes`);
             const confirmationTemplate = bot?.template_order_confirmation || defaultConfirmationTemplate;
             const confirmationMessage = replaceTemplateVariables(String(confirmationTemplate), orderVars);
 
+            // Use PostgreSQL NOW() + INTERVAL to avoid timezone issues between JS and DB
             await pool.query(
               `INSERT INTO scheduled_messages
                (client_id, order_id, telegram_chat_id, message_content, message_type, scheduled_at, status)
-               VALUES ($1, $2, $3, $4, $5, $6, 'pending')
+               VALUES ($1, $2, $3, $4, $5, NOW() + ($6 || ' minutes')::INTERVAL, 'pending')
                ON CONFLICT DO NOTHING`,
-              [resolvedClientId, order.id, telegramChatId, confirmationMessage, 'order_confirmation', scheduledTime]
+              [resolvedClientId, order.id, telegramChatId, confirmationMessage, 'order_confirmation', delayMinutes]
             );
           }
         } catch (e) {
@@ -396,8 +440,8 @@ export const getClientOrders: RequestHandler = async (req, res) => {
     const offset = parseInt(req.query.offset as string) || 0;
     
     // Check cache (only for initial page loads with no offset)
-    const cacheKey = req.user.id;
-    if (offset === 0 && limit === 100) {
+    const cacheKey = Number((req.user as any).id);
+    if (Number.isFinite(cacheKey) && offset === 0 && limit === 100) {
       const cached = ordersCache.get(cacheKey);
       if (cached && Date.now() - cached.timestamp < ORDERS_CACHE_TTL) {
         return res.json(cached.data);
@@ -449,7 +493,7 @@ export const getClientOrders: RequestHandler = async (req, res) => {
     };
 
     // Cache the response for default pagination
-    if (offset === 0 && limit === 100) {
+    if (Number.isFinite(cacheKey) && offset === 0 && limit === 100) {
       ordersCache.set(cacheKey, { data: responseData, timestamp: Date.now() });
     }
 

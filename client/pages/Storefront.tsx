@@ -46,7 +46,7 @@ export default function Storefront() {
   const [products, setProducts] = useState<StoreProduct[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<StoreProduct[]>([]);
   const [storeSettings, setStoreSettings] = useState<StoreSettings>({
-    template: 'classic',
+    template: 'shiro-hana',
     primary_color: '#16a34a',
     secondary_color: '#0ea5e9',
     currency_code: 'USD',
@@ -67,7 +67,7 @@ export default function Storefront() {
   const [sortOption, setSortOption] = useState<'newest' | 'price-asc' | 'price-desc' | 'featured' | 'views-desc'>('newest');
 
   // Derived visual tokens from store settings
-  const template = storeSettings.template || 'classic';
+  const template = storeSettings.template || 'shiro-hana';
   const primaryColor = storeSettings.primary_color || '#16a34a';
   const secondaryColor = storeSettings.secondary_color || '#0ea5e9';
   const bannerUrl = storeSettings.banner_url || '';
@@ -167,8 +167,8 @@ export default function Storefront() {
           store_logo: '',
           banner_url: '',
           ...incomingSettings,
-          // Use the template from store settings, or default to 'classic'
-          template: incomingSettings?.template || 'classic',
+          // Use the template from store settings, or default to a valid template ID
+          template: incomingSettings?.template || 'shiro-hana',
           // Always ensure store_slug is available (use URL slug as fallback)
           store_slug: incomingSettings?.store_slug || storeSlug,
         };

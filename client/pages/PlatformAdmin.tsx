@@ -281,6 +281,9 @@ interface LockedAccount {
   is_paid_temporarily?: boolean;
   subscription_extended_until?: string;
   subscription_ends_at?: string;
+  subscription_status?: string;
+  trial_ends_at?: string;
+  current_period_end?: string;
   created_at: string;
 }
 

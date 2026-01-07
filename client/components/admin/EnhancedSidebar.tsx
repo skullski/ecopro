@@ -66,7 +66,11 @@ const menuItems: MenuItem[] = [
     titleKey: "sidebar.delivery", 
     path: "/dashboard/delivery/companies", 
     icon: <Truck className="w-5 h-5" />,
-    permission: "edit_delivery_settings"
+    permission: "edit_delivery_settings",
+    children: [
+      { titleKey: "sidebar.deliveryCompanies", path: "/dashboard/delivery/companies", icon: <Truck className="w-4 h-4" />, permission: "edit_delivery_settings" },
+      { titleKey: "sidebar.deliveryPricing", path: "/dashboard/delivery/pricing", icon: <Tag className="w-4 h-4" />, permission: "edit_delivery_settings" }
+    ]
   },
   { 
     titleKey: "sidebar.addons", 

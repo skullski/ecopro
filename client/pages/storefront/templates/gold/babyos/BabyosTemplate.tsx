@@ -759,7 +759,7 @@ function FeaturedSection({ node, responsive, theme, settings, onSelect, resolveA
           {/* Right Product Cards */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: responsive.isDesktop ? 'repeat(3, 1fr)' : responsive.isTablet ? 'repeat(2, 1fr)' : '1fr',
+            gridTemplateColumns: responsive.isDesktop ? 'repeat(4, 1fr)' : responsive.isTablet ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)',
             gap: '12px',
           }}>
             {featuredItems.map((p, i) => renderCard(p, i))}
@@ -782,9 +782,9 @@ function ProductGrid({ node, responsive, theme, settings, onSelect, resolveAsset
   const heading = grid?.title?.value || 'Pieces in this universe';
   const gridItems = items.slice(3, 12); // Skip first 3 shown in featured
   
-  // Use fixed grid columns: Desktop 5, Tablet 3, Mobile 2
-  const configCols = parseInt(theme.gridColumns) || 5;
-  const cols = responsive.isDesktop ? 5 : responsive.isTablet ? 3 : 2;
+  // Use fixed grid columns: Desktop 4, Tablet 3, Mobile 2
+  const configCols = parseInt(theme.gridColumns) || 4;
+  const cols = responsive.isDesktop ? 4 : responsive.isTablet ? 3 : 2;
   const gap = parseInt(theme.gridGap) || 12;
 
   const renderCard = (p: ProductNode) => {
@@ -845,66 +845,61 @@ function ProductGrid({ node, responsive, theme, settings, onSelect, resolveAsset
         </div>
 
         {/* Content */}
-        <div style={{ padding: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px', marginBottom: '10px' }}>
-            <div
-              style={{ fontSize: '13px', fontWeight: 600, color: settings?.template_product_title_color || theme.productTitleColor, lineHeight: 1.3, flex: 1 }}
-              data-edit-path={`layout.featured.items.${p.id}.title`}
-              onClick={(e) => { e.stopPropagation(); onSelect(`layout.featured.items.${p.id}.title`); }}
-            >
-              {p.title?.value || 'Product'}
-            </div>
-            <span style={{ fontSize: '9px', color: theme.mutedLight, letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{addLabel}</span>
+        <div style={{ padding: '8px' }}>
+          <div
+            style={{ fontSize: '11px', fontWeight: 600, color: settings?.template_product_title_color || theme.productTitleColor, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: '6px' }}
+            data-edit-path={`layout.featured.items.${p.id}.title`}
+            onClick={(e) => { e.stopPropagation(); onSelect(`layout.featured.items.${p.id}.title`); }}
+          >
+            {p.title?.value || 'Product'}
           </div>
 
-          {/* Bottom row */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span
-                style={{
-                  backgroundColor: theme.accent,
-                  color: '#FFFFFF',
-                  fontSize: '8px',
-                  fontWeight: 700,
-                  letterSpacing: '0.05em',
-                  padding: '5px 10px',
-                  borderRadius: '100px',
-                }}
-              >
-                {tag.slice(0, 6)}
-              </span>
-              <span
-                style={{
-                  backgroundColor: theme.cardBg,
-                  border: `1px solid ${theme.border}`,
-                  color: settings?.template_product_price_color || theme.productPriceColor,
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  padding: '4px 10px',
-                  borderRadius: '100px',
-                }}
-              >
-                {price}
-              </span>
-            </div>
-            <button
+          {/* Price and tag row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
+            <span
               style={{
                 backgroundColor: theme.accent,
                 color: '#FFFFFF',
-                fontSize: '9px',
+                fontSize: '7px',
                 fontWeight: 700,
-                letterSpacing: '0.05em',
-                padding: '6px 12px',
+                padding: '2px 6px',
                 borderRadius: '100px',
-                border: 'none',
-                cursor: 'pointer',
+                whiteSpace: 'nowrap',
               }}
-              data-edit-path="layout.featured.addLabel"
-              onClick={(e) => { e.stopPropagation(); onSelect('layout.featured.addLabel'); }}
             >
-              {addLabel}
-            </button>
+              {tag.slice(0, 4)}
+            </span>
+            <span
+              style={{
+                color: settings?.template_product_price_color || theme.productPriceColor,
+                fontSize: '10px',
+                fontWeight: 600,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {price}
+            </span>
           </div>
+
+          {/* View button */}
+          <button
+            style={{
+              backgroundColor: theme.accent,
+              color: '#FFFFFF',
+              fontSize: '8px',
+              fontWeight: 700,
+              padding: '4px 10px',
+              borderRadius: '100px',
+              border: 'none',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              width: '100%',
+            }}
+            data-edit-path="layout.featured.addLabel"
+            onClick={(e) => { e.stopPropagation(); onSelect('layout.featured.addLabel'); }}
+          >
+            {addLabel}
+          </button>
         </div>
       </div>
     );
@@ -1056,6 +1051,7 @@ function Footer({ node, theme, settings, onSelect }: { node: FooterNode; theme: 
    ═══════════════════════════════════════════════════════════════════════════ */
 export default function BabyosTemplate(props: TemplateProps) {
   const rootRef = React.useRef<HTMLDivElement | null>(null);
+  const forcedBreakpoint = (props as any).forcedBreakpoint as 'mobile' | 'tablet' | 'desktop' | undefined;
   const [responsive, setResponsive] = React.useState<ResponsiveInfo>({
     width: 0,
     isMobile: true,
@@ -1064,7 +1060,20 @@ export default function BabyosTemplate(props: TemplateProps) {
     breakpoint: 'mobile',
   });
 
+  // Update responsive immediately when forcedBreakpoint changes
+  React.useEffect(() => {
+    if (forcedBreakpoint) {
+      const isMobile = forcedBreakpoint === 'mobile';
+      const isTablet = forcedBreakpoint === 'tablet';
+      const isDesktop = forcedBreakpoint === 'desktop';
+      setResponsive({ width: isDesktop ? 1024 : isTablet ? 768 : 375, isMobile, isTablet, isDesktop, breakpoint: forcedBreakpoint });
+    }
+  }, [forcedBreakpoint]);
+
   React.useLayoutEffect(() => {
+    // If forcedBreakpoint is provided, skip ResizeObserver
+    if (forcedBreakpoint) return;
+
     const el = rootRef.current;
     if (!el) return;
 
@@ -1081,7 +1090,7 @@ export default function BabyosTemplate(props: TemplateProps) {
     const ro = new ResizeObserver(() => compute());
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [forcedBreakpoint]);
 
   // Get settings
   const settings = props.settings as any;

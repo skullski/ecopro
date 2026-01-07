@@ -132,6 +132,17 @@ export const getStorefrontSettings: RequestHandler = async (req, res) => {
 
     // First, try to find by exact store_slug match
     let querySlug = storeSlug;
+
+    const normalizeTemplateIdForPublic = (id: any): string => {
+      const raw = String(id || '')
+        .trim()
+        .toLowerCase()
+        .replace(/^gold-/, '')
+        .replace(/-gold$/, '');
+      if (!raw || raw === 'classic') return 'shiro-hana';
+      if (raw === 'baby') return 'babyos';
+      return raw;
+    };
     
     const pool = await ensureConnection();
     if (!isProduction) {
@@ -198,7 +209,7 @@ export const getStorefrontSettings: RequestHandler = async (req, res) => {
           store_name: 'Store',
           primary_color: '#3b82f6',
           secondary_color: '#8b5cf6',
-          template: 'classic',
+          template: 'shiro-hana',
           currency_code: 'DZD',
           banner_url: null,
           hero_main_url: null,
@@ -244,14 +255,14 @@ export const getStorefrontSettings: RequestHandler = async (req, res) => {
 
     // IMPORTANT: Ensure row.template is NOT overridden by templateSettings/globalSettings
     // The template field from the database row takes precedence
-    const dbTemplate = row.template;
+    const dbTemplate = normalizeTemplateIdForPublic(row.template);
 
     res.json({
       ...globalSettings,
       ...templateSettings,
       ...row,
       template: dbTemplate, // Explicitly set to ensure it's not overridden
-      store_slug: storeSlug,
+      store_slug: row?.store_slug || storeSlug,
       banner_url: sanitize(row.banner_url),
       hero_main_url: sanitize(row.hero_main_url),
       hero_tile1_url: sanitize(row.hero_tile1_url),
@@ -413,6 +424,8 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
       // Client-provided total_price is accepted for backward-compatibility but ignored.
       // Total is computed server-side from the current product price.
       total_price: z.preprocess((v) => Number(v), z.number().positive()).optional(),
+      delivery_fee: z.preprocess((v) => Number(v), z.number().nonnegative()).optional(),
+      delivery_type: z.enum(['home', 'desk']).optional(),
       customer_name: z.preprocess(
         (v) => (typeof v === 'string' ? v.trim() : v),
         z.string().min(1).max(120)
@@ -442,6 +455,7 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
       product_id,
       quantity,
       total_price: _ignoredTotalPrice,
+      delivery_type,
       customer_name,
       customer_email,
       customer_phone,
@@ -503,23 +517,52 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
 
     const productRow = productRes.rows[0];
     const unitPrice = Number(productRow.price);
-    const expectedTotalPrice = unitPrice * Number(quantity);
+    // Total includes product price * quantity + delivery fee (computed server-side)
+    let deliveryAmount = 0;
+    if (shipping_wilaya_id) {
+      try {
+        const feeRes = await pool.query(
+          `SELECT home_delivery_price, desk_delivery_price
+           FROM delivery_prices
+           WHERE client_id = $1 AND wilaya_id = $2 AND is_active = true
+           ORDER BY home_delivery_price ASC
+           LIMIT 1`,
+          [clientId, Number(shipping_wilaya_id)]
+        );
+        if (feeRes.rows.length === 0) {
+          deliveryAmount = 500;
+        } else {
+          const row = feeRes.rows[0];
+          const home = Number(row.home_delivery_price ?? 0);
+          const desk = row.desk_delivery_price == null ? null : Number(row.desk_delivery_price);
+          const chosen = (delivery_type === 'desk' && desk != null) ? desk : home;
+          deliveryAmount = Number.isFinite(chosen) && chosen >= 0 ? chosen : 0;
+        }
+      } catch {
+        // If delivery pricing table is unavailable for any reason, avoid blocking checkout
+        deliveryAmount = 0;
+      }
+    }
+
+    const expectedTotalPrice = (unitPrice * Number(quantity)) + deliveryAmount;
 
     await client.query('BEGIN');
     inTransaction = true;
 
     const result = await client.query(
       `INSERT INTO store_orders (
-        product_id, client_id, quantity, total_price,
+        product_id, client_id, quantity, total_price, delivery_fee, delivery_type,
         customer_name, customer_email, customer_phone, shipping_address,
         shipping_wilaya_id, shipping_commune_id, shipping_hai,
         status, payment_status, created_at
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,TIMEZONE('UTC', NOW())) RETURNING *`,
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,TIMEZONE('UTC', NOW())) RETURNING *`,
       [
         product_id,
         clientId, // Store owner's client_id so orders appear in their dashboard
         quantity,
         expectedTotalPrice,
+        deliveryAmount,
+        delivery_type || 'home',
         customer_name,
         customer_email || null,
         normalizedPhone || null,
@@ -681,8 +724,7 @@ Long press on the previous message and select "Pin" to easily track your order!
           
           // Schedule confirmation message with buttons after delay
           const delayMinutes = botRes.rows[0].telegram_delay_minutes || 5; // default 5 minutes
-          const scheduledTime = new Date(Date.now() + delayMinutes * 60 * 1000);
-          console.log(`[PublicStore] Scheduling confirmation for order ${orderId} in ${delayMinutes} minutes (at ${scheduledTime.toISOString()}, db value: ${botRes.rows[0].telegram_delay_minutes})`);
+          console.log(`[PublicStore] Scheduling confirmation for order ${orderId} in ${delayMinutes} minutes`);
           
           // Get confirmation template
           const defaultConfirmationTemplate = `Hello {customerName}! 🌟
@@ -709,12 +751,13 @@ Press one of the buttons to confirm or cancel:`;
           });
           
           // Insert into scheduled_messages table (use DO NOTHING to prevent duplicates for same order)
+          // Use PostgreSQL NOW() + INTERVAL to avoid timezone issues between JS and DB
           await pool.query(
             `INSERT INTO scheduled_messages 
              (client_id, order_id, telegram_chat_id, message_content, message_type, scheduled_at, status)
-             VALUES ($1, $2, $3, $4, $5, $6, 'pending')
+             VALUES ($1, $2, $3, $4, $5, NOW() + ($6 || ' minutes')::INTERVAL, 'pending')
              ON CONFLICT DO NOTHING`,
-            [clientId, orderId, chatId, confirmationMessage, 'order_confirmation', scheduledTime]
+            [clientId, orderId, chatId, confirmationMessage, 'order_confirmation', delayMinutes]
           );
           if (!isProduction) {
             console.log(`[createPublicStoreOrder] Scheduled confirmation message for ${delayMinutes} minutes later`);

@@ -37,24 +37,31 @@ function normalizeUrl(url: string): string {
 export default function FurnitureTemplate(props: TemplateProps) {
   const settings = props.settings || ({} as any);
   const canManage = props.canManage !== false;
+  const forcedBreakpoint = (props as any).forcedBreakpoint as Breakpoint | undefined;
 
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [breakpoint, setBreakpoint] = useState<Breakpoint>('desktop');
+  const [detectedBreakpoint, setDetectedBreakpoint] = useState<Breakpoint>(() => {
+    if (typeof window !== 'undefined') {
+      const w = window.innerWidth;
+      return w >= 1024 ? 'desktop' : w >= 768 ? 'tablet' : 'mobile';
+    }
+    return 'desktop';
+  });
   const [categoryFilter, setCategoryFilter] = useState('');
 
   useEffect(() => {
-    if (!containerRef.current) return;
-    if (typeof ResizeObserver === 'undefined') return;
-
-    const el = containerRef.current;
-    const ro = new ResizeObserver((entries) => {
-      const w = Math.round(entries[0]?.contentRect?.width || el.getBoundingClientRect().width || 0);
+    if (forcedBreakpoint) return;
+    const updateBreakpoint = () => {
+      const w = window.innerWidth;
       const bp: Breakpoint = w >= 1024 ? 'desktop' : w >= 768 ? 'tablet' : 'mobile';
-      setBreakpoint(bp);
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
+      setDetectedBreakpoint(bp);
+    };
+    updateBreakpoint();
+    window.addEventListener('resize', updateBreakpoint);
+    return () => window.removeEventListener('resize', updateBreakpoint);
+  }, [forcedBreakpoint]);
+
+  const breakpoint = forcedBreakpoint || detectedBreakpoint;
 
   const onSelect = (path: string) => {
     const anyProps = props as any;
@@ -385,7 +392,7 @@ export default function FurnitureTemplate(props: TemplateProps) {
             </div>
 
             <div
-              style={{ flex: 1, display: 'flex', justifyContent: 'center' }}
+              style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}
               data-edit-path="layout.hero.image"
               onClick={(e) => clickGuard(e, 'layout.hero.image')}
             >
@@ -393,9 +400,11 @@ export default function FurnitureTemplate(props: TemplateProps) {
                 src={heroImage}
                 alt="Featured"
                 style={{
-                  maxWidth: isMobile ? '100%' : '400px',
-                  maxHeight: '350px',
-                  objectFit: 'cover',
+                  width: '100%',
+                  maxWidth: isMobile ? '280px' : '350px',
+                  height: 'auto',
+                  maxHeight: '300px',
+                  objectFit: 'contain',
                   borderRadius: '8px',
                 }}
                 onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.png'; }}
@@ -485,11 +494,17 @@ export default function FurnitureTemplate(props: TemplateProps) {
                     backgroundColor: cardBg,
                     borderRadius: `${cardRadius}px`,
                     overflow: 'hidden',
-                    cursor: 'pointer',
+                    cursor: canManage ? 'default' : 'pointer',
                     transition: `all ${animationSpeed} ease`,
                   }}
                   data-edit-path={`layout.featured.items.${product.id}`}
-                  onClick={(e) => clickGuard(e, `layout.featured.items.${product.id}`)}
+                  onClick={(e) => {
+                    if (!canManage && product?.slug) {
+                      props.navigate(product.slug);
+                    } else if (canManage) {
+                      clickGuard(e, `layout.featured.items.${product.id}`);
+                    }
+                  }}
                 >
                   <div style={{ position: 'relative', aspectRatio: '1/1', overflow: 'hidden', backgroundColor: '#f5f5f4' }}>
                     <img
@@ -511,6 +526,7 @@ export default function FurnitureTemplate(props: TemplateProps) {
                           fontSize: '10px',
                           fontWeight: 500,
                           letterSpacing: '0.05em',
+                          whiteSpace: 'nowrap',
                         }}
                       >
                         NEW
@@ -519,17 +535,17 @@ export default function FurnitureTemplate(props: TemplateProps) {
                   </div>
                   <div style={{ padding: isMobile ? '12px' : '16px' }}>
                     <h3
-                      style={{ fontSize: isMobile ? '13px' : '15px', fontWeight: 500, marginBottom: '6px', color: text }}
+                      style={{ fontSize: isMobile ? '13px' : '15px', fontWeight: 500, marginBottom: '6px', color: text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                       data-edit-path={`layout.featured.items.${product.id}.title`}
                       onClick={(e) => clickGuard(e, `layout.featured.items.${product.id}.title`)}
                     >
                       {product.title}
                     </h3>
                     {product.category && (
-                      <p style={{ fontSize: '12px', color: muted, marginBottom: '8px' }}>{product.category}</p>
+                      <p style={{ fontSize: '12px', color: muted, marginBottom: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.category}</p>
                     )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                      <span style={{ color: text, fontSize: isMobile ? '14px' : '16px', fontWeight: 500 }}>
+                      <span style={{ color: text, fontSize: isMobile ? '14px' : '16px', fontWeight: 500, whiteSpace: 'nowrap' }}>
                         {props.formatPrice?.(product.price) || `${product.price} DZD`}
                       </span>
                     </div>
@@ -545,6 +561,7 @@ export default function FurnitureTemplate(props: TemplateProps) {
                         fontWeight: 500,
                         letterSpacing: '0.05em',
                         cursor: 'pointer',
+                        whiteSpace: 'nowrap',
                       }}
                       data-edit-path="layout.featured.addLabel"
                       onClick={(e) => clickGuard(e, 'layout.featured.addLabel')}

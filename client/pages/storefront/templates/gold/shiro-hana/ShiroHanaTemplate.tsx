@@ -125,17 +125,27 @@ function CategoryPills({ categories, active, theme, onPick, onSelect }: { catego
 
 export default function ShiroHanaTemplate(props: TemplateProps) {
   const rootRef = React.useRef<HTMLDivElement | null>(null);
+  const forcedBreakpoint = (props as any).forcedBreakpoint as 'mobile' | 'tablet' | 'desktop' | undefined;
   const [responsive, setResponsive] = React.useState<ResponsiveInfo>({ width: 0, isSm: false, isMd: false, breakpoint: 'mobile' });
 
+  // Update responsive immediately when forcedBreakpoint changes
+  React.useEffect(() => {
+    if (forcedBreakpoint) {
+      const isSm = forcedBreakpoint !== 'mobile';
+      const isMd = forcedBreakpoint === 'desktop';
+      setResponsive({ width: isMd ? 1024 : isSm ? 768 : 375, isSm, isMd, breakpoint: forcedBreakpoint });
+    }
+  }, [forcedBreakpoint]);
+
   React.useLayoutEffect(() => {
+    // If forcedBreakpoint is provided, skip ResizeObserver
+    if (forcedBreakpoint) return;
+
     const el = rootRef.current;
     if (!el) return;
 
     const compute = () => {
       const w = el.getBoundingClientRect().width;
-      // Treat tablet as a real middle breakpoint (e.g., 768–1023px).
-      // Keep `isSm` aligned with Tailwind's sm (>=640).
-      // Make `isMd` represent desktop-only so tablet doesn't render desktop layout.
       const isSm = w >= 640;
       const isMd = w >= 1024;
       const breakpoint: ResponsiveInfo['breakpoint'] = isMd ? 'desktop' : w >= 768 ? 'tablet' : 'mobile';
@@ -147,7 +157,7 @@ export default function ShiroHanaTemplate(props: TemplateProps) {
     const ro = new ResizeObserver(() => compute());
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [forcedBreakpoint]);
 
   // Single template editor: support both new + legacy stored schema keys.
   const docKey = 'template_page_shiro_hana_home';
@@ -324,16 +334,18 @@ export default function ShiroHanaTemplate(props: TemplateProps) {
 
   const addLabel = asString((props.settings as any)?.template_add_to_cart_label) || asString(featuredNode?.addLabel?.value) || 'Add';
   const listForDisplay = (Array.isArray(props.filtered) && props.filtered.length ? props.filtered : props.products) || [];
-  const productItems: ProductNode[] = listForDisplay.slice(0, 6).map((p) => ({
+  const productItems: (ProductNode & { slug?: string })[] = listForDisplay.slice(0, 6).map((p) => ({
     id: String(p.id),
     title: { type: 'text', value: String(p.title || '') },
     description: p.description ? { type: 'text', value: String(p.description) } : undefined,
     price: Number(p.price || 0),
     image: { type: 'image', assetKey: (p.images && p.images[0]) ? String(p.images[0]) : 'tuna-1', alt: String(p.title || '') },
     size: 'medium',
+    slug: p.slug, // Include slug for navigation
   }));
 
-  const featuredItems = props.canManage === false ? schemaFeaturedItems : (productItems.length > 0 ? productItems : schemaFeaturedItems);
+  // Always use productItems for both editor and customer view so navigation works
+  const featuredItems = productItems.length > 0 ? productItems : schemaFeaturedItems;
 
   return (
     <div
@@ -473,6 +485,7 @@ export default function ShiroHanaTemplate(props: TemplateProps) {
             addLabel={addLabel}
             theme={theme}
             responsive={responsive}
+            navigate={props.navigate}
           />
         </main>
 

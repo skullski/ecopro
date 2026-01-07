@@ -9,6 +9,8 @@ interface DeliveryCompany {
   name: string;
   features: any;
   is_active: boolean;
+  is_configured?: boolean;
+  has_api_key?: boolean;
 }
 
 interface OrderStatus {
@@ -150,8 +152,13 @@ export default function OrdersAdmin() {
       if (res.ok) {
         const data = await res.json();
         setDeliveryCompanies(data);
-        if (data.length > 0) {
-          setSelectedDeliveryCompany(data[0].id);
+        // Auto-select first configured company
+        const configuredCompany = data.find((c: DeliveryCompany) => c.is_configured && c.has_api_key);
+        if (configuredCompany) {
+          setSelectedDeliveryCompany(configuredCompany.id);
+        } else if (data.length > 0) {
+          // Fallback to first company (will be disabled anyway)
+          setSelectedDeliveryCompany(null);
         }
       }
     } catch (error) {
@@ -1168,26 +1175,39 @@ export default function OrdersAdmin() {
                 </div>
               ) : (
                 <div className="grid gap-2">
-                  {deliveryCompanies.map(company => (
-                    <button
-                      key={company.id}
-                      onClick={() => setSelectedDeliveryCompany(company.id)}
-                      className={`p-3 rounded border text-left transition-colors ${
-                        selectedDeliveryCompany === company.id
-                          ? 'border-blue-500 bg-blue-500/10'
-                          : 'border-border/50 bg-background hover:bg-muted'
-                      }`}
-                    >
-                      <div className="font-bold">{company.name}</div>
-                      {company.features && (
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {company.features.tracking && '📍 Tracking '}
-                          {company.features.cod && '💰 COD '}
-                          {company.features.labels && '🏷️ Labels'}
+                  {deliveryCompanies.map(company => {
+                    const isConfigured = company.is_configured && company.has_api_key;
+                    return (
+                      <button
+                        key={company.id}
+                        onClick={() => isConfigured && setSelectedDeliveryCompany(company.id)}
+                        disabled={!isConfigured}
+                        className={`p-3 rounded border text-left transition-colors ${
+                          !isConfigured
+                            ? 'border-border/30 bg-muted/30 opacity-60 cursor-not-allowed'
+                            : selectedDeliveryCompany === company.id
+                              ? 'border-blue-500 bg-blue-500/10'
+                              : 'border-border/50 bg-background hover:bg-muted'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold">{company.name}</span>
+                          {isConfigured ? (
+                            <span className="text-xs bg-green-500/20 text-green-600 px-2 py-0.5 rounded">✓ Ready</span>
+                          ) : (
+                            <span className="text-xs bg-yellow-500/20 text-yellow-600 px-2 py-0.5 rounded">⚠ Not configured</span>
+                          )}
                         </div>
-                      )}
-                    </button>
-                  ))}
+                        {company.features && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {company.features.tracking && '📍 Tracking '}
+                            {company.features.cod && '💰 COD '}
+                            {company.features.labels && '🏷️ Labels'}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>

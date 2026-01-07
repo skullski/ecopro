@@ -68,6 +68,7 @@ const FlexScan = lazy(() => import("./pages/admin/orders/FlexScan"));
 
 // Delivery submenu pages - lazy loaded
 const DeliveryCompanies = lazy(() => import("./pages/admin/delivery/DeliveryCompanies"));
+const DeliveryPricing = lazy(() => import("./pages/admin/delivery/DeliveryPricing"));
 
 // Addons submenu pages - lazy loaded
 const GoogleSheetsIntegration = lazy(() => import("./pages/admin/addons/GoogleSheets"));
@@ -404,6 +405,7 @@ const App = () => (
                     {/* Products management moved to Store page */}
                     {/* Delivery submenu routes */}
                     <Route path="delivery/companies" element={<DeliveryCompanies />} />
+                    <Route path="delivery/pricing" element={<DeliveryPricing />} />
                     {/* Addons submenu routes */}
                     <Route path="addons/google-sheets" element={<GoogleSheetsIntegration />} />
                     {/* Analytics merged into Dashboard */}

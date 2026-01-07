@@ -72,23 +72,36 @@ function detectMaterial(title: string, index: number): Material {
 export default function BagsTemplate(props: TemplateProps) {
   const settings = props.settings || ({} as any);
   const canManage = props.canManage !== false;
+  const forcedBreakpoint = (props as any).forcedBreakpoint as Breakpoint | undefined;
 
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [breakpoint, setBreakpoint] = useState<Breakpoint>('desktop');
+  const [detectedBreakpoint, setDetectedBreakpoint] = useState<Breakpoint>(() => {
+    // Initialize based on window width if available
+    if (typeof window !== 'undefined') {
+      const w = window.innerWidth;
+      return w >= 1024 ? 'desktop' : w >= 768 ? 'tablet' : 'mobile';
+    }
+    return 'desktop';
+  });
 
   useEffect(() => {
-    if (!containerRef.current) return;
-    if (typeof ResizeObserver === 'undefined') return;
-
-    const el = containerRef.current;
-    const ro = new ResizeObserver((entries) => {
-      const w = Math.round(entries[0]?.contentRect?.width || el.getBoundingClientRect().width || 0);
+    // Skip detection if forcedBreakpoint is provided
+    if (forcedBreakpoint) return;
+    
+    // Use window width for breakpoint detection, not container width
+    const updateBreakpoint = () => {
+      const w = window.innerWidth;
       const bp: Breakpoint = w >= 1024 ? 'desktop' : w >= 768 ? 'tablet' : 'mobile';
-      setBreakpoint(bp);
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
+      setDetectedBreakpoint(bp);
+    };
+    
+    updateBreakpoint(); // Initial check
+    window.addEventListener('resize', updateBreakpoint);
+    return () => window.removeEventListener('resize', updateBreakpoint);
+  }, [forcedBreakpoint]);
+
+  // Use forced breakpoint if provided, otherwise use detected
+  const breakpoint = forcedBreakpoint || detectedBreakpoint;
 
   const onSelect = (path: string) => {
     const anyProps = props as any;
@@ -230,12 +243,22 @@ export default function BagsTemplate(props: TemplateProps) {
     const title = asString(product?.title) || 'Untitled';
     const material = detectMaterial(title, index);
 
+    // Navigate to product checkout when customer clicks (not in edit mode)
+    const handleProductClick = () => {
+      if (!canManage && product?.slug) {
+        props.navigate(product.slug);
+      }
+    };
+
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div 
+        style={{ display: 'flex', flexDirection: 'column', gap: 8, cursor: canManage ? 'default' : 'pointer' }}
+        onClick={handleProductClick}
+      >
         <div
           style={{ backgroundColor: cardBg, boxShadow: materialShadow(material) }}
           data-edit-path={`${path}.image`}
-          onClick={(e) => clickGuard(e, `${path}.image`)}
+          onClick={(e) => { if (canManage) clickGuard(e, `${path}.image`); }}
         >
           <img
             src={img}
@@ -254,22 +277,22 @@ export default function BagsTemplate(props: TemplateProps) {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <div>
+          <div style={{ minWidth: 0, flex: 1 }}>
             <div
-              style={{ fontFamily: headingFontFamily, fontSize: 14, color: '#111827' }}
+              style={{ fontFamily: headingFontFamily, fontSize: 14, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
               data-edit-path={`${path}.title`}
-              onClick={(e) => clickGuard(e, `${path}.title`)}
+              onClick={(e) => { if (canManage) clickGuard(e, `${path}.title`); }}
             >
               {title}
             </div>
-            <div style={{ fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#9ca3af', marginTop: 4 }}>
+            <div style={{ fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#9ca3af', marginTop: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {String(product?.category || '').trim() ? String(product.category) : 'Bag'}
             </div>
           </div>
           <div
-            style={{ textAlign: 'right', fontSize: 13, color: '#111827', whiteSpace: 'nowrap' }}
+            style={{ textAlign: 'right', fontSize: 13, color: '#111827', whiteSpace: 'nowrap', flexShrink: 0 }}
             data-edit-path={`${path}.price`}
-            onClick={(e) => clickGuard(e, `${path}.price`)}
+            onClick={(e) => { if (canManage) clickGuard(e, `${path}.price`); }}
           >
             {props.formatPrice(product?.price)}
           </div>

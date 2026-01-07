@@ -21,6 +21,7 @@ import { checkPwnedPassword } from '../utils/pwned-passwords';
 import { encryptData, decryptData, hashData } from '../utils/encryption';
 import { buildOtpAuthUrl, generateTotpSecretBase32, verifyTotp } from '../utils/totp';
 import { clearAuthCookies, getCookieOptions, cookieNames } from '../utils/auth-cookies';
+import { createTrialSubscription } from './billing';
 
 // JWT authentication middleware
 export const requireAuth: RequestHandler = (req, res, next) => {
@@ -193,6 +194,9 @@ export const register: RequestHandler = async (req, res) => {
         console.warn("[REGISTER] Could not create client record:", clientError);
         // Not critical - continue with registration
       }
+      
+      // Create 30-day trial subscription for new store owners
+      await createTrialSubscription(Number(user.id));
     }
 
     // Generate token
@@ -851,6 +855,9 @@ export const verifyAndRegister: RequestHandler = async (req, res) => {
     } catch (clientError) {
       console.warn("[REGISTER] Could not create client record:", clientError);
     }
+
+    // Create 30-day trial subscription for new store owners
+    await createTrialSubscription(Number(user.id));
 
     // Log security event
     try {

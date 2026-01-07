@@ -1281,49 +1281,56 @@ export const unlockUser: RequestHandler = async (req, res) => {
 export const getLockedAccounts: RequestHandler = async (_req, res) => {
   try {
     // Get ALL clients with their lock status and subscription info
-    // Note: lock_type column may not exist yet if migration hasn't run
-    // Use COALESCE to default to 'critical' if column doesn't exist
+    // JOIN with subscriptions table to get trial/subscription end dates
     const result = await pool.query(`
       SELECT 
-        id, 
-        email, 
-        name,
-        is_locked,
-        locked_reason,
-        locked_at,
-        locked_by_admin_id,
-        unlock_reason,
-        unlocked_at,
-        unlocked_by_admin_id,
-        subscription_ends_at,
-        is_paid_temporarily,
-        subscription_extended_until,
-        COALESCE(lock_type, 'critical') as lock_type,
-        created_at
-      FROM clients
-      ORDER BY is_locked DESC, locked_at DESC, created_at DESC
+        c.id, 
+        c.email, 
+        c.name,
+        c.is_locked,
+        c.locked_reason,
+        c.locked_at,
+        c.locked_by_admin_id,
+        c.unlock_reason,
+        c.unlocked_at,
+        c.unlocked_by_admin_id,
+        COALESCE(c.subscription_extended_until, s.trial_ends_at, s.current_period_end, c.subscription_ends_at) as subscription_ends_at,
+        c.is_paid_temporarily,
+        c.subscription_extended_until,
+        COALESCE(c.lock_type, 'critical') as lock_type,
+        c.created_at,
+        s.status as subscription_status,
+        s.trial_ends_at,
+        s.current_period_end
+      FROM clients c
+      LEFT JOIN subscriptions s ON s.user_id = c.id
+      ORDER BY c.is_locked DESC, c.locked_at DESC, c.created_at DESC
     `).catch(async (err) => {
       // If lock_type column doesn't exist yet, query without it
-      console.warn('lock_type column not found, querying without it:', err.message);
+      console.warn('Query with lock_type failed, trying fallback:', err.message);
       return pool.query(`
         SELECT 
-          id, 
-          email, 
-          name,
-          is_locked,
-          locked_reason,
-          locked_at,
-          locked_by_admin_id,
-          unlock_reason,
-          unlocked_at,
-          unlocked_by_admin_id,
-          subscription_ends_at,
-          is_paid_temporarily,
-          subscription_extended_until,
+          c.id, 
+          c.email, 
+          c.name,
+          c.is_locked,
+          c.locked_reason,
+          c.locked_at,
+          c.locked_by_admin_id,
+          c.unlock_reason,
+          c.unlocked_at,
+          c.unlocked_by_admin_id,
+          COALESCE(c.subscription_extended_until, s.trial_ends_at, s.current_period_end, c.subscription_ends_at) as subscription_ends_at,
+          c.is_paid_temporarily,
+          c.subscription_extended_until,
           'critical' as lock_type,
-          created_at
-        FROM clients
-        ORDER BY is_locked DESC, locked_at DESC, created_at DESC
+          c.created_at,
+          s.status as subscription_status,
+          s.trial_ends_at,
+          s.current_period_end
+        FROM clients c
+        LEFT JOIN subscriptions s ON s.user_id = c.id
+        ORDER BY c.is_locked DESC, c.locked_at DESC, c.created_at DESC
       `);
     });
 

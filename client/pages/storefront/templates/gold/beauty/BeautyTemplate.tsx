@@ -37,24 +37,31 @@ function normalizeUrl(url: string): string {
 export default function BeautyTemplate(props: TemplateProps) {
   const settings = props.settings || ({} as any);
   const canManage = props.canManage !== false;
+  const forcedBreakpoint = (props as any).forcedBreakpoint as Breakpoint | undefined;
 
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [breakpoint, setBreakpoint] = useState<Breakpoint>('desktop');
+  const [detectedBreakpoint, setDetectedBreakpoint] = useState<Breakpoint>(() => {
+    if (typeof window !== 'undefined') {
+      const w = window.innerWidth;
+      return w >= 1024 ? 'desktop' : w >= 768 ? 'tablet' : 'mobile';
+    }
+    return 'desktop';
+  });
   const [categoryFilter, setCategoryFilter] = useState('');
 
   useEffect(() => {
-    if (!containerRef.current) return;
-    if (typeof ResizeObserver === 'undefined') return;
-
-    const el = containerRef.current;
-    const ro = new ResizeObserver((entries) => {
-      const w = Math.round(entries[0]?.contentRect?.width || el.getBoundingClientRect().width || 0);
+    if (forcedBreakpoint) return;
+    const updateBreakpoint = () => {
+      const w = window.innerWidth;
       const bp: Breakpoint = w >= 1024 ? 'desktop' : w >= 768 ? 'tablet' : 'mobile';
-      setBreakpoint(bp);
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
+      setDetectedBreakpoint(bp);
+    };
+    updateBreakpoint();
+    window.addEventListener('resize', updateBreakpoint);
+    return () => window.removeEventListener('resize', updateBreakpoint);
+  }, [forcedBreakpoint]);
+
+  const breakpoint = forcedBreakpoint || detectedBreakpoint;
 
   const onSelect = (path: string) => {
     const anyProps = props as any;
@@ -428,12 +435,18 @@ export default function BeautyTemplate(props: TemplateProps) {
                   backgroundColor: cardBg,
                   borderRadius: `${cardRadius}px`,
                   overflow: 'hidden',
-                  cursor: 'pointer',
+                  cursor: canManage ? 'default' : 'pointer',
                   boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
                   transition: 'transform 0.3s ease, box-shadow 0.3s ease',
                 }}
                 data-edit-path={`layout.featured.items.${product.id}`}
-                onClick={(e) => clickGuard(e, `layout.featured.items.${product.id}`)}
+                onClick={(e) => {
+                  if (!canManage && product?.slug) {
+                    props.navigate(product.slug);
+                  } else if (canManage) {
+                    clickGuard(e, `layout.featured.items.${product.id}`);
+                  }
+                }}
               >
                 <div style={{ position: 'relative', aspectRatio: '1/1', overflow: 'hidden', backgroundColor: '#fdf2f8' }}>
                   <img
@@ -454,6 +467,7 @@ export default function BeautyTemplate(props: TemplateProps) {
                         borderRadius: '999px',
                         fontSize: '10px',
                         fontWeight: 600,
+                        whiteSpace: 'nowrap',
                       }}
                     >
                       BESTSELLER
@@ -462,17 +476,17 @@ export default function BeautyTemplate(props: TemplateProps) {
                 </div>
                 <div style={{ padding: isMobile ? '14px' : '18px' }}>
                   <h3
-                    style={{ fontSize: isMobile ? '14px' : '15px', fontWeight: 500, marginBottom: '6px', color: text }}
+                    style={{ fontSize: isMobile ? '14px' : '15px', fontWeight: 500, marginBottom: '6px', color: text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                     data-edit-path={`layout.featured.items.${product.id}.title`}
                     onClick={(e) => clickGuard(e, `layout.featured.items.${product.id}.title`)}
                   >
                     {product.title}
                   </h3>
                   {product.category && (
-                    <p style={{ fontSize: '12px', color: muted, marginBottom: '10px' }}>{product.category}</p>
+                    <p style={{ fontSize: '12px', color: muted, marginBottom: '10px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.category}</p>
                   )}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <span style={{ color: accent, fontSize: isMobile ? '16px' : '18px', fontWeight: 600 }}>
+                    <span style={{ color: accent, fontSize: isMobile ? '16px' : '18px', fontWeight: 600, whiteSpace: 'nowrap' }}>
                       {props.formatPrice?.(product.price) || `${product.price} DZD`}
                     </span>
                   </div>
@@ -485,6 +499,16 @@ export default function BeautyTemplate(props: TemplateProps) {
                       padding: '10px',
                       borderRadius: '999px',
                       fontSize: '12px',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                    }}
+                    data-edit-path="layout.featured.addLabel"
+                    onClick={(e) => clickGuard(e, 'layout.featured.addLabel')}
+                  >
+                    {addToCartLabel}
+                  </button>
+                </div>
                       fontWeight: 500,
                       cursor: 'pointer',
                     }}

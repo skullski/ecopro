@@ -75,6 +75,10 @@ export const getBotSettings: RequestHandler = async (req, res) => {
         autoExpireHours: 24,
         viberAuthToken: '',
         viberSenderName: '',
+        messengerEnabled: false,
+        fbPageId: '',
+        fbPageAccessToken: '',
+        messengerDelayMinutes: 5,
         templateGreeting: `Thank you for ordering from {storeName}, {customerName}!\n\n✅ Enable notifications on Telegram to receive order confirmation and tracking updates.`,
         templateInstantOrder: '',
         templatePinInstructions: '',
@@ -115,6 +119,10 @@ export const getBotSettings: RequestHandler = async (req, res) => {
       templateOrderConfirmation: settings.template_order_confirmation,
       templatePayment: settings.template_payment,
       templateShipping: settings.template_shipping,
+      messengerEnabled: !!settings.messenger_enabled,
+      fbPageId: settings.fb_page_id || '',
+      fbPageAccessToken: settings.fb_page_access_token || '',
+      messengerDelayMinutes: settings.messenger_delay_minutes || 5,
     };
 
     res.json(response);
@@ -151,7 +159,11 @@ export const updateBotSettings: RequestHandler = async (req, res) => {
       templatePinInstructions,
       templateOrderConfirmation,
       templatePayment,
-      templateShipping
+      templateShipping,
+      messengerEnabled,
+      fbPageId,
+      fbPageAccessToken,
+      messengerDelayMinutes
     } = req.body;
 
     const effectiveProvider = provider ?? 'telegram';
@@ -182,8 +194,9 @@ export const updateBotSettings: RequestHandler = async (req, res) => {
           telegram_bot_token, telegram_delay_minutes, auto_expire_hours, viber_auth_token, viber_sender_name,
           telegram_bot_username, telegram_webhook_secret,
           template_greeting, template_instant_order, template_pin_instructions, template_order_confirmation, template_payment, template_shipping,
+          messenger_enabled, fb_page_id, fb_page_access_token, messenger_delay_minutes,
           created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, NOW(), NOW())`,
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, NOW(), NOW())`,
         [
           clientId,
           enabled ?? true,
@@ -205,6 +218,10 @@ export const updateBotSettings: RequestHandler = async (req, res) => {
           templateOrderConfirmation ?? null,
           templatePayment ?? null,
           templateShipping ?? null,
+          messengerEnabled ?? false,
+          fbPageId ?? null,
+          fbPageAccessToken ?? null,
+          messengerDelayMinutes ?? 5,
         ]
       );
     } else {
@@ -229,6 +246,10 @@ export const updateBotSettings: RequestHandler = async (req, res) => {
           template_order_confirmation = $17,
           template_payment = $18,
           template_shipping = $19,
+          messenger_enabled = $20,
+          fb_page_id = $21,
+          fb_page_access_token = $22,
+          messenger_delay_minutes = $23,
           updated_at = NOW()
         WHERE client_id = $1`,
         [
@@ -251,6 +272,10 @@ export const updateBotSettings: RequestHandler = async (req, res) => {
           templateOrderConfirmation ?? null,
           templatePayment ?? null,
           templateShipping ?? null,
+          messengerEnabled ?? false,
+          fbPageId ?? null,
+          fbPageAccessToken ?? null,
+          messengerDelayMinutes ?? 5,
         ]
       );
     }

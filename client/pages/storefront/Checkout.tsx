@@ -188,6 +188,8 @@ export default function Checkout() {
   });
   const [haiSuggestions, setHaiSuggestions] = useState<string[]>([]);
   const [haiSuggestionsSupported, setHaiSuggestionsSupported] = useState(true);
+  const [deliveryPrice, setDeliveryPrice] = useState<number | null>(null);
+  const [loadingDeliveryPrice, setLoadingDeliveryPrice] = useState(false);
 
   // Get template and settings
   const template = localStorage.getItem('template') || 'fashion';
@@ -308,6 +310,41 @@ export default function Checkout() {
       stopped = true;
     };
   }, [haiSuggestionsSupported, settings?.store_slug, formData.communeId]);
+
+  // Fetch delivery price when wilaya changes
+  useEffect(() => {
+    const fetchDeliveryPrice = async () => {
+      if (!settings?.store_slug || !formData.wilayaId) {
+        setDeliveryPrice(null);
+        return;
+      }
+      
+      setLoadingDeliveryPrice(true);
+      try {
+        const res = await fetch(
+          `/api/storefront/${encodeURIComponent(settings.store_slug)}/delivery-prices?wilaya_id=${formData.wilayaId}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          if (data.price) {
+            setDeliveryPrice(data.price.home_delivery_price);
+          } else if (data.default_price) {
+            setDeliveryPrice(data.default_price);
+          } else {
+            setDeliveryPrice(null);
+          }
+        } else {
+          setDeliveryPrice(null);
+        }
+      } catch {
+        setDeliveryPrice(null);
+      } finally {
+        setLoadingDeliveryPrice(false);
+      }
+    };
+    
+    fetchDeliveryPrice();
+  }, [settings?.store_slug, formData.wilayaId]);
 
   // Fetch product on mount - try checkout session first, then localStorage, then API
   const { data: product } = useQuery({
@@ -742,7 +779,7 @@ export default function Checkout() {
 
                 <div className={`${style.inputBg} rounded-lg p-2 sm:p-2.5 md:p-2 lg:p-3 space-y-1.5 sm:space-y-2 md:space-y-1.5 lg:space-y-3 border-2 ${style.border}`}>
                   <div>
-                    <h3 className="font-bold text-xs sm:text-sm md:text-xs lg:text-lg mb-1.5 sm:mb-2 md:mb-1.5 lg:mb-2">Order Items</h3>
+                    <h3 className="font-bold text-xs sm:text-sm md:text-xs lg:text-lg mb-1.5 sm:mb-2 md:mb-1.5 lg:mb-2">{t("checkout.orderItems") || "Order Items"}</h3>
                     <div className="space-y-1">
                       {cart.map((item) => (
                         <div key={item.id} className="flex justify-between text-xs sm:text-xs md:text-xs lg:text-sm">
@@ -752,6 +789,31 @@ export default function Checkout() {
                       ))}
                     </div>
                   </div>
+                  
+                  {/* Price Summary */}
+                  <div className="border-t border-gray-400 pt-1.5 space-y-1">
+                    <div className="flex justify-between text-xs sm:text-xs md:text-xs lg:text-sm">
+                      <span className="opacity-70">{t("checkout.subtotal") || "Subtotal"}</span>
+                      <span>{cart.reduce((sum, item) => sum + item.price * item.quantity, 0)} DZD</span>
+                    </div>
+                    <div className="flex justify-between text-xs sm:text-xs md:text-xs lg:text-sm">
+                      <span className="opacity-70">{t("checkout.deliveryFee") || "Delivery Fee"}</span>
+                      {loadingDeliveryPrice ? (
+                        <span className="opacity-50">{t("common.loading") || "Loading..."}</span>
+                      ) : deliveryPrice !== null ? (
+                        <span>{deliveryPrice} DZD</span>
+                      ) : (
+                        <span className="opacity-50 text-xs">{t("checkout.selectWilayaForDelivery") || "Select wilaya"}</span>
+                      )}
+                    </div>
+                    <div className="flex justify-between text-sm sm:text-base md:text-sm lg:text-lg font-bold pt-1 border-t border-gray-300">
+                      <span>{t("checkout.total") || "Total"}</span>
+                      <span style={{ color: style.accent }}>
+                        {cart.reduce((sum, item) => sum + item.price * item.quantity, 0) + (deliveryPrice || 0)} DZD
+                      </span>
+                    </div>
+                  </div>
+                  
                   <div className="border-t border-gray-400 pt-1.5" />
                   <h3 className="font-bold text-xs sm:text-sm md:text-xs lg:text-lg mb-1.5 sm:mb-2 md:mb-1.5 lg:mb-4">Delivery Details</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5 sm:gap-2 md:gap-1.5 lg:gap-4 text-xs sm:text-xs md:text-xs lg:text-sm">
@@ -857,7 +919,9 @@ export default function Checkout() {
                           const orderData = {
                             product_id: item.id,
                             quantity: item.quantity,
-                            total_price: item.price * item.quantity,
+                            total_price: item.price * item.quantity + (deliveryPrice || 0),
+                            delivery_fee: deliveryPrice || 0,
+                            delivery_type: 'home',
                             customer_name: formData.fullName,
                             ...(formData.email?.trim() ? { customer_email: formData.email.trim() } : {}),
                             customer_phone: formData.phone,

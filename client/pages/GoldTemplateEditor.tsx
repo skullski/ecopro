@@ -256,8 +256,9 @@ export default function GoldTemplateEditor() {
       bannerUrl: settings.banner_url || null,
       navigate: (to: string | number) => { if (typeof to === 'string') navigate(to); },
       canManage: true,
+      forcedBreakpoint: previewDevice,
     }),
-    [settings, products, formatPrice, navigate]
+    [settings, products, formatPrice, navigate, previewDevice]
   );
 
   const selectedTemplateId = useMemo(() => normalizeTemplateId(String(settings.template || 'shiro-hana')), [settings.template]);

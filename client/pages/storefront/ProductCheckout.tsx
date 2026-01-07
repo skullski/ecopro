@@ -61,6 +61,10 @@ export default function ProductCheckout() {
   const [orderId, setOrderId] = useState<number | null>(null);
   const [telegramUrls, setTelegramUrls] = useState<string[]>([]);
   
+  // Delivery pricing states
+  const [deliveryPrice, setDeliveryPrice] = useState<number | null>(null);
+  const [loadingDeliveryPrice, setLoadingDeliveryPrice] = useState(false);
+  
   // Telegram pre-connect states
   const [telegramBotInfo, setTelegramBotInfo] = useState<{
     enabled: boolean;
@@ -70,6 +74,7 @@ export default function ProductCheckout() {
   } | null>(null);
   const [telegramConnected, setTelegramConnected] = useState(false);
   const [checkingConnection, setCheckingConnection] = useState(false);
+  const [waitingForTelegramConnection, setWaitingForTelegramConnection] = useState(false);
   
   const [formData, setFormData] = useState({
     fullName: '',
@@ -281,6 +286,55 @@ export default function ProductCheckout() {
     };
   }, [orderSuccess, storeSlug, product?.store_slug, formData.phone, telegramConnected, telegramBotInfo?.enabled]);
 
+  // Poll for Telegram connection after clicking Connect button
+  useEffect(() => {
+    if (!waitingForTelegramConnection) return;
+    if (telegramConnected) {
+      setWaitingForTelegramConnection(false);
+      return;
+    }
+
+    const slug = storeSlug || product?.store_slug || localStorage.getItem('currentStoreSlug');
+    const normalizedPhone = (formData.phone || '').replace(/\D/g, '');
+
+    if (!slug || normalizedPhone.length < 9) return;
+
+    let stopped = false;
+    let tries = 0;
+
+    const tick = async () => {
+      if (stopped) return;
+      tries++;
+      try {
+        const res = await fetch(`/api/telegram/check-connection/${slug}?phone=${normalizedPhone}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.connected) {
+            setTelegramConnected(true);
+            setWaitingForTelegramConnection(false);
+            stopped = true;
+            return;
+          }
+        }
+      } catch {
+        // ignore
+      }
+
+      // Stop after 60 attempts (2 min)
+      if (tries >= 60) {
+        setWaitingForTelegramConnection(false);
+        stopped = true;
+      }
+    };
+
+    tick();
+    const interval = setInterval(tick, 2000);
+    return () => {
+      stopped = true;
+      clearInterval(interval);
+    };
+  }, [waitingForTelegramConnection, telegramConnected, storeSlug, product?.store_slug, formData.phone]);
+
   // Generate Telegram connect URL with phone
   const getTelegramConnectUrl = () => {
     if (!telegramBotInfo?.enabled || !telegramBotInfo?.botUsername) return null;
@@ -314,8 +368,42 @@ export default function ProductCheckout() {
       }
     }
     
+    // Start polling for connection
+    setWaitingForTelegramConnection(true);
     window.open(url, '_blank');
   };
+
+  // Fetch delivery price when wilaya changes
+  useEffect(() => {
+    const fetchDeliveryPrice = async () => {
+      const slug = storeSlug || product?.store_slug || localStorage.getItem('currentStoreSlug');
+      if (!slug || !formData.wilayaId) {
+        setDeliveryPrice(null);
+        return;
+      }
+      setLoadingDeliveryPrice(true);
+      try {
+        const res = await fetch(`/api/storefront/${encodeURIComponent(slug)}/delivery-prices?wilaya_id=${formData.wilayaId}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.price?.home_delivery_price != null) {
+            setDeliveryPrice(data.price.home_delivery_price);
+          } else if (data.default_price != null) {
+            setDeliveryPrice(data.default_price);
+          } else {
+            setDeliveryPrice(null);
+          }
+        } else {
+          setDeliveryPrice(null);
+        }
+      } catch (error) {
+        setDeliveryPrice(null);
+      } finally {
+        setLoadingDeliveryPrice(false);
+      }
+    };
+    fetchDeliveryPrice();
+  }, [storeSlug, product?.store_slug, formData.wilayaId]);
 
   const handleSubmitOrder = async () => {
     const currentStock = Number(product?.stock_quantity ?? 0);
@@ -347,7 +435,9 @@ export default function ProductCheckout() {
       const orderData = {
         product_id: product.id,
         quantity: quantity,
-        total_price: (product.price || 0) * quantity,
+        total_price: ((product.price || 0) * quantity) + (deliveryPrice || 0),
+        delivery_fee: deliveryPrice || 0,
+        delivery_type: 'home',
         customer_name: formData.fullName,
         customer_phone: formData.phone,
         ...(formData.email?.trim() ? { customer_email: formData.email.trim() } : {}),
@@ -444,7 +534,8 @@ export default function ProductCheckout() {
   const productDesc = product.description || 'High quality product';
   const availableStock = Number(product.stock_quantity ?? 0);
   const inStock = Number.isFinite(availableStock) && availableStock > 0;
-  const totalPrice = productPrice * quantity;
+  const subtotalPrice = productPrice * quantity;
+  const totalPrice = subtotalPrice + (deliveryPrice || 0);
 
   // Success Screen
   if (orderSuccess) {
@@ -472,6 +563,16 @@ export default function ProductCheckout() {
                 <span>{productName}</span>
                 <span>x{quantity}</span>
               </div>
+              <div className="flex justify-between text-white/60 text-sm">
+                <span>Subtotal</span>
+                <span>{subtotalPrice.toLocaleString()} DZD</span>
+              </div>
+              {deliveryPrice !== null && (
+                <div className="flex justify-between text-white/60 text-sm">
+                  <span>Delivery</span>
+                  <span>{deliveryPrice.toLocaleString()} DZD</span>
+                </div>
+              )}
               <div className="flex justify-between text-white font-bold text-lg border-t border-white/10 pt-2 mt-2">
                 <span>Total</span>
                 <span>{totalPrice.toLocaleString()} DZD</span>
@@ -486,7 +587,11 @@ export default function ProductCheckout() {
                     <div>
                       <p className="text-white font-bold text-sm">Telegram confirmation</p>
                       <p className="text-white/70 text-xs">
-                        {telegramConnected ? 'Connected ✓' : 'Not connected yet'}
+                        {telegramConnected 
+                          ? 'Connected ✓' 
+                          : waitingForTelegramConnection 
+                            ? 'Waiting for connection...' 
+                            : 'Not connected yet'}
                       </p>
                     </div>
                   </div>
@@ -494,10 +599,17 @@ export default function ProductCheckout() {
                   {!telegramConnected ? (
                     <button
                       onClick={handleConnectTelegram}
-                      disabled={!formData.phone || formData.phone.replace(/\D/g, '').length < 9}
-                      className="px-3 py-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold disabled:opacity-50"
+                      disabled={!formData.phone || formData.phone.replace(/\D/g, '').length < 9 || waitingForTelegramConnection}
+                      className="px-3 py-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold disabled:opacity-50 flex items-center gap-1"
                     >
-                      Connect
+                      {waitingForTelegramConnection ? (
+                        <>
+                          <span className="animate-spin">⏳</span>
+                          Waiting...
+                        </>
+                      ) : (
+                        'Connect'
+                      )}
                     </button>
                   ) : (
                     <span className="text-green-300 text-xs font-bold">Ready</span>
@@ -621,9 +733,20 @@ export default function ProductCheckout() {
                   <Plus className="w-4 h-4" />
                 </button>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col items-end gap-1">
                 <span className={`text-sm ${inStock ? 'text-green-400' : 'text-red-400'}`}>{inStock ? '✓ In Stock' : '✗ Out of Stock'}</span>
-                <span className="text-white font-bold">{totalPrice.toLocaleString()} DZD</span>
+                <span className="text-white/70 text-xs">Subtotal: {subtotalPrice.toLocaleString()} DZD</span>
+                <span className="text-white/70 text-xs">
+                  Delivery:{' '}
+                  {loadingDeliveryPrice ? (
+                    <span className="text-white/40">Loading...</span>
+                  ) : deliveryPrice !== null ? (
+                    <span className="text-white/80">{deliveryPrice.toLocaleString()} DZD</span>
+                  ) : (
+                    <span className="text-white/40">Select wilaya</span>
+                  )}
+                </span>
+                <span className="text-white font-bold">Total: {totalPrice.toLocaleString()} DZD</span>
               </div>
             </div>
 

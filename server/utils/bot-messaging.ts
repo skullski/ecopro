@@ -261,6 +261,22 @@ export async function sendOrderConfirmationMessages(
       );
       console.log(`[Bot] Telegram scheduled for ${customerPhone} at ${sendAt}`);
     }
+
+    // Facebook Messenger: schedule message if enabled
+    if ((provider === 'messenger' || settings.messenger_enabled) && settings.fb_page_access_token) {
+      const messengerMessage = replaceTemplateVariables(
+        settings.template_order_confirmation || defaultWhatsAppTemplate(),
+        templateVariables
+      );
+      const delayMinutes = settings.messenger_delay_minutes || 5;
+      const sendAt = new Date(Date.now() + delayMinutes * 60 * 1000);
+      await pool.query(
+        `INSERT INTO bot_messages (order_id, client_id, customer_phone, message_type, message_content, confirmation_link, send_at)
+         VALUES ($1, $2, $3, 'messenger', $4, $5, $6)`,
+        [orderId, clientId, customerPhone, messengerMessage, confirmationLink, sendAt]
+      );
+      console.log(`[Bot] Messenger scheduled for order ${orderId} at ${sendAt}`);
+    }
   } catch (error) {
     console.error("Error scheduling bot messages:", error);
     throw error;

@@ -37,24 +37,31 @@ function normalizeUrl(url: string): string {
 export default function FashionTemplate(props: TemplateProps) {
   const settings = props.settings || ({} as any);
   const canManage = props.canManage !== false;
+  const forcedBreakpoint = (props as any).forcedBreakpoint as Breakpoint | undefined;
 
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [breakpoint, setBreakpoint] = useState<Breakpoint>('desktop');
+  const [detectedBreakpoint, setDetectedBreakpoint] = useState<Breakpoint>(() => {
+    if (typeof window !== 'undefined') {
+      const w = window.innerWidth;
+      return w >= 1024 ? 'desktop' : w >= 768 ? 'tablet' : 'mobile';
+    }
+    return 'desktop';
+  });
   const [categoryFilter, setCategoryFilter] = useState('');
 
   useEffect(() => {
-    if (!containerRef.current) return;
-    if (typeof ResizeObserver === 'undefined') return;
-
-    const el = containerRef.current;
-    const ro = new ResizeObserver((entries) => {
-      const w = Math.round(entries[0]?.contentRect?.width || el.getBoundingClientRect().width || 0);
+    if (forcedBreakpoint) return;
+    const updateBreakpoint = () => {
+      const w = window.innerWidth;
       const bp: Breakpoint = w >= 1024 ? 'desktop' : w >= 768 ? 'tablet' : 'mobile';
-      setBreakpoint(bp);
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
+      setDetectedBreakpoint(bp);
+    };
+    updateBreakpoint();
+    window.addEventListener('resize', updateBreakpoint);
+    return () => window.removeEventListener('resize', updateBreakpoint);
+  }, [forcedBreakpoint]);
+
+  const breakpoint = forcedBreakpoint || detectedBreakpoint;
 
   const onSelect = (path: string) => {
     const anyProps = props as any;
@@ -87,7 +94,7 @@ export default function FashionTemplate(props: TemplateProps) {
   const spacing = asString(settings.template_spacing) || 'normal';
   const animationSpeed = asString(settings.template_animation_speed) || '0.3s';
   const hoverScale = asString(settings.template_hover_scale) || '1.02';
-  const gridColumns = resolveInt(settings.template_grid_columns, 3, 1, 6);
+  const gridColumns = resolveInt(settings.template_grid_columns, 4, 1, 6);
   const customCss = asString(settings.template_custom_css);
 
   // Category pill settings
@@ -423,10 +430,16 @@ export default function FashionTemplate(props: TemplateProps) {
                   border: '1px solid #1f2933',
                   overflow: 'hidden',
                   transition: animationSpeed,
-                  cursor: 'pointer',
+                  cursor: canManage ? 'default' : 'pointer',
                 }}
                 data-edit-path={`layout.featured.items.${product.id}`}
-                onClick={(e) => clickGuard(e, `layout.featured.items.${product.id}`)}
+                onClick={(e) => {
+                  if (!canManage && product?.slug) {
+                    props.navigate(product.slug);
+                  } else if (canManage) {
+                    clickGuard(e, `layout.featured.items.${product.id}`);
+                  }
+                }}
               >
                 <div style={{ position: 'relative', aspectRatio: '3/4', overflow: 'hidden' }}>
                   <img
@@ -448,6 +461,7 @@ export default function FashionTemplate(props: TemplateProps) {
                         fontSize: '9px',
                         letterSpacing: '0.08em',
                         textTransform: 'uppercase',
+                        whiteSpace: 'nowrap',
                       }}
                     >
                       {product.category}
@@ -456,13 +470,13 @@ export default function FashionTemplate(props: TemplateProps) {
                 </div>
                 <div style={{ padding: isMobile ? '10px' : '14px' }}>
                   <h3
-                    style={{ fontSize: isMobile ? '12px' : '13px', fontWeight: 500, marginBottom: '4px', color: text }}
+                    style={{ fontSize: isMobile ? '12px' : '13px', fontWeight: 500, marginBottom: '4px', color: text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                     data-edit-path={`layout.featured.items.${product.id}.title`}
                     onClick={(e) => clickGuard(e, `layout.featured.items.${product.id}.title`)}
                   >
                     {product.title}
                   </h3>
-                  <div style={{ color: accent, fontSize: isMobile ? '12px' : '13px', fontWeight: 600, marginBottom: '8px' }}>
+                  <div style={{ color: accent, fontSize: isMobile ? '12px' : '13px', fontWeight: 600, marginBottom: '8px', whiteSpace: 'nowrap' }}>
                     {props.formatPrice?.(product.price) || `${product.price} DZD`}
                   </div>
                   <button
@@ -476,6 +490,7 @@ export default function FashionTemplate(props: TemplateProps) {
                       fontSize: '10px',
                       fontWeight: 500,
                       cursor: 'pointer',
+                      whiteSpace: 'nowrap',
                     }}
                     data-edit-path="layout.featured.addLabel"
                     onClick={(e) => clickGuard(e, 'layout.featured.addLabel')}

@@ -597,6 +597,12 @@ export const ar = {
   "checkout.success": "تم تأكيد الطلب بنجاح!",
   "checkout.orderNumber": "رقم الطلب",
   "checkout.thankYou": "شكراً لطلبك!",
+  "checkout.orderSummary": "ملخص الطلب",
+  "checkout.orderItems": "المنتجات",
+  "checkout.subtotal": "المجموع الفرعي",
+  "checkout.deliveryFee": "رسوم التوصيل",
+  "checkout.total": "المجموع الكلي",
+  "checkout.selectWilayaForDelivery": "اختر الولاية لمعرفة رسوم التوصيل",
 
   // Customer Info
   "customer.name": "الاسم الكامل",
@@ -1165,6 +1171,8 @@ export const ar = {
   "sidebar.stock": "المخزون",
   "sidebar.orders": "الطلبات",
   "sidebar.delivery": "التوصيل",
+  "sidebar.deliveryCompanies": "شركات التوصيل",
+  "sidebar.deliveryPricing": "أسعار التوصيل",
   "sidebar.addons": "الإضافات",
   "sidebar.pixels": "إحصائيات البكسل",
   "sidebar.wasselni": "Bot",
@@ -1267,6 +1275,8 @@ export const ar = {
   "bot.viberSenderName": "اسم المرسل فايبر",
   "bot.facebookPageId": "معرف صفحة فيسبوك",
   "bot.facebookAccessToken": "توكن فيسبوك",
+  "bot.messengerEnabled": "تفعيل إشعارات ماسنجر",
+  "bot.messengerDelay": "تأخير الرسالة (دقائق)",
   "bot.greetingMessage": "رسالة الترحيب",
   "bot.greetingDesc": "تُرسل عند ضغط العميل على زر تيليجرام ثم Start",
   "bot.instantOrder": "إشعار الطلب الفوري",
@@ -1334,6 +1344,25 @@ export const ar = {
   "delivery.docs": "التوثيق",
   "delivery.disconnect": "قطع الاتصال",
   "delivery.connectActivate": "الاتصال والتفعيل",
+
+  // Delivery Pricing Page
+  "delivery.pricingTitle": "أسعار التوصيل",
+  "delivery.pricingDesc": "حدد أسعار التوصيل لكل ولاية. سيرى العملاء هذه الأسعار عند الدفع.",
+  "delivery.defaultSettings": "الإعدادات الافتراضية",
+  "delivery.homePrice": "التوصيل للمنزل (دج)",
+  "delivery.deskPrice": "التوصيل للمكتب (دج)",
+  "delivery.estimatedDays": "أيام التوصيل",
+  "delivery.applyToAll": "تطبيق على الكل",
+  "delivery.searchWilaya": "ابحث عن ولاية...",
+  "delivery.wilaya": "الولاية",
+  "delivery.days": "أيام",
+  "delivery.active": "نشط",
+  "delivery.activeWilayas": "الولايات النشطة",
+  "delivery.saveAllPrices": "حفظ جميع الأسعار",
+  "delivery.defaultApplied": "تم تطبيق الأسعار الافتراضية على جميع الولايات",
+  "delivery.pricesSaved": "تم حفظ أسعار التوصيل بنجاح",
+  "delivery.loadError": "فشل تحميل أسعار التوصيل",
+  "delivery.saveError": "فشل حفظ أسعار التوصيل",
 
   // Google Sheets Addon Page - Additional
   "addons.sheets.exportOrdersAuto": "📊 تصدير الطلبات تلقائياً",

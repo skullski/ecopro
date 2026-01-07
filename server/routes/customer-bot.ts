@@ -302,9 +302,57 @@ router.post('/campaigns/:id/send', async (req: Request, res: Response) => {
           .replace(/{name}/gi, customer.customer_name || 'Valued Customer')
           .replace(/{phone}/gi, customer.customer_phone || '');
 
-        const channel = String(campaign.channel || botSettings?.provider || 'telegram');
+        const normalizedPhone = String(customer.customer_phone || '').replace(/\D/g, '');
+        
+        // Get customer's connected channels from customer_messaging_ids
+        const channelRes = await pool.query(
+          `SELECT telegram_chat_id, viber_user_id
+           FROM customer_messaging_ids
+           WHERE client_id = $1 AND customer_phone = $2
+           LIMIT 1`,
+          [clientId, normalizedPhone]
+        );
+        const customerChannels = channelRes.rows[0] || {};
+        
+        // Determine which channel to use:
+        // 1. If campaign has a specific channel set (not 'auto'), use that
+        // 2. Otherwise, auto-detect based on what customer has connected
+        let effectiveChannel = campaign.channel || 'auto';
+        let actualChannelUsed = effectiveChannel;
+        let sent = false;
 
-        if (channel === 'whatsapp_cloud' || channel === 'whatsapp') {
+        // Auto-detect: try channels in order of preference based on what's available
+        if (effectiveChannel === 'auto' || effectiveChannel === 'all') {
+          // Try Telegram first (most reliable)
+          if (customerChannels.telegram_chat_id && botSettings?.telegram_bot_token) {
+            effectiveChannel = 'telegram';
+          }
+          // Then WhatsApp
+          else if (botSettings?.whatsapp_token && botSettings?.whatsapp_phone_id) {
+            effectiveChannel = 'whatsapp_cloud';
+          }
+          // Then Viber
+          else if (customerChannels.viber_user_id) {
+            effectiveChannel = 'viber';
+          }
+          else {
+            throw new Error('No messaging channel available for this customer');
+          }
+        }
+
+        // Send via the determined channel
+        if (effectiveChannel === 'telegram') {
+          if (!botSettings?.telegram_bot_token) {
+            throw new Error('Telegram bot token missing in bot settings');
+          }
+          const chatId = customerChannels.telegram_chat_id;
+          if (!chatId) {
+            throw new Error('Customer not connected on Telegram');
+          }
+          await sendTelegramMessage(String(botSettings.telegram_bot_token), String(chatId), personalizedMessage);
+          actualChannelUsed = 'telegram';
+          sent = true;
+        } else if (effectiveChannel === 'whatsapp_cloud' || effectiveChannel === 'whatsapp') {
           if (!botSettings?.whatsapp_token || !botSettings?.whatsapp_phone_id) {
             throw new Error('WhatsApp Cloud credentials missing in bot settings');
           }
@@ -312,31 +360,24 @@ router.post('/campaigns/:id/send', async (req: Request, res: Response) => {
             token: String(botSettings.whatsapp_token),
             phoneId: String(botSettings.whatsapp_phone_id),
           });
-        } else if (channel === 'telegram') {
-          if (!botSettings?.telegram_bot_token) {
-            throw new Error('Telegram bot token missing in bot settings');
-          }
-          const chatRes = await pool.query(
-            `SELECT telegram_chat_id
-             FROM customer_messaging_ids
-             WHERE client_id = $1 AND customer_phone = $2 AND telegram_chat_id IS NOT NULL
-             LIMIT 1`,
-            [clientId, String(customer.customer_phone || '').replace(/\D/g, '')]
-          );
-          const chatId = chatRes.rows[0]?.telegram_chat_id;
-          if (!chatId) {
-            throw new Error('Customer not connected on Telegram');
-          }
-          await sendTelegramMessage(String(botSettings.telegram_bot_token), String(chatId), personalizedMessage);
+          actualChannelUsed = 'whatsapp';
+          sent = true;
+        } else if (effectiveChannel === 'viber') {
+          // TODO: Implement Viber sending when credentials are available
+          throw new Error('Viber messaging not yet implemented');
         } else {
-          throw new Error(`Unsupported channel: ${channel}`);
+          throw new Error(`Unsupported channel: ${effectiveChannel}`);
         }
 
-        // Log success
+        if (!sent) {
+          throw new Error('Message was not sent');
+        }
+
+        // Log success with the actual channel used
         await pool.query(`
           INSERT INTO message_logs (campaign_id, client_id, customer_phone, customer_email, customer_name, order_id, channel, status, sent_at)
           VALUES ($1, $2, $3, $4, $5, $6, $7, 'sent', NOW())
-        `, [id, clientId, customer.customer_phone, customer.customer_email, customer.customer_name, customer.order_id, campaign.channel]);
+        `, [id, clientId, customer.customer_phone, customer.customer_email, customer.customer_name, customer.order_id, actualChannelUsed]);
 
         sentCount++;
       } catch (sendError: any) {
@@ -346,7 +387,7 @@ router.post('/campaigns/:id/send', async (req: Request, res: Response) => {
         await pool.query(`
           INSERT INTO message_logs (campaign_id, client_id, customer_phone, customer_email, customer_name, order_id, channel, status, error_message)
           VALUES ($1, $2, $3, $4, $5, $6, $7, 'failed', $8)
-        `, [id, clientId, customer.customer_phone, customer.customer_email, customer.customer_name, customer.order_id, campaign.channel, sendError.message]);
+        `, [id, clientId, customer.customer_phone, customer.customer_email, customer.customer_name, customer.order_id, campaign.channel || 'auto', sendError.message]);
 
         failedCount++;
       }

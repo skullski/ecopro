@@ -12,7 +12,7 @@ interface BotSettings {
   enabled: boolean;
   updatesEnabled?: boolean;
   trackingEnabled?: boolean;
-  provider: 'whatsapp_cloud' | 'telegram' | 'viber' | 'facebook' | string;
+  provider: 'whatsapp_cloud' | 'telegram' | 'viber' | 'facebook' | 'messenger' | string;
   whatsappPhoneId: string;
   whatsappToken: string;
   telegramBotToken?: string;
@@ -23,6 +23,11 @@ interface BotSettings {
   viberSenderName?: string;
   facebookPageId?: string;
   facebookAccessToken?: string;
+  // Facebook Messenger fields
+  messengerEnabled?: boolean;
+  fbPageId?: string;
+  fbPageAccessToken?: string;
+  messengerDelayMinutes?: number;
   templateGreeting?: string;
   templateInstantOrder?: string;
   templatePinInstructions?: string;
@@ -52,6 +57,10 @@ export default function AdminWasselniSettings() {
     viberSenderName: '',
     facebookPageId: '',
     facebookAccessToken: '',
+    messengerEnabled: false,
+    fbPageId: '',
+    fbPageAccessToken: '',
+    messengerDelayMinutes: 5,
     templateGreeting: `Thank you for ordering from {storeName}, {customerName}!\n\n✅ Enable notifications on Telegram to receive order confirmation and tracking updates.`,
     templateInstantOrder: `🎉 Thank you, {customerName}!\n\nYour order has been received successfully ✅\n\n━━━━━━━━━━━━━━━━\n📦 Order Details\n━━━━━━━━━━━━━━━━\n🔢 Order ID: #{orderId}\n📱 Product: {productName}\n💰 Price: {totalPrice} DZD\n📍 Quantity: {quantity}\n\n━━━━━━━━━━━━━━━━\n👤 Delivery Information\n━━━━━━━━━━━━━━━━\n📛 Name: {customerName}\n📞 Phone: {customerPhone}\n🏠 Address: {address}\n\n━━━━━━━━━━━━━━━━\n🚚 Order Status: Processing\n━━━━━━━━━━━━━━━━\n\nWe will contact you soon for confirmation 📞\n\n⭐ From {storeName}`,
     templatePinInstructions: `📌 Important tip:\n\nLong press on the previous message and select "Pin" to easily track your order!\n\n🔔 Make sure to:\n• Enable notifications for the bot\n• Don't mute the conversation\n• You will receive order status updates here directly`,
@@ -381,22 +390,50 @@ export default function AdminWasselniSettings() {
 
               {settings.provider === 'facebook' && (
                 <div className="space-y-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                  <div className="p-3 bg-blue-50 dark:bg-blue-500/10 rounded-xl border border-blue-200 dark:border-blue-500/30 mb-3">
+                    <p className="text-xs text-blue-700 dark:text-blue-300">
+                      <strong>Setup:</strong> Create a Facebook App, add Messenger product, and get a Page Access Token from <a href="https://developers.facebook.com" target="_blank" rel="noopener noreferrer" className="underline">developers.facebook.com</a>
+                    </p>
+                  </div>
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.facebookPageId')}</Label>
+                    <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.facebookPageId') || 'Facebook Page ID'}</Label>
                     <Input
-                      value={settings.facebookPageId || ''}
-                      onChange={(e) => updateSetting('facebookPageId', e.target.value)}
+                      value={settings.fbPageId || settings.facebookPageId || ''}
+                      onChange={(e) => updateSetting('fbPageId', e.target.value)}
                       placeholder="e.g. 123456789012345"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.facebookAccessToken')}</Label>
+                    <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.facebookAccessToken') || 'Page Access Token'}</Label>
                     <Input
                       type="password"
-                      value={settings.facebookAccessToken || ''}
-                      onChange={(e) => updateSetting('facebookAccessToken', e.target.value)}
-                      placeholder="Paste Facebook access token"
+                      value={settings.fbPageAccessToken || settings.facebookAccessToken || ''}
+                      onChange={(e) => updateSetting('fbPageAccessToken', e.target.value)}
+                      placeholder="Paste Page Access Token from Facebook"
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.messengerDelay') || 'Message Delay (minutes)'}</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={60}
+                      value={settings.messengerDelayMinutes ?? 5}
+                      onChange={(e) => {
+                        const num = parseInt(e.target.value, 10);
+                        updateSetting('messengerDelayMinutes', isNaN(num) ? 5 : num);
+                      }}
+                      placeholder="5"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3 pt-2">
+                    <Switch
+                      checked={settings.messengerEnabled ?? false}
+                      onCheckedChange={(checked) => updateSetting('messengerEnabled', checked)}
+                    />
+                    <Label className="text-sm text-slate-700 dark:text-slate-300">
+                      {t('bot.messengerEnabled') || 'Enable Messenger notifications'}
+                    </Label>
                   </div>
                 </div>
               )}
