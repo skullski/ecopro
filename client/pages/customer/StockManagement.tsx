@@ -79,6 +79,7 @@ interface StockCategory {
   icon: string;
   product_count: number;
   created_at: string;
+  sample_image?: string | null;
 }
 
 export default function StockManagement() {
@@ -1393,7 +1394,15 @@ export default function StockManagement() {
                       className="flex items-center justify-between p-3 rounded-lg border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <span className="text-xl">{cat.icon}</span>
+                        {cat.sample_image ? (
+                          <img 
+                            src={cat.sample_image} 
+                            alt={cat.name}
+                            className="w-10 h-10 rounded-lg object-cover border border-primary/20"
+                          />
+                        ) : (
+                          <span className="text-xl w-10 h-10 flex items-center justify-center bg-primary/10 rounded-lg">{cat.icon}</span>
+                        )}
                         <div>
                           <p className="font-medium">{cat.name}</p>
                           <p className="text-xs text-muted-foreground">

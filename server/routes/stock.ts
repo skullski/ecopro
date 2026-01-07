@@ -742,11 +742,12 @@ export const getAllStockCategories: RequestHandler = async (req, res) => {
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
-    // Get categories from the categories table with product counts
+    // Get categories from the categories table with product counts and sample image
     const result = await pool.query(
       `SELECT 
          c.id, c.name, c.color, c.icon, c.created_at,
-         COUNT(p.id) as product_count
+         COUNT(p.id) as product_count,
+         (SELECT image_url FROM client_stock_products WHERE client_id = c.client_id AND category = c.name AND image_url IS NOT NULL LIMIT 1) as sample_image
        FROM client_stock_categories c
        LEFT JOIN client_stock_products p ON p.client_id = c.client_id AND p.category = c.name
        WHERE c.client_id = $1
