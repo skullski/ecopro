@@ -38,8 +38,8 @@ export function ProductGrid({ items, columns = 3, gap, paddingY, paddingX, backg
   const gapPx = resolveNumber(gap) ?? parseInt(String((theme as any)?.gridGap || ''), 10);
   const padXPx = resolveNumber(paddingX);
   const padYPx = resolveNumber(paddingY);
-  // Desktop: 4 cols, Tablet: 3 cols, Mobile: 2 cols
-  const colCount = isMd ? 4 : (isSm ? 3 : 2);
+  // Desktop: uses mdCols setting (default 4), Tablet: 3 cols, Mobile: 2 cols
+  const colCount = isMd ? mdCols : (isSm ? 3 : 2);
 
   const title = String((theme as any)?.featuredTitle || '').trim();
   const subtitle = String((theme as any)?.featuredSubtitle || '').trim();

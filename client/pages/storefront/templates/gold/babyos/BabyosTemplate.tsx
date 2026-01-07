@@ -782,9 +782,9 @@ function ProductGrid({ node, responsive, theme, settings, onSelect, resolveAsset
   const heading = grid?.title?.value || 'Pieces in this universe';
   const gridItems = items.slice(3, 12); // Skip first 3 shown in featured
   
-  // Use fixed grid columns: Desktop 4, Tablet 3, Mobile 2
+  // Use configurable grid columns: Desktop uses setting (default 4), Tablet 3, Mobile 2
   const configCols = parseInt(theme.gridColumns) || 4;
-  const cols = responsive.isDesktop ? 4 : responsive.isTablet ? 3 : 2;
+  const cols = responsive.isDesktop ? configCols : responsive.isTablet ? 3 : 2;
   const gap = parseInt(theme.gridGap) || 12;
 
   const renderCard = (p: ProductNode) => {
