@@ -157,6 +157,9 @@ export default function FashionTemplate(props: TemplateProps) {
   const isMobile = breakpoint === 'mobile';
   const isTablet = breakpoint === 'tablet';
 
+  // Debug breakpoint detection
+  console.log('[FashionTemplate] Breakpoint:', breakpoint, 'isMobile:', isMobile, 'isTablet:', isTablet, 'gridColumns:', gridColumns);
+
   return (
     <div
       ref={containerRef}
