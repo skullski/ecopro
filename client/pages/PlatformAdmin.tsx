@@ -1066,24 +1066,21 @@ export default function PlatformAdmin() {
     return `${abs.toFixed(0)}B`;
   };
 
-  const renderHtopBar = (pct: number | null | undefined, width = 22, color: 'red' | 'cyan' = 'cyan') => {
+  const renderHtopBar = (pct: number | null | undefined, color: 'red' | 'cyan' = 'cyan') => {
     const p = pct == null || !Number.isFinite(pct) ? 0 : Math.max(0, Math.min(100, pct));
     const barColor = color === 'red' ? 'bg-red-400' : 'bg-cyan-400';
     const glowColor = color === 'red' ? 'shadow-red-500/50' : 'shadow-cyan-500/50';
     return (
-      <span className="inline-flex items-center h-4 relative" style={{ width: `${width * 0.45}em` }}>
-        <span className="absolute inset-0 bg-slate-800/50 rounded-sm" />
-        <span 
+      <div className="flex-1 h-4 relative mx-2">
+        <div className="absolute inset-0 bg-slate-800/50 rounded-sm" />
+        <div 
           className={`absolute left-0 top-0 bottom-0 ${barColor} rounded-sm shadow-lg ${glowColor}`}
           style={{ 
             width: `${p}%`,
             animation: p > 0 ? 'htop-pulse 2s ease-in-out infinite' : 'none',
           }}
         />
-        <span className="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-white/80 mix-blend-difference">
-          {p.toFixed(0)}%
-        </span>
-      </span>
+      </div>
     );
   };
 
@@ -2743,12 +2740,10 @@ export default function PlatformAdmin() {
                       <div className="space-y-1.5 text-xs">
                         {Array.isArray(serverHealth.htop.cpu?.perCorePct) && serverHealth.htop.cpu!.perCorePct!.length > 0 ? (
                           serverHealth.htop.cpu!.perCorePct!.slice(0, 32).map((pct, idx) => (
-                            <div key={idx} className="flex items-center justify-between gap-3">
-                              <div className="text-slate-300 flex items-center gap-2 min-w-0">
-                                <span className="text-slate-500 w-4">{idx}</span>
-                                {renderHtopBar(pct, 22, 'red')}
-                              </div>
-                              <div className="text-fuchsia-300 tabular-nums">{formatPercent(pct)}</div>
+                            <div key={idx} className="flex items-center gap-1">
+                              <span className="text-slate-500 w-4 shrink-0">{idx}</span>
+                              {renderHtopBar(pct, 'red')}
+                              <span className="text-fuchsia-300 tabular-nums shrink-0 w-14 text-right">{formatPercent(pct)}</span>
                             </div>
                           ))
                         ) : (
@@ -2756,26 +2751,22 @@ export default function PlatformAdmin() {
                         )}
 
                         {serverHealth.htop.memory && (
-                          <div className="flex items-center justify-between gap-3 pt-1">
-                            <div className="text-slate-300 flex items-center gap-2 min-w-0">
-                              <span className="text-slate-500 w-6">Mem</span>
-                              {renderHtopBar(serverHealth.htop.memory.pctUsed, 22, 'cyan')}
-                            </div>
-                            <div className="text-fuchsia-300 tabular-nums">
+                          <div className="flex items-center gap-1 pt-1">
+                            <span className="text-slate-500 w-6 shrink-0">Mem</span>
+                            {renderHtopBar(serverHealth.htop.memory.pctUsed, 'cyan')}
+                            <span className="text-fuchsia-300 tabular-nums shrink-0 text-right" style={{ minWidth: '5.5rem' }}>
                               {formatBytesShort(serverHealth.htop.memory.usedBytes)}/{formatBytesShort(serverHealth.htop.memory.totalBytes)}
-                            </div>
+                            </span>
                           </div>
                         )}
 
                         {serverHealth.htop.swap && (
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="text-slate-300 flex items-center gap-2 min-w-0">
-                              <span className="text-slate-500 w-6">Swp</span>
-                              {renderHtopBar(serverHealth.htop.swap.pctUsed, 22, 'cyan')}
-                            </div>
-                            <div className="text-fuchsia-300 tabular-nums">
+                          <div className="flex items-center gap-1">
+                            <span className="text-slate-500 w-6 shrink-0">Swp</span>
+                            {renderHtopBar(serverHealth.htop.swap.pctUsed, 'cyan')}
+                            <span className="text-fuchsia-300 tabular-nums shrink-0 text-right" style={{ minWidth: '5.5rem' }}>
                               {formatBytesShort(serverHealth.htop.swap.usedBytes)}/{formatBytesShort(serverHealth.htop.swap.totalBytes)}
-                            </div>
+                            </span>
                           </div>
                         )}
                       </div>
