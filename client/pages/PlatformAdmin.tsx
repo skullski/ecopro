@@ -165,6 +165,10 @@ interface ServerHealth {
       waitingCount: number | null;
     };
   };
+  users?: {
+    total: number;
+    recent15m: number;
+  };
   alerts?: string[];
   thresholds?: {
     dbSlowMs: number;
@@ -1062,11 +1066,25 @@ export default function PlatformAdmin() {
     return `${abs.toFixed(0)}B`;
   };
 
-  const renderHtopBar = (pct: number | null | undefined, width = 22) => {
+  const renderHtopBar = (pct: number | null | undefined, width = 22, color: 'red' | 'cyan' = 'cyan') => {
     const p = pct == null || !Number.isFinite(pct) ? 0 : Math.max(0, Math.min(100, pct));
-    const filled = Math.round((p / 100) * width);
-    const empty = Math.max(0, width - filled);
-    return `${'|'.repeat(filled)}${' '.repeat(empty)}`;
+    const barColor = color === 'red' ? 'bg-red-400' : 'bg-cyan-400';
+    const glowColor = color === 'red' ? 'shadow-red-500/50' : 'shadow-cyan-500/50';
+    return (
+      <span className="inline-flex items-center h-4 relative" style={{ width: `${width * 0.45}em` }}>
+        <span className="absolute inset-0 bg-slate-800/50 rounded-sm" />
+        <span 
+          className={`absolute left-0 top-0 bottom-0 ${barColor} rounded-sm shadow-lg ${glowColor}`}
+          style={{ 
+            width: `${p}%`,
+            animation: p > 0 ? 'htop-pulse 2s ease-in-out infinite' : 'none',
+          }}
+        />
+        <span className="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-white/80 mix-blend-difference">
+          {p.toFixed(0)}%
+        </span>
+      </span>
+    );
   };
 
   const loadServerHealth = async () => {
@@ -2722,13 +2740,13 @@ export default function PlatformAdmin() {
                   {serverHealth.htop && (
                     <div className="bg-slate-950/60 rounded-lg border border-slate-700/50 p-3 font-mono">
                       <div className="text-slate-400 text-xs mb-2">$ htop (live)</div>
-                      <div className="space-y-1 text-xs">
+                      <div className="space-y-1.5 text-xs">
                         {Array.isArray(serverHealth.htop.cpu?.perCorePct) && serverHealth.htop.cpu!.perCorePct!.length > 0 ? (
                           serverHealth.htop.cpu!.perCorePct!.slice(0, 32).map((pct, idx) => (
                             <div key={idx} className="flex items-center justify-between gap-3">
                               <div className="text-slate-300 flex items-center gap-2 min-w-0">
                                 <span className="text-slate-500 w-4">{idx}</span>
-                                <span className="text-red-300">[{renderHtopBar(pct)}]</span>
+                                {renderHtopBar(pct, 22, 'red')}
                               </div>
                               <div className="text-fuchsia-300 tabular-nums">{formatPercent(pct)}</div>
                             </div>
@@ -2741,7 +2759,7 @@ export default function PlatformAdmin() {
                           <div className="flex items-center justify-between gap-3 pt-1">
                             <div className="text-slate-300 flex items-center gap-2 min-w-0">
                               <span className="text-slate-500 w-6">Mem</span>
-                              <span className="text-cyan-300">[{renderHtopBar(serverHealth.htop.memory.pctUsed)}]</span>
+                              {renderHtopBar(serverHealth.htop.memory.pctUsed, 22, 'cyan')}
                             </div>
                             <div className="text-fuchsia-300 tabular-nums">
                               {formatBytesShort(serverHealth.htop.memory.usedBytes)}/{formatBytesShort(serverHealth.htop.memory.totalBytes)}
@@ -2753,7 +2771,7 @@ export default function PlatformAdmin() {
                           <div className="flex items-center justify-between gap-3">
                             <div className="text-slate-300 flex items-center gap-2 min-w-0">
                               <span className="text-slate-500 w-6">Swp</span>
-                              <span className="text-cyan-300">[{renderHtopBar(serverHealth.htop.swap.pctUsed)}]</span>
+                              {renderHtopBar(serverHealth.htop.swap.pctUsed, 22, 'cyan')}
                             </div>
                             <div className="text-fuchsia-300 tabular-nums">
                               {formatBytesShort(serverHealth.htop.swap.usedBytes)}/{formatBytesShort(serverHealth.htop.swap.totalBytes)}
@@ -2764,7 +2782,7 @@ export default function PlatformAdmin() {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-1 lg:grid-cols-3" style={{ gap: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
+                  <div className="grid grid-cols-1 lg:grid-cols-4" style={{ gap: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
                   <div className="bg-slate-900/30 rounded-lg border border-slate-600/30 p-3">
                     <div className="flex items-center justify-between">
                       <div className="text-slate-300 font-medium text-sm">{t('platformAdmin.health.status')}</div>
@@ -2777,6 +2795,25 @@ export default function PlatformAdmin() {
                     </div>
                     <div className="mt-1 text-slate-400 text-xs">
                       {t('platformAdmin.health.updated')}: {new Date(serverHealth.timestamp).toLocaleString()}
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-violet-900/40 to-fuchsia-900/40 rounded-lg border border-violet-500/30 p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="text-violet-200 font-medium text-sm">👥 Active Users</div>
+                      <Badge className="bg-violet-600/20 text-violet-200 border border-violet-500/30">
+                        Live
+                      </Badge>
+                    </div>
+                    <div className="mt-2 text-slate-200 text-2xl font-bold">{serverHealth.users?.total ?? 0}</div>
+                    <div className="mt-1 text-slate-400 text-xs">Total registered users</div>
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                      </span>
+                      <span className="text-emerald-300 text-sm font-semibold">{serverHealth.users?.recent15m ?? 0}</span>
+                      <span className="text-slate-400 text-xs">active in last 15m</span>
                     </div>
                   </div>
 

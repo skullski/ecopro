@@ -69,6 +69,18 @@
     animation: float 6s ease-in-out infinite;
   }
 
+  /* htop-style progress bar pulse animation */
+  @keyframes htop-pulse {
+    0%, 100% {
+      opacity: 1;
+      filter: brightness(1);
+    }
+    50% {
+      opacity: 0.85;
+      filter: brightness(1.3);
+    }
+  }
+
   /* Sliding animation for admin header pattern */
   @keyframes slide {
     0% {

@@ -436,6 +436,7 @@ export const getServerHealth: RequestHandler = async (_req, res) => {
     let dbOk = false;
     let dbLatencyMs: number | null = null;
     let dbError: string | null = null;
+    let activeUsers = { total: 0, recent15m: 0 };
 
     try {
       const start = process.hrtime.bigint();
@@ -443,6 +444,20 @@ export const getServerHealth: RequestHandler = async (_req, res) => {
       const end = process.hrtime.bigint();
       dbLatencyMs = Number(end - start) / 1e6;
       dbOk = true;
+
+      // Get active users stats
+      const userCountResult = await pool.query(`
+        SELECT 
+          COUNT(*)::int as total,
+          COUNT(*) FILTER (WHERE updated_at > NOW() - INTERVAL '15 minutes')::int as recent15m
+        FROM users
+      `);
+      if (userCountResult.rows[0]) {
+        activeUsers = {
+          total: userCountResult.rows[0].total || 0,
+          recent15m: userCountResult.rows[0].recent15m || 0,
+        };
+      }
     } catch (err) {
       dbOk = false;
       dbError = err instanceof Error ? err.message : 'DB ping failed';
@@ -670,6 +685,7 @@ export const getServerHealth: RequestHandler = async (_req, res) => {
           waitingCount: poolWaiting ?? null,
         },
       },
+      users: activeUsers,
       alerts: (() => {
         const list: string[] = [];
         if (!dbOk) list.push('DB_DISCONNECTED');
