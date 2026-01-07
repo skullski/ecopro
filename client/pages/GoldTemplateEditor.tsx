@@ -4,12 +4,27 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ArrowLeft, Save, Eye, Settings } from 'lucide-react';
+import { ArrowLeft, Save, Eye, Settings, Check } from 'lucide-react';
 import { RenderStorefront, normalizeTemplateId } from './storefront/templates';
 import baseShiroHanaHome from './storefront/templates/gold/shiro-hana-home.json';
 import baseBabyosHome from './storefront/templates/gold/babyos-home.json';
 import { uploadImage } from '@/lib/api';
 import { useTranslation } from '@/lib/i18n';
+
+// Template preview data
+const TEMPLATE_PREVIEWS = [
+  { id: 'shiro-hana', name: 'Shiro Hana', image: '/template-previews/store.png' },
+  { id: 'babyos', name: 'Babyos', image: '/template-previews/baby.png' },
+  { id: 'bags', name: 'Bags Editorial', image: '/template-previews/bags.png' },
+  { id: 'jewelry', name: 'JewelryOS', image: '/template-previews/jewelry.png' },
+  { id: 'fashion', name: 'Fashion', image: '/template-previews/fashion.png' },
+  { id: 'electronics', name: 'Electronics', image: '/template-previews/electronics.png' },
+  { id: 'beauty', name: 'Beauty', image: '/template-previews/beauty.png' },
+  { id: 'food', name: 'Food & Restaurant', image: '/template-previews/food.png' },
+  { id: 'cafe', name: 'Cafe & Bakery', image: '/template-previews/cafe.png' },
+  { id: 'furniture', name: 'Furniture', image: '/template-previews/furniture.png' },
+  { id: 'perfume', name: 'Perfume', image: '/template-previews/perfume.png' },
+];
 
 type StoreSettings = {
   [key: string]: any;
@@ -861,33 +876,99 @@ export default function GoldTemplateEditor() {
             </div>
           </div>
         ) : (
-          <div className="max-w-2xl mx-auto space-y-6">
+          <div className="space-y-6">
+            {/* Template Carousel - Full Width */}
+            <div className="w-full overflow-hidden bg-gradient-to-b from-muted/30 to-transparent py-6">
+              <h2 className="text-lg font-semibold flex items-center gap-2 px-6 mb-4">
+                🎨 {t('editor.chooseTemplate')}
+              </h2>
+              
+              {/* Marquee Container */}
+              <div className="relative overflow-hidden">
+                {/* Gradient overlays */}
+                <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
+                <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
+                
+                {/* Scrolling container */}
+                <div 
+                  className="flex gap-5 px-6 hover:pause-animation"
+                  style={{
+                    animation: 'marquee 40s linear infinite',
+                    width: 'max-content',
+                  }}
+                >
+                  {/* Double the items for seamless loop */}
+                  {[...TEMPLATE_PREVIEWS, ...TEMPLATE_PREVIEWS].map((template, idx) => {
+                    const isSelected = String(settings.template || 'shiro-hana') === template.id;
+                    return (
+                      <div
+                        key={`${template.id}-${idx}`}
+                        onClick={() => handleSettingChange('template', template.id)}
+                        className={`relative flex-shrink-0 cursor-pointer group transition-all duration-300 ${
+                          isSelected ? 'scale-105' : 'hover:scale-105'
+                        }`}
+                      >
+                        <div className={`relative w-40 h-52 rounded-lg overflow-hidden border-2 transition-all ${
+                          isSelected 
+                            ? 'border-primary shadow-lg shadow-primary/25 ring-2 ring-primary/50' 
+                            : 'border-border/50 hover:border-primary/50'
+                        }`}>
+                          <img
+                            src={template.image}
+                            alt={template.name}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                          {/* Dark overlay on hover */}
+                          <div className={`absolute inset-0 transition-opacity ${
+                            isSelected ? 'bg-primary/10' : 'bg-black/0 group-hover:bg-black/20'
+                          }`} />
+                          {/* Selected checkmark */}
+                          {isSelected && (
+                            <div className="absolute top-2 right-2 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                              <Check className="w-3 h-3 text-primary-foreground" />
+                            </div>
+                          )}
+                        </div>
+                        {/* Template name */}
+                        <p className={`mt-2 text-center text-xs font-medium truncate max-w-[160px] ${
+                          isSelected ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
+                        }`}>
+                          {template.name}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              
+              {/* Current selection indicator */}
+              <p className="text-sm text-center mt-4">
+                <span className="text-muted-foreground">{t('editor.currentTemplate')}:</span>{' '}
+                <span className="font-semibold text-primary">
+                  {TEMPLATE_PREVIEWS.find(t => t.id === String(settings.template || 'shiro-hana'))?.name || 'Shiro Hana'}
+                </span>
+              </p>
+            </div>
+
+            {/* CSS for marquee animation */}
+            <style>{`
+              @keyframes marquee {
+                0% { transform: translateX(0); }
+                100% { transform: translateX(-50%); }
+              }
+              .hover\\:pause-animation:hover {
+                animation-play-state: paused;
+              }
+            `}</style>
+
             {/* Basic Settings */}
+            <div className="max-w-2xl mx-auto space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>{t('editor.storeInfo')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">{t('editor.template')}</label>
-                  <select
-                    value={String(settings.template || 'shiro-hana')}
-                    onChange={(e) => handleSettingChange('template', e.target.value)}
-                    className="mt-1 w-full rounded-md border bg-background px-3 py-2 text-sm"
-                  >
-                    <option value="shiro-hana">Shiro Hana</option>
-                    <option value="babyos">Babyos</option>
-                    <option value="bags">Bags Editorial</option>
-                    <option value="jewelry">JewelryOS</option>
-                    <option value="fashion">Fashion</option>
-                    <option value="electronics">Electronics</option>
-                    <option value="beauty">Beauty</option>
-                    <option value="food">Food & Restaurant</option>
-                    <option value="cafe">Cafe & Bakery</option>
-                    <option value="furniture">Furniture</option>
-                    <option value="perfume">Perfume</option>
-                  </select>
-                </div>
                 <div>
                   <label className="text-sm font-medium">{t('editor.storeName')}</label>
                   <Input
@@ -997,6 +1078,7 @@ export default function GoldTemplateEditor() {
                 </div>
               </CardContent>
             </Card>
+            </div>
           </div>
         )}
       </div>

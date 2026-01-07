@@ -1,0 +1,80 @@
+{
+  "schemaVersion": "universal-store-schema",
+  "version": 1,
+  "meta": {
+    "storeId": "store",
+    "name": "My Store",
+    "description": "",
+    "locale": "en-US",
+    "currency": "DZD"
+  },
+  "layout": {
+    "header": {
+      "type": "header",
+      "visible": true,
+      "logo": { "type": "image", "assetKey": "logo", "alt": "Store logo" },
+      "nav": [
+        { "label": { "type": "text", "value": "Home" }, "action": "/" },
+        { "label": { "type": "text", "value": "Products" }, "action": "/products" }
+      ],
+      "cta": [
+        { "label": { "type": "text", "value": "My Store" }, "action": "/my-store", "variant": "primary" }
+      ],
+      "sticky": true,
+      "paddingY": 16,
+      "paddingX": 24
+    },
+    "hero": {
+      "type": "hero",
+      "visible": true,
+      "kicker": { "type": "text", "value": "NEW SEASON • SOFT & PLAYFUL" },
+      "title": { "type": "text", "value": "A soft, modern universe for every little moment." },
+      "subtitle": { "type": "text", "value": "Toys, essentials, and comfort — curated for tiny adventures." },
+      "image": { "type": "image", "assetKey": "hero", "alt": "Hero image" },
+      "cta": [
+        { "label": { "type": "text", "value": "Shop baby essentials" }, "action": "/products", "variant": "primary" },
+        { "label": { "type": "text", "value": "See new toys" }, "action": "/products", "variant": "outline" }
+      ],
+      "layout": "right-text",
+      "paddingY": 32,
+      "paddingX": 24,
+      "gap": 20
+    },
+    "featured": {
+      "type": "grid",
+      "visible": true,
+      "addLabel": { "type": "text", "value": "Add" },
+      "columns": 4,
+      "gap": 16,
+      "paddingY": 24,
+      "paddingX": 24,
+      "card": {
+        "radius": 16,
+        "shadow": "sm",
+        "imageRatio": "4/3"
+      },
+      "items": []
+    },
+    "footer": {
+      "type": "footer",
+      "visible": true,
+      "paddingY": 24,
+      "paddingX": 24,
+      "links": [
+        { "label": { "type": "text", "value": "Support" }, "action": "/contact" },
+        { "label": { "type": "text", "value": "About" }, "action": "/about" }
+      ],
+      "copyright": { "type": "text", "value": "© 2026 My Store" }
+    }
+  },
+  "styles": {
+    "theme": "light",
+    "primaryColor": "hsl(var(--primary))",
+    "secondaryColor": "hsl(var(--muted-foreground))",
+    "accentColor": "hsl(var(--primary))"
+  },
+  "assets": {
+    "logo": { "url": "/placeholder.png", "alt": "Logo" },
+    "hero": { "url": "/placeholder.png", "alt": "Hero" }
+  }
+}

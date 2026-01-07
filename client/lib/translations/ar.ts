@@ -469,6 +469,8 @@ export const ar = {
   "editor.notEditable": "هذا العنصر غير قابل للتعديل مباشرة بعد.",
   "editor.storeInfo": "معلومات المتجر",
   "editor.template": "القالب",
+  "editor.chooseTemplate": "اختر قالبك",
+  "editor.currentTemplate": "القالب الحالي",
   "editor.storeName": "اسم المتجر",
   "editor.storeNamePlaceholder": "اسم متجرك",
   "editor.storeDescription": "وصف المتجر",

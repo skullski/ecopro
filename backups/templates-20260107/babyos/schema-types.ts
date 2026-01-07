@@ -1,0 +1,15 @@
+export type {
+  UniversalStoreSchema,
+  StoreMeta,
+  HeaderNode,
+  HeroNode,
+  ProductGridNode,
+  ProductNode,
+  FooterNode,
+  TextNode,
+  ImageNode,
+  CtaNode,
+  LinkNode,
+  BreakpointKey,
+  ResponsiveValue,
+} from '@/../../shared/universal-store-schema';

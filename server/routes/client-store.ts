@@ -160,9 +160,16 @@ export const createStoreProduct: RequestHandler = async (req, res) => {
       return res.status(400).json({ error: "Title and price are required" });
     }
 
+    // Debug: Log incoming images
+    console.log('[createStoreProduct] Received images:', images, 'Type:', typeof images, 'IsArray:', Array.isArray(images));
+
     client = await pool.connect();
     await client.query('BEGIN');
     inTransaction = true;
+
+    // Ensure images is a proper array
+    const imagesArray = Array.isArray(images) ? images : (images ? [images] : []);
+    console.log('[createStoreProduct] Images to save:', imagesArray);
 
     const result = await client.query(
       `INSERT INTO client_store_products 
@@ -176,7 +183,7 @@ export const createStoreProduct: RequestHandler = async (req, res) => {
         description || null,
         price,
         original_price || null,
-        images || [],
+        imagesArray,
         category || null,
         stock_quantity || 0,
         status || "active",
@@ -185,6 +192,7 @@ export const createStoreProduct: RequestHandler = async (req, res) => {
     );
 
     const product = result.rows[0];
+    console.log('[createStoreProduct] Created product images:', product.images);
     const slug = `${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${product.id}`;
 
     await client.query(

@@ -459,6 +459,8 @@ export const en = {
   "editor.notEditable": "This element is not directly editable yet.",
   "editor.storeInfo": "Store Information",
   "editor.template": "Template",
+  "editor.chooseTemplate": "Choose Your Template",
+  "editor.currentTemplate": "Current template",
   "editor.storeName": "Store Name",
   "editor.storeNamePlaceholder": "Your Store Name",
   "editor.storeDescription": "Store Description",
