@@ -10,7 +10,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { getCurrentUser, removeAuthToken, syncAuthState } from "@/lib/auth";
+import { getCurrentUser, removeAuthToken, syncAuthState, startAutoRefresh } from "@/lib/auth";
 import Layout from "@/components/layout/Layout";
 import Index from "./pages/Index";
 // import AppPlaceholder from "./pages/AppPlaceholder";
@@ -99,6 +99,8 @@ if (typeof window !== 'undefined') {
     syncAuthState().catch(() => {
       // Silent fail - user will be redirected to login if needed
     });
+    // Start auto-refresh to keep session alive
+    startAutoRefresh();
   }
 }
 

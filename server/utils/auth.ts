@@ -9,8 +9,8 @@ function getJwtSecret(): string {
   return getOrGenerateSecret('JWT_SECRET') || 'dev-jwt-secret-change-me';
 }
 
-// Security: short-lived access token + long-lived refresh token
-const JWT_EXPIRES_IN = '15m';
+// Security: longer-lived access token for better UX + long-lived refresh token
+const JWT_EXPIRES_IN = '7d';
 const REFRESH_TOKEN_EXPIRES_IN = '30d';
 
 interface JWTPayload {

@@ -71,7 +71,12 @@ export async function syncAuthState(): Promise<boolean> {
         localStorage.setItem("isAdmin", "true");
       }
       return true;
-    } else {
+    } else if (response.status === 401) {
+      // Try to refresh the token
+      const refreshed = await refreshAuthToken();
+      if (refreshed) {
+        return syncAuthState(); // Retry after refresh
+      }
       // Session invalid - clear stale localStorage
       const currentUser = localStorage.getItem("user");
       if (currentUser) {
@@ -79,10 +84,56 @@ export async function syncAuthState(): Promise<boolean> {
         removeAuthToken();
       }
       return false;
+    } else {
+      return false;
     }
   } catch {
     // Network error - don't clear localStorage, user might just be offline
     return !!localStorage.getItem("user");
+  }
+}
+
+/**
+ * Refresh the auth token using the refresh cookie
+ */
+export async function refreshAuthToken(): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+// Auto-refresh interval ID
+let autoRefreshIntervalId: ReturnType<typeof setInterval> | null = null;
+
+/**
+ * Start auto-refreshing the auth token periodically
+ * This keeps the session alive without requiring re-login
+ */
+export function startAutoRefresh(): void {
+  if (autoRefreshIntervalId) return; // Already running
+  
+  // Refresh every 5 minutes to keep session alive
+  autoRefreshIntervalId = setInterval(async () => {
+    const user = getCurrentUser();
+    if (user) {
+      await refreshAuthToken();
+    }
+  }, 5 * 60 * 1000);
+}
+
+/**
+ * Stop auto-refreshing
+ */
+export function stopAutoRefresh(): void {
+  if (autoRefreshIntervalId) {
+    clearInterval(autoRefreshIntervalId);
+    autoRefreshIntervalId = null;
   }
 }
 
@@ -154,6 +205,8 @@ export const authApi = {
     } else {
       localStorage.removeItem("isAdmin");
     }
+    // Start auto-refresh to keep session alive
+    startAutoRefresh();
     return response;
   },
 
