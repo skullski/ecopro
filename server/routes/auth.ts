@@ -344,6 +344,14 @@ export const login: RequestHandler = async (req, res) => {
     // Record successful login (clears failed attempt counters)
     recordSuccessfulLogin(ip, email);
 
+    // Update last_login timestamp in users table
+    try {
+      const pool = await ensureConnection();
+      await pool.query('UPDATE users SET last_login = NOW() WHERE id = $1', [user.id]);
+    } catch (e) {
+      console.error('[LOGIN] Failed to update last_login:', e);
+    }
+
     res.json({
       message: "Login successful",
       token,

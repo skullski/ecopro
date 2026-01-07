@@ -449,7 +449,7 @@ export const getServerHealth: RequestHandler = async (_req, res) => {
       const userCountResult = await pool.query(`
         SELECT 
           COUNT(*)::int as total,
-          COUNT(*) FILTER (WHERE updated_at > NOW() - INTERVAL '15 minutes')::int as recent15m
+          COUNT(*) FILTER (WHERE last_login > NOW() - INTERVAL '15 minutes')::int as recent15m
         FROM users
       `);
       if (userCountResult.rows[0]) {
