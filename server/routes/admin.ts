@@ -384,9 +384,16 @@ export const getServerHealth: RequestHandler = async (_req, res) => {
     // htop-like sampling: CPU per-core %, memory + swap
     const cpuSample = sampleCpuPercents();
     const meminfo = readProcMeminfo();
-    const memTotalBytes = meminfo?.memTotalBytes ?? os.totalmem();
+    const cgroupMemoryLimitBytes = getCgroupMemoryLimitBytes();
+    // For containers, prefer cgroup memory limit over host's /proc/meminfo
+    const memTotalBytes = cgroupMemoryLimitBytes ?? meminfo?.memTotalBytes ?? os.totalmem();
     const memAvailableBytes = meminfo?.memAvailableBytes ?? os.freemem();
-    const memUsedBytes = Math.max(0, memTotalBytes - memAvailableBytes);
+    // In containers, available memory can exceed the cgroup limit (it's host memory)
+    // So we calculate used memory based on process RSS for container environments
+    const processRss = process.memoryUsage().rss;
+    const memUsedBytes = cgroupMemoryLimitBytes 
+      ? processRss  // In container, use process RSS as "used"
+      : Math.max(0, memTotalBytes - memAvailableBytes);
     const memPctUsed = memTotalBytes > 0 ? (memUsedBytes / memTotalBytes) * 100 : 0;
 
     const swapTotalBytes = meminfo?.swapTotalBytes ?? 0;
