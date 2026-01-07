@@ -384,7 +384,6 @@ export const getServerHealth: RequestHandler = async (_req, res) => {
     // htop-like sampling: CPU per-core %, memory + swap
     const cpuSample = sampleCpuPercents();
     const meminfo = readProcMeminfo();
-    const cgroupMemoryLimitBytes = getCgroupMemoryLimitBytes();
     // For containers, prefer cgroup memory limit over host's /proc/meminfo
     const memTotalBytes = cgroupMemoryLimitBytes ?? meminfo?.memTotalBytes ?? os.totalmem();
     const memAvailableBytes = meminfo?.memAvailableBytes ?? os.freemem();
