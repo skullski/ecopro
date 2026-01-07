@@ -884,7 +884,6 @@ export default function PlatformAdmin() {
   const [codesLoading, setCodesLoading] = useState(false);
   const [generatedCodes, setGeneratedCodes] = useState<any[]>([]);
   const [issuingCode, setIssuingCode] = useState(false);
-  const [selectedTier, setSelectedTier] = useState<'bronze' | 'silver' | 'gold'>('bronze');
   const [lastGeneratedCode, setLastGeneratedCode] = useState<any>(null);
   const [expireClientEmail, setExpireClientEmail] = useState('');
   const [expiringClient, setExpiringClient] = useState(false);
@@ -1232,7 +1231,7 @@ export default function PlatformAdmin() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          tier: selectedTier,
+          tier: 'gold', // Single tier for all subscriptions
           payment_method: 'admin',
         }),
       });
@@ -3581,32 +3580,12 @@ export default function PlatformAdmin() {
             <div className="bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-700/50 shadow-lg p-6">
               <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                 <Gift className="w-5 h-5 text-cyan-400" />
-                Generate New Code
+                Generate Subscription Code
               </h3>
-              <div className="flex flex-col sm:flex-row gap-4 items-end">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Select Tier</label>
-                  <div className="flex gap-2">
-                    {(['bronze', 'silver', 'gold'] as const).map((tier) => (
-                      <Button
-                        key={tier}
-                        onClick={() => setSelectedTier(tier)}
-                        variant={selectedTier === tier ? 'default' : 'outline'}
-                        className={`flex-1 text-sm capitalize ${
-                          selectedTier === tier
-                            ? tier === 'gold'
-                              ? 'bg-yellow-600 hover:bg-yellow-700'
-                              : tier === 'silver'
-                              ? 'bg-slate-500 hover:bg-slate-600'
-                              : 'bg-amber-700 hover:bg-amber-800'
-                            : 'border-slate-600 text-slate-300'
-                        }`}
-                      >
-                        {tier}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
+              <div className="flex flex-col sm:flex-row gap-4 items-center">
+                <p className="text-slate-400 text-sm flex-1">
+                  Generate a new subscription code for a client. Code will expire in 1 hour if not redeemed.
+                </p>
                 <Button
                   onClick={handleIssueCode}
                   disabled={issuingCode}
@@ -3648,11 +3627,7 @@ export default function PlatformAdmin() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-3">
-                        <div className="bg-slate-900/50 rounded-lg p-3 border border-emerald-500/20">
-                          <p className="text-xs text-slate-400">Tier</p>
-                          <p className="text-sm font-bold text-emerald-300 capitalize">{lastGeneratedCode.tier}</p>
-                        </div>
+                      <div className="grid grid-cols-2 gap-3">
                         <div className="bg-slate-900/50 rounded-lg p-3 border border-emerald-500/20">
                           <p className="text-xs text-slate-400">Expires In</p>
                           <p className="text-sm font-bold text-emerald-300">1 Hour</p>
@@ -3710,7 +3685,6 @@ export default function PlatformAdmin() {
                     <thead>
                       <tr className="border-b border-slate-700/50 bg-slate-900/50">
                         <th className="p-4 text-left text-xs font-semibold text-slate-300">Code</th>
-                        <th className="p-4 text-left text-xs font-semibold text-slate-300">Tier</th>
                         <th className="p-4 text-left text-xs font-semibold text-slate-300">Status</th>
                         <th className="p-4 text-left text-xs font-semibold text-slate-300">Created</th>
                         <th className="p-4 text-left text-xs font-semibold text-slate-300">Expires</th>
@@ -3741,15 +3715,6 @@ export default function PlatformAdmin() {
                                   <span className="text-xs">📋</span>
                                 </Button>
                               </div>
-                            </td>
-                            <td className="p-4">
-                              <Badge className={`${
-                                code.code_tier === 'gold' ? 'bg-yellow-600' :
-                                code.code_tier === 'silver' ? 'bg-slate-500' :
-                                'bg-amber-700'
-                              } text-white capitalize`}>
-                                {code.code_tier}
-                              </Badge>
                             </td>
                             <td className="p-4">
                               <Badge className={`${
