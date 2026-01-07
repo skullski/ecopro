@@ -1068,14 +1068,20 @@ export default function PlatformAdmin() {
 
   const renderHtopBar = (pct: number | null | undefined, color: 'red' | 'cyan' = 'cyan') => {
     const p = pct == null || !Number.isFinite(pct) ? 0 : Math.max(0, Math.min(100, pct));
-    const textColor = color === 'red' ? 'text-red-400' : 'text-cyan-400';
-    // Calculate how many chars to fill based on percentage
-    const totalChars = 50;
-    const filled = Math.round((p / 100) * totalChars);
-    const empty = Math.max(0, totalChars - filled);
+    const barColor = color === 'red' ? '#f87171' : '#22d3ee'; // red-400 / cyan-400
     return (
-      <span className={`flex-1 ${textColor}`} style={{ animation: p > 0 ? 'htop-pulse 2s ease-in-out infinite' : 'none' }}>
-        [{'|'.repeat(filled)}{' '.repeat(empty)}]
+      <span 
+        className="flex-1 font-mono"
+        style={{ 
+          background: `linear-gradient(to right, ${barColor} ${p}%, #1e293b ${p}%)`,
+          WebkitBackgroundClip: 'text',
+          backgroundClip: 'text',
+          color: 'transparent',
+          animation: p > 0 ? 'htop-pulse 2s ease-in-out infinite' : 'none',
+          letterSpacing: '-0.05em',
+        }}
+      >
+        [{'|'.repeat(100)}]
       </span>
     );
   };
