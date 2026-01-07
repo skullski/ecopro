@@ -509,15 +509,6 @@ export default function BeautyTemplate(props: TemplateProps) {
                     {addToCartLabel}
                   </button>
                 </div>
-                      fontWeight: 500,
-                      cursor: 'pointer',
-                    }}
-                    data-edit-path="layout.featured.addLabel"
-                    onClick={(e) => clickGuard(e, 'layout.featured.addLabel')}
-                  >
-                    {addToCartLabel}
-                  </button>
-                </div>
               </div>
             ))}
           </div>
