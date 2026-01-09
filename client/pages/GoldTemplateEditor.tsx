@@ -259,19 +259,44 @@ export default function GoldTemplateEditor() {
     setSettings((prev) => ({ ...prev, [key]: value }));
   };
 
-  // Handle template change - reset template-specific settings when switching
-  const handleTemplateChange = (newTemplateId: string) => {
+  // Handle template change - reset template-specific settings when switching and auto-save
+  const handleTemplateChange = async (newTemplateId: string) => {
     const currentTemplate = settings.template || 'shiro-hana';
     if (newTemplateId === currentTemplate) return;
     
-    // Reset template-specific settings to null so the new template uses its defaults
-    setSettings((prev) => {
-      const updated = { ...prev, template: newTemplateId };
-      TEMPLATE_SETTING_KEYS.forEach(key => {
-        updated[key] = null;
-      });
-      return updated;
+    // Build updated settings with new template and reset template-specific settings
+    const updated = { ...settings, template: newTemplateId };
+    TEMPLATE_SETTING_KEYS.forEach(key => {
+      updated[key] = null;
     });
+    
+    // Update local state immediately for responsive UI
+    setSettings(updated);
+    
+    // Auto-save to database so template persists
+    setSaving(true);
+    try {
+      const res = await fetch('/api/client/store/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(updated),
+      });
+      
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error((data && (data.error || data.message)) ? String(data.error || data.message) : t('editor.saveFailed'));
+      }
+      
+      const savedData = await res.json();
+      setSettings(savedData);
+      setSuccess(t('editor.templateChanged', { name: newTemplateId }) || `Template changed to ${newTemplateId}`);
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err: any) {
+      setError(err.message || 'Failed to save template change');
+    } finally {
+      setSaving(false);
+    }
   };
 
   // Reset current template to its defaults

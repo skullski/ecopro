@@ -64,7 +64,12 @@ export const getStorefrontProducts: RequestHandler = async (req, res) => {
       if (!isProduction) {
         console.log(`Found ${result.rows.length} client products for store ${storeSlug}`);
       }
-      return res.json(result.rows);
+      // Ensure all products have a slug (generate fallback if missing)
+      const productsWithSlugs = result.rows.map(p => ({
+        ...p,
+        slug: p.slug || `${String(p.title || 'product').toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${p.id}`
+      }));
+      return res.json(productsWithSlugs);
     }
 
     // Otherwise try seller storefronts (seller_store_settings) and return marketplace_products
@@ -916,7 +921,12 @@ export const getProductWithStoreInfo: RequestHandler = async (req, res) => {
     );
 
     if (result.rows.length > 0) {
-      return res.json(result.rows[0]);
+      const p = result.rows[0];
+      // Ensure product has a slug (generate fallback if missing)
+      return res.json({
+        ...p,
+        slug: p.slug || `${String(p.title || 'product').toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${p.id}`
+      });
     }
 
     // Try marketplace product - search by ID or slug
@@ -932,7 +942,12 @@ export const getProductWithStoreInfo: RequestHandler = async (req, res) => {
     );
 
     if (mResult.rows.length > 0) {
-      return res.json(mResult.rows[0]);
+      const p = mResult.rows[0];
+      // Ensure product has a slug (generate fallback if missing)
+      return res.json({
+        ...p,
+        slug: p.slug || `${String(p.title || 'product').toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${p.id}`
+      });
     }
 
     res.status(404).json({ error: 'Product not found' });
