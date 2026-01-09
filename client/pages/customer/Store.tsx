@@ -963,10 +963,10 @@ export default function Store() {
           setInventoryStockQuantity(1);
         }
       }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add Product from Stock</DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-sm">
               Select an existing product from your inventory to add to your store
             </DialogDescription>
           </DialogHeader>
@@ -982,7 +982,7 @@ export default function Store() {
               </div>
             ) : (
               <>
-                <div className="grid gap-3 max-h-96 overflow-y-auto p-1">
+                <div className="grid gap-2 max-h-72 overflow-y-auto pr-1">
                   {inventoryProducts.map((product: any) => {
                     const imageUrl = product.images?.[0] 
                       ? (product.images[0].startsWith('http') ? product.images[0] : product.images[0])
@@ -995,47 +995,44 @@ export default function Store() {
                       <div
                         key={product.id}
                         onClick={() => setSelectedInventoryProduct(product)}
-                        className={`p-4 rounded-xl border-2 cursor-pointer transition-all hover:shadow-md ${
+                        className={`p-2.5 rounded-lg border cursor-pointer transition-all hover:shadow-sm ${
                           selectedInventoryProduct?.id === product.id
-                            ? 'border-primary bg-primary/10 shadow-lg'
+                            ? 'border-primary bg-primary/10 shadow'
                             : 'border-border/50 hover:border-primary/50 bg-card'
                         }`}
                       >
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3">
                           {imageUrl ? (
-                            <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-muted shadow-sm">
+                            <div className="w-12 h-12 rounded-md overflow-hidden flex-shrink-0 bg-muted">
                               <img
                                 src={imageUrl}
                                 alt={name}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
                                   (e.target as HTMLImageElement).style.display = 'none';
-                                  (e.target as HTMLImageElement).parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center text-2xl">📦</div>';
+                                  (e.target as HTMLImageElement).parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center text-lg">📦</div>';
                                 }}
                               />
                             </div>
                           ) : (
-                            <div className="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-muted/50 flex items-center justify-center text-3xl">
+                            <div className="w-12 h-12 rounded-md overflow-hidden flex-shrink-0 bg-muted/50 flex items-center justify-center text-xl">
                               📦
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-base truncate">{name}</p>
-                            {product.description && (
-                              <p className="text-sm text-muted-foreground truncate mt-0.5">{product.description}</p>
-                            )}
-                            <div className="flex items-center gap-3 mt-2">
+                            <p className="font-medium text-sm truncate">{name}</p>
+                            <div className="flex items-center gap-2 mt-1">
                               {Number(price) > 0 && (
-                                <span className="font-bold text-primary text-lg">{Math.round(Number(price))} DA</span>
+                                <span className="font-semibold text-primary text-sm">{Math.round(Number(price))} DA</span>
                               )}
-                              <Badge variant={stockQty > 0 ? 'secondary' : 'destructive'} className="text-xs">
+                              <Badge variant={stockQty > 0 ? 'secondary' : 'destructive'} className="text-xs px-1.5 py-0">
                                 {stockQty > 0 ? `${stockQty} in stock` : 'Out of stock'}
                               </Badge>
                             </div>
                           </div>
                           {selectedInventoryProduct?.id === product.id && (
-                            <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                              <svg className="w-4 h-4 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                              <svg className="w-3 h-3 text-primary-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                               </svg>
                             </div>
@@ -1047,27 +1044,27 @@ export default function Store() {
                 </div>
 
                 {selectedInventoryProduct && (
-                  <div className="space-y-4 border-t pt-4 bg-muted/30 rounded-lg p-4 -mx-2">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                  <div className="space-y-3 border-t pt-3 bg-muted/30 rounded-lg p-3 -mx-1">
+                    <div className="flex items-center gap-2">
+                      <div className="w-10 h-10 rounded-md overflow-hidden bg-muted flex-shrink-0">
                         {(selectedInventoryProduct as any).images?.[0] ? (
                           <img src={(selectedInventoryProduct as any).images[0]} alt="" className="w-full h-full object-cover" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-xl">📦</div>
+                          <div className="w-full h-full flex items-center justify-center text-base">📦</div>
                         )}
                       </div>
-                      <div>
-                        <p className="font-semibold">{(selectedInventoryProduct as any).name || (selectedInventoryProduct as any).title}</p>
-                        <p className="text-sm text-muted-foreground">Selected product</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{(selectedInventoryProduct as any).name || (selectedInventoryProduct as any).title}</p>
+                        <p className="text-xs text-muted-foreground">Selected</p>
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label>Quantity to Add to Store</Label>
-                      <div className="flex items-center gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Quantity to Add</Label>
+                      <div className="flex items-center gap-2">
                         <Button
                           size="icon"
                           variant="outline"
-                          className="h-10 w-10"
+                          className="h-8 w-8"
                           onClick={() => setInventoryStockQuantity(Math.max(1, inventoryStockQuantity - 1))}
                         >
                           -
@@ -1078,12 +1075,12 @@ export default function Store() {
                           max={(selectedInventoryProduct as any).quantity ?? (selectedInventoryProduct as any).stock_quantity ?? 999}
                           value={inventoryStockQuantity}
                           onChange={(e) => setInventoryStockQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                          className="w-20 text-center text-lg font-semibold"
+                          className="w-16 h-8 text-center text-sm font-semibold"
                         />
                         <Button
                           size="icon"
                           variant="outline"
-                          className="h-10 w-10"
+                          className="h-8 w-8"
                           onClick={() => {
                             const maxQty = (selectedInventoryProduct as any).quantity ?? (selectedInventoryProduct as any).stock_quantity ?? 999;
                             setInventoryStockQuantity(Math.min(maxQty, inventoryStockQuantity + 1));
@@ -1091,8 +1088,8 @@ export default function Store() {
                         >
                           +
                         </Button>
-                        <span className="text-sm text-muted-foreground ml-2">
-                          of {(selectedInventoryProduct as any).quantity ?? (selectedInventoryProduct as any).stock_quantity ?? 0} available
+                        <span className="text-xs text-muted-foreground">
+                          / {(selectedInventoryProduct as any).quantity ?? (selectedInventoryProduct as any).stock_quantity ?? 0}
                         </span>
                       </div>
                     </div>
