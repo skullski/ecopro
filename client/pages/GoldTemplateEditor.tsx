@@ -4,26 +4,122 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ArrowLeft, Save, Eye, Settings, Check } from 'lucide-react';
+import { ArrowLeft, Save, Eye, Settings, Check, Search, Grid3X3, LayoutGrid, X } from 'lucide-react';
 import { RenderStorefront, normalizeTemplateId } from './storefront/templates';
 import baseShiroHanaHome from './storefront/templates/gold/shiro-hana-home.json';
 import baseBabyosHome from './storefront/templates/gold/babyos-home.json';
 import { uploadImage } from '@/lib/api';
 import { useTranslation } from '@/lib/i18n';
 
-// Template preview data
+// Template categories for filtering
+const TEMPLATE_CATEGORIES = [
+  { id: 'all', name: 'All Templates', icon: '🎨' },
+  { id: 'popular', name: 'Popular', icon: '⭐' },
+  { id: 'minimal', name: 'Minimal & Clean', icon: '✨' },
+  { id: 'colorful', name: 'Colorful', icon: '🌈' },
+  { id: 'dark', name: 'Dark Mode', icon: '🌙' },
+  { id: 'elegant', name: 'Elegant', icon: '💎' },
+  { id: 'industry', name: 'Industry Specific', icon: '🏪' },
+  { id: 'pro', name: 'Pro Series', icon: '🚀' },
+];
+
+// Template preview data with categories
 const TEMPLATE_PREVIEWS = [
-  { id: 'shiro-hana', name: 'Shiro Hana', image: '/template-previews/store.png' },
-  { id: 'babyos', name: 'Babyos', image: '/template-previews/baby.png' },
-  { id: 'bags', name: 'Bags Editorial', image: '/template-previews/bags.png' },
-  { id: 'jewelry', name: 'JewelryOS', image: '/template-previews/jewelry.png' },
-  { id: 'fashion', name: 'Fashion', image: '/template-previews/fashion.png' },
-  { id: 'electronics', name: 'Electronics', image: '/template-previews/electronics.png' },
-  { id: 'beauty', name: 'Beauty', image: '/template-previews/beauty.png' },
-  { id: 'food', name: 'Food & Restaurant', image: '/template-previews/food.png' },
-  { id: 'cafe', name: 'Cafe & Bakery', image: '/template-previews/cafe.png' },
-  { id: 'furniture', name: 'Furniture', image: '/template-previews/furniture.png' },
-  { id: 'perfume', name: 'Perfume', image: '/template-previews/perfume.png' },
+  // Original templates
+  { id: 'shiro-hana', name: 'Shiro Hana', image: '/template-previews/store.png', categories: ['popular', 'elegant'] },
+  { id: 'babyos', name: 'Babyos', image: '/template-previews/baby.png', categories: ['popular', 'colorful', 'industry'] },
+  { id: 'bags', name: 'Bags Editorial', image: '/template-previews/bags.png', categories: ['elegant', 'industry'] },
+  { id: 'jewelry', name: 'JewelryOS', image: '/template-previews/jewelry.png', categories: ['elegant', 'industry'] },
+  { id: 'fashion', name: 'Fashion', image: '/template-previews/fashion.png', categories: ['popular', 'elegant'] },
+  { id: 'electronics', name: 'Electronics', image: '/template-previews/electronics.png', categories: ['industry'] },
+  { id: 'beauty', name: 'Beauty', image: '/template-previews/beauty.png', categories: ['colorful', 'industry'] },
+  { id: 'food', name: 'Food & Restaurant', image: '/template-previews/food.png', categories: ['colorful', 'industry'] },
+  { id: 'cafe', name: 'Cafe & Bakery', image: '/template-previews/cafe.png', categories: ['colorful', 'industry'] },
+  { id: 'furniture', name: 'Furniture', image: '/template-previews/furniture.png', categories: ['minimal', 'industry'] },
+  { id: 'perfume', name: 'Perfume', image: '/template-previews/perfume.png', categories: ['elegant', 'industry'] },
+  { id: 'minimal', name: 'Minimal', image: '/template-previews/minimal.png', categories: ['popular', 'minimal'] },
+  { id: 'classic', name: 'Classic', image: '/template-previews/classic.png', categories: ['elegant'] },
+  { id: 'modern', name: 'Modern', image: '/template-previews/modern.png', categories: ['minimal'] },
+  // New templates - Industry/Niche
+  { id: 'sports', name: 'Sports & Fitness', image: '/template-previews/sports.svg', categories: ['colorful', 'industry'] },
+  { id: 'books', name: 'Bookstore', image: '/template-previews/books.svg', categories: ['elegant', 'industry'] },
+  { id: 'pets', name: 'Pet Supplies', image: '/template-previews/pets.svg', categories: ['colorful', 'industry'] },
+  { id: 'toys', name: 'Toys & Games', image: '/template-previews/toys.svg', categories: ['colorful', 'industry'] },
+  { id: 'garden', name: 'Garden & Plants', image: '/template-previews/garden.svg', categories: ['colorful', 'industry'] },
+  { id: 'art', name: 'Art Gallery', image: '/template-previews/art.svg', categories: ['elegant', 'industry'] },
+  { id: 'music', name: 'Music & Instruments', image: '/template-previews/music.svg', categories: ['industry'] },
+  { id: 'health', name: 'Health & Pharmacy', image: '/template-previews/health.svg', categories: ['minimal', 'industry'] },
+  { id: 'watches', name: 'Watches', image: '/template-previews/watches.svg', categories: ['elegant', 'industry'] },
+  { id: 'shoes', name: 'Shoes & Footwear', image: '/template-previews/shoes.svg', categories: ['industry'] },
+  { id: 'gaming', name: 'Gaming', image: '/template-previews/gaming.svg', categories: ['dark', 'industry'] },
+  { id: 'automotive', name: 'Automotive', image: '/template-previews/automotive.svg', categories: ['dark', 'industry'] },
+  { id: 'crafts', name: 'Handmade & Crafts', image: '/template-previews/crafts.svg', categories: ['colorful', 'industry'] },
+  { id: 'outdoor', name: 'Outdoor & Camping', image: '/template-previews/outdoor.svg', categories: ['industry'] },
+  { id: 'vintage', name: 'Vintage & Antiques', image: '/template-previews/vintage.svg', categories: ['elegant', 'industry'] },
+  { id: 'tech', name: 'Tech & Gadgets', image: '/template-previews/tech.svg', categories: ['dark', 'industry'] },
+  { id: 'organic', name: 'Organic & Natural', image: '/template-previews/organic.svg', categories: ['colorful', 'industry'] },
+  { id: 'luxury', name: 'Luxury', image: '/template-previews/luxury.svg', categories: ['elegant', 'industry'] },
+  { id: 'kids', name: 'Kids & Baby', image: '/template-previews/kids.svg', categories: ['colorful', 'industry'] },
+  { id: 'travel', name: 'Travel & Luggage', image: '/template-previews/travel.svg', categories: ['industry'] },
+  { id: 'photography', name: 'Photography', image: '/template-previews/photography.svg', categories: ['minimal', 'industry'] },
+  { id: 'wedding', name: 'Wedding', image: '/template-previews/wedding.svg', categories: ['elegant', 'industry'] },
+  { id: 'fitness', name: 'Fitness & Gym', image: '/template-previews/fitness.svg', categories: ['colorful', 'industry'] },
+  { id: 'gifts', name: 'Gift Shop', image: '/template-previews/gifts.svg', categories: ['colorful', 'industry'] },
+  { id: 'candles', name: 'Candles & Home Scents', image: '/template-previews/candles.svg', categories: ['elegant', 'industry'] },
+  { id: 'skincare', name: 'Skincare', image: '/template-previews/skincare.svg', categories: ['minimal', 'industry'] },
+  { id: 'supplements', name: 'Supplements & Vitamins', image: '/template-previews/supplements.svg', categories: ['minimal', 'industry'] },
+  { id: 'phone-accessories', name: 'Phone Accessories', image: '/template-previews/phone-accessories.svg', categories: ['industry'] },
+  { id: 'tools', name: 'Tools & Hardware', image: '/template-previews/tools.svg', categories: ['industry'] },
+  { id: 'office', name: 'Office Supplies', image: '/template-previews/office.svg', categories: ['minimal', 'industry'] },
+  { id: 'stationery', name: 'Stationery', image: '/template-previews/stationery.svg', categories: ['colorful', 'industry'] },
+  // New templates - Style/Design
+  { id: 'neon', name: 'Neon Cyberpunk', image: '/template-previews/neon.svg', categories: ['dark', 'colorful'] },
+  { id: 'pastel', name: 'Pastel Dreams', image: '/template-previews/pastel.svg', categories: ['colorful', 'elegant'] },
+  { id: 'monochrome', name: 'Monochrome', image: '/template-previews/monochrome.svg', categories: ['minimal', 'dark'] },
+  { id: 'gradient', name: 'Gradient Wave', image: '/template-previews/gradient.svg', categories: ['colorful'] },
+  { id: 'florist', name: 'Florist', image: '/template-previews/florist.svg', categories: ['elegant', 'industry'] },
+  { id: 'eyewear', name: 'Eyewear', image: '/template-previews/eyewear.svg', categories: ['minimal', 'industry'] },
+  { id: 'lingerie', name: 'Lingerie & Intimates', image: '/template-previews/lingerie.svg', categories: ['elegant', 'industry'] },
+  { id: 'swimwear', name: 'Swimwear & Beach', image: '/template-previews/swimwear.svg', categories: ['colorful', 'industry'] },
+  { id: 'streetwear', name: 'Streetwear', image: '/template-previews/streetwear.svg', categories: ['dark', 'industry'] },
+  { id: 'wine', name: 'Wine & Spirits', image: '/template-previews/wine.svg', categories: ['elegant', 'industry'] },
+  { id: 'chocolate', name: 'Chocolate & Sweets', image: '/template-previews/chocolate.svg', categories: ['colorful', 'industry'] },
+  { id: 'tea', name: 'Tea & Coffee', image: '/template-previews/tea.svg', categories: ['elegant', 'industry'] },
+  { id: 'pro', name: 'Pro (Professional)', image: '/template-previews/pro.svg', categories: ['popular', 'pro', 'minimal'] },
+  // Pro variants (new)
+  { id: 'pro-aurora', name: 'Pro Aurora', image: '/template-previews/pro-aurora.svg', categories: ['pro', 'colorful'] },
+  { id: 'pro-vertex', name: 'Pro Vertex', image: '/template-previews/pro-vertex.svg', categories: ['pro', 'dark'] },
+  { id: 'pro-atelier', name: 'Pro Atelier', image: '/template-previews/pro-atelier.svg', categories: ['pro', 'elegant'] },
+  { id: 'pro-orbit', name: 'Pro Orbit', image: '/template-previews/pro-orbit.svg', categories: ['pro', 'dark'] },
+  { id: 'pro-zen', name: 'Pro Zen', image: '/template-previews/pro-zen.svg', categories: ['pro', 'minimal'] },
+  { id: 'pro-studio', name: 'Pro Studio', image: '/template-previews/pro-studio.svg', categories: ['pro', 'minimal'] },
+  { id: 'pro-mosaic', name: 'Pro Mosaic', image: '/template-previews/pro-mosaic.svg', categories: ['pro', 'colorful'] },
+  { id: 'pro-grid', name: 'Pro Grid', image: '/template-previews/pro-grid.svg', categories: ['pro', 'minimal'] },
+  { id: 'pro-catalog', name: 'Pro Catalog', image: '/template-previews/pro-catalog.svg', categories: ['pro', 'elegant'] },
+  // Screenshot-inspired templates - Batch 1 (Green/Sage)
+  { id: 'sage-boutique', name: 'Sage Boutique', image: '/template-previews/sage-boutique.svg', categories: ['elegant', 'colorful'] },
+  { id: 'mint-elegance', name: 'Mint Elegance', image: '/template-previews/mint-elegance.svg', categories: ['elegant', 'colorful'] },
+  { id: 'forest-store', name: 'Forest Store', image: '/template-previews/forest-store.svg', categories: ['dark', 'colorful'] },
+  // Screenshot-inspired templates - Batch 2 (Orange/Coral)
+  { id: 'sunset-shop', name: 'Sunset Shop', image: '/template-previews/sunset-shop.svg', categories: ['colorful', 'minimal'] },
+  { id: 'coral-market', name: 'Coral Market', image: '/template-previews/coral-market.svg', categories: ['colorful'] },
+  { id: 'amber-store', name: 'Amber Store', image: '/template-previews/amber-store.svg', categories: ['elegant', 'colorful'] },
+  // Screenshot-inspired templates - Batch 3 (Magenta/Pink)
+  { id: 'magenta-mall', name: 'Magenta Mall', image: '/template-previews/magenta-mall.svg', categories: ['colorful'] },
+  { id: 'berry-market', name: 'Berry Market', image: '/template-previews/berry-market.svg', categories: ['colorful'] },
+  { id: 'rose-catalog', name: 'Rose Catalog', image: '/template-previews/rose-catalog.svg', categories: ['colorful', 'elegant'] },
+  // Screenshot-inspired templates - Batch 4 (Lime/Green)
+  { id: 'lime-direct', name: 'Lime Direct', image: '/template-previews/lime-direct.svg', categories: ['colorful', 'minimal'] },
+  { id: 'emerald-shop', name: 'Emerald Shop', image: '/template-previews/emerald-shop.svg', categories: ['colorful', 'elegant'] },
+  { id: 'neon-store', name: 'Neon Store', image: '/template-previews/neon-store.svg', categories: ['dark', 'colorful'] },
+  // Screenshot-inspired templates - Batch 5 (Clean/Minimal)
+  { id: 'clean-single', name: 'Clean Single', image: '/template-previews/clean-single.svg', categories: ['minimal', 'popular'] },
+  { id: 'pure-product', name: 'Pure Product', image: '/template-previews/pure-product.svg', categories: ['minimal'] },
+  { id: 'snow-shop', name: 'Snow Shop', image: '/template-previews/snow-shop.svg', categories: ['minimal'] },
+  // Screenshot-inspired templates - Batch 6 (Gallery)
+  { id: 'gallery-pro', name: 'Gallery Pro', image: '/template-previews/gallery-pro.svg', categories: ['minimal', 'elegant'] },
+  { id: 'showcase-plus', name: 'Showcase Plus', image: '/template-previews/showcase-plus.svg', categories: ['colorful'] },
+  { id: 'exhibit-store', name: 'Exhibit Store', image: '/template-previews/exhibit-store.svg', categories: ['elegant', 'minimal'] },
 ];
 
 type StoreSettings = {
@@ -70,6 +166,26 @@ export default function GoldTemplateEditor() {
 
   const [previewDevice, setPreviewDevice] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
   const [selectedEditPath, setSelectedEditPath] = useState<string | null>(null);
+  
+  // Template selector state
+  const [templateSearch, setTemplateSearch] = useState('');
+  const [templateCategory, setTemplateCategory] = useState('all');
+  
+  // Filtered templates based on search and category
+  const filteredTemplates = useMemo(() => {
+    return TEMPLATE_PREVIEWS.filter((template) => {
+      // Search filter
+      const searchMatch = templateSearch === '' || 
+        template.name.toLowerCase().includes(templateSearch.toLowerCase()) ||
+        template.id.toLowerCase().includes(templateSearch.toLowerCase());
+      
+      // Category filter
+      const categoryMatch = templateCategory === 'all' || 
+        (template.categories && template.categories.includes(templateCategory));
+      
+      return searchMatch && categoryMatch;
+    });
+  }, [templateSearch, templateCategory]);
 
   // Load store data
   useEffect(() => {
@@ -575,12 +691,24 @@ export default function GoldTemplateEditor() {
     } else if (path === 'layout.categories') {
       body = (
         <div className="space-y-4">
-          <div className="font-medium text-sm">Category Pills Styling</div>
-          {bindColor('Pill Background', 'template_category_pill_bg' as any, '#F5F5F4')}
-          {bindColor('Pill Text Color', 'template_category_pill_text' as any, '#78716C')}
-          {bindColor('Active Pill Background', 'template_category_pill_active_bg' as any, '#F97316')}
-          {bindColor('Active Pill Text', 'template_category_pill_active_text' as any, '#FFFFFF')}
-          {bindRange('Pill Border Radius', 'template_category_pill_border_radius', 0, 50, 9999, 'px')}
+          <div className="font-medium text-sm">Description</div>
+          {bindTextarea('Description Text', 'template_description_text', 'Write a short description for your store...', 5)}
+          {bindColor('Text Color', 'template_description_color' as any, '#78716C')}
+          {bindRange('Font Size', 'template_description_size', 10, 32, 14, 'px')}
+          {bindSelect('Font Style', 'template_description_style', [
+            { value: 'normal', label: 'Normal' },
+            { value: 'italic', label: 'Italic' },
+          ], 'normal')}
+          {bindSelect('Font Weight', 'template_description_weight', [
+            { value: '300', label: 'Light (300)' },
+            { value: '400', label: 'Normal (400)' },
+            { value: '500', label: 'Medium (500)' },
+            { value: '600', label: 'Semi-bold (600)' },
+            { value: '700', label: 'Bold (700)' },
+          ], '400')}
+          <div className="text-xs text-muted-foreground">
+            Tip: if left empty, it will use your store description.
+          </div>
         </div>
       );
     } else if (path === 'layout.grid' || path.startsWith('layout.grid.')) {
@@ -723,6 +851,9 @@ export default function GoldTemplateEditor() {
               <option value="cafe">Cafe & Bakery</option>
               <option value="furniture">Furniture</option>
               <option value="perfume">Perfume</option>
+              <option value="minimal">Minimal</option>
+              <option value="classic">Classic</option>
+              <option value="modern">Modern</option>
             </select>
             <Button
               variant={activeTab === 'preview' ? 'default' : 'outline'}
@@ -877,90 +1008,126 @@ export default function GoldTemplateEditor() {
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Template Carousel - Full Width */}
-            <div className="w-full overflow-hidden bg-gradient-to-b from-muted/30 to-transparent py-6">
-              <h2 className="text-lg font-semibold flex items-center gap-2 px-6 mb-4">
+            {/* Template Selector - Searchable Grid */}
+            <div className="w-full bg-gradient-to-b from-muted/30 to-transparent py-6 px-6">
+              <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
                 🎨 {t('editor.chooseTemplate')}
               </h2>
               
-              {/* Marquee Container */}
-              <div className="relative overflow-hidden">
-                {/* Gradient overlays */}
-                <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
-                <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
-                
-                {/* Scrolling container */}
-                <div 
-                  className="flex gap-5 px-6 hover:pause-animation"
-                  style={{
-                    animation: 'marquee 40s linear infinite',
-                    width: 'max-content',
-                  }}
-                >
-                  {/* Double the items for seamless loop */}
-                  {[...TEMPLATE_PREVIEWS, ...TEMPLATE_PREVIEWS].map((template, idx) => {
-                    const isSelected = String(settings.template || 'shiro-hana') === template.id;
-                    return (
-                      <div
-                        key={`${template.id}-${idx}`}
-                        onClick={() => handleSettingChange('template', template.id)}
-                        className={`relative flex-shrink-0 cursor-pointer group transition-all duration-300 ${
-                          isSelected ? 'scale-105' : 'hover:scale-105'
-                        }`}
-                      >
-                        <div className={`relative w-40 h-52 rounded-lg overflow-hidden border-2 transition-all ${
-                          isSelected 
-                            ? 'border-primary shadow-lg shadow-primary/25 ring-2 ring-primary/50' 
-                            : 'border-border/50 hover:border-primary/50'
-                        }`}>
-                          <img
-                            src={template.image}
-                            alt={template.name}
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                          />
-                          {/* Dark overlay on hover */}
-                          <div className={`absolute inset-0 transition-opacity ${
-                            isSelected ? 'bg-primary/10' : 'bg-black/0 group-hover:bg-black/20'
-                          }`} />
-                          {/* Selected checkmark */}
-                          {isSelected && (
-                            <div className="absolute top-2 right-2 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                              <Check className="w-3 h-3 text-primary-foreground" />
-                            </div>
-                          )}
-                        </div>
-                        {/* Template name */}
-                        <p className={`mt-2 text-center text-xs font-medium truncate max-w-[160px] ${
-                          isSelected ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
-                        }`}>
-                          {template.name}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-              
-              {/* Current selection indicator */}
-              <p className="text-sm text-center mt-4">
-                <span className="text-muted-foreground">{t('editor.currentTemplate')}:</span>{' '}
+              {/* Current selection badge */}
+              <div className="mb-4 flex items-center gap-2 p-3 bg-primary/10 rounded-lg border border-primary/20">
+                <Check className="w-4 h-4 text-primary" />
+                <span className="text-sm text-muted-foreground">{t('editor.currentTemplate')}:</span>
                 <span className="font-semibold text-primary">
                   {TEMPLATE_PREVIEWS.find(t => t.id === String(settings.template || 'shiro-hana'))?.name || 'Shiro Hana'}
                 </span>
+              </div>
+              
+              {/* Search and Filter Controls */}
+              <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                {/* Search Input */}
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Search templates..."
+                    value={templateSearch}
+                    onChange={(e) => setTemplateSearch(e.target.value)}
+                    className="pl-10 pr-8"
+                  />
+                  {templateSearch && (
+                    <button
+                      onClick={() => setTemplateSearch('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+              
+              {/* Category Pills */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                {TEMPLATE_CATEGORIES.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setTemplateCategory(cat.id)}
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                      templateCategory === cat.id
+                        ? 'bg-primary text-primary-foreground shadow-md'
+                        : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
+                    }`}
+                  >
+                    <span className="mr-1">{cat.icon}</span>
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
+              
+              {/* Results count */}
+              <p className="text-sm text-muted-foreground mb-4">
+                Showing {filteredTemplates.length} of {TEMPLATE_PREVIEWS.length} templates
               </p>
+              
+              {/* Template Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 max-h-[500px] overflow-y-auto pr-2">
+                {filteredTemplates.map((template) => {
+                  const isSelected = String(settings.template || 'shiro-hana') === template.id;
+                  return (
+                    <div
+                      key={template.id}
+                      onClick={() => handleSettingChange('template', template.id)}
+                      className={`relative cursor-pointer group transition-all duration-200 ${
+                        isSelected ? 'scale-105 z-10' : 'hover:scale-105'
+                      }`}
+                    >
+                      <div className={`relative aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all ${
+                        isSelected 
+                          ? 'border-primary shadow-lg shadow-primary/25 ring-2 ring-primary/50' 
+                          : 'border-border/50 hover:border-primary/50'
+                      }`}>
+                        <img
+                          src={template.image}
+                          alt={template.name}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                        {/* Dark overlay on hover */}
+                        <div className={`absolute inset-0 transition-opacity ${
+                          isSelected ? 'bg-primary/10' : 'bg-black/0 group-hover:bg-black/20'
+                        }`} />
+                        {/* Selected checkmark */}
+                        {isSelected && (
+                          <div className="absolute top-2 right-2 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                            <Check className="w-3 h-3 text-primary-foreground" />
+                          </div>
+                        )}
+                      </div>
+                      {/* Template name */}
+                      <p className={`mt-2 text-center text-xs font-medium truncate ${
+                        isSelected ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
+                      }`}>
+                        {template.name}
+                      </p>
+                    </div>
+                  );
+                })}
+                
+                {/* No results message */}
+                {filteredTemplates.length === 0 && (
+                  <div className="col-span-full py-12 text-center">
+                    <div className="text-4xl mb-2">🔍</div>
+                    <p className="text-muted-foreground">No templates found</p>
+                    <button
+                      onClick={() => { setTemplateSearch(''); setTemplateCategory('all'); }}
+                      className="mt-2 text-sm text-primary hover:underline"
+                    >
+                      Clear filters
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-
-            {/* CSS for marquee animation */}
-            <style>{`
-              @keyframes marquee {
-                0% { transform: translateX(0); }
-                100% { transform: translateX(-50%); }
-              }
-              .hover\\:pause-animation:hover {
-                animation-play-state: paused;
-              }
-            `}</style>
 
             {/* Basic Settings */}
             <div className="max-w-2xl mx-auto space-y-6">

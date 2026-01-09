@@ -200,6 +200,13 @@ export default function BagsTemplate(props: TemplateProps) {
 
   const categoryList = ['' as const, ...(Array.isArray(props.categories) ? props.categories : [])].slice(0, 12);
 
+  const descriptionText = (asString((settings as any).template_description_text) || asString((settings as any).store_description)).trim();
+  const descriptionColor = asString((settings as any).template_description_color) || muted;
+  const descriptionSize = resolveInt((settings as any).template_description_size, 14, 10, 32);
+  const descriptionStyle = asString((settings as any).template_description_style) || 'normal';
+  const descriptionWeight = resolveInt((settings as any).template_description_weight, 400, 100, 900);
+  const showDescription = canManage || Boolean(descriptionText);
+
   const FooterLinks = ({
     label,
     href,
@@ -508,41 +515,27 @@ export default function BagsTemplate(props: TemplateProps) {
         </div>
       </section>
 
-      {/* FILTERS */}
-      <section
-        style={{ padding: '16px 0', borderTop: hairline, borderBottom: hairline, marginBottom: 40 }}
-        data-edit-path="layout.categories"
-        onClick={() => onSelect('layout.categories')}
-      >
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-          {categoryList.map((cat, idx) => {
-            const label = cat ? String(cat) : 'All';
-            const active = (props.categoryFilter || '') === (cat ? String(cat) : '');
-            return (
-              <button
-                key={`${label}-${idx}`}
-                type="button"
-                onClick={() => props.setCategoryFilter(cat ? String(cat) : '')}
-                style={{
-                  borderRadius: categoryPillRadius,
-                  border: paperBorder,
-                  padding: '6px 14px',
-                  fontSize: 10,
-                  letterSpacing: '0.22em',
-                  textTransform: 'uppercase',
-                  cursor: 'pointer',
-                  background: active ? categoryPillActiveBg : categoryPillBg,
-                  color: active ? categoryPillActiveText : categoryPillText,
-                  backdropFilter: 'blur(6px)',
-                  transition: `all ${animationSpeed} ease`,
-                }}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
-      </section>
+      {/* Description (replaces categories) */}
+      {showDescription ? (
+        <section
+          style={{ padding: '16px 0', borderTop: hairline, borderBottom: hairline, marginBottom: 40 }}
+          data-edit-path="layout.categories"
+          onClick={() => onSelect('layout.categories')}
+        >
+          <p
+            style={{
+              margin: 0,
+              color: descriptionColor,
+              fontSize: `${descriptionSize}px`,
+              fontStyle: descriptionStyle === 'italic' ? 'italic' : 'normal',
+              fontWeight: descriptionWeight,
+              lineHeight: 1.7,
+            }}
+          >
+            {descriptionText || (canManage ? 'Add description...' : '')}
+          </p>
+        </section>
+      ) : null}
 
       {/* CHAPTER */}
       <section

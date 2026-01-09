@@ -433,9 +433,9 @@ export const getStoreSettings: RequestHandler = async (req, res) => {
       
       // Create default settings with slug
       result = await pool.query(
-        `INSERT INTO client_store_settings (client_id, store_slug) 
-         VALUES ($1, $2) RETURNING *`,
-        [clientId, randomSlug]
+        `INSERT INTO client_store_settings (client_id, store_slug, template)
+         VALUES ($1, $2, $3) RETURNING *`,
+        [clientId, randomSlug, 'pro']
       );
     }
 
@@ -453,7 +453,7 @@ export const getStoreSettings: RequestHandler = async (req, res) => {
     const templateSettings = row?.template_settings && typeof row.template_settings === 'object' ? row.template_settings : {};
     const globalSettings = row?.global_settings && typeof row.global_settings === 'object' ? row.global_settings : {};
     // IMPORTANT: Ensure row.template is NOT overridden by templateSettings/globalSettings
-    const dbTemplate = row.template;
+    const dbTemplate = row.template || 'pro';
     const merged = { ...globalSettings, ...templateSettings, ...row, template: dbTemplate };
 
     // Cache the result for faster subsequent requests
@@ -478,7 +478,7 @@ export const getStoreSettings: RequestHandler = async (req, res) => {
         store_slug: 'preview',
         store_name: 'Preview Store',
         store_description: '',
-        template: 'shiro-hana',
+        template: 'pro',
         currency_code: 'DZD',
         primary_color: '#111827',
         secondary_color: '#6B7280',
@@ -831,7 +831,16 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
     // All templates are now enabled
     const ENABLED_TEMPLATE_IDS = new Set<string>([
       'shiro-hana', 'babyos', 'bags', 'jewelry',
-      'fashion', 'electronics', 'beauty', 'food', 'cafe', 'furniture', 'perfume'
+      'fashion', 'electronics', 'beauty', 'food', 'cafe', 'furniture', 'perfume',
+      'minimal', 'classic', 'modern',
+      // New templates
+      'sports', 'books', 'pets', 'toys', 'garden', 'art', 'music', 'health',
+      'watches', 'shoes', 'gaming', 'automotive', 'crafts', 'outdoor', 'vintage',
+      'tech', 'organic', 'luxury', 'kids', 'travel', 'photography', 'wedding',
+      'fitness', 'gifts', 'candles', 'skincare', 'supplements', 'phone-accessories',
+      'tools', 'office', 'stationery', 'neon', 'pastel', 'monochrome', 'gradient',
+      'florist', 'eyewear', 'lingerie', 'swimwear', 'streetwear', 'wine', 'chocolate', 'tea',
+      'pro'
     ]);
     const normalizeTemplateIdForAvailability = (id: any): string => {
       const normalized = String(id || '')

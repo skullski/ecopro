@@ -20,6 +20,12 @@ function asString(value: unknown): string {
   return typeof value === 'string' ? value : '';
 }
 
+function resolveInt(value: unknown, fallback: number, min: number, max: number): number {
+  const parsed = typeof value === 'number' ? value : parseInt(typeof value === 'string' ? value : '', 10);
+  const safe = Number.isFinite(parsed) ? parsed : fallback;
+  return Math.max(min, Math.min(max, safe));
+}
+
 function isHttpUrl(value: string): boolean {
   return /^https?:\/\//i.test(value);
 }
@@ -85,39 +91,32 @@ function safeParseJsonArray<T = any>(raw: unknown): T[] {
   }
 }
 
-function CategoryPills({ categories, active, theme, onPick, onSelect }: { categories: string[]; active: string; theme: any; onPick: (c: string) => void; onSelect: (p: string) => void }) {
-  const defaultCats = ['All', 'New', 'Popular', 'Gifts'];
-  const displayCats = categories.length > 0 ? ['All', ...categories.filter((c) => String(c).toLowerCase() !== 'all')] : defaultCats;
-  const activeKey = String(active || '').trim() || 'All';
+function CategoryPills({ settings, theme, canManage, onSelect }: { settings: any; theme: any; canManage: boolean; onSelect: (p: string) => void }) {
+  const descriptionText = (asString(settings?.template_description_text) || asString(settings?.store_description)).trim();
+  const descriptionColor = asString(settings?.template_description_color) || theme?.muted || DEFAULTS.muted;
+  const descriptionSize = resolveInt(settings?.template_description_size, 14, 10, 32);
+  const descriptionStyle = asString(settings?.template_description_style) || 'normal';
+  const descriptionWeight = resolveInt(settings?.template_description_weight, 400, 100, 900);
+  const showDescription = canManage || Boolean(descriptionText);
 
-  const pillRadius = `${parseInt(String(theme?.categoryPillBorderRadius || DEFAULTS.categoryPillBorderRadius), 10) || 9999}px`;
+  if (!showDescription) return null;
+
   return (
     <section className="w-full py-3" data-edit-path="layout.categories" onClick={() => onSelect('layout.categories')}>
-      <div className="container mx-auto px-6 flex flex-wrap gap-2">
-        {displayCats.map((c) => {
-          const isActive = String(c).toLowerCase() === String(activeKey).toLowerCase();
-          return (
-            <button
-              key={c}
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onPick(c);
-              }}
-              style={{
-                borderRadius: pillRadius,
-                backgroundColor: isActive ? (theme?.categoryPillActiveBg || DEFAULTS.categoryPillActiveBg) : (theme?.categoryPillBg || DEFAULTS.categoryPillBg),
-                color: isActive ? (theme?.categoryPillActiveText || DEFAULTS.categoryPillActiveText) : (theme?.categoryPillText || DEFAULTS.categoryPillText),
-                padding: '6px 12px',
-                fontSize: '12px',
-                border: `1px solid ${theme?.borderLight || DEFAULTS.borderLight}`,
-              }}
-            >
-              {c}
-            </button>
-          );
-        })}
+      <div className="container mx-auto px-6">
+        <p
+          style={{
+            margin: 0,
+            textAlign: 'center',
+            color: descriptionColor,
+            fontSize: `${descriptionSize}px`,
+            fontStyle: descriptionStyle === 'italic' ? 'italic' : 'normal',
+            fontWeight: descriptionWeight,
+            lineHeight: 1.6,
+          }}
+        >
+          {descriptionText || (canManage ? 'Add description...' : '')}
+        </p>
       </div>
     </section>
   );
@@ -417,13 +416,7 @@ export default function ShiroHanaTemplate(props: TemplateProps) {
             </section>
           ) : null}
 
-          <CategoryPills
-            categories={Array.isArray(props.categories) ? props.categories.filter(Boolean) : []}
-            active={props.categoryFilter || ''}
-            theme={theme}
-            onPick={(c) => props.setCategoryFilter?.(c)}
-            onSelect={onSelect}
-          />
+          <CategoryPills settings={props.settings} theme={theme} canManage={canManage} onSelect={onSelect} />
 
           <Hero
             node={{

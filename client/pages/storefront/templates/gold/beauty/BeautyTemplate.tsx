@@ -159,6 +159,13 @@ export default function BeautyTemplate(props: TemplateProps) {
   const isMobile = breakpoint === 'mobile';
   const isTablet = breakpoint === 'tablet';
 
+  const descriptionText = (asString(settings.template_description_text) || asString(settings.store_description)).trim();
+  const descriptionColor = asString(settings.template_description_color) || muted;
+  const descriptionSize = resolveInt(settings.template_description_size, 14, 10, 32);
+  const descriptionStyle = asString(settings.template_description_style) || 'normal';
+  const descriptionWeight = resolveInt(settings.template_description_weight, 400, 100, 900);
+  const showDescription = canManage || Boolean(descriptionText);
+
   return (
     <div
       ref={containerRef}
@@ -352,50 +359,29 @@ export default function BeautyTemplate(props: TemplateProps) {
         </div>
       </section>
 
-      {/* Category Filter Pills */}
-      <section
-        style={{ padding: '20px 24px', backgroundColor: cardBg, borderBottom: '1px solid #fce7f3' }}
-        data-edit-path="layout.categories"
-        onClick={(e) => clickGuard(e, 'layout.categories')}
-      >
-        <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
-          <button
-            onClick={(e) => { e.stopPropagation(); setCategoryFilter(''); }}
-            style={{
-              borderRadius: `${categoryPillRadius}px`,
-              border: '1px solid #fce7f3',
-              padding: '8px 20px',
-              fontSize: '13px',
-              cursor: 'pointer',
-              backgroundColor: categoryFilter === '' ? categoryPillActiveBg : categoryPillBg,
-              color: categoryFilter === '' ? categoryPillActiveText : categoryPillText,
-              fontWeight: 500,
-              transition: `all ${animationSpeed} ease`,
-            }}
-          >
-            All
-          </button>
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={(e) => { e.stopPropagation(); setCategoryFilter(cat); }}
+      {/* Description (replaces categories) */}
+      {showDescription && (
+        <section
+          style={{ padding: '20px 24px', backgroundColor: cardBg, borderBottom: '1px solid #fce7f3' }}
+          data-edit-path="layout.categories"
+          onClick={(e) => clickGuard(e, 'layout.categories')}
+        >
+          <div style={{ maxWidth: '1280px', margin: '0 auto', textAlign: 'center' }}>
+            <p
               style={{
-                borderRadius: `${categoryPillRadius}px`,
-                border: '1px solid #fce7f3',
-                padding: '8px 20px',
-                fontSize: '13px',
-                cursor: 'pointer',
-                backgroundColor: categoryFilter === cat ? categoryPillActiveBg : categoryPillBg,
-                color: categoryFilter === cat ? categoryPillActiveText : categoryPillText,
-                fontWeight: 500,
-                transition: `all ${animationSpeed} ease`,
+                margin: 0,
+                color: descriptionColor,
+                fontSize: `${descriptionSize}px`,
+                fontStyle: descriptionStyle === 'italic' ? 'italic' : 'normal',
+                fontWeight: descriptionWeight,
+                lineHeight: 1.6,
               }}
             >
-              {cat}
-            </button>
-          ))}
-        </div>
-      </section>
+              {descriptionText || (canManage ? 'Add description...' : '')}
+            </p>
+          </div>
+        </section>
+      )}
 
       {/* Products Grid */}
       <section

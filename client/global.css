@@ -225,6 +225,44 @@
     line-height: 1;
     font-size: inherit;
   }
+
+  /* Storefront template normalization (no product-category labels + better mobile cards) */
+
+  /* Hide per-product category labels where they follow the common pattern */
+  .ecopro-storefront [data-edit-path^="layout.products."] > div:nth-child(2) > p:first-child {
+    display: none !important;
+  }
+  .ecopro-storefront [data-edit-path^="layout.grid.item."] > div:nth-child(2) > div:first-child {
+    display: none !important;
+  }
+
+  @media (max-width: 640px) {
+    /* Reduce overly-tall cards by using a wider image ratio on mobile */
+    .ecopro-storefront [data-edit-path^="layout.products."] > div:first-child {
+      aspect-ratio: 4 / 3 !important;
+      height: auto !important;
+    }
+
+    .ecopro-storefront [data-edit-path^="layout.grid.item."] > div:first-child {
+      height: 140px !important;
+    }
+
+    /* Tighter spacing on mobile so content doesn't feel stretched */
+    .ecopro-storefront [data-edit-path^="layout.products."] > div:nth-child(2) {
+      padding: 12px !important;
+    }
+    .ecopro-storefront [data-edit-path^="layout.grid.item."] > div:nth-child(2) {
+      padding: 12px !important;
+    }
+
+    /* Clamp titles so cards don't become extremely tall */
+    .ecopro-storefront [data-edit-path^="layout.products."] h3 {
+      display: -webkit-box !important;
+      -webkit-line-clamp: 2 !important;
+      -webkit-box-orient: vertical !important;
+      overflow: hidden !important;
+    }
+  }
 }
 }
 

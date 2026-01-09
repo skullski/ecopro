@@ -159,6 +159,13 @@ export default function FurnitureTemplate(props: TemplateProps) {
   const isMobile = breakpoint === 'mobile';
   const isTablet = breakpoint === 'tablet';
 
+  const descriptionText = (asString(settings.template_description_text) || asString(settings.store_description)).trim();
+  const descriptionColor = asString(settings.template_description_color) || muted;
+  const descriptionSize = resolveInt(settings.template_description_size, 14, 10, 32);
+  const descriptionStyle = asString(settings.template_description_style) || 'normal';
+  const descriptionWeight = resolveInt(settings.template_description_weight, 400, 100, 900);
+  const showDescription = canManage || Boolean(descriptionText);
+
   return (
     <div
       ref={containerRef}
@@ -238,8 +245,8 @@ export default function FurnitureTemplate(props: TemplateProps) {
       </header>
 
       <div style={{ display: 'flex', maxWidth: '1400px', margin: '0 auto' }}>
-        {/* Sidebar - Desktop only */}
-        {!isMobile && !isTablet && (
+        {/* Sidebar (Description) - Desktop only */}
+        {!isMobile && !isTablet && showDescription && (
           <aside
             style={{
               width: '240px',
@@ -250,44 +257,19 @@ export default function FurnitureTemplate(props: TemplateProps) {
             data-edit-path="layout.categories"
             onClick={(e) => clickGuard(e, 'layout.categories')}
           >
-            <h3 style={{ fontSize: '12px', fontWeight: 600, letterSpacing: '0.1em', color: muted, marginBottom: '16px' }}>CATEGORIES</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <button
-                onClick={(e) => { e.stopPropagation(); setCategoryFilter(''); }}
-                style={{
-                  textAlign: 'left',
-                  padding: '8px 12px',
-                  borderRadius: `${categoryPillRadius}px`,
-                  border: 'none',
-                  backgroundColor: categoryFilter === '' ? categoryPillActiveBg : categoryPillBg,
-                  color: categoryFilter === '' ? categoryPillActiveText : categoryPillText,
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  transition: `all ${animationSpeed} ease`,
-                }}
-              >
-                All Products
-              </button>
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={(e) => { e.stopPropagation(); setCategoryFilter(cat); }}
-                  style={{
-                    textAlign: 'left',
-                    padding: '8px 12px',
-                    borderRadius: `${categoryPillRadius}px`,
-                    border: 'none',
-                    backgroundColor: categoryFilter === cat ? categoryPillActiveBg : categoryPillBg,
-                    color: categoryFilter === cat ? categoryPillActiveText : categoryPillText,
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    transition: `all ${animationSpeed} ease`,
-                  }}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
+            <h3 style={{ fontSize: '12px', fontWeight: 600, letterSpacing: '0.1em', color: muted, marginBottom: '12px' }}>DESCRIPTION</h3>
+            <p
+              style={{
+                margin: 0,
+                color: descriptionColor,
+                fontSize: `${descriptionSize}px`,
+                fontStyle: descriptionStyle === 'italic' ? 'italic' : 'normal',
+                fontWeight: descriptionWeight,
+                lineHeight: 1.7,
+              }}
+            >
+              {descriptionText || (canManage ? 'Add description...' : '')}
+            </p>
           </aside>
         )}
 
@@ -414,46 +396,25 @@ export default function FurnitureTemplate(props: TemplateProps) {
             </div>
           </section>
 
-          {/* Mobile Category Pills */}
-          {(isMobile || isTablet) && (
+          {/* Mobile Description */}
+          {(isMobile || isTablet) && showDescription && (
             <section
               style={{ padding: '16px', overflowX: 'auto' }}
               data-edit-path="layout.categories"
               onClick={(e) => clickGuard(e, 'layout.categories')}
             >
-              <div style={{ display: 'flex', gap: '8px', whiteSpace: 'nowrap' }}>
-                <button
-                  onClick={(e) => { e.stopPropagation(); setCategoryFilter(''); }}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '999px',
-                    border: '1px solid #e7e5e4',
-                    backgroundColor: categoryFilter === '' ? text : 'transparent',
-                    color: categoryFilter === '' ? cardBg : muted,
-                    cursor: 'pointer',
-                    fontSize: '13px',
-                  }}
-                >
-                  All
-                </button>
-                {categories.map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={(e) => { e.stopPropagation(); setCategoryFilter(cat); }}
-                    style={{
-                      padding: '8px 16px',
-                      borderRadius: '999px',
-                      border: '1px solid #e7e5e4',
-                      backgroundColor: categoryFilter === cat ? text : 'transparent',
-                      color: categoryFilter === cat ? cardBg : muted,
-                      cursor: 'pointer',
-                      fontSize: '13px',
-                    }}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
+              <p
+                style={{
+                  margin: 0,
+                  color: descriptionColor,
+                  fontSize: `${descriptionSize}px`,
+                  fontStyle: descriptionStyle === 'italic' ? 'italic' : 'normal',
+                  fontWeight: descriptionWeight,
+                  lineHeight: 1.65,
+                }}
+              >
+                {descriptionText || (canManage ? 'Add description...' : '')}
+              </p>
             </section>
           )}
 

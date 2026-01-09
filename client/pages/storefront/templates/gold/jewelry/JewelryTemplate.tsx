@@ -30,6 +30,14 @@ function normalizeUrl(url: string): string {
   return '/' + u.replace(/^\/+/, '');
 }
 
+function resolveInt(value: unknown, fallback: number, min: number, max: number): number {
+  const str = String(value ?? '').trim();
+  if (str === '') return fallback;
+  const n = Number(str);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(min, Math.min(max, Math.round(n)));
+}
+
 export default function JewelryTemplate(props: TemplateProps) {
   const settings = props.settings || ({} as any);
   const canManage = props.canManage !== false;
@@ -139,6 +147,13 @@ export default function JewelryTemplate(props: TemplateProps) {
   const featuredImage2 = asString((settings as any).template_edit_image_2) || heroImage;
 
   const categoryList = ['' as const, ...(Array.isArray(props.categories) ? props.categories : [])].slice(0, 12);
+
+  const descriptionText = (asString((settings as any).template_description_text) || asString((settings as any).store_description)).trim();
+  const descriptionColor = asString((settings as any).template_description_color) || asString((settings as any).template_footer_text) || '#6b7280';
+  const descriptionSize = resolveInt((settings as any).template_description_size, 14, 10, 32);
+  const descriptionStyle = asString((settings as any).template_description_style) || 'normal';
+  const descriptionWeight = resolveInt((settings as any).template_description_weight, 400, 100, 900);
+  const showDescription = canManage || Boolean(descriptionText);
 
   const copyright =
     asString((settings as any).template_copyright) || `© ${new Date().getFullYear()} ${storeName} · Minimal Luxury Jewelry`;
@@ -332,35 +347,27 @@ export default function JewelryTemplate(props: TemplateProps) {
         </div>
       </section>
 
-      {/* COLLECTION FILTERS */}
-      <section
-        className="max-w-6xl mx-auto px-6 pb-6"
-        data-edit-path="layout.categories"
-        onClick={() => onSelect('layout.categories')}
-      >
-        <div className="flex flex-wrap gap-3">
-          {categoryList.map((cat, idx) => {
-            const label = cat ? String(cat) : 'All';
-            const active = (props.categoryFilter || '') === (cat ? String(cat) : '');
-            return (
-              <button
-                key={`${label}-${idx}`}
-                type="button"
-                onClick={() => props.setCategoryFilter(cat ? String(cat) : '')}
-                className="rounded-full border px-4 py-2 text-[11px] tracking-[0.16em] uppercase transition"
-                style={{
-                  borderColor: active ? accent : '#d1d5db',
-                  color: active ? accent : '#6b7280',
-                  boxShadow: active ? `0 0 12px ${accent}45, 0 0 4px ${accent}90` : 'none',
-                  background: '#ffffff',
-                }}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
-      </section>
+      {/* Description (replaces categories) */}
+      {showDescription ? (
+        <section
+          className="max-w-6xl mx-auto px-6 pb-6"
+          data-edit-path="layout.categories"
+          onClick={() => onSelect('layout.categories')}
+        >
+          <p
+            style={{
+              margin: 0,
+              color: descriptionColor,
+              fontSize: `${descriptionSize}px`,
+              fontStyle: descriptionStyle === 'italic' ? 'italic' : 'normal',
+              fontWeight: descriptionWeight,
+              lineHeight: 1.7,
+            }}
+          >
+            {descriptionText || (canManage ? 'Add description...' : '')}
+          </p>
+        </section>
+      ) : null}
 
       {/* FEATURED ROW */}
       <section

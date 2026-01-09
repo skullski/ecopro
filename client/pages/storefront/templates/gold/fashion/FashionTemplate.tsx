@@ -159,6 +159,13 @@ export default function FashionTemplate(props: TemplateProps) {
   const isMobile = breakpoint === 'mobile';
   const isTablet = breakpoint === 'tablet';
 
+  const descriptionText = (asString(settings.template_description_text) || asString(settings.store_description)).trim();
+  const descriptionColor = asString(settings.template_description_color) || muted;
+  const descriptionSize = resolveInt(settings.template_description_size, 14, 10, 32);
+  const descriptionStyle = asString(settings.template_description_style) || 'normal';
+  const descriptionWeight = resolveInt(settings.template_description_weight, 400, 100, 900);
+  const showDescription = canManage || Boolean(descriptionText);
+
   // Debug breakpoint detection
   console.log('[FashionTemplate] Breakpoint:', breakpoint, 'isMobile:', isMobile, 'isTablet:', isTablet, 'gridColumns:', gridColumns);
 
@@ -350,48 +357,29 @@ export default function FashionTemplate(props: TemplateProps) {
         </div>
       </section>
 
-      {/* Category Filter Pills */}
-      <section
-        style={{ padding: '24px', borderBottom: '1px solid #1f2933' }}
-        data-edit-path="layout.categories"
-        onClick={(e) => clickGuard(e, 'layout.categories')}
-      >
-        <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <button
-            onClick={(e) => { e.stopPropagation(); setCategoryFilter(''); }}
-            style={{
-              borderRadius: `${categoryPillRadius}px`,
-              border: `1px solid ${categoryFilter === '' ? categoryPillActiveBg : '#3f3f46'}`,
-              padding: '6px 14px',
-              fontSize: '11px',
-              cursor: 'pointer',
-              backgroundColor: categoryFilter === '' ? categoryPillActiveBg : categoryPillBg,
-              color: categoryFilter === '' ? categoryPillActiveText : categoryPillText,
-              transition: `all ${animationSpeed} ease`,
-            }}
-          >
-            All
-          </button>
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={(e) => { e.stopPropagation(); setCategoryFilter(cat); }}
+      {/* Description (replaces categories) */}
+      {showDescription && (
+        <section
+          style={{ padding: '24px', borderBottom: '1px solid #1f2933' }}
+          data-edit-path="layout.categories"
+          onClick={(e) => clickGuard(e, 'layout.categories')}
+        >
+          <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+            <p
               style={{
-                borderRadius: `${categoryPillRadius}px`,
-                border: `1px solid ${categoryFilter === cat ? categoryPillActiveBg : '#3f3f46'}`,
-                padding: '6px 14px',
-                fontSize: '11px',
-                cursor: 'pointer',
-                backgroundColor: categoryFilter === cat ? categoryPillActiveBg : categoryPillBg,
-                color: categoryFilter === cat ? categoryPillActiveText : categoryPillText,
-                transition: `all ${animationSpeed} ease`,
+                margin: 0,
+                color: descriptionColor,
+                fontSize: `${descriptionSize}px`,
+                fontStyle: descriptionStyle === 'italic' ? 'italic' : 'normal',
+                fontWeight: descriptionWeight,
+                lineHeight: 1.65,
               }}
             >
-              {cat}
-            </button>
-          ))}
-        </div>
-      </section>
+              {descriptionText || (canManage ? 'Add description...' : '')}
+            </p>
+          </div>
+        </section>
+      )}
 
       {/* Products Grid */}
       <section

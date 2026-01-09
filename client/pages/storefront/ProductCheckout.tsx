@@ -679,13 +679,13 @@ export default function ProductCheckout() {
         </div>
       </div>
 
-      {/* Main Content - Wide Single Column, No Scroll */}
-      <div className="pt-16 px-4 h-[calc(100vh-64px)] overflow-hidden">
-        <div className="max-w-4xl mx-auto h-full flex gap-4">
+      {/* Main Content - Responsive Layout */}
+      <div className="pt-16 px-4 pb-4 min-h-[calc(100vh-64px)] overflow-y-auto md:h-[calc(100vh-64px)] md:overflow-hidden">
+        <div className="max-w-4xl mx-auto h-full flex flex-col md:flex-row gap-4">
           
-          {/* Left - Image */}
-          <div className="w-1/2 h-full flex items-center">
-            <div className="relative w-full aspect-square rounded-xl overflow-hidden">
+          {/* Image - Top on mobile, Left on desktop */}
+          <div className="w-full md:w-1/2 md:h-full flex items-center shrink-0">
+            <div className="relative w-full aspect-square rounded-xl overflow-hidden max-h-[50vh] md:max-h-none">
               <img src={productImages[activeImageIndex]} alt={productName} className="w-full h-full object-cover" />
               {productImages.length > 1 && (
                 <>
@@ -696,8 +696,8 @@ export default function ProductCheckout() {
             </div>
           </div>
 
-          {/* Right - Info + Form */}
-          <div className="w-1/2 flex flex-col justify-center gap-3">
+          {/* Form - Bottom on mobile, Right on desktop */}
+          <div className="w-full md:w-1/2 flex flex-col justify-center gap-3">
             {/* Product Info */}
             <div className="flex items-center justify-between">
               <div>

@@ -227,7 +227,7 @@ export default function Store() {
                   seller_email: storeSettings.seller_email || null,
                   store_description: storeSettings.store_description || null,
                   store_logo: storeSettings.store_logo || null,
-                  template: storeSettings.template || 'classic',
+                  template: storeSettings.template || 'pro',
                   banner_url: storeSettings.banner_url || null,
                   // hero_main_url removed
                   hero_tile1_url: storeSettings.hero_tile1_url || null,
@@ -294,7 +294,7 @@ export default function Store() {
     seller_email: '',
     store_description: '',
     store_logo: '',
-    template: 'classic',
+    template: 'pro',
     banner_url: '',
     // hero_main_url removed
     hero_tile1_url: '',

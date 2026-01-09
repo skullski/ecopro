@@ -1,0 +1,299 @@
+import React from 'react';
+import type { TemplateProps, StoreProduct } from '../../types';
+
+/**
+ * PRO ATELIER - Luxury editorial template with large imagery.
+ * Features: Full-width images, minimal text, editorial layout, serif headings.
+ */
+
+function asString(v: unknown): string {
+  return typeof v === 'string' ? v : '';
+}
+
+function resolveInt(value: unknown, fallback: number, min: number, max: number): number {
+  const parsed = typeof value === 'number' ? value : parseInt(String(value || ''), 10);
+  const safe = Number.isFinite(parsed) ? parsed : fallback;
+  return Math.max(min, Math.min(max, safe));
+}
+
+function productTitle(p: StoreProduct): string {
+  return String(p.title || p.name || '').trim() || 'Product';
+}
+
+function productImage(p: StoreProduct): string {
+  const img = Array.isArray(p.images) ? p.images.find(Boolean) : undefined;
+  return typeof img === 'string' && img ? img : '/placeholder.png';
+}
+
+export default function ProAtelierTemplate(props: TemplateProps) {
+  const { settings, formatPrice, navigate } = props;
+  const canManage = Boolean(props.canManage);
+  const onSelect = (path: string) => {
+    if (canManage && typeof (props as any).onSelect === 'function') {
+      (props as any).onSelect(path);
+    }
+  };
+
+  const [isMobile, setIsMobile] = React.useState((props as any).forcedBreakpoint === 'mobile');
+  React.useEffect(() => {
+    const bp = (props as any).forcedBreakpoint;
+    if (bp) { setIsMobile(bp === 'mobile'); return; }
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, [(props as any).forcedBreakpoint]);
+
+  // Atelier theme - warm cream/white with gold accent
+  const bg = asString(settings.template_bg_color) || '#faf9f6';
+  const text = asString(settings.template_text_color) || '#1c1917';
+  const muted = asString(settings.template_muted_color) || '#78716c';
+  const accent = asString(settings.template_accent_color) || '#b45309';
+
+  const storeName = asString(settings.store_name) || 'ATELIER';
+  const heroTitle = asString(settings.template_hero_heading) || 'Crafted with Purpose';
+  const heroSubtitle = asString(settings.template_hero_subtitle) || 'Timeless pieces for the discerning eye';
+  const cta = asString(settings.template_button_text) || 'Discover';
+
+  const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 12) || [];
+
+  const descText = asString(settings.template_description_text);
+  const descColor = asString(settings.template_description_color) || muted;
+  const descSize = resolveInt(settings.template_description_size, 16, 10, 32);
+
+  return (
+    <div
+      className="ecopro-storefront"
+      style={{
+        minHeight: '100vh',
+        background: bg,
+        color: text,
+        fontFamily: '"Playfair Display", Georgia, serif',
+      }}
+    >
+      {/* Header - Ultra minimal */}
+      <header
+        data-edit-path="layout.header"
+        onClick={() => canManage && onSelect('layout.header')}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 50,
+          padding: '24px 32px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          background: 'transparent',
+        }}
+      >
+        <span style={{ fontSize: 22, fontWeight: 600, letterSpacing: '0.2em' }}>{storeName}</span>
+        <button
+          onClick={() => navigate('/products')}
+          style={{
+            background: 'transparent',
+            border: `1px solid ${text}`,
+            padding: '10px 24px',
+            color: text,
+            fontFamily: 'system-ui, sans-serif',
+            fontSize: 12,
+            fontWeight: 600,
+            letterSpacing: '0.1em',
+            cursor: 'pointer',
+          }}
+        >
+          SHOP
+        </button>
+      </header>
+
+      {/* Hero - Full screen image with text overlay */}
+      <section
+        data-edit-path="layout.hero"
+        onClick={() => canManage && onSelect('layout.hero')}
+        style={{
+          position: 'relative',
+          height: '100vh',
+          display: 'flex',
+          alignItems: 'flex-end',
+          justifyContent: 'flex-start',
+        }}
+      >
+        {products[0] && (
+          <img
+            src={productImage(products[0])}
+            alt=""
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+            }}
+          />
+        )}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 50%)',
+          }}
+        />
+        <div style={{ position: 'relative', padding: isMobile ? '40px 24px' : '80px 60px', color: '#fff', maxWidth: 700 }}>
+          <h1 style={{ fontSize: isMobile ? 40 : 72, fontWeight: 400, lineHeight: 1.1, margin: 0, fontStyle: 'italic' }}>
+            {heroTitle}
+          </h1>
+          <p style={{ marginTop: 20, fontSize: 18, opacity: 0.85, fontFamily: 'system-ui, sans-serif', fontWeight: 300 }}>
+            {heroSubtitle}
+          </p>
+          <button
+            onClick={() => navigate('/products')}
+            style={{
+              marginTop: 32,
+              background: '#fff',
+              border: 0,
+              padding: '16px 40px',
+              color: '#000',
+              fontFamily: 'system-ui, sans-serif',
+              fontSize: 13,
+              fontWeight: 600,
+              letterSpacing: '0.15em',
+              cursor: 'pointer',
+            }}
+          >
+            {cta.toUpperCase()}
+          </button>
+        </div>
+      </section>
+
+      {/* Description */}
+      {(canManage || descText) && (
+        <section
+          data-edit-path="layout.categories"
+          onClick={() => canManage && onSelect('layout.categories')}
+          style={{ padding: isMobile ? '60px 24px' : '100px 60px', textAlign: 'center' }}
+        >
+          <p style={{ maxWidth: 800, margin: '0 auto', color: descColor, fontSize: descSize, lineHeight: 1.8, fontStyle: 'italic' }}>
+            {descText || (canManage ? 'Add description...' : '')}
+          </p>
+        </section>
+      )}
+
+      {/* Products - Editorial alternating layout */}
+      <section
+        data-edit-path="layout.grid"
+        onClick={() => canManage && onSelect('layout.grid')}
+        style={{ padding: isMobile ? '0 24px 60px' : '0 60px 100px' }}
+      >
+        <div style={{ textAlign: 'center', marginBottom: isMobile ? 40 : 60 }}>
+          <h2 style={{ fontSize: isMobile ? 28 : 42, fontWeight: 400, fontStyle: 'italic', margin: 0 }}>The Collection</h2>
+        </div>
+
+        {products.slice(0, 6).map((p, idx) => (
+          <div
+            key={p.id}
+            data-edit-path={`layout.grid.items.${p.id}`}
+            onClick={(e) => {
+              if (canManage) { e.stopPropagation(); onSelect(`layout.grid.items.${p.id}`); return; }
+              if ((p as any).slug) navigate((p as any).slug);
+            }}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : idx % 2 === 0 ? '1.2fr 0.8fr' : '0.8fr 1.2fr',
+              gap: isMobile ? 20 : 40,
+              marginBottom: isMobile ? 40 : 80,
+              alignItems: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            <div style={{ order: isMobile ? 0 : idx % 2 === 0 ? 0 : 1 }}>
+              <div style={{ aspectRatio: '4/5', overflow: 'hidden' }}>
+                <img
+                  src={productImage(p)}
+                  alt={productTitle(p)}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.6s' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+                />
+              </div>
+            </div>
+            <div style={{ padding: isMobile ? 0 : '40px 0' }}>
+              <div style={{ fontSize: 11, color: muted, fontFamily: 'system-ui, sans-serif', letterSpacing: '0.2em', marginBottom: 12 }}>
+                ITEM {String(idx + 1).padStart(2, '0')}
+              </div>
+              <h3 style={{ fontSize: isMobile ? 24 : 32, fontWeight: 400, margin: 0, fontStyle: 'italic' }}>
+                {productTitle(p)}
+              </h3>
+              <p style={{ marginTop: 16, color: muted, fontSize: 14, lineHeight: 1.7, fontFamily: 'system-ui, sans-serif' }}>
+                {String(p.description || '').slice(0, 150) || 'Expertly crafted with attention to every detail.'}
+              </p>
+              <div style={{ marginTop: 20, fontSize: 20, fontWeight: 600, color: accent }}>
+                {formatPrice(Number(p.price) || 0)}
+              </div>
+              <button
+                style={{
+                  marginTop: 24,
+                  background: 'transparent',
+                  border: `1px solid ${text}`,
+                  padding: '12px 28px',
+                  color: text,
+                  fontFamily: 'system-ui, sans-serif',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  letterSpacing: '0.1em',
+                  cursor: 'pointer',
+                }}
+              >
+                VIEW DETAILS
+              </button>
+            </div>
+          </div>
+        ))}
+
+        {/* More products grid */}
+        {products.length > 6 && (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
+              gap: 24,
+              marginTop: 60,
+            }}
+          >
+            {products.slice(6).map((p) => (
+              <div
+                key={p.id}
+                onClick={() => (p as any).slug && navigate((p as any).slug)}
+                style={{ cursor: 'pointer' }}
+              >
+                <div style={{ aspectRatio: '3/4', overflow: 'hidden', marginBottom: 16 }}>
+                  <img src={productImage(p)} alt={productTitle(p)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+                <div style={{ fontSize: 16, fontStyle: 'italic' }}>{productTitle(p)}</div>
+                <div style={{ fontSize: 14, color: accent, marginTop: 4, fontFamily: 'system-ui, sans-serif', fontWeight: 600 }}>
+                  {formatPrice(Number(p.price) || 0)}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Footer */}
+      <footer
+        data-edit-path="layout.footer"
+        onClick={() => canManage && onSelect('layout.footer')}
+        style={{
+          borderTop: `1px solid ${muted}33`,
+          padding: isMobile ? '40px 24px' : '60px',
+          textAlign: 'center',
+        }}
+      >
+        <div style={{ fontSize: 20, fontStyle: 'italic', marginBottom: 20 }}>{storeName}</div>
+        <p style={{ color: muted, fontSize: 13, fontFamily: 'system-ui, sans-serif' }}>
+          © {new Date().getFullYear()} All rights reserved.
+        </p>
+      </footer>
+    </div>
+  );
+}

@@ -494,72 +494,38 @@ function Hero({ node, responsive, theme, onSelect, resolveAsset, settings }: any
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   CATEGORY PILLS - Fully editable
-   "BROWSE BY CATEGORY" label + horizontal pills with icons
+   DESCRIPTION (replaces categories) - Fully editable
    ═══════════════════════════════════════════════════════════════════════════ */
-const CATEGORY_ICONS: Record<string, string> = {
-  all: '◎',
-  toys: '🧸',
-  clothing: '👕',
-  feeding: '🍼',
-  strollers: '🛒',
-  nursery: '🛏️',
-  bath: '🛁',
-  gift: '🎁',
-};
+function CategoryPills({ settings, theme, canManage, onSelect }: { settings: any; theme: ThemeColors; canManage: boolean; onSelect: (p: string) => void }) {
+  const descriptionText = (asString(settings?.template_description_text) || asString(settings?.store_description)).trim();
+  const descriptionColor = asString(settings?.template_description_color) || theme.muted;
+  const descriptionSize = Math.max(10, Math.min(32, parseInt(String(settings?.template_description_size ?? '14'), 10) || 14));
+  const descriptionStyle = asString(settings?.template_description_style) || 'normal';
+  const descriptionWeight = Math.max(100, Math.min(900, parseInt(String(settings?.template_description_weight ?? '400'), 10) || 400));
+  const showDescription = canManage || Boolean(descriptionText);
 
-function CategoryPills({ categories, active, theme, onPick, onSelect }: { categories: string[]; active: string; theme: ThemeColors; onPick: (c: string) => void; onSelect: (p: string) => void }) {
-  const defaultCats = ['All', 'Toys', 'Clothing', 'Feeding', 'Strollers', 'Nursery', 'Bath', 'Gift'];
-  const displayCats = categories.length > 0 ? ['All', ...categories.filter(c => c.toLowerCase() !== 'all')] : defaultCats;
+  if (!showDescription) return null;
 
   return (
-    <div 
+    <div
       style={{ backgroundColor: theme.bg, borderBottom: `1px solid ${theme.borderLight}`, padding: '16px 0' }}
       data-edit-path="layout.categories"
       onClick={() => onSelect('layout.categories')}
     >
       <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <span style={{ color: theme.mutedLight, fontSize: '10px', fontWeight: 500, letterSpacing: '0.1em', whiteSpace: 'nowrap' }}>
-            BROWSE BY CATEGORY
-          </span>
-          <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
-            {displayCats.map((cat) => {
-              const isActive = cat.toLowerCase() === (active || 'all').toLowerCase();
-              const icon = CATEGORY_ICONS[cat.toLowerCase()] || '•';
-              return (
-                <button
-                  key={cat}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onPick(cat.toLowerCase() === 'all' ? '' : cat);
-                  }}
-                  className="theme-hover-scale"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    backgroundColor: isActive ? theme.categoryPillActiveBg : theme.categoryPillBg,
-                    border: `1px solid ${isActive ? theme.categoryPillActiveBg : theme.border}`,
-                    borderRadius: `${theme.categoryPillBorderRadius}px`,
-                    padding: '6px 12px',
-                    fontSize: '10px',
-                    fontWeight: 500,
-                    letterSpacing: '0.05em',
-                    color: isActive ? theme.categoryPillActiveText : theme.categoryPillText,
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap',
-                    transition: `all ${theme.animationSpeed}ms ease`,
-                  }}
-                >
-                  <span style={{ fontSize: '12px' }}>{icon}</span>
-                  <span>{cat.toUpperCase()}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <p
+          style={{
+            margin: 0,
+            textAlign: 'center',
+            color: descriptionColor,
+            fontSize: `${descriptionSize}px`,
+            fontStyle: descriptionStyle === 'italic' ? 'italic' : 'normal',
+            fontWeight: descriptionWeight,
+            lineHeight: 1.6,
+          }}
+        >
+          {descriptionText || (canManage ? 'Add description...' : '')}
+        </p>
       </div>
     </div>
   );
@@ -570,7 +536,7 @@ function CategoryPills({ categories, active, theme, onPick, onSelect }: { catego
    Left: description card with gradient
    Right: product cards
    ═══════════════════════════════════════════════════════════════════════════ */
-function FeaturedSection({ node, responsive, theme, settings, onSelect, resolveAsset, formatPrice }: any) {
+function FeaturedSection({ node, responsive, theme, settings, onSelect, resolveAsset, formatPrice, canManage, navigate }: any) {
   const grid: ProductGridNode = node || ({} as any);
   const items: ProductNode[] = Array.isArray(grid.items) ? grid.items : [];
   const bp = responsive.breakpoint as Breakpoint;
@@ -599,9 +565,17 @@ function FeaturedSection({ node, responsive, theme, settings, onSelect, resolveA
           borderRadius: '16px',
           overflow: 'hidden',
           border: `1px solid ${theme.borderLight}`,
+          cursor: canManage ? 'default' : 'pointer',
         }}
         data-edit-path={`layout.featured.items.${p.id}`}
-        onClick={(e) => { e.stopPropagation(); onSelect(`layout.featured.items.${p.id}`); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (!canManage && (p as any)?.slug && navigate) {
+            navigate((p as any).slug);
+          } else if (canManage) {
+            onSelect(`layout.featured.items.${p.id}`);
+          }
+        }}
       >
         {/* Image */}
         <div style={{ position: 'relative', aspectRatio: '4/3', backgroundColor: theme.borderLight }}>
@@ -773,7 +747,7 @@ function FeaturedSection({ node, responsive, theme, settings, onSelect, resolveA
 /* ═══════════════════════════════════════════════════════════════════════════
    PRODUCT GRID - Fully editable
    ═══════════════════════════════════════════════════════════════════════════ */
-function ProductGrid({ node, responsive, theme, settings, onSelect, resolveAsset, formatPrice }: any) {
+function ProductGrid({ node, responsive, theme, settings, onSelect, resolveAsset, formatPrice, canManage, navigate }: any) {
   const grid: ProductGridNode = node || ({} as any);
   const items: ProductNode[] = Array.isArray(grid.items) ? grid.items : [];
   const bp = responsive.breakpoint as Breakpoint;
@@ -806,9 +780,17 @@ function ProductGrid({ node, responsive, theme, settings, onSelect, resolveAsset
           overflow: 'hidden',
           border: `1px solid ${theme.borderLight}`,
           transition: `all ${theme.animationSpeed}ms ease`,
+          cursor: canManage ? 'default' : 'pointer',
         }}
         data-edit-path={`layout.featured.items.${p.id}`}
-        onClick={(e) => { e.stopPropagation(); onSelect(`layout.featured.items.${p.id}`); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (!canManage && (p as any)?.slug && navigate) {
+            navigate((p as any).slug);
+          } else if (canManage) {
+            onSelect(`layout.featured.items.${p.id}`);
+          }
+        }}
       >
         {/* Image */}
         <div style={{ position: 'relative', aspectRatio: '4/3', backgroundColor: theme.borderLight }}>
@@ -1264,9 +1246,9 @@ export default function BabyosTemplate(props: TemplateProps) {
       
       <Header storeName={storeName} logoUrl={settings?.store_logo} theme={theme} onSelect={onSelect} />
       <Hero node={composedHero} responsive={responsive} theme={theme} settings={settings} onSelect={onSelect} resolveAsset={resolveAsset} />
-      <CategoryPills categories={categories} active={props.categoryFilter || ''} theme={theme} onPick={(c) => props.setCategoryFilter?.(c)} onSelect={onSelect} />
-      <FeaturedSection node={featuredNode} responsive={responsive} theme={theme} settings={settings} onSelect={onSelect} resolveAsset={resolveAsset} formatPrice={props.formatPrice} />
-      <ProductGrid node={featuredNode} responsive={responsive} theme={theme} settings={settings} onSelect={onSelect} resolveAsset={resolveAsset} formatPrice={props.formatPrice} />
+      <CategoryPills settings={settings} theme={theme} canManage={typeof (props as any).onSelect === 'function'} onSelect={onSelect} />
+      <FeaturedSection node={featuredNode} responsive={responsive} theme={theme} settings={settings} onSelect={onSelect} resolveAsset={resolveAsset} formatPrice={props.formatPrice} canManage={typeof (props as any).onSelect === 'function'} navigate={props.navigate} />
+      <ProductGrid node={featuredNode} responsive={responsive} theme={theme} settings={settings} onSelect={onSelect} resolveAsset={resolveAsset} formatPrice={props.formatPrice} canManage={typeof (props as any).onSelect === 'function'} navigate={props.navigate} />
       <Footer node={footerNode} theme={theme} settings={settings} onSelect={onSelect} />
     </div>
   );

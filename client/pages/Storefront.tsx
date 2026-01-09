@@ -46,7 +46,7 @@ export default function Storefront() {
   const [products, setProducts] = useState<StoreProduct[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<StoreProduct[]>([]);
   const [storeSettings, setStoreSettings] = useState<StoreSettings>({
-    template: 'shiro-hana',
+    template: 'pro',
     primary_color: '#16a34a',
     secondary_color: '#0ea5e9',
     currency_code: 'USD',
@@ -67,7 +67,7 @@ export default function Storefront() {
   const [sortOption, setSortOption] = useState<'newest' | 'price-asc' | 'price-desc' | 'featured' | 'views-desc'>('newest');
 
   // Derived visual tokens from store settings
-  const template = storeSettings.template || 'shiro-hana';
+  const template = storeSettings.template || 'pro';
   const primaryColor = storeSettings.primary_color || '#16a34a';
   const secondaryColor = storeSettings.secondary_color || '#0ea5e9';
   const bannerUrl = storeSettings.banner_url || '';
@@ -91,9 +91,7 @@ export default function Storefront() {
         p.title?.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q)
       ));
     }
-    if (categoryFilter && categoryFilter !== 'all') {
-      next = next.filter(p => p.category === categoryFilter);
-    }
+    // Categories are intentionally not used for storefront UX.
     switch (sortOption) {
       case 'price-asc':
         next.sort((a,b) => Number(a.price) - Number(b.price));
@@ -168,7 +166,7 @@ export default function Storefront() {
           banner_url: '',
           ...incomingSettings,
           // Use the template from store settings, or default to a valid template ID
-          template: incomingSettings?.template || 'shiro-hana',
+          template: incomingSettings?.template || 'pro',
           // Always ensure store_slug is available (use URL slug as fallback)
           store_slug: incomingSettings?.store_slug || storeSlug,
         };
@@ -202,10 +200,11 @@ export default function Storefront() {
           }));
         }
         
-        const items = productsData?.products || productsData || [];
-        setProducts(items);
-        const cats = Array.from(new Set(items.map((p: any) => p.category).filter(Boolean))) as string[];
-        setCategories(cats.length ? ['all', ...cats] : ['all']);
+        const items = (productsData?.products || productsData || []) as StoreProduct[];
+        // Strip categories from products for all storefront templates.
+        const withoutCategories = items.map((p) => ({ ...p, category: undefined }));
+        setProducts(withoutCategories);
+        setCategories([]);
         setLoading(false);
       } catch (e: any) {
         if (!isMounted) return;
@@ -270,21 +269,10 @@ export default function Storefront() {
     );
   }
 
-  // Debug: Log which template is being rendered
-  console.log('[Storefront] Rendering template:', template, 'Store settings:', storeSettings);
-
   return (
     <>
       <UniversalStyleInjector />
-      {/* Active template badge for quick visibility */}
-      <div className="fixed top-20 right-4 z-40">
-        <div className="inline-flex items-center gap-2 rounded-full border bg-card/80 backdrop-blur px-3 py-1 text-xs shadow-sm">
-          <span className="font-semibold">{t('storefront.template')}:</span>
-          <span className="font-mono">{template}</span>
-        </div>
-      </div>
-      <>
-        {console.log('🎨 About to call RenderStorefront with template:', template)}
+      <div className="ecopro-storefront">
         {RenderStorefront(template as any, {
             storeSlug: storeSlug!,
             products,
@@ -306,7 +294,7 @@ export default function Storefront() {
             navigate: (to: any) => navigate(to),
             canManage: false,
           })}
-      </>
+      </div>
     </>
   );
 }
