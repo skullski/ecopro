@@ -92,9 +92,11 @@ export default function ElectronicsTemplate(props: TemplateProps) {
   const headingWeight = asString(settings.template_heading_font_weight) || '600';
   const cardRadius = resolveInt(settings.template_card_border_radius, 16, 0, 32);
 
-  // Advanced settings
-  const spacing = asString(settings.template_spacing) || 'normal';
-  const animationSpeed = asString(settings.template_animation_speed) || '0.3s';
+  // Advanced settings - properly parsed
+  const gridGap = resolveInt(settings.template_grid_gap, 20, 8, 48);
+  const baseSpacing = resolveInt(settings.template_spacing, 24, 8, 32);
+  const sectionSpacing = resolveInt(settings.template_section_spacing, 64, 24, 96);
+  const animationSpeed = resolveInt(settings.template_animation_speed, 300, 100, 500);
   const hoverScale = asString(settings.template_hover_scale) || '1.02';
   const gridColumns = resolveInt(settings.template_grid_columns, 4, 1, 6);
   const customCss = asString(settings.template_custom_css);
@@ -421,7 +423,7 @@ export default function ElectronicsTemplate(props: TemplateProps) {
             style={{
               display: 'grid',
               gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : isTablet ? 'repeat(3, 1fr)' : `repeat(${gridColumns}, 1fr)`,
-              gap: isMobile ? '12px' : '20px',
+              gap: isMobile ? '12px' : `${gridGap}px`,
             }}
             data-edit-path="layout.grid"
             onClick={(e) => clickGuard(e, 'layout.grid')}
@@ -434,7 +436,7 @@ export default function ElectronicsTemplate(props: TemplateProps) {
                   borderRadius: `${cardRadius}px`,
                   border: '1px solid #1e293b',
                   overflow: 'hidden',
-                  transition: `all ${animationSpeed} ease`,
+                  transition: `all ${animationSpeed}ms ease`,
                   cursor: canManage ? 'default' : 'pointer',
                 }}
                 data-edit-path={`layout.featured.items.${product.id}`}
@@ -444,6 +446,14 @@ export default function ElectronicsTemplate(props: TemplateProps) {
                   } else if (canManage) {
                     clickGuard(e, `layout.featured.items.${product.id}`);
                   }
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = `scale(${hoverScale})`;
+                  e.currentTarget.style.boxShadow = '0 0 24px rgba(56,189,248,0.2)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.boxShadow = 'none';
                 }}
               >
                 <div style={{ position: 'relative', aspectRatio: '4/3', overflow: 'hidden', backgroundColor: '#0f172a', padding: '12px' }}>

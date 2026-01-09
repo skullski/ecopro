@@ -96,6 +96,12 @@ export default function MinimalTemplate(props: TemplateProps) {
   const headingWeight = asString(settings.template_heading_font_weight) || '300';
   const cardRadius = resolveInt(settings.template_card_border_radius, 0, 0, 32);
   const gridColumns = resolveInt(settings.template_grid_columns, 3, 1, 6);
+  const gridGap = resolveInt(settings.template_grid_gap, 40, 8, 48);
+  const baseSpacing = resolveInt(settings.template_spacing, 24, 8, 32);
+  const sectionSpacing = resolveInt(settings.template_section_spacing, 80, 24, 96);
+  const buttonRadius = resolveInt(settings.template_button_border_radius, 0, 0, 50);
+  const animationSpeed = resolveInt(settings.template_animation_speed, 200, 100, 500);
+  const hoverScale = asString(settings.template_hover_scale) || '1';
 
   // Hero content
   const heroTitle = asString(settings.template_hero_heading) || 'Less is more.';
@@ -387,7 +393,7 @@ export default function MinimalTemplate(props: TemplateProps) {
       {/* Products Section */}
       <section
         style={{
-          padding: isMobile ? '48px 24px' : '80px 24px',
+          padding: isMobile ? `${sectionSpacing * 0.6}px ${baseSpacing}px` : `${sectionSpacing}px ${baseSpacing}px`,
         }}
         data-edit-path="layout.featured"
         onClick={(e) => clickGuard(e, 'layout.featured')}
@@ -414,7 +420,7 @@ export default function MinimalTemplate(props: TemplateProps) {
             style={{
               display: 'grid',
               gridTemplateColumns: `repeat(${getGridCols()}, 1fr)`,
-              gap: isMobile ? '24px' : '40px',
+              gap: isMobile ? '24px' : `${gridGap}px`,
             }}
             data-edit-path="layout.grid"
             onClick={(e) => clickGuard(e, 'layout.grid')}

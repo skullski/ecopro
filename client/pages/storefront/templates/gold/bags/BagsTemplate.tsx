@@ -157,9 +157,11 @@ export default function BagsTemplate(props: TemplateProps) {
   const chapterProducts = products.slice(0, 3);
   const gridProducts = products;
 
-  // Advanced settings
-  const spacing = asString((settings as any).template_spacing) || 'normal';
-  const animationSpeed = asString((settings as any).template_animation_speed) || '0.3s';
+  // Advanced settings - properly parsed
+  const gridGap = resolveInt((settings as any).template_grid_gap, 32, 8, 48);
+  const baseSpacing = resolveInt((settings as any).template_spacing, 24, 8, 32);
+  const sectionSpacing = resolveInt((settings as any).template_section_spacing, 80, 24, 96);
+  const animationSpeed = resolveInt((settings as any).template_animation_speed, 300, 100, 500);
   const hoverScale = asString((settings as any).template_hover_scale) || '1.02';
   const gridColumns = resolveInt((settings as any).template_grid_columns, 4, 1, 6);
   const customCss = asString((settings as any).template_custom_css);
@@ -568,18 +570,25 @@ export default function BagsTemplate(props: TemplateProps) {
           </div>
 
           <div
-            className="grid gap-5"
+            className="grid"
             style={{
-              gridTemplateColumns: breakpoint === 'desktop' ? `repeat(${gridColumns}, 1fr)` : breakpoint === 'tablet' ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)'
+              gridTemplateColumns: breakpoint === 'desktop' ? `repeat(${gridColumns}, 1fr)` : breakpoint === 'tablet' ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)',
+              gap: breakpoint === 'mobile' ? '16px' : `${gridGap}px`,
             }}
           >
             {chapterProducts.length
               ? chapterProducts.map((p, i) => (
                   <div
                     key={p.id}
-                    style={{ transition: `all ${animationSpeed} ease` }}
+                    style={{ transition: `all ${animationSpeed}ms ease` }}
                     data-edit-path={`layout.featured.items.${p.id}`}
                     onClick={(e) => clickGuard(e, `layout.featured.items.${p.id}`)}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = `scale(${hoverScale})`;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'scale(1)';
+                    }}
                   >
                     <BagTile
                       product={p}
@@ -619,17 +628,24 @@ export default function BagsTemplate(props: TemplateProps) {
         </div>
 
         <div
-          className="grid gap-8"
+          className="grid"
           style={{
-            gridTemplateColumns: breakpoint === 'desktop' ? `repeat(${gridColumns}, 1fr)` : breakpoint === 'tablet' ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)'
+            gridTemplateColumns: breakpoint === 'desktop' ? `repeat(${gridColumns}, 1fr)` : breakpoint === 'tablet' ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)',
+            gap: breakpoint === 'mobile' ? '20px' : `${gridGap}px`,
           }}
         >
           {gridProducts.map((p, index) => (
             <div
               key={p.id}
-              style={{ transition: `all ${animationSpeed} ease` }}
+              style={{ transition: `all ${animationSpeed}ms ease` }}
               data-edit-path={`layout.featured.items.${p.id}`}
               onClick={(e) => clickGuard(e, `layout.featured.items.${p.id}`)}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = `scale(${hoverScale})`;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
             >
               <BagTile product={p} index={index} tall={index % 3 === 0} path={`layout.featured.items.${p.id}`} />
             </div>

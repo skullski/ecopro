@@ -97,6 +97,12 @@ export default function ModernTemplate(props: TemplateProps) {
   const headingWeight = asString(settings.template_heading_font_weight) || '700';
   const cardRadius = resolveInt(settings.template_card_border_radius, 16, 0, 32);
   const gridColumns = resolveInt(settings.template_grid_columns, 4, 1, 6);
+  const gridGap = resolveInt(settings.template_grid_gap, 24, 8, 48);
+  const baseSpacing = resolveInt(settings.template_spacing, 24, 8, 32);
+  const sectionSpacing = resolveInt(settings.template_section_spacing, 64, 24, 96);
+  const buttonRadius = resolveInt(settings.template_button_border_radius, 12, 0, 50);
+  const animationSpeed = resolveInt(settings.template_animation_speed, 300, 100, 500);
+  const hoverScale = asString(settings.template_hover_scale) || '1.02';
 
   // Gradient for hero
   const gradient = `linear-gradient(135deg, ${accent} 0%, ${accentSecondary} 100%)`;
@@ -512,7 +518,7 @@ export default function ModernTemplate(props: TemplateProps) {
       {/* Products Section */}
       <section
         style={{
-          padding: isMobile ? '40px 24px' : '64px 24px',
+          padding: isMobile ? `${sectionSpacing * 0.6}px ${baseSpacing}px` : `${sectionSpacing}px ${baseSpacing}px`,
         }}
         data-edit-path="layout.featured"
         onClick={(e) => clickGuard(e, 'layout.featured')}
@@ -548,7 +554,7 @@ export default function ModernTemplate(props: TemplateProps) {
             style={{
               display: 'grid',
               gridTemplateColumns: `repeat(${getGridCols()}, 1fr)`,
-              gap: isMobile ? '16px' : '24px',
+              gap: isMobile ? '16px' : `${gridGap}px`,
             }}
             data-edit-path="layout.grid"
             onClick={(e) => clickGuard(e, 'layout.grid')}
@@ -562,7 +568,7 @@ export default function ModernTemplate(props: TemplateProps) {
                   overflow: 'hidden',
                   cursor: canManage ? 'default' : 'pointer',
                   boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-                  transition: 'all 0.3s ease',
+                  transition: `all ${animationSpeed}ms ease`,
                 }}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -574,11 +580,11 @@ export default function ModernTemplate(props: TemplateProps) {
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.12)';
-                  e.currentTarget.style.transform = 'translateY(-8px)';
+                  e.currentTarget.style.transform = `scale(${hoverScale})`;
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)';
-                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.transform = 'scale(1)';
                 }}
               >
                 <div

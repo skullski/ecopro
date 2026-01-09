@@ -92,9 +92,11 @@ export default function FoodTemplate(props: TemplateProps) {
   const headingWeight = asString(settings.template_heading_font_weight) || '700';
   const cardRadius = resolveInt(settings.template_card_border_radius, 16, 0, 32);
 
-  // Advanced settings
-  const spacing = asString(settings.template_spacing) || 'normal';
-  const animationSpeed = asString(settings.template_animation_speed) || '0.3s';
+  // Advanced settings - properly parsed
+  const gridGap = resolveInt(settings.template_grid_gap, 24, 8, 48);
+  const baseSpacing = resolveInt(settings.template_spacing, 24, 8, 32);
+  const sectionSpacing = resolveInt(settings.template_section_spacing, 64, 24, 96);
+  const animationSpeed = resolveInt(settings.template_animation_speed, 300, 100, 500);
   const hoverScale = asString(settings.template_hover_scale) || '1.02';
   const gridColumns = resolveInt(settings.template_grid_columns, 4, 1, 6);
   const customCss = asString(settings.template_custom_css);
@@ -422,7 +424,7 @@ export default function FoodTemplate(props: TemplateProps) {
             style={{
               display: 'grid',
               gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : isTablet ? 'repeat(3, 1fr)' : `repeat(${gridColumns}, 1fr)`,
-              gap: isMobile ? '16px' : '24px',
+              gap: isMobile ? '16px' : `${gridGap}px`,
             }}
             data-edit-path="layout.grid"
             onClick={(e) => clickGuard(e, 'layout.grid')}
@@ -435,7 +437,7 @@ export default function FoodTemplate(props: TemplateProps) {
                   borderRadius: `${cardRadius}px`,
                   overflow: 'hidden',
                   cursor: canManage ? 'default' : 'pointer',
-                  transition: `all ${animationSpeed} ease`,
+                  transition: `all ${animationSpeed}ms ease`,
                 }}
                 data-edit-path={`layout.featured.items.${product.id}`}
                 onClick={(e) => {
@@ -444,6 +446,14 @@ export default function FoodTemplate(props: TemplateProps) {
                   } else if (canManage) {
                     clickGuard(e, `layout.featured.items.${product.id}`);
                   }
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = `scale(${hoverScale})`;
+                  e.currentTarget.style.boxShadow = '0 12px 32px rgba(0,0,0,0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.boxShadow = 'none';
                 }}
               >
                 <div style={{ 

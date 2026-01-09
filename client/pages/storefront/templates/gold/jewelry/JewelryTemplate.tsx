@@ -81,9 +81,11 @@ export default function JewelryTemplate(props: TemplateProps) {
 
   const storeName = asString(settings.store_name) || 'JEWELRYOS';
 
-  // Advanced settings
-  const spacing = asString((settings as any).template_spacing) || 'normal';
-  const animationSpeed = asString((settings as any).template_animation_speed) || '0.3s';
+  // Advanced settings - properly parsed
+  const gridGap = resolveInt((settings as any).template_grid_gap, 24, 8, 48);
+  const baseSpacing = resolveInt((settings as any).template_spacing, 24, 8, 32);
+  const sectionSpacing = resolveInt((settings as any).template_section_spacing, 64, 24, 96);
+  const animationSpeed = resolveInt((settings as any).template_animation_speed, 300, 100, 500);
   const hoverScale = asString((settings as any).template_hover_scale) || '1.02';
   const gridColumns = Number(asString((settings as any).template_grid_columns)) || 4;
 
@@ -433,9 +435,10 @@ export default function JewelryTemplate(props: TemplateProps) {
         </div>
 
         <div
-          className="grid gap-4 sm:gap-6"
+          className="grid"
           style={{
-            gridTemplateColumns: breakpoint === 'desktop' ? `repeat(${gridColumns}, 1fr)` : breakpoint === 'tablet' ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)'
+            gridTemplateColumns: breakpoint === 'desktop' ? `repeat(${gridColumns}, 1fr)` : breakpoint === 'tablet' ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)',
+            gap: breakpoint === 'mobile' ? '16px' : `${gridGap}px`,
           }}
         >
           {products.map((p) => {
@@ -444,7 +447,7 @@ export default function JewelryTemplate(props: TemplateProps) {
               <div
                 key={p.id}
                 className="bg-white rounded-[18px] border border-gray-200 overflow-hidden"
-                style={{ transition: `all ${animationSpeed} ease`, cursor: canManage ? 'default' : 'pointer' }}
+                style={{ transition: `all ${animationSpeed}ms ease`, cursor: canManage ? 'default' : 'pointer' }}
                 data-edit-path={`layout.featured.items.${p.id}`}
                 onClick={(e) => {
                   if (!canManage && p?.slug) {
@@ -452,6 +455,14 @@ export default function JewelryTemplate(props: TemplateProps) {
                   } else if (canManage) {
                     clickGuard(e, `layout.featured.items.${p.id}`);
                   }
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = `scale(${hoverScale})`;
+                  e.currentTarget.style.boxShadow = '0 12px 32px rgba(212,175,55,0.15)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.boxShadow = 'none';
                 }}
               >
                 <img
