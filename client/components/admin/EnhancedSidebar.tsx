@@ -4,7 +4,7 @@ import {
   Truck, Megaphone, Star, Percent, Globe, BarChart3, 
   Users, Shield, Ban, Puzzle, CreditCard, Settings,
   ChevronDown, ChevronRight, Menu, X, Package, Bot,
-  Divide, Palette, User, Lock
+  Divide, Palette, User, Lock, Image
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
@@ -47,6 +47,7 @@ const CATEGORY_COLORS: { [key: string]: string } = {
   home: '#3b82f6',      // Blue
   store: '#10b981',     // Green
   stock: '#f59e0b',     // Amber
+  images: '#0ea5e9',    // Sky Blue
   orders: '#ef4444',    // Red
   delivery: '#8b5cf6',  // Purple
   addons: '#ec4899',    // Pink
@@ -61,6 +62,7 @@ const menuItems: MenuItem[] = [
   { titleKey: "sidebar.profile", path: "/dashboard/profile", icon: <User className="w-5 h-5" />, permission: "view_settings" },
   { titleKey: "sidebar.store", path: "/dashboard/preview", icon: <Eye className="w-5 h-5" />, permission: "view_products_list" },
   { titleKey: "sidebar.stock", path: "/dashboard/stock", icon: <Package className="w-5 h-5" />, permission: "view_inventory" },
+  { titleKey: "sidebar.images", path: "/dashboard/images", icon: <Image className="w-5 h-5" />, permission: "view_products_list" },
   { titleKey: "sidebar.orders", path: "/dashboard/orders", icon: <ShoppingCart className="w-5 h-5" />, permission: "view_orders_list" },
   { 
     titleKey: "sidebar.delivery", 

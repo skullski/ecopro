@@ -18,7 +18,7 @@ import * as templateRoutes from "./routes/templates";
 import { createProduct as createStorefrontProduct, updateProduct as updateStorefrontProduct, deleteProduct as deleteStorefrontProduct, handleUploadImages as uploadStorefrontImages } from "./routes/storefront";
 import * as orderRoutes from "./routes/orders";
 import * as orderConfirmationRoutes from "./routes/order-confirmation";
-import { upload, uploadImage, serveSignedUpload } from "./routes/uploads";
+import { upload, uploadImage, serveSignedUpload, listClientImages, deleteClientImage } from "./routes/uploads";
 import { authenticate, optionalAuthenticate, requireAdmin, requireClient, requireStoreOwner } from "./middleware/auth";
 import { requireActiveSubscription } from "./middleware/subscription-check";
 import * as adminRoutes from "./routes/admin";
@@ -1064,6 +1064,20 @@ export function createServer(options?: { skipDbInit?: boolean }) {
     authenticate,
     requireClient,
     clientStoreRoutes.getProductShareLink
+  );
+
+  // Client image management routes
+  app.get(
+    "/api/client/images",
+    authenticate,
+    requireClient,
+    listClientImages
+  );
+  app.delete(
+    "/api/client/images/:filename",
+    authenticate,
+    requireClient,
+    deleteClientImage
   );
 
   // Public store routes (no authentication required)

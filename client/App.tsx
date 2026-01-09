@@ -42,6 +42,7 @@ const DataMigration = lazy(() => import("./pages/DataMigration"));
 // Customer pages - lazy loaded
 const StockManagement = lazy(() => import("./pages/customer/StockManagement"));
 const Store = lazy(() => import("./pages/customer/Store"));
+const ImageManager = lazy(() => import("./pages/admin/ImageManager"));
 const PublicProduct = lazy(() => import("./pages/PublicProduct"));
 const Storefront = lazy(() => import("./pages/Storefront"));
 const Checkout = lazy(() => import("./pages/Checkout"));
@@ -399,6 +400,8 @@ const App = () => (
                     {/* Admin store submenu removed */}
                     {/* Customer stock management */}
                     <Route path="stock" element={<StockManagement />} />
+                    {/* Image management */}
+                    <Route path="images" element={<ImageManager />} />
                     {/* Orders submenu routes */}
                     <Route path="orders" element={<SubscriptionPageLock><AdminOrders /></SubscriptionPageLock>} />
                     <Route path="orders/add" element={<SubscriptionPageLock><AddOrder /></SubscriptionPageLock>} />

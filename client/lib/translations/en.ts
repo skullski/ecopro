@@ -1161,6 +1161,7 @@ export const en = {
   "sidebar.profile": "Profile",
   "sidebar.store": "My Store",
   "sidebar.stock": "Stock",
+  "sidebar.images": "Images",
   "sidebar.orders": "Orders",
   "sidebar.delivery": "Delivery",
   "sidebar.deliveryCompanies": "Companies",

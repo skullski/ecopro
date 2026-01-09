@@ -1171,6 +1171,7 @@ export const ar = {
   "sidebar.profile": "الملف الشخصي",
   "sidebar.store": "متجري",
   "sidebar.stock": "المخزون",
+  "sidebar.images": "الصور",
   "sidebar.orders": "الطلبات",
   "sidebar.delivery": "التوصيل",
   "sidebar.deliveryCompanies": "شركات التوصيل",

@@ -142,4 +142,193 @@ export const serveSignedUpload: RequestHandler = async (req, res) => {
   }
 };
 
+// GET /api/client/images - List all images for a client with usage info
+import { ensureConnection } from '../utils/database';
 
+export const listClientImages: RequestHandler = async (req, res) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+    
+    const clientId = req.user.id;
+    const pool = await ensureConnection();
+    
+    // Get all image references from the database
+    // 1. Product images
+    const productImagesResult = await pool.query(
+      `SELECT id, title, images, slug FROM client_store_products WHERE client_id = $1`,
+      [clientId]
+    );
+    
+    // 2. Store settings (logo, banner, hero images)
+    const settingsResult = await pool.query(
+      `SELECT store_logo, banner_url, hero_main_url, hero_tile1_url, hero_tile2_url, store_images
+       FROM client_store_settings WHERE client_id = $1`,
+      [clientId]
+    );
+    
+    // Build a map of image URL -> usage info
+    const imageUsage: Record<string, { type: string; name: string; id?: number }[]> = {};
+    
+    // Process product images
+    for (const product of productImagesResult.rows) {
+      const images = product.images || [];
+      for (const imgUrl of images) {
+        if (!imgUrl) continue;
+        if (!imageUsage[imgUrl]) imageUsage[imgUrl] = [];
+        imageUsage[imgUrl].push({
+          type: 'product',
+          name: product.title || `Product #${product.id}`,
+          id: product.id
+        });
+      }
+    }
+    
+    // Process store settings images
+    if (settingsResult.rows.length > 0) {
+      const settings = settingsResult.rows[0];
+      
+      if (settings.store_logo) {
+        if (!imageUsage[settings.store_logo]) imageUsage[settings.store_logo] = [];
+        imageUsage[settings.store_logo].push({ type: 'store', name: 'Store Logo' });
+      }
+      
+      if (settings.banner_url) {
+        if (!imageUsage[settings.banner_url]) imageUsage[settings.banner_url] = [];
+        imageUsage[settings.banner_url].push({ type: 'store', name: 'Banner' });
+      }
+      
+      if (settings.hero_main_url) {
+        if (!imageUsage[settings.hero_main_url]) imageUsage[settings.hero_main_url] = [];
+        imageUsage[settings.hero_main_url].push({ type: 'store', name: 'Hero Main' });
+      }
+      
+      if (settings.hero_tile1_url) {
+        if (!imageUsage[settings.hero_tile1_url]) imageUsage[settings.hero_tile1_url] = [];
+        imageUsage[settings.hero_tile1_url].push({ type: 'store', name: 'Hero Tile 1' });
+      }
+      
+      if (settings.hero_tile2_url) {
+        if (!imageUsage[settings.hero_tile2_url]) imageUsage[settings.hero_tile2_url] = [];
+        imageUsage[settings.hero_tile2_url].push({ type: 'store', name: 'Hero Tile 2' });
+      }
+      
+      // Process store_images array
+      const storeImages = settings.store_images || [];
+      for (let i = 0; i < storeImages.length; i++) {
+        const imgUrl = storeImages[i];
+        if (!imgUrl) continue;
+        if (!imageUsage[imgUrl]) imageUsage[imgUrl] = [];
+        imageUsage[imgUrl].push({ type: 'store', name: `Store Gallery Image ${i + 1}` });
+      }
+    }
+    
+    // Read actual files from uploads directory
+    await ensureDirs();
+    const files = await fs.readdir(UPLOAD_DIR);
+    const imageFiles = files.filter(f => 
+      !f.startsWith('.') && 
+      f !== 'tmp' && 
+      /\.(jpg|jpeg|png|gif|webp|mp4)$/i.test(f)
+    );
+    
+    // Build response with all images and their usage
+    const images = await Promise.all(imageFiles.map(async (filename) => {
+      const filePath = path.join(UPLOAD_DIR, filename);
+      const stats = await fs.stat(filePath);
+      const url = `/uploads/${filename}`;
+      
+      return {
+        filename,
+        url,
+        size: stats.size,
+        createdAt: stats.birthtime,
+        modifiedAt: stats.mtime,
+        usedIn: imageUsage[url] || [],
+        isOrphaned: !imageUsage[url] || imageUsage[url].length === 0
+      };
+    }));
+    
+    // Sort by date (newest first)
+    images.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    
+    res.json({
+      images,
+      total: images.length,
+      orphaned: images.filter(i => i.isOrphaned).length,
+      inUse: images.filter(i => !i.isOrphaned).length
+    });
+  } catch (err) {
+    console.error('[listClientImages] Error:', isProduction ? (err as any)?.message : err);
+    res.status(500).json({ error: 'Failed to list images' });
+  }
+};
+
+// DELETE /api/client/images/:filename - Delete an image
+export const deleteClientImage: RequestHandler = async (req, res) => {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+    
+    const filename = String(req.params.filename || '');
+    if (!isSafeUploadName(filename)) {
+      return res.status(400).json({ error: 'Invalid filename' });
+    }
+    
+    const clientId = req.user.id;
+    const pool = await ensureConnection();
+    const url = `/uploads/${filename}`;
+    
+    // Check if image is in use by this client
+    const productCheck = await pool.query(
+      `SELECT id, title FROM client_store_products 
+       WHERE client_id = $1 AND $2 = ANY(images)`,
+      [clientId, url]
+    );
+    
+    const settingsCheck = await pool.query(
+      `SELECT client_id FROM client_store_settings 
+       WHERE client_id = $1 
+         AND (store_logo = $2 OR banner_url = $2 OR hero_main_url = $2 
+              OR hero_tile1_url = $2 OR hero_tile2_url = $2 
+              OR $2 = ANY(store_images))`,
+      [clientId, url]
+    );
+    
+    if (productCheck.rows.length > 0) {
+      const product = productCheck.rows[0];
+      return res.status(400).json({ 
+        error: 'Image in use',
+        message: `This image is used by product "${product.title}". Remove it from the product first.`,
+        usedBy: { type: 'product', id: product.id, name: product.title }
+      });
+    }
+    
+    if (settingsCheck.rows.length > 0) {
+      return res.status(400).json({
+        error: 'Image in use',
+        message: 'This image is used in your store settings (logo, banner, or hero). Remove it from settings first.',
+        usedBy: { type: 'store' }
+      });
+    }
+    
+    // Delete the file
+    const filePath = path.join(UPLOAD_DIR, filename);
+    if (!filePath.startsWith(UPLOAD_DIR)) {
+      return res.status(400).json({ error: 'Invalid path' });
+    }
+    
+    try {
+      await fs.access(filePath);
+      await fs.unlink(filePath);
+      res.json({ ok: true, message: 'Image deleted successfully' });
+    } catch {
+      res.status(404).json({ error: 'Image not found' });
+    }
+  } catch (err) {
+    console.error('[deleteClientImage] Error:', isProduction ? (err as any)?.message : err);
+    res.status(500).json({ error: 'Failed to delete image' });
+  }
+};

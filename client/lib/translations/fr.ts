@@ -902,6 +902,7 @@ export const fr = {
   "sidebar.profile": "Profil",
   "sidebar.store": "Ma Boutique",
   "sidebar.stock": "Stock",
+  "sidebar.images": "Images",
   "sidebar.orders": "Commandes",
   "sidebar.delivery": "Livraison",
   "sidebar.addons": "Extensions",
