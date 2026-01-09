@@ -118,6 +118,20 @@ export default function Store() {
   const [uploading, setUploading] = useState(false);
 
           // Product action handlers
+          // Helper to reload products
+          const reloadProducts = async () => {
+            try {
+              const productsRes = await fetch('/api/client/store/products');
+              if (productsRes.ok) {
+                const productsData = await productsRes.json();
+                setProducts(productsData);
+                setFilteredProducts(productsData);
+              }
+            } catch (err) {
+              console.error('Failed to reload products', err);
+            }
+          };
+
           const handleCreateProduct = async () => {
             try {
               const res = await fetch('/api/client/store/products', {
@@ -129,6 +143,7 @@ export default function Store() {
               });
               if (res.ok) {
                 // reload products
+                await reloadProducts();
                 setShowAddModal(false);
                 setFormData({ status: 'active', is_featured: false, stock_quantity: 0 });
               } else {
@@ -152,6 +167,7 @@ export default function Store() {
               });
               if (res.ok) {
                 // reload products
+                await reloadProducts();
                 setShowEditModal(false);
                 setSelectedProduct(null);
                 setFormData({ status: 'active', is_featured: false, stock_quantity: 0 });
@@ -172,6 +188,7 @@ export default function Store() {
               });
               if (res.ok) {
                 // reload products
+                await reloadProducts();
                 setShowDeleteDialog(false);
                 setSelectedProduct(null);
               } else {
