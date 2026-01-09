@@ -687,6 +687,20 @@ export function createServer(options?: { skipDbInit?: boolean }) {
   );
 
   app.get(
+    "/api/admin/capacity",
+    authenticate,
+    requireAdmin,
+    adminRoutes.getSystemCapacity
+  );
+
+  app.get(
+    "/api/admin/active-users",
+    authenticate,
+    requireAdmin,
+    adminRoutes.getActiveUsers
+  );
+
+  app.get(
     "/api/admin/staff",
     authenticate,
     requireAdmin,

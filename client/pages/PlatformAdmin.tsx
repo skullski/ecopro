@@ -5,21 +5,29 @@ import { removeAuthToken } from '@/lib/auth';
 import {
   Activity,
   AlertCircle,
+  AlertTriangle,
   Award,
   Ban,
   BarChart3,
   CheckCircle,
+  CheckCircle2,
   Clock,
   Copy,
+  Cpu,
   CreditCard,
+  Database,
   DollarSign,
   Eye,
+  Gauge,
   Gift,
   HeartPulse,
+  Loader2,
   Lock,
   LogOut,
+  MemoryStick,
   Package,
   PieChart as PieChartIcon,
+  RefreshCw,
   Search,
   Settings,
   Shield,
@@ -861,6 +869,10 @@ export default function PlatformAdmin() {
   const [serverHealth, setServerHealth] = useState<ServerHealth | null>(null);
   const [healthLoading, setHealthLoading] = useState(false);
   const [healthError, setHealthError] = useState<string | null>(null);
+  const [systemCapacity, setSystemCapacity] = useState<any>(null);
+  const [capacityLoading, setCapacityLoading] = useState(false);
+  const [activeUsers, setActiveUsers] = useState<any>(null);
+  const [activeUsersLoading, setActiveUsersLoading] = useState(false);
   const [billingMetrics, setBillingMetrics] = useState<any>(null);
   const [billingLoading, setBillingLoading] = useState(false);
   const [platformSettings, setPlatformSettings] = useState<any>(null);
@@ -922,6 +934,22 @@ export default function PlatformAdmin() {
       alive = false;
       window.clearInterval(id);
     };
+  }, [activeTab]);
+
+  // Load system capacity when health tab is active (every 10 seconds)
+  useEffect(() => {
+    if (activeTab !== 'health') return;
+    loadSystemCapacity();
+    const id = window.setInterval(loadSystemCapacity, 10000);
+    return () => window.clearInterval(id);
+  }, [activeTab]);
+
+  // Load active users when health tab is active (every 5 seconds for real-time feel)
+  useEffect(() => {
+    if (activeTab !== 'health') return;
+    loadActiveUsers();
+    const id = window.setInterval(loadActiveUsers, 5000);
+    return () => window.clearInterval(id);
   }, [activeTab]);
 
   useEffect(() => {
@@ -1104,6 +1132,36 @@ export default function PlatformAdmin() {
       setServerHealth(null);
     } finally {
       setHealthLoading(false);
+    }
+  };
+
+  const loadSystemCapacity = async () => {
+    setCapacityLoading(true);
+    try {
+      const res = await fetch('/api/admin/capacity');
+      if (res.ok) {
+        const data = await res.json();
+        setSystemCapacity(data);
+      }
+    } catch (error) {
+      console.error('Failed to load system capacity:', error);
+    } finally {
+      setCapacityLoading(false);
+    }
+  };
+
+  const loadActiveUsers = async () => {
+    setActiveUsersLoading(true);
+    try {
+      const res = await fetch('/api/admin/active-users?window=30&details=true');
+      if (res.ok) {
+        const data = await res.json();
+        setActiveUsers(data);
+      }
+    } catch (error) {
+      console.error('Failed to load active users:', error);
+    } finally {
+      setActiveUsersLoading(false);
     }
   };
 
@@ -2993,6 +3051,382 @@ export default function PlatformAdmin() {
                   )}
                 </div>
               )}
+
+              {/* Real-Time Active Users */}
+              <div className="bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 backdrop-blur-md rounded-xl border border-emerald-500/30 shadow-lg" style={{ padding: 'clamp(1rem, 2vh, 1.25rem)' }}>
+                <div className="flex items-center justify-between" style={{ marginBottom: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
+                  <h3 className="font-bold text-white flex items-center" style={{ fontSize: 'clamp(1rem, 2vh, 1.15rem)', gap: 'clamp(0.5rem, 1vh, 0.625rem)' }}>
+                    <Users className="text-emerald-400" style={{ width: 'clamp(1.125rem, 2.25vh, 1.375rem)', height: 'clamp(1.125rem, 2.25vh, 1.375rem)' }} />
+                    Real-Time Active Users
+                    <span className="ml-2 flex items-center gap-1">
+                      <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+                      <span className="text-emerald-400 text-xs font-normal">Live</span>
+                    </span>
+                  </h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={loadActiveUsers}
+                    disabled={activeUsersLoading}
+                    className="text-slate-400 hover:text-white"
+                  >
+                    {activeUsersLoading ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+
+                {activeUsersLoading && !activeUsers ? (
+                  <div className="flex items-center justify-center py-8">
+                    <RefreshCw className="w-6 h-6 animate-spin text-emerald-400" />
+                    <span className="ml-2 text-slate-400">Tracking active users...</span>
+                  </div>
+                ) : activeUsers ? (
+                  <div className="space-y-4">
+                    {/* Main Stats */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div className="bg-slate-900/50 rounded-lg p-4 text-center border border-emerald-500/20">
+                        <div className="text-3xl font-bold text-emerald-400">{activeUsers.active?.total || 0}</div>
+                        <div className="text-slate-400 text-xs mt-1">Active Now</div>
+                        <div className="text-slate-500 text-xs">Last {activeUsers.windowSeconds}s</div>
+                      </div>
+                      <div className="bg-slate-900/50 rounded-lg p-4 text-center border border-blue-500/20">
+                        <div className="text-2xl font-bold text-blue-400">{activeUsers.active?.authenticated || 0}</div>
+                        <div className="text-slate-400 text-xs mt-1">Logged In</div>
+                      </div>
+                      <div className="bg-slate-900/50 rounded-lg p-4 text-center border border-slate-500/20">
+                        <div className="text-2xl font-bold text-slate-300">{activeUsers.active?.anonymous || 0}</div>
+                        <div className="text-slate-400 text-xs mt-1">Visitors</div>
+                      </div>
+                      <div className="bg-slate-900/50 rounded-lg p-4 text-center border border-amber-500/20">
+                        <div className="text-2xl font-bold text-amber-400">{activeUsers.traffic?.requestsPerSecond || 0}</div>
+                        <div className="text-slate-400 text-xs mt-1">Req/s</div>
+                      </div>
+                    </div>
+
+                    {/* User Breakdown */}
+                    {activeUsers.active?.breakdown && (
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="bg-slate-800/50 rounded-lg p-2 text-center">
+                          <div className="text-purple-400 font-semibold">{activeUsers.active.breakdown.admins || 0}</div>
+                          <div className="text-slate-500 text-xs">Admins</div>
+                        </div>
+                        <div className="bg-slate-800/50 rounded-lg p-2 text-center">
+                          <div className="text-cyan-400 font-semibold">{activeUsers.active.breakdown.clients || 0}</div>
+                          <div className="text-slate-500 text-xs">Clients</div>
+                        </div>
+                        <div className="bg-slate-800/50 rounded-lg p-2 text-center">
+                          <div className="text-slate-300 font-semibold">{activeUsers.active.breakdown.visitors || 0}</div>
+                          <div className="text-slate-500 text-xs">Other</div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Top Active Pages */}
+                    {activeUsers.topPages && activeUsers.topPages.length > 0 && (
+                      <div className="bg-slate-900/30 rounded-lg p-3">
+                        <div className="text-slate-400 text-xs font-medium mb-2">Active Pages</div>
+                        <div className="space-y-1">
+                          {activeUsers.topPages.slice(0, 5).map((page: any, idx: number) => (
+                            <div key={idx} className="flex items-center justify-between text-xs">
+                              <span className="text-slate-300 truncate max-w-[70%]">{page.path}</span>
+                              <span className="text-emerald-400 font-mono">{page.count}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Active Visitors List */}
+                    {activeUsers.visitors && activeUsers.visitors.length > 0 && (
+                      <div className="bg-slate-900/30 rounded-lg p-3">
+                        <div className="text-slate-400 text-xs font-medium mb-2">Active Sessions ({activeUsers.visitors.length})</div>
+                        <div className="max-h-40 overflow-y-auto space-y-1">
+                          {activeUsers.visitors.slice(0, 10).map((v: any, idx: number) => (
+                            <div key={idx} className="flex items-center justify-between text-xs bg-slate-800/50 rounded px-2 py-1">
+                              <div className="flex items-center gap-2">
+                                <span className={`w-2 h-2 rounded-full ${v.userId ? 'bg-emerald-400' : 'bg-slate-500'}`} />
+                                <span className="text-slate-400 font-mono">{v.fingerprint}</span>
+                                {v.countryCode && <span className="text-slate-500">{v.countryCode}</span>}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-slate-500">{v.requestCount} req</span>
+                                <span className="text-slate-600">{v.activeFor}s</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Capacity vs Current */}
+                    {systemCapacity && (
+                      <div className="bg-slate-900/30 rounded-lg p-3 border border-slate-600/20">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400 text-xs">Current Load vs Capacity</span>
+                          <span className="text-xs font-mono">
+                            <span className="text-emerald-400">{activeUsers.active?.total || 0}</span>
+                            <span className="text-slate-500"> / </span>
+                            <span className="text-slate-300">{systemCapacity.capacity?.estimated?.toLocaleString() || '?'}</span>
+                          </span>
+                        </div>
+                        <div className="mt-2 h-2 bg-slate-700 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 transition-all duration-500"
+                            style={{ 
+                              width: `${Math.min(100, ((activeUsers.active?.total || 0) / (systemCapacity.capacity?.estimated || 1)) * 100)}%` 
+                            }}
+                          />
+                        </div>
+                        <div className="text-slate-500 text-xs mt-1 text-right">
+                          {((activeUsers.active?.total || 0) / (systemCapacity.capacity?.estimated || 1) * 100).toFixed(1)}% of capacity
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-slate-500">
+                    <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>No active users data</p>
+                  </div>
+                )}
+              </div>
+
+              {/* System Capacity Analysis */}
+              <div className="bg-slate-800/50 backdrop-blur-md rounded-xl border border-slate-700/50 shadow-lg" style={{ padding: 'clamp(1rem, 2vh, 1.25rem)' }}>
+                <div className="flex items-center justify-between" style={{ marginBottom: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
+                  <h3 className="font-bold text-white flex items-center" style={{ fontSize: 'clamp(1rem, 2vh, 1.15rem)', gap: 'clamp(0.5rem, 1vh, 0.625rem)' }}>
+                    <Gauge className="text-purple-400" style={{ width: 'clamp(1.125rem, 2.25vh, 1.375rem)', height: 'clamp(1.125rem, 2.25vh, 1.375rem)' }} />
+                    System Capacity Analysis
+                  </h3>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={loadSystemCapacity}
+                    disabled={capacityLoading}
+                    className="text-xs border-slate-600 text-slate-300 hover:bg-slate-700"
+                  >
+                    {capacityLoading ? (
+                      <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                    ) : (
+                      <RefreshCw className="w-3 h-3 mr-1" />
+                    )}
+                    Refresh
+                  </Button>
+                </div>
+
+                {capacityLoading && !systemCapacity ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-8 h-8 animate-spin text-purple-400" />
+                    <span className="ml-2 text-slate-400">Analyzing system capacity...</span>
+                  </div>
+                ) : systemCapacity ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
+                    {/* Health Score Gauge */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3" style={{ gap: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
+                      {/* Health Score */}
+                      <div className={`bg-slate-900/30 rounded-lg border p-4 text-center ${
+                        systemCapacity.health.status === 'healthy' ? 'border-emerald-500/50' :
+                        systemCapacity.health.status === 'degraded' ? 'border-yellow-500/50' :
+                        'border-red-500/50'
+                      }`}>
+                        <div className={`text-4xl font-bold ${
+                          systemCapacity.health.status === 'healthy' ? 'text-emerald-400' :
+                          systemCapacity.health.status === 'degraded' ? 'text-yellow-400' :
+                          'text-red-400'
+                        }`}>
+                          {systemCapacity.health.score}
+                        </div>
+                        <div className="text-slate-400 text-xs mt-1">Health Score</div>
+                        <div className={`text-xs mt-2 px-2 py-1 rounded-full inline-block ${
+                          systemCapacity.health.status === 'healthy' ? 'bg-emerald-500/20 text-emerald-300' :
+                          systemCapacity.health.status === 'degraded' ? 'bg-yellow-500/20 text-yellow-300' :
+                          'bg-red-500/20 text-red-300'
+                        }`}>
+                          {systemCapacity.health.status.toUpperCase()}
+                        </div>
+                      </div>
+
+                      {/* Capacity Estimate */}
+                      <div className="bg-slate-900/30 rounded-lg border border-slate-600/30 p-4 text-center">
+                        <div className="text-3xl font-bold text-blue-400">
+                          {systemCapacity.capacity.estimated.toLocaleString()}
+                        </div>
+                        <div className="text-slate-400 text-xs mt-1">Estimated Max Users</div>
+                        <div className="text-slate-500 text-xs mt-2">
+                          Current: {systemCapacity.current.users} ({systemCapacity.capacity.utilizationPct.toFixed(1)}%)
+                        </div>
+                      </div>
+
+                      {/* Current Tier */}
+                      <div className="bg-slate-900/30 rounded-lg border border-slate-600/30 p-4 text-center">
+                        <div className={`text-2xl font-bold ${
+                          systemCapacity.scaling.currentTier === 'starter' ? 'text-slate-400' :
+                          systemCapacity.scaling.currentTier === 'growth' ? 'text-blue-400' :
+                          systemCapacity.scaling.currentTier === 'business' ? 'text-purple-400' :
+                          'text-amber-400'
+                        }`}>
+                          {String(systemCapacity.scaling.currentTier || '').charAt(0).toUpperCase() + String(systemCapacity.scaling.currentTier || '').slice(1)}
+                        </div>
+                        <div className="text-slate-400 text-xs mt-1">Current Tier</div>
+                        {systemCapacity.scaling.nextTier && (
+                          <div className="text-slate-500 text-xs mt-2">
+                            Upgrade at {systemCapacity.scaling.upgradeAt}+ users
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Resource Capacity Breakdown */}
+                    <div className="bg-slate-900/20 rounded-lg border border-slate-600/20 p-4">
+                      <h4 className="text-slate-300 text-sm font-medium mb-3">Resource Capacity Limits</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: 'clamp(0.5rem, 1vh, 0.75rem)' }}>
+                        <div className="flex items-center justify-between bg-slate-800/50 rounded-lg p-3">
+                          <div className="flex items-center gap-2">
+                            <MemoryStick className="w-4 h-4 text-green-400" />
+                            <span className="text-slate-300 text-sm">RAM</span>
+                          </div>
+                          <span className="text-green-400 font-mono text-sm">{systemCapacity.capacity.byResource.ram.toLocaleString()} users</span>
+                        </div>
+                        <div className="flex items-center justify-between bg-slate-800/50 rounded-lg p-3">
+                          <div className="flex items-center gap-2">
+                            <Cpu className="w-4 h-4 text-blue-400" />
+                            <span className="text-slate-300 text-sm">CPU</span>
+                          </div>
+                          <span className="text-blue-400 font-mono text-sm">{systemCapacity.capacity.byResource.cpu.toLocaleString()} users</span>
+                        </div>
+                        <div className="flex items-center justify-between bg-slate-800/50 rounded-lg p-3">
+                          <div className="flex items-center gap-2">
+                            <Database className="w-4 h-4 text-purple-400" />
+                            <span className="text-slate-300 text-sm">Database</span>
+                          </div>
+                          <span className="text-purple-400 font-mono text-sm">{systemCapacity.capacity.byResource.db.toLocaleString()} users</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bottlenecks */}
+                    {systemCapacity.health.bottlenecks.length > 0 && (
+                      <div className="bg-slate-900/20 rounded-lg border border-slate-600/20 p-4">
+                        <h4 className="text-slate-300 text-sm font-medium mb-3 flex items-center gap-2">
+                          <AlertTriangle className="w-4 h-4 text-yellow-400" />
+                          Bottlenecks Detected ({systemCapacity.health.bottlenecks.length})
+                        </h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.5rem, 1vh, 0.75rem)' }}>
+                          {systemCapacity.health.bottlenecks.map((bottleneck: any, idx: number) => (
+                            <div
+                              key={idx}
+                              className={`rounded-lg p-3 border ${
+                                bottleneck.severity === 'critical' ? 'bg-red-500/10 border-red-500/30' :
+                                bottleneck.severity === 'high' ? 'bg-orange-500/10 border-orange-500/30' :
+                                bottleneck.severity === 'medium' ? 'bg-yellow-500/10 border-yellow-500/30' :
+                                'bg-blue-500/10 border-blue-500/30'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                    bottleneck.severity === 'critical' ? 'bg-red-500/20 text-red-300' :
+                                    bottleneck.severity === 'high' ? 'bg-orange-500/20 text-orange-300' :
+                                    bottleneck.severity === 'medium' ? 'bg-yellow-500/20 text-yellow-300' :
+                                    'bg-blue-500/20 text-blue-300'
+                                  }`}>
+                                    {bottleneck.severity.toUpperCase()}
+                                  </span>
+                                  <span className="text-white font-medium text-sm">{bottleneck.resource}</span>
+                                </div>
+                                <span className="text-slate-400 text-xs font-mono">
+                                  {bottleneck.current}{bottleneck.unit} / {bottleneck.threshold}{bottleneck.unit}
+                                </span>
+                              </div>
+                              <div className="text-slate-300 text-xs">{bottleneck.recommendation}</div>
+                              {bottleneck.upgradeSpec && (
+                                <div className="text-emerald-400 text-xs mt-1">
+                                  ↑ Upgrade to: {bottleneck.upgradeSpec}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Recommended Specs */}
+                    <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-lg border border-purple-500/30 p-4">
+                      <h4 className="text-slate-300 text-sm font-medium mb-3 flex items-center gap-2">
+                        <Zap className="w-4 h-4 text-purple-400" />
+                        Recommended Specs for Smooth Operation
+                      </h4>
+                      <div className="grid grid-cols-2 md:grid-cols-4" style={{ gap: 'clamp(0.5rem, 1vh, 0.75rem)' }}>
+                        <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                          <div className="text-purple-400 font-bold">{systemCapacity.scaling.recommended.ram}</div>
+                          <div className="text-slate-500 text-xs mt-1">RAM</div>
+                        </div>
+                        <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                          <div className="text-blue-400 font-bold">{systemCapacity.scaling.recommended.cpu}</div>
+                          <div className="text-slate-500 text-xs mt-1">CPU Cores</div>
+                        </div>
+                        <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                          <div className="text-emerald-400 font-bold">{systemCapacity.scaling.recommended.db}</div>
+                          <div className="text-slate-500 text-xs mt-1">DB Connections</div>
+                        </div>
+                        <div className="bg-slate-800/50 rounded-lg p-3 text-center">
+                          <div className="text-amber-400 font-bold">{systemCapacity.scaling.recommended.users.toLocaleString()}</div>
+                          <div className="text-slate-500 text-xs mt-1">Target Users</div>
+                        </div>
+                      </div>
+                      {systemCapacity.scaling.nextTier && (
+                        <div className="mt-3 text-center">
+                          <span className="text-slate-400 text-xs">
+                            Next tier: <span className="text-purple-300 font-medium">{String(systemCapacity.scaling.nextTier || '').charAt(0).toUpperCase() + String(systemCapacity.scaling.nextTier || '').slice(1)}</span>
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Primary Bottleneck Callout */}
+                    {systemCapacity.health.primaryBottleneck && (
+                      <div className="bg-gradient-to-r from-red-500/10 to-orange-500/10 rounded-lg border border-red-500/30 p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-red-500/20 rounded-full p-2">
+                            <AlertTriangle className="w-5 h-5 text-red-400" />
+                          </div>
+                          <div>
+                            <div className="text-white font-medium text-sm">Primary Bottleneck: {systemCapacity.health.primaryBottleneck.resource}</div>
+                            <div className="text-slate-400 text-xs mt-1">
+                              This is the main limiting factor. {systemCapacity.health.primaryBottleneck.recommendation}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* No Bottlenecks - All Good */}
+                    {systemCapacity.health.bottlenecks.length === 0 && (
+                      <div className="bg-gradient-to-r from-emerald-500/10 to-green-500/10 rounded-lg border border-emerald-500/30 p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-emerald-500/20 rounded-full p-2">
+                            <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                          </div>
+                          <div>
+                            <div className="text-white font-medium text-sm">System Running Optimally</div>
+                            <div className="text-slate-400 text-xs mt-1">
+                              No bottlenecks detected. Your platform can handle up to {systemCapacity.capacity.estimated.toLocaleString()} concurrent users.
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-slate-400">
+                    <Gauge className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                    <p className="text-sm">Click refresh to analyze system capacity</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

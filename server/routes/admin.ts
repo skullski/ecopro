@@ -359,6 +359,346 @@ const summarizeNumbers = (values: Array<number | null | undefined>) => {
   return { min, avg, max };
 };
 
+// System Capacity Analysis - Estimates how many users the system can handle
+export const getSystemCapacity: RequestHandler = async (_req, res) => {
+  try {
+    const mem = process.memoryUsage();
+    const loadavg = os.loadavg();
+    const cpuCount = os.cpus()?.length ?? 1;
+    const cgroupMemoryLimitBytes = getCgroupMemoryLimitBytes();
+    const memoryLimitBytes = cgroupMemoryLimitBytes ?? os.totalmem();
+    const cgroupCpu = getCgroupCpuLimit();
+    const effectiveCpuCount = cgroupCpu?.cpus ?? cpuCount;
+    
+    // Get current user count and activity
+    let currentUsers = 0;
+    let activeUsers15m = 0;
+    let activeUsersToday = 0;
+    let totalProducts = 0;
+    let totalOrders = 0;
+    let dbLatencyMs: number | null = null;
+    
+    try {
+      const start = process.hrtime.bigint();
+      const [usersResult, productsResult, ordersResult] = await Promise.all([
+        pool.query(`
+          SELECT 
+            COUNT(*)::int as total,
+            COUNT(*) FILTER (WHERE last_login > NOW() - INTERVAL '15 minutes')::int as active15m,
+            COUNT(*) FILTER (WHERE last_login > NOW() - INTERVAL '24 hours')::int as activeToday
+          FROM users
+        `),
+        pool.query(`SELECT COUNT(*)::int as count FROM client_store_products WHERE status = 'active'`),
+        pool.query(`SELECT COUNT(*)::int as count FROM store_orders WHERE created_at > NOW() - INTERVAL '30 days'`),
+      ]);
+      const end = process.hrtime.bigint();
+      dbLatencyMs = Number(end - start) / 1e6;
+      
+      currentUsers = usersResult.rows[0]?.total || 0;
+      activeUsers15m = usersResult.rows[0]?.active15m || 0;
+      activeUsersToday = usersResult.rows[0]?.activeToday || 0;
+      totalProducts = productsResult.rows[0]?.count || 0;
+      totalOrders = ordersResult.rows[0]?.count || 0;
+    } catch (e) {
+      console.error('getSystemCapacity db error:', e);
+    }
+    
+    // Current resource usage
+    const memUsedPct = (mem.rss / memoryLimitBytes) * 100;
+    const heapUsedPct = (mem.heapUsed / mem.heapTotal) * 100;
+    const load1PerCpu = loadavg[0] / effectiveCpuCount;
+    const eventLoopUtil = performance.eventLoopUtilization();
+    const poolWaiting = (pool as any).waitingCount ?? 0;
+    const poolTotal = (pool as any).totalCount ?? 10;
+    
+    // Capacity estimation formulas (based on current usage per user)
+    // Memory: ~5MB per active user (rough estimate)
+    const memPerUserMB = 5;
+    const availableMemMB = (memoryLimitBytes - mem.rss) / (1024 * 1024);
+    const memCapacity = Math.floor(availableMemMB / memPerUserMB);
+    
+    // CPU: Estimate based on current load and active users
+    const cpuCapacity = activeUsers15m > 0 
+      ? Math.floor((activeUsers15m / Math.max(0.1, load1PerCpu)) * 0.8) // 80% target
+      : Math.floor(effectiveCpuCount * 50); // ~50 concurrent per CPU core default
+      
+    // DB: Connection pool based (each active user uses ~0.2 connections on average)
+    const dbCapacity = Math.floor(poolTotal * 5);
+    
+    // Event loop: High utilization reduces capacity
+    const eluFactor = Math.max(0.2, 1 - eventLoopUtil.utilization);
+    
+    // Overall estimated capacity (minimum of all bottlenecks)
+    const rawCapacity = Math.min(memCapacity, cpuCapacity, dbCapacity);
+    const estimatedCapacity = Math.floor(rawCapacity * eluFactor);
+    
+    // Bottleneck analysis
+    type Bottleneck = {
+      resource: string;
+      current: number;
+      threshold: number;
+      unit: string;
+      severity: 'ok' | 'warning' | 'critical';
+      recommendation: string;
+      upgradeSpec: string;
+    };
+    
+    const bottlenecks: Bottleneck[] = [];
+    
+    // RAM Analysis
+    const ramSeverity = memUsedPct > 85 ? 'critical' : memUsedPct > 70 ? 'warning' : 'ok';
+    bottlenecks.push({
+      resource: 'RAM',
+      current: Math.round(memUsedPct),
+      threshold: 70,
+      unit: '%',
+      severity: ramSeverity,
+      recommendation: ramSeverity === 'ok' 
+        ? 'Memory usage is healthy'
+        : ramSeverity === 'warning'
+          ? 'Consider upgrading RAM soon to handle more users'
+          : 'Upgrade RAM immediately - risk of crashes under load',
+      upgradeSpec: ramSeverity !== 'ok' 
+        ? `Upgrade to ${Math.ceil(memoryLimitBytes / (1024 * 1024 * 1024) * 2)}GB RAM`
+        : 'No upgrade needed',
+    });
+    
+    // CPU Analysis
+    const cpuSeverity = load1PerCpu > 1.5 ? 'critical' : load1PerCpu > 0.8 ? 'warning' : 'ok';
+    bottlenecks.push({
+      resource: 'CPU',
+      current: Math.round(load1PerCpu * 100),
+      threshold: 80,
+      unit: '% load/core',
+      severity: cpuSeverity,
+      recommendation: cpuSeverity === 'ok'
+        ? 'CPU load is healthy'
+        : cpuSeverity === 'warning'
+          ? 'CPU is under moderate load - consider upgrading for growth'
+          : 'CPU is overloaded - upgrade immediately',
+      upgradeSpec: cpuSeverity !== 'ok'
+        ? `Upgrade to ${Math.ceil(effectiveCpuCount * 2)} CPU cores`
+        : 'No upgrade needed',
+    });
+    
+    // Database Analysis
+    const dbPoolUsedPct = poolTotal > 0 ? ((poolTotal - ((pool as any).idleCount ?? 0)) / poolTotal) * 100 : 0;
+    const dbSeverity = (poolWaiting > 0 || dbPoolUsedPct > 90) ? 'critical' 
+      : dbPoolUsedPct > 70 ? 'warning' : 'ok';
+    bottlenecks.push({
+      resource: 'Database',
+      current: Math.round(dbPoolUsedPct),
+      threshold: 70,
+      unit: '% pool used',
+      severity: dbSeverity,
+      recommendation: dbSeverity === 'ok'
+        ? 'Database connections are healthy'
+        : dbSeverity === 'warning'
+          ? 'Database pool is filling up - consider upgrading DB plan'
+          : 'Database is bottleneck - upgrade DB plan or add read replicas',
+      upgradeSpec: dbSeverity !== 'ok'
+        ? 'Upgrade to next Render DB tier (more connections + CPU)'
+        : 'No upgrade needed',
+    });
+    
+    // Event Loop Analysis
+    const eluPct = eventLoopUtil.utilization * 100;
+    const eluSeverity = eluPct > 80 ? 'critical' : eluPct > 50 ? 'warning' : 'ok';
+    bottlenecks.push({
+      resource: 'Event Loop',
+      current: Math.round(eluPct),
+      threshold: 50,
+      unit: '%',
+      severity: eluSeverity,
+      recommendation: eluSeverity === 'ok'
+        ? 'Event loop is responsive'
+        : eluSeverity === 'warning'
+          ? 'Event loop showing some blocking - review async code'
+          : 'Event loop blocked - possible memory leak or sync operations',
+      upgradeSpec: eluSeverity !== 'ok'
+        ? 'Review code for blocking operations; consider worker threads'
+        : 'No action needed',
+    });
+    
+    // Disk Analysis (if available)
+    const diskCwd = getDiskStats(process.cwd());
+    const diskUsedPct = diskCwd.total && diskCwd.available 
+      ? ((diskCwd.total - diskCwd.available) / diskCwd.total) * 100 : 0;
+    const diskSeverity = diskUsedPct > 90 ? 'critical' : diskUsedPct > 75 ? 'warning' : 'ok';
+    bottlenecks.push({
+      resource: 'Storage',
+      current: Math.round(diskUsedPct),
+      threshold: 75,
+      unit: '%',
+      severity: diskSeverity,
+      recommendation: diskSeverity === 'ok'
+        ? 'Storage space is adequate'
+        : diskSeverity === 'warning'
+          ? 'Storage filling up - clean old files or upgrade'
+          : 'Storage nearly full - immediate action required',
+      upgradeSpec: diskSeverity !== 'ok'
+        ? 'Increase disk allocation or clean up uploads'
+        : 'No upgrade needed',
+    });
+    
+    // DB Latency Analysis
+    const dbLatencySeverity = (dbLatencyMs ?? 0) > 500 ? 'critical' 
+      : (dbLatencyMs ?? 0) > 200 ? 'warning' : 'ok';
+    bottlenecks.push({
+      resource: 'DB Latency',
+      current: Math.round(dbLatencyMs ?? 0),
+      threshold: 200,
+      unit: 'ms',
+      severity: dbLatencySeverity,
+      recommendation: dbLatencySeverity === 'ok'
+        ? 'Database response time is good'
+        : dbLatencySeverity === 'warning'
+          ? 'Database queries are slow - check indexes and query optimization'
+          : 'Database is very slow - upgrade DB or optimize queries',
+      upgradeSpec: dbLatencySeverity !== 'ok'
+        ? 'Upgrade DB plan or add indexes'
+        : 'No upgrade needed',
+    });
+    
+    // Overall system health score (0-100)
+    const severityScore = (s: 'ok' | 'warning' | 'critical') => s === 'ok' ? 100 : s === 'warning' ? 60 : 20;
+    const healthScore = Math.round(
+      bottlenecks.reduce((sum, b) => sum + severityScore(b.severity), 0) / bottlenecks.length
+    );
+    
+    // Primary bottleneck
+    const criticalBottlenecks = bottlenecks.filter(b => b.severity === 'critical');
+    const warningBottlenecks = bottlenecks.filter(b => b.severity === 'warning');
+    const primaryBottleneck = criticalBottlenecks[0] || warningBottlenecks[0] || null;
+    
+    // Scaling recommendations
+    const scalingTier = currentUsers < 100 ? 'starter' 
+      : currentUsers < 500 ? 'growth'
+      : currentUsers < 2000 ? 'business'
+      : 'enterprise';
+      
+    const recommendedSpecs = {
+      starter: { ram: '512MB', cpu: '0.5 cores', db: 'Render Starter', users: '< 100' },
+      growth: { ram: '2GB', cpu: '1 core', db: 'Render Basic', users: '100-500' },
+      business: { ram: '4GB', cpu: '2 cores', db: 'Render Standard', users: '500-2000' },
+      enterprise: { ram: '8GB+', cpu: '4+ cores', db: 'Render Pro', users: '2000+' },
+    };
+    
+    res.json({
+      timestamp: new Date().toISOString(),
+      
+      // Current stats
+      current: {
+        users: currentUsers,
+        activeUsers15m,
+        activeUsersToday,
+        totalProducts,
+        totalOrders,
+      },
+      
+      // Resources
+      resources: {
+        ram: {
+          total: memoryLimitBytes,
+          used: mem.rss,
+          usedPct: memUsedPct,
+        },
+        cpu: {
+          cores: effectiveCpuCount,
+          load1m: loadavg[0],
+          load5m: loadavg[1],
+          load15m: loadavg[2],
+          loadPerCpu: load1PerCpu,
+        },
+        db: {
+          latencyMs: dbLatencyMs,
+          poolTotal,
+          poolIdle: (pool as any).idleCount ?? 0,
+          poolWaiting,
+        },
+        eventLoop: {
+          utilization: eventLoopUtil.utilization,
+        },
+        disk: {
+          total: diskCwd.total,
+          available: diskCwd.available,
+          usedPct: diskUsedPct,
+        },
+      },
+      
+      // Capacity estimates
+      capacity: {
+        estimated: estimatedCapacity,
+        byResource: {
+          ram: memCapacity,
+          cpu: cpuCapacity,
+          db: dbCapacity,
+        },
+        utilizationPct: currentUsers > 0 && estimatedCapacity > 0 
+          ? Math.round((currentUsers / (currentUsers + estimatedCapacity)) * 100)
+          : 0,
+      },
+      
+      // Health analysis
+      health: {
+        score: healthScore,
+        status: healthScore >= 80 ? 'healthy' : healthScore >= 50 ? 'degraded' : 'critical',
+        bottlenecks,
+        primaryBottleneck: primaryBottleneck ? {
+          resource: primaryBottleneck.resource,
+          severity: primaryBottleneck.severity,
+          recommendation: primaryBottleneck.recommendation,
+          upgradeSpec: primaryBottleneck.upgradeSpec,
+        } : null,
+      },
+      
+      // Recommendations
+      scaling: {
+        currentTier: scalingTier,
+        recommended: recommendedSpecs[scalingTier],
+        nextTier: scalingTier === 'starter' ? 'growth'
+          : scalingTier === 'growth' ? 'business'
+          : scalingTier === 'business' ? 'enterprise'
+          : null,
+        nextTierSpecs: scalingTier === 'starter' ? recommendedSpecs.growth
+          : scalingTier === 'growth' ? recommendedSpecs.business
+          : scalingTier === 'business' ? recommendedSpecs.enterprise
+          : null,
+        upgradeAt: Math.floor(estimatedCapacity * 0.7), // Suggest upgrade at 70% capacity
+      },
+    });
+  } catch (err) {
+    console.error('getSystemCapacity error:', err);
+    return jsonError(res, 500, 'Failed to get system capacity');
+  }
+};
+
+// Real-time active users tracking
+export const getActiveUsers: RequestHandler = async (req, res) => {
+  try {
+    const { getActiveUsersStats, getActiveVisitorsList } = await import('../utils/traffic');
+    
+    const windowSeconds = Math.max(10, Math.min(300, parseInt(String(req.query.window || '30'), 10)));
+    const includeDetails = req.query.details === 'true';
+    
+    const stats = getActiveUsersStats(windowSeconds);
+    
+    const response: any = {
+      ...stats,
+      serverTime: new Date().toISOString(),
+    };
+    
+    if (includeDetails) {
+      response.visitors = getActiveVisitorsList(windowSeconds, 30);
+    }
+    
+    res.json(response);
+  } catch (err) {
+    console.error('getActiveUsers error:', err);
+    return jsonError(res, 500, 'Failed to get active users');
+  }
+};
+
 // Admin-only: server health snapshot (no secrets)
 export const getServerHealth: RequestHandler = async (_req, res) => {
   try {
