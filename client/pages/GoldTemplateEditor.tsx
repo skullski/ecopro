@@ -122,6 +122,32 @@ const TEMPLATE_PREVIEWS = [
   { id: 'exhibit-store', name: 'Exhibit Store', image: '/template-previews/exhibit-store.svg', categories: ['elegant', 'minimal'] },
 ];
 
+// Default settings for each template - used for reset functionality
+// Keys that should be reset when switching/resetting templates
+const TEMPLATE_SETTING_KEYS = [
+  'template_bg_color',
+  'template_text_color', 
+  'template_muted_color',
+  'template_accent_color',
+  'template_hero_heading',
+  'template_hero_subtitle',
+  'template_button_text',
+  'template_description_text',
+  'template_description_color',
+  'template_description_size',
+  'template_description_weight',
+  'template_description_style',
+] as const;
+
+// When resetting, we clear these values so templates use their built-in defaults
+const getTemplateDefaults = (): Partial<StoreSettings> => {
+  const defaults: Partial<StoreSettings> = {};
+  TEMPLATE_SETTING_KEYS.forEach(key => {
+    defaults[key] = null; // null = use template's built-in default
+  });
+  return defaults;
+};
+
 type StoreSettings = {
   [key: string]: any;
   store_slug?: string;
@@ -231,6 +257,37 @@ export default function GoldTemplateEditor() {
 
   const handleSettingChange = (key: string, value: any) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
+  };
+
+  // Handle template change - reset template-specific settings when switching
+  const handleTemplateChange = (newTemplateId: string) => {
+    const currentTemplate = settings.template || 'shiro-hana';
+    if (newTemplateId === currentTemplate) return;
+    
+    // Reset template-specific settings to null so the new template uses its defaults
+    setSettings((prev) => {
+      const updated = { ...prev, template: newTemplateId };
+      TEMPLATE_SETTING_KEYS.forEach(key => {
+        updated[key] = null;
+      });
+      return updated;
+    });
+  };
+
+  // Reset current template to its defaults
+  const handleResetTemplate = () => {
+    if (!confirm('Reset all template customizations? This will restore the template to its original colors and text.')) {
+      return;
+    }
+    setSettings((prev) => {
+      const updated = { ...prev };
+      TEMPLATE_SETTING_KEYS.forEach(key => {
+        updated[key] = null;
+      });
+      return updated;
+    });
+    setSuccess('Template reset to defaults');
+    setTimeout(() => setSuccess(null), 3000);
   };
 
   const handleSave = async () => {
@@ -836,7 +893,7 @@ export default function GoldTemplateEditor() {
           <div className="flex items-center gap-2">
             <select
               value={String(settings.template || 'shiro-hana')}
-              onChange={(e) => handleSettingChange('template', e.target.value)}
+              onChange={(e) => handleTemplateChange(e.target.value)}
               className="h-9 rounded-md border bg-background px-3 text-sm"
               aria-label="Select template"
             >
@@ -1014,14 +1071,29 @@ export default function GoldTemplateEditor() {
                 🎨 {t('editor.chooseTemplate')}
               </h2>
               
-              {/* Current selection badge */}
-              <div className="mb-4 flex items-center gap-2 p-3 bg-primary/10 rounded-lg border border-primary/20">
-                <Check className="w-4 h-4 text-primary" />
-                <span className="text-sm text-muted-foreground">{t('editor.currentTemplate')}:</span>
-                <span className="font-semibold text-primary">
-                  {TEMPLATE_PREVIEWS.find(t => t.id === String(settings.template || 'shiro-hana'))?.name || 'Shiro Hana'}
-                </span>
+              {/* Current selection badge with Reset button */}
+              <div className="mb-4 flex items-center justify-between p-3 bg-primary/10 rounded-lg border border-primary/20">
+                <div className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-primary" />
+                  <span className="text-sm text-muted-foreground">{t('editor.currentTemplate')}:</span>
+                  <span className="font-semibold text-primary">
+                    {TEMPLATE_PREVIEWS.find(t => t.id === String(settings.template || 'shiro-hana'))?.name || 'Shiro Hana'}
+                  </span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleResetTemplate}
+                  className="text-xs"
+                >
+                  🔄 Reset Template
+                </Button>
               </div>
+              
+              {/* Info message */}
+              <p className="text-xs text-muted-foreground mb-3 bg-muted/50 p-2 rounded">
+                💡 Switching templates resets colors and text to the new template's defaults. Your store name and products stay the same.
+              </p>
               
               {/* Search and Filter Controls */}
               <div className="flex flex-col sm:flex-row gap-3 mb-4">
@@ -1076,7 +1148,7 @@ export default function GoldTemplateEditor() {
                   return (
                     <div
                       key={template.id}
-                      onClick={() => handleSettingChange('template', template.id)}
+                      onClick={() => handleTemplateChange(template.id)}
                       className={`relative cursor-pointer group transition-all duration-200 ${
                         isSelected ? 'scale-105 z-10' : 'hover:scale-105'
                       }`}
