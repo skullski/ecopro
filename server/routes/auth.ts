@@ -748,7 +748,8 @@ export const sendVerificationCodeHandler: RequestHandler = async (req, res) => {
     
     if (!emailResult.success) {
       console.error('[AUTH] Failed to send verification email:', emailResult.error);
-      // Still return success - code is in DB, user can retry
+      // Return error so user knows email wasn't sent
+      return jsonError(res, 500, `Failed to send verification email: ${emailResult.error || 'Unknown error'}. Please try again later.`);
     }
 
     res.json({ 

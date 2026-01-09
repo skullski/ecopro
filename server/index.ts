@@ -405,6 +405,18 @@ export function createServer(options?: { skipDbInit?: boolean }) {
     res.json({ message: ping });
   });
 
+  // Email config check (for debugging)
+  app.get("/api/email-status", (_req, res) => {
+    const user = process.env.GMAIL_USER;
+    const pass = process.env.GMAIL_APP_PASSWORD;
+    res.json({
+      configured: !!(user && pass),
+      user: user ? `${user.substring(0, 3)}...@${user.split('@')[1] || '?'}` : null,
+      passwordSet: !!pass,
+      passwordLength: pass?.length || 0,
+    });
+  });
+
   // Health check: confirms DB connectivity regardless of frontend port
   app.get("/api/health", handleHealth);
 

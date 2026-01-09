@@ -13,6 +13,13 @@ function getTransporter() {
   const user = process.env.GMAIL_USER;
   const pass = process.env.GMAIL_APP_PASSWORD;
   
+  console.log('[EmailService] Checking email config:', {
+    hasUser: !!user,
+    userEmail: user ? `${user.substring(0, 3)}...@${user.split('@')[1] || '?'}` : 'NOT SET',
+    hasPassword: !!pass,
+    passwordLength: pass?.length || 0,
+  });
+  
   if (!user || !pass) {
     console.warn('[EmailService] GMAIL_USER or GMAIL_APP_PASSWORD not set - emails will be logged only');
     return null;
@@ -24,6 +31,19 @@ function getTransporter() {
       user,
       pass,
     },
+    // Add connection timeout
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
+  });
+  
+  // Verify transporter connection
+  transporter.verify((error, success) => {
+    if (error) {
+      console.error('[EmailService] SMTP connection verification failed:', error.message);
+    } else {
+      console.log('[EmailService] SMTP server is ready to send emails');
+    }
   });
   
   return transporter;
@@ -50,7 +70,8 @@ export async function sendEmail(options: SendEmailOptions): Promise<{ success: b
   }
   
   try {
-    await transport.sendMail({
+    console.log('[EmailService] Attempting to send email to:', options.to);
+    const info = await transport.sendMail({
       from: `"EcoPro Platform" <${process.env.GMAIL_USER}>`,
       to: options.to,
       subject: options.subject,
@@ -58,10 +79,20 @@ export async function sendEmail(options: SendEmailOptions): Promise<{ success: b
       html: options.html,
     });
     
-    console.log('[EmailService] Email sent to:', options.to);
+    console.log('[EmailService] Email sent successfully:', {
+      to: options.to,
+      messageId: info.messageId,
+      response: info.response,
+    });
     return { success: true };
   } catch (error: any) {
-    console.error('[EmailService] Failed to send email:', error.message);
+    console.error('[EmailService] Failed to send email:', {
+      to: options.to,
+      error: error.message,
+      code: error.code,
+      command: error.command,
+      responseCode: error.responseCode,
+    });
     return { success: false, error: error.message };
   }
 }
