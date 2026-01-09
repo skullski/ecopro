@@ -61,6 +61,15 @@ export default function ProAtelierTemplate(props: TemplateProps) {
   const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 16, 10, 32);
 
+  // Layout settings
+  const gridColumns = resolveInt(settings.template_grid_columns, 3, 2, 6);
+  const gridGap = resolveInt(settings.template_grid_gap, 24, 8, 48);
+  const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
+  const sectionSpacing = resolveInt(settings.template_section_spacing, 60, 24, 96);
+  const animationSpeed = resolveInt(settings.template_animation_speed, 600, 100, 1000);
+  const hoverScale = asString(settings.template_hover_scale) || '1.05';
+  const cardRadius = resolveInt(settings.template_card_border_radius, 0, 0, 32);
+
   return (
     <div
       className="ecopro-storefront"
@@ -211,8 +220,8 @@ export default function ProAtelierTemplate(props: TemplateProps) {
                 <img
                   src={productImage(p)}
                   alt={productTitle(p)}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.6s' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', transition: `transform ${animationSpeed}ms` }}
+                  onMouseEnter={(e) => (e.currentTarget.style.transform = `scale(${hoverScale})`)}
                   onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
                 />
               </div>
@@ -255,9 +264,9 @@ export default function ProAtelierTemplate(props: TemplateProps) {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
-              gap: 24,
-              marginTop: 60,
+              gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : `repeat(${gridColumns}, 1fr)`,
+              gap: gridGap,
+              marginTop: sectionSpacing,
             }}
           >
             {products.slice(6).map((p) => (

@@ -76,6 +76,17 @@ export default function SportsTemplate(props: TemplateProps) {
   const descriptionWeight = resolveInt(settings.template_description_weight, 400, 100, 900);
   const showDescription = canManage || Boolean(descriptionText);
 
+  // Layout settings
+  const gridColumns = resolveInt(settings.template_grid_columns, 4, 2, 6);
+  const gridGap = resolveInt(settings.template_grid_gap, 24, 8, 48);
+  const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
+  const sectionSpacing = resolveInt(settings.template_section_spacing, 48, 24, 96);
+  const animationSpeed = resolveInt(settings.template_animation_speed, 200, 100, 500);
+  const hoverScale = asString(settings.template_hover_scale) || '1.02';
+  const cardRadius = resolveInt(settings.template_card_border_radius, 12, 0, 32);
+
+  const finalCols = isMobile ? 2 : breakpoint === 'tablet' ? 3 : gridColumns;
+
   return (
     <div ref={containerRef} style={{ minHeight: '100vh', backgroundColor: bg, color: text, fontFamily: 'system-ui, sans-serif' }} data-edit-path="__root">
       {/* Header */}
@@ -153,13 +164,15 @@ export default function SportsTemplate(props: TemplateProps) {
       )}
 
       {/* Products */}
-      <section style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }} data-edit-path="layout.products">
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '16px' }}>
+      <section style={{ padding: `${sectionSpacing}px ${baseSpacing}px`, maxWidth: '1400px', margin: '0 auto' }} data-edit-path="layout.products">
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${finalCols}, 1fr)`, gap: gridGap }}>
           {products.map(product => (
             <div 
               key={product.id} 
-              style={{ backgroundColor: cardBg, overflow: 'hidden', cursor: canManage ? 'default' : 'pointer' }}
+              style={{ backgroundColor: cardBg, borderRadius: cardRadius, overflow: 'hidden', cursor: canManage ? 'default' : 'pointer', transition: `transform ${animationSpeed}ms, box-shadow ${animationSpeed}ms` }}
               data-edit-path={`layout.products.${product.id}`}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = `scale(${hoverScale})`; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.3)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}
               onClick={(e) => { 
                 e.stopPropagation(); 
                 if (!canManage && product.slug) props.navigate(product.slug); 

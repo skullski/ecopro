@@ -62,6 +62,15 @@ export default function ExhibitStoreTemplate(props: TemplateProps) {
   const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 15, 10, 32);
 
+  // Layout settings
+  const gridColumns = resolveInt(settings.template_grid_columns, 3, 2, 6);
+  const gridGap = resolveInt(settings.template_grid_gap, 24, 8, 48);
+  const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
+  const sectionSpacing = resolveInt(settings.template_section_spacing, 60, 24, 96);
+  const animationSpeed = resolveInt(settings.template_animation_speed, 500, 100, 500);
+  const hoverScale = asString(settings.template_hover_scale) || '1.05';
+  const cardRadius = resolveInt(settings.template_card_border_radius, 0, 0, 32);
+
   const mainProduct = products[0];
 
   return (
@@ -195,15 +204,15 @@ export default function ExhibitStoreTemplate(props: TemplateProps) {
       <section
         data-edit-path="layout.grid"
         onClick={() => canManage && onSelect('layout.grid')}
-        style={{ maxWidth: 1400, margin: '0 auto', padding: '60px 24px 100px' }}
+        style={{ maxWidth: 1400, margin: '0 auto', padding: `${sectionSpacing}px 24px 100px` }}
       >
-        <h2 style={{ fontSize: 36, fontWeight: 500, textAlign: 'center', marginBottom: 48, letterSpacing: '0.1em' }}>THE COLLECTION</h2>
+        <h2 style={{ fontSize: 36, fontWeight: 500, textAlign: 'center', marginBottom: sectionSpacing, letterSpacing: '0.1em' }}>THE COLLECTION</h2>
         
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
-            gap: isMobile ? 32 : 24,
+            gridTemplateColumns: isMobile ? '1fr' : `repeat(${gridColumns}, 1fr)`,
+            gap: isMobile ? 32 : gridGap,
           }}
         >
           {products.slice(0, 6).map((p, idx) => (
@@ -219,7 +228,7 @@ export default function ExhibitStoreTemplate(props: TemplateProps) {
                 gridRow: !isMobile && idx === 0 ? 'span 2' : 'span 1',
               }}
             >
-              <div style={{ overflow: 'hidden', background: '#fff' }}>
+              <div style={{ overflow: 'hidden', background: '#fff', borderRadius: cardRadius }}>
                 <img 
                   src={productImage(p)} 
                   alt={productTitle(p)} 
@@ -227,9 +236,9 @@ export default function ExhibitStoreTemplate(props: TemplateProps) {
                     width: '100%', 
                     aspectRatio: !isMobile && idx === 0 ? '3/4' : '1', 
                     objectFit: 'cover',
-                    transition: 'transform 0.5s',
+                    transition: `transform ${animationSpeed}ms`,
                   }} 
-                  onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+                  onMouseEnter={(e) => (e.currentTarget.style.transform = `scale(${hoverScale})`)}
                   onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
                 />
               </div>

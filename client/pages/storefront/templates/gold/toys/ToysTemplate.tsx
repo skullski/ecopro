@@ -2,6 +2,18 @@ import React, { useState, useEffect, useMemo } from 'react';
 import type { TemplateProps } from '../../types';
 type Breakpoint = 'mobile' | 'tablet' | 'desktop';
 
+function asString(v: unknown): string {
+  return typeof v === 'string' ? v : '';
+}
+
+function resolveInt(value: unknown, fallback: number, min: number, max: number): number {
+  const str = String(value ?? '').trim();
+  if (str === '') return fallback;
+  const n = Number(str);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(min, Math.min(max, Math.round(n)));
+}
+
 export default function ToysTemplate(props: TemplateProps) {
   const settings = props.settings || ({} as any);
   const canManage = props.canManage !== false;
@@ -30,6 +42,15 @@ export default function ToysTemplate(props: TemplateProps) {
   const accent = settings.template_accent_color || '#ec4899';
   const cardBg = settings.template_card_bg || '#ffffff';
 
+  // Layout settings
+  const gridColumns = resolveInt(settings.template_grid_columns, 4, 2, 6);
+  const gridGap = resolveInt(settings.template_grid_gap, 20, 8, 48);
+  const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
+  const sectionSpacing = resolveInt(settings.template_section_spacing, 48, 24, 96);
+  const animationSpeed = resolveInt(settings.template_animation_speed, 200, 100, 500);
+  const hoverScale = asString(settings.template_hover_scale) || '1.05';
+  const cardRadius = resolveInt(settings.template_card_border_radius, 24, 0, 32);
+
   const storeName = settings.store_name || 'TOY WORLD';
   const heroTitle = settings.template_hero_heading || 'Fun for Everyone! 🎈';
   const ctaText = settings.template_button_text || 'Shop Toys';
@@ -40,7 +61,7 @@ export default function ToysTemplate(props: TemplateProps) {
   }, [props.filtered, props.products, categoryFilter]);
 
   const categories = useMemo(() => [...new Set(props.products?.map(p => p.category).filter(Boolean))], [props.products]);
-  const cols = breakpoint === 'mobile' ? 2 : breakpoint === 'tablet' ? 3 : 4;
+  const cols = breakpoint === 'mobile' ? 2 : breakpoint === 'tablet' ? Math.min(3, gridColumns) : gridColumns;
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: bg, color: text, fontFamily: '"Comic Sans MS", cursive, sans-serif' }} data-edit-path="__root">
@@ -61,10 +82,12 @@ export default function ToysTemplate(props: TemplateProps) {
         </div>
       )}
 
-      <section style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }} data-edit-path="layout.products">
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '20px' }}>
+      <section style={{ padding: `${sectionSpacing}px ${baseSpacing}px`, maxWidth: '1400px', margin: '0 auto' }} data-edit-path="layout.products">
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: `${gridGap}px` }}>
           {products.map(product => (
-            <div key={product.id} style={{ backgroundColor: cardBg, borderRadius: '24px', overflow: 'hidden', boxShadow: '0 8px 24px rgba(236,72,153,0.2)', cursor: canManage ? 'default' : 'pointer', transition: 'transform 0.2s' }} data-edit-path={`layout.products.${product.id}`}
+            <div key={product.id} style={{ backgroundColor: cardBg, borderRadius: `${cardRadius}px`, overflow: 'hidden', boxShadow: '0 8px 24px rgba(236,72,153,0.2)', cursor: canManage ? 'default' : 'pointer', transition: `transform ${animationSpeed}ms ease` }} data-edit-path={`layout.products.${product.id}`}
+              onMouseEnter={(e) => { if (!canManage) e.currentTarget.style.transform = `scale(${hoverScale})`; }}
+              onMouseLeave={(e) => { if (!canManage) e.currentTarget.style.transform = 'scale(1)'; }}
               onClick={(e) => { e.stopPropagation(); if (!canManage && product.slug) props.navigate(product.slug); else if (canManage) onSelect(`layout.products.${product.id}`); }}>
               <div style={{ aspectRatio: '1', backgroundColor: '#fce7f3', overflow: 'hidden' }}>
                 {product.images?.[0] && <img src={product.images[0]} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
@@ -78,7 +101,7 @@ export default function ToysTemplate(props: TemplateProps) {
         </div>
       </section>
 
-      <footer style={{ padding: '48px 24px', backgroundColor: accent, color: '#fff', marginTop: '48px', textAlign: 'center' }} data-edit-path="layout.footer" onClick={(e) => clickGuard(e, 'layout.footer')}>
+      <footer style={{ padding: `${sectionSpacing}px ${baseSpacing}px`, backgroundColor: accent, color: '#fff', marginTop: `${sectionSpacing}px`, textAlign: 'center' }} data-edit-path="layout.footer" onClick={(e) => clickGuard(e, 'layout.footer')}>
         <p style={{ fontSize: '16px' }}>© {new Date().getFullYear()} {storeName} ✨</p>
       </footer>
     </div>

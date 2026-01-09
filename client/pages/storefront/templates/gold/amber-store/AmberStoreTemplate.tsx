@@ -61,6 +61,15 @@ export default function AmberStoreTemplate(props: TemplateProps) {
   const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 16, 10, 32);
 
+  // Layout settings
+  const gridColumns = resolveInt(settings.template_grid_columns, 3, 2, 6);
+  const gridGap = resolveInt(settings.template_grid_gap, 32, 8, 48);
+  const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
+  const sectionSpacing = resolveInt(settings.template_section_spacing, 48, 24, 96);
+  const animationSpeed = resolveInt(settings.template_animation_speed, 200, 100, 500);
+  const hoverScale = asString(settings.template_hover_scale) || '1.05';
+  const cardRadius = resolveInt(settings.template_card_border_radius, 0, 0, 32);
+
   return (
     <div
       className="ecopro-storefront"
@@ -213,8 +222,8 @@ export default function AmberStoreTemplate(props: TemplateProps) {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)',
-            gap: 32,
+            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : `repeat(${gridColumns}, 1fr)`,
+            gap: gridGap,
           }}
         >
           {products.slice(0, 6).map((p) => (
@@ -227,12 +236,12 @@ export default function AmberStoreTemplate(props: TemplateProps) {
               }}
               style={{ cursor: 'pointer' }}
             >
-              <div style={{ aspectRatio: '3/4', overflow: 'hidden', marginBottom: 16, background: '#f5f0eb' }}>
+              <div style={{ aspectRatio: '3/4', overflow: 'hidden', marginBottom: baseSpacing, background: '#f5f0eb', borderRadius: cardRadius }}>
                 <img 
                   src={productImage(p)} 
                   alt={productTitle(p)} 
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.6s' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', transition: `transform ${animationSpeed}ms` }}
+                  onMouseEnter={(e) => (e.currentTarget.style.transform = `scale(${hoverScale})`)}
                   onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
                 />
               </div>

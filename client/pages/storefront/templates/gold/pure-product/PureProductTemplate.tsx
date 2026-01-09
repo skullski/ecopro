@@ -61,6 +61,15 @@ export default function PureProductTemplate(props: TemplateProps) {
   const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 15, 10, 32);
 
+  // Layout settings
+  const gridColumns = resolveInt(settings.template_grid_columns, 4, 2, 6);
+  const gridGap = resolveInt(settings.template_grid_gap, 16, 8, 48);
+  const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
+  const sectionSpacing = resolveInt(settings.template_section_spacing, 48, 24, 96);
+  const animationSpeed = resolveInt(settings.template_animation_speed, 200, 100, 500);
+  const hoverScale = asString(settings.template_hover_scale) || '1.02';
+  const cardRadius = resolveInt(settings.template_card_border_radius, 16, 0, 32);
+
   const mainProduct = products[0];
 
   return (
@@ -123,13 +132,13 @@ export default function PureProductTemplate(props: TemplateProps) {
         }}
       >
         {mainProduct && (
-          <div style={{ marginBottom: 48 }}>
+          <div style={{ marginBottom: sectionSpacing }}>
             <div 
               style={{ 
                 maxWidth: isMobile ? '100%' : 500, 
                 margin: '0 auto', 
                 aspectRatio: '1', 
-                borderRadius: 24,
+                borderRadius: cardRadius,
                 overflow: 'hidden',
                 background: '#f5f5f5',
               }}
@@ -204,7 +213,7 @@ export default function PureProductTemplate(props: TemplateProps) {
       )}
 
       {/* Specs */}
-      <section style={{ maxWidth: 700, margin: '0 auto', padding: '40px 24px' }}>
+      <section style={{ maxWidth: 700, margin: '0 auto', padding: `${sectionSpacing}px ${baseSpacing}px` }}>
         <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 24 }}>Specifications</h2>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           {[
@@ -226,14 +235,14 @@ export default function PureProductTemplate(props: TemplateProps) {
         <section
           data-edit-path="layout.grid"
           onClick={() => canManage && onSelect('layout.grid')}
-          style={{ maxWidth: 1000, margin: '0 auto', padding: '40px 24px 80px' }}
+          style={{ maxWidth: 1000, margin: '0 auto', padding: `${sectionSpacing}px ${baseSpacing}px ${sectionSpacing * 1.5}px` }}
         >
           <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 24 }}>You May Also Like</h2>
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
-              gap: 16,
+              gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : `repeat(${gridColumns}, 1fr)`,
+              gap: gridGap,
             }}
           >
             {products.slice(1, 5).map((p) => (
@@ -246,9 +255,12 @@ export default function PureProductTemplate(props: TemplateProps) {
                 }}
                 style={{
                   cursor: 'pointer',
+                  transition: `transform ${animationSpeed}ms`,
                 }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = `scale(${hoverScale})`; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
               >
-                <div style={{ aspectRatio: '1', borderRadius: 16, overflow: 'hidden', background: '#f5f5f5' }}>
+                <div style={{ aspectRatio: '1', borderRadius: cardRadius, overflow: 'hidden', background: '#f5f5f5' }}>
                   <img src={productImage(p)} alt={productTitle(p)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
                 <div style={{ padding: '12px 4px' }}>
@@ -265,7 +277,7 @@ export default function PureProductTemplate(props: TemplateProps) {
       <footer
         data-edit-path="layout.footer"
         onClick={() => canManage && onSelect('layout.footer')}
-        style={{ borderTop: '1px solid #eee', padding: '40px 24px' }}
+        style={{ borderTop: '1px solid #eee', padding: `${sectionSpacing}px ${baseSpacing}px` }}
       >
         <div style={{ maxWidth: 1000, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
           <span style={{ fontWeight: 700 }}>{storeName}</span>

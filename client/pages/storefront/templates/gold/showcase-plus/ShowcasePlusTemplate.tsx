@@ -63,6 +63,15 @@ export default function ShowcasePlusTemplate(props: TemplateProps) {
   const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 15, 10, 32);
 
+  // Layout settings
+  const gridColumns = resolveInt(settings.template_grid_columns, 4, 2, 6);
+  const gridGap = resolveInt(settings.template_grid_gap, 20, 8, 48);
+  const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
+  const sectionSpacing = resolveInt(settings.template_section_spacing, 48, 24, 96);
+  const animationSpeed = resolveInt(settings.template_animation_speed, 200, 100, 500);
+  const hoverScale = asString(settings.template_hover_scale) || '1.02';
+  const cardRadius = resolveInt(settings.template_card_border_radius, 16, 0, 32);
+
   const mainProduct = products[0];
 
   // Create display images from all products
@@ -150,7 +159,7 @@ export default function ShowcasePlusTemplate(props: TemplateProps) {
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.3fr 1fr', gap: isMobile ? 32 : 48, alignItems: 'center' }}>
           {/* Image Carousel */}
           <div style={{ position: 'relative' }}>
-            <div style={{ background: '#fff', borderRadius: 24, overflow: 'hidden', aspectRatio: '4/3', boxShadow: '0 8px 30px rgba(0,0,0,0.08)' }}>
+            <div style={{ background: '#fff', borderRadius: cardRadius, overflow: 'hidden', aspectRatio: '4/3', boxShadow: '0 8px 30px rgba(0,0,0,0.08)' }}>
               <img 
                 src={allImages[currentSlide] || '/placeholder.png'} 
                 alt="" 
@@ -268,7 +277,7 @@ export default function ShowcasePlusTemplate(props: TemplateProps) {
             </div>
 
             {/* Order Form */}
-            <div style={{ marginTop: 28, background: '#fff', borderRadius: 16, padding: 20, boxShadow: '0 2px 10px rgba(0,0,0,0.04)' }}>
+            <div style={{ marginTop: 28, background: '#fff', borderRadius: cardRadius, padding: 20, boxShadow: '0 2px 10px rgba(0,0,0,0.04)' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <input placeholder="Name" style={{ padding: '14px', border: '1px solid #e7e5e4', borderRadius: 10, fontSize: 14 }} />
                 <input placeholder="Phone" style={{ padding: '14px', border: '1px solid #e7e5e4', borderRadius: 10, fontSize: 14 }} />
@@ -304,7 +313,7 @@ export default function ShowcasePlusTemplate(props: TemplateProps) {
         <section
           data-edit-path="layout.categories"
           onClick={() => canManage && onSelect('layout.categories')}
-          style={{ padding: '48px 24px', background: '#fff' }}
+          style={{ padding: `${sectionSpacing}px ${baseSpacing}px`, background: '#fff' }}
         >
           <div style={{ maxWidth: 700, margin: '0 auto', textAlign: 'center' }}>
             <p style={{ color: descColor, fontSize: descSize, lineHeight: 1.9 }}>
@@ -315,15 +324,15 @@ export default function ShowcasePlusTemplate(props: TemplateProps) {
       )}
 
       {/* Trust badges */}
-      <section style={{ padding: '40px 24px' }}>
-        <div style={{ maxWidth: 900, margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: 20 }}>
+      <section style={{ padding: `${sectionSpacing}px ${baseSpacing}px` }}>
+        <div style={{ maxWidth: 900, margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : `repeat(4, 1fr)`, gap: gridGap }}>
           {[
             { icon: '🚚', text: 'Free Shipping' },
             { icon: '↩️', text: '30-Day Returns' },
             { icon: '🔒', text: 'Secure Payment' },
             { icon: '💬', text: '24/7 Support' },
           ].map((b) => (
-            <div key={b.text} style={{ background: '#fff', borderRadius: 12, padding: 20, textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+            <div key={b.text} style={{ background: '#fff', borderRadius: cardRadius, padding: 20, textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
               <div style={{ fontSize: 24, marginBottom: 8 }}>{b.icon}</div>
               <div style={{ fontSize: 13, fontWeight: 600 }}>{b.text}</div>
             </div>
@@ -336,14 +345,14 @@ export default function ShowcasePlusTemplate(props: TemplateProps) {
         <section
           data-edit-path="layout.grid"
           onClick={() => canManage && onSelect('layout.grid')}
-          style={{ maxWidth: 1200, margin: '0 auto', padding: '20px 24px 80px' }}
+          style={{ maxWidth: 1200, margin: '0 auto', padding: `${baseSpacing}px ${baseSpacing}px ${sectionSpacing * 1.5}px` }}
         >
           <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 24, textAlign: 'center' }}>You May Also Like</h2>
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
-              gap: 20,
+              gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : `repeat(${gridColumns}, 1fr)`,
+              gap: gridGap,
             }}
           >
             {products.slice(1, 9).map((p) => (
@@ -356,14 +365,14 @@ export default function ShowcasePlusTemplate(props: TemplateProps) {
                 }}
                 style={{
                   background: '#fff',
-                  borderRadius: 16,
+                  borderRadius: cardRadius,
                   overflow: 'hidden',
                   cursor: 'pointer',
                   boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                  transition: 'transform 0.2s',
+                  transition: `transform ${animationSpeed}ms`,
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-4px)')}
-                onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+                onMouseEnter={(e) => (e.currentTarget.style.transform = `translateY(-4px) scale(${hoverScale})`)}
+                onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0) scale(1)')}
               >
                 <div style={{ aspectRatio: '1', background: bg }}>
                   <img src={productImage(p)} alt={productTitle(p)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -382,7 +391,7 @@ export default function ShowcasePlusTemplate(props: TemplateProps) {
       <footer
         data-edit-path="layout.footer"
         onClick={() => canManage && onSelect('layout.footer')}
-        style={{ background: text, color: '#fff', padding: '48px 24px' }}
+        style={{ background: text, color: '#fff', padding: `${sectionSpacing}px ${baseSpacing}px` }}
       >
         <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 24 }}>
           <div>

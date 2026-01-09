@@ -61,6 +61,15 @@ export default function ForestStoreTemplate(props: TemplateProps) {
   const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 15, 10, 32);
 
+  // Layout settings
+  const gridColumns = resolveInt(settings.template_grid_columns, 3, 2, 6);
+  const gridGap = resolveInt(settings.template_grid_gap, 24, 8, 48);
+  const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
+  const sectionSpacing = resolveInt(settings.template_section_spacing, 80, 24, 96);
+  const animationSpeed = resolveInt(settings.template_animation_speed, 300, 100, 500);
+  const hoverScale = asString(settings.template_hover_scale) || '1.02';
+  const cardRadius = resolveInt(settings.template_card_border_radius, 20, 0, 32);
+
   return (
     <div
       className="ecopro-storefront"
@@ -196,9 +205,9 @@ export default function ForestStoreTemplate(props: TemplateProps) {
       <section
         data-edit-path="layout.grid"
         onClick={() => canManage && onSelect('layout.grid')}
-        style={{ maxWidth: 1200, margin: '0 auto', padding: '80px 24px' }}
+        style={{ maxWidth: 1200, margin: '0 auto', padding: `${sectionSpacing}px 24px` }}
       >
-        <div style={{ textAlign: 'center', marginBottom: 48 }}>
+        <div style={{ textAlign: 'center', marginBottom: sectionSpacing }}>
           <h2 style={{ fontSize: 32, fontWeight: 800, margin: 0 }}>Our Collection</h2>
           <p style={{ color: muted, marginTop: 12 }}>Handpicked sustainable products</p>
         </div>
@@ -206,8 +215,8 @@ export default function ForestStoreTemplate(props: TemplateProps) {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)',
-            gap: 24,
+            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : `repeat(${gridColumns}, 1fr)`,
+            gap: gridGap,
           }}
         >
           {products.slice(0, 6).map((p) => (
@@ -220,12 +229,12 @@ export default function ForestStoreTemplate(props: TemplateProps) {
               }}
               style={{
                 background: '#243424',
-                borderRadius: 20,
+                borderRadius: cardRadius,
                 overflow: 'hidden',
                 cursor: 'pointer',
-                transition: 'transform 0.3s',
+                transition: `transform ${animationSpeed}ms`,
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.02)')}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = `scale(${hoverScale})`)}
               onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
             >
               <div style={{ aspectRatio: '4/5', position: 'relative' }}>

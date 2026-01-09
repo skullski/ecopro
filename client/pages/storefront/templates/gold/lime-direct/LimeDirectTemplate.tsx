@@ -61,6 +61,15 @@ export default function LimeDirectTemplate(props: TemplateProps) {
   const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 15, 10, 32);
 
+  // Layout settings
+  const gridColumns = resolveInt(settings.template_grid_columns, 4, 2, 6);
+  const gridGap = resolveInt(settings.template_grid_gap, 16, 8, 48);
+  const baseSpacing = resolveInt(settings.template_spacing, 12, 8, 32);
+  const sectionSpacing = resolveInt(settings.template_section_spacing, 48, 24, 96);
+  const animationSpeed = resolveInt(settings.template_animation_speed, 200, 100, 500);
+  const hoverScale = asString(settings.template_hover_scale) || '1.02';
+  const cardRadius = resolveInt(settings.template_card_border_radius, 12, 0, 32);
+
   return (
     <div
       className="ecopro-storefront"
@@ -232,14 +241,14 @@ export default function LimeDirectTemplate(props: TemplateProps) {
       <section
         data-edit-path="layout.grid"
         onClick={() => canManage && onSelect('layout.grid')}
-        style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 24px 60px' }}
+        style={{ maxWidth: 1200, margin: '0 auto', padding: `${sectionSpacing}px 24px 60px` }}
       >
         <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 24, textAlign: 'center' }}>More Products</h2>
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
-            gap: 16,
+            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : `repeat(${gridColumns}, 1fr)`,
+            gap: gridGap,
           }}
         >
           {products.slice(0, 8).map((p) => (
@@ -253,18 +262,24 @@ export default function LimeDirectTemplate(props: TemplateProps) {
               style={{
                 background: '#fff',
                 border: `2px solid ${accent}30`,
-                borderRadius: 12,
+                borderRadius: cardRadius,
                 overflow: 'hidden',
                 cursor: 'pointer',
-                transition: 'border-color 0.2s',
+                transition: `border-color ${animationSpeed}ms, transform ${animationSpeed}ms`,
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.borderColor = accent)}
-              onMouseLeave={(e) => (e.currentTarget.style.borderColor = `${accent}30`)}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = accent;
+                e.currentTarget.style.transform = `scale(${hoverScale})`;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = `${accent}30`;
+                e.currentTarget.style.transform = 'scale(1)';
+              }}
             >
               <div style={{ aspectRatio: '1' }}>
                 <img src={productImage(p)} alt={productTitle(p)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
-              <div style={{ padding: 12 }}>
+              <div style={{ padding: baseSpacing }}>
                 <h3 style={{ fontSize: 13, fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {productTitle(p)}
                 </h3>
@@ -281,7 +296,7 @@ export default function LimeDirectTemplate(props: TemplateProps) {
       </section>
 
       {/* Contact */}
-      <section style={{ background: text, color: '#fff', padding: '48px 24px', textAlign: 'center' }}>
+      <section style={{ background: text, color: '#fff', padding: `${sectionSpacing}px 24px`, textAlign: 'center' }}>
         <h3 style={{ fontSize: 24, fontWeight: 800, margin: 0 }}>Need Help?</h3>
         <p style={{ marginTop: 12, opacity: 0.8 }}>Contact us anytime for support</p>
         <div style={{ marginTop: 20, display: 'flex', justifyContent: 'center', gap: 24, flexWrap: 'wrap' }}>

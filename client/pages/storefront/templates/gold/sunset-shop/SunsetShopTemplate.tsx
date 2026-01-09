@@ -61,6 +61,17 @@ export default function SunsetShopTemplate(props: TemplateProps) {
   const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 15, 10, 32);
 
+  // Layout settings
+  const gridColumns = resolveInt(settings.template_grid_columns, 4, 2, 6);
+  const gridGap = resolveInt(settings.template_grid_gap, 20, 8, 48);
+  const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
+  const sectionSpacing = resolveInt(settings.template_section_spacing, 48, 24, 96);
+  const animationSpeed = resolveInt(settings.template_animation_speed, 200, 100, 500);
+  const hoverScale = asString(settings.template_hover_scale) || '1.02';
+  const cardRadius = resolveInt(settings.template_card_border_radius, 12, 0, 32);
+
+  const cols = isMobile ? 2 : gridColumns;
+
   return (
     <div
       className="ecopro-storefront"
@@ -186,7 +197,7 @@ export default function SunsetShopTemplate(props: TemplateProps) {
       <section
         data-edit-path="layout.grid"
         onClick={() => canManage && onSelect('layout.grid')}
-        style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 24px 80px' }}
+        style={{ maxWidth: 1200, margin: '0 auto', padding: `${sectionSpacing}px ${baseSpacing}px` }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
           <h2 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>Featured Products</h2>
@@ -198,8 +209,8 @@ export default function SunsetShopTemplate(props: TemplateProps) {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
-            gap: 20,
+            gridTemplateColumns: `repeat(${cols}, 1fr)`,
+            gap: gridGap,
           }}
         >
           {products.slice(0, 8).map((p) => (
@@ -213,13 +224,13 @@ export default function SunsetShopTemplate(props: TemplateProps) {
               style={{
                 background: '#fff',
                 border: '1px solid #e5e7eb',
-                borderRadius: 12,
+                borderRadius: cardRadius,
                 overflow: 'hidden',
                 cursor: 'pointer',
-                transition: 'box-shadow 0.3s',
+                transition: `transform ${animationSpeed}ms, box-shadow ${animationSpeed}ms`,
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.1)')}
-              onMouseLeave={(e) => (e.currentTarget.style.boxShadow = 'none')}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = `scale(${hoverScale})`; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.1)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}
             >
               <div style={{ aspectRatio: '1', background: '#f9fafb' }}>
                 <img src={productImage(p)} alt={productTitle(p)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />

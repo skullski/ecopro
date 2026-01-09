@@ -63,6 +63,15 @@ export default function ProAuroraTemplate(props: TemplateProps) {
   const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 14, 10, 32);
 
+  // Layout settings
+  const gridColumns = resolveInt(settings.template_grid_columns, 4, 2, 6);
+  const gridGap = resolveInt(settings.template_grid_gap, 24, 8, 48);
+  const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
+  const sectionSpacing = resolveInt(settings.template_section_spacing, 80, 24, 96);
+  const animationSpeed = resolveInt(settings.template_animation_speed, 300, 100, 500);
+  const hoverScale = asString(settings.template_hover_scale) || '1.02';
+  const cardRadius = resolveInt(settings.template_card_border_radius, 20, 0, 32);
+
   return (
     <div
       className="ecopro-storefront"
@@ -251,7 +260,7 @@ export default function ProAuroraTemplate(props: TemplateProps) {
       <section
         data-edit-path="layout.grid"
         onClick={() => canManage && onSelect('layout.grid')}
-        style={{ maxWidth: 1400, margin: '0 auto', padding: '0 24px 80px' }}
+        style={{ maxWidth: 1400, margin: '0 auto', padding: `0 ${baseSpacing}px ${sectionSpacing}px` }}
       >
         <div style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ fontSize: 24, fontWeight: 800 }}>Featured Products</h2>
@@ -266,8 +275,8 @@ export default function ProAuroraTemplate(props: TemplateProps) {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))',
-            gap: 24,
+            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : `repeat(${gridColumns}, 1fr)`,
+            gap: gridGap,
           }}
         >
           {products.map((p, idx) => (
@@ -280,20 +289,20 @@ export default function ProAuroraTemplate(props: TemplateProps) {
               }}
               style={{
                 position: 'relative',
-                borderRadius: 20,
+                borderRadius: cardRadius,
                 background: 'rgba(255,255,255,0.03)',
                 backdropFilter: 'blur(20px)',
                 border: '1px solid rgba(255,255,255,0.08)',
                 overflow: 'hidden',
                 cursor: 'pointer',
-                transition: 'transform 0.3s, box-shadow 0.3s',
+                transition: `transform ${animationSpeed}ms, box-shadow ${animationSpeed}ms`,
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-8px)';
+                e.currentTarget.style.transform = `translateY(-8px) scale(${hoverScale})`;
                 e.currentTarget.style.boxShadow = `0 30px 60px ${accent}22`;
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.transform = 'translateY(0) scale(1)';
                 e.currentTarget.style.boxShadow = 'none';
               }}
             >

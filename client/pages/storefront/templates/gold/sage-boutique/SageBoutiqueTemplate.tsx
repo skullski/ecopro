@@ -61,6 +61,15 @@ export default function SageBoutiqueTemplate(props: TemplateProps) {
   const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 15, 10, 32);
 
+  // Layout settings
+  const gridColumns = resolveInt(settings.template_grid_columns, 4, 2, 6);
+  const gridGap = resolveInt(settings.template_grid_gap, 24, 8, 48);
+  const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
+  const sectionSpacing = resolveInt(settings.template_section_spacing, 48, 24, 96);
+  const animationSpeed = resolveInt(settings.template_animation_speed, 200, 100, 500);
+  const hoverScale = asString(settings.template_hover_scale) || '1.05';
+  const cardRadius = resolveInt(settings.template_card_border_radius, 0, 0, 32);
+
   return (
     <div
       className="ecopro-storefront"
@@ -158,7 +167,7 @@ export default function SageBoutiqueTemplate(props: TemplateProps) {
         <section
           data-edit-path="layout.categories"
           onClick={() => canManage && onSelect('layout.categories')}
-          style={{ padding: '40px 24px', textAlign: 'center', background: '#fff' }}
+          style={{ padding: `${sectionSpacing}px ${baseSpacing}px`, textAlign: 'center', background: '#fff' }}
         >
           <p style={{ maxWidth: 600, margin: '0 auto', color: descColor, fontSize: descSize, lineHeight: 1.8, fontStyle: 'italic' }}>
             {descText || (canManage ? 'Add store description...' : '')}
@@ -170,9 +179,9 @@ export default function SageBoutiqueTemplate(props: TemplateProps) {
       <section
         data-edit-path="layout.grid"
         onClick={() => canManage && onSelect('layout.grid')}
-        style={{ maxWidth: 1200, margin: '0 auto', padding: '60px 24px' }}
+        style={{ maxWidth: 1200, margin: '0 auto', padding: `${sectionSpacing}px ${baseSpacing}px` }}
       >
-        <div style={{ textAlign: 'center', marginBottom: 48 }}>
+        <div style={{ textAlign: 'center', marginBottom: sectionSpacing }}>
           <h2 style={{ fontSize: 32, fontWeight: 400, margin: 0 }}>Featured Pieces</h2>
           <p style={{ color: muted, marginTop: 12 }}>Handpicked selections for you</p>
         </div>
@@ -180,8 +189,8 @@ export default function SageBoutiqueTemplate(props: TemplateProps) {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
-            gap: 24,
+            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : `repeat(${gridColumns}, 1fr)`,
+            gap: gridGap,
           }}
         >
           {products.slice(0, 8).map((p) => (
@@ -194,12 +203,12 @@ export default function SageBoutiqueTemplate(props: TemplateProps) {
               }}
               style={{ cursor: 'pointer' }}
             >
-              <div style={{ aspectRatio: '3/4', background: '#fff', marginBottom: 16, overflow: 'hidden' }}>
+              <div style={{ aspectRatio: '3/4', background: '#fff', marginBottom: baseSpacing, overflow: 'hidden', borderRadius: cardRadius }}>
                 <img
                   src={productImage(p)}
                   alt={productTitle(p)}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', transition: `transform ${animationSpeed}ms` }}
+                  onMouseEnter={(e) => (e.currentTarget.style.transform = `scale(${hoverScale})`)}
                   onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
                 />
               </div>
@@ -229,7 +238,7 @@ export default function SageBoutiqueTemplate(props: TemplateProps) {
       </section>
 
       {/* Newsletter */}
-      <section style={{ background: accent, padding: '60px 24px', textAlign: 'center' }}>
+      <section style={{ background: accent, padding: `${sectionSpacing}px ${baseSpacing}px`, textAlign: 'center' }}>
         <h3 style={{ color: '#fff', fontSize: 28, fontWeight: 400, margin: 0 }}>Join Our Community</h3>
         <p style={{ color: 'rgba(255,255,255,0.8)', marginTop: 12 }}>Subscribe for exclusive offers and new arrivals</p>
         <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
@@ -248,7 +257,7 @@ export default function SageBoutiqueTemplate(props: TemplateProps) {
       <footer
         data-edit-path="layout.footer"
         onClick={() => canManage && onSelect('layout.footer')}
-        style={{ background: '#fff', padding: '60px 24px' }}
+        style={{ background: '#fff', padding: `${sectionSpacing}px ${baseSpacing}px` }}
       >
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(4, 1fr)', gap: 40 }}>

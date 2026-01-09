@@ -70,6 +70,15 @@ export default function GalleryProTemplate(props: TemplateProps) {
   const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 15, 10, 32);
 
+  // Layout settings
+  const gridColumns = resolveInt(settings.template_grid_columns, 5, 2, 6);
+  const gridGap = resolveInt(settings.template_grid_gap, 16, 8, 48);
+  const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
+  const sectionSpacing = resolveInt(settings.template_section_spacing, 40, 24, 96);
+  const animationSpeed = resolveInt(settings.template_animation_speed, 200, 100, 500);
+  const hoverScale = asString(settings.template_hover_scale) || '1.02';
+  const cardRadius = resolveInt(settings.template_card_border_radius, 12, 0, 32);
+
   const mainProduct = products[0];
   const images = mainProduct ? productImages(mainProduct) : [];
   const displayImages = images.length > 0 ? images : [productImage(mainProduct || products[0])];
@@ -282,14 +291,14 @@ export default function GalleryProTemplate(props: TemplateProps) {
         <section
           data-edit-path="layout.grid"
           onClick={() => canManage && onSelect('layout.grid')}
-          style={{ maxWidth: 1300, margin: '0 auto', padding: '40px 24px 80px' }}
+          style={{ maxWidth: 1300, margin: '0 auto', padding: `${sectionSpacing}px 24px ${sectionSpacing * 2}px` }}
         >
-          <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 24 }}>Related Products</h2>
+          <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: baseSpacing * 1.5 }}>Related Products</h2>
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)',
-              gap: 16,
+              gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : `repeat(${gridColumns}, 1fr)`,
+              gap: gridGap,
             }}
           >
             {products.slice(1, 11).map((p) => (
@@ -302,13 +311,13 @@ export default function GalleryProTemplate(props: TemplateProps) {
                 }}
                 style={{
                   background: '#fafafa',
-                  borderRadius: 12,
+                  borderRadius: cardRadius,
                   overflow: 'hidden',
                   cursor: 'pointer',
-                  transition: 'box-shadow 0.2s',
+                  transition: `box-shadow ${animationSpeed}ms, transform ${animationSpeed}ms`,
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.1)')}
-                onMouseLeave={(e) => (e.currentTarget.style.boxShadow = 'none')}
+                onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.1)'; e.currentTarget.style.transform = `scale(${hoverScale})`; }}
+                onMouseLeave={(e) => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'scale(1)'; }}
               >
                 <div style={{ aspectRatio: '1' }}>
                   <img src={productImage(p)} alt={productTitle(p)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />

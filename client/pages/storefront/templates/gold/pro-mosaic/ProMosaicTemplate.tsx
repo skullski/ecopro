@@ -50,6 +50,15 @@ export default function ProMosaicTemplate(props: TemplateProps) {
   const muted = asString(settings.template_muted_color) || '#71717a';
   const accent = asString(settings.template_accent_color) || '#ec4899';
 
+  // Layout settings
+  const gridColumns = resolveInt(settings.template_grid_columns, 4, 2, 6);
+  const gridGap = resolveInt(settings.template_grid_gap, 16, 0, 48);
+  const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
+  const sectionSpacing = resolveInt(settings.template_section_spacing, 48, 24, 96);
+  const animationSpeed = resolveInt(settings.template_animation_speed, 200, 100, 500);
+  const hoverScale = asString(settings.template_hover_scale) || '1.02';
+  const cardRadius = resolveInt(settings.template_card_border_radius, 12, 0, 32);
+
   const storeName = asString(settings.store_name) || 'MOSAIC';
   const heroTitle = asString(settings.template_hero_heading) || 'Discover Your Style';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'A curated collection of unique finds';
@@ -195,9 +204,9 @@ export default function ProMosaicTemplate(props: TemplateProps) {
       <section
         data-edit-path="layout.grid"
         onClick={() => canManage && onSelect('layout.grid')}
-        style={{ maxWidth: 1600, margin: '0 auto', padding: '40px 24px 80px' }}
+        style={{ maxWidth: 1600, margin: '0 auto', padding: `${sectionSpacing}px ${baseSpacing * 1.5}px ${sectionSpacing * 1.6}px` }}
       >
-        <div style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ marginBottom: baseSpacing * 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ fontSize: 24, fontWeight: 800, margin: 0 }}>Browse All</h2>
           <span style={{ color: muted, fontSize: 14 }}>{products.length} items</span>
         </div>
@@ -205,8 +214,8 @@ export default function ProMosaicTemplate(props: TemplateProps) {
         {/* CSS Columns for masonry effect */}
         <div
           style={{
-            columnCount: isMobile ? 2 : 4,
-            columnGap: 16,
+            columnCount: isMobile ? 2 : gridColumns,
+            columnGap: gridGap,
           }}
         >
           {products.map((p, idx) => (
@@ -219,20 +228,20 @@ export default function ProMosaicTemplate(props: TemplateProps) {
               }}
               style={{
                 breakInside: 'avoid',
-                marginBottom: 16,
-                borderRadius: 12,
+                marginBottom: gridGap,
+                borderRadius: cardRadius,
                 overflow: 'hidden',
                 background: '#fff',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
                 cursor: 'pointer',
-                transition: 'transform 0.2s, box-shadow 0.2s',
+                transition: `transform ${animationSpeed}ms ease, box-shadow ${animationSpeed}ms ease`,
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-4px)';
+                e.currentTarget.style.transform = `scale(${hoverScale}) translateY(-4px)`;
                 e.currentTarget.style.boxShadow = '0 12px 24px rgba(0,0,0,0.12)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.transform = 'scale(1) translateY(0)';
                 e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)';
               }}
             >

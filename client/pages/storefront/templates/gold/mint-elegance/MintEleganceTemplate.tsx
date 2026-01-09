@@ -61,6 +61,15 @@ export default function MintEleganceTemplate(props: TemplateProps) {
   const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 15, 10, 32);
 
+  // Layout settings
+  const gridColumns = resolveInt(settings.template_grid_columns, 4, 2, 6);
+  const gridGap = resolveInt(settings.template_grid_gap, 20, 8, 48);
+  const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
+  const sectionSpacing = resolveInt(settings.template_section_spacing, 80, 24, 96);
+  const animationSpeed = resolveInt(settings.template_animation_speed, 300, 100, 500);
+  const hoverScale = asString(settings.template_hover_scale) || '1.02';
+  const cardRadius = resolveInt(settings.template_card_border_radius, 16, 0, 32);
+
   return (
     <div
       className="ecopro-storefront"
@@ -231,7 +240,7 @@ export default function MintEleganceTemplate(props: TemplateProps) {
       <section
         data-edit-path="layout.grid"
         onClick={() => canManage && onSelect('layout.grid')}
-        style={{ maxWidth: 1280, margin: '0 auto', padding: '80px 24px' }}
+        style={{ maxWidth: 1280, margin: '0 auto', padding: `${sectionSpacing}px 24px` }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40 }}>
           <div>
@@ -249,8 +258,8 @@ export default function MintEleganceTemplate(props: TemplateProps) {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
-            gap: 20,
+            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : `repeat(${gridColumns}, 1fr)`,
+            gap: gridGap,
           }}
         >
           {products.slice(0, 8).map((p) => (
@@ -263,24 +272,24 @@ export default function MintEleganceTemplate(props: TemplateProps) {
               }}
               style={{
                 background: '#fff',
-                borderRadius: 16,
+                borderRadius: cardRadius,
                 overflow: 'hidden',
                 cursor: 'pointer',
-                transition: 'transform 0.3s, box-shadow 0.3s',
+                transition: `transform ${animationSpeed}ms, box-shadow ${animationSpeed}ms`,
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-8px)';
+                e.currentTarget.style.transform = `translateY(-8px) scale(${hoverScale})`;
                 e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.12)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.transform = 'translateY(0) scale(1)';
                 e.currentTarget.style.boxShadow = 'none';
               }}
             >
               <div style={{ aspectRatio: '1', background: '#f8faf9' }}>
                 <img src={productImage(p)} alt={productTitle(p)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
-              <div style={{ padding: 16 }}>
+              <div style={{ padding: baseSpacing }}>
                 <h3 style={{ fontSize: 15, fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {productTitle(p)}
                 </h3>
@@ -297,7 +306,7 @@ export default function MintEleganceTemplate(props: TemplateProps) {
       </section>
 
       {/* Testimonial */}
-      <section style={{ background: '#fff', padding: '80px 24px' }}>
+      <section style={{ background: '#fff', padding: `${sectionSpacing}px 24px` }}>
         <div style={{ maxWidth: 800, margin: '0 auto', textAlign: 'center' }}>
           <div style={{ fontSize: 48, color: accent }}>❝</div>
           <p style={{ fontSize: 22, fontStyle: 'italic', lineHeight: 1.7, color: text }}>
@@ -314,7 +323,7 @@ export default function MintEleganceTemplate(props: TemplateProps) {
       <footer
         data-edit-path="layout.footer"
         onClick={() => canManage && onSelect('layout.footer')}
-        style={{ background: text, color: '#fff', padding: '60px 24px' }}
+        style={{ background: text, color: '#fff', padding: `${sectionSpacing - 20}px 24px` }}
       >
         <div style={{ maxWidth: 1280, margin: '0 auto' }}>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(4, 1fr)', gap: 40 }}>

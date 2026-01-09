@@ -3,6 +3,16 @@ import type { TemplateProps } from '../../types';
 
 type Breakpoint = 'mobile' | 'tablet' | 'desktop';
 
+function asString(v: unknown): string {
+  return typeof v === 'string' ? v : '';
+}
+
+function resolveInt(value: unknown, fallback: number, min: number, max: number): number {
+  const parsed = typeof value === 'number' ? value : parseInt(String(value || ''), 10);
+  const safe = Number.isFinite(parsed) ? parsed : fallback;
+  return Math.max(min, Math.min(max, safe));
+}
+
 export default function BooksTemplate(props: TemplateProps) {
   const settings = props.settings || ({} as any);
   const canManage = props.canManage !== false;
@@ -39,6 +49,15 @@ export default function BooksTemplate(props: TemplateProps) {
   const heroSubtitle = settings.template_hero_subtitle || 'Curated books for curious minds';
   const ctaText = settings.template_button_text || 'Browse Collection';
 
+  // Layout settings
+  const gridColumns = resolveInt(settings.template_grid_columns, 5, 2, 6);
+  const gridGap = resolveInt(settings.template_grid_gap, 24, 8, 48);
+  const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
+  const sectionSpacing = resolveInt(settings.template_section_spacing, 48, 24, 96);
+  const animationSpeed = resolveInt(settings.template_animation_speed, 200, 100, 500);
+  const hoverScale = asString(settings.template_hover_scale) || '1.02';
+  const cardRadius = resolveInt(settings.template_card_border_radius, 0, 0, 32);
+
   const products = useMemo(() => {
     const list = props.filtered?.length ? props.filtered : props.products || [];
     return categoryFilter ? list.filter(p => p.category === categoryFilter) : list;
@@ -46,7 +65,7 @@ export default function BooksTemplate(props: TemplateProps) {
 
   const categories = useMemo(() => [...new Set(props.products?.map(p => p.category).filter(Boolean))], [props.products]);
   const isMobile = breakpoint === 'mobile';
-  const cols = isMobile ? 2 : breakpoint === 'tablet' ? 3 : 5;
+  const cols = isMobile ? 2 : breakpoint === 'tablet' ? 3 : gridColumns;
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: bg, color: text, fontFamily: 'Georgia, serif' }} data-edit-path="__root">
@@ -73,12 +92,14 @@ export default function BooksTemplate(props: TemplateProps) {
       )}
 
       {/* Products */}
-      <section style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }} data-edit-path="layout.products">
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '24px' }}>
+      <section style={{ padding: `${sectionSpacing}px 24px`, maxWidth: '1400px', margin: '0 auto' }} data-edit-path="layout.products">
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: `${gridGap}px` }}>
           {products.map(product => (
-            <div key={product.id} style={{ cursor: canManage ? 'default' : 'pointer', textAlign: 'center' }} data-edit-path={`layout.products.${product.id}`}
+            <div key={product.id} style={{ cursor: canManage ? 'default' : 'pointer', textAlign: 'center', transition: `transform ${animationSpeed}ms` }} data-edit-path={`layout.products.${product.id}`}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = `scale(${hoverScale})`)}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
               onClick={(e) => { e.stopPropagation(); if (!canManage && product.slug) props.navigate(product.slug); else if (canManage) onSelect(`layout.products.${product.id}`); }}>
-              <div style={{ aspectRatio: '2/3', backgroundColor: cardBg, boxShadow: '4px 4px 12px rgba(0,0,0,0.1)', marginBottom: '12px', overflow: 'hidden' }}>
+              <div style={{ aspectRatio: '2/3', backgroundColor: cardBg, boxShadow: '4px 4px 12px rgba(0,0,0,0.1)', marginBottom: `${baseSpacing}px`, overflow: 'hidden', borderRadius: cardRadius }}>
                 {product.images?.[0] && <img src={product.images[0]} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
               </div>
               <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '4px' }}>{product.title}</h3>

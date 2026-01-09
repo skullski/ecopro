@@ -50,6 +50,15 @@ export default function ProOrbitTemplate(props: TemplateProps) {
   const muted = asString(settings.template_muted_color) || '#64748b';
   const accent = asString(settings.template_accent_color) || '#10b981';
 
+  // Layout settings
+  const gridColumns = resolveInt(settings.template_grid_columns, 4, 2, 6);
+  const gridGap = resolveInt(settings.template_grid_gap, 24, 8, 48);
+  const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
+  const sectionSpacing = resolveInt(settings.template_section_spacing, 48, 24, 96);
+  const animationSpeed = resolveInt(settings.template_animation_speed, 200, 100, 500);
+  const hoverScale = asString(settings.template_hover_scale) || '1.03';
+  const cardRadius = resolveInt(settings.template_card_border_radius, 16, 0, 32);
+
   const storeName = asString(settings.store_name) || 'ORBIT';
   const heroTitle = asString(settings.template_hero_heading) || 'Circle of Excellence';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Products that revolve around your lifestyle';
@@ -268,7 +277,7 @@ export default function ProOrbitTemplate(props: TemplateProps) {
       <section
         data-edit-path="layout.grid"
         onClick={() => canManage && onSelect('layout.grid')}
-        style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px 80px' }}
+        style={{ maxWidth: 1200, margin: '0 auto', padding: `0 ${baseSpacing}px ${sectionSpacing}px` }}
       >
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <h2 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Featured Products</h2>
@@ -278,8 +287,8 @@ export default function ProOrbitTemplate(props: TemplateProps) {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(260px, 1fr))',
-            gap: 24,
+            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : `repeat(${gridColumns}, 1fr)`,
+            gap: gridGap,
           }}
         >
           {products.map((p) => (
@@ -292,18 +301,18 @@ export default function ProOrbitTemplate(props: TemplateProps) {
               }}
               style={{
                 background: '#fff',
-                borderRadius: 24,
+                borderRadius: cardRadius,
                 overflow: 'hidden',
                 boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
                 cursor: 'pointer',
-                transition: 'transform 0.3s, box-shadow 0.3s',
+                transition: `transform ${animationSpeed}ms, box-shadow ${animationSpeed}ms`,
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-6px)';
+                e.currentTarget.style.transform = `translateY(-6px) scale(${hoverScale})`;
                 e.currentTarget.style.boxShadow = '0 16px 40px rgba(0,0,0,0.12)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.transform = 'translateY(0) scale(1)';
                 e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.06)';
               }}
             >

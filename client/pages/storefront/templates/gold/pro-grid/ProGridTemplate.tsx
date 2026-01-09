@@ -61,6 +61,15 @@ export default function ProGridTemplate(props: TemplateProps) {
   const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 14, 10, 32);
 
+  // Layout settings
+  const gridColumns = resolveInt(settings.template_grid_columns, 5, 2, 8);
+  const gridGap = resolveInt(settings.template_grid_gap, 12, 8, 48);
+  const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
+  const sectionSpacing = resolveInt(settings.template_section_spacing, 40, 24, 96);
+  const animationSpeed = resolveInt(settings.template_animation_speed, 200, 100, 500);
+  const hoverScale = asString(settings.template_hover_scale) || '1.02';
+  const cardRadius = resolveInt(settings.template_card_border_radius, 8, 0, 32);
+
   return (
     <div
       className="ecopro-storefront"
@@ -218,7 +227,7 @@ export default function ProGridTemplate(props: TemplateProps) {
         <section
           data-edit-path="layout.grid"
           onClick={() => canManage && onSelect('layout.grid')}
-          style={{ flex: 1, padding: '24px' }}
+          style={{ flex: 1, padding: `${baseSpacing}px` }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
             <span style={{ fontSize: 14, color: muted }}>{products.length} products</span>
@@ -233,8 +242,8 @@ export default function ProGridTemplate(props: TemplateProps) {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(180px, 1fr))',
-              gap: 12,
+              gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : `repeat(${gridColumns}, 1fr)`,
+              gap: gridGap,
             }}
           >
             {products.map((p) => (
@@ -247,13 +256,19 @@ export default function ProGridTemplate(props: TemplateProps) {
                 }}
                 style={{
                   border: '1px solid #e5e7eb',
-                  borderRadius: 8,
+                  borderRadius: cardRadius,
                   overflow: 'hidden',
                   cursor: 'pointer',
-                  transition: 'border-color 0.2s',
+                  transition: `border-color ${animationSpeed}ms, transform ${animationSpeed}ms`,
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.borderColor = accent)}
-                onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#e5e7eb')}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = accent;
+                  e.currentTarget.style.transform = `scale(${hoverScale})`;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = '#e5e7eb';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
               >
                 <div style={{ aspectRatio: '1', background: '#f9fafb' }}>
                   <img src={productImage(p)} alt={productTitle(p)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />

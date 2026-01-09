@@ -61,6 +61,15 @@ export default function ProZenTemplate(props: TemplateProps) {
   const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 16, 10, 32);
 
+  // Layout settings
+  const gridColumns = resolveInt(settings.template_grid_columns, 3, 2, 6);
+  const gridGap = resolveInt(settings.template_grid_gap, 80, 24, 120);
+  const baseSpacing = resolveInt(settings.template_spacing, 24, 8, 48);
+  const sectionSpacing = resolveInt(settings.template_section_spacing, 100, 40, 160);
+  const animationSpeed = resolveInt(settings.template_animation_speed, 600, 100, 1000);
+  const hoverScale = asString(settings.template_hover_scale) || '1.03';
+  const cardRadius = resolveInt(settings.template_card_border_radius, 0, 0, 32);
+
   return (
     <div
       className="ecopro-storefront"
@@ -165,13 +174,13 @@ export default function ProZenTemplate(props: TemplateProps) {
       <section
         data-edit-path="layout.grid"
         onClick={() => canManage && onSelect('layout.grid')}
-        style={{ maxWidth: 1400, margin: '0 auto', padding: isMobile ? '0 24px 100px' : '0 48px 160px' }}
+        style={{ maxWidth: 1400, margin: '0 auto', padding: isMobile ? `0 ${baseSpacing}px ${sectionSpacing}px` : `0 ${baseSpacing * 2}px ${sectionSpacing + 60}px` }}
       >
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
-            gap: isMobile ? 48 : 80,
+            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : `repeat(${gridColumns}, 1fr)`,
+            gap: isMobile ? 48 : gridGap,
           }}
         >
           {products.map((p, idx) => (
@@ -188,8 +197,8 @@ export default function ProZenTemplate(props: TemplateProps) {
                 <img
                   src={productImage(p)}
                   alt={productTitle(p)}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.6s' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.03)')}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', transition: `transform ${animationSpeed}ms` }}
+                  onMouseEnter={(e) => (e.currentTarget.style.transform = `scale(${hoverScale})`)}
                   onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
                 />
               </div>

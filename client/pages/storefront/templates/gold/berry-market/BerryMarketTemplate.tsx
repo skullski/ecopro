@@ -61,6 +61,15 @@ export default function BerryMarketTemplate(props: TemplateProps) {
   const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 15, 10, 32);
 
+  // Layout settings
+  const gridColumns = resolveInt(settings.template_grid_columns, 5, 2, 6);
+  const gridGap = resolveInt(settings.template_grid_gap, 16, 8, 48);
+  const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
+  const sectionSpacing = resolveInt(settings.template_section_spacing, 48, 24, 96);
+  const animationSpeed = resolveInt(settings.template_animation_speed, 200, 100, 500);
+  const hoverScale = asString(settings.template_hover_scale) || '1.05';
+  const cardRadius = resolveInt(settings.template_card_border_radius, 16, 0, 32);
+
   return (
     <div
       className="ecopro-storefront"
@@ -197,14 +206,14 @@ export default function BerryMarketTemplate(props: TemplateProps) {
               style={{
                 background: '#fff',
                 border: 0,
-                borderRadius: 16,
+                borderRadius: cardRadius,
                 padding: 20,
                 textAlign: 'center',
                 cursor: 'pointer',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                transition: 'transform 0.2s',
+                transition: `transform ${animationSpeed}ms`,
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = `scale(${hoverScale})`)}
               onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
             >
               <div style={{ fontSize: 28 }}>{cat.split(' ')[0]}</div>
@@ -273,14 +282,14 @@ export default function BerryMarketTemplate(props: TemplateProps) {
       <section
         data-edit-path="layout.grid"
         onClick={() => canManage && onSelect('layout.grid')}
-        style={{ maxWidth: 1300, margin: '0 auto', padding: '24px 24px 60px' }}
+        style={{ maxWidth: 1300, margin: '0 auto', padding: `24px 24px ${sectionSpacing}px` }}
       >
         <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 20 }}>All Products</h2>
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)',
-            gap: 16,
+            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : `repeat(${gridColumns}, 1fr)`,
+            gap: gridGap,
           }}
         >
           {products.slice(0, 10).map((p) => (
@@ -293,10 +302,10 @@ export default function BerryMarketTemplate(props: TemplateProps) {
               }}
               style={{
                 background: '#fff',
-                borderRadius: 16,
+                borderRadius: cardRadius,
                 overflow: 'hidden',
                 cursor: 'pointer',
-                transition: 'box-shadow 0.2s',
+                transition: `box-shadow ${animationSpeed}ms`,
               }}
               onMouseEnter={(e) => (e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.1)')}
               onMouseLeave={(e) => (e.currentTarget.style.boxShadow = 'none')}

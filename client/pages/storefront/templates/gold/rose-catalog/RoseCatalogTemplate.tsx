@@ -61,6 +61,15 @@ export default function RoseCatalogTemplate(props: TemplateProps) {
   const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 15, 10, 32);
 
+  // Layout settings
+  const gridColumns = resolveInt(settings.template_grid_columns, 4, 2, 6);
+  const gridGap = resolveInt(settings.template_grid_gap, 20, 8, 48);
+  const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
+  const sectionSpacing = resolveInt(settings.template_section_spacing, 48, 24, 96);
+  const animationSpeed = resolveInt(settings.template_animation_speed, 200, 100, 500);
+  const hoverScale = asString(settings.template_hover_scale) || '1.02';
+  const cardRadius = resolveInt(settings.template_card_border_radius, 16, 0, 32);
+
   return (
     <div
       className="ecopro-storefront"
@@ -150,18 +159,21 @@ export default function RoseCatalogTemplate(props: TemplateProps) {
 
       {/* Featured row */}
       {products.length >= 4 && (
-        <section style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px 40px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(4, 1fr)', gap: 16 }}>
+        <section style={{ maxWidth: 1200, margin: '0 auto', padding: `0 ${baseSpacing}px ${sectionSpacing}px` }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : `repeat(${gridColumns}, 1fr)`, gap: gridGap }}>
             {products.slice(0, 4).map((p) => (
               <div
                 key={p.id}
                 onClick={() => (p as any).slug && navigate((p as any).slug)}
                 style={{
                   background: '#fff',
-                  borderRadius: 16,
+                  borderRadius: cardRadius,
                   overflow: 'hidden',
                   cursor: 'pointer',
+                  transition: `transform ${animationSpeed}ms`,
                 }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = `scale(${hoverScale})`; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
               >
                 <div style={{ aspectRatio: '4/3' }}>
                   <img src={productImage(p)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -177,7 +189,7 @@ export default function RoseCatalogTemplate(props: TemplateProps) {
         <section
           data-edit-path="layout.categories"
           onClick={() => canManage && onSelect('layout.categories')}
-          style={{ padding: '40px 24px', background: '#fff' }}
+          style={{ padding: `${sectionSpacing}px ${baseSpacing}px`, background: '#fff' }}
         >
           <div style={{ maxWidth: 700, margin: '0 auto', textAlign: 'center' }}>
             <p style={{ color: descColor, fontSize: descSize, lineHeight: 1.9 }}>
@@ -188,7 +200,7 @@ export default function RoseCatalogTemplate(props: TemplateProps) {
       )}
 
       {/* Catalog filters */}
-      <section style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 24px 20px' }}>
+      <section style={{ maxWidth: 1200, margin: '0 auto', padding: `${sectionSpacing}px ${baseSpacing}px ${baseSpacing}px` }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
           <h2 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>Our Catalog</h2>
           <div style={{ display: 'flex', gap: 12 }}>
@@ -211,13 +223,13 @@ export default function RoseCatalogTemplate(props: TemplateProps) {
       <section
         data-edit-path="layout.grid"
         onClick={() => canManage && onSelect('layout.grid')}
-        style={{ maxWidth: 1200, margin: '0 auto', padding: '20px 24px 60px' }}
+        style={{ maxWidth: 1200, margin: '0 auto', padding: `${baseSpacing}px ${baseSpacing}px ${sectionSpacing}px` }}
       >
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
-            gap: 20,
+            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : `repeat(${gridColumns}, 1fr)`,
+            gap: gridGap,
           }}
         >
           {products.slice(0, 12).map((p, idx) => (
@@ -230,17 +242,17 @@ export default function RoseCatalogTemplate(props: TemplateProps) {
               }}
               style={{
                 background: '#fff',
-                borderRadius: 16,
+                borderRadius: cardRadius,
                 overflow: 'hidden',
                 cursor: 'pointer',
-                transition: 'transform 0.2s, box-shadow 0.2s',
+                transition: `transform ${animationSpeed}ms, box-shadow ${animationSpeed}ms`,
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-4px)';
+                e.currentTarget.style.transform = `translateY(-4px) scale(${hoverScale})`;
                 e.currentTarget.style.boxShadow = '0 12px 24px rgba(0,0,0,0.08)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.transform = 'translateY(0) scale(1)';
                 e.currentTarget.style.boxShadow = 'none';
               }}
             >
@@ -289,7 +301,7 @@ export default function RoseCatalogTemplate(props: TemplateProps) {
       </section>
 
       {/* Newsletter */}
-      <section style={{ background: accent, padding: '60px 24px', textAlign: 'center' }}>
+      <section style={{ background: accent, padding: `${sectionSpacing}px ${baseSpacing}px`, textAlign: 'center' }}>
         <div style={{ maxWidth: 500, margin: '0 auto' }}>
           <h3 style={{ color: '#fff', fontSize: 28, fontWeight: 700, margin: 0 }}>Stay Updated</h3>
           <p style={{ color: 'rgba(255,255,255,0.8)', marginTop: 12 }}>Subscribe to our newsletter for new arrivals and exclusive offers</p>
@@ -306,7 +318,7 @@ export default function RoseCatalogTemplate(props: TemplateProps) {
       <footer
         data-edit-path="layout.footer"
         onClick={() => canManage && onSelect('layout.footer')}
-        style={{ background: '#fff', padding: '48px 24px' }}
+        style={{ background: '#fff', padding: `${sectionSpacing}px ${baseSpacing}px` }}
       >
         <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(4, 1fr)', gap: 32 }}>
           <div>

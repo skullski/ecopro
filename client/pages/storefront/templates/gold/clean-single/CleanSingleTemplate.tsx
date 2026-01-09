@@ -61,6 +61,15 @@ export default function CleanSingleTemplate(props: TemplateProps) {
   const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 15, 10, 32);
 
+  // Layout settings
+  const gridColumns = resolveInt(settings.template_grid_columns, 4, 2, 6);
+  const gridGap = resolveInt(settings.template_grid_gap, 20, 8, 48);
+  const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
+  const sectionSpacing = resolveInt(settings.template_section_spacing, 48, 24, 96);
+  const animationSpeed = resolveInt(settings.template_animation_speed, 200, 100, 500);
+  const hoverScale = asString(settings.template_hover_scale) || '1.02';
+  const cardRadius = resolveInt(settings.template_card_border_radius, 16, 0, 32);
+
   const mainProduct = products[0];
 
   return (
@@ -216,14 +225,14 @@ export default function CleanSingleTemplate(props: TemplateProps) {
         <section
           data-edit-path="layout.grid"
           onClick={() => canManage && onSelect('layout.grid')}
-          style={{ maxWidth: 1200, margin: '0 auto', padding: '60px 32px 80px' }}
+          style={{ maxWidth: 1200, margin: '0 auto', padding: `${sectionSpacing}px 32px 80px` }}
         >
           <h2 style={{ fontSize: 24, fontWeight: 700, textAlign: 'center', marginBottom: 32 }}>More Products</h2>
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
-              gap: 20,
+              gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : `repeat(${gridColumns}, 1fr)`,
+              gap: gridGap,
             }}
           >
             {products.slice(1, 9).map((p) => (
@@ -236,13 +245,13 @@ export default function CleanSingleTemplate(props: TemplateProps) {
                 }}
                 style={{
                   background: '#fafafa',
-                  borderRadius: 16,
+                  borderRadius: cardRadius,
                   overflow: 'hidden',
                   cursor: 'pointer',
-                  transition: 'transform 0.2s',
+                  transition: `transform ${animationSpeed}ms`,
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-4px)')}
-                onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+                onMouseEnter={(e) => (e.currentTarget.style.transform = `scale(${hoverScale})`)}
+                onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
               >
                 <div style={{ aspectRatio: '1' }}>
                   <img src={productImage(p)} alt={productTitle(p)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />

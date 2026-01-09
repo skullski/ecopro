@@ -50,6 +50,15 @@ export default function ProVertexTemplate(props: TemplateProps) {
   const muted = asString(settings.template_muted_color) || '#71717a';
   const accent = asString(settings.template_accent_color) || '#a855f7';
 
+  // Layout settings
+  const gridColumns = resolveInt(settings.template_grid_columns, 4, 2, 6);
+  const gridGap = resolveInt(settings.template_grid_gap, 1, 0, 48);
+  const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
+  const sectionSpacing = resolveInt(settings.template_section_spacing, 48, 24, 96);
+  const animationSpeed = resolveInt(settings.template_animation_speed, 200, 100, 500);
+  const hoverScale = asString(settings.template_hover_scale) || '1.02';
+  const cardRadius = resolveInt(settings.template_card_border_radius, 0, 0, 32);
+
   const storeName = asString(settings.store_name) || 'VERTEX';
   const heroTitle = asString(settings.template_hero_heading) || 'Precision Design';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Sharp aesthetics for modern taste';
@@ -236,7 +245,7 @@ export default function ProVertexTemplate(props: TemplateProps) {
           <section
             data-edit-path="layout.categories"
             onClick={() => canManage && onSelect('layout.categories')}
-            style={{ padding: '40px 24px', borderTop: '1px solid #27272a', borderBottom: '1px solid #27272a' }}
+            style={{ padding: `${sectionSpacing * 0.8}px ${baseSpacing * 1.5}px`, borderTop: '1px solid #27272a', borderBottom: '1px solid #27272a' }}
           >
             <p style={{ maxWidth: 600, color: descColor, fontSize: descSize, lineHeight: 1.7 }}>
               {descText || (canManage ? 'Add description...' : '')}
@@ -248,9 +257,9 @@ export default function ProVertexTemplate(props: TemplateProps) {
         <section
           data-edit-path="layout.grid"
           onClick={() => canManage && onSelect('layout.grid')}
-          style={{ padding: isMobile ? '40px 20px' : '60px 40px' }}
+          style={{ padding: isMobile ? `${sectionSpacing * 0.8}px ${baseSpacing}px` : `${sectionSpacing}px ${baseSpacing * 2.5}px` }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: baseSpacing * 2 }}>
             <div>
               <h2 style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>All Products</h2>
               <p style={{ color: muted, fontSize: 13, marginTop: 4 }}>{products.length} items</p>
@@ -260,9 +269,9 @@ export default function ProVertexTemplate(props: TemplateProps) {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
-              gap: 1,
-              background: '#27272a',
+              gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : `repeat(${gridColumns}, 1fr)`,
+              gap: gridGap,
+              background: gridGap < 2 ? '#27272a' : 'transparent',
             }}
           >
             {products.map((p) => (
@@ -273,12 +282,20 @@ export default function ProVertexTemplate(props: TemplateProps) {
                   if (canManage) { e.stopPropagation(); onSelect(`layout.grid.items.${p.id}`); return; }
                   if ((p as any).slug) navigate((p as any).slug);
                 }}
-                style={{ background: bg, cursor: 'pointer' }}
+                style={{
+                  background: bg,
+                  cursor: 'pointer',
+                  borderRadius: cardRadius,
+                  overflow: 'hidden',
+                  transition: `transform ${animationSpeed}ms ease`,
+                }}
+                onMouseEnter={(e) => { if (!isMobile) e.currentTarget.style.transform = `scale(${hoverScale})`; }}
+                onMouseLeave={(e) => { if (!isMobile) e.currentTarget.style.transform = 'scale(1)'; }}
               >
                 <div style={{ aspectRatio: '1', background: '#18181b', position: 'relative' }}>
                   <img src={productImage(p)} alt={productTitle(p)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
-                <div style={{ padding: 12 }}>
+                <div style={{ padding: baseSpacing * 0.75 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {productTitle(p)}
                   </div>
@@ -295,7 +312,7 @@ export default function ProVertexTemplate(props: TemplateProps) {
         <footer
           data-edit-path="layout.footer"
           onClick={() => canManage && onSelect('layout.footer')}
-          style={{ borderTop: '1px solid #27272a', padding: '40px 24px' }}
+          style={{ borderTop: '1px solid #27272a', padding: `${sectionSpacing * 0.8}px ${baseSpacing * 1.5}px` }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
             <span style={{ color: muted, fontSize: 13 }}>© {new Date().getFullYear()} {storeName}</span>

@@ -61,6 +61,15 @@ export default function NeonStoreTemplate(props: TemplateProps) {
   const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 15, 10, 32);
 
+  // Layout settings
+  const gridColumns = resolveInt(settings.template_grid_columns, 4, 2, 6);
+  const gridGap = resolveInt(settings.template_grid_gap, 24, 8, 48);
+  const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
+  const sectionSpacing = resolveInt(settings.template_section_spacing, 48, 24, 96);
+  const animationSpeed = resolveInt(settings.template_animation_speed, 200, 100, 500);
+  const hoverScale = asString(settings.template_hover_scale) || '1.02';
+  const cardRadius = resolveInt(settings.template_card_border_radius, 12, 0, 32);
+
   return (
     <div
       className="ecopro-storefront"
@@ -193,7 +202,7 @@ export default function NeonStoreTemplate(props: TemplateProps) {
       <section
         data-edit-path="layout.grid"
         onClick={() => canManage && onSelect('layout.grid')}
-        style={{ maxWidth: 1200, margin: '0 auto', padding: '48px 24px 80px' }}
+        style={{ maxWidth: 1200, margin: '0 auto', padding: `${sectionSpacing}px ${baseSpacing}px 80px` }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
           <h2 style={{ fontSize: 24, fontWeight: 900, margin: 0, letterSpacing: '0.05em' }}>FEATURED</h2>
@@ -205,8 +214,8 @@ export default function NeonStoreTemplate(props: TemplateProps) {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
-            gap: 16,
+            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : `repeat(${gridColumns}, 1fr)`,
+            gap: gridGap,
           }}
         >
           {products.slice(0, 8).map((p) => (
@@ -220,18 +229,20 @@ export default function NeonStoreTemplate(props: TemplateProps) {
               style={{
                 background: '#141414',
                 border: `1px solid ${accent}20`,
-                borderRadius: 8,
+                borderRadius: cardRadius,
                 overflow: 'hidden',
                 cursor: 'pointer',
-                transition: 'border-color 0.2s, box-shadow 0.2s',
+                transition: `border-color ${animationSpeed}ms, box-shadow ${animationSpeed}ms, transform ${animationSpeed}ms`,
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.borderColor = accent;
                 e.currentTarget.style.boxShadow = `0 0 20px ${accent}30`;
+                e.currentTarget.style.transform = `scale(${hoverScale})`;
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = `${accent}20`;
                 e.currentTarget.style.boxShadow = 'none';
+                e.currentTarget.style.transform = 'scale(1)';
               }}
             >
               <div style={{ aspectRatio: '1', background: '#1a1a1a' }}>
@@ -275,7 +286,7 @@ export default function NeonStoreTemplate(props: TemplateProps) {
       <footer
         data-edit-path="layout.footer"
         onClick={() => canManage && onSelect('layout.footer')}
-        style={{ padding: '48px 24px', borderTop: `1px solid ${accent}20` }}
+        style={{ padding: `${sectionSpacing}px ${baseSpacing}px`, borderTop: `1px solid ${accent}20` }}
       >
         <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 24 }}>
           <span style={{ fontSize: 24, fontWeight: 900, color: accent }}>{storeName}</span>

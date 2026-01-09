@@ -61,6 +61,15 @@ export default function MagentaMallTemplate(props: TemplateProps) {
   const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 14, 10, 32);
 
+  // Layout settings
+  const gridColumns = resolveInt(settings.template_grid_columns, 4, 2, 6);
+  const gridGap = resolveInt(settings.template_grid_gap, 12, 8, 48);
+  const baseSpacing = resolveInt(settings.template_spacing, 10, 8, 32);
+  const sectionSpacing = resolveInt(settings.template_section_spacing, 48, 24, 96);
+  const animationSpeed = resolveInt(settings.template_animation_speed, 200, 100, 500);
+  const hoverScale = asString(settings.template_hover_scale) || '1.02';
+  const cardRadius = resolveInt(settings.template_card_border_radius, 8, 0, 32);
+
   const categories = ['All', 'Electronics', 'Fashion', 'Home', 'Beauty', 'Sports', 'Toys'];
 
   return (
@@ -248,8 +257,8 @@ export default function MagentaMallTemplate(props: TemplateProps) {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
-                gap: 12,
+                gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : `repeat(${gridColumns}, 1fr)`,
+                gap: gridGap,
               }}
             >
               {products.slice(0, 12).map((p, idx) => (
@@ -262,13 +271,19 @@ export default function MagentaMallTemplate(props: TemplateProps) {
                   }}
                   style={{
                     background: '#fff',
-                    borderRadius: 8,
+                    borderRadius: cardRadius,
                     overflow: 'hidden',
                     cursor: 'pointer',
-                    transition: 'box-shadow 0.2s',
+                    transition: `box-shadow ${animationSpeed}ms, transform ${animationSpeed}ms`,
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.boxShadow = 'none')}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+                    e.currentTarget.style.transform = `scale(${hoverScale})`;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = 'none';
+                    e.currentTarget.style.transform = 'scale(1)';
+                  }}
                 >
                   <div style={{ aspectRatio: '1', position: 'relative', background: '#f9fafb' }}>
                     <img src={productImage(p)} alt={productTitle(p)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -278,7 +293,7 @@ export default function MagentaMallTemplate(props: TemplateProps) {
                       </span>
                     )}
                   </div>
-                  <div style={{ padding: 10 }}>
+                  <div style={{ padding: baseSpacing }}>
                     <h3 style={{ fontSize: 12, fontWeight: 500, margin: 0, height: 32, overflow: 'hidden', lineHeight: 1.3 }}>
                       {productTitle(p)}
                     </h3>
@@ -322,7 +337,7 @@ export default function MagentaMallTemplate(props: TemplateProps) {
       <footer
         data-edit-path="layout.footer"
         onClick={() => canManage && onSelect('layout.footer')}
-        style={{ background: '#1f2937', color: '#fff', padding: '48px 24px', marginTop: 40 }}
+        style={{ background: '#1f2937', color: '#fff', padding: `${sectionSpacing}px 24px`, marginTop: 40 }}
       >
         <div style={{ maxWidth: 1400, margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(4, 1fr)', gap: 32 }}>
           <div>

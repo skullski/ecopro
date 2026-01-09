@@ -3,6 +3,16 @@ import type { TemplateProps } from '../../types';
 
 type Breakpoint = 'mobile' | 'tablet' | 'desktop';
 
+function asString(v: unknown): string {
+  return typeof v === 'string' ? v : '';
+}
+
+function resolveInt(value: unknown, fallback: number, min: number, max: number): number {
+  const parsed = typeof value === 'number' ? value : parseInt(String(value || ''), 10);
+  const safe = Number.isFinite(parsed) ? parsed : fallback;
+  return Math.max(min, Math.min(max, safe));
+}
+
 export default function PetsTemplate(props: TemplateProps) {
   const settings = props.settings || ({} as any);
   const canManage = props.canManage !== false;
@@ -26,16 +36,25 @@ export default function PetsTemplate(props: TemplateProps) {
     onSelect(path);
   };
 
-  const bg = settings.template_bg_color || '#fafaf9';
-  const text = settings.template_text_color || '#1c1917';
-  const accent = settings.template_accent_color || '#f97316';
-  const muted = settings.template_muted_color || '#78716c';
-  const cardBg = settings.template_card_bg || '#ffffff';
+  const bg = asString(settings.template_bg_color) || '#fafaf9';
+  const text = asString(settings.template_text_color) || '#1c1917';
+  const accent = asString(settings.template_accent_color) || '#f97316';
+  const muted = asString(settings.template_muted_color) || '#78716c';
+  const cardBg = asString(settings.template_card_bg) || '#ffffff';
 
-  const storeName = settings.store_name || 'HAPPY PAWS';
-  const heroTitle = settings.template_hero_heading || 'Everything for Your Furry Friends 🐾';
-  const heroSubtitle = settings.template_hero_subtitle || 'Premium pet supplies with love';
-  const ctaText = settings.template_button_text || 'Shop Now';
+  // Layout settings
+  const gridColumns = resolveInt(settings.template_grid_columns, 4, 2, 6);
+  const gridGap = resolveInt(settings.template_grid_gap, 24, 8, 48);
+  const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
+  const sectionSpacing = resolveInt(settings.template_section_spacing, 48, 24, 96);
+  const animationSpeed = resolveInt(settings.template_animation_speed, 200, 100, 500);
+  const hoverScale = asString(settings.template_hover_scale) || '1.02';
+  const cardRadius = resolveInt(settings.template_card_border_radius, 16, 0, 32);
+
+  const storeName = asString(settings.store_name) || 'HAPPY PAWS';
+  const heroTitle = asString(settings.template_hero_heading) || 'Everything for Your Furry Friends 🐾';
+  const heroSubtitle = asString(settings.template_hero_subtitle) || 'Premium pet supplies with love';
+  const ctaText = asString(settings.template_button_text) || 'Shop Now';
 
   const products = useMemo(() => {
     const list = props.filtered?.length ? props.filtered : props.products || [];
@@ -44,7 +63,7 @@ export default function PetsTemplate(props: TemplateProps) {
 
   const categories = useMemo(() => [...new Set(props.products?.map(p => p.category).filter(Boolean))], [props.products]);
   const isMobile = breakpoint === 'mobile';
-  const cols = isMobile ? 2 : breakpoint === 'tablet' ? 3 : 4;
+  const cols = isMobile ? 2 : breakpoint === 'tablet' ? Math.min(3, gridColumns) : gridColumns;
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: bg, color: text, fontFamily: 'system-ui, sans-serif' }} data-edit-path="__root">
@@ -67,10 +86,12 @@ export default function PetsTemplate(props: TemplateProps) {
         </div>
       )}
 
-      <section style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }} data-edit-path="layout.products">
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '20px' }}>
+      <section style={{ padding: `${sectionSpacing}px ${baseSpacing}px`, maxWidth: '1400px', margin: '0 auto' }} data-edit-path="layout.products">
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: gridGap }}>
           {products.map(product => (
-            <div key={product.id} style={{ backgroundColor: cardBg, borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.06)', cursor: canManage ? 'default' : 'pointer' }} data-edit-path={`layout.products.${product.id}`}
+            <div key={product.id} style={{ backgroundColor: cardBg, borderRadius: cardRadius, overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.06)', cursor: canManage ? 'default' : 'pointer', transition: `transform ${animationSpeed}ms, box-shadow ${animationSpeed}ms` }} data-edit-path={`layout.products.${product.id}`}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = `scale(${hoverScale})`; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.1)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.06)'; }}
               onClick={(e) => { e.stopPropagation(); if (!canManage && product.slug) props.navigate(product.slug); else if (canManage) onSelect(`layout.products.${product.id}`); }}>
               <div style={{ aspectRatio: '1', backgroundColor: '#f5f5f4', overflow: 'hidden' }}>
                 {product.images?.[0] && <img src={product.images[0]} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
@@ -84,7 +105,7 @@ export default function PetsTemplate(props: TemplateProps) {
         </div>
       </section>
 
-      <footer style={{ padding: '48px 24px', backgroundColor: accent, color: '#fff', marginTop: '48px', textAlign: 'center' }} data-edit-path="layout.footer" onClick={(e) => clickGuard(e, 'layout.footer')}>
+      <footer style={{ padding: `${sectionSpacing}px ${baseSpacing}px`, backgroundColor: accent, color: '#fff', marginTop: `${sectionSpacing}px`, textAlign: 'center' }} data-edit-path="layout.footer" onClick={(e) => clickGuard(e, 'layout.footer')}>
         <p>© {new Date().getFullYear()} {storeName} 🐕 🐈</p>
       </footer>
     </div>
