@@ -154,7 +154,7 @@ export const listClientImages: RequestHandler = async (req, res) => {
     const clientId = req.user.id;
     const pool = await ensureConnection();
     
-    // Get all image references from the database
+    // Get all image references from the database for THIS CLIENT ONLY
     // 1. Product images
     const productImagesResult = await pool.query(
       `SELECT id, title, images, slug FROM client_store_products WHERE client_id = $1`,
@@ -168,14 +168,23 @@ export const listClientImages: RequestHandler = async (req, res) => {
       [clientId]
     );
     
+    // 3. Stock images
+    const stockImagesResult = await pool.query(
+      `SELECT id, name, images FROM client_stock_products WHERE client_id = $1`,
+      [clientId]
+    );
+    
     // Build a map of image URL -> usage info
     const imageUsage: Record<string, { type: string; name: string; id?: number }[]> = {};
+    // Track all image URLs that belong to this client
+    const clientImageUrls = new Set<string>();
     
     // Process product images
     for (const product of productImagesResult.rows) {
       const images = product.images || [];
       for (const imgUrl of images) {
         if (!imgUrl) continue;
+        clientImageUrls.add(imgUrl);
         if (!imageUsage[imgUrl]) imageUsage[imgUrl] = [];
         imageUsage[imgUrl].push({
           type: 'product',
@@ -185,31 +194,51 @@ export const listClientImages: RequestHandler = async (req, res) => {
       }
     }
     
+    // Process stock images
+    for (const stock of stockImagesResult.rows) {
+      const images = stock.images || [];
+      for (const imgUrl of images) {
+        if (!imgUrl) continue;
+        clientImageUrls.add(imgUrl);
+        if (!imageUsage[imgUrl]) imageUsage[imgUrl] = [];
+        imageUsage[imgUrl].push({
+          type: 'stock',
+          name: stock.name || `Stock #${stock.id}`,
+          id: stock.id
+        });
+      }
+    }
+    
     // Process store settings images
     if (settingsResult.rows.length > 0) {
       const settings = settingsResult.rows[0];
       
       if (settings.store_logo) {
+        clientImageUrls.add(settings.store_logo);
         if (!imageUsage[settings.store_logo]) imageUsage[settings.store_logo] = [];
         imageUsage[settings.store_logo].push({ type: 'store', name: 'Store Logo' });
       }
       
       if (settings.banner_url) {
+        clientImageUrls.add(settings.banner_url);
         if (!imageUsage[settings.banner_url]) imageUsage[settings.banner_url] = [];
         imageUsage[settings.banner_url].push({ type: 'store', name: 'Banner' });
       }
       
       if (settings.hero_main_url) {
+        clientImageUrls.add(settings.hero_main_url);
         if (!imageUsage[settings.hero_main_url]) imageUsage[settings.hero_main_url] = [];
         imageUsage[settings.hero_main_url].push({ type: 'store', name: 'Hero Main' });
       }
       
       if (settings.hero_tile1_url) {
+        clientImageUrls.add(settings.hero_tile1_url);
         if (!imageUsage[settings.hero_tile1_url]) imageUsage[settings.hero_tile1_url] = [];
         imageUsage[settings.hero_tile1_url].push({ type: 'store', name: 'Hero Tile 1' });
       }
       
       if (settings.hero_tile2_url) {
+        clientImageUrls.add(settings.hero_tile2_url);
         if (!imageUsage[settings.hero_tile2_url]) imageUsage[settings.hero_tile2_url] = [];
         imageUsage[settings.hero_tile2_url].push({ type: 'store', name: 'Hero Tile 2' });
       }
@@ -219,6 +248,7 @@ export const listClientImages: RequestHandler = async (req, res) => {
       for (let i = 0; i < storeImages.length; i++) {
         const imgUrl = storeImages[i];
         if (!imgUrl) continue;
+        clientImageUrls.add(imgUrl);
         if (!imageUsage[imgUrl]) imageUsage[imgUrl] = [];
         imageUsage[imgUrl].push({ type: 'store', name: `Store Gallery Image ${i + 1}` });
       }
@@ -233,8 +263,14 @@ export const listClientImages: RequestHandler = async (req, res) => {
       /\.(jpg|jpeg|png|gif|webp|mp4)$/i.test(f)
     );
     
-    // Build response with all images and their usage
-    const images = await Promise.all(imageFiles.map(async (filename) => {
+    // Only include files that belong to this client (referenced in their data)
+    const clientImageFiles = imageFiles.filter(filename => {
+      const url = `/uploads/${filename}`;
+      return clientImageUrls.has(url);
+    });
+    
+    // Build response with only THIS CLIENT's images
+    const images = await Promise.all(clientImageFiles.map(async (filename) => {
       const filePath = path.join(UPLOAD_DIR, filename);
       const stats = await fs.stat(filePath);
       const url = `/uploads/${filename}`;
