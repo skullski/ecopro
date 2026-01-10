@@ -75,6 +75,16 @@ export default function ProductCheckout() {
   const [telegramConnected, setTelegramConnected] = useState(false);
   const [checkingConnection, setCheckingConnection] = useState(false);
   const [waitingForTelegramConnection, setWaitingForTelegramConnection] = useState(false);
+
+  // Messenger pre-connect states
+  const [messengerInfo, setMessengerInfo] = useState<{
+    enabled: boolean;
+    pageId?: string;
+    url?: string;
+    storeName?: string;
+  } | null>(null);
+  const [messengerConnected, setMessengerConnected] = useState(false);
+  const [waitingForMessengerConnection, setWaitingForMessengerConnection] = useState(false);
   
   const [formData, setFormData] = useState({
     fullName: '',
@@ -212,6 +222,25 @@ export default function ProductCheckout() {
     fetchTelegramInfo();
   }, [storeSlug, product?.store_slug]);
 
+  // Fetch Messenger info for this store
+  useEffect(() => {
+    const fetchMessengerInfo = async () => {
+      const slug = storeSlug || product?.store_slug || localStorage.getItem('currentStoreSlug');
+      if (!slug) return;
+      
+      try {
+        const res = await fetch(`/api/messenger/page-link/${slug}`);
+        if (res.ok) {
+          const data = await res.json();
+          setMessengerInfo(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch Messenger info:', error);
+      }
+    };
+    fetchMessengerInfo();
+  }, [storeSlug, product?.store_slug]);
+
   // Check Telegram connection when phone changes
   useEffect(() => {
     const checkConnection = async () => {
@@ -237,6 +266,31 @@ export default function ProductCheckout() {
     };
     
     // Debounce the check
+    const timeout = setTimeout(checkConnection, 500);
+    return () => clearTimeout(timeout);
+  }, [storeSlug, product?.store_slug, formData.phone]);
+
+  // Check Messenger connection when phone changes
+  useEffect(() => {
+    const checkConnection = async () => {
+      const slug = storeSlug || product?.store_slug || localStorage.getItem('currentStoreSlug');
+      if (!slug || !formData.phone || formData.phone.replace(/\D/g, '').length < 9) {
+        setMessengerConnected(false);
+        return;
+      }
+      
+      try {
+        const normalizedPhone = formData.phone.replace(/\D/g, '');
+        const res = await fetch(`/api/messenger/check-connection/${slug}?phone=${normalizedPhone}`);
+        if (res.ok) {
+          const data = await res.json();
+          setMessengerConnected(data.connected);
+        }
+      } catch (error) {
+        console.error('Failed to check Messenger connection:', error);
+      }
+    };
+    
     const timeout = setTimeout(checkConnection, 500);
     return () => clearTimeout(timeout);
   }, [storeSlug, product?.store_slug, formData.phone]);
@@ -371,6 +425,57 @@ export default function ProductCheckout() {
     // Start polling for connection
     setWaitingForTelegramConnection(true);
     window.open(url, '_blank');
+  };
+
+  // Open Messenger with proper link
+  const handleConnectMessenger = async () => {
+    if (!messengerInfo?.enabled || !messengerInfo?.pageId) return;
+    
+    let url = messengerInfo.url || `https://m.me/${messengerInfo.pageId}`;
+    const slug = storeSlug || product?.store_slug || localStorage.getItem('currentStoreSlug');
+    
+    if (slug && formData.phone && formData.phone.replace(/\D/g, '').length >= 9) {
+      try {
+        const normalizedPhone = formData.phone.replace(/\D/g, '');
+        const res = await fetch(`/api/messenger/page-link/${slug}?phone=${normalizedPhone}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.url) url = data.url;
+        }
+      } catch (error) {
+        console.error('Failed to get Messenger link:', error);
+      }
+    }
+    
+    // Start polling for connection
+    setWaitingForMessengerConnection(true);
+    window.open(url, '_blank');
+    
+    // Poll for connection
+    const slug2 = storeSlug || product?.store_slug || localStorage.getItem('currentStoreSlug');
+    const normalizedPhone = (formData.phone || '').replace(/\D/g, '');
+    if (slug2 && normalizedPhone.length >= 9) {
+      let tries = 0;
+      const poll = setInterval(async () => {
+        tries++;
+        if (tries > 60) {
+          clearInterval(poll);
+          setWaitingForMessengerConnection(false);
+          return;
+        }
+        try {
+          const res = await fetch(`/api/messenger/check-connection/${slug2}?phone=${normalizedPhone}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.connected) {
+              setMessengerConnected(true);
+              setWaitingForMessengerConnection(false);
+              clearInterval(poll);
+            }
+          }
+        } catch {}
+      }, 2000);
+    }
   };
 
   // Fetch delivery price when wilaya changes
@@ -827,6 +932,26 @@ export default function ProductCheckout() {
                 </div>
                 {!telegramConnected && (
                   <button onClick={handleConnectTelegram} disabled={!formData.phone || formData.phone.replace(/\D/g, '').length < 9} className="px-3 py-1 rounded bg-blue-500 text-white text-xs font-bold disabled:opacity-50">Connect</button>
+                )}
+              </div>
+            )}
+
+            {/* Messenger */}
+            {messengerInfo?.enabled && (
+              <div className="flex items-center justify-between p-2 rounded-lg bg-blue-600/10 border border-blue-600/20">
+                <div className="flex items-center gap-2">
+                  <MessageCircle className="w-4 h-4 text-blue-500" />
+                  <span className="text-white text-sm">Track via Messenger</span>
+                  {messengerConnected && <span className="text-green-400 text-xs">✓</span>}
+                </div>
+                {!messengerConnected && (
+                  <button 
+                    onClick={handleConnectMessenger} 
+                    disabled={!formData.phone || formData.phone.replace(/\D/g, '').length < 9 || waitingForMessengerConnection} 
+                    className="px-3 py-1 rounded bg-blue-600 text-white text-xs font-bold disabled:opacity-50"
+                  >
+                    {waitingForMessengerConnection ? 'Waiting...' : 'Connect'}
+                  </button>
                 )}
               </div>
             )}
