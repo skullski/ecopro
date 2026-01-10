@@ -1246,9 +1246,9 @@ export default function BabyosTemplate(props: TemplateProps) {
       
       <Header storeName={storeName} logoUrl={settings?.store_logo} theme={theme} onSelect={onSelect} />
       <Hero node={composedHero} responsive={responsive} theme={theme} settings={settings} onSelect={onSelect} resolveAsset={resolveAsset} />
-      <CategoryPills settings={settings} theme={theme} canManage={typeof (props as any).onSelect === 'function'} onSelect={onSelect} />
-      <FeaturedSection node={featuredNode} responsive={responsive} theme={theme} settings={settings} onSelect={onSelect} resolveAsset={resolveAsset} formatPrice={props.formatPrice} canManage={typeof (props as any).onSelect === 'function'} navigate={props.navigate} />
-      <ProductGrid node={featuredNode} responsive={responsive} theme={theme} settings={settings} onSelect={onSelect} resolveAsset={resolveAsset} formatPrice={props.formatPrice} canManage={typeof (props as any).onSelect === 'function'} navigate={props.navigate} />
+      <CategoryPills settings={settings} theme={theme} canManage={props.canManage !== false} onSelect={onSelect} />
+      <FeaturedSection node={featuredNode} responsive={responsive} theme={theme} settings={settings} onSelect={onSelect} resolveAsset={resolveAsset} formatPrice={props.formatPrice} canManage={props.canManage !== false} navigate={props.navigate} />
+      <ProductGrid node={featuredNode} responsive={responsive} theme={theme} settings={settings} onSelect={onSelect} resolveAsset={resolveAsset} formatPrice={props.formatPrice} canManage={props.canManage !== false} navigate={props.navigate} />
       <Footer node={footerNode} theme={theme} settings={settings} onSelect={onSelect} />
     </div>
   );
