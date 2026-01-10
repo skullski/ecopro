@@ -1,0 +1,20 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1024" height="1024" rx="200" fill="#10B981"/>
+  
+  <!-- Leaf/Eco shape -->
+  <path d="M512 180C512 180 320 320 320 512C320 704 432 844 512 844C592 844 704 704 704 512C704 320 512 180 512 180Z" fill="white" fill-opacity="0.9"/>
+  
+  <!-- Inner leaf vein -->
+  <path d="M512 280L512 720" stroke="#10B981" stroke-width="24" stroke-linecap="round"/>
+  <path d="M512 400L420 340" stroke="#10B981" stroke-width="16" stroke-linecap="round"/>
+  <path d="M512 480L600 400" stroke="#10B981" stroke-width="16" stroke-linecap="round"/>
+  <path d="M512 560L420 500" stroke="#10B981" stroke-width="16" stroke-linecap="round"/>
+  <path d="M512 640L600 580" stroke="#10B981" stroke-width="16" stroke-linecap="round"/>
+  
+  <!-- Shopping cart overlay -->
+  <circle cx="680" cy="720" r="120" fill="#059669"/>
+  <path d="M620 680L640 680L660 740L740 740L750 700L665 700" stroke="white" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="670" cy="760" r="12" fill="white"/>
+  <circle cx="725" cy="760" r="12" fill="white"/>
+</svg>

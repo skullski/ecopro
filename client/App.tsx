@@ -3,6 +3,7 @@ import Pricing from "./pages/Pricing";
 import SubscriptionTiers from "./pages/SubscriptionTiers";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
+import Privacy from "./pages/Privacy";
 import { Toaster } from "@/components/ui/toaster";
 
 import "./global.css";
@@ -436,6 +437,7 @@ const App = () => (
                   <Route path="/pricing/tiers" element={<SubscriptionTiers />} />
                   <Route path="/about" element={<About />} />
                   <Route path="/contact" element={<Contact />} />
+                  <Route path="/privacy" element={<Privacy />} />
                   <Route path="/codes-store" element={<Navigate to="/pricing" replace />} />
                   <Route path="/codes" element={<Navigate to="/pricing" replace />} />
                   <Route path="/chat" element={<RequirePaidClient><ChatPage /></RequirePaidClient>} />

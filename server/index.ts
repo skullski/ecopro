@@ -405,6 +405,26 @@ export function createServer(options?: { skipDbInit?: boolean }) {
     res.json({ message: ping });
   });
 
+  // Privacy Policy page for Facebook App verification
+  app.get("/privacy-policy", (_req, res) => {
+    res.setHeader('Content-Type', 'text/html');
+    res.send(`<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Privacy Policy</title></head>
+<body style="font-family:sans-serif;max-width:800px;margin:40px auto;padding:20px;">
+<h1>Privacy Policy</h1>
+<p>Last updated: January 2026</p>
+<h2>1. Information We Collect</h2>
+<p>We collect information you provide when placing orders including name, phone number, and delivery address. We also collect messaging identifiers when you opt-in to notifications.</p>
+<h2>2. How We Use Information</h2>
+<p>We use your information to process orders, send notifications via your preferred messaging platform, and improve our services.</p>
+<h2>3. Information Sharing</h2>
+<p>We do not sell personal information. We share data only with delivery partners and messaging platforms for order fulfillment.</p>
+<h2>4. Contact</h2>
+<p>Contact the store directly for privacy inquiries.</p>
+</body></html>`);
+  });
+
   // Email config check (for debugging)
   app.get("/api/email-status", (_req, res) => {
     const user = process.env.GMAIL_USER;
