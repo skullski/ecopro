@@ -283,6 +283,8 @@ export function securityMiddleware(options: {
     const isHealth = path === '/api/health' || path === '/api/ping' || path === '/api/db-check' || path === '/api/db/ping';
     // Public provider webhooks must remain reachable from outside DZ.
     const isWebhook = path === '/api/telegram/webhook' || path === '/api/messenger/webhook';
+    // Privacy policy page must be accessible for Facebook App verification
+    const isPrivacyPolicy = path === '/privacy-policy' || path === '/privacy.html';
 
     const isUnauth = !(req as any).user;
 
@@ -313,7 +315,7 @@ export function securityMiddleware(options: {
     }
 
     // DZ-only hard block for unauth traffic
-    if (dzOnlyUnauth && isUnauth && !isHealth && !isWebhook) {
+    if (dzOnlyUnauth && isUnauth && !isHealth && !isWebhook && !isPrivacyPolicy) {
       const cc = geo.country_code;
       const isDz = cc === 'DZ';
       const unknown = !cc;
