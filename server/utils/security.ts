@@ -282,7 +282,7 @@ export function securityMiddleware(options: {
     const path = req.path || req.url || '';
     const isHealth = path === '/api/health' || path === '/api/ping' || path === '/api/db-check' || path === '/api/db/ping';
     // Public provider webhooks must remain reachable from outside DZ.
-    const isWebhook = path === '/api/telegram/webhook';
+    const isWebhook = path === '/api/telegram/webhook' || path === '/api/messenger/webhook';
 
     const isUnauth = !(req as any).user;
 
