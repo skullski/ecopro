@@ -840,7 +840,17 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
       'fitness', 'gifts', 'candles', 'skincare', 'supplements', 'phone-accessories',
       'tools', 'office', 'stationery', 'neon', 'pastel', 'monochrome', 'gradient',
       'florist', 'eyewear', 'lingerie', 'swimwear', 'streetwear', 'wine', 'chocolate', 'tea',
-      'pro'
+      'pro',
+      // Pro variants
+      'pro-aurora', 'pro-vertex', 'pro-atelier', 'pro-orbit', 'pro-zen',
+      'pro-studio', 'pro-mosaic', 'pro-grid', 'pro-catalog',
+      // Screenshot-inspired templates
+      'sage-boutique', 'mint-elegance', 'forest-store',
+      'sunset-shop', 'coral-market', 'amber-store',
+      'magenta-mall', 'berry-market', 'rose-catalog',
+      'lime-direct', 'emerald-shop', 'neon-store',
+      'clean-single', 'pure-product', 'snow-shop',
+      'gallery-pro', 'showcase-plus', 'exhibit-store'
     ]);
     const normalizeTemplateIdForAvailability = (id: any): string => {
       const normalized = String(id || '')
@@ -970,6 +980,43 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
     }
 
     res.status(500).json({ error: 'Failed to update store settings' });
+  }
+};
+
+// Fast template-only update (avoids timeout on slow DB)
+export const updateStoreTemplate: RequestHandler = async (req, res) => {
+  try {
+    const user = (req as any).user;
+    if (user && (user.role === 'admin' || user.user_type === 'admin')) {
+      return res.status(403).json({ error: 'Admins do not have a client store' });
+    }
+    const clientId = (req as any).user.id;
+    const { template } = req.body;
+    
+    if (!template || typeof template !== 'string') {
+      return res.status(400).json({ error: 'Template ID required' });
+    }
+    
+    const normalizedTemplate = String(template).trim().toLowerCase()
+      .replace(/^gold-/, '').replace(/-gold$/, '');
+    
+    logStoreSettings('updateStoreTemplate:start', { clientId, template: normalizedTemplate });
+    
+    const result = await pool.query(
+      'UPDATE client_store_settings SET template = $1, updated_at = CURRENT_TIMESTAMP WHERE client_id = $2 RETURNING template',
+      [normalizedTemplate, clientId]
+    );
+    
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Store settings not found' });
+    }
+    
+    logStoreSettings('updateStoreTemplate:success', { clientId, template: result.rows[0].template });
+    res.json({ success: true, template: result.rows[0].template });
+  } catch (error) {
+    console.error('Update store template error:', error);
+    logStoreSettings('updateStoreTemplate:error', { error: (error as any)?.message });
+    res.status(500).json({ error: 'Failed to update template' });
   }
 };
 

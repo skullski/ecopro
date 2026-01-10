@@ -120,6 +120,54 @@ export async function sendViberMessage(
 }
 
 /**
+ * Send Facebook Messenger message via Graph API
+ * Used by processPendingMessages for scheduled messenger notifications
+ */
+export async function sendMessengerMessageDirect(
+  pageAccessToken: string,
+  recipientPsid: string,
+  message: string
+): Promise<SendResult> {
+  try {
+    if (!pageAccessToken) return { success: false, error: 'Page access token missing' };
+    if (!recipientPsid) return { success: false, error: 'Recipient PSID missing' };
+
+    const payload = {
+      recipient: { id: recipientPsid },
+      message: { text: message },
+      messaging_type: 'MESSAGE_TAG',
+      tag: 'CONFIRMED_EVENT_UPDATE', // Allows sending outside 24h window for order updates
+    };
+
+    const response = await fetch(
+      `https://graph.facebook.com/v18.0/me/messages?access_token=${pageAccessToken}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    const data: any = await response.json().catch(() => null);
+    
+    if (!response.ok || data?.error) {
+      console.error('[Messenger] Send failed:', data?.error);
+      return { 
+        success: false, 
+        error: data?.error?.message || `Send failed (${response.status})` 
+      };
+    }
+
+    console.log(`[Messenger] Message sent to ${recipientPsid}: ${data?.message_id}`);
+    return { success: true, messageId: data?.message_id };
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error(`[Messenger] Failed to send message: ${errorMsg}`);
+    return { success: false, error: errorMsg };
+  }
+}
+
+/**
  * Generate confirmation link token
  */
 export function generateConfirmationToken(): string {
@@ -397,6 +445,41 @@ export async function processPendingMessages(): Promise<void> {
           const receiverId = idRes.rows[0]?.viber_user_id;
           if (token && receiverId) {
             sendResult = await sendViberMessage(token, receiverId, message.message_content, senderName);
+          }
+        } else if (message.message_type === 'messenger') {
+          // Facebook Messenger handling
+          const settingsResult = await pool.query(
+            `SELECT fb_page_access_token FROM bot_settings WHERE client_id = $1`,
+            [message.client_id]
+          );
+          const pageAccessToken = settingsResult.rows[0]?.fb_page_access_token;
+          
+          // Try to get PSID from order_messenger_chats first, then customer_messaging_ids
+          let psid: string | null = null;
+          
+          const orderChatRes = await pool.query(
+            `SELECT messenger_psid FROM order_messenger_chats WHERE order_id = $1 AND client_id = $2 LIMIT 1`,
+            [message.order_id, message.client_id]
+          );
+          psid = orderChatRes.rows[0]?.messenger_psid;
+          
+          if (!psid) {
+            const idRes = await pool.query(
+              `SELECT messenger_psid FROM customer_messaging_ids WHERE client_id = $1 AND customer_phone = $2`,
+              [message.client_id, message.customer_phone]
+            );
+            psid = idRes.rows[0]?.messenger_psid;
+          }
+          
+          if (pageAccessToken && psid) {
+            sendResult = await sendMessengerMessageDirect(pageAccessToken, psid, message.message_content);
+          } else {
+            // Customer hasn't connected Messenger yet; retry later
+            await pool.query(
+              `UPDATE bot_messages SET send_at = NOW() + INTERVAL '5 minutes', error_message = $1, updated_at = NOW() WHERE id = $2`,
+              ['WAITING_FOR_MESSENGER_PSID', message.id]
+            );
+            continue;
           }
         }
 

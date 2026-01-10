@@ -18,12 +18,21 @@ const FB_VERIFY_TOKEN = process.env.FB_MESSENGER_VERIFY_TOKEN || 'ecopro_messeng
 const FB_APP_SECRET = process.env.FB_APP_SECRET || '';
 
 /**
+ * Generate a unique ref token for Messenger preconnect
+ */
+function generateMessengerRefToken(): string {
+  return crypto.randomBytes(16).toString('hex');
+}
+
+/**
  * GET /api/messenger/page-link/:storeSlug
  * Public endpoint: returns Messenger chat link for a store if enabled.
+ * Optionally generates a preconnect token when phone is provided.
  */
 export const getMessengerPageLink: RequestHandler = async (req, res) => {
   try {
     const { storeSlug } = req.params as any;
+    const { phone } = req.query;
     const pool = await ensureConnection();
 
     const storeRes = await pool.query(
@@ -59,15 +68,93 @@ export const getMessengerPageLink: RequestHandler = async (req, res) => {
       return res.json({ enabled: false });
     }
 
+    let messengerUrl = `https://m.me/${encodeURIComponent(pageId)}`;
+    let refToken = '';
+
+    // Generate preconnect token if phone is provided
+    if (phone) {
+      const normalizedPhone = String(phone).replace(/\D/g, '');
+      if (normalizedPhone.length >= 9) {
+        refToken = generateMessengerRefToken();
+        
+        // Store preconnect token
+        await pool.query(
+          `INSERT INTO messenger_preconnect_tokens (client_id, customer_phone, ref_token, page_id, created_at, expires_at)
+           VALUES ($1, $2, $3, $4, NOW(), NOW() + INTERVAL '24 hours')
+           ON CONFLICT (client_id, customer_phone)
+           DO UPDATE SET ref_token = $3, page_id = $4, created_at = NOW(), expires_at = NOW() + INTERVAL '24 hours', used_at = NULL`,
+          [clientId, normalizedPhone, refToken, pageId]
+        );
+
+        // Add ref parameter for tracking
+        messengerUrl = `https://m.me/${encodeURIComponent(pageId)}?ref=${encodeURIComponent(refToken)}`;
+      }
+    }
+
     return res.json({
       enabled: true,
       storeName,
       pageId,
-      url: `https://m.me/${encodeURIComponent(pageId)}`,
+      url: messengerUrl,
+      refToken: refToken || undefined,
+      instructions: {
+        ar: 'اضغط على الزر لفتح Messenger وبدء محادثة. ثم ارجع هنا لإتمام طلبك وستتلقى التأكيد مباشرة!',
+        en: 'Click the button to open Messenger and start a chat. Then come back here to place your order and receive instant confirmation!'
+      }
     });
   } catch (error) {
     console.error('[Messenger] Failed to get page link:', error);
     return res.status(500).json({ error: 'Failed to fetch Messenger link' });
+  }
+};
+
+/**
+ * GET /api/messenger/check-connection/:storeSlug
+ * Check if customer has connected their Messenger
+ */
+export const checkMessengerConnection: RequestHandler = async (req, res) => {
+  try {
+    const { storeSlug } = req.params;
+    const { phone } = req.query;
+
+    if (!storeSlug || !phone) {
+      return res.json({ connected: false });
+    }
+
+    const normalizedPhone = String(phone).replace(/\D/g, '');
+    if (normalizedPhone.length < 9) {
+      return res.json({ connected: false });
+    }
+
+    const pool = await ensureConnection();
+
+    // Get client_id from store slug
+    const storeRes = await pool.query(
+      `SELECT client_id FROM client_store_settings WHERE store_slug = $1 LIMIT 1`,
+      [storeSlug]
+    );
+
+    if (!storeRes.rows.length) {
+      return res.json({ connected: false });
+    }
+
+    const clientId = storeRes.rows[0].client_id;
+
+    // Check if we have a messenger_psid for this phone
+    const psidRes = await pool.query(
+      `SELECT messenger_psid FROM customer_messaging_ids 
+       WHERE client_id = $1 AND customer_phone = $2 AND messenger_psid IS NOT NULL
+       LIMIT 1`,
+      [clientId, normalizedPhone]
+    );
+
+    res.json({
+      connected: psidRes.rows.length > 0,
+      psid: psidRes.rows[0]?.messenger_psid || null
+    });
+  } catch (error) {
+    console.error('[Messenger] Check connection error:', error);
+    res.json({ connected: false });
   }
 };
 
@@ -239,11 +326,15 @@ const verifyWebhook: RequestHandler = (req, res) => {
   const token = req.query['hub.verify_token'];
   const challenge = req.query['hub.challenge'];
 
+  console.log('[Messenger] Webhook verification attempt:', { mode, token: token ? '***' : 'missing', challenge: challenge ? 'present' : 'missing' });
+
   if (mode === 'subscribe' && token === FB_VERIFY_TOKEN) {
-    console.log('[Messenger] Webhook verified');
+    console.log('[Messenger] Webhook verified successfully');
+    // Facebook requires plain text response with the challenge
+    res.set('Content-Type', 'text/plain');
     res.status(200).send(challenge);
   } else {
-    console.warn('[Messenger] Webhook verification failed');
+    console.warn('[Messenger] Webhook verification failed - token mismatch or wrong mode');
     res.sendStatus(403);
   }
 };
@@ -272,7 +363,12 @@ const handleWebhook: RequestHandler = async (req, res) => {
       const senderId = event.sender?.id;
       const recipientId = event.recipient?.id;
 
-      // Handle postback (button clicks)
+      // Handle referral (preconnect from m.me link with ref parameter)
+      if (event.referral) {
+        await handleReferral(pageId, senderId, event.referral);
+      }
+
+      // Handle postback (button clicks) - may also contain referral
       if (event.postback) {
         await handlePostback(pageId, senderId, event.postback);
       }
@@ -297,6 +393,90 @@ const handleWebhook: RequestHandler = async (req, res) => {
   // Always respond with 200 OK quickly
   res.sendStatus(200);
 };
+
+/**
+ * Handle referral events (from m.me links with ref parameter)
+ * This is triggered when a user clicks a link like m.me/PAGE_ID?ref=TOKEN
+ */
+async function handleReferral(pageId: string, senderId: string, referral: any) {
+  const refToken = referral.ref || '';
+  console.log(`[Messenger] Referral from ${senderId} with ref: ${refToken}`);
+
+  if (!refToken) return;
+
+  try {
+    const pool = await ensureConnection();
+
+    // Look up the preconnect token
+    const preconnectRes = await pool.query(
+      `SELECT client_id, customer_phone FROM messenger_preconnect_tokens
+       WHERE ref_token = $1 AND expires_at > NOW()
+       LIMIT 1`,
+      [refToken]
+    );
+
+    if (!preconnectRes.rows.length) {
+      console.log(`[Messenger] Preconnect token not found or expired: ${refToken}`);
+      return;
+    }
+
+    const { client_id, customer_phone } = preconnectRes.rows[0];
+
+    // Get store settings
+    const settingsRes = await pool.query(
+      `SELECT fb_page_access_token, template_greeting FROM bot_settings 
+       WHERE client_id = $1 AND messenger_enabled = true`,
+      [client_id]
+    );
+
+    if (!settingsRes.rows.length) return;
+
+    const { fb_page_access_token, template_greeting } = settingsRes.rows[0];
+
+    // Save the phone->PSID mapping
+    await pool.query(
+      `INSERT INTO customer_messaging_ids (client_id, customer_phone, messenger_psid, created_at, updated_at)
+       VALUES ($1, $2, $3, NOW(), NOW())
+       ON CONFLICT (client_id, customer_phone)
+       DO UPDATE SET messenger_psid = EXCLUDED.messenger_psid, updated_at = NOW()`,
+      [client_id, customer_phone, senderId]
+    );
+
+    // Also store in messenger_subscribers
+    await pool.query(
+      `INSERT INTO messenger_subscribers (client_id, psid, page_id, customer_phone, subscribed_at, last_interaction)
+       VALUES ($1, $2, $3, $4, NOW(), NOW())
+       ON CONFLICT (client_id, psid) DO UPDATE SET customer_phone = $4, last_interaction = NOW()`,
+      [client_id, senderId, pageId, customer_phone]
+    );
+
+    // Mark token as used
+    await pool.query(
+      `UPDATE messenger_preconnect_tokens SET used_at = NOW() WHERE ref_token = $1`,
+      [refToken]
+    );
+
+    // Get store name
+    const storeRes = await pool.query(
+      `SELECT store_name FROM client_store_settings WHERE client_id = $1 LIMIT 1`,
+      [client_id]
+    );
+    const storeName = storeRes.rows[0]?.store_name || 'Store';
+
+    // Send welcome message
+    const defaultGreeting = `مرحباً بك في ${storeName}! 🎉\n\n✅ تم ربط حسابك بنجاح.\n\nيمكنك الآن العودة لإتمام طلبك وستتلقى التأكيد هنا مباشرة! 📦`;
+    
+    await sendMessengerMessage(
+      fb_page_access_token,
+      senderId,
+      template_greeting || defaultGreeting
+    );
+
+    console.log(`[Messenger] Successfully linked PSID ${senderId} to phone ${customer_phone} for client ${client_id}`);
+  } catch (error) {
+    console.error('[Messenger] Referral handler error:', error);
+  }
+}
 
 /**
  * Handle postback events (button clicks)
@@ -448,6 +628,7 @@ const getConfig: RequestHandler = async (req, res) => {
 router.get('/webhook', verifyWebhook);
 router.post('/webhook', handleWebhook);
 router.get('/page-link/:storeSlug', getMessengerPageLink);
+router.get('/check-connection/:storeSlug', checkMessengerConnection);
 router.get('/config', getConfig);
 
 export default router;

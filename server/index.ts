@@ -1053,6 +1053,13 @@ export function createServer(options?: { skipDbInit?: boolean }) {
     apiLimiter,
     clientStoreRoutes.updateStoreSettings
   );
+  // Fast template-only update (avoids timeout on slow DB)
+  app.patch(
+    "/api/client/store/template",
+    authenticate,
+    requireClient,
+    clientStoreRoutes.updateStoreTemplate
+  );
   app.get(
     "/api/client/store/stats",
     authenticate,

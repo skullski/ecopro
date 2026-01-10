@@ -273,14 +273,14 @@ export default function GoldTemplateEditor() {
     // Update local state immediately for responsive UI
     setSettings(updated);
     
-    // Auto-save to database so template persists
+    // Use fast template-only endpoint to avoid timeout on slow DB
     setSaving(true);
     try {
-      const res = await fetch('/api/client/store/settings', {
-        method: 'PUT',
+      const res = await fetch('/api/client/store/template', {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify(updated),
+        body: JSON.stringify({ template: newTemplateId }),
       });
       
       if (!res.ok) {
@@ -289,7 +289,8 @@ export default function GoldTemplateEditor() {
       }
       
       const savedData = await res.json();
-      setSettings(savedData);
+      // Update only the template in settings, keep other local changes
+      setSettings(prev => ({ ...prev, template: savedData.template || newTemplateId }));
       setSuccess(t('editor.templateChanged', { name: newTemplateId }) || `Template changed to ${newTemplateId}`);
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {

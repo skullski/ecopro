@@ -90,6 +90,17 @@ export default function OrdersAdmin() {
     ]
   };
 
+  // Parse database timestamp as UTC (PostgreSQL stores without timezone indicator)
+  const parseUTCDate = (dateStr: string) => {
+    if (!dateStr) return new Date();
+    // If already has timezone indicator, parse directly
+    if (dateStr.includes('Z') || dateStr.includes('+') || dateStr.includes('-')) {
+      return new Date(dateStr);
+    }
+    // Otherwise, append Z to treat as UTC
+    return new Date(dateStr.replace(' ', 'T') + 'Z');
+  };
+
   const getTimeStr = (minutes: number) => {
     if (minutes < 60) {
       return t('orders.time.minutes').replace('{n}', minutes.toString());
@@ -420,7 +431,7 @@ export default function OrdersAdmin() {
           total: order.total_price,
           status: order.status, // Keep the actual status from database
           created_at: order.created_at,
-          time: getTimeStr(Math.floor((Date.now() - new Date(order.created_at).getTime()) / 60000)),
+          time: getTimeStr(Math.floor((Date.now() - parseUTCDate(order.created_at).getTime()) / 60000)),
           product_title: order.product_title,
           product_image: product_image,
           quantity: order.quantity,
@@ -816,7 +827,7 @@ export default function OrdersAdmin() {
                         );
                       })()}
                     </td>
-                    <td className="whitespace-nowrap p-2 text-right text-muted-foreground text-sm" key={`time-${o.id}-${timeUpdate}`}>{getTimeStr(Math.floor((Date.now() - new Date(o.created_at).getTime()) / 60000))}</td>
+                    <td className="whitespace-nowrap p-2 text-right text-muted-foreground text-sm" key={`time-${o.id}-${timeUpdate}`}>{getTimeStr(Math.floor((Date.now() - parseUTCDate(o.created_at).getTime()) / 60000))}</td>
                     <td className="p-2 text-right">
                       <span className="text-xs text-muted-foreground">
                         {expandedOrderId === o.id ? '▼' : '▶'}

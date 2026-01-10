@@ -21,9 +21,9 @@ function getDbDefaults() {
   const devFastFail = !isProd && (devFastFailRaw === '1' || devFastFailRaw === 'true' || devFastFailRaw === 'yes');
   // Render Postgres can be slow/variable from local dev networks.
   // Use more forgiving defaults in dev to avoid flapping/crashes.
-  const connectTimeoutMs = readIntEnv('DB_CONNECT_TIMEOUT_MS', isProd ? 30000 : (devFastFail ? 2000 : 20000));
-  const statementTimeoutMs = readIntEnv('DB_STATEMENT_TIMEOUT_MS', isProd ? 30000 : (devFastFail ? 5000 : 60000));
-  const queryTimeoutMs = readIntEnv('DB_QUERY_TIMEOUT_MS', isProd ? 30000 : (devFastFail ? 5000 : 30000));
+  const connectTimeoutMs = readIntEnv('DB_CONNECT_TIMEOUT_MS', isProd ? 30000 : (devFastFail ? 2000 : 30000));
+  const statementTimeoutMs = readIntEnv('DB_STATEMENT_TIMEOUT_MS', isProd ? 60000 : (devFastFail ? 5000 : 120000));
+  const queryTimeoutMs = readIntEnv('DB_QUERY_TIMEOUT_MS', isProd ? 60000 : (devFastFail ? 5000 : 90000));
   const max = readIntEnv('DB_POOL_MAX', isProd ? 10 : (devFastFail ? 5 : 15));
   const idleTimeoutMs = readIntEnv('DB_IDLE_TIMEOUT_MS', 30000);
   const retries = readIntEnv('DB_CONNECT_RETRIES', isProd ? 5 : (devFastFail ? 0 : 6));
