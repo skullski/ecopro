@@ -263,37 +263,87 @@ export const listClientImages: RequestHandler = async (req, res) => {
       /\.(jpg|jpeg|png|gif|webp|mp4)$/i.test(f)
     );
     
-    // Only include files that belong to this client (referenced in their data)
-    const clientImageFiles = imageFiles.filter(filename => {
+    // Build list of ALL images from database references + uploaded files
+    // Include external URLs too (not just /uploads/)
+    const allImages: {
+      filename: string;
+      url: string;
+      size: number | null;
+      createdAt: Date | null;
+      modifiedAt: Date | null;
+      usedIn: { type: string; name: string; id?: number }[];
+      isOrphaned: boolean;
+      isExternal: boolean;
+    }[] = [];
+    
+    // Process uploaded files that belong to this client
+    for (const filename of imageFiles) {
       const url = `/uploads/${filename}`;
-      return clientImageUrls.has(url);
+      if (clientImageUrls.has(url)) {
+        const filePath = path.join(UPLOAD_DIR, filename);
+        try {
+          const stats = await fs.stat(filePath);
+          allImages.push({
+            filename,
+            url,
+            size: stats.size,
+            createdAt: stats.birthtime,
+            modifiedAt: stats.mtime,
+            usedIn: imageUsage[url] || [],
+            isOrphaned: !imageUsage[url] || imageUsage[url].length === 0,
+            isExternal: false
+          });
+        } catch {
+          // File doesn't exist on disk but is referenced - still include it
+          allImages.push({
+            filename,
+            url,
+            size: null,
+            createdAt: null,
+            modifiedAt: null,
+            usedIn: imageUsage[url] || [],
+            isOrphaned: false,
+            isExternal: false
+          });
+        }
+      }
+    }
+    
+    // Also include external URLs (http/https) that are referenced
+    for (const url of clientImageUrls) {
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        // Extract filename from URL
+        const urlParts = url.split('/');
+        const filename = urlParts[urlParts.length - 1]?.split('?')[0] || 'external-image';
+        
+        allImages.push({
+          filename: filename.substring(0, 50) + (filename.length > 50 ? '...' : ''),
+          url,
+          size: null,
+          createdAt: null,
+          modifiedAt: null,
+          usedIn: imageUsage[url] || [],
+          isOrphaned: false,
+          isExternal: true
+        });
+      }
+    }
+    
+    // Sort by date (newest first), external images last
+    allImages.sort((a, b) => {
+      if (a.isExternal && !b.isExternal) return 1;
+      if (!a.isExternal && b.isExternal) return -1;
+      if (!a.createdAt && !b.createdAt) return 0;
+      if (!a.createdAt) return 1;
+      if (!b.createdAt) return -1;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
     
-    // Build response with only THIS CLIENT's images
-    const images = await Promise.all(clientImageFiles.map(async (filename) => {
-      const filePath = path.join(UPLOAD_DIR, filename);
-      const stats = await fs.stat(filePath);
-      const url = `/uploads/${filename}`;
-      
-      return {
-        filename,
-        url,
-        size: stats.size,
-        createdAt: stats.birthtime,
-        modifiedAt: stats.mtime,
-        usedIn: imageUsage[url] || [],
-        isOrphaned: !imageUsage[url] || imageUsage[url].length === 0
-      };
-    }));
-    
-    // Sort by date (newest first)
-    images.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    
     res.json({
-      images,
-      total: images.length,
-      orphaned: images.filter(i => i.isOrphaned).length,
-      inUse: images.filter(i => !i.isOrphaned).length
+      images: allImages,
+      total: allImages.length,
+      orphaned: allImages.filter(i => i.isOrphaned).length,
+      inUse: allImages.filter(i => !i.isOrphaned).length
     });
   } catch (err) {
     console.error('[listClientImages] Error:', isProduction ? (err as any)?.message : err);
@@ -301,68 +351,81 @@ export const listClientImages: RequestHandler = async (req, res) => {
   }
 };
 
-// DELETE /api/client/images/:filename - Delete an image
+// DELETE /api/client/images/:filename - Delete an image from EVERYWHERE in account
 export const deleteClientImage: RequestHandler = async (req, res) => {
   try {
     if (!req.user?.id) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
     
-    const filename = String(req.params.filename || '');
-    if (!isSafeUploadName(filename)) {
-      return res.status(400).json({ error: 'Invalid filename' });
+    // The filename could be a full URL or just a filename
+    let imageUrl = String(req.params.filename || '');
+    
+    // If it's URL-encoded, decode it
+    try {
+      imageUrl = decodeURIComponent(imageUrl);
+    } catch {}
+    
+    // If it's not a full URL, treat it as an upload filename
+    if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
+      if (!isSafeUploadName(imageUrl)) {
+        return res.status(400).json({ error: 'Invalid filename' });
+      }
+      imageUrl = `/uploads/${imageUrl}`;
     }
     
     const clientId = req.user.id;
     const pool = await ensureConnection();
-    const url = `/uploads/${filename}`;
     
-    // Check if image is in use by this client
-    const productCheck = await pool.query(
-      `SELECT id, title FROM client_store_products 
+    // Remove from products - update images array to exclude this URL
+    await pool.query(
+      `UPDATE client_store_products 
+       SET images = array_remove(images, $2),
+           updated_at = NOW()
        WHERE client_id = $1 AND $2 = ANY(images)`,
-      [clientId, url]
+      [clientId, imageUrl]
     );
     
-    const settingsCheck = await pool.query(
-      `SELECT client_id FROM client_store_settings 
-       WHERE client_id = $1 
-         AND (store_logo = $2 OR banner_url = $2 OR hero_main_url = $2 
-              OR hero_tile1_url = $2 OR hero_tile2_url = $2 
-              OR $2 = ANY(store_images))`,
-      [clientId, url]
+    // Remove from stock - update images array to exclude this URL
+    await pool.query(
+      `UPDATE client_stock_products 
+       SET images = array_remove(images, $2),
+           updated_at = NOW()
+       WHERE client_id = $1 AND $2 = ANY(images)`,
+      [clientId, imageUrl]
     );
     
-    if (productCheck.rows.length > 0) {
-      const product = productCheck.rows[0];
-      return res.status(400).json({ 
-        error: 'Image in use',
-        message: `This image is used by product "${product.title}". Remove it from the product first.`,
-        usedBy: { type: 'product', id: product.id, name: product.title }
-      });
+    // Remove from store settings - set to null if matches
+    await pool.query(
+      `UPDATE client_store_settings 
+       SET 
+         store_logo = CASE WHEN store_logo = $2 THEN NULL ELSE store_logo END,
+         banner_url = CASE WHEN banner_url = $2 THEN NULL ELSE banner_url END,
+         hero_main_url = CASE WHEN hero_main_url = $2 THEN NULL ELSE hero_main_url END,
+         hero_tile1_url = CASE WHEN hero_tile1_url = $2 THEN NULL ELSE hero_tile1_url END,
+         hero_tile2_url = CASE WHEN hero_tile2_url = $2 THEN NULL ELSE hero_tile2_url END,
+         store_images = array_remove(store_images, $2),
+         updated_at = NOW()
+       WHERE client_id = $1`,
+      [clientId, imageUrl]
+    );
+    
+    // If it's a local upload, delete the file too
+    if (imageUrl.startsWith('/uploads/')) {
+      const filename = imageUrl.replace('/uploads/', '');
+      const filePath = path.join(UPLOAD_DIR, filename);
+      
+      if (filePath.startsWith(UPLOAD_DIR)) {
+        try {
+          await fs.access(filePath);
+          await fs.unlink(filePath);
+        } catch {
+          // File might not exist, that's ok
+        }
+      }
     }
     
-    if (settingsCheck.rows.length > 0) {
-      return res.status(400).json({
-        error: 'Image in use',
-        message: 'This image is used in your store settings (logo, banner, or hero). Remove it from settings first.',
-        usedBy: { type: 'store' }
-      });
-    }
-    
-    // Delete the file
-    const filePath = path.join(UPLOAD_DIR, filename);
-    if (!filePath.startsWith(UPLOAD_DIR)) {
-      return res.status(400).json({ error: 'Invalid path' });
-    }
-    
-    try {
-      await fs.access(filePath);
-      await fs.unlink(filePath);
-      res.json({ ok: true, message: 'Image deleted successfully' });
-    } catch {
-      res.status(404).json({ error: 'Image not found' });
-    }
+    res.json({ ok: true, message: 'Image deleted from all locations' });
   } catch (err) {
     console.error('[deleteClientImage] Error:', isProduction ? (err as any)?.message : err);
     res.status(500).json({ error: 'Failed to delete image' });

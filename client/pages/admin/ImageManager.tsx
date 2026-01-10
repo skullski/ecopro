@@ -21,7 +21,7 @@ import { useTranslation } from '@/lib/i18n';
 import { toast } from 'sonner';
 
 interface ImageUsage {
-  type: 'product' | 'store';
+  type: 'product' | 'store' | 'stock';
   name: string;
   id?: number;
 }
@@ -29,11 +29,12 @@ interface ImageUsage {
 interface ImageInfo {
   filename: string;
   url: string;
-  size: number;
-  createdAt: string;
-  modifiedAt: string;
+  size: number | null;
+  createdAt: string | null;
+  modifiedAt: string | null;
   usedIn: ImageUsage[];
   isOrphaned: boolean;
+  isExternal?: boolean;
 }
 
 interface ImagesResponse {
@@ -43,15 +44,16 @@ interface ImagesResponse {
   inUse: number;
 }
 
-function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 B';
+function formatFileSize(bytes: number | null): string {
+  if (bytes === null || bytes === 0) return '-';
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
-function formatDate(dateStr: string): string {
+function formatDate(dateStr: string | null): string {
+  if (!dateStr) return '-';
   return new Date(dateStr).toLocaleDateString(undefined, {
     year: 'numeric',
     month: 'short',
@@ -83,8 +85,13 @@ export default function ImageManager() {
 
   // Delete mutation
   const deleteMutation = useMutation({
-    mutationFn: async (filename: string) => {
-      const res = await fetch(`/api/client/images/${encodeURIComponent(filename)}`, {
+    mutationFn: async (imageUrl: string) => {
+      // For external URLs, encode the full URL; for uploads, just use filename
+      const deleteParam = imageUrl.startsWith('http') 
+        ? encodeURIComponent(imageUrl) 
+        : encodeURIComponent(imageUrl.replace('/uploads/', ''));
+      
+      const res = await fetch(`/api/client/images/${deleteParam}`, {
         method: 'DELETE',
         credentials: 'include'
       });
@@ -96,7 +103,7 @@ export default function ImageManager() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['client-images'] });
-      toast.success('Image deleted successfully');
+      toast.success('Image deleted from all locations');
       setDeleteDialogOpen(false);
       setImageToDelete(null);
     },
@@ -131,17 +138,13 @@ export default function ImageManager() {
   }, [data?.images, filterType, searchQuery]);
 
   const handleDeleteClick = (img: ImageInfo) => {
-    if (!img.isOrphaned) {
-      toast.error(`Cannot delete: Image is used in ${img.usedIn.map(u => u.name).join(', ')}`);
-      return;
-    }
     setImageToDelete(img);
     setDeleteDialogOpen(true);
   };
 
   const confirmDelete = () => {
     if (imageToDelete) {
-      deleteMutation.mutate(imageToDelete.filename);
+      deleteMutation.mutate(imageToDelete.url);
     }
   };
 
@@ -271,10 +274,10 @@ export default function ImageManager() {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {filteredImages.map((img) => (
             <div 
-              key={img.filename}
+              key={img.url}
               className={`relative group rounded-lg border overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary transition-all ${
                 img.isOrphaned ? 'border-orange-300 dark:border-orange-700' : ''
-              }`}
+              } ${img.isExternal ? 'border-dashed' : ''}`}
               onClick={() => setSelectedImage(img)}
             >
               <div className="aspect-square bg-muted">
@@ -283,6 +286,9 @@ export default function ImageManager() {
                   alt={img.filename}
                   className="w-full h-full object-cover"
                   loading="lazy"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23666" width="100" height="100"/><text x="50" y="50" fill="white" font-size="12" text-anchor="middle" dy=".3em">No Preview</text></svg>';
+                  }}
                 />
               </div>
               {img.isOrphaned && (
@@ -293,19 +299,25 @@ export default function ImageManager() {
                   Unused
                 </Badge>
               )}
+              {img.isExternal && (
+                <Badge 
+                  variant="outline" 
+                  className="absolute top-2 right-2 bg-blue-100 text-blue-700 border-blue-300 text-[10px]"
+                >
+                  URL
+                </Badge>
+              )}
               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                 <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); setSelectedImage(img); }}>
                   <Eye className="w-4 h-4" />
                 </Button>
-                {img.isOrphaned && (
-                  <Button 
-                    size="sm" 
-                    variant="destructive" 
-                    onClick={(e) => { e.stopPropagation(); handleDeleteClick(img); }}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                )}
+                <Button 
+                  size="sm" 
+                  variant="destructive" 
+                  onClick={(e) => { e.stopPropagation(); handleDeleteClick(img); }}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
               </div>
               <div className="p-2 text-xs truncate">{img.filename.slice(0, 20)}...</div>
             </div>
@@ -315,10 +327,10 @@ export default function ImageManager() {
         <div className="space-y-2">
           {filteredImages.map((img) => (
             <div 
-              key={img.filename}
+              key={img.url}
               className={`flex items-center gap-4 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer ${
                 img.isOrphaned ? 'border-orange-300 dark:border-orange-700' : ''
-              }`}
+              } ${img.isExternal ? 'border-dashed' : ''}`}
               onClick={() => setSelectedImage(img)}
             >
               <div className="w-16 h-16 rounded overflow-hidden flex-shrink-0 bg-muted">
@@ -327,18 +339,24 @@ export default function ImageManager() {
                   alt={img.filename}
                   className="w-full h-full object-cover"
                   loading="lazy"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23666" width="100" height="100"/><text x="50" y="50" fill="white" font-size="12" text-anchor="middle" dy=".3em">No Preview</text></svg>';
+                  }}
                 />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium truncate">{img.filename}</p>
                 <p className="text-sm text-muted-foreground">
                   {formatFileSize(img.size)} • {formatDate(img.createdAt)}
+                  {img.isExternal && <span className="ml-2 text-blue-600">(External URL)</span>}
                 </p>
                 <div className="flex gap-1 mt-1 flex-wrap">
                   {img.usedIn.length > 0 ? (
                     img.usedIn.map((usage, i) => (
                       <Badge key={i} variant="secondary" className="text-xs">
-                        {usage.type === 'product' ? <Package className="w-3 h-3 mr-1" /> : <StoreIcon className="w-3 h-3 mr-1" />}
+                        {usage.type === 'product' ? <Package className="w-3 h-3 mr-1" /> : 
+                         usage.type === 'stock' ? <Package className="w-3 h-3 mr-1" /> :
+                         <StoreIcon className="w-3 h-3 mr-1" />}
                         {usage.name}
                       </Badge>
                     ))
@@ -350,15 +368,13 @@ export default function ImageManager() {
                 </div>
               </div>
               <div className="flex gap-2">
-                {img.isOrphaned && (
-                  <Button 
-                    size="sm" 
-                    variant="destructive"
-                    onClick={(e) => { e.stopPropagation(); handleDeleteClick(img); }}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                )}
+                <Button 
+                  size="sm" 
+                  variant="destructive"
+                  onClick={(e) => { e.stopPropagation(); handleDeleteClick(img); }}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
               </div>
             </div>
           ))}
@@ -451,7 +467,14 @@ export default function ImageManager() {
               Delete Image
             </DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this image? This action cannot be undone.
+              {imageToDelete && !imageToDelete.isOrphaned ? (
+                <span className="text-orange-600 dark:text-orange-400">
+                  ⚠️ This image is currently used in: {imageToDelete.usedIn.map(u => u.name).join(', ')}. 
+                  Deleting it will remove it from <strong>all locations</strong> in your account.
+                </span>
+              ) : (
+                'Are you sure you want to delete this image? This action cannot be undone.'
+              )}
             </DialogDescription>
           </DialogHeader>
           {imageToDelete && (
@@ -464,8 +487,11 @@ export default function ImageManager() {
                 />
               </div>
               <div>
-                <p className="font-medium text-sm">{imageToDelete.filename}</p>
+                <p className="font-medium text-sm truncate max-w-[200px]">{imageToDelete.filename}</p>
                 <p className="text-sm text-muted-foreground">{formatFileSize(imageToDelete.size)}</p>
+                {imageToDelete.isExternal && (
+                  <Badge variant="outline" className="mt-1 text-xs">External URL</Badge>
+                )}
               </div>
             </div>
           )}
@@ -478,7 +504,7 @@ export default function ImageManager() {
               onClick={confirmDelete}
               disabled={deleteMutation.isPending}
             >
-              {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+              {deleteMutation.isPending ? 'Deleting...' : 'Delete from Everywhere'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -491,9 +517,9 @@ export default function ImageManager() {
           <div className="text-sm text-muted-foreground">
             <p className="font-medium text-foreground mb-1">About Image Management</p>
             <ul className="list-disc list-inside space-y-1">
-              <li><strong>Unused images</strong> can be deleted to free up space</li>
-              <li>Images marked as <strong>In Use</strong> are linked to products or store settings</li>
-              <li>To delete an "in use" image, first remove it from the product or setting</li>
+              <li>Shows <strong>all images</strong> from your products, stock, and store settings</li>
+              <li>Deleting an image removes it from <strong>everywhere</strong> in your account</li>
+              <li><strong>External URLs</strong> (http/https) are also tracked and can be removed</li>
               <li>Deleted images cannot be recovered</li>
             </ul>
           </div>
