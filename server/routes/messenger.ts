@@ -483,14 +483,15 @@ async function handleReferral(pageId: string, senderId: string, referral: any) {
  */
 async function handlePostback(pageId: string, senderId: string, postback: any) {
   const payload = postback.payload || '';
+  const referral = postback.referral; // Get Started can include referral
   console.log(`[Messenger] Postback from ${senderId}: ${payload}`);
 
   try {
     const pool = await ensureConnection();
 
-    // Get page access token
+    // Get client_id and page access token
     const settingsResult = await pool.query(
-      `SELECT fb_page_access_token, store_name FROM bot_settings 
+      `SELECT fb_page_access_token, client_id, store_name FROM bot_settings 
        WHERE fb_page_id = $1 AND messenger_enabled = true`,
       [pageId]
     );
@@ -500,7 +501,59 @@ async function handlePostback(pageId: string, senderId: string, postback: any) {
       return;
     }
 
-    const { fb_page_access_token, store_name } = settingsResult.rows[0];
+    const { fb_page_access_token, client_id, store_name } = settingsResult.rows[0];
+
+    // Handle GET_STARTED - this fires when user clicks m.me link or Get Started button
+    if (payload === 'GET_STARTED') {
+      // Check for ref in referral (from m.me link)
+      if (referral?.ref) {
+        await handleReferral(pageId, senderId, referral);
+        return; // handleReferral sends its own message
+      }
+
+      // Check for pending preconnect token
+      const pendingToken = await pool.query(
+        `SELECT customer_phone, ref_token FROM messenger_preconnect_tokens 
+         WHERE client_id = $1 AND used_at IS NULL AND expires_at > NOW()
+         ORDER BY created_at DESC LIMIT 1`,
+        [client_id]
+      );
+
+      if (pendingToken.rows.length > 0) {
+        const { customer_phone, ref_token } = pendingToken.rows[0];
+        
+        // Link PSID to phone
+        await pool.query(
+          `INSERT INTO customer_messaging_ids (client_id, customer_phone, messenger_psid, created_at, updated_at)
+           VALUES ($1, $2, $3, NOW(), NOW())
+           ON CONFLICT (client_id, customer_phone)
+           DO UPDATE SET messenger_psid = EXCLUDED.messenger_psid, updated_at = NOW()`,
+          [client_id, customer_phone, senderId]
+        );
+
+        await pool.query(
+          `UPDATE messenger_preconnect_tokens SET used_at = NOW() WHERE ref_token = $1`,
+          [ref_token]
+        );
+
+        console.log(`[Messenger] Linked PSID ${senderId} to phone ${customer_phone} via GET_STARTED`);
+
+        await sendMessengerMessage(
+          fb_page_access_token,
+          senderId,
+          `✅ تم ربط حسابك بنجاح!\n\nيمكنك الآن العودة لإتمام طلبك. ستتلقى تأكيدات الطلبات هنا! 📦`
+        );
+        return;
+      }
+
+      // Default welcome if no preconnect
+      await sendMessengerMessage(
+        fb_page_access_token,
+        senderId,
+        `مرحباً بك! 👋\n\nأنا مساعدك الآلي من ${store_name}.\n\nسأرسل لك تأكيدات الطلبات وتحديثات الشحن.`
+      );
+      return;
+    }
 
     // Handle different postback payloads
     if (payload.startsWith('CANCEL_ORDER_')) {
@@ -535,12 +588,6 @@ async function handlePostback(pageId: string, senderId: string, postback: any) {
         fb_page_access_token,
         senderId,
         `للتواصل مع ${storeName}:\n📞 ${phone}\n\nسنرد عليك في أقرب وقت! 💬`
-      );
-    } else if (payload === 'GET_STARTED') {
-      await sendMessengerMessage(
-        fb_page_access_token,
-        senderId,
-        `مرحباً بك! 👋\n\nأنا مساعدك الآلي من ${store_name}.\n\nسأرسل لك تأكيدات الطلبات وتحديثات الشحن.\n\nللمساعدة، اكتب "مساعدة".`
       );
     }
   } catch (error) {
@@ -651,6 +698,62 @@ async function handleMessage(pageId: string, senderId: string, message: any) {
 }
 
 /**
+ * Setup "Get Started" button for a page - call this once per page
+ */
+export async function setupGetStartedButton(pageAccessToken: string): Promise<boolean> {
+  try {
+    const response = await fetch(
+      `https://graph.facebook.com/v18.0/me/messenger_profile?access_token=${pageAccessToken}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          get_started: { payload: 'GET_STARTED' }
+        }),
+      }
+    );
+    const data: any = await response.json();
+    console.log('[Messenger] Get Started button setup:', data);
+    return data.result === 'success';
+  } catch (error) {
+    console.error('[Messenger] Failed to setup Get Started:', error);
+    return false;
+  }
+}
+
+/**
+ * POST /api/messenger/setup-get-started/:storeSlug - Setup Get Started button for store's page
+ */
+const setupGetStarted: RequestHandler = async (req, res) => {
+  try {
+    const { storeSlug } = req.params as any;
+    const pool = await ensureConnection();
+
+    const storeRes = await pool.query(
+      `SELECT client_id FROM client_store_settings WHERE store_slug = $1 LIMIT 1`,
+      [storeSlug]
+    );
+    if (storeRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Store not found' });
+    }
+
+    const botRes = await pool.query(
+      `SELECT fb_page_access_token FROM bot_settings WHERE client_id = $1 AND messenger_enabled = true`,
+      [storeRes.rows[0].client_id]
+    );
+    if (botRes.rows.length === 0 || !botRes.rows[0].fb_page_access_token) {
+      return res.status(400).json({ error: 'Messenger not configured' });
+    }
+
+    const success = await setupGetStartedButton(botRes.rows[0].fb_page_access_token);
+    res.json({ success });
+  } catch (error) {
+    console.error('[Messenger] Setup Get Started error:', error);
+    res.status(500).json({ error: 'Setup failed' });
+  }
+};
+
+/**
  * GET /api/messenger/config - Get Messenger configuration status
  */
 const getConfig: RequestHandler = async (req, res) => {
@@ -666,6 +769,7 @@ router.get('/webhook', verifyWebhook);
 router.post('/webhook', handleWebhook);
 router.get('/page-link/:storeSlug', getMessengerPageLink);
 router.get('/check-connection/:storeSlug', checkMessengerConnection);
+router.post('/setup-get-started/:storeSlug', setupGetStarted);
 router.get('/config', getConfig);
 
 export default router;
