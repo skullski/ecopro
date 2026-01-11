@@ -419,6 +419,7 @@ const App = () => (
                     <Route path="staff" element={<StaffManagement />} />
                     <Route path="calls" element={<AdminCalls />} />
                     <Route path="wasselni-settings" element={<SubscriptionPageLock><AdminWasselniSettings /></SubscriptionPageLock>} />
+                    <Route path="pixel-statistics" element={<PixelStatistics />} />
                   </Route>
                   {/* Secret Platform Admin Panel removed */}
                   {/* Old admin routes: redirect to /dashboard (preserve subpath) */}
@@ -442,7 +443,6 @@ const App = () => (
                   <Route path="/codes" element={<Navigate to="/pricing" replace />} />
                   <Route path="/chat" element={<RequirePaidClient><ChatPage /></RequirePaidClient>} />
                   <Route path="/customer-bot" element={<RequirePaidClient><SubscriptionPageLock><CustomerBot /></SubscriptionPageLock></RequirePaidClient>} />
-                  <Route path="/pixel-statistics" element={<RequirePaidClient><PixelStatistics /></RequirePaidClient>} />
                   {/* My Store - logged in client viewing their own store */}
                   <Route path="/my-store" element={<MyStore />} />
                   {/* Template Editor */}

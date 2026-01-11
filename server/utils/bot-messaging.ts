@@ -310,8 +310,8 @@ export async function sendOrderConfirmationMessages(
       console.log(`[Bot] Telegram scheduled for ${customerPhone} at ${sendAt}`);
     }
 
-    // Facebook Messenger: schedule message if enabled
-    if ((provider === 'messenger' || settings.messenger_enabled) && settings.fb_page_access_token) {
+    // Facebook Messenger: schedule message if enabled (provider 'facebook' or 'messenger', or messenger_enabled flag)
+    if ((provider === 'facebook' || provider === 'messenger' || settings.messenger_enabled) && settings.fb_page_access_token) {
       const messengerMessage = replaceTemplateVariables(
         settings.template_order_confirmation || defaultWhatsAppTemplate(),
         templateVariables
@@ -332,22 +332,22 @@ export async function sendOrderConfirmationMessages(
 }
 
 /**
- * Default WhatsApp template
+ * Default WhatsApp/bot template (Arabic)
  */
 function defaultWhatsAppTemplate(): string {
-  return `Hello {customerName}! 🌟
+  return `مرحباً {customerName}! 🌟
 
-Thank you for your order from {storeName}! 
+شكراً لطلبك من {storeName}!
 
-📦 Order Details:
-• Product: {productName}
-• Price: {price} DZD
-• Order ID: {orderId}
+📦 تفاصيل الطلب:
+• المنتج: {productName}
+• السعر: {price} دج
+• رقم الطلب: {orderId}
 
-Please confirm your order through the link below:
+يرجى تأكيد طلبك من خلال الرابط أدناه:
 {confirmationLink}
 
-Thank you! 🎉`;
+شكراً لك! 🎉`;
 }
 
 /**

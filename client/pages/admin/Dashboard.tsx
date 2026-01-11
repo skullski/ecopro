@@ -187,17 +187,17 @@ export default function Dashboard() {
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRoLTJ2LTRoMnY0em0wLTZ2LTRoLTJ2NGgyem0tNiA2di00aC00djRoNHptMC02di00aC00djRoNHoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-30" />
         <div className="relative z-10 flex items-center justify-between">
           <div>
-            <h1 className="text-sm sm:text-base font-bold">{t('dashboard.title')}</h1>
-            <p className="text-white/70 text-[10px] sm:text-xs">{t('dashboard.subtitle')}</p>
+            <h1 className="text-base sm:text-lg font-bold">{t('dashboard.title')}</h1>
+            <p className="text-white/70 text-xs sm:text-sm">{t('dashboard.subtitle')}</p>
           </div>
           <div className="flex items-center gap-3">
             <div className="text-right">
-              <p className="text-white/70 text-[10px]">{t('dashboard.totalRevenue')}</p>
-              <p className="text-sm sm:text-base font-bold">{Math.round(stats.revenue)} DZD</p>
+              <p className="text-white/70 text-xs">{t('dashboard.totalRevenue')}</p>
+              <p className="text-base sm:text-lg font-bold">{Math.round(stats.revenue)} DZD</p>
             </div>
-            <div className="flex gap-1 text-[10px]">
-              <span className="bg-white/20 px-1.5 py-0.5 rounded">{stats.orders} orders</span>
-              <span className="bg-white/20 px-1.5 py-0.5 rounded">{stats.products} products</span>
+            <div className="flex gap-1.5 text-xs">
+              <span className="bg-white/20 px-2 py-0.5 rounded">{stats.orders} orders</span>
+              <span className="bg-white/20 px-2 py-0.5 rounded">{stats.products} products</span>
             </div>
           </div>
         </div>
@@ -213,7 +213,7 @@ export default function Dashboard() {
           <button
             key={period.key}
             onClick={() => setSelectedPeriod(period.key as any)}
-            className={`px-2 py-1 rounded text-[10px] sm:text-xs font-medium transition-all ${
+            className={`px-3 py-1.5 rounded text-xs sm:text-sm font-medium transition-all ${
               selectedPeriod === period.key
                 ? 'bg-primary text-primary-foreground shadow-sm'
                 : 'hover:bg-muted text-muted-foreground'
@@ -233,10 +233,10 @@ export default function Dashboard() {
               <div className="p-1.5 rounded-md bg-gradient-to-br from-blue-500 to-cyan-500 text-white">
                 <Package className="w-3 h-3" />
               </div>
-              <h3 className="font-bold text-xs sm:text-sm">{t('dashboard.orders') || 'Orders'}</h3>
+              <h3 className="font-bold text-sm">{t('dashboard.orders') || 'Orders'}</h3>
             </div>
             <div className="text-right">
-              <p className="text-sm sm:text-base font-bold text-blue-600 dark:text-blue-400">{totalOrders}</p>
+              <p className="text-lg font-bold text-blue-600 dark:text-blue-400">{totalOrders}</p>
             </div>
           </div>
           
@@ -256,11 +256,11 @@ export default function Dashboard() {
                   </div>
                 </div>
                 {chartData.length <= 7 && (
-                  <span className="text-[8px] text-muted-foreground mt-0.5">{new Date(day.date).getDate()}</span>
+                  <span className="text-xs text-muted-foreground mt-0.5">{new Date(day.date).getDate()}</span>
                 )}
               </div>
             );}) : (
-              <div className="flex-1 flex items-center justify-center text-muted-foreground text-xs">
+              <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
                 {t('dashboard.noDataAvailable')}
               </div>
             )}
@@ -272,12 +272,12 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-1.5">
               <div className="p-1.5 rounded-md bg-gradient-to-br from-emerald-500 to-green-500 text-white">
-                <DollarSign className="w-3 h-3" />
+                <DollarSign className="w-4 h-4" />
               </div>
-              <h3 className="font-bold text-xs sm:text-sm">{t('dashboard.revenue') || 'Revenue'}</h3>
+              <h3 className="font-bold text-sm">{t('dashboard.revenue') || 'Revenue'}</h3>
             </div>
             <div className="text-right">
-              <p className="text-sm sm:text-base font-bold text-emerald-600 dark:text-emerald-400">{Math.round(totalRevenue)} DZD</p>
+              <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">{Math.round(totalRevenue)} DZD</p>
             </div>
           </div>
           
@@ -297,11 +297,11 @@ export default function Dashboard() {
                   </div>
                 </div>
                 {chartData.length <= 7 && (
-                  <span className="text-[8px] text-muted-foreground mt-0.5">{new Date(day.date).getDate()}</span>
+                  <span className="text-xs text-muted-foreground mt-0.5">{new Date(day.date).getDate()}</span>
                 )}
               </div>
             );}) : (
-              <div className="flex-1 flex items-center justify-center text-muted-foreground text-xs">
+              <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
                 {t('dashboard.noDataAvailable')}
               </div>
             )}
@@ -311,149 +311,117 @@ export default function Dashboard() {
 
       {/* Status + Top Products + Recent Orders - All in one row */}
       <div className="grid gap-2 grid-cols-1 md:grid-cols-3">
-        {/* Order Status Breakdown - Compact */}
-        <Card className="p-2 sm:p-3 shadow-lg bg-white dark:bg-slate-800/90 border border-gray-200 dark:border-slate-700">
+        {/* Order Status Breakdown */}
+        <Card className="p-2 shadow-lg bg-white dark:bg-slate-800/90 border border-gray-200 dark:border-slate-700">
           <div className="flex items-center gap-1.5 mb-2">
-            <div className="p-1.5 rounded-md bg-gradient-to-br from-amber-500 to-orange-500 text-white">
-              <Target className="w-3 h-3" />
+            <div className="p-1 rounded-md bg-gradient-to-br from-amber-500 to-orange-500 text-white">
+              <Target className="w-3.5 h-3.5" />
             </div>
-            <h3 className="font-bold text-xs sm:text-sm">{t('dashboard.statusDistribution')}</h3>
+            <h3 className="font-bold text-sm">{t('dashboard.statusDistribution')}</h3>
           </div>
           <div className="space-y-1.5">
             {analytics?.statusBreakdown?.slice(0, 5).map((item, i) => {
               const total = analytics.statusBreakdown.reduce((sum, s) => sum + s.count, 0);
               const percentage = total > 0 ? (item.count / total) * 100 : 0;
               return (
-                <div key={i} className="flex items-center gap-2">
+                <div key={i} className="flex items-center gap-1.5">
                   <div 
-                    className="w-2 h-2 rounded-full flex-shrink-0"
+                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                     style={{ backgroundColor: getStatusColor(item.status) }}
                   />
-                  <span className="text-[10px] flex-1 truncate">{getStatusName(item.status)}</span>
-                  <div className="w-12 h-1 bg-muted rounded-full overflow-hidden">
+                  <span className="text-xs flex-1 truncate">{getStatusName(item.status)}</span>
+                  <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
                     <div className="h-full rounded-full" style={{ width: `${percentage}%`, backgroundColor: getStatusColor(item.status) }} />
                   </div>
-                  <span className="text-[10px] font-bold w-5 text-right">{item.count}</span>
+                  <span className="text-xs font-bold w-6 text-right">{item.count}</span>
                 </div>
               );
             }) || (
-              <p className="text-[10px] text-muted-foreground text-center py-2">{t('dashboard.noDataAvailable')}</p>
+              <p className="text-xs text-muted-foreground text-center py-1">{t('dashboard.noDataAvailable')}</p>
             )}
           </div>
         </Card>
 
-        {/* Top Products - Compact */}
-        <Card className="p-2 sm:p-3 shadow-lg bg-white dark:bg-slate-800/90 border border-gray-200 dark:border-slate-700">
-          <div className="flex items-center gap-1.5 mb-2">
+        {/* Top Products */}
+        <Card className="p-3 shadow-lg bg-white dark:bg-slate-800/90 border border-gray-200 dark:border-slate-700">
+          <div className="flex items-center gap-2 mb-3">
             <div className="p-1.5 rounded-md bg-gradient-to-br from-yellow-500 to-orange-500 text-white">
-              <Crown className="w-3 h-3" />
+              <Crown className="w-4 h-4" />
             </div>
-            <h3 className="font-bold text-xs sm:text-sm">{t('dashboard.topProducts')}</h3>
+            <h3 className="font-bold text-sm">{t('dashboard.topProducts')}</h3>
           </div>
-          <div className="space-y-1">
+          <div className="space-y-2">
             {analytics?.topProducts?.slice(0, 4).map((product, i) => (
-              <div key={product.id} className="flex items-center gap-1.5 p-1 rounded hover:bg-muted/50">
-                <span className={`w-4 h-4 rounded text-[9px] flex items-center justify-center font-bold text-white ${
+              <div key={product.id} className="flex items-center gap-2 p-1.5 rounded hover:bg-muted/50">
+                <span className={`w-5 h-5 rounded text-xs flex items-center justify-center font-bold text-white ${
                   i === 0 ? 'bg-yellow-500' : i === 1 ? 'bg-slate-400' : i === 2 ? 'bg-orange-600' : 'bg-slate-600'
                 }`}>{i + 1}</span>
                 {product.image_url ? (
-                  <img src={product.image_url} alt="" className="w-6 h-6 rounded object-cover" />
+                  <img src={product.image_url} alt="" className="w-8 h-8 rounded object-cover" />
                 ) : (
-                  <div className="w-6 h-6 rounded bg-muted flex items-center justify-center">
-                    <Package className="w-3 h-3 text-muted-foreground" />
+                  <div className="w-8 h-8 rounded bg-muted flex items-center justify-center">
+                    <Package className="w-4 h-4 text-muted-foreground" />
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-medium truncate">{product.title}</p>
-                  <p className="text-[9px] text-muted-foreground">{product.total_orders} • {Math.round(product.total_revenue)} DZD</p>
+                  <p className="text-xs font-medium truncate">{product.title}</p>
+                  <p className="text-xs text-muted-foreground">{product.total_orders} • {Math.round(product.total_revenue)} DZD</p>
                 </div>
               </div>
             )) || (
-              <p className="text-[10px] text-muted-foreground text-center py-2">{t('dashboard.noProducts')}</p>
+              <p className="text-xs text-muted-foreground text-center py-2">{t('dashboard.noProducts')}</p>
             )}
           </div>
         </Card>
 
-        {/* Recent Orders - Compact */}
-        <Card className="p-2 sm:p-3 shadow-lg bg-white dark:bg-slate-800/90 border border-gray-200 dark:border-slate-700">
-          <div className="flex items-center gap-1.5 mb-2">
+        {/* Recent Orders */}
+        <Card className="p-3 shadow-lg bg-white dark:bg-slate-800/90 border border-gray-200 dark:border-slate-700">
+          <div className="flex items-center gap-2 mb-3">
             <div className="p-1.5 rounded-md bg-gradient-to-br from-cyan-500 to-blue-500 text-white">
-              <Clock className="w-3 h-3" />
+              <Clock className="w-4 h-4" />
             </div>
-            <h3 className="font-bold text-xs sm:text-sm">{t('dashboard.recentOrders')}</h3>
+            <h3 className="font-bold text-sm">{t('dashboard.recentOrders')}</h3>
           </div>
-          <div className="space-y-1">
+          <div className="space-y-2">
             {analytics?.recentOrders?.slice(0, 4).map((order) => (
-              <div key={order.id} className="flex items-center justify-between p-1 rounded hover:bg-muted/50">
+              <div key={order.id} className="flex items-center justify-between p-1.5 rounded hover:bg-muted/50">
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-medium truncate">{order.customer_name}</p>
-                  <p className="text-[9px] text-muted-foreground">{formatTimeAgo(order.created_at)}</p>
+                  <p className="text-xs font-medium truncate">{order.customer_name}</p>
+                  <p className="text-xs text-muted-foreground">{formatTimeAgo(order.created_at)}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[10px] font-bold">{Math.round(order.total_price)} DZD</p>
-                  <span className="text-[8px] px-1 py-0.5 rounded text-white" style={{ backgroundColor: getStatusColor(order.status) }}>
+                  <p className="text-xs font-bold">{Math.round(order.total_price)} DZD</p>
+                  <span className="text-xs px-1.5 py-0.5 rounded text-white" style={{ backgroundColor: getStatusColor(order.status) }}>
                     {order.status}
                   </span>
                 </div>
               </div>
             )) || (
-              <p className="text-[10px] text-muted-foreground text-center py-2">{t('dashboard.noOrders')}</p>
+              <p className="text-xs text-muted-foreground text-center py-2">{t('dashboard.noOrders')}</p>
             )}
           </div>
         </Card>
       </div>
 
-      {/* Orders by City - Full width, compact */}
-      <Card className="p-2 sm:p-3 shadow-lg bg-white dark:bg-slate-800/90 border border-gray-200 dark:border-slate-700">
-        <div className="flex items-center gap-1.5 mb-2">
+      {/* Orders by City */}
+      <Card className="p-3 shadow-lg bg-white dark:bg-slate-800/90 border border-gray-200 dark:border-slate-700">
+        <div className="flex items-center gap-2 mb-3">
           <div className="p-1.5 rounded-md bg-gradient-to-br from-pink-500 to-rose-500 text-white">
-            <MapPin className="w-3 h-3" />
+            <MapPin className="w-4 h-4" />
           </div>
-          <h3 className="font-bold text-xs sm:text-sm">{t('dashboard.ordersByCity')}</h3>
+          <h3 className="font-bold text-sm">{t('dashboard.ordersByCity')}</h3>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-1">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
           {analytics?.cityBreakdown?.slice(0, 6).map((city, i) => (
-            <div key={i} className="flex items-center justify-between p-1.5 rounded bg-muted/30 hover:bg-muted/50">
-              <span className="text-[10px] truncate flex-1">{city.city || 'Not specified'}</span>
-              <span className="text-[10px] font-bold ml-1">{city.count}</span>
+            <div key={i} className="flex items-center justify-between p-2 rounded bg-muted/30 hover:bg-muted/50">
+              <span className="text-xs truncate flex-1">{city.city || 'Not specified'}</span>
+              <span className="text-xs font-bold ml-2">{city.count}</span>
             </div>
           )) || (
-            <p className="col-span-full text-[10px] text-muted-foreground text-center py-2">{t('dashboard.noDataAvailable')}</p>
+            <p className="col-span-full text-xs text-muted-foreground text-center py-2">{t('dashboard.noDataAvailable')}</p>
           )}
         </div>
       </Card>
-
-      {/* Quick Stats Row - Compact */}
-      <div className="grid gap-1.5 grid-cols-4">
-        <div className="flex items-center gap-1.5 p-1.5 rounded-md bg-muted/30">
-          <DollarSign className="w-3 h-3 text-cyan-500" />
-          <div>
-            <p className="text-[9px] text-muted-foreground">Avg Order</p>
-            <p className="text-xs font-bold">{stats.orders > 0 ? Math.round(stats.revenue / stats.orders) : 0} DZD</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5 p-1.5 rounded-md bg-muted/30">
-          <TrendingUp className="w-3 h-3 text-green-500" />
-          <div>
-            <p className="text-[9px] text-muted-foreground">Success</p>
-            <p className="text-xs font-bold">{stats.orders > 0 ? Math.round((stats.completedOrders / stats.orders) * 100) : 0}%</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5 p-1.5 rounded-md bg-muted/30">
-          <Clock className="w-3 h-3 text-amber-500" />
-          <div>
-            <p className="text-[9px] text-muted-foreground">Pending</p>
-            <p className="text-xs font-bold">{stats.pendingOrders}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5 p-1.5 rounded-md bg-muted/30">
-          <Eye className="w-3 h-3 text-violet-500" />
-          <div>
-            <p className="text-[9px] text-muted-foreground">Views</p>
-            <p className="text-xs font-bold">{stats.visitors}</p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

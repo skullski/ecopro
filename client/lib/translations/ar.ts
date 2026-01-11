@@ -1280,6 +1280,7 @@ export const ar = {
   "bot.facebookAccessToken": "توكن فيسبوك",
   "bot.messengerEnabled": "تفعيل إشعارات ماسنجر",
   "bot.messengerDelay": "تأخير الرسالة (دقائق)",
+  "bot.delayDescription": "التأخير قبل إرسال رسالة التأكيد بعد الطلب",
   "bot.greetingMessage": "رسالة الترحيب",
   "bot.greetingDesc": "تُرسل عند ضغط العميل على زر تيليجرام ثم Start",
   "bot.instantOrder": "إشعار الطلب الفوري",

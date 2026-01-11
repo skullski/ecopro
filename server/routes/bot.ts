@@ -62,7 +62,7 @@ export const getBotSettings: RequestHandler = async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      // Return default settings
+      // Return default settings with Arabic templates
       const access = await getClientAccessState(clientId);
       return res.json({
         enabled: access.allowBot,
@@ -79,12 +79,12 @@ export const getBotSettings: RequestHandler = async (req, res) => {
         fbPageId: '',
         fbPageAccessToken: '',
         messengerDelayMinutes: 5,
-        templateGreeting: `Thank you for ordering from {storeName}, {customerName}!\n\n✅ Enable notifications on Telegram to receive order confirmation and tracking updates.`,
-        templateInstantOrder: '',
-        templatePinInstructions: '',
-        templateOrderConfirmation: `Hello {customerName}! 🌟\n\nThank you for your order from {companyName}! \n\n📦 Order Details:\n• Product: {productName}\n• Price: {totalPrice} DZD\n• Address: {address}\n\nDo you confirm the order? Reply "Yes" to confirm or "No" to cancel.`,
-        templatePayment: `Your order #{orderId} has been confirmed. Please pay {totalPrice} DZD.`,
-        templateShipping: `Your order #{orderId} has been shipped. Tracking number: {trackingNumber}.`
+        templateGreeting: `شكراً لطلبك من {storeName}، {customerName}! 🎉\n\n✅ فعّل الإشعارات على تيليجرام لتلقي تأكيد الطلب وتحديثات التتبع.`,
+        templateInstantOrder: `🎉 شكراً لك {customerName}!\n\nتم استلام طلبك بنجاح ✅\n\n━━━━━━━━━━━━━━━━\n📦 تفاصيل الطلب\n━━━━━━━━━━━━━━━━\n🔢 رقم الطلب: #{orderId}\n📱 المنتج: {productName}\n💰 السعر: {totalPrice} دج\n📍 الكمية: {quantity}\n\n━━━━━━━━━━━━━━━━\n👤 معلومات التوصيل\n━━━━━━━━━━━━━━━━\n📛 الاسم: {customerName}\n📞 الهاتف: {customerPhone}\n🏠 العنوان: {address}\n\n━━━━━━━━━━━━━━━━\n🚚 حالة الطلب: قيد المعالجة\n━━━━━━━━━━━━━━━━\n\nسنتصل بك قريباً للتأكيد 📞\n\n⭐ من {storeName}`,
+        templatePinInstructions: `📌 نصيحة مهمة:\n\nاضغط مطولاً على الرسالة السابقة واختر "تثبيت" لتتبع طلبك بسهولة!\n\n🔔 تأكد من:\n• تفعيل الإشعارات للبوت\n• عدم كتم المحادثة\n• ستتلقى تحديثات حالة الطلب هنا مباشرة`,
+        templateOrderConfirmation: `مرحباً {customerName}! 🌟\n\nشكراً لطلبك من {companyName}!\n\n📦 تفاصيل الطلب:\n• المنتج: {productName}\n• السعر: {totalPrice} دج\n• العنوان: {address}\n\nهل تؤكد الطلب؟ اضغط ✅ للتأكيد أو ❌ للإلغاء.`,
+        templatePayment: `تم تأكيد طلبك #{orderId}. المبلغ المطلوب: {totalPrice} دج.`,
+        templateShipping: `تم شحن طلبك #{orderId}. رقم التتبع: {trackingNumber}.`
       });
     }
 

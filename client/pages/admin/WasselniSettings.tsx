@@ -61,12 +61,12 @@ export default function AdminWasselniSettings() {
     fbPageId: '',
     fbPageAccessToken: '',
     messengerDelayMinutes: 5,
-    templateGreeting: `Thank you for ordering from {storeName}, {customerName}!\n\n✅ Enable notifications on Telegram to receive order confirmation and tracking updates.`,
-    templateInstantOrder: `🎉 Thank you, {customerName}!\n\nYour order has been received successfully ✅\n\n━━━━━━━━━━━━━━━━\n📦 Order Details\n━━━━━━━━━━━━━━━━\n🔢 Order ID: #{orderId}\n📱 Product: {productName}\n💰 Price: {totalPrice} DZD\n📍 Quantity: {quantity}\n\n━━━━━━━━━━━━━━━━\n👤 Delivery Information\n━━━━━━━━━━━━━━━━\n📛 Name: {customerName}\n📞 Phone: {customerPhone}\n🏠 Address: {address}\n\n━━━━━━━━━━━━━━━━\n🚚 Order Status: Processing\n━━━━━━━━━━━━━━━━\n\nWe will contact you soon for confirmation 📞\n\n⭐ From {storeName}`,
-    templatePinInstructions: `📌 Important tip:\n\nLong press on the previous message and select "Pin" to easily track your order!\n\n🔔 Make sure to:\n• Enable notifications for the bot\n• Don't mute the conversation\n• You will receive order status updates here directly`,
-    templateOrderConfirmation: `Hello {customerName}! 🌟\n\nThank you for your order from {companyName}! \n\n📦 Order Details:\n• Product: {productName}\n• Price: {totalPrice} DZD\n• Address: {address}\n\nDo you confirm the order? Reply "Yes" to confirm or "No" to cancel.`,
-    templatePayment: `Your order #{orderId} has been confirmed. Please pay {totalPrice} DZD.`,
-    templateShipping: `Your order #{orderId} has been shipped. Tracking number: {trackingNumber}.`
+    templateGreeting: `شكراً لطلبك من {storeName}، {customerName}! 🎉\n\n✅ فعّل الإشعارات على تيليجرام لتلقي تأكيد الطلب وتحديثات التتبع.`,
+    templateInstantOrder: `🎉 شكراً لك {customerName}!\n\nتم استلام طلبك بنجاح ✅\n\n━━━━━━━━━━━━━━━━\n📦 تفاصيل الطلب\n━━━━━━━━━━━━━━━━\n🔢 رقم الطلب: #{orderId}\n📱 المنتج: {productName}\n💰 السعر: {totalPrice} دج\n📍 الكمية: {quantity}\n\n━━━━━━━━━━━━━━━━\n👤 معلومات التوصيل\n━━━━━━━━━━━━━━━━\n📛 الاسم: {customerName}\n📞 الهاتف: {customerPhone}\n🏠 العنوان: {address}\n\n━━━━━━━━━━━━━━━━\n🚚 حالة الطلب: قيد المعالجة\n━━━━━━━━━━━━━━━━\n\nسنتصل بك قريباً للتأكيد 📞\n\n⭐ من {storeName}`,
+    templatePinInstructions: `📌 نصيحة مهمة:\n\nاضغط مطولاً على الرسالة السابقة واختر "تثبيت" لتتبع طلبك بسهولة!\n\n🔔 تأكد من:\n• تفعيل الإشعارات للبوت\n• عدم كتم المحادثة\n• ستتلقى تحديثات حالة الطلب هنا مباشرة`,
+    templateOrderConfirmation: `مرحباً {customerName}! 🌟\n\nشكراً لطلبك من {companyName}!\n\n📦 تفاصيل الطلب:\n• المنتج: {productName}\n• السعر: {totalPrice} دج\n• العنوان: {address}\n\nهل تؤكد الطلب؟ اضغط ✅ للتأكيد أو ❌ للإلغاء.`,
+    templatePayment: `تم تأكيد طلبك #{orderId}. المبلغ المطلوب: {totalPrice} دج.`,
+    templateShipping: `تم شحن طلبك #{orderId}. رقم التتبع: {trackingNumber}.`
   });
 
   useEffect(() => {
@@ -342,6 +342,21 @@ export default function AdminWasselniSettings() {
                       placeholder="@YourBotUsername"
                     />
                   </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.messengerDelay') || 'Message Delay (minutes)'}</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={60}
+                      value={settings.telegramDelayMinutes ?? 5}
+                      onChange={(e) => {
+                        const num = parseInt(e.target.value, 10);
+                        updateSetting('telegramDelayMinutes', isNaN(num) ? 5 : num);
+                      }}
+                      placeholder="5"
+                    />
+                    <p className="text-xs text-slate-500">{t('bot.delayDescription') || 'Delay before sending confirmation message after order'}</p>
+                  </div>
                 </div>
               )}
 
@@ -364,6 +379,21 @@ export default function AdminWasselniSettings() {
                       placeholder="Paste access token"
                     />
                   </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.messengerDelay') || 'Message Delay (minutes)'}</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={60}
+                      value={(settings as any).whatsappDelayMinutes ?? 5}
+                      onChange={(e) => {
+                        const num = parseInt(e.target.value, 10);
+                        updateSetting('whatsappDelayMinutes' as any, isNaN(num) ? 5 : num);
+                      }}
+                      placeholder="5"
+                    />
+                    <p className="text-xs text-slate-500">{t('bot.delayDescription') || 'Delay before sending confirmation message after order'}</p>
+                  </div>
                 </div>
               )}
 
@@ -384,6 +414,21 @@ export default function AdminWasselniSettings() {
                       onChange={(e) => updateSetting('viberSenderName', e.target.value)}
                       placeholder="sahla-E"
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.messengerDelay') || 'Message Delay (minutes)'}</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={60}
+                      value={(settings as any).viberDelayMinutes ?? 5}
+                      onChange={(e) => {
+                        const num = parseInt(e.target.value, 10);
+                        updateSetting('viberDelayMinutes' as any, isNaN(num) ? 5 : num);
+                      }}
+                      placeholder="5"
+                    />
+                    <p className="text-xs text-slate-500">{t('bot.delayDescription') || 'Delay before sending confirmation message after order'}</p>
                   </div>
                 </div>
               )}
