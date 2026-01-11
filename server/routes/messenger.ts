@@ -569,6 +569,43 @@ async function handleMessage(pageId: string, senderId: string, message: any) {
 
     const { fb_page_access_token, client_id, store_name } = settingsResult.rows[0];
 
+    // Check if there's a pending preconnect token for this PSID (user just clicked m.me link)
+    // First check if we have any unexpired token for this client where the user might be connecting
+    const pendingToken = await pool.query(
+      `SELECT customer_phone, ref_token FROM messenger_preconnect_tokens 
+       WHERE client_id = $1 AND used_at IS NULL AND expires_at > NOW()
+       ORDER BY created_at DESC LIMIT 1`,
+      [client_id]
+    );
+
+    if (pendingToken.rows.length > 0) {
+      const { customer_phone, ref_token } = pendingToken.rows[0];
+      
+      // Link this PSID to the phone
+      await pool.query(
+        `INSERT INTO customer_messaging_ids (client_id, customer_phone, messenger_psid, created_at, updated_at)
+         VALUES ($1, $2, $3, NOW(), NOW())
+         ON CONFLICT (client_id, customer_phone)
+         DO UPDATE SET messenger_psid = EXCLUDED.messenger_psid, updated_at = NOW()`,
+        [client_id, customer_phone, senderId]
+      );
+
+      // Mark token as used
+      await pool.query(
+        `UPDATE messenger_preconnect_tokens SET used_at = NOW() WHERE ref_token = $1`,
+        [ref_token]
+      );
+
+      console.log(`[Messenger] Linked PSID ${senderId} to phone ${customer_phone} via message`);
+
+      // Send welcome/confirmation
+      await sendMessengerMessage(
+        fb_page_access_token,
+        senderId,
+        `✅ تم ربط حسابك بنجاح!\n\nيمكنك الآن العودة لإتمام طلبك. ستتلقى تأكيدات الطلبات هنا مباشرة! 📦`
+      );
+    }
+
     // Store/update customer's PSID for future messaging
     await pool.query(
       `INSERT INTO messenger_subscribers (client_id, psid, page_id, subscribed_at, last_interaction)
