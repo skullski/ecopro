@@ -1054,6 +1054,21 @@ export function createServer(options?: { skipDbInit?: boolean }) {
     requireClient,
     clientStoreRoutes.deleteStoreProduct
   );
+  
+  // Media Library routes
+  app.get(
+    "/api/client/media-library",
+    authenticate,
+    requireClient,
+    clientStoreRoutes.getMediaLibrary
+  );
+  app.delete(
+    "/api/client/media-library",
+    authenticate,
+    requireClient,
+    clientStoreRoutes.deleteMediaImage
+  );
+  
   app.get(
     "/api/client/store/categories",
     authenticate,
@@ -1130,6 +1145,11 @@ export function createServer(options?: { skipDbInit?: boolean }) {
   app.post("/api/orders/create", storefrontOrderLimiter, orderRoutes.createOrder); // Public - buyers can create orders
   app.get("/api/client/orders", authenticate, requireClient, orderRoutes.getClientOrders);
   app.get("/api/orders/new-count", authenticate, requireClient, orderRoutes.getNewOrdersCount); // Get count of new orders;
+  
+  // Fraud detection routes (authenticated - client only)
+  app.get("/api/orders/high-risk", authenticate, requireClient, orderRoutes.getHighRiskOrdersHandler);
+  app.get("/api/orders/:id/risk", authenticate, requireClient, orderRoutes.getOrderRisk);
+  app.post("/api/orders/check-risk", authenticate, requireClient, orderRoutes.checkPhoneRisk);
   
   // Order statuses routes (authenticated - client only)
   app.get("/api/client/order-statuses", authenticate, requireClient, orderRoutes.getOrderStatuses);

@@ -61,9 +61,9 @@ export default function AdminWasselniSettings() {
     fbPageId: '',
     fbPageAccessToken: '',
     messengerDelayMinutes: 5,
-    templateGreeting: `شكراً لطلبك من {storeName}، {customerName}! 🎉\n\n✅ فعّل الإشعارات على تيليجرام لتلقي تأكيد الطلب وتحديثات التتبع.`,
+    templateGreeting: `شكراً لطلبك من {storeName}، {customerName}! 🎉\n\n✅ فعّل الإشعارات لتلقي تأكيد الطلب وتحديثات التتبع.`,
     templateInstantOrder: `🎉 شكراً لك {customerName}!\n\nتم استلام طلبك بنجاح ✅\n\n━━━━━━━━━━━━━━━━\n📦 تفاصيل الطلب\n━━━━━━━━━━━━━━━━\n🔢 رقم الطلب: #{orderId}\n📱 المنتج: {productName}\n💰 السعر: {totalPrice} دج\n📍 الكمية: {quantity}\n\n━━━━━━━━━━━━━━━━\n👤 معلومات التوصيل\n━━━━━━━━━━━━━━━━\n📛 الاسم: {customerName}\n📞 الهاتف: {customerPhone}\n🏠 العنوان: {address}\n\n━━━━━━━━━━━━━━━━\n🚚 حالة الطلب: قيد المعالجة\n━━━━━━━━━━━━━━━━\n\nسنتصل بك قريباً للتأكيد 📞\n\n⭐ من {storeName}`,
-    templatePinInstructions: `📌 نصيحة مهمة:\n\nاضغط مطولاً على الرسالة السابقة واختر "تثبيت" لتتبع طلبك بسهولة!\n\n🔔 تأكد من:\n• تفعيل الإشعارات للبوت\n• عدم كتم المحادثة\n• ستتلقى تحديثات حالة الطلب هنا مباشرة`,
+    templatePinInstructions: `📌 نصيحة مهمة:\n\nاضغط مطولاً على الرسالة السابقة واختر "تثبيت" لتتبع طلبك بسهولة!\n\n🔔 تأكد من:\n• تفعيل الإشعارات\n• عدم كتم المحادثة\n• ستتلقى تحديثات حالة الطلب هنا مباشرة`,
     templateOrderConfirmation: `مرحباً {customerName}! 🌟\n\nشكراً لطلبك من {companyName}!\n\n📦 تفاصيل الطلب:\n• المنتج: {productName}\n• السعر: {totalPrice} دج\n• العنوان: {address}\n\nهل تؤكد الطلب؟ اضغط ✅ للتأكيد أو ❌ للإلغاء.`,
     templatePayment: `تم تأكيد طلبك #{orderId}. المبلغ المطلوب: {totalPrice} دج.`,
     templateShipping: `تم شحن طلبك #{orderId}. رقم التتبع: {trackingNumber}.`
@@ -357,6 +357,21 @@ export default function AdminWasselniSettings() {
                     />
                     <p className="text-xs text-slate-500">{t('bot.delayDescription') || 'Delay before sending confirmation message after order'}</p>
                   </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.autoExpire')}</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={72}
+                      value={settings.autoExpireHours ?? 24}
+                      onChange={(e) => {
+                        const num = parseInt(e.target.value, 10);
+                        updateSetting('autoExpireHours', isNaN(num) ? 24 : num);
+                      }}
+                      placeholder="24"
+                    />
+                    <p className="text-xs text-slate-500">{t('bot.autoExpireDesc')}</p>
+                  </div>
                 </div>
               )}
 
@@ -394,6 +409,21 @@ export default function AdminWasselniSettings() {
                     />
                     <p className="text-xs text-slate-500">{t('bot.delayDescription') || 'Delay before sending confirmation message after order'}</p>
                   </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.autoExpire')}</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={72}
+                      value={settings.autoExpireHours ?? 24}
+                      onChange={(e) => {
+                        const num = parseInt(e.target.value, 10);
+                        updateSetting('autoExpireHours', isNaN(num) ? 24 : num);
+                      }}
+                      placeholder="24"
+                    />
+                    <p className="text-xs text-slate-500">{t('bot.autoExpireDesc')}</p>
+                  </div>
                 </div>
               )}
 
@@ -429,6 +459,21 @@ export default function AdminWasselniSettings() {
                       placeholder="5"
                     />
                     <p className="text-xs text-slate-500">{t('bot.delayDescription') || 'Delay before sending confirmation message after order'}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.autoExpire')}</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={72}
+                      value={settings.autoExpireHours ?? 24}
+                      onChange={(e) => {
+                        const num = parseInt(e.target.value, 10);
+                        updateSetting('autoExpireHours', isNaN(num) ? 24 : num);
+                      }}
+                      placeholder="24"
+                    />
+                    <p className="text-xs text-slate-500">{t('bot.autoExpireDesc')}</p>
                   </div>
                 </div>
               )}
@@ -470,6 +515,21 @@ export default function AdminWasselniSettings() {
                       }}
                       placeholder="5"
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.autoExpire')}</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={72}
+                      value={settings.autoExpireHours ?? 24}
+                      onChange={(e) => {
+                        const num = parseInt(e.target.value, 10);
+                        updateSetting('autoExpireHours', isNaN(num) ? 24 : num);
+                      }}
+                      placeholder="24"
+                    />
+                    <p className="text-xs text-slate-500">{t('bot.autoExpireDesc')}</p>
                   </div>
                   <div className="flex items-center gap-3 pt-2">
                     <Switch
@@ -544,78 +604,6 @@ export default function AdminWasselniSettings() {
                 ⏱️ {t('bot.orderConfirmation')}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">{t('bot.orderConfirmationDesc')}</p>
-              
-              {/* Delay Setting */}
-              <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
-                <Label className="text-sm font-semibold text-green-800 dark:text-green-300 mb-2 block">
-                  ⏰ {t('bot.confirmationDelay')}
-                </Label>
-                <div className="flex items-center gap-3">
-                  <Input
-                    type="number"
-                    min={1}
-                    value={settings.telegramDelayMinutes ?? ''}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (val === '') {
-                        updateSetting('telegramDelayMinutes', undefined);
-                      } else {
-                        const num = parseInt(val);
-                        if (!isNaN(num) && num >= 1) {
-                          updateSetting('telegramDelayMinutes', num);
-                        }
-                      }
-                    }}
-                    onBlur={(e) => {
-                      // Set default on blur if empty
-                      if (!settings.telegramDelayMinutes) {
-                        updateSetting('telegramDelayMinutes', 5);
-                      }
-                    }}
-                    className="w-24 bg-white dark:bg-slate-800 border-green-300 dark:border-green-700"
-                  />
-                  <span className="text-xs text-green-700 dark:text-green-400">
-                    {t('bot.sendConfirmationAfter').replace('{n}', (settings.telegramDelayMinutes || 5).toString())}
-                  </span>
-                </div>
-              </div>
-              
-              {/* Auto-Expire Setting */}
-              <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
-                <Label className="text-sm font-semibold text-red-800 dark:text-red-300 mb-2 block">
-                  ⏱️ {t('bot.autoExpire')}
-                </Label>
-                <p className="text-xs text-red-600 dark:text-red-400 mb-2">
-                  {t('bot.autoExpireDesc')}
-                </p>
-                <div className="flex items-center gap-3">
-                  <Input
-                    type="number"
-                    min={1}
-                    value={settings.autoExpireHours ?? ''}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (val === '') {
-                        updateSetting('autoExpireHours', undefined);
-                      } else {
-                        const num = parseInt(val);
-                        if (!isNaN(num) && num >= 1) {
-                          updateSetting('autoExpireHours', num);
-                        }
-                      }
-                    }}
-                    onBlur={() => {
-                      if (!settings.autoExpireHours) {
-                        updateSetting('autoExpireHours', 24);
-                      }
-                    }}
-                    className="w-24 bg-white dark:bg-slate-800 border-red-300 dark:border-red-700"
-                  />
-                  <span className="text-xs text-red-700 dark:text-red-400">
-                    {t('bot.autoExpireAfter').replace('{n}', (settings.autoExpireHours || 24).toString())}
-                  </span>
-                </div>
-              </div>
               
               <Textarea
                 value={settings.templateOrderConfirmation}
@@ -710,10 +698,10 @@ export default function AdminWasselniSettings() {
                 <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-500/20">
                   <Package className="h-4 w-4 text-orange-600 dark:text-orange-400" />
                 </div>
-                Tracking Status Messages
+                {t('bot.trackingStatusMessages')}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-                Configure messages sent at each delivery stage. Use variables like {'{customerName}'}, {'{orderId}'}, {'{trackingNumber}'}.
+                {t('bot.trackingStatusDesc')}
               </p>
               
               <div className="space-y-4">
@@ -721,10 +709,10 @@ export default function AdminWasselniSettings() {
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                    Order Shipped
+                    {t('bot.orderShipped')}
                   </Label>
                   <Textarea
-                    value={(settings as any).templateTrackingShipped || `📦 Hello {customerName}!\n\nYour order #{orderId} has been shipped.\n🚚 Delivery Company: {deliveryCompany}\n📍 Tracking Number: {trackingNumber}\n\nYou can track your order here: {trackingUrl}`}
+                    value={(settings as any).templateTrackingShipped || `📦 مرحباً {customerName}!\n\nتم شحن طلبك #{orderId}.\n🚚 شركة التوصيل: {deliveryCompany}\n📍 رقم التتبع: {trackingNumber}\n\nيمكنك تتبع طلبك من هنا: {trackingUrl}`}
                     onChange={(e) => updateSetting('templateTrackingShipped' as any, e.target.value)}
                     rows={4}
                     className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-xl text-sm"
@@ -735,10 +723,10 @@ export default function AdminWasselniSettings() {
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                    Out for Delivery
+                    {t('bot.outForDelivery')}
                   </Label>
                   <Textarea
-                    value={(settings as any).templateTrackingOutForDelivery || `🚛 {customerName}, your order is on its way!\n\nYour order #{orderId} is out for delivery.\n📍 Estimated arrival: {estimatedTime}\n📞 The driver will contact you soon.\n\nMake sure you're available to receive the order!`}
+                    value={(settings as any).templateTrackingOutForDelivery || `🚛 {customerName}، طلبك في الطريق!\n\nطلبك #{orderId} خرج للتوصيل.\n📍 الوصول المتوقع: {estimatedTime}\n📞 السائق سيتصل بك قريباً.\n\nتأكد من تواجدك لاستلام الطلب!`}
                     onChange={(e) => updateSetting('templateTrackingOutForDelivery' as any, e.target.value)}
                     rows={4}
                     className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-xl text-sm"
@@ -749,10 +737,10 @@ export default function AdminWasselniSettings() {
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                    Delivered
+                    {t('bot.delivered')}
                   </Label>
                   <Textarea
-                    value={(settings as any).templateTrackingDelivered || `✅ Successfully Delivered!\n\nHello {customerName},\nYour order #{orderId} has been delivered successfully.\n\n🙏 Thank you for shopping with us!\n⭐ We hope you enjoy your products.\n\nFor inquiries: {supportPhone}`}
+                    value={(settings as any).templateTrackingDelivered || `✅ تم التوصيل بنجاح!\n\nمرحباً {customerName}،\nتم توصيل طلبك #{orderId} بنجاح.\n\n🙏 شكراً لتسوقك معنا!\n⭐ نتمنى أن تستمتع بمنتجاتك.\n\nللاستفسارات: {supportPhone}`}
                     onChange={(e) => updateSetting('templateTrackingDelivered' as any, e.target.value)}
                     rows={4}
                     className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-xl text-sm"
@@ -763,10 +751,10 @@ export default function AdminWasselniSettings() {
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                    Delivery Failed
+                    {t('bot.deliveryFailed')}
                   </Label>
                   <Textarea
-                    value={(settings as any).templateTrackingFailed || `⚠️ Delivery Failed\n\nHello {customerName},\nWe were unable to deliver your order #{orderId}.\n\nReason: {failureReason}\n\n📞 Please contact us to reschedule delivery: {supportPhone}`}
+                    value={(settings as any).templateTrackingFailed || `⚠️ فشل التوصيل\n\nمرحباً {customerName}،\nلم نتمكن من توصيل طلبك #{orderId}.\n\nالسبب: {failureReason}\n\n📞 يرجى التواصل معنا لإعادة جدولة التوصيل: {supportPhone}`}
                     onChange={(e) => updateSetting('templateTrackingFailed' as any, e.target.value)}
                     rows={4}
                     className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-xl text-sm"
@@ -781,24 +769,24 @@ export default function AdminWasselniSettings() {
                 <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-500/20">
                   <Truck className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                 </div>
-                Delivery Company Settings
+                {t('bot.deliveryCompanySettings')}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-                Connect with delivery companies to get automatic tracking updates.
+                {t('bot.deliveryCompanyDesc')}
               </p>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-900 dark:text-white">Default Delivery Company</Label>
+                  <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.defaultDeliveryCompany')}</Label>
                   <Input
                     value={(settings as any).defaultDeliveryCompany || ''}
                     onChange={(e) => updateSetting('defaultDeliveryCompany' as any, e.target.value)}
-                    placeholder="e.g. Yalidine, ZR Express"
+                    placeholder="Yalidine, ZR Express..."
                     className="bg-slate-50 dark:bg-slate-800/50"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-slate-900 dark:text-white">Tracking URL Template</Label>
+                  <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.trackingUrlTemplate')}</Label>
                   <Input
                     value={(settings as any).trackingUrlTemplate || ''}
                     onChange={(e) => updateSetting('trackingUrlTemplate' as any, e.target.value)}
@@ -815,18 +803,18 @@ export default function AdminWasselniSettings() {
                 <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-500/20">
                   <Code2 className="h-4 w-4 text-orange-600 dark:text-orange-400" />
                 </div>
-                <h4 className="font-bold text-base text-slate-900 dark:text-white">Tracking Variables</h4>
+                <h4 className="font-bold text-base text-slate-900 dark:text-white">{t('bot.trackingVariables')}</h4>
               </div>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 {[
-                  { key: '{customerName}', desc: 'Customer name' },
-                  { key: '{orderId}', desc: 'Order ID' },
-                  { key: '{trackingNumber}', desc: 'Tracking number' },
-                  { key: '{deliveryCompany}', desc: 'Delivery company' },
-                  { key: '{trackingUrl}', desc: 'Tracking URL' },
-                  { key: '{estimatedTime}', desc: 'Estimated delivery' },
-                  { key: '{failureReason}', desc: 'Delivery failure reason' },
-                  { key: '{supportPhone}', desc: 'Support phone' },
+                  { key: '{customerName}', desc: t('bot.customerName') },
+                  { key: '{orderId}', desc: t('bot.orderId') },
+                  { key: '{trackingNumber}', desc: t('bot.trackingNumber') },
+                  { key: '{deliveryCompany}', desc: t('bot.deliveryCompany') },
+                  { key: '{trackingUrl}', desc: t('bot.trackingUrl') },
+                  { key: '{estimatedTime}', desc: t('bot.estimatedTime') },
+                  { key: '{failureReason}', desc: t('bot.failureReason') },
+                  { key: '{supportPhone}', desc: t('bot.supportPhone') },
                 ].map((v) => (
                   <div key={v.key} className="flex items-center gap-2 bg-white dark:bg-slate-800 p-2 rounded-lg border border-slate-200 dark:border-slate-700">
                     <code className="bg-orange-100 dark:bg-orange-500/20 text-orange-700 dark:text-orange-300 px-2 py-1 rounded-md font-mono text-xs font-semibold">

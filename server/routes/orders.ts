@@ -4,6 +4,7 @@ import { pool } from "../utils/database";
 import { sendBotMessagesForOrder } from "./order-confirmation";
 import { createOrderTelegramLink } from "../utils/telegram";
 import { replaceTemplateVariables, sendTelegramMessage } from "../utils/bot-messaging";
+import { assessOrderRisk, getHighRiskOrders } from "../utils/fraud-detection";
 import { z } from 'zod';
 
 const isProduction = process.env.NODE_ENV === 'production';
@@ -598,7 +599,11 @@ export const updateOrderStatus: RequestHandler = async (req, res) => {
     if (!isProduction) console.log('[updateOrderStatus] User:', req.user.id, 'Order:', id, 'Status:', status);
 
     // Built-in valid statuses
-    const builtInStatuses = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'];
+    const builtInStatuses = [
+      'pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded',
+      'completed', 'failed', 'at_delivery', 'no_answer_1', 'no_answer_2', 'no_answer_3',
+      'waiting_callback', 'postponed', 'line_closed', 'fake', 'duplicate', 'returned'
+    ];
     
     // Check if status is a built-in status OR a custom status for this client
     let isValidStatus = builtInStatuses.includes(status);
@@ -874,5 +879,126 @@ export const getNewOrdersCount: RequestHandler = async (req, res) => {
   } catch (error) {
     console.error("Get new orders count error:", error);
     res.status(500).json({ error: "Failed to get new orders count" });
+  }
+};
+
+/**
+ * Assess fraud risk for a specific order
+ * GET /api/orders/:id/risk
+ */
+export const getOrderRisk: RequestHandler = async (req, res) => {
+  try {
+    const clientId = (req as any).user?.id;
+    if (!clientId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const orderId = parseInt(req.params.id, 10);
+    if (isNaN(orderId)) {
+      res.status(400).json({ error: "Invalid order ID" });
+      return;
+    }
+
+    // Get order details
+    const orderResult = await pool.query(
+      `SELECT customer_phone, customer_address FROM store_orders WHERE id = $1 AND client_id = $2`,
+      [orderId, clientId]
+    );
+
+    if (orderResult.rows.length === 0) {
+      res.status(404).json({ error: "Order not found" });
+      return;
+    }
+
+    const order = orderResult.rows[0];
+    const risk = await assessOrderRisk(clientId, order.customer_phone, order.customer_address);
+
+    res.json({
+      order_id: orderId,
+      ...risk
+    });
+  } catch (error) {
+    console.error("Get order risk error:", error);
+    res.status(500).json({ error: "Failed to assess order risk" });
+  }
+};
+
+/**
+ * Get all high-risk pending orders
+ * GET /api/orders/high-risk
+ */
+export const getHighRiskOrdersHandler: RequestHandler = async (req, res) => {
+  try {
+    const clientId = (req as any).user?.id;
+    if (!clientId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const rawOrders = await getHighRiskOrders(clientId);
+    
+    // Calculate full risk assessment for each order
+    const ordersWithRisk = await Promise.all(
+      rawOrders.map(async (order) => {
+        const risk = await assessOrderRisk(clientId, order.customer_phone, order.customer_address);
+        return {
+          order_id: order.id,
+          customer_name: order.customer_name,
+          customer_phone: order.customer_phone,
+          customer_address: order.customer_address,
+          total_price: order.total_price,
+          created_at: order.created_at,
+          risk: {
+            score: risk.score,
+            level: risk.level,
+            flags: risk.flags,
+            recommendation: risk.recommendation,
+            history: {
+              total_orders: risk.phoneHistory.totalOrders,
+              fake_orders: risk.phoneHistory.fakeOrders,
+              returned_orders: risk.phoneHistory.returnedOrders,
+              cancelled_orders: risk.phoneHistory.cancelledOrders,
+              no_answer_orders: risk.phoneHistory.noAnswerOrders,
+              completed_orders: risk.phoneHistory.completedOrders,
+            }
+          }
+        };
+      })
+    );
+
+    // Filter to only return orders with risk score > 25
+    const highRiskOnly = ordersWithRisk.filter(o => o.risk.score > 25);
+    
+    res.json({ orders: highRiskOnly });
+  } catch (error) {
+    console.error("Get high-risk orders error:", error);
+    res.status(500).json({ error: "Failed to get high-risk orders" });
+  }
+};
+
+/**
+ * Assess risk for a phone number (without creating order)
+ * POST /api/orders/check-risk
+ */
+export const checkPhoneRisk: RequestHandler = async (req, res) => {
+  try {
+    const clientId = (req as any).user?.id;
+    if (!clientId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const { phone, address } = req.body;
+    if (!phone || typeof phone !== 'string') {
+      res.status(400).json({ error: "Phone number is required" });
+      return;
+    }
+
+    const risk = await assessOrderRisk(clientId, phone.trim(), address?.trim() || null);
+    res.json(risk);
+  } catch (error) {
+    console.error("Check phone risk error:", error);
+    res.status(500).json({ error: "Failed to check risk" });
   }
 };

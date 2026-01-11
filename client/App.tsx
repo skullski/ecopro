@@ -44,6 +44,7 @@ const DataMigration = lazy(() => import("./pages/DataMigration"));
 const StockManagement = lazy(() => import("./pages/customer/StockManagement"));
 const Store = lazy(() => import("./pages/customer/Store"));
 const ImageManager = lazy(() => import("./pages/admin/ImageManager"));
+const MediaLibrary = lazy(() => import("./pages/admin/MediaLibrary"));
 const PublicProduct = lazy(() => import("./pages/PublicProduct"));
 const Storefront = lazy(() => import("./pages/Storefront"));
 const Checkout = lazy(() => import("./pages/Checkout"));
@@ -443,6 +444,8 @@ const App = () => (
                   <Route path="/codes" element={<Navigate to="/pricing" replace />} />
                   <Route path="/chat" element={<RequirePaidClient><ChatPage /></RequirePaidClient>} />
                   <Route path="/customer-bot" element={<RequirePaidClient><SubscriptionPageLock><CustomerBot /></SubscriptionPageLock></RequirePaidClient>} />
+                  {/* Redirect old pixel-statistics URL to dashboard */}
+                  <Route path="/pixel-statistics" element={<Navigate to="/dashboard/pixel-statistics" replace />} />
                   {/* My Store - logged in client viewing their own store */}
                   <Route path="/my-store" element={<MyStore />} />
                   {/* Template Editor */}

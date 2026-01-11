@@ -1077,4 +1077,167 @@ export const getProductShareLink: RequestHandler = async (req, res) => {
   }
 };
 
+/**
+ * Get all images in the client's account (Media Library)
+ * GET /api/client/media-library
+ */
+export const getMediaLibrary: RequestHandler = async (req, res) => {
+  try {
+    const user = (req as any).user;
+    if (user && (user.role === 'admin' || user.user_type === 'admin')) {
+      return res.status(403).json({ error: 'Admins do not have a client store' });
+    }
+    const clientId = (req as any).user.id;
+
+    const images: any[] = [];
+
+    // 1. Get product images
+    const productsRes = await pool.query(
+      `SELECT id, title, images FROM client_store_products WHERE client_id = $1 AND images IS NOT NULL`,
+      [clientId]
+    );
+    
+    for (const product of productsRes.rows) {
+      const productImages = Array.isArray(product.images) 
+        ? product.images 
+        : (typeof product.images === 'string' ? JSON.parse(product.images) : []);
+      
+      for (let i = 0; i < productImages.length; i++) {
+        const url = productImages[i];
+        if (url && typeof url === 'string' && url.trim()) {
+          images.push({
+            id: `product_${product.id}_${i}`,
+            url: url.trim(),
+            source: 'product',
+            source_id: product.id,
+            source_name: product.title
+          });
+        }
+      }
+    }
+
+    // 2. Get store settings images
+    const imageKeys = [
+      'hero_main_url', 'hero_tile1_url', 'hero_tile2_url', 
+      'banner_url', 'logo_url', 'favicon_url', 'store_images'
+    ];
+    
+    const settingsRes = await pool.query(
+      `SELECT key, value FROM store_settings WHERE client_id = $1 AND key = ANY($2)`,
+      [clientId, imageKeys]
+    );
+
+    for (const setting of settingsRes.rows) {
+      if (setting.key === 'store_images') {
+        // store_images is an array
+        try {
+          const storeImages = typeof setting.value === 'string' 
+            ? JSON.parse(setting.value) 
+            : setting.value;
+          if (Array.isArray(storeImages)) {
+            for (let i = 0; i < storeImages.length; i++) {
+              const url = storeImages[i];
+              if (url && typeof url === 'string' && url.trim()) {
+                images.push({
+                  id: `store_images_${i}`,
+                  url: url.trim(),
+                  source: 'store_images',
+                  source_name: `Store Image ${i + 1}`
+                });
+              }
+            }
+          }
+        } catch (e) {
+          // ignore parse errors
+        }
+      } else {
+        // Single URL settings
+        const url = setting.value;
+        if (url && typeof url === 'string' && url.trim()) {
+          images.push({
+            id: `setting_${setting.key}`,
+            url: url.trim(),
+            source: setting.key,
+            source_name: setting.key.replace(/_/g, ' ').replace(/url$/i, '').trim()
+          });
+        }
+      }
+    }
+
+    res.json({ images });
+  } catch (error) {
+    console.error("Get media library error:", error);
+    res.status(500).json({ error: "Failed to load media library" });
+  }
+};
+
+/**
+ * Delete an image from the media library
+ * DELETE /api/client/media-library
+ */
+export const deleteMediaImage: RequestHandler = async (req, res) => {
+  try {
+    const user = (req as any).user;
+    if (user && (user.role === 'admin' || user.user_type === 'admin')) {
+      return res.status(403).json({ error: 'Admins do not have a client store' });
+    }
+    const clientId = (req as any).user.id;
+    const { url, source, source_id } = req.body;
+
+    if (!url || !source) {
+      return res.status(400).json({ error: 'URL and source are required' });
+    }
+
+    if (source === 'product' && source_id) {
+      // Remove image from product's images array
+      const productRes = await pool.query(
+        `SELECT images FROM client_store_products WHERE id = $1 AND client_id = $2`,
+        [source_id, clientId]
+      );
+      
+      if (productRes.rows.length > 0) {
+        let images = productRes.rows[0].images || [];
+        if (typeof images === 'string') images = JSON.parse(images);
+        images = images.filter((img: string) => img !== url);
+        
+        await pool.query(
+          `UPDATE client_store_products SET images = $1 WHERE id = $2 AND client_id = $3`,
+          [JSON.stringify(images), source_id, clientId]
+        );
+        invalidateProductsCache(clientId);
+      }
+    } else if (source === 'store_images') {
+      // Remove from store_images array
+      const settingRes = await pool.query(
+        `SELECT value FROM store_settings WHERE client_id = $1 AND key = 'store_images'`,
+        [clientId]
+      );
+      
+      if (settingRes.rows.length > 0) {
+        let images = settingRes.rows[0].value || [];
+        if (typeof images === 'string') images = JSON.parse(images);
+        images = images.filter((img: string) => img !== url);
+        
+        await pool.query(
+          `UPDATE store_settings SET value = $1 WHERE client_id = $2 AND key = 'store_images'`,
+          [JSON.stringify(images), clientId]
+        );
+        invalidateSettingsCache(clientId);
+      }
+    } else {
+      // Delete single URL setting (hero, banner, logo, etc)
+      await pool.query(
+        `DELETE FROM store_settings WHERE client_id = $1 AND key = $2`,
+        [clientId, source]
+      );
+      invalidateSettingsCache(clientId);
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Delete media image error:", error);
+    res.status(500).json({ error: "Failed to delete image" });
+  }
+};
+
 export default router;

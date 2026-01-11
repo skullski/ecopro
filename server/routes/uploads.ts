@@ -309,10 +309,16 @@ export const listClientImages: RequestHandler = async (req, res) => {
       }
     }
     
-    // Also include external URLs (http/https) that are referenced
+    // Also include ALL database-referenced URLs that weren't found on disk
+    // This handles: external URLs (http/https) AND /uploads/ paths not on local disk
+    const addedUrls = new Set(allImages.map(img => img.url));
+    
     for (const url of clientImageUrls) {
+      // Skip if already added from disk files
+      if (addedUrls.has(url)) continue;
+      
       if (url.startsWith('http://') || url.startsWith('https://')) {
-        // Extract filename from URL
+        // External URL
         const urlParts = url.split('/');
         const filename = urlParts[urlParts.length - 1]?.split('?')[0] || 'external-image';
         
@@ -325,6 +331,20 @@ export const listClientImages: RequestHandler = async (req, res) => {
           usedIn: imageUsage[url] || [],
           isOrphaned: false,
           isExternal: true
+        });
+      } else if (url.startsWith('/uploads/')) {
+        // Local upload path not found on disk (e.g., on Render server)
+        const filename = url.replace('/uploads/', '');
+        
+        allImages.push({
+          filename,
+          url,
+          size: null,
+          createdAt: null,
+          modifiedAt: null,
+          usedIn: imageUsage[url] || [],
+          isOrphaned: false,
+          isExternal: false
         });
       }
     }

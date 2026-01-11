@@ -3,6 +3,7 @@ import { MoreHorizontal, Download, ShoppingBag, TrendingUp, Plus, Settings, X, T
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "@/lib/i18n";
 import { OrderFulfillment } from "@/components/delivery/OrderFulfillment";
+import { RiskAlert } from "@/components/orders/RiskAlert";
 
 interface DeliveryCompany {
   id: number;
@@ -534,6 +535,17 @@ export default function OrdersAdmin() {
 
   return (
     <div>
+      {/* Risk Alert for suspicious orders */}
+      <RiskAlert 
+        onOrderClick={(orderId) => {
+          // Find the order in our list and expand it
+          const order = orders.find(o => o.raw_id === orderId);
+          if (order) {
+            setExpandedOrderId(order.id);
+          }
+        }}
+      />
+      
       {/* Header Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-2 mb-2 md:mb-3">
         <div className="rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/30 p-2 md:p-3">
