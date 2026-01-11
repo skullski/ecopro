@@ -463,13 +463,16 @@ async function handleReferral(pageId: string, senderId: string, referral: any) {
     );
     const storeName = storeRes.rows[0]?.store_name || 'Store';
 
-    // Send welcome message
+    // Send welcome message - replace placeholders
     const defaultGreeting = `مرحباً بك في ${storeName}! 🎉\n\n✅ تم ربط حسابك بنجاح.\n\nيمكنك الآن العودة لإتمام طلبك وستتلقى التأكيد هنا مباشرة! 📦`;
+    
+    let greeting = template_greeting || defaultGreeting;
+    greeting = greeting.replace(/\{storeName\}/g, storeName).replace(/\{customerName\}/g, '');
     
     await sendMessengerMessage(
       fb_page_access_token,
       senderId,
-      template_greeting || defaultGreeting
+      greeting
     );
 
     console.log(`[Messenger] Successfully linked PSID ${senderId} to phone ${customer_phone} for client ${client_id}`);
