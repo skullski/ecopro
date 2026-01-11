@@ -18,7 +18,7 @@ interface DashboardStats {
 }
 
 interface Analytics {
-  dailyRevenue: { date: string; orders: number; revenue: number }[];
+  dailyRevenue: { date: string; orders: number; revenue: number; total_value: number }[];
   customStatuses: { key?: string; name: string; color: string; icon: string }[];
   comparisons: {
     today: { orders: number; revenue: number; ordersGrowth: number; revenueGrowth: number };
@@ -142,6 +142,7 @@ export default function Dashboard() {
 
   // Calculate chart data for last 12 days
   const chartData = analytics?.dailyRevenue?.slice(-12) || [];
+  const maxOrders = Math.max(...chartData.map(d => d.orders), 1);
   const maxRevenue = Math.max(...chartData.map(d => d.revenue), 1);
 
   const currentComparison = analytics?.comparisons?.[selectedPeriod];
@@ -283,18 +284,65 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Main Content Grid */}
-      <div className="grid gap-3 lg:grid-cols-3">
-        {/* Sales Chart - Takes 2 columns */}
-        <Card className="lg:col-span-2 p-3 sm:p-4 shadow-lg bg-white dark:bg-slate-800/90 border border-gray-200 dark:border-slate-700">
+      {/* Charts Row - Orders & Revenue */}
+      <div className="grid gap-3 lg:grid-cols-2">
+        {/* Orders Chart */}
+        <Card className="p-3 sm:p-4 shadow-lg bg-white dark:bg-slate-800/90 border border-gray-200 dark:border-slate-700">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500 text-white">
-                <BarChart3 className="w-4 h-4" />
+              <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 text-white">
+                <Package className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm sm:text-base">{t('dashboard.ordersLast12Days') || 'Orders Last 12 Days'}</h3>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">{t('dashboard.dailyOrders') || 'Daily orders'}</p>
+              </div>
+            </div>
+            <div className="text-left bg-gradient-to-r from-blue-500/10 to-cyan-500/10 px-2 sm:px-3 py-1.5 rounded-lg border border-blue-500/20">
+              <p className="text-sm sm:text-lg font-bold text-blue-600 dark:text-blue-400">
+                {chartData.reduce((sum, d) => sum + d.orders, 0)}
+              </p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">{t('dashboard.totalOrders') || 'Total orders'}</p>
+            </div>
+          </div>
+          
+          <div className="h-32 sm:h-40 flex items-end gap-1 sm:gap-2 px-1">
+            {chartData.length > 0 ? chartData.map((day, i) => {
+              const heightPercent = maxOrders > 0 ? (day.orders / maxOrders) * 100 : 0;
+              const barHeight = Math.max(heightPercent, 4);
+              return (
+              <div key={i} className="flex-1 flex flex-col items-center gap-1 group h-full">
+                <div className="relative w-full flex-1 flex items-end">
+                  <div 
+                    className="w-full rounded-t-md bg-gradient-to-t from-blue-600 to-cyan-400 hover:from-blue-500 hover:to-cyan-300 transition-all duration-300 cursor-pointer shadow-md"
+                    style={{ height: `${barHeight}%` }}
+                  />
+                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap z-10 shadow-xl">
+                    <p className="font-bold">{day.orders} orders</p>
+                  </div>
+                </div>
+                <span className="text-[9px] sm:text-[10px] text-muted-foreground font-medium">
+                  {new Date(day.date).getDate()}
+                </span>
+              </div>
+            );}) : (
+              <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                <p className="text-sm">{t('dashboard.noDataAvailable')}</p>
+              </div>
+            )}
+          </div>
+        </Card>
+
+        {/* Revenue Chart (completed orders only) */}
+        <Card className="p-3 sm:p-4 shadow-lg bg-white dark:bg-slate-800/90 border border-gray-200 dark:border-slate-700">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-emerald-500 to-green-500 text-white">
+                <DollarSign className="w-4 h-4" />
               </div>
               <div>
                 <h3 className="font-bold text-sm sm:text-base">{t('dashboard.revenueLast12Days')}</h3>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">{t('dashboard.dailyRevenue')}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">{t('dashboard.completedOnly') || 'Completed orders only'}</p>
               </div>
             </div>
             <div className="text-left bg-gradient-to-r from-emerald-500/10 to-green-500/10 px-2 sm:px-3 py-1.5 rounded-lg border border-emerald-500/20">
@@ -305,37 +353,36 @@ export default function Dashboard() {
             </div>
           </div>
           
-          <div className="h-40 sm:h-48 flex items-end gap-2 sm:gap-3 px-1.5">
+          <div className="h-32 sm:h-40 flex items-end gap-1 sm:gap-2 px-1">
             {chartData.length > 0 ? chartData.map((day, i) => {
               const heightPercent = maxRevenue > 0 ? (day.revenue / maxRevenue) * 100 : 0;
-              const barHeight = Math.max(heightPercent, 4); // minimum 4% height for visibility
+              const barHeight = Math.max(heightPercent, 4);
               return (
-              <div key={i} className="flex-1 flex flex-col items-center gap-1.5 group h-full">
+              <div key={i} className="flex-1 flex flex-col items-center gap-1 group h-full">
                 <div className="relative w-full flex-1 flex items-end">
                   <div 
-                    className="w-full rounded-t-md bg-gradient-to-t from-blue-600 via-blue-500 to-purple-500 hover:from-blue-500 hover:via-purple-500 hover:to-pink-500 transition-all duration-300 cursor-pointer shadow-md shadow-blue-500/20 hover:shadow-purple-500/30"
+                    className="w-full rounded-t-md bg-gradient-to-t from-emerald-600 to-green-400 hover:from-emerald-500 hover:to-green-300 transition-all duration-300 cursor-pointer shadow-md"
                     style={{ height: `${barHeight}%` }}
                   />
-                  <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] px-2 py-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap z-10 shadow-xl">
+                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap z-10 shadow-xl">
                     <p className="font-bold">{Math.round(day.revenue)} DZD</p>
-                    <p className="text-white/70">{day.orders} orders</p>
                   </div>
                 </div>
-                <span className="text-[10px] sm:text-xs text-muted-foreground font-medium">
+                <span className="text-[9px] sm:text-[10px] text-muted-foreground font-medium">
                   {new Date(day.date).getDate()}
                 </span>
               </div>
             );}) : (
               <div className="flex-1 flex items-center justify-center text-muted-foreground">
-                <div className="text-center">
-                  <BarChart3 className="w-8 h-8 mx-auto mb-1.5 opacity-20" />
-                  <p className="text-sm">{t('dashboard.noDataAvailable')}</p>
-                </div>
+                <p className="text-sm">{t('dashboard.noDataAvailable')}</p>
               </div>
             )}
           </div>
         </Card>
+      </div>
 
+      {/* Main Content Grid */}
+      <div className="grid gap-3 lg:grid-cols-3">
         {/* Order Status Breakdown */}
         <Card className="p-3 sm:p-4 shadow-lg bg-white dark:bg-slate-800/90 border border-gray-200 dark:border-slate-700">
           <div className="flex items-center gap-2 mb-3">
