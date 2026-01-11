@@ -312,32 +312,39 @@ export default function Dashboard() {
       {/* Status + Top Products + Recent Orders - All in one row */}
       <div className="grid gap-2 grid-cols-1 md:grid-cols-3">
         {/* Order Status Breakdown */}
-        <Card className="p-2 shadow-lg bg-white dark:bg-slate-800/90 border border-gray-200 dark:border-slate-700">
-          <div className="flex items-center gap-1.5 mb-2">
-            <div className="p-1 rounded-md bg-gradient-to-br from-amber-500 to-orange-500 text-white">
-              <Target className="w-3.5 h-3.5" />
+        <Card className="p-3 shadow-lg bg-white dark:bg-slate-800/90 border border-gray-200 dark:border-slate-700">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="p-1.5 rounded-md bg-gradient-to-br from-amber-500 to-orange-500 text-white">
+              <Target className="w-4 h-4" />
             </div>
             <h3 className="font-bold text-sm">{t('dashboard.statusDistribution')}</h3>
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             {analytics?.statusBreakdown?.slice(0, 5).map((item, i) => {
               const total = analytics.statusBreakdown.reduce((sum, s) => sum + s.count, 0);
               const percentage = total > 0 ? (item.count / total) * 100 : 0;
               return (
-                <div key={i} className="flex items-center gap-1.5">
-                  <div 
-                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: getStatusColor(item.status) }}
-                  />
-                  <span className="text-xs flex-1 truncate">{getStatusName(item.status)}</span>
-                  <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full rounded-full" style={{ width: `${percentage}%`, backgroundColor: getStatusColor(item.status) }} />
+                <div key={i}>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: getStatusColor(item.status) }}
+                      />
+                      <span className="text-sm">{getStatusName(item.status)}</span>
+                    </div>
+                    <span className="text-sm font-bold">{item.count}</span>
                   </div>
-                  <span className="text-xs font-bold w-6 text-right">{item.count}</span>
+                  <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className="h-full rounded-full transition-all" 
+                      style={{ width: `${percentage}%`, backgroundColor: getStatusColor(item.status) }} 
+                    />
+                  </div>
                 </div>
               );
             }) || (
-              <p className="text-xs text-muted-foreground text-center py-1">{t('dashboard.noDataAvailable')}</p>
+              <p className="text-sm text-muted-foreground text-center py-2">{t('dashboard.noDataAvailable')}</p>
             )}
           </div>
         </Card>
