@@ -113,17 +113,17 @@ export const getDashboardAnalytics: RequestHandler = async (req, res) => {
         `SELECT key, name, color, icon FROM order_statuses WHERE client_id = $1 ORDER BY sort_order`,
         [clientId]
       ),
-      // Daily revenue for last 30 days
+      // Daily revenue for last 30 days (show all order values, not just completed)
       pool.query(
         `SELECT 
           DATE(created_at) as date,
           COUNT(*)::int as orders,
-          COALESCE(SUM(CASE WHEN status = ANY($2) THEN total_price ELSE 0 END), 0)::float as revenue
+          COALESCE(SUM(total_price), 0)::float as revenue
          FROM store_orders 
          WHERE client_id = $1 AND created_at >= NOW() - INTERVAL '30 days'
          GROUP BY DATE(created_at)
          ORDER BY date ASC`,
-        [clientId, revenueStatuses]
+        [clientId]
       ),
       // Today
       pool.query(
