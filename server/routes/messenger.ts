@@ -600,21 +600,35 @@ async function handlePostback(pageId: string, senderId: string, postback: any) {
  */
 async function handleMessage(pageId: string, senderId: string, message: any) {
   const text = message.text?.toLowerCase() || '';
-  console.log(`[Messenger] Message from ${senderId}: ${text}`);
+  console.log(`[Messenger] Message from ${senderId} to page ${pageId}: ${text}`);
 
   try {
     const pool = await ensureConnection();
 
-    // Get page access token
-    const settingsResult = await pool.query(
+    // Get page access token - try both exact match and partial match
+    let settingsResult = await pool.query(
       `SELECT fb_page_access_token, client_id, store_name FROM bot_settings 
        WHERE fb_page_id = $1 AND messenger_enabled = true`,
       [pageId]
     );
 
-    if (settingsResult.rows.length === 0) return;
+    // Fallback: if no exact match, try finding by partial match or any enabled messenger
+    if (settingsResult.rows.length === 0) {
+      console.log(`[Messenger] No exact match for pageId ${pageId}, trying fallback...`);
+      settingsResult = await pool.query(
+        `SELECT fb_page_access_token, client_id, store_name FROM bot_settings 
+         WHERE messenger_enabled = true AND fb_page_access_token IS NOT NULL
+         LIMIT 1`
+      );
+    }
+
+    if (settingsResult.rows.length === 0) {
+      console.log(`[Messenger] No settings found for page ${pageId}`);
+      return;
+    }
 
     const { fb_page_access_token, client_id, store_name } = settingsResult.rows[0];
+    console.log(`[Messenger] Found client ${client_id} for page ${pageId}`);
 
     // Check if there's a pending preconnect token for this PSID (user just clicked m.me link)
     // First check if we have any unexpired token for this client where the user might be connecting
