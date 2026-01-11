@@ -306,12 +306,15 @@ export default function Dashboard() {
           </div>
           
           <div className="h-40 sm:h-48 flex items-end gap-2 sm:gap-3 px-1.5">
-            {chartData.length > 0 ? chartData.map((day, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-1.5 group">
-                <div className="relative w-full">
+            {chartData.length > 0 ? chartData.map((day, i) => {
+              const heightPercent = maxRevenue > 0 ? (day.revenue / maxRevenue) * 100 : 0;
+              const barHeight = Math.max(heightPercent, 4); // minimum 4% height for visibility
+              return (
+              <div key={i} className="flex-1 flex flex-col items-center gap-1.5 group h-full">
+                <div className="relative w-full flex-1 flex items-end">
                   <div 
                     className="w-full rounded-t-md bg-gradient-to-t from-blue-600 via-blue-500 to-purple-500 hover:from-blue-500 hover:via-purple-500 hover:to-pink-500 transition-all duration-300 cursor-pointer shadow-md shadow-blue-500/20 hover:shadow-purple-500/30"
-                    style={{ height: `${Math.max((day.revenue / maxRevenue) * 100, 6)}px` }}
+                    style={{ height: `${barHeight}%` }}
                   />
                   <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] px-2 py-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap z-10 shadow-xl">
                     <p className="font-bold">{Math.round(day.revenue)} DZD</p>
@@ -322,7 +325,7 @@ export default function Dashboard() {
                   {new Date(day.date).getDate()}
                 </span>
               </div>
-            )) : (
+            );}) : (
               <div className="flex-1 flex items-center justify-center text-muted-foreground">
                 <div className="text-center">
                   <BarChart3 className="w-8 h-8 mx-auto mb-1.5 opacity-20" />
