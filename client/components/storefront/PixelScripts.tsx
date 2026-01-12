@@ -28,13 +28,26 @@ declare global {
 export default function PixelScripts({ storeSlug }: PixelScriptsProps) {
   const [config, setConfig] = useState<PixelConfig | null>(null);
 
+  // Set current store slug for backend tracking
+  useEffect(() => {
+    if (storeSlug) {
+      setCurrentStoreSlug(storeSlug);
+    }
+  }, [storeSlug]);
+
   // Fetch pixel config on mount
   useEffect(() => {
     if (!storeSlug) return;
     
     fetch(`/api/pixels/config/${storeSlug}`)
       .then(res => res.json())
-      .then(data => setConfig(data))
+      .then(data => {
+        setConfig(data);
+        // Track PageView to our backend when pixel config loads
+        if (data.is_facebook_enabled || data.is_tiktok_enabled) {
+          trackAllPixels('PageView', { page_url: window.location.href });
+        }
+      })
       .catch(err => console.error('Failed to load pixel config:', err));
   }, [storeSlug]);
 
@@ -134,9 +147,70 @@ export function trackTikTokEvent(eventName: string, params?: Record<string, any>
   }
 }
 
+/**
+ * Send event to our backend for statistics tracking
+ */
+function trackToBackend(storeSlug: string, pixelType: 'facebook' | 'tiktok', eventName: string, params?: Record<string, any>) {
+  if (!storeSlug) return;
+  
+  fetch('/api/pixels/track', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      store_slug: storeSlug,
+      pixel_type: pixelType,
+      event_name: eventName,
+      event_data: params || {},
+      page_url: window.location.href,
+      product_id: params?.content_ids?.[0],
+      order_id: params?.order_id,
+      revenue: params?.value,
+      currency: params?.currency || 'DZD',
+      session_id: getSessionId(),
+      visitor_id: getVisitorId()
+    })
+  }).catch(err => console.error('[Pixel] Backend tracking failed:', err));
+}
+
+// Get or create session ID (per browser session)
+function getSessionId(): string {
+  let sessionId = sessionStorage.getItem('pixel_session_id');
+  if (!sessionId) {
+    sessionId = 'sess_' + Math.random().toString(36).substring(2, 15);
+    sessionStorage.setItem('pixel_session_id', sessionId);
+  }
+  return sessionId;
+}
+
+// Get or create visitor ID (persistent across sessions)
+function getVisitorId(): string {
+  let visitorId = localStorage.getItem('pixel_visitor_id');
+  if (!visitorId) {
+    visitorId = 'vis_' + Math.random().toString(36).substring(2, 15);
+    localStorage.setItem('pixel_visitor_id', visitorId);
+  }
+  return visitorId;
+}
+
+// Store the current store slug for backend tracking
+let currentStoreSlug = '';
+
+export function setCurrentStoreSlug(slug: string) {
+  currentStoreSlug = slug;
+  // Also save to localStorage for other pages
+  if (slug) localStorage.setItem('currentStoreSlug', slug);
+}
+
 export function trackAllPixels(eventName: string, params?: Record<string, any>) {
   trackFacebookEvent(eventName, params);
   trackTikTokEvent(eventName, params);
+  
+  // Also track to our backend for statistics
+  const storeSlug = currentStoreSlug || localStorage.getItem('currentStoreSlug') || '';
+  if (storeSlug) {
+    trackToBackend(storeSlug, 'facebook', eventName, params);
+    trackToBackend(storeSlug, 'tiktok', eventName, params);
+  }
 }
 
 // Event name mappings for common events
