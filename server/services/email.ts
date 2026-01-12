@@ -235,3 +235,4 @@ If you didn't request this code, please ignore this email.`;
 
   return sendEmail({ to: email, subject, text, html });
 }
+// Trigger redeploy Mon 12 Jan 2026 05:52:17 PM CET
