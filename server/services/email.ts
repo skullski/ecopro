@@ -76,12 +76,13 @@ export interface SendEmailOptions {
 async function sendViaResend(options: SendEmailOptions): Promise<{ success: boolean; error?: string }> {
   const resend = getResendClient();
   if (!resend) return { success: false, error: 'Resend not configured' };
+
+  const from = (process.env.EMAIL_FROM || process.env.RESEND_FROM || 'EcoPro <onboarding@resend.dev>').trim();
   
   try {
     console.log('[EmailService] Sending via Resend API to:', options.to);
     const { data, error } = await resend.emails.send({
-      // Use Resend's test domain until you verify your own domain
-      from: 'EcoPro <onboarding@resend.dev>',
+      from,
       to: options.to,
       subject: options.subject,
       text: options.text,
