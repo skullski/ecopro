@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import PixelScripts, { trackAllPixels, PixelEvents } from '@/components/storefront/PixelScripts';
 
 interface Product {
   id: number;
@@ -195,10 +196,34 @@ export default function ProductCheckout() {
     },
   });
 
-  // Auto-scroll to checkout when opened
+  // Track ViewContent when product loads
+  useEffect(() => {
+    if (product) {
+      trackAllPixels(PixelEvents.VIEW_CONTENT, {
+        content_name: product.title || product.name,
+        content_ids: [product.id],
+        content_type: 'product',
+        value: product.price,
+        currency: settings.currency_code || 'DZD'
+      });
+    }
+  }, [product?.id]);
+
+  // Auto-scroll to checkout when opened & track InitiateCheckout
   useEffect(() => {
     if (showCheckout) {
       document.getElementById('checkout-section')?.scrollIntoView({ behavior: 'smooth' });
+      // Track InitiateCheckout event
+      if (product) {
+        trackAllPixels(PixelEvents.INITIATE_CHECKOUT, {
+          content_name: product.title || product.name,
+          content_ids: [product.id],
+          content_type: 'product',
+          value: product.price * quantity,
+          currency: settings.currency_code || 'DZD',
+          num_items: quantity
+        });
+      }
     }
   }, [showCheckout]);
 
@@ -593,6 +618,17 @@ export default function ProductCheckout() {
         setOrderId(result.orderId || result.id);
         if (result.telegramUrls) setTelegramUrls(result.telegramUrls);
         setOrderSuccess(true);
+        
+        // Track Purchase event
+        trackAllPixels(PixelEvents.PURCHASE, {
+          content_name: product.title || product.name,
+          content_ids: [product.id],
+          content_type: 'product',
+          value: product.price * quantity,
+          currency: settings.currency_code || 'DZD',
+          num_items: quantity,
+          order_id: result.orderId || result.id
+        });
       } else {
         console.error('Order failed:', result);
         const msg = result?.error || result?.message || raw || `HTTP ${response.status}`;
@@ -754,24 +790,29 @@ export default function ProductCheckout() {
     );
   }
 
+  // Get store slug for pixel tracking
+  const pixelStoreSlug = storeSlug || product?.store_slug || settings.store_slug || '';
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Floating Header */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-xl border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <button
-            onClick={() => navigate(-1)}
-            className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          
-          <div className="flex items-center gap-2">
-            {settings.logo_url && (
-              <img src={settings.logo_url} alt="" className="w-8 h-8 rounded-lg" />
-            )}
-            <span className="font-bold text-white">{settings.store_name || 'Store'}</span>
-          </div>
+    <>
+      {pixelStoreSlug && <PixelScripts storeSlug={pixelStoreSlug} />}
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        {/* Floating Header */}
+        <div className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-xl border-b border-white/10">
+          <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <button
+              onClick={() => navigate(-1)}
+              className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            
+            <div className="flex items-center gap-2">
+              {settings.logo_url && (
+                <img src={settings.logo_url} alt="" className="w-8 h-8 rounded-lg" />
+              )}
+              <span className="font-bold text-white">{settings.store_name || 'Store'}</span>
+            </div>
           
           <button
             onClick={() => setWishlist(!wishlist)}
@@ -964,6 +1005,7 @@ export default function ProductCheckout() {
 
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Heart, Share2, ChevronLeft, Plus, Minus } from 'lucide-react';
+import PixelScripts, { trackAllPixels, PixelEvents } from '@/components/storefront/PixelScripts';
 
 interface Product {
   id: number;
@@ -161,6 +162,22 @@ export default function ProductDetail() {
     },
   });
 
+  // Get store slug from settings
+  const storeSlug = settings.store_slug || '';
+
+  // Track ViewContent event when product loads
+  useEffect(() => {
+    if (product) {
+      trackAllPixels(PixelEvents.VIEW_CONTENT, {
+        content_name: product.title || product.name,
+        content_ids: [product.id],
+        content_type: 'product',
+        value: product.price,
+        currency: settings.currency_code || 'DZD'
+      });
+    }
+  }, [product?.id]);
+
   if (isLoading) {
     return (
       <div className={`min-h-screen ${style.bg} flex items-center justify-center`}>
@@ -183,18 +200,20 @@ export default function ProductDetail() {
   const productDesc = product.description || 'Premium quality product';
 
   return (
-    <div className={`min-h-screen ${style.bg} ${style.text} transition-colors`}>
-      {/* Header */}
-      <div className={`border-b ${style.border} sticky top-0 z-40 bg-opacity-95 backdrop-blur`}>
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <button
-            onClick={() => navigate(-1)}
-            className={`p-2 rounded hover:${style.bg === 'bg-black' ? 'bg-gray-800' : 'bg-gray-100'}`}
-          >
-            <ChevronLeft className="w-6 h-6" />
-          </button>
-          <h1 className="text-lg font-semibold flex-1 text-center">{settings.store_name || 'Store'}</h1>
-          <div className="w-10" />
+    <>
+      {storeSlug && <PixelScripts storeSlug={storeSlug} />}
+      <div className={`min-h-screen ${style.bg} ${style.text} transition-colors`}>
+        {/* Header */}
+        <div className={`border-b ${style.border} sticky top-0 z-40 bg-opacity-95 backdrop-blur`}>
+          <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+            <button
+              onClick={() => navigate(-1)}
+              className={`p-2 rounded hover:${style.bg === 'bg-black' ? 'bg-gray-800' : 'bg-gray-100'}`}
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+            <h1 className="text-lg font-semibold flex-1 text-center">{settings.store_name || 'Store'}</h1>
+            <div className="w-10" />
         </div>
       </div>
 
@@ -345,6 +364,7 @@ export default function ProductDetail() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

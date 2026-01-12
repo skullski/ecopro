@@ -7,6 +7,7 @@ import multer from 'multer';
 import { fileTypeFromFile } from 'file-type';
 import { scanFileForMalware } from '../utils/malware-scan';
 import { isSafeUploadName, signUploadPath, verifyUploadSignature } from '../utils/upload-signing';
+import { isCloudinaryConfigured, uploadToCloudinary } from '../utils/cloudinary';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -91,6 +92,32 @@ export const uploadImage: RequestHandler = async (req, res) => {
       return res.status(400).json({ error: scan.reason });
     }
 
+    // If Cloudinary is configured, upload there (persistent storage)
+    if (isCloudinaryConfigured()) {
+      try {
+        const clientId = req.user.id;
+        const result = await uploadToCloudinary(req.file.path, {
+          folder: `ecopro/client_${clientId}`,
+          resourceType: detected.mime.startsWith('video/') ? 'video' : 'image',
+        });
+
+        // Clean up temp file
+        await fs.unlink(req.file.path).catch(() => null);
+
+        return res.status(200).json({
+          url: result.url,
+          filename: result.publicId.split('/').pop() || result.publicId,
+          size: result.bytes,
+          mimetype: detected.mime,
+          cloudinary: true,
+        });
+      } catch (cloudErr) {
+        console.error('[uploadImage] Cloudinary upload failed:', cloudErr);
+        // Fall through to local storage as fallback
+      }
+    }
+
+    // Local storage fallback (development or if Cloudinary fails)
     await ensureDirs();
     const finalName = `${crypto.randomUUID()}.${detected.ext}`;
     const finalPath = path.join(UPLOAD_DIR, finalName);

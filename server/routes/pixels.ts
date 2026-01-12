@@ -473,6 +473,58 @@ export const getPixelFunnel: RequestHandler = async (req, res) => {
   }
 };
 
+// Get public pixel config by store slug (for frontend script injection - no auth)
+export const getPublicPixelConfig: RequestHandler = async (req, res) => {
+  try {
+    const { storeSlug } = req.params;
+    
+    if (!storeSlug) {
+      return res.status(400).json({ error: 'Store slug required' });
+    }
+    
+    const pool = await getPool();
+    
+    // Get client_id from store_slug
+    const storeResult = await pool.query(
+      `SELECT client_id FROM client_store_settings WHERE store_slug = $1`,
+      [storeSlug]
+    );
+    
+    if (storeResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Store not found' });
+    }
+    
+    const clientId = storeResult.rows[0].client_id;
+    
+    // Get pixel settings
+    const pixelSettings = await pool.query(
+      `SELECT facebook_pixel_id, tiktok_pixel_id, is_facebook_enabled, is_tiktok_enabled 
+       FROM client_pixel_settings WHERE client_id = $1`,
+      [clientId]
+    );
+    
+    if (pixelSettings.rows.length === 0) {
+      return res.json({ 
+        facebook_pixel_id: null, 
+        tiktok_pixel_id: null,
+        is_facebook_enabled: false,
+        is_tiktok_enabled: false
+      });
+    }
+    
+    const settings = pixelSettings.rows[0];
+    res.json({
+      facebook_pixel_id: settings.is_facebook_enabled ? settings.facebook_pixel_id : null,
+      tiktok_pixel_id: settings.is_tiktok_enabled ? settings.tiktok_pixel_id : null,
+      is_facebook_enabled: settings.is_facebook_enabled,
+      is_tiktok_enabled: settings.is_tiktok_enabled
+    });
+  } catch (error) {
+    console.error("Get public pixel config error:", error);
+    res.status(500).json({ error: "Failed to fetch pixel config" });
+  }
+};
+
 // =====================
 // ROUTES
 // =====================
@@ -484,7 +536,8 @@ router.get('/stats', authenticate, requireClient, getPixelStats);
 router.get('/events', authenticate, requireClient, getRecentPixelEvents);
 router.get('/funnel', authenticate, requireClient, getPixelFunnel);
 
-// Public route for tracking (no auth required - uses store_slug)
+// Public routes (no auth required)
 router.post('/track', trackPixelEvent);
+router.get('/config/:storeSlug', getPublicPixelConfig);
 
 export default router;

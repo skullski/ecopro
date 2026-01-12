@@ -8,6 +8,7 @@ import { useTranslation } from '@/lib/i18n';
 import { RenderStorefront } from './storefront/templates';
 import { storeNameToSlug } from '@/utils/storeUrl';
 import UniversalStyleInjector from '@/components/storefront/UniversalStyleInjector';
+import PixelScripts from '@/components/storefront/PixelScripts';
 import { setWindowTemplateSettings } from '@/lib/templateWindow';
 
 interface StoreProduct {
@@ -272,6 +273,7 @@ export default function Storefront() {
   return (
     <>
       <UniversalStyleInjector />
+      <PixelScripts storeSlug={storeSlug!} />
       <div className="ecopro-storefront">
         {RenderStorefront(template as any, {
             storeSlug: storeSlug!,
