@@ -80,7 +80,8 @@ async function sendViaResend(options: SendEmailOptions): Promise<{ success: bool
   try {
     console.log('[EmailService] Sending via Resend API to:', options.to);
     const { data, error } = await resend.emails.send({
-      from: 'EcoPro <noreply@ecopro-platform.com>', // You'll need to verify this domain in Resend
+      // Use Resend's test domain until you verify your own domain
+      from: 'EcoPro <onboarding@resend.dev>',
       to: options.to,
       subject: options.subject,
       text: options.text,
