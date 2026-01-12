@@ -81,12 +81,10 @@ export default function AdminLayout() {
             </Button>
           </div>
         )}
-        <div className="p-4 md:p-6">
-          {/* Wrap outlet with PermissionGate - auto-detects permission from route */}
-          <PermissionGate>
-            <Outlet />
-          </PermissionGate>
-        </div>
+        {/* Wrap outlet with PermissionGate - auto-detects permission from route */}
+        <PermissionGate>
+          <Outlet />
+        </PermissionGate>
       </main>
     </div>
   );
