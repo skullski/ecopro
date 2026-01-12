@@ -145,12 +145,14 @@ async function sendViaSmtp(options: SendEmailOptions, retries = 2): Promise<{ su
 // Main send function - tries Resend API first, falls back to Gmail SMTP
 export async function sendEmail(options: SendEmailOptions): Promise<{ success: boolean; error?: string }> {
   const isProduction = process.env.NODE_ENV === 'production';
+  const isRender = process.env.RENDER === 'true' || !!process.env.RENDER_SERVICE_ID;
+  const isProdLike = isProduction || isRender;
   const hasResend = !!process.env.RESEND_API_KEY;
   const hasSmtp = !!process.env.GMAIL_USER && !!process.env.GMAIL_APP_PASSWORD;
 
   // In production, prefer HTTPS email providers (SMTP is commonly blocked on hosts like Render).
   // Fail fast if Resend isn't configured so the auth flow doesn't hang on timeouts.
-  if (isProduction && !hasResend) {
+  if (isProdLike && !hasResend) {
     if (hasSmtp) {
       console.warn('[EmailService] Production without RESEND_API_KEY: SMTP is configured but may be blocked; failing fast to avoid timeouts');
     }
@@ -173,7 +175,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<{ success: b
     if (resendResult.success) return resendResult;
 
     // In production, do not fall back to SMTP (commonly blocked); surface the Resend error.
-    if (isProduction) {
+    if (isProdLike) {
       return resendResult;
     }
 
