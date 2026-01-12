@@ -52,10 +52,10 @@ function getTransporter() {
       user,
       pass,
     },
-    // Increase timeouts for slow networks (Render can be slow)
-    connectionTimeout: 30000, // 30 seconds
-    greetingTimeout: 30000,
-    socketTimeout: 60000, // 60 seconds
+    // Fail fast: keep SMTP attempts snappy (Render can block/slow SMTP)
+    connectionTimeout: 10000, // 10 seconds
+    greetingTimeout: 10000,
+    socketTimeout: 10000,
     // Pool connections for better reliability
     pool: true,
     maxConnections: 3,
