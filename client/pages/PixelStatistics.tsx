@@ -239,13 +239,13 @@ export default function PixelStatistics() {
 
   const getEventColor = (eventName: string) => {
     const colors: Record<string, string> = {
-      'PageView': 'bg-blue-100 text-blue-800',
-      'ViewContent': 'bg-purple-100 text-purple-800',
-      'AddToCart': 'bg-orange-100 text-orange-800',
-      'InitiateCheckout': 'bg-yellow-100 text-yellow-800',
-      'Purchase': 'bg-green-100 text-green-800'
+      'PageView': 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
+      'ViewContent': 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300',
+      'AddToCart': 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300',
+      'InitiateCheckout': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300',
+      'Purchase': 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300'
     };
-    return colors[eventName] || 'bg-gray-100 text-gray-800';
+    return colors[eventName] || 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
   };
 
   // Stats cards for a platform
@@ -254,46 +254,46 @@ export default function PixelStatistics() {
     const color = platform === 'facebook' ? 'blue' : 'pink';
     
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 md:p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Eye className="h-4 w-4 text-gray-500" />
-              <span className="text-sm text-gray-600">Page Views</span>
+              <Eye className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs md:text-sm text-muted-foreground">Page Views</span>
             </div>
-            <p className="text-2xl font-bold">{formatNumber(data?.total_page_views)}</p>
+            <p className="text-xl md:text-2xl font-bold">{formatNumber(data?.total_page_views)}</p>
           </CardContent>
         </Card>
         
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 md:p-4">
             <div className="flex items-center gap-2 mb-2">
-              <MousePointer className="h-4 w-4 text-gray-500" />
-              <span className="text-sm text-gray-600">View Content</span>
+              <MousePointer className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs md:text-sm text-muted-foreground">View Content</span>
             </div>
-            <p className="text-2xl font-bold">{formatNumber(data?.total_view_content)}</p>
+            <p className="text-xl md:text-2xl font-bold">{formatNumber(data?.total_view_content)}</p>
           </CardContent>
         </Card>
         
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 md:p-4">
             <div className="flex items-center gap-2 mb-2">
-              <ShoppingCart className="h-4 w-4 text-gray-500" />
-              <span className="text-sm text-gray-600">Add to Cart</span>
+              <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs md:text-sm text-muted-foreground">Add to Cart</span>
             </div>
-            <p className="text-2xl font-bold">{formatNumber(data?.total_add_to_cart)}</p>
-            <p className="text-xs text-gray-500 mt-1">Cart Rate: {data?.cart_rate || 0}%</p>
+            <p className="text-xl md:text-2xl font-bold">{formatNumber(data?.total_add_to_cart)}</p>
+            <p className="text-xs text-muted-foreground mt-1">Cart Rate: {data?.cart_rate || 0}%</p>
           </CardContent>
         </Card>
         
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-3 md:p-4">
             <div className="flex items-center gap-2 mb-2">
-              <CreditCard className="h-4 w-4 text-gray-500" />
-              <span className="text-sm text-gray-600">Purchases</span>
+              <CreditCard className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs md:text-sm text-muted-foreground">Purchases</span>
             </div>
-            <p className="text-2xl font-bold">{formatNumber(data?.total_purchases)}</p>
-            <p className="text-xs text-gray-500 mt-1">Conv: {data?.conversion_rate || 0}%</p>
+            <p className="text-xl md:text-2xl font-bold">{formatNumber(data?.total_purchases)}</p>
+            <p className="text-xs text-muted-foreground mt-1">Conv: {data?.conversion_rate || 0}%</p>
           </CardContent>
         </Card>
       </div>
@@ -311,26 +311,26 @@ export default function PixelStatistics() {
     
     return (
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Target className="h-5 w-5" />
+        <CardHeader className="p-4 md:p-6">
+          <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+            <Target className="h-4 w-4 md:h-5 md:w-5" />
             Conversion Funnel
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-xs md:text-sm">
             {platform === 'facebook' ? 'Facebook' : 'TikTok'} Pixel - Last {data.period_days} days
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 md:p-6 pt-0 md:pt-0">
           <div className="space-y-3">
             {data.funnel.map((step, idx) => (
               <div key={step.stage} className="space-y-1">
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-xs md:text-sm">
                   <span className="font-medium">{step.stage}</span>
-                  <span className="text-gray-600">
+                  <span className="text-muted-foreground">
                     {formatNumber(step.count)} ({step.rate}%)
                   </span>
                 </div>
-                <div className="h-8 bg-gray-100 rounded-lg overflow-hidden">
+                <div className="h-6 md:h-8 bg-muted rounded-lg overflow-hidden">
                   <div 
                     className={`h-full ${colors[idx]} transition-all duration-500`}
                     style={{ width: maxCount > 0 ? `${(step.count / maxCount) * 100}%` : '0%' }}
@@ -340,14 +340,14 @@ export default function PixelStatistics() {
             ))}
           </div>
           
-          <div className="mt-6 pt-4 border-t grid grid-cols-2 gap-4">
+          <div className="mt-4 md:mt-6 pt-4 border-t grid grid-cols-2 gap-4">
             <div>
-              <p className="text-sm text-gray-600">Total Revenue</p>
-              <p className="text-xl font-bold text-green-600">{formatCurrency(data.total_revenue)}</p>
+              <p className="text-xs md:text-sm text-muted-foreground">Total Revenue</p>
+              <p className="text-lg md:text-xl font-bold text-green-600 dark:text-green-400">{formatCurrency(data.total_revenue)}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Avg Order Value</p>
-              <p className="text-xl font-bold">{formatCurrency(data.avg_order_value)}</p>
+              <p className="text-xs md:text-sm text-muted-foreground">Avg Order Value</p>
+              <p className="text-lg md:text-xl font-bold">{formatCurrency(data.avg_order_value)}</p>
             </div>
           </div>
         </CardContent>
@@ -356,16 +356,16 @@ export default function PixelStatistics() {
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-6 space-y-6">
+    <div className="container mx-auto p-3 md:p-6 space-y-4 md:space-y-6 max-w-7xl">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
-            <BarChart3 className="h-7 w-7" />
+          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 md:h-7 md:w-7" />
             Pixel Statistics
           </h1>
-          <p className="text-gray-600 mt-1">
-            Track Facebook and TikTok pixel performance for your store
+          <p className="text-muted-foreground text-sm md:text-base mt-1">
+            Track Facebook and TikTok pixel performance
           </p>
         </div>
         
@@ -391,26 +391,26 @@ export default function PixelStatistics() {
 
       {/* Pixel Status Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className={settings?.is_facebook_enabled ? 'border-blue-200 bg-blue-50/50' : ''}>
-          <CardContent className="p-4">
+        <Card className={settings?.is_facebook_enabled ? 'border-blue-500/30 bg-blue-500/10 dark:bg-blue-900/20' : ''}>
+          <CardContent className="p-3 md:p-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Facebook className="h-6 w-6 text-blue-600" />
+              <div className="flex items-center gap-2 md:gap-3">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg">
+                  <Facebook className="h-5 w-5 md:h-6 md:w-6 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">Facebook Pixel</h3>
-                  <p className="text-sm text-gray-600">
+                  <h3 className="font-semibold text-sm md:text-base">Facebook Pixel</h3>
+                  <p className="text-xs md:text-sm text-muted-foreground truncate max-w-[120px] md:max-w-none">
                     {settings?.facebook_pixel_id || 'Not configured'}
                   </p>
                 </div>
               </div>
               {settings?.is_facebook_enabled ? (
-                <Badge className="bg-green-100 text-green-800">
+                <Badge className="bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300 text-xs">
                   <CheckCircle className="h-3 w-3 mr-1" /> Active
                 </Badge>
               ) : (
-                <Badge variant="secondary">
+                <Badge variant="secondary" className="text-xs">
                   <XCircle className="h-3 w-3 mr-1" /> Inactive
                 </Badge>
               )}
@@ -418,26 +418,26 @@ export default function PixelStatistics() {
           </CardContent>
         </Card>
 
-        <Card className={settings?.is_tiktok_enabled ? 'border-pink-200 bg-pink-50/50' : ''}>
-          <CardContent className="p-4">
+        <Card className={settings?.is_tiktok_enabled ? 'border-pink-500/30 bg-pink-500/10 dark:bg-pink-900/20' : ''}>
+          <CardContent className="p-3 md:p-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-pink-100 rounded-lg">
-                  <TikTokIcon className="h-6 w-6 text-pink-600" />
+              <div className="flex items-center gap-2 md:gap-3">
+                <div className="p-2 bg-pink-100 dark:bg-pink-900/50 rounded-lg">
+                  <TikTokIcon className="h-5 w-5 md:h-6 md:w-6 text-pink-600 dark:text-pink-400" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">TikTok Pixel</h3>
-                  <p className="text-sm text-gray-600">
+                  <h3 className="font-semibold text-sm md:text-base">TikTok Pixel</h3>
+                  <p className="text-xs md:text-sm text-muted-foreground truncate max-w-[120px] md:max-w-none">
                     {settings?.tiktok_pixel_id || 'Not configured'}
                   </p>
                 </div>
               </div>
               {settings?.is_tiktok_enabled ? (
-                <Badge className="bg-green-100 text-green-800">
+                <Badge className="bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300 text-xs">
                   <CheckCircle className="h-3 w-3 mr-1" /> Active
                 </Badge>
               ) : (
-                <Badge variant="secondary">
+                <Badge variant="secondary" className="text-xs">
                   <XCircle className="h-3 w-3 mr-1" /> Inactive
                 </Badge>
               )}
@@ -448,60 +448,60 @@ export default function PixelStatistics() {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="facebook">Facebook</TabsTrigger>
-          <TabsTrigger value="tiktok">TikTok</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4 h-auto">
+          <TabsTrigger value="overview" className="text-xs md:text-sm py-2">Overview</TabsTrigger>
+          <TabsTrigger value="facebook" className="text-xs md:text-sm py-2">Facebook</TabsTrigger>
+          <TabsTrigger value="tiktok" className="text-xs md:text-sm py-2">TikTok</TabsTrigger>
+          <TabsTrigger value="settings" className="text-xs md:text-sm py-2">Settings</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-6">
+        <TabsContent value="overview" className="space-y-4 md:space-y-6">
           {/* Summary Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
             <Card>
-              <CardContent className="p-4">
+              <CardContent className="p-3 md:p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Eye className="h-4 w-4 text-blue-500" />
-                  <span className="text-sm text-gray-600">Total Page Views</span>
+                  <span className="text-xs md:text-sm text-muted-foreground">Page Views</span>
                 </div>
-                <p className="text-2xl font-bold">
+                <p className="text-xl md:text-2xl font-bold">
                   {formatNumber((stats?.facebook?.total_page_views || 0) + (stats?.tiktok?.total_page_views || 0))}
                 </p>
               </CardContent>
             </Card>
             
             <Card>
-              <CardContent className="p-4">
+              <CardContent className="p-3 md:p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <ShoppingCart className="h-4 w-4 text-orange-500" />
-                  <span className="text-sm text-gray-600">Total Add to Cart</span>
+                  <span className="text-xs md:text-sm text-muted-foreground">Add to Cart</span>
                 </div>
-                <p className="text-2xl font-bold">
+                <p className="text-xl md:text-2xl font-bold">
                   {formatNumber((stats?.facebook?.total_add_to_cart || 0) + (stats?.tiktok?.total_add_to_cart || 0))}
                 </p>
               </CardContent>
             </Card>
             
             <Card>
-              <CardContent className="p-4">
+              <CardContent className="p-3 md:p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <CreditCard className="h-4 w-4 text-green-500" />
-                  <span className="text-sm text-gray-600">Total Purchases</span>
+                  <span className="text-xs md:text-sm text-muted-foreground">Purchases</span>
                 </div>
-                <p className="text-2xl font-bold">
+                <p className="text-xl md:text-2xl font-bold">
                   {formatNumber((stats?.facebook?.total_purchases || 0) + (stats?.tiktok?.total_purchases || 0))}
                 </p>
               </CardContent>
             </Card>
             
             <Card>
-              <CardContent className="p-4">
+              <CardContent className="p-3 md:p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <DollarSign className="h-4 w-4 text-green-500" />
-                  <span className="text-sm text-gray-600">Total Revenue</span>
+                  <span className="text-xs md:text-sm text-muted-foreground">Revenue</span>
                 </div>
-                <p className="text-2xl font-bold text-green-600">
+                <p className="text-xl md:text-2xl font-bold text-green-600 dark:text-green-400">
                   {formatCurrency((Number(stats?.facebook?.total_revenue) || 0) + (Number(stats?.tiktok?.total_revenue) || 0))}
                 </p>
               </CardContent>
@@ -527,32 +527,32 @@ export default function PixelStatistics() {
                       <TableHead>Platform</TableHead>
                       <TableHead>Event</TableHead>
                       <TableHead>Page</TableHead>
-                      <TableHead>Revenue</TableHead>
-                      <TableHead>Time</TableHead>
+                      <TableHead className="text-xs">Revenue</TableHead>
+                      <TableHead className="text-xs hidden md:table-cell">Time</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {recentEvents.events.slice(0, 10).map((event) => (
                       <TableRow key={event.id}>
-                        <TableCell>
+                        <TableCell className="p-2 md:p-4">
                           {event.pixel_type === 'facebook' ? (
-                            <Facebook className="h-4 w-4 text-blue-600" />
+                            <Facebook className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                           ) : (
-                            <TikTokIcon className="h-4 w-4 text-pink-600" />
+                            <TikTokIcon className="h-4 w-4 text-pink-600 dark:text-pink-400" />
                           )}
                         </TableCell>
-                        <TableCell>
-                          <Badge className={getEventColor(event.event_name)}>
+                        <TableCell className="p-2 md:p-4">
+                          <Badge className={getEventColor(event.event_name) + " text-xs"}>
                             {event.event_name}
                           </Badge>
                         </TableCell>
-                        <TableCell className="max-w-[200px] truncate text-sm text-gray-600">
+                        <TableCell className="max-w-[100px] md:max-w-[200px] truncate text-xs md:text-sm text-muted-foreground p-2 md:p-4">
                           {event.page_url?.replace(/^https?:\/\/[^/]+/, '') || '-'}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="p-2 md:p-4 text-xs md:text-sm">
                           {event.revenue ? formatCurrency(event.revenue) : '-'}
                         </TableCell>
-                        <TableCell className="text-sm text-gray-600">
+                        <TableCell className="text-xs md:text-sm text-muted-foreground hidden md:table-cell">
                           {formatDate(event.created_at)}
                         </TableCell>
                       </TableRow>
@@ -560,7 +560,7 @@ export default function PixelStatistics() {
                   </TableBody>
                 </Table>
               ) : (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-muted-foreground">
                   <Activity className="h-12 w-12 mx-auto mb-3 opacity-50" />
                   <p>No events recorded yet</p>
                   <p className="text-sm mt-1">Events will appear here once your pixels start tracking</p>
@@ -571,7 +571,7 @@ export default function PixelStatistics() {
         </TabsContent>
 
         {/* Facebook Tab */}
-        <TabsContent value="facebook" className="space-y-6">
+        <TabsContent value="facebook" className="space-y-4 md:space-y-6">
           {settings?.is_facebook_enabled ? (
             <>
               <StatsCards platform="facebook" data={stats?.facebook} />
@@ -579,10 +579,10 @@ export default function PixelStatistics() {
             </>
           ) : (
             <Card>
-              <CardContent className="p-8 text-center">
-                <Facebook className="h-16 w-16 mx-auto mb-4 text-blue-200" />
-                <h3 className="text-xl font-semibold mb-2">Facebook Pixel Not Configured</h3>
-                <p className="text-gray-600 mb-4">
+              <CardContent className="p-6 md:p-8 text-center">
+                <Facebook className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-4 text-blue-200 dark:text-blue-800" />
+                <h3 className="text-lg md:text-xl font-semibold mb-2">Facebook Pixel Not Configured</h3>
+                <p className="text-muted-foreground text-sm md:text-base mb-4">
                   Add your Facebook Pixel ID in the Settings tab to start tracking
                 </p>
                 <Button onClick={() => setActiveTab('settings')}>
@@ -595,7 +595,7 @@ export default function PixelStatistics() {
         </TabsContent>
 
         {/* TikTok Tab */}
-        <TabsContent value="tiktok" className="space-y-6">
+        <TabsContent value="tiktok" className="space-y-4 md:space-y-6">
           {settings?.is_tiktok_enabled ? (
             <>
               <StatsCards platform="tiktok" data={stats?.tiktok} />
@@ -603,10 +603,10 @@ export default function PixelStatistics() {
             </>
           ) : (
             <Card>
-              <CardContent className="p-8 text-center">
-                <TikTokIcon className="h-16 w-16 mx-auto mb-4 text-pink-200" />
-                <h3 className="text-xl font-semibold mb-2">TikTok Pixel Not Configured</h3>
-                <p className="text-gray-600 mb-4">
+              <CardContent className="p-6 md:p-8 text-center">
+                <TikTokIcon className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-4 text-pink-200 dark:text-pink-800" />
+                <h3 className="text-lg md:text-xl font-semibold mb-2">TikTok Pixel Not Configured</h3>
+                <p className="text-muted-foreground text-sm md:text-base mb-4">
                   Add your TikTok Pixel ID in the Settings tab to start tracking
                 </p>
                 <Button onClick={() => setActiveTab('settings')}>
@@ -619,49 +619,51 @@ export default function PixelStatistics() {
         </TabsContent>
 
         {/* Settings Tab */}
-        <TabsContent value="settings" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <TabsContent value="settings" className="space-y-4 md:space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
             {/* Facebook Settings */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Facebook className="h-5 w-5 text-blue-600" />
+              <CardHeader className="p-4 md:p-6">
+                <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                  <Facebook className="h-4 w-4 md:h-5 md:w-5 text-blue-600 dark:text-blue-400" />
                   Facebook Pixel
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-xs md:text-sm">
                   Configure your Facebook Pixel for conversion tracking
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 p-4 md:p-6 pt-0 md:pt-0">
                 <div>
-                  <Label htmlFor="fb-pixel-id">Pixel ID</Label>
+                  <Label htmlFor="fb-pixel-id" className="text-sm">Pixel ID</Label>
                   <Input
                     id="fb-pixel-id"
                     placeholder="Enter your Facebook Pixel ID"
                     value={settingsForm.facebook_pixel_id || ''}
                     onChange={(e) => setSettingsForm(prev => ({ ...prev, facebook_pixel_id: e.target.value }))}
+                    className="mt-1"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Find this in your Facebook Events Manager
                   </p>
                 </div>
                 
                 <div>
-                  <Label htmlFor="fb-access-token">Access Token (Optional)</Label>
+                  <Label htmlFor="fb-access-token" className="text-sm">Access Token (Optional)</Label>
                   <Input
                     id="fb-access-token"
                     type="password"
                     placeholder="For server-side tracking"
                     value={settingsForm.facebook_access_token || ''}
                     onChange={(e) => setSettingsForm(prev => ({ ...prev, facebook_access_token: e.target.value }))}
+                    className="mt-1"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Required for Conversions API (server-side events)
                   </p>
                 </div>
                 
                 <div className="flex items-center justify-between pt-2">
-                  <Label htmlFor="fb-enabled">Enable Facebook Pixel</Label>
+                  <Label htmlFor="fb-enabled" className="text-sm">Enable Facebook Pixel</Label>
                   <Switch
                     id="fb-enabled"
                     checked={settingsForm.is_facebook_enabled || false}
@@ -673,45 +675,47 @@ export default function PixelStatistics() {
 
             {/* TikTok Settings */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TikTokIcon className="h-5 w-5 text-pink-600" />
+              <CardHeader className="p-4 md:p-6">
+                <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                  <TikTokIcon className="h-4 w-4 md:h-5 md:w-5 text-pink-600 dark:text-pink-400" />
                   TikTok Pixel
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-xs md:text-sm">
                   Configure your TikTok Pixel for conversion tracking
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 p-4 md:p-6 pt-0 md:pt-0">
                 <div>
-                  <Label htmlFor="tt-pixel-id">Pixel ID</Label>
+                  <Label htmlFor="tt-pixel-id" className="text-sm">Pixel ID</Label>
                   <Input
                     id="tt-pixel-id"
                     placeholder="Enter your TikTok Pixel ID"
                     value={settingsForm.tiktok_pixel_id || ''}
                     onChange={(e) => setSettingsForm(prev => ({ ...prev, tiktok_pixel_id: e.target.value }))}
+                    className="mt-1"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Find this in your TikTok Ads Manager
                   </p>
                 </div>
                 
                 <div>
-                  <Label htmlFor="tt-access-token">Access Token (Optional)</Label>
+                  <Label htmlFor="tt-access-token" className="text-sm">Access Token (Optional)</Label>
                   <Input
                     id="tt-access-token"
                     type="password"
                     placeholder="For server-side tracking"
                     value={settingsForm.tiktok_access_token || ''}
                     onChange={(e) => setSettingsForm(prev => ({ ...prev, tiktok_access_token: e.target.value }))}
+                    className="mt-1"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Required for Events API (server-side events)
                   </p>
                 </div>
                 
                 <div className="flex items-center justify-between pt-2">
-                  <Label htmlFor="tt-enabled">Enable TikTok Pixel</Label>
+                  <Label htmlFor="tt-enabled" className="text-sm">Enable TikTok Pixel</Label>
                   <Switch
                     id="tt-enabled"
                     checked={settingsForm.is_tiktok_enabled || false}
@@ -740,23 +744,23 @@ export default function PixelStatistics() {
 
           {/* How it works */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5" />
+            <CardHeader className="p-4 md:p-6">
+              <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                <AlertCircle className="h-4 w-4 md:h-5 md:w-5" />
                 How Pixel Tracking Works
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4 text-sm text-gray-600">
+            <CardContent className="space-y-4 text-xs md:text-sm text-muted-foreground p-4 md:p-6 pt-0 md:pt-0">
               <p>
                 Once you configure your pixel IDs and enable tracking, your store will automatically 
                 track the following events:
               </p>
               <ul className="list-disc pl-5 space-y-1">
-                <li><strong>PageView</strong> - When a customer visits any page</li>
-                <li><strong>ViewContent</strong> - When a customer views a product</li>
-                <li><strong>AddToCart</strong> - When a customer adds a product to cart</li>
-                <li><strong>InitiateCheckout</strong> - When a customer starts checkout</li>
-                <li><strong>Purchase</strong> - When an order is completed</li>
+                <li><strong className="text-foreground">PageView</strong> - When a customer visits any page</li>
+                <li><strong className="text-foreground">ViewContent</strong> - When a customer views a product</li>
+                <li><strong className="text-foreground">AddToCart</strong> - When a customer adds a product to cart</li>
+                <li><strong className="text-foreground">InitiateCheckout</strong> - When a customer starts checkout</li>
+                <li><strong className="text-foreground">Purchase</strong> - When an order is completed</li>
               </ul>
               <p>
                 All events are tracked both in-browser (standard pixel) and server-side (if access 
