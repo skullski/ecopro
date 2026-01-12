@@ -27,6 +27,8 @@ services:
         sync: false  # Set manually for image uploads
       - key: CLOUDINARY_API_SECRET
         sync: false  # Set manually for image uploads
+      - key: RESEND_API_KEY
+        sync: false  # Set manually - get from https://resend.com (free 100 emails/day)
       - key: ALLOWED_ORIGINS
         value: https://ecopro-1lbl.onrender.com
       - key: BASE_URL

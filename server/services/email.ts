@@ -1,8 +1,27 @@
 
-// Email Service - Send verification codes via Gmail SMTP
+// Email Service - Send verification codes via Resend API (primary) or Gmail SMTP (fallback)
 import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
-// Gmail SMTP transporter
+// Resend client (uses HTTPS API - works even when SMTP is blocked)
+let resendClient: Resend | null = null;
+
+function getResendClient(): Resend | null {
+  if (resendClient) return resendClient;
+  
+  const apiKey = process.env.RESEND_API_KEY;
+  
+  if (!apiKey) {
+    console.log('[EmailService] RESEND_API_KEY not set - will try Gmail SMTP');
+    return null;
+  }
+  
+  console.log('[EmailService] Using Resend API for emails');
+  resendClient = new Resend(apiKey);
+  return resendClient;
+}
+
+// Gmail SMTP transporter (fallback)
 // Requires: GMAIL_USER and GMAIL_APP_PASSWORD environment variables
 // To get app password: Google Account → Security → 2-Step Verification → App passwords
 let transporter: nodemailer.Transporter | null = null;
@@ -13,7 +32,7 @@ function getTransporter() {
   const user = process.env.GMAIL_USER;
   const pass = process.env.GMAIL_APP_PASSWORD;
   
-  console.log('[EmailService] Checking email config:', {
+  console.log('[EmailService] Checking Gmail SMTP config:', {
     hasUser: !!user,
     userEmail: user ? `${user.substring(0, 3)}...@${user.split('@')[1] || '?'}` : 'NOT SET',
     hasPassword: !!pass,
@@ -21,7 +40,7 @@ function getTransporter() {
   });
   
   if (!user || !pass) {
-    console.warn('[EmailService] GMAIL_USER or GMAIL_APP_PASSWORD not set - emails will be logged only');
+    console.warn('[EmailService] GMAIL_USER or GMAIL_APP_PASSWORD not set');
     return null;
   }
   
@@ -43,15 +62,6 @@ function getTransporter() {
     maxMessages: 50,
   });
   
-  // Verify transporter connection
-  transporter.verify((error, success) => {
-    if (error) {
-      console.error('[EmailService] SMTP connection verification failed:', error.message);
-    } else {
-      console.log('[EmailService] SMTP server is ready to send emails');
-    }
-  });
-  
   return transporter;
 }
 
@@ -62,22 +72,45 @@ export interface SendEmailOptions {
   html?: string;
 }
 
-export async function sendEmail(options: SendEmailOptions, retries = 2): Promise<{ success: boolean; error?: string }> {
+// Send email using Resend API (HTTPS - bypasses SMTP blocks)
+async function sendViaResend(options: SendEmailOptions): Promise<{ success: boolean; error?: string }> {
+  const resend = getResendClient();
+  if (!resend) return { success: false, error: 'Resend not configured' };
+  
+  try {
+    console.log('[EmailService] Sending via Resend API to:', options.to);
+    const { data, error } = await resend.emails.send({
+      from: 'EcoPro <noreply@ecopro-platform.com>', // You'll need to verify this domain in Resend
+      to: options.to,
+      subject: options.subject,
+      text: options.text,
+      html: options.html,
+    });
+    
+    if (error) {
+      console.error('[EmailService] Resend API error:', error);
+      return { success: false, error: error.message };
+    }
+    
+    console.log('[EmailService] Resend email sent successfully:', { to: options.to, id: data?.id });
+    return { success: true };
+  } catch (err: any) {
+    console.error('[EmailService] Resend exception:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+// Send email using Gmail SMTP (fallback)
+async function sendViaSmtp(options: SendEmailOptions, retries = 2): Promise<{ success: boolean; error?: string }> {
   const transport = getTransporter();
   
   if (!transport) {
-    // Log email in development when no Gmail configured
-    console.log('[EmailService] Would send email:', {
-      to: options.to,
-      subject: options.subject,
-      text: options.text?.substring(0, 100),
-    });
-    return { success: true }; // Pretend success in dev mode
+    return { success: false, error: 'Gmail SMTP not configured' };
   }
   
   for (let attempt = 1; attempt <= retries + 1; attempt++) {
     try {
-      console.log(`[EmailService] Attempting to send email to: ${options.to} (attempt ${attempt}/${retries + 1})`);
+      console.log(`[EmailService] Sending via Gmail SMTP to: ${options.to} (attempt ${attempt}/${retries + 1})`);
       const info = await transport.sendMail({
         from: `"EcoPro Platform" <${process.env.GMAIL_USER}>`,
         to: options.to,
@@ -86,26 +119,18 @@ export async function sendEmail(options: SendEmailOptions, retries = 2): Promise
         html: options.html,
       });
       
-      console.log('[EmailService] Email sent successfully:', {
+      console.log('[EmailService] Gmail SMTP sent successfully:', {
         to: options.to,
         messageId: info.messageId,
-        response: info.response,
       });
       return { success: true };
     } catch (error: any) {
-      console.error(`[EmailService] Failed to send email (attempt ${attempt}/${retries + 1}):`, {
-        to: options.to,
-        error: error.message,
-        code: error.code,
-        command: error.command,
-        responseCode: error.responseCode,
-      });
+      console.error(`[EmailService] Gmail SMTP failed (attempt ${attempt}/${retries + 1}):`, error.message);
       
-      // If this is a timeout error and we have retries left, reset the transporter and try again
+      // If timeout error and retries left, reset and retry
       if (attempt <= retries && (error.code === 'ETIMEDOUT' || error.code === 'ESOCKET' || error.message.includes('timeout'))) {
-        console.log('[EmailService] Resetting transporter for retry...');
-        transporter = null; // Reset to force new connection
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Wait before retry
+        transporter = null;
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
         continue;
       }
       
@@ -114,6 +139,35 @@ export async function sendEmail(options: SendEmailOptions, retries = 2): Promise
   }
   
   return { success: false, error: 'Max retries exceeded' };
+}
+
+// Main send function - tries Resend API first, falls back to Gmail SMTP
+export async function sendEmail(options: SendEmailOptions): Promise<{ success: boolean; error?: string }> {
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  // In development without email config, just log
+  if (!isProduction && !process.env.RESEND_API_KEY && !process.env.GMAIL_USER) {
+    console.log('[EmailService] DEV MODE - Would send email:', {
+      to: options.to,
+      subject: options.subject,
+      text: options.text?.substring(0, 100),
+    });
+    return { success: true };
+  }
+  
+  // Try Resend API first (uses HTTPS, bypasses SMTP blocks)
+  if (process.env.RESEND_API_KEY) {
+    const resendResult = await sendViaResend(options);
+    if (resendResult.success) return resendResult;
+    console.log('[EmailService] Resend failed, trying Gmail SMTP fallback...');
+  }
+  
+  // Fall back to Gmail SMTP
+  if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+    return await sendViaSmtp(options);
+  }
+  
+  return { success: false, error: 'No email service configured' };
 }
 
 // Generate a 6-digit verification code
