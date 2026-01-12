@@ -188,7 +188,7 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
             level > 0 && (isRTL ? "mr-3" : "ml-3"),
             active 
               ? "shadow-sm font-medium"
-              : "hover:bg-white hover:bg-opacity-50 text-muted-foreground hover:text-foreground",
+                "group relative flex items-center gap-2 px-3 py-2.5 rounded-lg transition-all duration-200",
             collapsed && level === 0 && "justify-center",
             !hasAccess && "opacity-50"
           )}
@@ -211,7 +211,7 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
           
           {!collapsed && (
             <>
-              <span className="flex-1 font-semibold text-sm leading-none">{t(item.titleKey)}</span>
+              <span className="flex-1 font-semibold text-base leading-none">{t(item.titleKey)}</span>
               
               {!hasAccess && (
                 <Lock className="w-3 h-3 text-gray-400" />
@@ -319,7 +319,7 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto p-2 space-y-0.5">
+      <nav className="flex-1 overflow-y-auto p-3 space-y-1">
         {menuItems.map(item => renderMenuItem(item))}
       </nav>
 
