@@ -43,9 +43,15 @@ export default function PixelScripts({ storeSlug }: PixelScriptsProps) {
       .then(res => res.json())
       .then(data => {
         setConfig(data);
-        // Track PageView to our backend when pixel config loads
+        // Track PageView to our backend when pixel config loads (only once per page)
         if (data.is_facebook_enabled || data.is_tiktok_enabled) {
-          trackAllPixels('PageView', { page_url: window.location.href });
+          // Prevent duplicate PageView on same URL
+          const lastPageView = sessionStorage.getItem('last_pageview_url');
+          const currentUrl = window.location.pathname;
+          if (lastPageView !== currentUrl) {
+            sessionStorage.setItem('last_pageview_url', currentUrl);
+            trackPageView(storeSlug);
+          }
         }
       })
       .catch(err => console.error('Failed to load pixel config:', err));
@@ -149,8 +155,9 @@ export function trackTikTokEvent(eventName: string, params?: Record<string, any>
 
 /**
  * Send event to our backend for statistics tracking
+ * Only sends ONE event per call (not duplicated per pixel type)
  */
-function trackToBackend(storeSlug: string, pixelType: 'facebook' | 'tiktok', eventName: string, params?: Record<string, any>) {
+function trackToBackend(storeSlug: string, eventName: string, params?: Record<string, any>) {
   if (!storeSlug) return;
   
   fetch('/api/pixels/track', {
@@ -158,7 +165,7 @@ function trackToBackend(storeSlug: string, pixelType: 'facebook' | 'tiktok', eve
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       store_slug: storeSlug,
-      pixel_type: pixelType,
+      pixel_type: 'facebook', // We only need one record per event for stats
       event_name: eventName,
       event_data: params || {},
       page_url: window.location.href,
@@ -170,6 +177,13 @@ function trackToBackend(storeSlug: string, pixelType: 'facebook' | 'tiktok', eve
       visitor_id: getVisitorId()
     })
   }).catch(err => console.error('[Pixel] Backend tracking failed:', err));
+}
+
+/**
+ * Track PageView - only one event per page navigation
+ */
+function trackPageView(storeSlug: string) {
+  trackToBackend(storeSlug, 'PageView', { page_url: window.location.href });
 }
 
 // Get or create session ID (per browser session)
@@ -202,14 +216,15 @@ export function setCurrentStoreSlug(slug: string) {
 }
 
 export function trackAllPixels(eventName: string, params?: Record<string, any>) {
+  // Track to Facebook and TikTok SDKs (client-side)
   trackFacebookEvent(eventName, params);
   trackTikTokEvent(eventName, params);
   
-  // Also track to our backend for statistics
+  // Track to our backend for statistics (only ONE event, not duplicated)
   const storeSlug = currentStoreSlug || localStorage.getItem('currentStoreSlug') || '';
-  if (storeSlug) {
-    trackToBackend(storeSlug, 'facebook', eventName, params);
-    trackToBackend(storeSlug, 'tiktok', eventName, params);
+  if (storeSlug && eventName !== 'PageView') {
+    // PageView is handled separately with deduplication
+    trackToBackend(storeSlug, eventName, params);
   }
 }
 
