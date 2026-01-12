@@ -171,6 +171,12 @@ export async function sendEmail(options: SendEmailOptions): Promise<{ success: b
   if (hasResend) {
     const resendResult = await sendViaResend(options);
     if (resendResult.success) return resendResult;
+
+    // In production, do not fall back to SMTP (commonly blocked); surface the Resend error.
+    if (isProduction) {
+      return resendResult;
+    }
+
     console.log('[EmailService] Resend failed, trying Gmail SMTP fallback...');
   }
   
