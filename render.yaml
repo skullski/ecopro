@@ -18,9 +18,15 @@ services:
       - key: UPLOAD_SIGNING_KEY
         sync: false  # Required in production (signed upload URLs)
       - key: GMAIL_USER
-        value: sahla4eco@gmail.com
+        sync: false  # Set manually for email (sahla4eco@gmail.com)
       - key: GMAIL_APP_PASSWORD
-        value: trgbuhbjfulgicvr
+        sync: false  # Set manually for email
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false  # Set manually for image uploads
+      - key: CLOUDINARY_API_KEY
+        sync: false  # Set manually for image uploads
+      - key: CLOUDINARY_API_SECRET
+        sync: false  # Set manually for image uploads
       - key: ALLOWED_ORIGINS
         value: https://ecopro-1lbl.onrender.com
       - key: BASE_URL

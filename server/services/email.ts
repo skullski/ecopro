@@ -26,15 +26,21 @@ function getTransporter() {
   }
   
   transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false, // Use STARTTLS
     auth: {
       user,
       pass,
     },
-    // Add connection timeout
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000,
+    // Increase timeouts for slow networks (Render can be slow)
+    connectionTimeout: 30000, // 30 seconds
+    greetingTimeout: 30000,
+    socketTimeout: 60000, // 60 seconds
+    // Pool connections for better reliability
+    pool: true,
+    maxConnections: 3,
+    maxMessages: 50,
   });
   
   // Verify transporter connection
@@ -56,7 +62,7 @@ export interface SendEmailOptions {
   html?: string;
 }
 
-export async function sendEmail(options: SendEmailOptions): Promise<{ success: boolean; error?: string }> {
+export async function sendEmail(options: SendEmailOptions, retries = 2): Promise<{ success: boolean; error?: string }> {
   const transport = getTransporter();
   
   if (!transport) {
@@ -69,32 +75,45 @@ export async function sendEmail(options: SendEmailOptions): Promise<{ success: b
     return { success: true }; // Pretend success in dev mode
   }
   
-  try {
-    console.log('[EmailService] Attempting to send email to:', options.to);
-    const info = await transport.sendMail({
-      from: `"EcoPro Platform" <${process.env.GMAIL_USER}>`,
-      to: options.to,
-      subject: options.subject,
-      text: options.text,
-      html: options.html,
-    });
-    
-    console.log('[EmailService] Email sent successfully:', {
-      to: options.to,
-      messageId: info.messageId,
-      response: info.response,
-    });
-    return { success: true };
-  } catch (error: any) {
-    console.error('[EmailService] Failed to send email:', {
-      to: options.to,
-      error: error.message,
-      code: error.code,
-      command: error.command,
-      responseCode: error.responseCode,
-    });
-    return { success: false, error: error.message };
+  for (let attempt = 1; attempt <= retries + 1; attempt++) {
+    try {
+      console.log(`[EmailService] Attempting to send email to: ${options.to} (attempt ${attempt}/${retries + 1})`);
+      const info = await transport.sendMail({
+        from: `"EcoPro Platform" <${process.env.GMAIL_USER}>`,
+        to: options.to,
+        subject: options.subject,
+        text: options.text,
+        html: options.html,
+      });
+      
+      console.log('[EmailService] Email sent successfully:', {
+        to: options.to,
+        messageId: info.messageId,
+        response: info.response,
+      });
+      return { success: true };
+    } catch (error: any) {
+      console.error(`[EmailService] Failed to send email (attempt ${attempt}/${retries + 1}):`, {
+        to: options.to,
+        error: error.message,
+        code: error.code,
+        command: error.command,
+        responseCode: error.responseCode,
+      });
+      
+      // If this is a timeout error and we have retries left, reset the transporter and try again
+      if (attempt <= retries && (error.code === 'ETIMEDOUT' || error.code === 'ESOCKET' || error.message.includes('timeout'))) {
+        console.log('[EmailService] Resetting transporter for retry...');
+        transporter = null; // Reset to force new connection
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Wait before retry
+        continue;
+      }
+      
+      return { success: false, error: error.message };
+    }
   }
+  
+  return { success: false, error: 'Max retries exceeded' };
 }
 
 // Generate a 6-digit verification code
