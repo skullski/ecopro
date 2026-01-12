@@ -58,41 +58,41 @@ const CATEGORY_COLORS: { [key: string]: string } = {
 };
 
 const menuItems: MenuItem[] = [
-  { titleKey: "sidebar.home", path: "/dashboard", icon: <Home className="w-5 h-5" />, permission: "view_dashboard" },
-  { titleKey: "sidebar.profile", path: "/dashboard/profile", icon: <User className="w-5 h-5" />, permission: "view_settings" },
-  { titleKey: "sidebar.store", path: "/dashboard/preview", icon: <Eye className="w-5 h-5" />, permission: "view_products_list" },
-  { titleKey: "sidebar.stock", path: "/dashboard/stock", icon: <Package className="w-5 h-5" />, permission: "view_inventory" },
-  { titleKey: "sidebar.images", path: "/dashboard/images", icon: <Image className="w-5 h-5" />, permission: "view_products_list" },
-  { titleKey: "sidebar.orders", path: "/dashboard/orders", icon: <ShoppingCart className="w-5 h-5" />, permission: "view_orders_list" },
+  { titleKey: "sidebar.home", path: "/dashboard", icon: <Home className="w-[18px] h-[18px]" />, permission: "view_dashboard" },
+  { titleKey: "sidebar.profile", path: "/dashboard/profile", icon: <User className="w-[18px] h-[18px]" />, permission: "view_settings" },
+  { titleKey: "sidebar.store", path: "/dashboard/preview", icon: <Eye className="w-[18px] h-[18px]" />, permission: "view_products_list" },
+  { titleKey: "sidebar.stock", path: "/dashboard/stock", icon: <Package className="w-[18px] h-[18px]" />, permission: "view_inventory" },
+  { titleKey: "sidebar.images", path: "/dashboard/images", icon: <Image className="w-[18px] h-[18px]" />, permission: "view_products_list" },
+  { titleKey: "sidebar.orders", path: "/dashboard/orders", icon: <ShoppingCart className="w-[18px] h-[18px]" />, permission: "view_orders_list" },
   { 
     titleKey: "sidebar.delivery", 
     path: "/dashboard/delivery/companies", 
-    icon: <Truck className="w-5 h-5" />,
+    icon: <Truck className="w-[18px] h-[18px]" />,
     permission: "edit_delivery_settings",
     children: [
-      { titleKey: "sidebar.deliveryCompanies", path: "/dashboard/delivery/companies", icon: <Truck className="w-4 h-4" />, permission: "edit_delivery_settings" },
-      { titleKey: "sidebar.deliveryPricing", path: "/dashboard/delivery/pricing", icon: <Tag className="w-4 h-4" />, permission: "edit_delivery_settings" }
+      { titleKey: "sidebar.deliveryCompanies", path: "/dashboard/delivery/companies", icon: <Truck className="w-3.5 h-3.5" />, permission: "edit_delivery_settings" },
+      { titleKey: "sidebar.deliveryPricing", path: "/dashboard/delivery/pricing", icon: <Tag className="w-3.5 h-3.5" />, permission: "edit_delivery_settings" }
     ]
   },
   { 
     titleKey: "sidebar.addons", 
     path: "/dashboard/addons/google-sheets", 
-    icon: <Puzzle className="w-5 h-5" />,
+    icon: <Puzzle className="w-[18px] h-[18px]" />,
     permission: "view_settings"
   },
   { 
     titleKey: "sidebar.pixels", 
     path: "/pixel-statistics", 
-    icon: <BarChart3 className="w-5 h-5" />,
+    icon: <BarChart3 className="w-[18px] h-[18px]" />,
     permission: "view_settings"
   },
   { 
     titleKey: "sidebar.wasselni", 
     path: "/dashboard/wasselni-settings", 
-    icon: <Bot className="w-5 h-5" />,
+    icon: <Bot className="w-[18px] h-[18px]" />,
     permission: "manage_bot_settings"
   },
-  { titleKey: "sidebar.staff", path: "/dashboard/staff", icon: <Users className="w-5 h-5" />, permission: "view_staff" },
+  { titleKey: "sidebar.staff", path: "/dashboard/staff", icon: <Users className="w-[18px] h-[18px]" />, permission: "view_staff" },
 ];
 
 export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {}) {
@@ -212,12 +212,12 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
               backgroundColor: `${categoryColor}20`,
               color: hasAccess ? categoryColor : '#9ca3af',
             }}>
-            {hasAccess ? item.icon : <Lock className="w-5 h-5" />}
+            {hasAccess ? item.icon : <Lock className="w-[18px] h-[18px]" />}
           </div>
           
           {!collapsed && (
             <>
-              <span className="flex-1 font-semibold text-[15px] leading-none">{t(item.titleKey)}</span>
+              <span className="flex-1 font-semibold text-[14px] leading-none">{t(item.titleKey)}</span>
               
               {!hasAccess && (
                 <Lock className="w-3 h-3 text-gray-400" />
