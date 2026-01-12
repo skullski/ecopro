@@ -135,8 +135,7 @@ export async function sendMessengerMessageDirect(
     const payload = {
       recipient: { id: recipientPsid },
       message: { text: message },
-      messaging_type: 'MESSAGE_TAG',
-      tag: 'CONFIRMED_EVENT_UPDATE', // Allows sending outside 24h window for order updates
+      messaging_type: 'RESPONSE',
     };
 
     const response = await fetch(
@@ -163,6 +162,71 @@ export async function sendMessengerMessageDirect(
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
     console.error(`[Messenger] Failed to send message: ${errorMsg}`);
+    return { success: false, error: errorMsg };
+  }
+}
+
+/**
+ * Send a Messenger button template with approve/decline postbacks.
+ * Used for order confirmations.
+ */
+export async function sendMessengerOrderConfirmationDirect(
+  pageAccessToken: string,
+  recipientPsid: string,
+  params: { text: string; orderId: number }
+): Promise<SendResult> {
+  try {
+    if (!pageAccessToken) return { success: false, error: 'Page access token missing' };
+    if (!recipientPsid) return { success: false, error: 'Recipient PSID missing' };
+
+    const payload = {
+      recipient: { id: recipientPsid },
+      message: {
+        attachment: {
+          type: 'template',
+          payload: {
+            template_type: 'button',
+            text: params.text,
+            buttons: [
+              {
+                type: 'postback',
+                title: '✅ Confirm',
+                payload: `CONFIRM_ORDER_${params.orderId}`,
+              },
+              {
+                type: 'postback',
+                title: '❌ Decline',
+                payload: `DECLINE_ORDER_${params.orderId}`,
+              },
+            ],
+          },
+        },
+      },
+      messaging_type: 'RESPONSE',
+    };
+
+    const response = await fetch(
+      `https://graph.facebook.com/v18.0/me/messages?access_token=${pageAccessToken}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    const data: any = await response.json().catch(() => null);
+    if (!response.ok || data?.error) {
+      console.error('[Messenger] Template send failed:', data?.error);
+      return {
+        success: false,
+        error: data?.error?.message || `Send failed (${response.status})`,
+      };
+    }
+
+    return { success: true, messageId: data?.message_id };
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error(`[Messenger] Failed to send order confirmation: ${errorMsg}`);
     return { success: false, error: errorMsg };
   }
 }
@@ -220,7 +284,8 @@ export async function sendOrderConfirmationMessages(
   storeName: string,
   productName: string,
   price: number,
-  confirmationLink: string
+  confirmationLink: string,
+  options?: { skipTelegram?: boolean }
 ): Promise<void> {
   try {
     const pool = await ensureConnection();
@@ -295,7 +360,7 @@ export async function sendOrderConfirmationMessages(
 
     // Telegram-only: schedule Telegram message (chat_id will be resolved by order_id at send time).
     const provider = settings.provider || 'telegram';
-    if (provider === 'telegram' && settings.telegram_bot_token) {
+    if (!options?.skipTelegram && provider === 'telegram' && settings.telegram_bot_token) {
       const telegramMessage = replaceTemplateVariables(
         settings.template_order_confirmation || defaultWhatsAppTemplate(),
         templateVariables
@@ -312,16 +377,41 @@ export async function sendOrderConfirmationMessages(
 
     // Facebook Messenger: schedule message if enabled (provider 'facebook' or 'messenger', or messenger_enabled flag)
     if ((provider === 'facebook' || provider === 'messenger' || settings.messenger_enabled) && settings.fb_page_access_token) {
-      const messengerMessage = replaceTemplateVariables(
-        settings.template_order_confirmation || defaultWhatsAppTemplate(),
+      const defaultInstant = `✅ Order received!\n\nOrder #${orderId}\nProduct: {productName}\nTotal: {totalPrice} DZD\n\nWe will ask you to confirm shortly.`;
+      const defaultPin = `📌 Tip: Please pin this chat so you don't miss updates.`;
+      const defaultConfirmation = `Hello {customerName}!\n\nDo you confirm your order from {storeName}?\n\n📦 {productName}\n💰 {totalPrice} DZD\n\nUse the buttons below:`;
+
+      const instantMessage = replaceTemplateVariables(
+        String(settings.template_instant_order || defaultInstant),
         templateVariables
       );
+      const pinMessage = replaceTemplateVariables(
+        String(settings.template_pin_instructions || defaultPin),
+        templateVariables
+      );
+      const confirmationMessage = replaceTemplateVariables(
+        String(settings.template_order_confirmation || defaultConfirmation),
+        templateVariables
+      );
+
+      const now = new Date();
+      await pool.query(
+        `INSERT INTO bot_messages (order_id, client_id, customer_phone, message_type, message_content, send_at)
+         VALUES ($1, $2, $3, 'messenger', $4, $5)`,
+        [orderId, clientId, customerPhone, instantMessage, now]
+      );
+      await pool.query(
+        `INSERT INTO bot_messages (order_id, client_id, customer_phone, message_type, message_content, send_at)
+         VALUES ($1, $2, $3, 'messenger', $4, $5)`,
+        [orderId, clientId, customerPhone, pinMessage, now]
+      );
+
       const delayMinutes = settings.messenger_delay_minutes || 5;
       const sendAt = new Date(Date.now() + delayMinutes * 60 * 1000);
       await pool.query(
         `INSERT INTO bot_messages (order_id, client_id, customer_phone, message_type, message_content, confirmation_link, send_at)
          VALUES ($1, $2, $3, 'messenger', $4, $5, $6)`,
-        [orderId, clientId, customerPhone, messengerMessage, confirmationLink, sendAt]
+        [orderId, clientId, customerPhone, confirmationMessage, confirmationLink, sendAt]
       );
       console.log(`[Bot] Messenger scheduled for order ${orderId} at ${sendAt}`);
     }
@@ -472,7 +562,14 @@ export async function processPendingMessages(): Promise<void> {
           }
           
           if (pageAccessToken && psid) {
-            sendResult = await sendMessengerMessageDirect(pageAccessToken, psid, message.message_content);
+            if (message.confirmation_link) {
+              sendResult = await sendMessengerOrderConfirmationDirect(pageAccessToken, psid, {
+                text: String(message.message_content || ''),
+                orderId: Number(message.order_id),
+              });
+            } else {
+              sendResult = await sendMessengerMessageDirect(pageAccessToken, psid, message.message_content);
+            }
           } else {
             // Customer hasn't connected Messenger yet; retry later
             await pool.query(

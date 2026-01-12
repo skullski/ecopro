@@ -780,6 +780,19 @@ Press one of the buttons to confirm or cancel:`;
           if (!isProduction) {
             console.log(`[createPublicStoreOrder] Sent immediate Telegram notification to chat ${chatId}`);
           }
+
+          // Also schedule Messenger messages (if enabled) without duplicating Telegram.
+          sendBotMessagesForOrder(
+            result.rows[0].id,
+            Number(clientId),
+            normalizedPhone,
+            customer_name,
+            storeName,
+            productTitle,
+            orderTotalPrice,
+            storeSlug,
+            { skipTelegram: true }
+          ).catch(() => {});
         }
       } else {
         // Customer not pre-connected, use the scheduled bot message flow

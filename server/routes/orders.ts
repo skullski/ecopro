@@ -367,6 +367,19 @@ Press one of the buttons to confirm or cancel:`;
             if (sent.success) {
               await sendTelegramMessage(botToken, telegramChatId, String(pinTemplate));
             }
+
+            // Also schedule Messenger messages (if enabled) without duplicating Telegram.
+            sendBotMessagesForOrder(
+              order.id,
+              Number(resolvedClientId),
+              toPhone,
+              customer_name,
+              storeName,
+              productTitle,
+              Number(order.total_price ?? expectedTotalPrice),
+              storeSlug,
+              { skipTelegram: true }
+            ).catch(() => {/* swallow errors */});
           }
 
           // Always schedule confirmation message with buttons (worker will wait for chat link if needed)

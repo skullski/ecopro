@@ -365,7 +365,8 @@ export async function sendBotMessagesForOrder(
   storeName: string,
   productName: string,
   price: number,
-  storeSlug: string
+  storeSlug: string,
+  options?: { skipTelegram?: boolean }
 ): Promise<void> {
   try {
     // Reuse existing unexpired link token if possible (prevents duplicates)
@@ -400,7 +401,8 @@ export async function sendBotMessagesForOrder(
       storeName,
       productName,
       price,
-      confirmationLink
+      confirmationLink,
+      options
     );
 
     console.log(`[Orders] Bot messages scheduled for order ${orderId}`);

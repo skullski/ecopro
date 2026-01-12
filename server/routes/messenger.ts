@@ -198,8 +198,7 @@ export async function sendMessengerMessage(
     const payload: any = {
       recipient: { id: recipientId },
       message: { text: message },
-      messaging_type: 'MESSAGE_TAG',
-      tag: 'CONFIRMED_EVENT_UPDATE', // Allows sending outside 24h window for order updates
+      messaging_type: 'RESPONSE',
     };
 
     // Add quick reply buttons if provided
@@ -268,27 +267,20 @@ export async function sendMessengerOrderConfirmation(
             text: `مرحباً ${customerName}! 👋\n\nتم استلام طلبك من ${storeName}:\n\n📦 طلب #${orderId}\n🛍️ المنتج: ${productName}\n💰 المجموع: ${price} دج\n\nيرجى تأكيد طلبك:`,
             buttons: [
               {
-                type: 'web_url',
-                url: confirmationLink,
-                title: '✅ تأكيد الطلب',
-                webview_height_ratio: 'full',
+                type: 'postback',
+                title: '✅ تأكيد',
+                payload: `CONFIRM_ORDER_${orderId}`,
               },
               {
                 type: 'postback',
                 title: '❌ إلغاء',
-                payload: `CANCEL_ORDER_${orderId}`,
-              },
-              {
-                type: 'postback',
-                title: '📞 اتصل بنا',
-                payload: `CONTACT_STORE_${orderId}`,
+                payload: `DECLINE_ORDER_${orderId}`,
               },
             ],
           },
         },
       },
-      messaging_type: 'MESSAGE_TAG',
-      tag: 'CONFIRMED_EVENT_UPDATE',
+      messaging_type: 'RESPONSE',
     };
 
     const response = await fetch(
@@ -559,20 +551,72 @@ async function handlePostback(pageId: string, senderId: string, postback: any) {
     }
 
     // Handle different postback payloads
-    if (payload.startsWith('CANCEL_ORDER_')) {
-      const orderId = parseInt(payload.replace('CANCEL_ORDER_', ''), 10);
-      
-      // Update order status
-      await pool.query(
-        `UPDATE store_orders SET status = 'cancelled', updated_at = NOW() WHERE id = $1`,
-        [orderId]
+    if (payload.startsWith('CONFIRM_ORDER_')) {
+      const orderId = parseInt(payload.replace('CONFIRM_ORDER_', ''), 10);
+
+      const upd = await pool.query(
+        `UPDATE store_orders
+         SET status = 'confirmed', updated_at = NOW()
+         WHERE id = $1 AND client_id = $2 AND status IN ('pending')
+         RETURNING id`,
+        [orderId, client_id]
       );
 
-      await sendMessengerMessage(
-        fb_page_access_token,
-        senderId,
-        `تم إلغاء طلبك #${orderId}. شكراً لتواصلك مع ${store_name}. 🙏`
+      if (upd.rows.length) {
+        await pool.query(
+          `INSERT INTO order_confirmations (order_id, client_id, response_type, confirmed_via, confirmed_at)
+           SELECT $1, $2, 'approved', 'messenger', NOW()
+           WHERE NOT EXISTS (
+             SELECT 1 FROM order_confirmations WHERE order_id = $1 AND client_id = $2
+           )`,
+          [orderId, client_id]
+        );
+        await sendMessengerMessage(
+          fb_page_access_token,
+          senderId,
+          `✅ تم تأكيد طلبك #${orderId}. شكراً لك!`
+        );
+      } else {
+        await sendMessengerMessage(
+          fb_page_access_token,
+          senderId,
+          `تمت معالجة هذا الطلب مسبقاً.`
+        );
+      }
+    } else if (payload.startsWith('DECLINE_ORDER_') || payload.startsWith('CANCEL_ORDER_')) {
+      const orderId = payload.startsWith('DECLINE_ORDER_')
+        ? parseInt(payload.replace('DECLINE_ORDER_', ''), 10)
+        : parseInt(payload.replace('CANCEL_ORDER_', ''), 10);
+
+      const upd = await pool.query(
+        `UPDATE store_orders
+         SET status = 'declined', updated_at = NOW()
+         WHERE id = $1 AND client_id = $2 AND status IN ('pending')
+         RETURNING id`,
+        [orderId, client_id]
       );
+
+      if (upd.rows.length) {
+        await pool.query(
+          `INSERT INTO order_confirmations (order_id, client_id, response_type, confirmed_via, confirmed_at)
+           SELECT $1, $2, 'declined', 'messenger', NOW()
+           WHERE NOT EXISTS (
+             SELECT 1 FROM order_confirmations WHERE order_id = $1 AND client_id = $2
+           )`,
+          [orderId, client_id]
+        );
+        await sendMessengerMessage(
+          fb_page_access_token,
+          senderId,
+          `❌ تم إلغاء طلبك #${orderId}. شكراً لتواصلك مع ${store_name}.`
+        );
+      } else {
+        await sendMessengerMessage(
+          fb_page_access_token,
+          senderId,
+          `تمت معالجة هذا الطلب مسبقاً.`
+        );
+      }
     } else if (payload.startsWith('CONTACT_STORE_')) {
       const orderId = parseInt(payload.replace('CONTACT_STORE_', ''), 10);
       
