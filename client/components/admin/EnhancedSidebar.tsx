@@ -217,7 +217,7 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
           
           {!collapsed && (
             <>
-              <span className="flex-1 font-semibold text-sm leading-none">{t(item.titleKey)}</span>
+              <span className="flex-1 font-semibold text-[15px] leading-none">{t(item.titleKey)}</span>
               
               {!hasAccess && (
                 <Lock className="w-3 h-3 text-gray-400" />
