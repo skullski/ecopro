@@ -254,46 +254,46 @@ export default function PixelStatistics() {
     const color = platform === 'facebook' ? 'blue' : 'pink';
     
     return (
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
         <Card>
-          <CardContent className="p-3 md:p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Eye className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs md:text-sm text-muted-foreground">Page Views</span>
+          <CardContent className="p-2.5 md:p-3">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Page Views</span>
             </div>
-            <p className="text-xl md:text-2xl font-bold">{formatNumber(data?.total_page_views)}</p>
+            <p className="text-lg md:text-xl font-bold">{formatNumber(data?.total_page_views)}</p>
           </CardContent>
         </Card>
         
         <Card>
-          <CardContent className="p-3 md:p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <MousePointer className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs md:text-sm text-muted-foreground">View Content</span>
+          <CardContent className="p-2.5 md:p-3">
+            <div className="flex items-center gap-1.5 mb-1">
+              <MousePointer className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">View Content</span>
             </div>
-            <p className="text-xl md:text-2xl font-bold">{formatNumber(data?.total_view_content)}</p>
+            <p className="text-lg md:text-xl font-bold">{formatNumber(data?.total_view_content)}</p>
           </CardContent>
         </Card>
         
         <Card>
-          <CardContent className="p-3 md:p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs md:text-sm text-muted-foreground">Add to Cart</span>
+          <CardContent className="p-2.5 md:p-3">
+            <div className="flex items-center gap-1.5 mb-1">
+              <ShoppingCart className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Add to Cart</span>
             </div>
-            <p className="text-xl md:text-2xl font-bold">{formatNumber(data?.total_add_to_cart)}</p>
-            <p className="text-xs text-muted-foreground mt-1">Cart Rate: {data?.cart_rate || 0}%</p>
+            <p className="text-lg md:text-xl font-bold">{formatNumber(data?.total_add_to_cart)}</p>
+            <p className="text-xs text-muted-foreground">Rate: {data?.cart_rate || 0}%</p>
           </CardContent>
         </Card>
         
         <Card>
-          <CardContent className="p-3 md:p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <CreditCard className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs md:text-sm text-muted-foreground">Purchases</span>
+          <CardContent className="p-2.5 md:p-3">
+            <div className="flex items-center gap-1.5 mb-1">
+              <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Purchases</span>
             </div>
-            <p className="text-xl md:text-2xl font-bold">{formatNumber(data?.total_purchases)}</p>
-            <p className="text-xs text-muted-foreground mt-1">Conv: {data?.conversion_rate || 0}%</p>
+            <p className="text-lg md:text-xl font-bold">{formatNumber(data?.total_purchases)}</p>
+            <p className="text-xs text-muted-foreground">Conv: {data?.conversion_rate || 0}%</p>
           </CardContent>
         </Card>
       </div>
@@ -311,26 +311,26 @@ export default function PixelStatistics() {
     
     return (
       <Card>
-        <CardHeader className="p-4 md:p-6">
-          <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-            <Target className="h-4 w-4 md:h-5 md:w-5" />
+        <CardHeader className="p-3 md:p-4">
+          <CardTitle className="flex items-center gap-2 text-sm md:text-base">
+            <Target className="h-4 w-4" />
             Conversion Funnel
           </CardTitle>
-          <CardDescription className="text-xs md:text-sm">
+          <CardDescription className="text-xs">
             {platform === 'facebook' ? 'Facebook' : 'TikTok'} Pixel - Last {data.period_days} days
           </CardDescription>
         </CardHeader>
-        <CardContent className="p-4 md:p-6 pt-0 md:pt-0">
-          <div className="space-y-3">
+        <CardContent className="p-3 md:p-4 pt-0">
+          <div className="space-y-2">
             {data.funnel.map((step, idx) => (
-              <div key={step.stage} className="space-y-1">
-                <div className="flex justify-between text-xs md:text-sm">
+              <div key={step.stage} className="space-y-0.5">
+                <div className="flex justify-between text-xs">
                   <span className="font-medium">{step.stage}</span>
                   <span className="text-muted-foreground">
                     {formatNumber(step.count)} ({step.rate}%)
                   </span>
                 </div>
-                <div className="h-6 md:h-8 bg-muted rounded-lg overflow-hidden">
+                <div className="h-5 md:h-6 bg-muted rounded-md overflow-hidden">
                   <div 
                     className={`h-full ${colors[idx]} transition-all duration-500`}
                     style={{ width: maxCount > 0 ? `${(step.count / maxCount) * 100}%` : '0%' }}
@@ -340,14 +340,14 @@ export default function PixelStatistics() {
             ))}
           </div>
           
-          <div className="mt-4 md:mt-6 pt-4 border-t grid grid-cols-2 gap-4">
+          <div className="mt-3 pt-3 border-t grid grid-cols-2 gap-3">
             <div>
-              <p className="text-xs md:text-sm text-muted-foreground">Total Revenue</p>
-              <p className="text-lg md:text-xl font-bold text-green-600 dark:text-green-400">{formatCurrency(data.total_revenue)}</p>
+              <p className="text-xs text-muted-foreground">Total Revenue</p>
+              <p className="text-base md:text-lg font-bold text-green-600 dark:text-green-400">{formatCurrency(data.total_revenue)}</p>
             </div>
             <div>
-              <p className="text-xs md:text-sm text-muted-foreground">Avg Order Value</p>
-              <p className="text-lg md:text-xl font-bold">{formatCurrency(data.avg_order_value)}</p>
+              <p className="text-xs text-muted-foreground">Avg Order Value</p>
+              <p className="text-base md:text-lg font-bold">{formatCurrency(data.avg_order_value)}</p>
             </div>
           </div>
         </CardContent>
@@ -356,22 +356,22 @@ export default function PixelStatistics() {
   };
 
   return (
-    <div className="container mx-auto p-3 md:p-6 space-y-4 md:space-y-6 max-w-7xl">
+    <div className="container mx-auto p-2 md:p-4 space-y-3 md:space-y-4 max-w-6xl">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-3">
         <div>
-          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 md:h-7 md:w-7" />
+          <h1 className="text-lg md:text-xl lg:text-2xl font-bold flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 md:h-5 md:w-5" />
             Pixel Statistics
           </h1>
-          <p className="text-muted-foreground text-sm md:text-base mt-1">
+          <p className="text-muted-foreground text-xs md:text-sm mt-0.5">
             Track Facebook and TikTok pixel performance
           </p>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <Select value={selectedDays} onValueChange={setSelectedDays}>
-            <SelectTrigger className="w-36">
+            <SelectTrigger className="w-32 h-8 text-xs">
               <SelectValue placeholder="Time period" />
             </SelectTrigger>
             <SelectContent>
@@ -383,24 +383,24 @@ export default function PixelStatistics() {
             </SelectContent>
           </Select>
           
-          <Button variant="outline" size="icon" onClick={() => refetchStats()}>
-            <RefreshCw className="h-4 w-4" />
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => refetchStats()}>
+            <RefreshCw className="h-3.5 w-3.5" />
           </Button>
         </div>
       </div>
 
       {/* Pixel Status Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Card className={settings?.is_facebook_enabled ? 'border-blue-500/30 bg-blue-500/10 dark:bg-blue-900/20' : ''}>
-          <CardContent className="p-3 md:p-4">
+          <CardContent className="p-2.5 md:p-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 md:gap-3">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg">
-                  <Facebook className="h-5 w-5 md:h-6 md:w-6 text-blue-600 dark:text-blue-400" />
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-blue-100 dark:bg-blue-900/50 rounded-lg">
+                  <Facebook className="h-4 w-4 md:h-5 md:w-5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-sm md:text-base">Facebook Pixel</h3>
-                  <p className="text-xs md:text-sm text-muted-foreground truncate max-w-[120px] md:max-w-none">
+                  <h3 className="font-semibold text-xs md:text-sm">Facebook Pixel</h3>
+                  <p className="text-xs text-muted-foreground truncate max-w-[120px] md:max-w-none">
                     {settings?.facebook_pixel_id || 'Not configured'}
                   </p>
                 </div>
@@ -419,15 +419,15 @@ export default function PixelStatistics() {
         </Card>
 
         <Card className={settings?.is_tiktok_enabled ? 'border-pink-500/30 bg-pink-500/10 dark:bg-pink-900/20' : ''}>
-          <CardContent className="p-3 md:p-4">
+          <CardContent className="p-2.5 md:p-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 md:gap-3">
-                <div className="p-2 bg-pink-100 dark:bg-pink-900/50 rounded-lg">
-                  <TikTokIcon className="h-5 w-5 md:h-6 md:w-6 text-pink-600 dark:text-pink-400" />
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-pink-100 dark:bg-pink-900/50 rounded-lg">
+                  <TikTokIcon className="h-4 w-4 md:h-5 md:w-5 text-pink-600 dark:text-pink-400" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-sm md:text-base">TikTok Pixel</h3>
-                  <p className="text-xs md:text-sm text-muted-foreground truncate max-w-[120px] md:max-w-none">
+                  <h3 className="font-semibold text-xs md:text-sm">TikTok Pixel</h3>
+                  <p className="text-xs text-muted-foreground truncate max-w-[120px] md:max-w-none">
                     {settings?.tiktok_pixel_id || 'Not configured'}
                   </p>
                 </div>
@@ -449,59 +449,59 @@ export default function PixelStatistics() {
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-4 h-auto">
-          <TabsTrigger value="overview" className="text-xs md:text-sm py-2">Overview</TabsTrigger>
-          <TabsTrigger value="facebook" className="text-xs md:text-sm py-2">Facebook</TabsTrigger>
-          <TabsTrigger value="tiktok" className="text-xs md:text-sm py-2">TikTok</TabsTrigger>
-          <TabsTrigger value="settings" className="text-xs md:text-sm py-2">Settings</TabsTrigger>
+          <TabsTrigger value="overview" className="text-xs py-1.5">Overview</TabsTrigger>
+          <TabsTrigger value="facebook" className="text-xs py-1.5">Facebook</TabsTrigger>
+          <TabsTrigger value="tiktok" className="text-xs py-1.5">TikTok</TabsTrigger>
+          <TabsTrigger value="settings" className="text-xs py-1.5">Settings</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-4 md:space-y-6">
+        <TabsContent value="overview" className="space-y-3 md:space-y-4">
           {/* Summary Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
             <Card>
-              <CardContent className="p-3 md:p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Eye className="h-4 w-4 text-blue-500" />
-                  <span className="text-xs md:text-sm text-muted-foreground">Page Views</span>
+              <CardContent className="p-2.5 md:p-3">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Eye className="h-3.5 w-3.5 text-blue-500" />
+                  <span className="text-xs text-muted-foreground">Total Page Views</span>
                 </div>
-                <p className="text-xl md:text-2xl font-bold">
+                <p className="text-lg md:text-xl font-bold">
                   {formatNumber((stats?.facebook?.total_page_views || 0) + (stats?.tiktok?.total_page_views || 0))}
                 </p>
               </CardContent>
             </Card>
             
             <Card>
-              <CardContent className="p-3 md:p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <ShoppingCart className="h-4 w-4 text-orange-500" />
-                  <span className="text-xs md:text-sm text-muted-foreground">Add to Cart</span>
+              <CardContent className="p-2.5 md:p-3">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <ShoppingCart className="h-3.5 w-3.5 text-orange-500" />
+                  <span className="text-xs text-muted-foreground">Total Add to Cart</span>
                 </div>
-                <p className="text-xl md:text-2xl font-bold">
+                <p className="text-lg md:text-xl font-bold">
                   {formatNumber((stats?.facebook?.total_add_to_cart || 0) + (stats?.tiktok?.total_add_to_cart || 0))}
                 </p>
               </CardContent>
             </Card>
             
             <Card>
-              <CardContent className="p-3 md:p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <CreditCard className="h-4 w-4 text-green-500" />
-                  <span className="text-xs md:text-sm text-muted-foreground">Purchases</span>
+              <CardContent className="p-2.5 md:p-3">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <CreditCard className="h-3.5 w-3.5 text-green-500" />
+                  <span className="text-xs text-muted-foreground">Total Purchases</span>
                 </div>
-                <p className="text-xl md:text-2xl font-bold">
+                <p className="text-lg md:text-xl font-bold">
                   {formatNumber((stats?.facebook?.total_purchases || 0) + (stats?.tiktok?.total_purchases || 0))}
                 </p>
               </CardContent>
             </Card>
             
             <Card>
-              <CardContent className="p-3 md:p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <DollarSign className="h-4 w-4 text-green-500" />
-                  <span className="text-xs md:text-sm text-muted-foreground">Revenue</span>
+              <CardContent className="p-2.5 md:p-3">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <DollarSign className="h-3.5 w-3.5 text-green-500" />
+                  <span className="text-xs text-muted-foreground">Total Revenue</span>
                 </div>
-                <p className="text-xl md:text-2xl font-bold text-green-600 dark:text-green-400">
+                <p className="text-lg md:text-xl font-bold text-green-600 dark:text-green-400">
                   {formatCurrency((Number(stats?.facebook?.total_revenue) || 0) + (Number(stats?.tiktok?.total_revenue) || 0))}
                 </p>
               </CardContent>
@@ -510,16 +510,16 @@ export default function PixelStatistics() {
 
           {/* Recent Events */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5" />
+            <CardHeader className="p-3 md:p-4">
+              <CardTitle className="flex items-center gap-2 text-sm md:text-base">
+                <Activity className="h-4 w-4" />
                 Recent Events
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs">
                 Latest pixel events from your store
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-3 md:p-4 pt-0">
               {recentEvents?.events && recentEvents.events.length > 0 ? (
                 <Table>
                   <TableHeader>

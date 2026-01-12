@@ -58,41 +58,41 @@ const CATEGORY_COLORS: { [key: string]: string } = {
 };
 
 const menuItems: MenuItem[] = [
-  { titleKey: "sidebar.home", path: "/dashboard", icon: <Home className="w-5 h-5" />, permission: "view_dashboard" },
-  { titleKey: "sidebar.profile", path: "/dashboard/profile", icon: <User className="w-5 h-5" />, permission: "view_settings" },
-  { titleKey: "sidebar.store", path: "/dashboard/preview", icon: <Eye className="w-5 h-5" />, permission: "view_products_list" },
-  { titleKey: "sidebar.stock", path: "/dashboard/stock", icon: <Package className="w-5 h-5" />, permission: "view_inventory" },
-  { titleKey: "sidebar.images", path: "/dashboard/images", icon: <Image className="w-5 h-5" />, permission: "view_products_list" },
-  { titleKey: "sidebar.orders", path: "/dashboard/orders", icon: <ShoppingCart className="w-5 h-5" />, permission: "view_orders_list" },
+  { titleKey: "sidebar.home", path: "/dashboard", icon: <Home className="w-4 h-4" />, permission: "view_dashboard" },
+  { titleKey: "sidebar.profile", path: "/dashboard/profile", icon: <User className="w-4 h-4" />, permission: "view_settings" },
+  { titleKey: "sidebar.store", path: "/dashboard/preview", icon: <Eye className="w-4 h-4" />, permission: "view_products_list" },
+  { titleKey: "sidebar.stock", path: "/dashboard/stock", icon: <Package className="w-4 h-4" />, permission: "view_inventory" },
+  { titleKey: "sidebar.images", path: "/dashboard/images", icon: <Image className="w-4 h-4" />, permission: "view_products_list" },
+  { titleKey: "sidebar.orders", path: "/dashboard/orders", icon: <ShoppingCart className="w-4 h-4" />, permission: "view_orders_list" },
   { 
     titleKey: "sidebar.delivery", 
     path: "/dashboard/delivery/companies", 
-    icon: <Truck className="w-5 h-5" />,
+    icon: <Truck className="w-4 h-4" />,
     permission: "edit_delivery_settings",
     children: [
-      { titleKey: "sidebar.deliveryCompanies", path: "/dashboard/delivery/companies", icon: <Truck className="w-4 h-4" />, permission: "edit_delivery_settings" },
-      { titleKey: "sidebar.deliveryPricing", path: "/dashboard/delivery/pricing", icon: <Tag className="w-4 h-4" />, permission: "edit_delivery_settings" }
+      { titleKey: "sidebar.deliveryCompanies", path: "/dashboard/delivery/companies", icon: <Truck className="w-3.5 h-3.5" />, permission: "edit_delivery_settings" },
+      { titleKey: "sidebar.deliveryPricing", path: "/dashboard/delivery/pricing", icon: <Tag className="w-3.5 h-3.5" />, permission: "edit_delivery_settings" }
     ]
   },
   { 
     titleKey: "sidebar.addons", 
     path: "/dashboard/addons/google-sheets", 
-    icon: <Puzzle className="w-5 h-5" />,
+    icon: <Puzzle className="w-4 h-4" />,
     permission: "view_settings"
   },
   { 
     titleKey: "sidebar.pixels", 
     path: "/pixel-statistics", 
-    icon: <BarChart3 className="w-5 h-5" />,
+    icon: <BarChart3 className="w-4 h-4" />,
     permission: "view_settings"
   },
   { 
     titleKey: "sidebar.wasselni", 
     path: "/dashboard/wasselni-settings", 
-    icon: <Bot className="w-5 h-5" />,
+    icon: <Bot className="w-4 h-4" />,
     permission: "manage_bot_settings"
   },
-  { titleKey: "sidebar.staff", path: "/dashboard/staff", icon: <Users className="w-5 h-5" />, permission: "view_staff" },
+  { titleKey: "sidebar.staff", path: "/dashboard/staff", icon: <Users className="w-4 h-4" />, permission: "view_staff" },
 ];
 
 export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {}) {
@@ -190,8 +190,8 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
             }
           }}
           className={cn(
-            "group relative flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200",
-            level > 0 && (isRTL ? "mr-4" : "ml-4"),
+            "group relative flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200",
+            level > 0 && (isRTL ? "mr-3" : "ml-3"),
             active 
               ? "shadow-sm font-medium"
               : "hover:bg-white hover:bg-opacity-50 text-muted-foreground hover:text-foreground",
@@ -207,17 +207,17 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
           title={!hasAccess ? 'No permission' : undefined}
         >
           {/* Icon with category color */}
-          <div className="flex-shrink-0 transition-colors rounded-md p-1.5" 
+          <div className="flex-shrink-0 transition-colors rounded-md p-1" 
             style={{
               backgroundColor: `${categoryColor}20`,
               color: hasAccess ? categoryColor : '#9ca3af',
             }}>
-            {hasAccess ? item.icon : <Lock className="w-5 h-5" />}
+            {hasAccess ? item.icon : <Lock className="w-4 h-4" />}
           </div>
           
           {!collapsed && (
             <>
-              <span className="flex-1 font-bold" style={{ fontSize: '13px' }}>{t(item.titleKey)}</span>
+              <span className="flex-1 font-semibold" style={{ fontSize: '12px' }}>{t(item.titleKey)}</span>
               
               {!hasAccess && (
                 <Lock className="w-3 h-3 text-gray-400" />
@@ -253,14 +253,14 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
   };
 
   const sidebarContent = (
-    <div className="flex flex-col h-full pt-20 transition-all duration-300"
+    <div className="flex flex-col h-full pt-14 transition-all duration-300"
       style={{
         backgroundColor: SIDEBAR_THEMES[activeTheme].bg,
         color: SIDEBAR_THEMES[activeTheme].text,
         borderColor: SIDEBAR_THEMES[activeTheme].border,
       }}>
       {/* Header with unique design */}
-      <div className="p-2 border-b flex items-center justify-between transition-all duration-300"
+      <div className="p-1.5 border-b flex items-center justify-between transition-all duration-300"
         style={{
           backgroundColor: SIDEBAR_THEMES[activeTheme].bg,
           borderColor: SIDEBAR_THEMES[activeTheme].border,
@@ -269,11 +269,11 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
         {!collapsed && (
           <div>
             <span className="font-bold block transition-colors duration-200" 
-              style={{ color: SIDEBAR_THEMES[activeTheme].accent, fontSize: '14px' }}>
+              style={{ color: SIDEBAR_THEMES[activeTheme].accent, fontSize: '12px' }}>
               {t('sidebar.brand')}
             </span>
             <span className="transition-colors duration-200" 
-              style={{ color: SIDEBAR_THEMES[activeTheme].text, fontSize: '16px' }}>
+              style={{ color: SIDEBAR_THEMES[activeTheme].text, fontSize: '14px' }}>
               {t("sidebar.controlPanel")}
             </span>
           </div>
@@ -392,7 +392,7 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
       <aside className={cn(
         "hidden lg:block fixed top-0 h-screen transition-all duration-300 z-40",
         isRTL ? "right-0 border-l shadow-2xl" : "left-0 border-r shadow-2xl",
-        collapsed ? "w-20" : "w-72"
+        collapsed ? "w-16" : "w-56"
       )}
       style={{
         backgroundColor: SIDEBAR_THEMES[activeTheme].bg,
@@ -412,7 +412,7 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
             onClick={() => setMobileOpen(false)}
           />
           <aside className={cn(
-            "lg:hidden fixed top-0 h-screen w-72 z-[70] border-r transition-all duration-300",
+            "lg:hidden fixed top-0 h-screen w-60 z-[70] border-r transition-all duration-300",
             isRTL ? "right-0" : "left-0"
           )}
           style={{
