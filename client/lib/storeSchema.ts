@@ -33,8 +33,11 @@ export type StoreProductLike = {
 
 function normalizeTemplateId(input: string | null | undefined): string {
   const t = String(input || '').trim();
-  if (!t) return 'shiro-hana';
-  return t.replace(/^gold-/, '');
+  const raw = t.replace(/^gold-/, '').toLowerCase();
+  if (!raw) return 'pro';
+  if (raw === 'shiro-hana') return 'pro';
+  if (raw === 'baby' || raw === 'babyos') return 'kids';
+  return raw;
 }
 
 function templateIdToPresetId(templateId: string): string {
@@ -45,9 +48,7 @@ function templateIdToPresetId(templateId: string): string {
     case 'fashion3':
     case 'bags':
       return 'fashion-dark';
-    case 'baby':
-    case 'baby-gold':
-    case 'babyos':
+    case 'kids':
       return 'baby-soft';
     case 'electronics':
       return 'tech-dark';
@@ -62,7 +63,6 @@ function templateIdToPresetId(templateId: string): string {
     case 'furniture':
     case 'store':
       return 'minimal';
-    case 'shiro-hana':
     default:
       return 'minimal';
   }
@@ -76,9 +76,7 @@ function templateIdToCategory(templateId: string): Parameters<typeof createDefau
     case 'fashion3':
     case 'bags':
       return 'fashion';
-    case 'baby':
-    case 'baby-gold':
-    case 'babyos':
+    case 'kids':
       return 'baby';
     case 'electronics':
       return 'electronics';

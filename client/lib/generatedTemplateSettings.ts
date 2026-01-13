@@ -14,289 +14,690 @@ export type InferredField = {
 };
 
 export const GENERATED_TEMPLATE_DEFAULTS: Record<string, Record<string, unknown>> = {
-  "baby": {
-    "banner_url": "https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&w=2000&q=80",
-    "store_name": "BabyOS",
-    "template_browse_by_category_label": "Browse by category",
-    "template_buy_now_label": "Buy Now",
-    "template_empty_category_text": "No items in this category",
-    "template_featured_kicker": "Soft & snuggly picks",
-    "template_featured_product_label": "Featured product",
-    "template_featured_text": "A small edit of plush toys, blankets and first outfits designed to feel soft against newborn skin. Gentle colors, cozy textures, and everyday comfort.",
-    "template_featured_title": "Plush friends and warm layers.",
-    "template_footer_suffix": "Modern Baby Store",
-    "template_grid_kicker": "All baby products",
-    "template_grid_title": "Pieces in this universe",
-    "template_header_cart_label": "Cart (0)",
-    "template_header_search_label": "Search",
-    "template_hero_badge_left": "New season",
-    "template_hero_badge_right": "Soft & Playful",
-    "template_hero_heading": "A soft, modern universe\nfor every little moment.",
-    "template_hero_image_alt": "Baby hero",
-    "template_hero_subtitle": "Toys, outfits, feeding essentials, nursery finds and tiny gifts — curated for newborns and toddlers in one balanced, playful store.",
-    "template_items_suffix": "items",
-    "template_primary_cta": "Shop baby essentials",
-    "template_product_badge_1": "Soft",
-    "template_product_badge_2": "0–6m",
-    "template_secondary_cta": "View all toys"
+  "amber-store": {},
+  "art": {
+    "store_name": "ARTISAN GALLERY",
+    "template_accent_color": "#dc2626",
+    "template_bg_color": "#fafafa",
+    "template_button_text": "VIEW GALLERY",
+    "template_card_bg": "#ffffff",
+    "template_hero_heading": "Original Art & Prints",
+    "template_hero_subtitle": "Curated collection",
+    "template_text_color": "#18181b"
+  },
+  "automotive": {
+    "store_name": "AUTO PARTS",
+    "template_accent_color": "#ef4444",
+    "template_bg_color": "#111827",
+    "template_button_text": "SHOP NOW",
+    "template_card_bg": "#1f2937",
+    "template_hero_heading": "Performance Parts 🏎️",
+    "template_hero_subtitle": "Quality auto parts for every vehicle",
+    "template_text_color": "#f9fafb"
   },
   "bags": {},
-  "beauty": {
-    "store_name": "BloomSkin",
-    "template_hero_heading": "A clean, modern beauty store built around routines, concerns and shades",
-    "template_hero_subtitle": "Filter by skin concern, routine time, product type and price. Wishlist your favorites and explore base shades."
+  "beauty": {},
+  "berry-market": {},
+  "books": {
+    "store_name": "THE BOOKSHELF",
+    "template_accent_color": "#b45309",
+    "template_bg_color": "#fef7ed",
+    "template_button_text": "Browse Collection",
+    "template_card_bg": "#ffffff",
+    "template_hero_heading": "Discover Your Next Adventure",
+    "template_hero_subtitle": "Curated books for curious minds",
+    "template_muted_color": "#78716c",
+    "template_text_color": "#1c1917"
   },
-  "cafe": {
-    "store_name": "Sweet Home Dz"
+  "cafe": {},
+  "candles": {
+    "store_name": "Warm Glow",
+    "template_accent_color": "#fbbf24",
+    "template_bg_color": "#1c1917",
+    "template_button_text": "Shop Candles",
+    "template_card_bg": "#292524",
+    "template_hero_heading": "Light Up Your Space 🕯️",
+    "template_hero_subtitle": "Premium scented candles for every mood",
+    "template_text_color": "#fef3c7"
   },
-  "electronics": {
-    "store_name": "ElectroVerse"
-  },
-  "fashion": {
-    "banner_url": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=1600&q=80",
-    "store_name": "WardrobeOS",
-    "template_button_text": "Browse collection",
-    "template_hero_heading": "Build a wardrobe that behaves like software.",
-    "template_hero_subtitle": "Fewer pieces, more combinations. Coats, trousers, and layers designed to work in any city, any season."
-  },
-  "fashion2": {
-    "store_name": "LineaWear",
+  "chocolate": {
+    "store_name": "Cocoa Dreams",
+    "template_accent_color": "#d97706",
+    "template_bg_color": "#1c1414",
     "template_button_text": "Shop Now",
-    "template_hero_heading": "Build a fashion store that feels like a campaign, but behaves like a clean, modern catalog."
+    "template_card_bg": "#2a2020",
+    "template_hero_heading": "Pure Indulgence 🍫",
+    "template_hero_subtitle": "Handcrafted luxury chocolates",
+    "template_text_color": "#fef3c7"
   },
-  "fashion3": {
-    "store_name": "LineaWear",
-    "template_button_text": "Explore",
-    "template_hero_heading": "Premium Essentials"
+  "classic": {},
+  "clean-single": {},
+  "coral-market": {},
+  "crafts": {
+    "store_name": "Handmade Studio",
+    "template_accent_color": "#ca8a04",
+    "template_bg_color": "#fefce8",
+    "template_button_text": "Explore Collection",
+    "template_card_bg": "#ffffff",
+    "template_hero_heading": "Crafted With Love ✨",
+    "template_hero_subtitle": "Each piece tells a story",
+    "template_text_color": "#422006"
+  },
+  "electronics": {},
+  "emerald-shop": {},
+  "exhibit-store": {},
+  "eyewear": {
+    "store_name": "OPTIX",
+    "template_accent_color": "#78716c",
+    "template_bg_color": "#f5f5f4",
+    "template_button_text": "BROWSE FRAMES",
+    "template_card_bg": "#ffffff",
+    "template_hero_heading": "See The World 👓",
+    "template_hero_subtitle": "Premium eyewear for every style",
+    "template_text_color": "#1c1917"
+  },
+  "fashion": {},
+  "fitness": {
+    "store_name": "IRON FORCE",
+    "template_accent_color": "#f97316",
+    "template_bg_color": "#18181b",
+    "template_button_text": "START NOW",
+    "template_card_bg": "#27272a",
+    "template_hero_heading": "Train Hard 💪",
+    "template_hero_subtitle": "Premium fitness equipment & supplements",
+    "template_text_color": "#fafafa"
+  },
+  "florist": {
+    "store_name": "Bloom & Blossom",
+    "template_accent_color": "#e11d48",
+    "template_bg_color": "#fdf2f8",
+    "template_button_text": "Order Now",
+    "template_card_bg": "#ffffff",
+    "template_hero_heading": "Fresh Flowers 💐",
+    "template_hero_subtitle": "Beautiful bouquets for every occasion",
+    "template_text_color": "#831843"
   },
   "food": {},
-  "jewelry": {
-    "banner_url": "https://images.unsplash.com/photo-1603561596112-0a132b757133?auto=format&fit=crop&w=1600&q=80",
-    "store_name": "JewelryOS",
-    "template_edit_image_1": "https://images.unsplash.com/photo-1617038688874-ef666027625a?auto=format&fit=crop&w=900&q=80",
-    "template_edit_image_1_alt": "Gold detail 1",
-    "template_edit_image_2": "https://images.unsplash.com/photo-1611003228941-98852ba62227?auto=format&fit=crop&w=900&q=80",
-    "template_edit_image_2_alt": "Gold detail 2",
-    "template_edit_subtitle_1": "Sculpted rings and chains in warm 18K gold. Soft light, precise edges and a focus on proportion.",
-    "template_edit_subtitle_2": "Each piece is designed to stack quietly or stand alone.",
-    "template_edit_title": "The Gold Edit",
-    "template_empty_hint": "Products will appear automatically once you add them to your store.",
-    "template_empty_subtitle": "Add your jewelry pieces to see them displayed here.",
-    "template_empty_title": "No Products Yet",
-    "template_footer_suffix": "Minimal Luxury Jewelry",
-    "template_grid_count_suffix": "pieces",
-    "template_grid_title": "Pieces in this collection",
-    "template_hero_cta": "Explore the collection",
-    "template_hero_heading": "Timeless jewelry, designed in gold and light.",
-    "template_hero_image_alt": "Hero jewelry",
-    "template_hero_kicker": "Gold & silver jewelry / 2025",
-    "template_hero_subtitle": "A focused collection of rings, bracelets, necklaces and earrings in 18K gold, silver and diamonds. Built for quiet luxury, worn every day.",
-    "template_highlight_label": "Highlight piece",
-    "template_nav_bag": "Bag (0)",
-    "template_nav_collections": "Collections",
-    "template_nav_engagement": "Engagement",
-    "template_nav_gold": "Gold",
-    "template_nav_search": "Search",
-    "template_view_piece_label": "View piece"
+  "forest-store": {},
+  "furniture": {},
+  "gallery-pro": {},
+  "gaming": {
+    "store_name": "GAME ZONE",
+    "template_accent_color": "#8b5cf6",
+    "template_bg_color": "#0f0f23",
+    "template_button_text": "SHOP GEAR",
+    "template_card_bg": "#1a1a2e",
+    "template_hero_heading": "Level Up Your Game 🎮",
+    "template_hero_subtitle": "Gear up for victory",
+    "template_text_color": "#e2e8f0"
   },
-  "perfume": {
-    "banner_url": "https://images.unsplash.com/photo-1523293182086-7651a899d37f?auto=format&fit=crop&w=1600&q=80",
-    "store_name": "Premium Scents",
-    "template_all_scents_title": "All Scents",
-    "template_buy_now_label": "Buy Now",
-    "template_editorial_1_text": "Built for night-heavy rooms. Amber, smoke, and vanilla crafted to leave a trail of warmth and mystery.",
-    "template_editorial_1_title": "Realm I — Noir Extrait",
-    "template_editorial_2_text": "Bright, structured, and modern. Neroli, citrus, and musk for clean daytime presence.",
-    "template_editorial_2_title": "Realm II — Golden Luxe",
-    "template_editorial_3_text": "Minimal, airy, and skin-like. Soft musks and woods that feel like a second skin.",
-    "template_editorial_3_title": "Realm III — Dreamscape",
-    "template_empty_hint": "Products will appear automatically once you add them to your store.",
-    "template_empty_subtitle": "Add fragrances to your store to see them displayed here.",
-    "template_empty_title": "No Fragrances Yet",
-    "template_explore_more_title": "Explore More",
-    "template_featured_title": "Featured",
-    "template_filter_all_label": "All",
-    "template_filter_dark_label": "Noir",
-    "template_filter_dream_label": "Dream",
-    "template_filter_gold_label": "Gold",
-    "template_footer_rights": "All rights reserved.",
-    "template_hero_heading": "A New Way to Experience Scent",
-    "template_hero_subtitle": "Three realms. One universe. Discover fragrances crafted for mood, presence, and identity."
+  "garden": {
+    "store_name": "GREEN GARDEN",
+    "template_accent_color": "#16a34a",
+    "template_bg_color": "#f0fdf4",
+    "template_button_text": "Explore",
+    "template_card_bg": "#ffffff",
+    "template_hero_heading": "Grow Your Paradise 🌿",
+    "template_hero_subtitle": "Plants, tools & outdoor living",
+    "template_text_color": "#14532d"
   },
-  "store": {
-    "banner_url": "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?q=80&w=1400&auto=format&fit=crop",
-    "currency_code": "DZD",
-    "store_name": "ElectroStore DZ",
-    "template_button_text": "Build Your PC",
-    "template_hero_heading": "Your Trusted Electronics Store",
-    "template_hero_subtitle": "Shop smartphones, laptops, monitors, and configure your dream PC with expert-curated parts and local support.",
-    "template_neon_color": "#00f0ff",
-    "template_slide2_cta_text": "Shop Now",
-    "template_slide2_subtitle": "High performance products for every need.",
-    "template_slide2_title": "Featured Collection"
+  "gifts": {
+    "store_name": "Gift Box",
+    "template_accent_color": "#dc2626",
+    "template_bg_color": "#fef2f2",
+    "template_button_text": "Shop Gifts",
+    "template_card_bg": "#ffffff",
+    "template_hero_heading": "Perfect Gifts 🎁",
+    "template_hero_subtitle": "Find the perfect gift for everyone",
+    "template_text_color": "#7f1d1d"
+  },
+  "gradient": {
+    "store_name": "Spectrum",
+    "template_accent_color": "#6366f1",
+    "template_bg_color": "#0f172a",
+    "template_button_text": "Explore",
+    "template_card_bg": "#1e293b",
+    "template_hero_heading": "Bold & Beautiful 🌈",
+    "template_hero_subtitle": "Express yourself with color",
+    "template_text_color": "#f8fafc"
+  },
+  "health": {
+    "store_name": "WELLNESS SHOP",
+    "template_accent_color": "#14b8a6",
+    "template_bg_color": "#ffffff",
+    "template_button_text": "Shop Wellness",
+    "template_card_bg": "#f0fdfa",
+    "template_hero_heading": "Your Health, Our Priority 💚",
+    "template_hero_subtitle": "Natural supplements & wellness products",
+    "template_text_color": "#0f766e"
+  },
+  "jewelry": {},
+  "kids": {
+    "store_name": "Little Stars ⭐",
+    "template_accent_color": "#d946ef",
+    "template_bg_color": "#fdf4ff",
+    "template_button_text": "Shop Now! 🛍️",
+    "template_card_bg": "#ffffff",
+    "template_hero_heading": "Fun for Little Ones! 🎈",
+    "template_hero_subtitle": "Adorable clothes & accessories for kids",
+    "template_text_color": "#581c87"
+  },
+  "lime-direct": {},
+  "lingerie": {
+    "store_name": "Intimate",
+    "template_accent_color": "#f472b6",
+    "template_bg_color": "#1a1a1a",
+    "template_button_text": "SHOP NOW",
+    "template_card_bg": "#262626",
+    "template_hero_heading": "Feel Beautiful",
+    "template_hero_subtitle": "Luxury lingerie for every woman",
+    "template_text_color": "#fce7f3"
+  },
+  "luxury": {
+    "store_name": "MAISON LUXE",
+    "template_accent_color": "#c9a962",
+    "template_bg_color": "#0a0a0a",
+    "template_button_text": "DISCOVER",
+    "template_card_bg": "#141414",
+    "template_hero_heading": "Exceptional Quality",
+    "template_hero_subtitle": "Timeless elegance, uncompromising craftsmanship",
+    "template_text_color": "#fafafa"
+  },
+  "magenta-mall": {},
+  "minimal": {},
+  "mint-elegance": {},
+  "modern": {},
+  "monochrome": {
+    "store_name": "MONO",
+    "template_accent_color": "#000000",
+    "template_bg_color": "#ffffff",
+    "template_button_text": "SHOP",
+    "template_card_bg": "#fafafa",
+    "template_hero_heading": "Pure Simplicity",
+    "template_hero_subtitle": "Less is more",
+    "template_text_color": "#000000"
+  },
+  "music": {
+    "store_name": "SOUND STATION",
+    "template_accent_color": "#eab308",
+    "template_bg_color": "#0c0a09",
+    "template_button_text": "SHOP NOW",
+    "template_card_bg": "#1c1917",
+    "template_hero_heading": "Feel the Music 🎸",
+    "template_hero_subtitle": "Instruments & Audio Equipment",
+    "template_text_color": "#fafaf9"
+  },
+  "neon": {},
+  "neon-store": {},
+  "office": {},
+  "organic": {},
+  "outdoor": {},
+  "pastel": {},
+  "perfume": {},
+  "pets": {},
+  "phone-accessories": {
+    "store_name": "Phone Hub",
+    "template_accent_color": "#3b82f6",
+    "template_bg_color": "#fafafa",
+    "template_button_text": "Shop Now",
+    "template_card_bg": "#ffffff",
+    "template_hero_heading": "Upgrade Your Phone 📱",
+    "template_hero_subtitle": "Cases, chargers, and more for every device",
+    "template_text_color": "#18181b"
+  },
+  "photography": {
+    "store_name": "LENS & LIGHT",
+    "template_accent_color": "#fafafa",
+    "template_bg_color": "#171717",
+    "template_button_text": "SHOP GEAR",
+    "template_card_bg": "#262626",
+    "template_hero_heading": "Capture Every Moment 📷",
+    "template_hero_subtitle": "Professional camera gear & accessories",
+    "template_text_color": "#fafafa"
+  },
+  "pro": {},
+  "pro-atelier": {},
+  "pro-aurora": {},
+  "pro-catalog": {},
+  "pro-grid": {},
+  "pro-mosaic": {},
+  "pro-orbit": {},
+  "pro-studio": {},
+  "pro-vertex": {},
+  "pro-zen": {},
+  "pure-product": {},
+  "rose-catalog": {},
+  "sage-boutique": {},
+  "shoes": {
+    "store_name": "STEP UP",
+    "template_accent_color": "#ef4444",
+    "template_bg_color": "#fafafa",
+    "template_button_text": "SHOP NOW",
+    "template_card_bg": "#ffffff",
+    "template_hero_heading": "Walk in Style 👟",
+    "template_text_color": "#171717"
+  },
+  "showcase-plus": {},
+  "skincare": {
+    "store_name": "Glow Lab",
+    "template_accent_color": "#8b5cf6",
+    "template_bg_color": "#faf5ff",
+    "template_button_text": "Shop Skincare",
+    "template_card_bg": "#ffffff",
+    "template_hero_heading": "Radiant Skin Awaits ✨",
+    "template_hero_subtitle": "Clean, effective skincare for all skin types",
+    "template_text_color": "#4c1d95"
+  },
+  "snow-shop": {},
+  "sports": {
+    "store_name": "SPORTS GEAR",
+    "template_accent_color": "#22c55e",
+    "template_bg_color": "#0f172a",
+    "template_button_text": "SHOP NOW",
+    "template_card_bg": "#1e293b",
+    "template_hero_heading": "PUSH YOUR LIMITS",
+    "template_hero_subtitle": "Premium athletic gear for champions",
+    "template_muted_color": "#64748b",
+    "template_text_color": "#f8fafc"
+  },
+  "stationery": {
+    "store_name": "Paper & Pen",
+    "template_accent_color": "#f59e0b",
+    "template_bg_color": "#fffbeb",
+    "template_button_text": "Explore",
+    "template_card_bg": "#ffffff",
+    "template_hero_heading": "Write Your Story ✏️",
+    "template_hero_subtitle": "Beautiful pens, papers, and planners",
+    "template_text_color": "#451a03"
+  },
+  "streetwear": {
+    "store_name": "URBAN DRIP",
+    "template_accent_color": "#fbbf24",
+    "template_bg_color": "#0c0c0c",
+    "template_button_text": "SHOP DROP",
+    "template_card_bg": "#1a1a1a",
+    "template_hero_heading": "Street Culture 🔥",
+    "template_hero_subtitle": "Exclusive streetwear drops",
+    "template_text_color": "#fafafa"
+  },
+  "sunset-shop": {},
+  "supplements": {
+    "store_name": "VITAL FORCE",
+    "template_accent_color": "#10b981",
+    "template_bg_color": "#022c22",
+    "template_button_text": "SHOP NOW",
+    "template_card_bg": "#064e3b",
+    "template_hero_heading": "Fuel Your Body 💊",
+    "template_hero_subtitle": "Premium supplements for peak performance",
+    "template_text_color": "#ecfdf5"
+  },
+  "swimwear": {
+    "store_name": "Wave Rider",
+    "template_accent_color": "#06b6d4",
+    "template_bg_color": "#ecfeff",
+    "template_button_text": "Shop Swimwear",
+    "template_card_bg": "#ffffff",
+    "template_hero_heading": "Beach Ready 🏖️",
+    "template_hero_subtitle": "Swimwear for sun-seekers",
+    "template_text_color": "#164e63"
+  },
+  "tea": {
+    "store_name": "Zen Tea House",
+    "template_accent_color": "#84cc16",
+    "template_bg_color": "#fefdf5",
+    "template_button_text": "Explore Teas",
+    "template_card_bg": "#ffffff",
+    "template_hero_heading": "Find Your Calm 🍵",
+    "template_hero_subtitle": "Artisan teas from around the world",
+    "template_text_color": "#365314"
+  },
+  "tech": {
+    "store_name": "TECH HUB",
+    "template_accent_color": "#06b6d4",
+    "template_bg_color": "#030712",
+    "template_button_text": "EXPLORE",
+    "template_card_bg": "#111827",
+    "template_hero_heading": "Future Tech Today 🚀",
+    "template_hero_subtitle": "Cutting-edge gadgets & accessories",
+    "template_text_color": "#f9fafb"
+  },
+  "tools": {
+    "store_name": "Tool Pro",
+    "template_accent_color": "#ea580c",
+    "template_bg_color": "#fafaf9",
+    "template_button_text": "SHOP TOOLS",
+    "template_card_bg": "#ffffff",
+    "template_hero_heading": "Built to Last 🔧",
+    "template_hero_subtitle": "Professional tools for every project",
+    "template_text_color": "#1c1917"
+  },
+  "toys": {
+    "store_name": "TOY WORLD",
+    "template_accent_color": "#ec4899",
+    "template_bg_color": "#fef3c7",
+    "template_button_text": "Shop Toys",
+    "template_card_bg": "#ffffff",
+    "template_hero_heading": "Fun for Everyone! 🎈",
+    "template_text_color": "#1e1b4b"
+  },
+  "travel": {
+    "store_name": "Wanderlust",
+    "template_accent_color": "#0d9488",
+    "template_bg_color": "#f0fdfa",
+    "template_button_text": "Shop Now",
+    "template_card_bg": "#ffffff",
+    "template_hero_heading": "Travel in Style ✈️",
+    "template_hero_subtitle": "Premium luggage & travel accessories",
+    "template_text_color": "#134e4a"
+  },
+  "vintage": {
+    "store_name": "The Vintage Emporium",
+    "template_accent_color": "#a1673c",
+    "template_bg_color": "#f5f0e8",
+    "template_button_text": "VIEW COLLECTION",
+    "template_card_bg": "#ffffff",
+    "template_hero_heading": "Timeless Treasures",
+    "template_hero_subtitle": "Curated antiques & collectibles",
+    "template_text_color": "#3d3022"
+  },
+  "watches": {
+    "store_name": "TIMEPIECE",
+    "template_accent_color": "#d4af37",
+    "template_bg_color": "#09090b",
+    "template_button_text": "DISCOVER",
+    "template_card_bg": "#18181b",
+    "template_hero_heading": "Crafted for Precision",
+    "template_hero_subtitle": "Swiss craftsmanship since 1875",
+    "template_text_color": "#fafafa"
+  },
+  "wedding": {
+    "store_name": "Forever Yours",
+    "template_accent_color": "#be185d",
+    "template_bg_color": "#fdf2f8",
+    "template_button_text": "Browse Collection",
+    "template_card_bg": "#ffffff",
+    "template_hero_heading": "Your Perfect Day 💒",
+    "template_hero_subtitle": "Everything for your dream wedding",
+    "template_text_color": "#831843"
+  },
+  "wine": {
+    "store_name": "Château Rouge",
+    "template_accent_color": "#991b1b",
+    "template_bg_color": "#1c1917",
+    "template_button_text": "Explore Collection",
+    "template_card_bg": "#292524",
+    "template_hero_heading": "Fine Wines 🍷",
+    "template_hero_subtitle": "Curated wines from around the world",
+    "template_text_color": "#fef2f2"
   }
 };
 
 export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
-  "baby": [
+  "amber-store": [
     {
-      "defaultValue": "https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&w=2000&q=80",
-      "key": "banner_url",
-      "label": "Banner Url",
+      "key": "store_logo",
+      "label": "Store Logo",
       "type": "image"
     },
     {
-      "defaultValue": "BabyOS",
       "key": "store_name",
       "label": "Store Name",
       "type": "text"
     },
     {
-      "key": "template_age_chips",
-      "label": "Age Chips",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
       "type": "text"
     },
     {
-      "defaultValue": "Browse by category",
-      "key": "template_browse_by_category_label",
-      "label": "Browse By Category Label",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
       "type": "text"
     },
     {
-      "defaultValue": "Buy Now",
-      "key": "template_buy_now_label",
-      "label": "Buy Now Label",
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
       "type": "text"
     },
     {
-      "key": "template_categories_json",
-      "label": "Categories Json",
-      "type": "text"
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
     },
     {
-      "defaultValue": "No items in this category",
-      "key": "template_empty_category_text",
-      "label": "Empty Category Text",
-      "type": "text"
-    },
-    {
-      "defaultValue": "Soft & snuggly picks",
-      "key": "template_featured_kicker",
-      "label": "Featured Kicker",
-      "type": "text"
-    },
-    {
-      "defaultValue": "Featured product",
-      "key": "template_featured_product_label",
-      "label": "Featured Product Label",
-      "type": "text"
-    },
-    {
-      "defaultValue": "A small edit of plush toys, blankets and first outfits designed to feel soft against newborn skin. Gentle colors, cozy textures, and everyday comfort.",
-      "key": "template_featured_text",
-      "label": "Featured Text",
-      "type": "text"
-    },
-    {
-      "defaultValue": "Plush friends and warm layers.",
-      "key": "template_featured_title",
-      "label": "Featured Title",
-      "type": "text"
-    },
-    {
-      "key": "template_footer_links",
-      "label": "Footer Links",
-      "type": "url"
-    },
-    {
-      "defaultValue": "Modern Baby Store",
-      "key": "template_footer_suffix",
-      "label": "Footer Suffix",
+      "key": "template_description_size",
+      "label": "Description Size",
       "type": "textarea"
     },
     {
-      "defaultValue": "All baby products",
-      "key": "template_grid_kicker",
-      "label": "Grid Kicker",
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
       "type": "text"
     },
     {
-      "defaultValue": "Pieces in this universe",
-      "key": "template_grid_title",
-      "label": "Grid Title",
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
       "type": "text"
     },
     {
-      "defaultValue": "Cart (0)",
-      "key": "template_header_cart_label",
-      "label": "Header Cart Label",
-      "type": "text"
-    },
-    {
-      "defaultValue": "Search",
-      "key": "template_header_search_label",
-      "label": "Header Search Label",
-      "type": "text"
-    },
-    {
-      "defaultValue": "New season",
-      "key": "template_hero_badge_left",
-      "label": "Hero Badge Left",
-      "type": "text"
-    },
-    {
-      "defaultValue": "Soft & Playful",
-      "key": "template_hero_badge_right",
-      "label": "Hero Badge Right",
-      "type": "text"
-    },
-    {
-      "defaultValue": "A soft, modern universe\nfor every little moment.",
       "key": "template_hero_heading",
       "label": "Hero Heading",
       "type": "text"
     },
     {
-      "defaultValue": "Baby hero",
-      "key": "template_hero_image_alt",
-      "label": "Hero Image Alt",
-      "type": "image"
-    },
-    {
-      "defaultValue": "Toys, outfits, feeding essentials, nursery finds and tiny gifts — curated for newborns and toddlers in one balanced, playful store.",
       "key": "template_hero_subtitle",
       "label": "Hero Subtitle",
       "type": "textarea"
     },
     {
-      "defaultValue": "items",
-      "key": "template_items_suffix",
-      "label": "Items Suffix",
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
       "type": "text"
     },
     {
-      "defaultValue": "Shop baby essentials",
-      "key": "template_primary_cta",
-      "label": "Primary Cta",
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
       "type": "text"
     },
     {
-      "defaultValue": "Soft",
-      "key": "template_product_badge_1",
-      "label": "Product Badge 1",
+      "key": "template_spacing",
+      "label": "Spacing",
       "type": "text"
     },
     {
-      "defaultValue": "0–6m",
-      "key": "template_product_badge_2",
-      "label": "Product Badge 2",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "art": [
+    {
+      "defaultValue": "ARTISAN GALLERY",
+      "key": "store_name",
+      "label": "Store Name",
       "type": "text"
     },
     {
-      "defaultValue": "View all toys",
-      "key": "template_secondary_cta",
-      "label": "Secondary Cta",
+      "defaultValue": "#dc2626",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
       "type": "text"
+    },
+    {
+      "defaultValue": "#fafafa",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "VIEW GALLERY",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#ffffff",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Original Art & Prints",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Curated collection",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#18181b",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "automotive": [
+    {
+      "defaultValue": "AUTO PARTS",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#ef4444",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#111827",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "SHOP NOW",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#1f2937",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Performance Parts 🏎️",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Quality auto parts for every vehicle",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#f9fafb",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
     }
   ],
   "bags": [
@@ -306,34 +707,524 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "image"
     },
     {
-      "key": "store_name",
-      "label": "Store Name",
-      "type": "text"
-    }
-  ],
-  "beauty": [
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
     {
-      "defaultValue": "BloomSkin",
       "key": "store_name",
       "label": "Store Name",
       "type": "text"
     },
     {
-      "key": "template_concerns",
-      "label": "Concerns",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_border_radius",
+      "label": "Border Radius",
       "type": "text"
     },
     {
-      "defaultValue": "A clean, modern beauty store built around routines, concerns and shades",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_font_family",
+      "label": "Font Family",
+      "type": "text"
+    },
+    {
+      "key": "template_font_weight",
+      "label": "Font Weight",
+      "type": "text"
+    },
+    {
+      "key": "template_header_text",
+      "label": "Header Text",
+      "type": "text"
+    },
+    {
+      "key": "template_heading_font_weight",
+      "label": "Heading Font Weight",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_badge_subtitle",
+      "label": "Hero Badge Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hero_badge_title",
+      "label": "Hero Badge Title",
+      "type": "text"
+    },
+    {
       "key": "template_hero_heading",
       "label": "Hero Heading",
       "type": "text"
     },
     {
-      "defaultValue": "Filter by skin concern, routine time, product type and price. Wishlist your favorites and explore base shades.",
+      "key": "template_hero_kicker",
+      "label": "Hero Kicker",
+      "type": "text"
+    },
+    {
       "key": "template_hero_subtitle",
       "label": "Hero Subtitle",
       "type": "textarea"
+    },
+    {
+      "key": "template_hero_subtitle_color",
+      "label": "Hero Subtitle Color",
+      "type": "color"
+    },
+    {
+      "key": "template_hero_subtitle_size",
+      "label": "Hero Subtitle Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hero_title_color",
+      "label": "Hero Title Color",
+      "type": "color"
+    },
+    {
+      "key": "template_hero_title_size",
+      "label": "Hero Title Size",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "beauty": [
+    {
+      "key": "banner_url",
+      "label": "Banner Url",
+      "type": "image"
+    },
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_secondary_text",
+      "label": "Button Secondary Text",
+      "type": "text"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_active_bg",
+      "label": "Category Pill Active Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_active_text",
+      "label": "Category Pill Active Text",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_bg",
+      "label": "Category Pill Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_border_radius",
+      "label": "Category Pill Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_text",
+      "label": "Category Pill Text",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
+      "key": "template_custom_css",
+      "label": "Custom Css",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_style",
+      "label": "Description Style",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_weight",
+      "label": "Description Weight",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
+    },
+    {
+      "key": "template_font_family",
+      "label": "Font Family",
+      "type": "text"
+    },
+    {
+      "key": "template_footer_bg",
+      "label": "Footer Bg",
+      "type": "textarea"
+    },
+    {
+      "key": "template_footer_links",
+      "label": "Footer Links",
+      "type": "url"
+    },
+    {
+      "key": "template_footer_text",
+      "label": "Footer Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_header_bg",
+      "label": "Header Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_header_text",
+      "label": "Header Text",
+      "type": "text"
+    },
+    {
+      "key": "template_heading_font_weight",
+      "label": "Heading Font Weight",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_badge",
+      "label": "Hero Badge",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_kicker",
+      "label": "Hero Kicker",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_nav_links",
+      "label": "Nav Links",
+      "type": "url"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_social_links",
+      "label": "Social Links",
+      "type": "url"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "berry-market": [
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "books": [
+    {
+      "defaultValue": "THE BOOKSHELF",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#b45309",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#fef7ed",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "Browse Collection",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#ffffff",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Discover Your Next Adventure",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Curated books for curious minds",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#78716c",
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#1c1917",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
     }
   ],
   "cafe": [
@@ -343,78 +1234,339 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "image"
     },
     {
-      "key": "store_city",
-      "label": "Store City",
-      "type": "text"
-    },
-    {
-      "defaultValue": "Sweet Home Dz",
-      "key": "store_name",
-      "label": "Store Name",
-      "type": "text"
-    }
-  ],
-  "electronics": [
-    {
-      "defaultValue": "ElectroVerse",
-      "key": "store_name",
-      "label": "Store Name",
-      "type": "text"
-    }
-  ],
-  "fashion": [
-    {
-      "defaultValue": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=1600&q=80",
-      "key": "banner_url",
-      "label": "Banner Url",
-      "type": "image"
-    },
-    {
-      "defaultValue": "WardrobeOS",
-      "key": "store_name",
-      "label": "Store Name",
-      "type": "text"
-    },
-    {
-      "defaultValue": "Browse collection",
-      "key": "template_button_text",
-      "label": "Button Text",
-      "type": "text"
-    },
-    {
-      "key": "template_genders",
-      "label": "Genders",
-      "type": "text"
-    },
-    {
-      "defaultValue": "Build a wardrobe that behaves like software.",
-      "key": "template_hero_heading",
-      "label": "Hero Heading",
-      "type": "text"
-    },
-    {
-      "defaultValue": "Fewer pieces, more combinations. Coats, trousers, and layers designed to work in any city, any season.",
-      "key": "template_hero_subtitle",
-      "label": "Hero Subtitle",
-      "type": "textarea"
-    }
-  ],
-  "fashion2": [
-    {
-      "key": "banner_url",
-      "label": "Banner Url",
-      "type": "image"
-    },
-    {
       "key": "store_description",
       "label": "Store Description",
       "type": "textarea"
     },
     {
-      "defaultValue": "LineaWear",
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "key": "store_name",
       "label": "Store Name",
       "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_secondary_text",
+      "label": "Button Secondary Text",
+      "type": "text"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_active_bg",
+      "label": "Category Pill Active Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_active_text",
+      "label": "Category Pill Active Text",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_bg",
+      "label": "Category Pill Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_border_radius",
+      "label": "Category Pill Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_text",
+      "label": "Category Pill Text",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
+      "key": "template_custom_css",
+      "label": "Custom Css",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_style",
+      "label": "Description Style",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_weight",
+      "label": "Description Weight",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
+    },
+    {
+      "key": "template_font_family",
+      "label": "Font Family",
+      "type": "text"
+    },
+    {
+      "key": "template_footer_bg",
+      "label": "Footer Bg",
+      "type": "textarea"
+    },
+    {
+      "key": "template_footer_links",
+      "label": "Footer Links",
+      "type": "url"
+    },
+    {
+      "key": "template_footer_text",
+      "label": "Footer Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_header_bg",
+      "label": "Header Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_header_text",
+      "label": "Header Text",
+      "type": "text"
+    },
+    {
+      "key": "template_heading_font_weight",
+      "label": "Heading Font Weight",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_badge",
+      "label": "Hero Badge",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_kicker",
+      "label": "Hero Kicker",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_nav_links",
+      "label": "Nav Links",
+      "type": "url"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_social_links",
+      "label": "Social Links",
+      "type": "url"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "candles": [
+    {
+      "defaultValue": "Warm Glow",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#fbbf24",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#1c1917",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "Shop Candles",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#292524",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Light Up Your Space 🕯️",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Premium scented candles for every mood",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#fef3c7",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "chocolate": [
+    {
+      "defaultValue": "Cocoa Dreams",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#d97706",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#1c1414",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
     },
     {
       "defaultValue": "Shop Now",
@@ -423,18 +1575,61 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
-      "key": "template_genders",
-      "label": "Genders",
+      "defaultValue": "#2a2020",
+      "key": "template_card_bg",
+      "label": "Card Bg",
       "type": "text"
     },
     {
-      "defaultValue": "Build a fashion store that feels like a campaign, but behaves like a clean, modern catalog.",
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Pure Indulgence 🍫",
       "key": "template_hero_heading",
       "label": "Hero Heading",
       "type": "text"
+    },
+    {
+      "defaultValue": "Handcrafted luxury chocolates",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#fef3c7",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
     }
   ],
-  "fashion3": [
+  "classic": [
     {
       "key": "banner_url",
       "label": "Banner Url",
@@ -446,27 +1641,1361 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "textarea"
     },
     {
-      "defaultValue": "LineaWear",
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "key": "store_name",
       "label": "Store Name",
       "type": "text"
     },
     {
-      "defaultValue": "Explore",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_border_color",
+      "label": "Border Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_border_radius",
+      "label": "Button Border Radius",
+      "type": "text"
+    },
+    {
       "key": "template_button_text",
       "label": "Button Text",
       "type": "text"
     },
     {
-      "key": "template_genders",
-      "label": "Genders",
+      "key": "template_card_bg",
+      "label": "Card Bg",
       "type": "text"
     },
     {
-      "defaultValue": "Premium Essentials",
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_style",
+      "label": "Description Style",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_weight",
+      "label": "Description Weight",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
+    },
+    {
+      "key": "template_font_family",
+      "label": "Font Family",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_header_bg",
+      "label": "Header Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_header_text",
+      "label": "Header Text",
+      "type": "text"
+    },
+    {
+      "key": "template_heading_font_weight",
+      "label": "Heading Font Weight",
+      "type": "text"
+    },
+    {
       "key": "template_hero_heading",
       "label": "Hero Heading",
       "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_nav_links",
+      "label": "Nav Links",
+      "type": "url"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_social_links",
+      "label": "Social Links",
+      "type": "url"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "clean-single": [
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "coral-market": [
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "crafts": [
+    {
+      "defaultValue": "Handmade Studio",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#ca8a04",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#fefce8",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "Explore Collection",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#ffffff",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Crafted With Love ✨",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Each piece tells a story",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#422006",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "electronics": [
+    {
+      "key": "banner_url",
+      "label": "Banner Url",
+      "type": "image"
+    },
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_secondary_text",
+      "label": "Button Secondary Text",
+      "type": "text"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_active_bg",
+      "label": "Category Pill Active Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_active_text",
+      "label": "Category Pill Active Text",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_bg",
+      "label": "Category Pill Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_border_radius",
+      "label": "Category Pill Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_text",
+      "label": "Category Pill Text",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
+      "key": "template_custom_css",
+      "label": "Custom Css",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_style",
+      "label": "Description Style",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_weight",
+      "label": "Description Weight",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
+    },
+    {
+      "key": "template_font_family",
+      "label": "Font Family",
+      "type": "text"
+    },
+    {
+      "key": "template_footer_bg",
+      "label": "Footer Bg",
+      "type": "textarea"
+    },
+    {
+      "key": "template_footer_links",
+      "label": "Footer Links",
+      "type": "url"
+    },
+    {
+      "key": "template_footer_text",
+      "label": "Footer Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_header_bg",
+      "label": "Header Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_header_text",
+      "label": "Header Text",
+      "type": "text"
+    },
+    {
+      "key": "template_heading_font_weight",
+      "label": "Heading Font Weight",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_badge",
+      "label": "Hero Badge",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_kicker",
+      "label": "Hero Kicker",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_nav_links",
+      "label": "Nav Links",
+      "type": "url"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_social_links",
+      "label": "Social Links",
+      "type": "url"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "emerald-shop": [
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "exhibit-store": [
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "eyewear": [
+    {
+      "defaultValue": "OPTIX",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#78716c",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#f5f5f4",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "BROWSE FRAMES",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#ffffff",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "See The World 👓",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Premium eyewear for every style",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#1c1917",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "fashion": [
+    {
+      "key": "banner_url",
+      "label": "Banner Url",
+      "type": "image"
+    },
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_secondary_text",
+      "label": "Button Secondary Text",
+      "type": "text"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_active_bg",
+      "label": "Category Pill Active Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_active_text",
+      "label": "Category Pill Active Text",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_bg",
+      "label": "Category Pill Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_border_radius",
+      "label": "Category Pill Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_text",
+      "label": "Category Pill Text",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
+      "key": "template_custom_css",
+      "label": "Custom Css",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_style",
+      "label": "Description Style",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_weight",
+      "label": "Description Weight",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
+    },
+    {
+      "key": "template_font_family",
+      "label": "Font Family",
+      "type": "text"
+    },
+    {
+      "key": "template_footer_bg",
+      "label": "Footer Bg",
+      "type": "textarea"
+    },
+    {
+      "key": "template_footer_links",
+      "label": "Footer Links",
+      "type": "url"
+    },
+    {
+      "key": "template_footer_text",
+      "label": "Footer Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_header_bg",
+      "label": "Header Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_header_text",
+      "label": "Header Text",
+      "type": "text"
+    },
+    {
+      "key": "template_heading_font_weight",
+      "label": "Heading Font Weight",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_badge",
+      "label": "Hero Badge",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_kicker",
+      "label": "Hero Kicker",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_nav_links",
+      "label": "Nav Links",
+      "type": "url"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_social_links",
+      "label": "Social Links",
+      "type": "url"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "fitness": [
+    {
+      "defaultValue": "IRON FORCE",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#f97316",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#18181b",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "START NOW",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#27272a",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Train Hard 💪",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Premium fitness equipment & supplements",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#fafafa",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "florist": [
+    {
+      "defaultValue": "Bloom & Blossom",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#e11d48",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#fdf2f8",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "Order Now",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#ffffff",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Fresh Flowers 💐",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Beautiful bouquets for every occasion",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#831843",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
     }
   ],
   "food": [
@@ -476,93 +3005,139 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "image"
     },
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "key": "store_name",
       "label": "Store Name",
       "type": "text"
     },
     {
-      "key": "template_hero_heading",
-      "label": "Hero Heading",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
       "type": "text"
     },
     {
-      "key": "template_hero_subtitle",
-      "label": "Hero Subtitle",
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_secondary_text",
+      "label": "Button Secondary Text",
+      "type": "text"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_active_bg",
+      "label": "Category Pill Active Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_active_text",
+      "label": "Category Pill Active Text",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_bg",
+      "label": "Category Pill Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_border_radius",
+      "label": "Category Pill Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_text",
+      "label": "Category Pill Text",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
+      "key": "template_custom_css",
+      "label": "Custom Css",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
       "type": "textarea"
-    }
-  ],
-  "jewelry": [
-    {
-      "defaultValue": "https://images.unsplash.com/photo-1603561596112-0a132b757133?auto=format&fit=crop&w=1600&q=80",
-      "key": "banner_url",
-      "label": "Banner Url",
-      "type": "image"
     },
     {
-      "defaultValue": "JewelryOS",
-      "key": "store_name",
-      "label": "Store Name",
-      "type": "text"
-    },
-    {
-      "defaultValue": "https://images.unsplash.com/photo-1617038688874-ef666027625a?auto=format&fit=crop&w=900&q=80",
-      "key": "template_edit_image_1",
-      "label": "Edit Image 1",
-      "type": "image"
-    },
-    {
-      "defaultValue": "Gold detail 1",
-      "key": "template_edit_image_1_alt",
-      "label": "Edit Image 1 Alt",
-      "type": "image"
-    },
-    {
-      "defaultValue": "https://images.unsplash.com/photo-1611003228941-98852ba62227?auto=format&fit=crop&w=900&q=80",
-      "key": "template_edit_image_2",
-      "label": "Edit Image 2",
-      "type": "image"
-    },
-    {
-      "defaultValue": "Gold detail 2",
-      "key": "template_edit_image_2_alt",
-      "label": "Edit Image 2 Alt",
-      "type": "image"
-    },
-    {
-      "defaultValue": "Sculpted rings and chains in warm 18K gold. Soft light, precise edges and a focus on proportion.",
-      "key": "template_edit_subtitle_1",
-      "label": "Edit Subtitle 1",
+      "key": "template_description_style",
+      "label": "Description Style",
       "type": "textarea"
     },
     {
-      "defaultValue": "Each piece is designed to stack quietly or stand alone.",
-      "key": "template_edit_subtitle_2",
-      "label": "Edit Subtitle 2",
+      "key": "template_description_text",
+      "label": "Description Text",
       "type": "textarea"
     },
     {
-      "defaultValue": "The Gold Edit",
-      "key": "template_edit_title",
-      "label": "Edit Title",
-      "type": "text"
-    },
-    {
-      "defaultValue": "Products will appear automatically once you add them to your store.",
-      "key": "template_empty_hint",
-      "label": "Empty Hint",
-      "type": "text"
-    },
-    {
-      "defaultValue": "Add your jewelry pieces to see them displayed here.",
-      "key": "template_empty_subtitle",
-      "label": "Empty Subtitle",
+      "key": "template_description_weight",
+      "label": "Description Weight",
       "type": "textarea"
     },
     {
-      "defaultValue": "No Products Yet",
-      "key": "template_empty_title",
-      "label": "Empty Title",
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
       "type": "text"
+    },
+    {
+      "key": "template_font_family",
+      "label": "Font Family",
+      "type": "text"
+    },
+    {
+      "key": "template_footer_bg",
+      "label": "Footer Bg",
+      "type": "textarea"
     },
     {
       "key": "template_footer_links",
@@ -570,300 +3145,6124 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "url"
     },
     {
-      "defaultValue": "Minimal Luxury Jewelry",
-      "key": "template_footer_suffix",
-      "label": "Footer Suffix",
+      "key": "template_footer_text",
+      "label": "Footer Text",
       "type": "textarea"
     },
     {
-      "defaultValue": "pieces",
-      "key": "template_grid_count_suffix",
-      "label": "Grid Count Suffix",
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
       "type": "text"
     },
     {
-      "defaultValue": "Pieces in this collection",
-      "key": "template_grid_title",
-      "label": "Grid Title",
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
       "type": "text"
     },
     {
-      "defaultValue": "Explore the collection",
-      "key": "template_hero_cta",
-      "label": "Hero Cta",
+      "key": "template_header_bg",
+      "label": "Header Bg",
       "type": "text"
     },
     {
-      "defaultValue": "Timeless jewelry, designed in gold and light.",
+      "key": "template_header_text",
+      "label": "Header Text",
+      "type": "text"
+    },
+    {
+      "key": "template_heading_font_weight",
+      "label": "Heading Font Weight",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_badge",
+      "label": "Hero Badge",
+      "type": "text"
+    },
+    {
       "key": "template_hero_heading",
       "label": "Hero Heading",
       "type": "text"
     },
     {
-      "defaultValue": "Hero jewelry",
-      "key": "template_hero_image_alt",
-      "label": "Hero Image Alt",
-      "type": "image"
-    },
-    {
-      "defaultValue": "Gold & silver jewelry / 2025",
       "key": "template_hero_kicker",
       "label": "Hero Kicker",
       "type": "text"
     },
     {
-      "defaultValue": "A focused collection of rings, bracelets, necklaces and earrings in 18K gold, silver and diamonds. Built for quiet luxury, worn every day.",
       "key": "template_hero_subtitle",
       "label": "Hero Subtitle",
       "type": "textarea"
     },
     {
-      "key": "template_hero_tags",
-      "label": "Hero Tags",
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
       "type": "text"
     },
     {
-      "defaultValue": "Highlight piece",
-      "key": "template_highlight_label",
-      "label": "Highlight Label",
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_nav_links",
+      "label": "Nav Links",
+      "type": "url"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
       "type": "text"
     },
     {
-      "defaultValue": "Bag (0)",
-      "key": "template_nav_bag",
-      "label": "Nav Bag",
+      "key": "template_social_links",
+      "label": "Social Links",
+      "type": "url"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
       "type": "text"
     },
     {
-      "defaultValue": "Collections",
-      "key": "template_nav_collections",
-      "label": "Nav Collections",
-      "type": "text"
-    },
-    {
-      "defaultValue": "Engagement",
-      "key": "template_nav_engagement",
-      "label": "Nav Engagement",
-      "type": "text"
-    },
-    {
-      "defaultValue": "Gold",
-      "key": "template_nav_gold",
-      "label": "Nav Gold",
-      "type": "text"
-    },
-    {
-      "defaultValue": "Search",
-      "key": "template_nav_search",
-      "label": "Nav Search",
-      "type": "text"
-    },
-    {
-      "defaultValue": "View piece",
-      "key": "template_view_piece_label",
-      "label": "View Piece Label",
-      "type": "text"
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
     }
   ],
-  "perfume": [
+  "forest-store": [
     {
-      "defaultValue": "https://images.unsplash.com/photo-1523293182086-7651a899d37f?auto=format&fit=crop&w=1600&q=80",
-      "key": "banner_url",
-      "label": "Banner Url",
+      "key": "store_logo",
+      "label": "Store Logo",
       "type": "image"
     },
     {
-      "defaultValue": "Premium Scents",
       "key": "store_name",
       "label": "Store Name",
       "type": "text"
     },
     {
-      "defaultValue": "All Scents",
-      "key": "template_all_scents_title",
-      "label": "All Scents Title",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
       "type": "text"
     },
     {
-      "defaultValue": "Buy Now",
-      "key": "template_buy_now_label",
-      "label": "Buy Now Label",
-      "type": "text"
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
     },
     {
-      "defaultValue": "Built for night-heavy rooms. Amber, smoke, and vanilla crafted to leave a trail of warmth and mystery.",
-      "key": "template_editorial_1_text",
-      "label": "Editorial 1 Text",
-      "type": "text"
-    },
-    {
-      "defaultValue": "Realm I — Noir Extrait",
-      "key": "template_editorial_1_title",
-      "label": "Editorial 1 Title",
-      "type": "text"
-    },
-    {
-      "defaultValue": "Bright, structured, and modern. Neroli, citrus, and musk for clean daytime presence.",
-      "key": "template_editorial_2_text",
-      "label": "Editorial 2 Text",
-      "type": "text"
-    },
-    {
-      "defaultValue": "Realm II — Golden Luxe",
-      "key": "template_editorial_2_title",
-      "label": "Editorial 2 Title",
-      "type": "text"
-    },
-    {
-      "defaultValue": "Minimal, airy, and skin-like. Soft musks and woods that feel like a second skin.",
-      "key": "template_editorial_3_text",
-      "label": "Editorial 3 Text",
-      "type": "text"
-    },
-    {
-      "defaultValue": "Realm III — Dreamscape",
-      "key": "template_editorial_3_title",
-      "label": "Editorial 3 Title",
-      "type": "text"
-    },
-    {
-      "defaultValue": "Products will appear automatically once you add them to your store.",
-      "key": "template_empty_hint",
-      "label": "Empty Hint",
-      "type": "text"
-    },
-    {
-      "defaultValue": "Add fragrances to your store to see them displayed here.",
-      "key": "template_empty_subtitle",
-      "label": "Empty Subtitle",
-      "type": "textarea"
-    },
-    {
-      "defaultValue": "No Fragrances Yet",
-      "key": "template_empty_title",
-      "label": "Empty Title",
-      "type": "text"
-    },
-    {
-      "defaultValue": "Explore More",
-      "key": "template_explore_more_title",
-      "label": "Explore More Title",
-      "type": "text"
-    },
-    {
-      "defaultValue": "Featured",
-      "key": "template_featured_title",
-      "label": "Featured Title",
-      "type": "text"
-    },
-    {
-      "defaultValue": "All",
-      "key": "template_filter_all_label",
-      "label": "Filter All Label",
-      "type": "text"
-    },
-    {
-      "defaultValue": "Noir",
-      "key": "template_filter_dark_label",
-      "label": "Filter Dark Label",
-      "type": "text"
-    },
-    {
-      "defaultValue": "Dream",
-      "key": "template_filter_dream_label",
-      "label": "Filter Dream Label",
-      "type": "text"
-    },
-    {
-      "defaultValue": "Gold",
-      "key": "template_filter_gold_label",
-      "label": "Filter Gold Label",
-      "type": "text"
-    },
-    {
-      "defaultValue": "All rights reserved.",
-      "key": "template_footer_rights",
-      "label": "Footer Rights",
-      "type": "textarea"
-    },
-    {
-      "defaultValue": "A New Way to Experience Scent",
-      "key": "template_hero_heading",
-      "label": "Hero Heading",
-      "type": "text"
-    },
-    {
-      "defaultValue": "Three realms. One universe. Discover fragrances crafted for mood, presence, and identity.",
-      "key": "template_hero_subtitle",
-      "label": "Hero Subtitle",
-      "type": "textarea"
-    }
-  ],
-  "store": [
-    {
-      "defaultValue": "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?q=80&w=1400&auto=format&fit=crop",
-      "key": "banner_url",
-      "label": "Banner Url",
-      "type": "image"
-    },
-    {
-      "defaultValue": "DZD",
-      "key": "currency_code",
-      "label": "Currency Code",
-      "type": "text"
-    },
-    {
-      "defaultValue": "ElectroStore DZ",
-      "key": "store_name",
-      "label": "Store Name",
-      "type": "text"
-    },
-    {
-      "defaultValue": "Build Your PC",
       "key": "template_button_text",
       "label": "Button Text",
       "type": "text"
     },
     {
-      "key": "template_default_dark",
-      "label": "Default Dark",
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
       "type": "text"
     },
     {
-      "defaultValue": "Your Trusted Electronics Store",
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
       "key": "template_hero_heading",
       "label": "Hero Heading",
       "type": "text"
     },
     {
-      "defaultValue": "Shop smartphones, laptops, monitors, and configure your dream PC with expert-curated parts and local support.",
       "key": "template_hero_subtitle",
       "label": "Hero Subtitle",
       "type": "textarea"
     },
     {
-      "defaultValue": "#00f0ff",
-      "key": "template_neon_color",
-      "label": "Neon Color",
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "furniture": [
+    {
+      "key": "banner_url",
+      "label": "Banner Url",
+      "type": "image"
+    },
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_secondary_text",
+      "label": "Button Secondary Text",
+      "type": "text"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_active_bg",
+      "label": "Category Pill Active Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_active_text",
+      "label": "Category Pill Active Text",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_bg",
+      "label": "Category Pill Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_border_radius",
+      "label": "Category Pill Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_text",
+      "label": "Category Pill Text",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
+      "key": "template_custom_css",
+      "label": "Custom Css",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_style",
+      "label": "Description Style",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_weight",
+      "label": "Description Weight",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
+    },
+    {
+      "key": "template_font_family",
+      "label": "Font Family",
+      "type": "text"
+    },
+    {
+      "key": "template_footer_bg",
+      "label": "Footer Bg",
+      "type": "textarea"
+    },
+    {
+      "key": "template_footer_links",
+      "label": "Footer Links",
+      "type": "url"
+    },
+    {
+      "key": "template_footer_text",
+      "label": "Footer Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_header_bg",
+      "label": "Header Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_header_text",
+      "label": "Header Text",
+      "type": "text"
+    },
+    {
+      "key": "template_heading_font_weight",
+      "label": "Heading Font Weight",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_badge",
+      "label": "Hero Badge",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_kicker",
+      "label": "Hero Kicker",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_nav_links",
+      "label": "Nav Links",
+      "type": "url"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_social_links",
+      "label": "Social Links",
+      "type": "url"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "gallery-pro": [
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "gaming": [
+    {
+      "defaultValue": "GAME ZONE",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#8b5cf6",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#0f0f23",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "SHOP GEAR",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#1a1a2e",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Level Up Your Game 🎮",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Gear up for victory",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#e2e8f0",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "garden": [
+    {
+      "defaultValue": "GREEN GARDEN",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#16a34a",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#f0fdf4",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "Explore",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#ffffff",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Grow Your Paradise 🌿",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Plants, tools & outdoor living",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#14532d",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "gifts": [
+    {
+      "defaultValue": "Gift Box",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#dc2626",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#fef2f2",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "Shop Gifts",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#ffffff",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Perfect Gifts 🎁",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Find the perfect gift for everyone",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#7f1d1d",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "gradient": [
+    {
+      "defaultValue": "Spectrum",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#6366f1",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#0f172a",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "Explore",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#1e293b",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Bold & Beautiful 🌈",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Express yourself with color",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#f8fafc",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "health": [
+    {
+      "defaultValue": "WELLNESS SHOP",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#14b8a6",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#ffffff",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "Shop Wellness",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#f0fdfa",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Your Health, Our Priority 💚",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Natural supplements & wellness products",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#0f766e",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "jewelry": [
+    {
+      "key": "banner_url",
+      "label": "Banner Url",
+      "type": "image"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_font_family",
+      "label": "Font Family",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_badge_subtitle",
+      "label": "Hero Badge Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hero_badge_title",
+      "label": "Hero Badge Title",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_kicker",
+      "label": "Hero Kicker",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    }
+  ],
+  "kids": [
+    {
+      "defaultValue": "Little Stars ⭐",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#d946ef",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#fdf4ff",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "Shop Now! 🛍️",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#ffffff",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Fun for Little Ones! 🎈",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Adorable clothes & accessories for kids",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#581c87",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "lime-direct": [
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "lingerie": [
+    {
+      "defaultValue": "Intimate",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#f472b6",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#1a1a1a",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "SHOP NOW",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#262626",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Feel Beautiful",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Luxury lingerie for every woman",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#fce7f3",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "luxury": [
+    {
+      "defaultValue": "MAISON LUXE",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#c9a962",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#0a0a0a",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "DISCOVER",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#141414",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Exceptional Quality",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Timeless elegance, uncompromising craftsmanship",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#fafafa",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "magenta-mall": [
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "minimal": [
+    {
+      "key": "banner_url",
+      "label": "Banner Url",
+      "type": "image"
+    },
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_border_color",
+      "label": "Border Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_border_radius",
+      "label": "Button Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_style",
+      "label": "Description Style",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_weight",
+      "label": "Description Weight",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
+    },
+    {
+      "key": "template_font_family",
+      "label": "Font Family",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_header_bg",
+      "label": "Header Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_header_text",
+      "label": "Header Text",
+      "type": "text"
+    },
+    {
+      "key": "template_heading_font_weight",
+      "label": "Heading Font Weight",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_nav_links",
+      "label": "Nav Links",
+      "type": "url"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_social_links",
+      "label": "Social Links",
+      "type": "url"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "mint-elegance": [
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "modern": [
+    {
+      "key": "banner_url",
+      "label": "Banner Url",
+      "type": "image"
+    },
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_accent_secondary_color",
+      "label": "Accent Secondary Color",
+      "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_border_color",
+      "label": "Border Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_border_radius",
+      "label": "Button Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_secondary_text",
+      "label": "Button Secondary Text",
+      "type": "text"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_style",
+      "label": "Description Style",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_weight",
+      "label": "Description Weight",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
+    },
+    {
+      "key": "template_font_family",
+      "label": "Font Family",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_header_bg",
+      "label": "Header Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_header_text",
+      "label": "Header Text",
+      "type": "text"
+    },
+    {
+      "key": "template_heading_font_weight",
+      "label": "Heading Font Weight",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_nav_links",
+      "label": "Nav Links",
+      "type": "url"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_social_links",
+      "label": "Social Links",
+      "type": "url"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "monochrome": [
+    {
+      "defaultValue": "MONO",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#000000",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#ffffff",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "SHOP",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#fafafa",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Pure Simplicity",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Less is more",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#000000",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "music": [
+    {
+      "defaultValue": "SOUND STATION",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#eab308",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#0c0a09",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "SHOP NOW",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#1c1917",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Feel the Music 🎸",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Instruments & Audio Equipment",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#fafaf9",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "neon": [
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "neon-store": [
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "office": [
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "organic": [
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "outdoor": [
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "pastel": [
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "perfume": [
+    {
+      "key": "banner_url",
+      "label": "Banner Url",
+      "type": "image"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_secondary_text",
+      "label": "Button Secondary Text",
+      "type": "text"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_active_bg",
+      "label": "Category Pill Active Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_active_text",
+      "label": "Category Pill Active Text",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_bg",
+      "label": "Category Pill Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_border_radius",
+      "label": "Category Pill Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_category_pill_text",
+      "label": "Category Pill Text",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
+      "key": "template_custom_css",
+      "label": "Custom Css",
+      "type": "text"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
+    },
+    {
+      "key": "template_font_family",
+      "label": "Font Family",
+      "type": "text"
+    },
+    {
+      "key": "template_footer_bg",
+      "label": "Footer Bg",
+      "type": "textarea"
+    },
+    {
+      "key": "template_footer_links",
+      "label": "Footer Links",
+      "type": "url"
+    },
+    {
+      "key": "template_footer_text",
+      "label": "Footer Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_header_bg",
+      "label": "Header Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_header_text",
+      "label": "Header Text",
+      "type": "text"
+    },
+    {
+      "key": "template_heading_font_weight",
+      "label": "Heading Font Weight",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_badge",
+      "label": "Hero Badge",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_kicker",
+      "label": "Hero Kicker",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_nav_links",
+      "label": "Nav Links",
+      "type": "url"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_social_links",
+      "label": "Social Links",
+      "type": "url"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "pets": [
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "phone-accessories": [
+    {
+      "defaultValue": "Phone Hub",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#3b82f6",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#fafafa",
+      "key": "template_bg_color",
+      "label": "Bg Color",
       "type": "color"
     },
     {
       "defaultValue": "Shop Now",
-      "key": "template_slide2_cta_text",
-      "label": "Slide2 Cta Text",
+      "key": "template_button_text",
+      "label": "Button Text",
       "type": "text"
     },
     {
-      "defaultValue": "High performance products for every need.",
-      "key": "template_slide2_subtitle",
-      "label": "Slide2 Subtitle",
+      "defaultValue": "#ffffff",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Upgrade Your Phone 📱",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Cases, chargers, and more for every device",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
       "type": "textarea"
     },
     {
-      "defaultValue": "Featured Collection",
-      "key": "template_slide2_title",
-      "label": "Slide2 Title",
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
       "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#18181b",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "photography": [
+    {
+      "defaultValue": "LENS & LIGHT",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#fafafa",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#171717",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "SHOP GEAR",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#262626",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Capture Every Moment 📷",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Professional camera gear & accessories",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#fafafa",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "pro": [
+    {
+      "key": "banner_url",
+      "label": "Banner Url",
+      "type": "image"
+    },
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_border_color",
+      "label": "Border Color",
+      "type": "color"
+    },
+    {
+      "key": "template_border_radius",
+      "label": "Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_border_radius",
+      "label": "Button Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_button2_border",
+      "label": "Button2 Border",
+      "type": "text"
+    },
+    {
+      "key": "template_button2_text",
+      "label": "Button2 Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
+      "key": "template_custom_css",
+      "label": "Custom Css",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_style",
+      "label": "Description Style",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_weight",
+      "label": "Description Weight",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
+    },
+    {
+      "key": "template_font_family",
+      "label": "Font Family",
+      "type": "text"
+    },
+    {
+      "key": "template_font_weight",
+      "label": "Font Weight",
+      "type": "text"
+    },
+    {
+      "key": "template_footer_bg",
+      "label": "Footer Bg",
+      "type": "textarea"
+    },
+    {
+      "key": "template_footer_link_color",
+      "label": "Footer Link Color",
+      "type": "color"
+    },
+    {
+      "key": "template_footer_text",
+      "label": "Footer Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_title",
+      "label": "Grid Title",
+      "type": "text"
+    },
+    {
+      "key": "template_header_bg",
+      "label": "Header Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_header_text",
+      "label": "Header Text",
+      "type": "text"
+    },
+    {
+      "key": "template_heading_font_weight",
+      "label": "Heading Font Weight",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_kicker",
+      "label": "Hero Kicker",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_kicker_color",
+      "label": "Hero Kicker Color",
+      "type": "color"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hero_subtitle_color",
+      "label": "Hero Subtitle Color",
+      "type": "color"
+    },
+    {
+      "key": "template_hero_subtitle_size",
+      "label": "Hero Subtitle Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hero_title_color",
+      "label": "Hero Title Color",
+      "type": "color"
+    },
+    {
+      "key": "template_hero_title_size",
+      "label": "Hero Title Size",
+      "type": "text"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_nav_links",
+      "label": "Nav Links",
+      "type": "url"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_section_subtitle_color",
+      "label": "Section Subtitle Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_title_color",
+      "label": "Section Title Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_title_size",
+      "label": "Section Title Size",
+      "type": "text"
+    },
+    {
+      "key": "template_social_links",
+      "label": "Social Links",
+      "type": "url"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "pro-atelier": [
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "pro-aurora": [
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "pro-catalog": [
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "pro-grid": [
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "pro-mosaic": [
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "pro-orbit": [
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "pro-studio": [
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "pro-vertex": [
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "pro-zen": [
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "pure-product": [
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "rose-catalog": [
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "sage-boutique": [
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "shoes": [
+    {
+      "defaultValue": "STEP UP",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#ef4444",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#fafafa",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "SHOP NOW",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#ffffff",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Walk in Style 👟",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#171717",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "showcase-plus": [
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "skincare": [
+    {
+      "defaultValue": "Glow Lab",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#8b5cf6",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#faf5ff",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "Shop Skincare",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#ffffff",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Radiant Skin Awaits ✨",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Clean, effective skincare for all skin types",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#4c1d95",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "snow-shop": [
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "sports": [
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "defaultValue": "SPORTS GEAR",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#22c55e",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#0f172a",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "SHOP NOW",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#1e293b",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_style",
+      "label": "Description Style",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_weight",
+      "label": "Description Weight",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "PUSH YOUR LIMITS",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Premium athletic gear for champions",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#64748b",
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#f8fafc",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "stationery": [
+    {
+      "defaultValue": "Paper & Pen",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#f59e0b",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#fffbeb",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "Explore",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#ffffff",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Write Your Story ✏️",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Beautiful pens, papers, and planners",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#451a03",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "streetwear": [
+    {
+      "defaultValue": "URBAN DRIP",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#fbbf24",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#0c0c0c",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "SHOP DROP",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#1a1a1a",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Street Culture 🔥",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Exclusive streetwear drops",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#fafafa",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "sunset-shop": [
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_description_color",
+      "label": "Description Color",
+      "type": "color"
+    },
+    {
+      "key": "template_description_size",
+      "label": "Description Size",
+      "type": "textarea"
+    },
+    {
+      "key": "template_description_text",
+      "label": "Description Text",
+      "type": "textarea"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "supplements": [
+    {
+      "defaultValue": "VITAL FORCE",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#10b981",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#022c22",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "SHOP NOW",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#064e3b",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Fuel Your Body 💊",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Premium supplements for peak performance",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#ecfdf5",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "swimwear": [
+    {
+      "defaultValue": "Wave Rider",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#06b6d4",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#ecfeff",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "Shop Swimwear",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#ffffff",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Beach Ready 🏖️",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Swimwear for sun-seekers",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#164e63",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "tea": [
+    {
+      "defaultValue": "Zen Tea House",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#84cc16",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#fefdf5",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "Explore Teas",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#ffffff",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Find Your Calm 🍵",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Artisan teas from around the world",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#365314",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "tech": [
+    {
+      "defaultValue": "TECH HUB",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#06b6d4",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#030712",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "EXPLORE",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#111827",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Future Tech Today 🚀",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Cutting-edge gadgets & accessories",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#f9fafb",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "tools": [
+    {
+      "defaultValue": "Tool Pro",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#ea580c",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#fafaf9",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "SHOP TOOLS",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#ffffff",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Built to Last 🔧",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Professional tools for every project",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#1c1917",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "toys": [
+    {
+      "defaultValue": "TOY WORLD",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#ec4899",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#fef3c7",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "Shop Toys",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#ffffff",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Fun for Everyone! 🎈",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#1e1b4b",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "travel": [
+    {
+      "defaultValue": "Wanderlust",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#0d9488",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#f0fdfa",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "Shop Now",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#ffffff",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Travel in Style ✈️",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Premium luggage & travel accessories",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#134e4a",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "vintage": [
+    {
+      "defaultValue": "The Vintage Emporium",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#a1673c",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#f5f0e8",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "VIEW COLLECTION",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#ffffff",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Timeless Treasures",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Curated antiques & collectibles",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#3d3022",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "watches": [
+    {
+      "defaultValue": "TIMEPIECE",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#d4af37",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#09090b",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "DISCOVER",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#18181b",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Crafted for Precision",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Swiss craftsmanship since 1875",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#fafafa",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "wedding": [
+    {
+      "defaultValue": "Forever Yours",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#be185d",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#fdf2f8",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "Browse Collection",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#ffffff",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Your Perfect Day 💒",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Everything for your dream wedding",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#831843",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "wine": [
+    {
+      "defaultValue": "Château Rouge",
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#991b1b",
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_animation_speed",
+      "label": "Animation Speed",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#1c1917",
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "defaultValue": "Explore Collection",
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#292524",
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Fine Wines 🍷",
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "defaultValue": "Curated wines from around the world",
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_hover_scale",
+      "label": "Hover Scale",
+      "type": "text"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "defaultValue": "#fef2f2",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
     }
   ]
 };

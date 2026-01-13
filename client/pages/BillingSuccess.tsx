@@ -43,7 +43,7 @@ const BillingSuccess = () => {
           <div className="space-y-3">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Amount Paid</p>
-              <p className="text-2xl font-bold text-green-600 dark:text-green-400">$7.00 DZD</p>
+              <p className="text-2xl font-bold text-green-600 dark:text-green-400">2000 DZD</p>
             </div>
             <div className="border-t border-green-200 dark:border-green-800 pt-3">
               <p className="text-sm text-gray-600 dark:text-gray-400">Status</p>

@@ -706,7 +706,20 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
       'store_images',
     ]);
 
-    const existingTemplate = existingRow?.template || 'shiro-hana';
+    const normalizeTemplateIdForAvailability = (id: any): string => {
+      const normalized = String(id || '')
+        .trim()
+        .toLowerCase()
+        .replace(/^gold-/, '')
+        .replace(/-gold$/, '');
+      if (!normalized) return 'pro';
+      if (normalized === 'shiro-hana') return 'pro';
+      if (normalized === 'babyos' || normalized === 'baby') return 'kids';
+      return normalized;
+    };
+
+    const existingTemplateRaw = existingRow?.template || 'pro';
+    const existingTemplate = normalizeTemplateIdForAvailability(existingTemplateRaw);
     const existingTemplateSettings =
       existingRow?.template_settings && typeof existingRow.template_settings === 'object'
         ? existingRow.template_settings
@@ -830,7 +843,7 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
 
     // All templates are now enabled
     const ENABLED_TEMPLATE_IDS = new Set<string>([
-      'shiro-hana', 'babyos', 'bags', 'jewelry',
+      'bags', 'jewelry',
       'fashion', 'electronics', 'beauty', 'food', 'cafe', 'furniture', 'perfume',
       'minimal', 'classic', 'modern',
       // New templates
@@ -852,14 +865,12 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
       'clean-single', 'pure-product', 'snow-shop',
       'gallery-pro', 'showcase-plus', 'exhibit-store'
     ]);
-    const normalizeTemplateIdForAvailability = (id: any): string => {
-      const normalized = String(id || '')
-        .trim()
-        .replace(/^gold-/, '')
-        .replace(/-gold$/, '');
-      if (normalized === 'baby') return 'babyos';
-      return normalized;
-    };
+
+    // If the store currently has a removed/legacy template, migrate it on any save.
+    if (!('template' in columnUpdates) && existingTemplateRaw !== existingTemplate) {
+      columnUpdates.template = existingTemplate;
+    }
+
     const requestedTemplate = typeof columnUpdates.template === 'string' ? String(columnUpdates.template) : null;
     if (requestedTemplate) {
       const normalizedRequested = normalizeTemplateIdForAvailability(requestedTemplate);

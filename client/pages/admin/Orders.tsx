@@ -534,7 +534,7 @@ export default function OrdersAdmin() {
   }
 
   return (
-    <div>
+    <div className="pt-4">
       {/* Risk Alert for suspicious orders */}
       <RiskAlert 
         onOrderClick={(orderId) => {

@@ -599,8 +599,8 @@ export default function Store() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-7xl mx-auto space-y-3 md:space-y-4">
+    <div className="min-h-screen bg-background p-4">
+      <div className="max-w-7xl mx-auto space-y-2 md:space-y-3">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -611,7 +611,7 @@ export default function Store() {
               {t('store.manageExclusive')}
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Button 
               variant="outline"
               onClick={() => {
@@ -620,6 +620,7 @@ export default function Store() {
                 }
               }}
               disabled={!storeSettings.store_name}
+              className="h-9 px-3"
             >
               <StoreIcon className="w-4 h-4 mr-2" />
               {t('store.viewStorefront')}
@@ -627,6 +628,7 @@ export default function Store() {
             <Button
               variant="outline"
               onClick={() => navigate('/template-editor')}
+              className="h-9 px-3"
             >
               <Settings className="w-4 h-4 mr-2" />
               {t('store.templateEditor')}
@@ -637,7 +639,7 @@ export default function Store() {
                 setSelectedInventoryProduct(null);
                 setInventoryStockQuantity(1);
               }}
-              className="bg-gradient-to-r from-primary to-purple-600"
+              className="bg-gradient-to-r from-primary to-purple-600 h-9 px-3"
             >
               <Plus className="w-4 h-4 mr-2" />
               {t('store.addProduct')}
@@ -646,44 +648,44 @@ export default function Store() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-3 text-white">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm opacity-90">{t('store.totalProducts')}</p>
                 <p className="text-xl md:text-2xl font-bold mt-1">{stats.total}</p>
               </div>
-              <Package className="w-10 h-10 opacity-80" />
+              <Package className="w-8 h-8 opacity-80" />
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white">
+          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-3 text-white">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm opacity-90">{t('store.active')}</p>
                 <p className="text-xl md:text-2xl font-bold mt-1">{stats.active}</p>
               </div>
-              <Check className="w-10 h-10 opacity-80" />
+              <Check className="w-8 h-8 opacity-80" />
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-4 text-white">
+          <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-3 text-white">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm opacity-90">{t('store.drafts')}</p>
                 <p className="text-xl md:text-2xl font-bold mt-1">{stats.draft}</p>
               </div>
-              <Edit className="w-10 h-10 opacity-80" />
+              <Edit className="w-8 h-8 opacity-80" />
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white">
+          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-3 text-white">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm opacity-90">{t('store.totalViews')}</p>
                 <p className="text-xl md:text-2xl font-bold mt-1">{stats.totalViews}</p>
               </div>
-              <Eye className="w-10 h-10 opacity-80" />
+              <Eye className="w-8 h-8 opacity-80" />
             </div>
           </div>
         </div>
@@ -744,22 +746,22 @@ export default function Store() {
         )}
 
         {/* Filters */}
-        <div className="bg-card rounded-xl border p-4">
-          <div className="flex flex-wrap gap-4 items-center">
+        <div className="bg-card rounded-xl border p-3">
+          <div className="flex flex-wrap gap-3 items-center">
             <div className="flex-1 min-w-[200px]">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   placeholder={t('store.searchProducts')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
+                  className="pl-9 h-9"
                 />
               </div>
             </div>
 
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[170px] h-9">
                 <SelectValue placeholder={t('store.filterByStatus')} />
               </SelectTrigger>
               <SelectContent>
@@ -792,8 +794,8 @@ export default function Store() {
         {/* Products Grid/List */}
         {/* Store Summary will render at bottom of page */}
         {filteredProducts.length === 0 ? (
-          <div className="bg-card rounded-xl border p-6 md:p-6 text-center">
-            <Package className="w-12 md:w-16 h-12 md:h-16 mx-auto text-muted-foreground opacity-20 mb-3" />
+          <div className="bg-card rounded-xl border p-4 md:p-4 text-center">
+            <Package className="w-10 md:w-14 h-10 md:h-14 mx-auto text-muted-foreground opacity-20 mb-2" />
             <h3 className="text-base md:text-lg font-semibold mb-2">{t('store.noProductsYet')}</h3>
             <p className="text-muted-foreground mb-4">
               {t('store.createFirstProduct')}
@@ -1438,19 +1440,19 @@ export default function Store() {
 
       {/* Store Summary (moved here) */}
       <div className="max-w-7xl mx-auto mt-4 md:mt-6">
-        <div className="bg-card rounded-xl border p-4">
-          <div className="flex items-center justify-between mb-3">
+        <div className="bg-card rounded-xl border p-3">
+          <div className="flex items-center justify-between mb-2">
             <Label className="text-sm font-semibold">{t('store.storeSummary')}</Label>
           </div>
         
 
           <div>
             <Label className="text-sm font-semibold">{t('store.howToUse')}</Label>
-            <ol className="mt-2 text-sm space-y-2">
-              <li className="flex gap-2 items-start"><div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">1</div><div><span className="font-medium">Add Products</span><div className="text-muted-foreground">Create products with images, prices, and descriptions</div></div></li>
-              <li className="flex gap-2 items-start"><div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">2</div><div><span className="font-medium">Share Your Store Link</span><div className="text-muted-foreground">Copy the store URL above and share it with customers on social media, WhatsApp, email, etc.</div></div></li>
-              <li className="flex gap-2 items-start"><div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">3</div><div><span className="font-medium">Share Individual Products</span><div className="text-muted-foreground">Click "Share" on any product to get a direct link for targeted advertising</div></div></li>
-              <li className="flex gap-2 items-start"><div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">4</div><div><span className="font-medium">Track Performance</span><div className="text-muted-foreground">Monitor views and engagement for each product in your dashboard</div></div></li>
+            <ol className="mt-2 text-sm space-y-1.5">
+              <li className="flex gap-1.5 items-start"><div className="w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">1</div><div><span className="font-medium">Add Products</span><div className="text-muted-foreground">Create products with images, prices, and descriptions</div></div></li>
+              <li className="flex gap-1.5 items-start"><div className="w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">2</div><div><span className="font-medium">Share Your Store Link</span><div className="text-muted-foreground">Copy the store URL above and share it with customers on social media, WhatsApp, email, etc.</div></div></li>
+              <li className="flex gap-1.5 items-start"><div className="w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">3</div><div><span className="font-medium">Share Individual Products</span><div className="text-muted-foreground">Click "Share" on any product to get a direct link for targeted advertising</div></div></li>
+              <li className="flex gap-1.5 items-start"><div className="w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">4</div><div><span className="font-medium">Track Performance</span><div className="text-muted-foreground">Monitor views and engagement for each product in your dashboard</div></div></li>
             </ol>
           </div>
         </div>

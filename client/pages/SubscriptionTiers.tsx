@@ -62,7 +62,7 @@ export default function SubscriptionTiers() {
       id: 'gold',
       name: 'Gold',
       description: 'For growing businesses',
-      price: 7,
+      price: 8,
       period: isAnnual ? '/year' : '/month',
       badge: 'Most Popular',
       highlighted: true,

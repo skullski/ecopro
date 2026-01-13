@@ -1,6 +1,4 @@
 import { TemplateProps } from './types';
-import ShiroHanaTemplate from './gold/shiro-hana/ShiroHanaTemplate';
-import BabyosTemplate from './gold/babyos/BabyosTemplate';
 import BagsTemplate from './gold/bags/BagsTemplate';
 import JewelryTemplate from './gold/jewelry/JewelryTemplate';
 import FashionTemplate from './gold/fashion/FashionTemplate';
@@ -96,8 +94,6 @@ import ExhibitStoreTemplate from './gold/exhibit-store/ExhibitStoreTemplate';
  * Available template IDs.
  */
 export type TemplateId = 
-  | 'shiro-hana' 
-  | 'babyos' 
   | 'bags' 
   | 'jewelry'
   | 'fashion'
@@ -193,6 +189,9 @@ export function normalizeTemplateId(t: string): TemplateId {
     .replace(/^gold-/, '')
     .replace(/-gold$/, '');
   if (!raw) return 'pro';
+  // Removed templates (backwards compatibility)
+  if (raw === 'shiro-hana') return 'pro';
+  if (raw === 'babyos' || raw === 'baby') return 'kids';
   // Pro variants
   if (raw === 'pro-aurora' || raw === 'aurora-pro') return 'pro-aurora';
   if (raw === 'pro-vertex' || raw === 'vertex-pro') return 'pro-vertex';
@@ -209,7 +208,6 @@ export function normalizeTemplateId(t: string): TemplateId {
   if (raw === 'modern' || raw === 'bold') return 'modern';
   if (raw === 'jewelry') return 'jewelry';
   if (raw === 'bags') return 'bags';
-  if (raw === 'babyos' || raw === 'baby') return 'babyos';
   if (raw === 'fashion') return 'fashion';
   if (raw === 'electronics') return 'electronics';
   if (raw === 'beauty' || raw === 'cosmetics') return 'beauty';
@@ -281,7 +279,7 @@ export function normalizeTemplateId(t: string): TemplateId {
   if (raw === 'gallery-pro' || raw === 'gallery') return 'gallery-pro';
   if (raw === 'showcase-plus' || raw === 'showcase') return 'showcase-plus';
   if (raw === 'exhibit-store' || raw === 'exhibit') return 'exhibit-store';
-  return 'shiro-hana';
+  return 'pro';
 }
 
 /**
@@ -309,7 +307,6 @@ export function RenderStorefront(t: TemplateId | string, props: TemplateProps) {
   if (id === 'modern') return <ModernTemplate {...sanitizedProps} />;
   if (id === 'jewelry') return <JewelryTemplate {...sanitizedProps} />;
   if (id === 'bags') return <BagsTemplate {...sanitizedProps} />;
-  if (id === 'babyos') return <BabyosTemplate {...sanitizedProps} />;
   if (id === 'fashion') return <FashionTemplate {...sanitizedProps} />;
   if (id === 'electronics') return <ElectronicsTemplate {...sanitizedProps} />;
   if (id === 'beauty') return <BeautyTemplate {...sanitizedProps} />;
@@ -390,12 +387,10 @@ export function RenderStorefront(t: TemplateId | string, props: TemplateProps) {
   if (id === 'gallery-pro') return <GalleryProTemplate {...sanitizedProps} />;
   if (id === 'showcase-plus') return <ShowcasePlusTemplate {...sanitizedProps} />;
   if (id === 'exhibit-store') return <ExhibitStoreTemplate {...sanitizedProps} />;
-  return <ShiroHanaTemplate {...sanitizedProps} />;
+  return <ProTemplate {...sanitizedProps} />;
 }
 
 // Re-export all templates
-export { ShiroHanaTemplate };
-export { BabyosTemplate };
 export { BagsTemplate };
 export { JewelryTemplate };
 export { FashionTemplate };

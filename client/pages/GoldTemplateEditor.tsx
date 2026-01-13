@@ -1,42 +1,28 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ArrowLeft, Save, Eye, Settings, Check, Search, Grid3X3, LayoutGrid, X } from 'lucide-react';
+import { ArrowLeft, Save, Eye, Settings, Check, Search, X, ChevronDown } from 'lucide-react';
 import { RenderStorefront, normalizeTemplateId } from './storefront/templates';
-import baseShiroHanaHome from './storefront/templates/gold/shiro-hana-home.json';
-import baseBabyosHome from './storefront/templates/gold/babyos-home.json';
 import { uploadImage } from '@/lib/api';
 import { useTranslation } from '@/lib/i18n';
 
-// Template categories for filtering
-const TEMPLATE_CATEGORIES = [
-  { id: 'all', name: 'All Templates', icon: '🎨' },
-  { id: 'popular', name: 'Popular', icon: '⭐' },
-  { id: 'minimal', name: 'Minimal & Clean', icon: '✨' },
-  { id: 'colorful', name: 'Colorful', icon: '🌈' },
-  { id: 'dark', name: 'Dark Mode', icon: '🌙' },
-  { id: 'elegant', name: 'Elegant', icon: '💎' },
-  { id: 'industry', name: 'Industry Specific', icon: '🏪' },
-  { id: 'pro', name: 'Pro Series', icon: '🚀' },
-];
+const DEFAULT_TEMPLATE_ID = 'tea';
 
 // Template preview data with categories
 const TEMPLATE_PREVIEWS = [
-  // Original templates
-  { id: 'shiro-hana', name: 'Shiro Hana', image: '/template-previews/store.png', categories: ['popular', 'elegant'] },
-  { id: 'babyos', name: 'Babyos', image: '/template-previews/baby.png', categories: ['popular', 'colorful', 'industry'] },
-  { id: 'bags', name: 'Bags Editorial', image: '/template-previews/bags.png', categories: ['elegant', 'industry'] },
-  { id: 'jewelry', name: 'JewelryOS', image: '/template-previews/jewelry.png', categories: ['elegant', 'industry'] },
-  { id: 'fashion', name: 'Fashion', image: '/template-previews/fashion.png', categories: ['popular', 'elegant'] },
-  { id: 'electronics', name: 'Electronics', image: '/template-previews/electronics.png', categories: ['industry'] },
-  { id: 'beauty', name: 'Beauty', image: '/template-previews/beauty.png', categories: ['colorful', 'industry'] },
-  { id: 'food', name: 'Food & Restaurant', image: '/template-previews/food.png', categories: ['colorful', 'industry'] },
-  { id: 'cafe', name: 'Cafe & Bakery', image: '/template-previews/cafe.png', categories: ['colorful', 'industry'] },
-  { id: 'furniture', name: 'Furniture', image: '/template-previews/furniture.png', categories: ['minimal', 'industry'] },
-  { id: 'perfume', name: 'Perfume', image: '/template-previews/perfume.png', categories: ['elegant', 'industry'] },
+  // Original templates (updated previews)
+  { id: 'bags', name: 'Bags Editorial', image: '/template-previews/bags-preview.svg', categories: ['elegant', 'industry'] },
+  { id: 'jewelry', name: 'JewelryOS', image: '/template-previews/jewelry-preview.svg', categories: ['elegant', 'industry'] },
+  { id: 'fashion', name: 'Fashion', image: '/template-previews/fashion-preview.svg', categories: ['popular', 'elegant'] },
+  { id: 'electronics', name: 'Electronics', image: '/template-previews/electronics-preview.svg', categories: ['industry'] },
+  { id: 'beauty', name: 'Beauty', image: '/template-previews/beauty-preview.svg', categories: ['colorful', 'industry'] },
+  { id: 'food', name: 'Food & Restaurant', image: '/template-previews/food-preview.svg', categories: ['colorful', 'industry'] },
+  { id: 'cafe', name: 'Cafe & Bakery', image: '/template-previews/cafe-preview.svg', categories: ['colorful', 'industry'] },
+  { id: 'furniture', name: 'Furniture', image: '/template-previews/furniture-preview.svg', categories: ['minimal', 'industry'] },
+  { id: 'perfume', name: 'Perfume', image: '/template-previews/perfume-preview.svg', categories: ['elegant', 'industry'] },
   { id: 'minimal', name: 'Minimal', image: '/template-previews/minimal.png', categories: ['popular', 'minimal'] },
   { id: 'classic', name: 'Classic', image: '/template-previews/classic.png', categories: ['elegant'] },
   { id: 'modern', name: 'Modern', image: '/template-previews/modern.png', categories: ['minimal'] },
@@ -122,6 +108,17 @@ const TEMPLATE_PREVIEWS = [
   { id: 'exhibit-store', name: 'Exhibit Store', image: '/template-previews/exhibit-store.svg', categories: ['elegant', 'minimal'] },
 ];
 
+const TEMPLATE_CATEGORIES = [
+  { id: 'all', name: 'All Templates', icon: '🎨' },
+  { id: 'popular', name: 'Popular', icon: '⭐' },
+  { id: 'minimal', name: 'Minimal & Clean', icon: '✨' },
+  { id: 'colorful', name: 'Colorful', icon: '🌈' },
+  { id: 'dark', name: 'Dark Mode', icon: '🌙' },
+  { id: 'elegant', name: 'Elegant', icon: '💎' },
+  { id: 'industry', name: 'Industry Specific', icon: '🏪' },
+  { id: 'pro', name: 'Pro Series', icon: '🚀' },
+];
+
 // Default settings for each template - used for reset functionality
 // Keys that should be reset when switching/resetting templates
 const TEMPLATE_SETTING_KEYS = [
@@ -182,6 +179,7 @@ export default function GoldTemplateEditor() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const previewRootRef = React.useRef<HTMLDivElement | null>(null);
+  const previewFitRef = React.useRef<HTMLDivElement | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -192,26 +190,37 @@ export default function GoldTemplateEditor() {
 
   const [previewDevice, setPreviewDevice] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
   const [selectedEditPath, setSelectedEditPath] = useState<string | null>(null);
-  
-  // Template selector state
+
+  // Template picker (header)
+  const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
   const [templateSearch, setTemplateSearch] = useState('');
   const [templateCategory, setTemplateCategory] = useState('all');
-  
-  // Filtered templates based on search and category
+
   const filteredTemplates = useMemo(() => {
-    return TEMPLATE_PREVIEWS.filter((template) => {
-      // Search filter
-      const searchMatch = templateSearch === '' || 
-        template.name.toLowerCase().includes(templateSearch.toLowerCase()) ||
-        template.id.toLowerCase().includes(templateSearch.toLowerCase());
-      
-      // Category filter
-      const categoryMatch = templateCategory === 'all' || 
-        (template.categories && template.categories.includes(templateCategory));
-      
+    const q = templateSearch.trim().toLowerCase();
+    return TEMPLATE_PREVIEWS.filter((tpl) => {
+      const searchMatch = !q || tpl.name.toLowerCase().includes(q) || tpl.id.toLowerCase().includes(q);
+      const categoryMatch = templateCategory === 'all' || (tpl.categories && tpl.categories.includes(templateCategory));
       return searchMatch && categoryMatch;
     });
   }, [templateSearch, templateCategory]);
+
+  const effectiveTemplateId = useMemo(() => {
+    const normalized = normalizeTemplateId(String(settings.template || DEFAULT_TEMPLATE_ID));
+    const allowed = TEMPLATE_PREVIEWS.some((t) => t.id === normalized);
+    return allowed ? normalized : DEFAULT_TEMPLATE_ID;
+  }, [settings.template]);
+
+  // If an old/removed template is present in settings, switch locally to a valid one.
+  useEffect(() => {
+    if (loading) return;
+    setSettings((prev) => {
+      const normalized = normalizeTemplateId(String(prev.template || DEFAULT_TEMPLATE_ID));
+      const allowed = TEMPLATE_PREVIEWS.some((t) => t.id === normalized);
+      if (allowed) return prev;
+      return { ...prev, template: DEFAULT_TEMPLATE_ID };
+    });
+  }, [loading]);
 
   // Load store data
   useEffect(() => {
@@ -261,7 +270,7 @@ export default function GoldTemplateEditor() {
 
   // Handle template change - reset template-specific settings when switching and auto-save
   const handleTemplateChange = async (newTemplateId: string) => {
-    const currentTemplate = settings.template || 'shiro-hana';
+    const currentTemplate = settings.template || DEFAULT_TEMPLATE_ID;
     if (newTemplateId === currentTemplate) return;
     
     // Build updated settings with new template and reset template-specific settings
@@ -445,13 +454,7 @@ export default function GoldTemplateEditor() {
       storeSlug: settings.store_slug || 'preview',
       settings: {
         ...settings,
-        template: String(settings.template || 'shiro-hana'),
-        // New unified editor keys
-        template_page_shiro_hana_home: baseShiroHanaHome,
-        template_page_babyos_home: baseBabyosHome,
-        // Legacy keys (older data/templates)
-        gold_page_shiro_hana_home: baseShiroHanaHome,
-        gold_page_babyos_home: baseBabyosHome,
+        template: effectiveTemplateId,
       },
       products,
       filtered: products,
@@ -472,10 +475,10 @@ export default function GoldTemplateEditor() {
       canManage: true,
       forcedBreakpoint: previewDevice,
     }),
-    [settings, products, formatPrice, navigate, previewDevice]
+    [settings, products, formatPrice, navigate, previewDevice, effectiveTemplateId]
   );
 
-  const selectedTemplateId = useMemo(() => normalizeTemplateId(String(settings.template || 'shiro-hana')), [settings.template]);
+  const selectedTemplateId = useMemo(() => normalizeTemplateId(String(effectiveTemplateId)), [effectiveTemplateId]);
 
   const deviceFrame = useMemo(() => {
     if (previewDevice === 'mobile') {
@@ -489,6 +492,63 @@ export default function GoldTemplateEditor() {
     // Desktop: full width, auto height
     return { width: '100%', maxWidth: '100%', height: '700px', aspectRatio: 'auto' } as const;
   }, [previewDevice]);
+
+  const baseDeviceOuter = useMemo(() => {
+    if (previewDevice === 'mobile') {
+      // Outer container is 342px wide and has 6px padding around a 732px screen.
+      return { width: 342, height: 732 + 12 };
+    }
+    if (previewDevice === 'tablet') {
+      // Outer container is 562px wide; includes 12px vertical padding and a small camera area.
+      return { width: 562, height: 776 + 24 + 20 };
+    }
+    // Desktop uses fluid width; scaling is unnecessary.
+    return { width: 0, height: 0 };
+  }, [previewDevice]);
+
+  const [deviceScale, setDeviceScale] = useState(1);
+
+  useLayoutEffect(() => {
+    const host = previewFitRef.current;
+    if (!host) return;
+
+    const compute = () => {
+      if (previewDevice === 'desktop') {
+        setDeviceScale(1);
+        return;
+      }
+      const rect = host.getBoundingClientRect();
+      const availW = Math.max(1, rect.width);
+      // Fit to visible viewport, but keep a small bottom buffer.
+      const availH = Math.max(1, window.innerHeight - rect.top - 12);
+      const baseW = baseDeviceOuter.width || 1;
+      const baseH = baseDeviceOuter.height || 1;
+
+      // Allow scaling up more so the device fills the available space.
+      const maxScale = previewDevice === 'mobile' ? 2.6 : 2.08;
+      const s = Math.min(availW / baseW, availH / baseH, maxScale);
+      const clamped = Math.max(0.25, Math.min(maxScale, s));
+      setDeviceScale(clamped);
+    };
+
+    compute();
+    const ro = new ResizeObserver(() => compute());
+    ro.observe(host);
+    window.addEventListener('resize', compute);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', compute);
+    };
+  }, [previewDevice, baseDeviceOuter.width, baseDeviceOuter.height]);
+
+  useEffect(() => {
+    if (!templatePickerOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setTemplatePickerOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [templatePickerOpen]);
 
   const editPanel = useMemo(() => {
     const path = selectedEditPath;
@@ -917,27 +977,17 @@ export default function GoldTemplateEditor() {
           </div>
 
           <div className="flex items-center gap-2">
-            <select
-              value={String(settings.template || 'shiro-hana')}
-              onChange={(e) => handleTemplateChange(e.target.value)}
-              className="h-9 rounded-md border bg-background px-3 text-sm"
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setTemplatePickerOpen((v) => !v)}
+              className="gap-2"
               aria-label="Select template"
             >
-              <option value="shiro-hana">Shiro Hana</option>
-              <option value="babyos">Babyos</option>
-              <option value="bags">Bags Editorial</option>
-              <option value="jewelry">JewelryOS</option>
-              <option value="fashion">Fashion</option>
-              <option value="electronics">Electronics</option>
-              <option value="beauty">Beauty</option>
-              <option value="food">Food & Restaurant</option>
-              <option value="cafe">Cafe & Bakery</option>
-              <option value="furniture">Furniture</option>
-              <option value="perfume">Perfume</option>
-              <option value="minimal">Minimal</option>
-              <option value="classic">Classic</option>
-              <option value="modern">Modern</option>
-            </select>
+              {TEMPLATE_PREVIEWS.find((t) => t.id === String(settings.template || 'shiro-hana'))?.name || 'Shiro Hana'}
+              <ChevronDown className="w-4 h-4" />
+            </Button>
             <Button
               variant={activeTab === 'preview' ? 'default' : 'outline'}
               size="sm"
@@ -961,6 +1011,153 @@ export default function GoldTemplateEditor() {
           </div>
         </div>
       </div>
+
+      {templatePickerOpen && (
+        <div className="border-b bg-background">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <div className="text-sm font-semibold">{(t('editor.chooseTemplate') as any) || 'Choose Template'}</div>
+              <Button type="button" variant="ghost" size="sm" onClick={() => setTemplatePickerOpen(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+
+            <div className="mb-3 flex items-center justify-between p-3 bg-primary/10 rounded-lg border border-primary/20">
+              <div className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-primary" />
+                <span className="text-sm text-muted-foreground">{(t('editor.currentTemplate') as any) || 'Current'}:</span>
+                <span className="font-semibold text-primary">
+                  {TEMPLATE_PREVIEWS.find((t) => t.id === String(settings.template || 'shiro-hana'))?.name || 'Shiro Hana'}
+                </span>
+              </div>
+              <Button variant="outline" size="sm" onClick={handleResetTemplate} className="text-xs">
+                🔄 Reset Template
+              </Button>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 mb-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search templates..."
+                  value={templateSearch}
+                  onChange={(e) => setTemplateSearch(e.target.value)}
+                  className="pl-10 pr-8"
+                />
+                {templateSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setTemplateSearch('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    aria-label="Clear search"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2 mb-3">
+              {TEMPLATE_CATEGORIES.map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setTemplateCategory(cat.id)}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                    templateCategory === cat.id
+                      ? 'bg-primary text-primary-foreground shadow-md'
+                      : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
+                  }`}
+                >
+                  <span className="mr-1">{cat.icon}</span>
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+
+            <p className="text-sm text-muted-foreground mb-3">
+              Showing {filteredTemplates.length} of {TEMPLATE_PREVIEWS.length} templates
+            </p>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 max-h-[420px] overflow-y-auto pr-2">
+              {filteredTemplates.map((template) => {
+                const isSelected = String(settings.template || 'shiro-hana') === template.id;
+                return (
+                  <div
+                    key={template.id}
+                    onClick={() => {
+                      handleTemplateChange(template.id);
+                      setTemplatePickerOpen(false);
+                    }}
+                    className={`relative cursor-pointer group transition-all duration-200 ${
+                      isSelected ? 'scale-105 z-10' : 'hover:scale-105'
+                    }`}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleTemplateChange(template.id);
+                        setTemplatePickerOpen(false);
+                      }
+                    }}
+                  >
+                    <div
+                      className={`relative aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all ${
+                        isSelected
+                          ? 'border-primary shadow-lg shadow-primary/25 ring-2 ring-primary/50'
+                          : 'border-border/50 hover:border-primary/50'
+                      }`}
+                    >
+                      <img
+                        src={template.image}
+                        alt={template.name}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                      <div
+                        className={`absolute inset-0 transition-opacity ${
+                          isSelected ? 'bg-primary/10' : 'bg-black/0 group-hover:bg-black/20'
+                        }`}
+                      />
+                      {isSelected && (
+                        <div className="absolute top-2 right-2 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                          <Check className="w-3 h-3 text-primary-foreground" />
+                        </div>
+                      )}
+                    </div>
+                    <p
+                      className={`mt-2 text-center text-xs font-medium truncate ${
+                        isSelected ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
+                      }`}
+                    >
+                      {template.name}
+                    </p>
+                  </div>
+                );
+              })}
+
+              {filteredTemplates.length === 0 && (
+                <div className="col-span-full py-10 text-center">
+                  <div className="text-4xl mb-2">🔍</div>
+                  <p className="text-muted-foreground">No templates found</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTemplateSearch('');
+                      setTemplateCategory('all');
+                    }}
+                    className="mt-2 text-sm text-primary hover:underline"
+                  >
+                    Clear filters
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Alerts */}
       {error && (
@@ -1004,83 +1201,139 @@ export default function GoldTemplateEditor() {
               </div>
 
               {/* Device Frame Container */}
-              <div
-                style={{
-                  marginLeft: '0',
-                  marginRight: 'auto',
-                  ...(previewDevice === 'mobile' ? {
-                    // Samsung Galaxy S24 Ultra frame styling
-                    background: 'linear-gradient(145deg, #2a2a2a 0%, #1a1a1a 50%, #0d0d0d 100%)',
-                    borderRadius: '28px',
-                    padding: '6px',
-                    boxShadow: '0 20px 40px -10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1), 0 0 0 1px #333',
-                    width: '342px',
-                  } : previewDevice === 'tablet' ? {
-                    // iPad frame styling (65% scale)
-                    background: '#2d2d2d',
-                    borderRadius: '16px',
-                    padding: '12px 10px',
-                    boxShadow: '0 20px 40px -10px rgba(0,0,0,0.35), inset 0 0 0 2px #444',
-                    width: '562px',
-                  } : {
-                    // Desktop: simple border, no device frame
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    width: '100%',
-                  }),
-                }}
-              >
-                {/* Samsung Galaxy punch-hole camera (rendered inside screen) */}
-
-                {/* Front Camera for iPad */}
-                {previewDevice === 'tablet' && (
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    marginBottom: '10px',
-                  }}>
-                    <div style={{
-                      width: '10px',
-                      height: '10px',
-                      background: '#1a1a1a',
-                      borderRadius: '50%',
-                      boxShadow: 'inset 0 0 2px rgba(255,255,255,0.2)',
-                    }} />
+              <div ref={previewFitRef} className="w-full">
+                {previewDevice === 'desktop' ? (
+                  <div
+                    style={{
+                      marginLeft: '0',
+                      marginRight: 'auto',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      width: '100%',
+                    }}
+                  >
+                    <div
+                      className="overflow-hidden bg-white flex flex-col"
+                      style={{
+                        maxWidth: deviceFrame.maxWidth as any,
+                        width: deviceFrame.width as any,
+                        height: deviceFrame.height as any,
+                        aspectRatio: deviceFrame.aspectRatio as any,
+                        borderRadius: '4px',
+                        position: 'relative',
+                      }}
+                    >
+                      <style>{`[data-edit-selected="true"]{outline:2px solid hsl(var(--primary)); outline-offset:2px;}`}</style>
+                      <div ref={previewRootRef} onClickCapture={handlePreviewClickCapture} className="flex-1 overflow-y-auto">
+                        {RenderStorefront(selectedTemplateId, templateProps as any)}
+                      </div>
+                    </div>
                   </div>
-                )}
+                ) : (
+                  <div
+                    style={{
+                      width: `${Math.round(baseDeviceOuter.width * deviceScale)}px`,
+                      height: `${Math.round(baseDeviceOuter.height * deviceScale)}px`,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${baseDeviceOuter.width}px`,
+                        height: `${baseDeviceOuter.height}px`,
+                        transform: `scale(${deviceScale})`,
+                        transformOrigin: 'top left',
+                      }}
+                    >
+                      <div
+                        style={{
+                          position: 'relative',
+                          marginLeft: '0',
+                          marginRight: 'auto',
+                          ...(previewDevice === 'mobile'
+                            ? {
+                                // Samsung Galaxy S24 Ultra frame styling
+                                background:
+                                  'linear-gradient(145deg, #2a2a2a 0%, #1a1a1a 50%, #0d0d0d 100%)',
+                                borderRadius: '28px',
+                                padding: '6px',
+                                boxShadow:
+                                  '0 20px 40px -10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1), 0 0 0 1px #333',
+                                width: '342px',
+                              }
+                            : {
+                                // iPad frame styling (65% scale)
+                                background: '#2d2d2d',
+                                borderRadius: '16px',
+                                padding: '12px 10px',
+                                boxShadow:
+                                  '0 20px 40px -10px rgba(0,0,0,0.35), inset 0 0 0 2px #444',
+                                width: '562px',
+                              }),
+                        }}
+                      >
+                        {/* Front Camera for iPad */}
+                        {previewDevice === 'tablet' && (
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'center',
+                              marginBottom: '10px',
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: '10px',
+                                height: '10px',
+                                background: '#1a1a1a',
+                                borderRadius: '50%',
+                                boxShadow: 'inset 0 0 2px rgba(255,255,255,0.2)',
+                              }}
+                            />
+                          </div>
+                        )}
 
-                {/* Screen */}
-                <div
-                  className="overflow-hidden bg-white flex flex-col"
-                  style={{
-                    maxWidth: deviceFrame.maxWidth as any,
-                    width: deviceFrame.width as any,
-                    height: deviceFrame.height as any,
-                    aspectRatio: deviceFrame.aspectRatio as any,
-                    borderRadius: previewDevice === 'mobile' ? '22px' : previewDevice === 'tablet' ? '8px' : '4px',
-                    position: 'relative',
-                  }}
-                >
-                  <style>{`[data-edit-selected="true"]{outline:2px solid hsl(var(--primary)); outline-offset:2px;}`}</style>
-                  <div ref={previewRootRef} onClickCapture={handlePreviewClickCapture} className="flex-1 overflow-y-auto">
-                    {RenderStorefront(selectedTemplateId, templateProps as any)}
+                        {/* Screen */}
+                        <div
+                          className="overflow-hidden bg-white flex flex-col"
+                          style={{
+                            maxWidth: deviceFrame.maxWidth as any,
+                            width: deviceFrame.width as any,
+                            height: deviceFrame.height as any,
+                            aspectRatio: deviceFrame.aspectRatio as any,
+                            borderRadius: previewDevice === 'mobile' ? '22px' : '8px',
+                            position: 'relative',
+                          }}
+                        >
+                          <style>{`[data-edit-selected="true"]{outline:2px solid hsl(var(--primary)); outline-offset:2px;}`}</style>
+                          <div
+                            ref={previewRootRef}
+                            onClickCapture={handlePreviewClickCapture}
+                            className="flex-1 overflow-y-auto"
+                          >
+                            {RenderStorefront(selectedTemplateId, templateProps as any)}
+                          </div>
+                        </div>
+
+                        {/* Punch-hole camera overlay for Galaxy */}
+                        {previewDevice === 'mobile' && (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              top: '12px',
+                              left: '50%',
+                              transform: 'translateX(-50%)',
+                              width: '12px',
+                              height: '12px',
+                              background: '#000',
+                              borderRadius: '50%',
+                              boxShadow: 'inset 0 0 3px rgba(255,255,255,0.15)',
+                              zIndex: 10,
+                            }}
+                          />
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-
-                {/* Punch-hole camera overlay for Galaxy */}
-                {previewDevice === 'mobile' && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '12px',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    width: '12px',
-                    height: '12px',
-                    background: '#000',
-                    borderRadius: '50%',
-                    boxShadow: 'inset 0 0 3px rgba(255,255,255,0.15)',
-                    zIndex: 10,
-                  }} />
                 )}
               </div>
             </div>
@@ -1091,142 +1344,6 @@ export default function GoldTemplateEditor() {
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Template Selector - Searchable Grid */}
-            <div className="w-full bg-gradient-to-b from-muted/30 to-transparent py-6 px-6">
-              <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
-                🎨 {t('editor.chooseTemplate')}
-              </h2>
-              
-              {/* Current selection badge with Reset button */}
-              <div className="mb-4 flex items-center justify-between p-3 bg-primary/10 rounded-lg border border-primary/20">
-                <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-primary" />
-                  <span className="text-sm text-muted-foreground">{t('editor.currentTemplate')}:</span>
-                  <span className="font-semibold text-primary">
-                    {TEMPLATE_PREVIEWS.find(t => t.id === String(settings.template || 'shiro-hana'))?.name || 'Shiro Hana'}
-                  </span>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleResetTemplate}
-                  className="text-xs"
-                >
-                  🔄 Reset Template
-                </Button>
-              </div>
-              
-              {/* Info message */}
-              <p className="text-xs text-muted-foreground mb-3 bg-muted/50 p-2 rounded">
-                💡 Switching templates resets colors and text to the new template's defaults. Your store name and products stay the same.
-              </p>
-              
-              {/* Search and Filter Controls */}
-              <div className="flex flex-col sm:flex-row gap-3 mb-4">
-                {/* Search Input */}
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    type="text"
-                    placeholder="Search templates..."
-                    value={templateSearch}
-                    onChange={(e) => setTemplateSearch(e.target.value)}
-                    className="pl-10 pr-8"
-                  />
-                  {templateSearch && (
-                    <button
-                      onClick={() => setTemplateSearch('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              </div>
-              
-              {/* Category Pills */}
-              <div className="flex flex-wrap gap-2 mb-4">
-                {TEMPLATE_CATEGORIES.map((cat) => (
-                  <button
-                    key={cat.id}
-                    onClick={() => setTemplateCategory(cat.id)}
-                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                      templateCategory === cat.id
-                        ? 'bg-primary text-primary-foreground shadow-md'
-                        : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
-                    }`}
-                  >
-                    <span className="mr-1">{cat.icon}</span>
-                    {cat.name}
-                  </button>
-                ))}
-              </div>
-              
-              {/* Results count */}
-              <p className="text-sm text-muted-foreground mb-4">
-                Showing {filteredTemplates.length} of {TEMPLATE_PREVIEWS.length} templates
-              </p>
-              
-              {/* Template Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 max-h-[500px] overflow-y-auto pr-2">
-                {filteredTemplates.map((template) => {
-                  const isSelected = String(settings.template || 'shiro-hana') === template.id;
-                  return (
-                    <div
-                      key={template.id}
-                      onClick={() => handleTemplateChange(template.id)}
-                      className={`relative cursor-pointer group transition-all duration-200 ${
-                        isSelected ? 'scale-105 z-10' : 'hover:scale-105'
-                      }`}
-                    >
-                      <div className={`relative aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all ${
-                        isSelected 
-                          ? 'border-primary shadow-lg shadow-primary/25 ring-2 ring-primary/50' 
-                          : 'border-border/50 hover:border-primary/50'
-                      }`}>
-                        <img
-                          src={template.image}
-                          alt={template.name}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                        {/* Dark overlay on hover */}
-                        <div className={`absolute inset-0 transition-opacity ${
-                          isSelected ? 'bg-primary/10' : 'bg-black/0 group-hover:bg-black/20'
-                        }`} />
-                        {/* Selected checkmark */}
-                        {isSelected && (
-                          <div className="absolute top-2 right-2 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                            <Check className="w-3 h-3 text-primary-foreground" />
-                          </div>
-                        )}
-                      </div>
-                      {/* Template name */}
-                      <p className={`mt-2 text-center text-xs font-medium truncate ${
-                        isSelected ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
-                      }`}>
-                        {template.name}
-                      </p>
-                    </div>
-                  );
-                })}
-                
-                {/* No results message */}
-                {filteredTemplates.length === 0 && (
-                  <div className="col-span-full py-12 text-center">
-                    <div className="text-4xl mb-2">🔍</div>
-                    <p className="text-muted-foreground">No templates found</p>
-                    <button
-                      onClick={() => { setTemplateSearch(''); setTemplateCategory('all'); }}
-                      className="mt-2 text-sm text-primary hover:underline"
-                    >
-                      Clear filters
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
             {/* Basic Settings */}
             <div className="max-w-2xl mx-auto space-y-6">
             <Card>

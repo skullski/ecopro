@@ -8,7 +8,6 @@ export const PAGE_PERMISSIONS: Record<string, string> = {
   '/dashboard/stock': 'view_inventory',
   '/dashboard/orders': 'view_orders_list',
   '/dashboard/delivery': 'edit_delivery_settings',
-  '/dashboard/addons': 'view_settings',
   '/dashboard/wasselni-settings': 'manage_bot_settings',
   '/dashboard/staff': 'view_staff',
 };

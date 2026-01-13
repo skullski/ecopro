@@ -212,7 +212,7 @@ export default function Checkout() {
         // Fall back to API
         if (storeSlug && productSlug) {
           // Try by slug first
-          let res = await fetch(`/api/store/${storeSlug}/${productSlug}`);
+          let res = await fetch(`/api/store/${storeSlug}/${productSlug}?track_view=0`);
           if (!res.ok) {
             // Try by ID (productSlug might be numeric ID)
             res = await fetch(`/api/storefront/${storeSlug}/products/${productSlug}`);

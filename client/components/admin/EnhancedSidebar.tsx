@@ -75,12 +75,6 @@ const menuItems: MenuItem[] = [
     ]
   },
   { 
-    titleKey: "sidebar.addons", 
-    path: "/dashboard/addons/google-sheets", 
-    icon: <Puzzle className="w-[18px] h-[18px]" />,
-    permission: "view_settings"
-  },
-  { 
     titleKey: "sidebar.pixels", 
     path: "/pixel-statistics", 
     icon: <BarChart3 className="w-[18px] h-[18px]" />,
@@ -281,23 +275,25 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
         
         <div className="flex items-center gap-2">
           {/* Theme toggle button */}
-          <button
-            onClick={() => setThemeCustomizationEnabled(!themeCustomizationEnabled)}
-            className={cn(
-              "relative w-9 h-5 rounded-full transition-all duration-300 flex-shrink-0",
-              themeCustomizationEnabled 
-                ? "bg-green-500 shadow-md shadow-green-500/50" 
-                : "bg-gray-500"
-            )}
-            title={themeCustomizationEnabled ? "Disable theme" : "Enable theme"}
-          >
-            <div
+          {!collapsed && (
+            <button
+              onClick={() => setThemeCustomizationEnabled(!themeCustomizationEnabled)}
               className={cn(
-                "absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-all duration-300 shadow-sm",
-                themeCustomizationEnabled && "translate-x-4"
+                "relative w-9 h-5 rounded-full transition-all duration-300 flex-shrink-0",
+                themeCustomizationEnabled 
+                  ? "bg-green-500 shadow-md shadow-green-500/50" 
+                  : "bg-gray-500"
               )}
-            />
-          </button>
+              title={themeCustomizationEnabled ? "Disable theme" : "Enable theme"}
+            >
+              <div
+                className={cn(
+                  "absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-all duration-300 shadow-sm",
+                  themeCustomizationEnabled && "translate-x-4"
+                )}
+              />
+            </button>
+          )}
           
           {/* Toggle button for desktop (collapse/expand) */}
           <button

@@ -155,10 +155,10 @@ export default function AdminWasselniSettings() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50 dark:from-black dark:via-slate-900 dark:to-black p-4 sm:p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50 dark:from-black dark:via-slate-900 dark:to-black p-3 sm:p-4">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-4">
           <div className="flex items-start justify-between gap-3 mb-2">
             <div>
               <h1 className="text-2xl md:text-xl md:text-2xl lg:text-lg md:text-xl md:text-2xl font-bold tracking-tight text-slate-900 dark:text-white mb-1">
@@ -172,10 +172,10 @@ export default function AdminWasselniSettings() {
         </div>
 
         {/* Three Bot Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
           {/* Bot Confirmation Card */}
           <div 
-            className={`relative overflow-hidden rounded-2xl p-4 cursor-pointer transition-all duration-300 ${
+            className={`relative overflow-hidden rounded-xl p-3 cursor-pointer transition-all duration-300 ${
               activeBot === 'confirmation' 
                 ? 'bg-gradient-to-br from-emerald-500 to-green-600 shadow-xl shadow-emerald-500/25 scale-[1.02]' 
                 : settings.enabled
@@ -185,13 +185,13 @@ export default function AdminWasselniSettings() {
             onClick={() => setActiveBot(activeBot === 'confirmation' ? null : 'confirmation')}
           >
             {/* Decorative circles */}
-            <div className="absolute -top-6 -right-6 w-20 h-20 bg-white/10 rounded-full" />
-            <div className="absolute -bottom-8 -left-8 w-28 h-28 bg-white/5 rounded-full" />
+            <div className="absolute -top-5 -right-5 w-16 h-16 bg-white/10 rounded-full" />
+            <div className="absolute -bottom-7 -left-7 w-24 h-24 bg-white/5 rounded-full" />
             
             <div className="relative">
-              <div className="flex items-center gap-3 mb-3">
-                <div className={`p-2.5 rounded-xl ${settings.enabled || activeBot === 'confirmation' ? 'bg-white/20' : 'bg-slate-300/50 dark:bg-slate-700'}`}>
-                  <MessageSquare className={`h-5 w-5 ${settings.enabled || activeBot === 'confirmation' ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} />
+              <div className="flex items-center gap-2 mb-2">
+                <div className={`p-2 rounded-lg ${settings.enabled || activeBot === 'confirmation' ? 'bg-white/20' : 'bg-slate-300/50 dark:bg-slate-700'}`}>
+                  <MessageSquare className={`h-4 w-4 ${settings.enabled || activeBot === 'confirmation' ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} />
                 </div>
                 <div>
                   <p className={`text-sm font-bold ${settings.enabled || activeBot === 'confirmation' ? 'text-white' : 'text-slate-800 dark:text-white'}`}>{t('bot.confirmation')}</p>
@@ -199,7 +199,7 @@ export default function AdminWasselniSettings() {
                 </div>
               </div>
               <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
-                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${settings.enabled ? 'bg-white/25 text-white' : 'bg-slate-300 text-slate-600 dark:bg-slate-600 dark:text-slate-300'}`}>
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${settings.enabled ? 'bg-white/25 text-white' : 'bg-slate-300 text-slate-600 dark:bg-slate-600 dark:text-slate-300'}`}>
                   {settings.enabled ? `● ${t('bot.active')}` : `○ ${t('bot.off')}`}
                 </span>
                 <Switch
@@ -214,7 +214,7 @@ export default function AdminWasselniSettings() {
 
           {/* Bot Updates Card */}
           <div 
-            className={`relative overflow-hidden rounded-2xl p-4 cursor-pointer transition-all duration-300 ${
+            className={`relative overflow-hidden rounded-xl p-3 cursor-pointer transition-all duration-300 ${
               activeBot === 'updates' 
                 ? 'bg-gradient-to-br from-violet-500 to-purple-600 shadow-xl shadow-violet-500/25 scale-[1.02]' 
                 : settings.updatesEnabled
@@ -224,13 +224,13 @@ export default function AdminWasselniSettings() {
             onClick={() => setActiveBot(activeBot === 'updates' ? null : 'updates')}
           >
             {/* Decorative circles */}
-            <div className="absolute -top-6 -right-6 w-20 h-20 bg-white/10 rounded-full" />
-            <div className="absolute -bottom-8 -left-8 w-28 h-28 bg-white/5 rounded-full" />
+            <div className="absolute -top-5 -right-5 w-16 h-16 bg-white/10 rounded-full" />
+            <div className="absolute -bottom-7 -left-7 w-24 h-24 bg-white/5 rounded-full" />
             
             <div className="relative">
-              <div className="flex items-center gap-3 mb-3">
-                <div className={`p-2.5 rounded-xl ${settings.updatesEnabled || activeBot === 'updates' ? 'bg-white/20' : 'bg-slate-300/50 dark:bg-slate-700'}`}>
-                  <Users className={`h-5 w-5 ${settings.updatesEnabled || activeBot === 'updates' ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} />
+              <div className="flex items-center gap-2 mb-2">
+                <div className={`p-2 rounded-lg ${settings.updatesEnabled || activeBot === 'updates' ? 'bg-white/20' : 'bg-slate-300/50 dark:bg-slate-700'}`}>
+                  <Users className={`h-4 w-4 ${settings.updatesEnabled || activeBot === 'updates' ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} />
                 </div>
                 <div>
                   <p className={`text-sm font-bold ${settings.updatesEnabled || activeBot === 'updates' ? 'text-white' : 'text-slate-800 dark:text-white'}`}>{t('bot.updates')}</p>
@@ -238,7 +238,7 @@ export default function AdminWasselniSettings() {
                 </div>
               </div>
               <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
-                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${settings.updatesEnabled ? 'bg-white/25 text-white' : 'bg-slate-300 text-slate-600 dark:bg-slate-600 dark:text-slate-300'}`}>
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${settings.updatesEnabled ? 'bg-white/25 text-white' : 'bg-slate-300 text-slate-600 dark:bg-slate-600 dark:text-slate-300'}`}>
                   {settings.updatesEnabled ? `● ${t('bot.active')}` : `○ ${t('bot.off')}`}
                 </span>
                 <Switch
@@ -253,7 +253,7 @@ export default function AdminWasselniSettings() {
 
           {/* Bot Tracking Card */}
           <div 
-            className={`relative overflow-hidden rounded-2xl p-4 cursor-pointer transition-all duration-300 ${
+            className={`relative overflow-hidden rounded-xl p-3 cursor-pointer transition-all duration-300 ${
               activeBot === 'tracking' 
                 ? 'bg-gradient-to-br from-orange-500 to-amber-600 shadow-xl shadow-orange-500/25 scale-[1.02]' 
                 : settings.trackingEnabled
@@ -263,13 +263,13 @@ export default function AdminWasselniSettings() {
             onClick={() => setActiveBot(activeBot === 'tracking' ? null : 'tracking')}
           >
             {/* Decorative circles */}
-            <div className="absolute -top-6 -right-6 w-20 h-20 bg-white/10 rounded-full" />
-            <div className="absolute -bottom-8 -left-8 w-28 h-28 bg-white/5 rounded-full" />
+            <div className="absolute -top-5 -right-5 w-16 h-16 bg-white/10 rounded-full" />
+            <div className="absolute -bottom-7 -left-7 w-24 h-24 bg-white/5 rounded-full" />
             
             <div className="relative">
-              <div className="flex items-center gap-3 mb-3">
-                <div className={`p-2.5 rounded-xl ${settings.trackingEnabled || activeBot === 'tracking' ? 'bg-white/20' : 'bg-slate-300/50 dark:bg-slate-700'}`}>
-                  <MapPin className={`h-5 w-5 ${settings.trackingEnabled || activeBot === 'tracking' ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} />
+              <div className="flex items-center gap-2 mb-2">
+                <div className={`p-2 rounded-lg ${settings.trackingEnabled || activeBot === 'tracking' ? 'bg-white/20' : 'bg-slate-300/50 dark:bg-slate-700'}`}>
+                  <MapPin className={`h-4 w-4 ${settings.trackingEnabled || activeBot === 'tracking' ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} />
                 </div>
                 <div>
                   <p className={`text-sm font-bold ${settings.trackingEnabled || activeBot === 'tracking' ? 'text-white' : 'text-slate-800 dark:text-white'}`}>{t('bot.tracking')}</p>
@@ -277,7 +277,7 @@ export default function AdminWasselniSettings() {
                 </div>
               </div>
               <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
-                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${settings.trackingEnabled ? 'bg-white/25 text-white' : 'bg-slate-300 text-slate-600 dark:bg-slate-600 dark:text-slate-300'}`}>
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${settings.trackingEnabled ? 'bg-white/25 text-white' : 'bg-slate-300 text-slate-600 dark:bg-slate-600 dark:text-slate-300'}`}>
                   {settings.trackingEnabled ? `● ${t('bot.active')}` : `○ ${t('bot.off')}`}
                 </span>
                 <Switch
@@ -293,16 +293,16 @@ export default function AdminWasselniSettings() {
 
         {/* Confirmation Bot Templates - Show when confirmation bot is selected */}
         {activeBot === 'confirmation' && (
-          <div className="space-y-4 mb-6 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="space-y-3 mb-4 animate-in fade-in slide-in-from-top-2 duration-300">
             {/* Provider Selection */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-lg shadow-slate-200/50 dark:shadow-black/20">
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-lg shadow-slate-200/50 dark:shadow-black/20">
               <h3 className="text-base font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-500/20">
+                <div className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-500/20">
                   <Globe className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 {t('bot.provider')}
               </h3>
-              <div className="grid grid-cols-4 gap-3 mb-4">
+              <div className="grid grid-cols-4 gap-2 mb-3">
                 {[
                   { value: 'facebook', label: 'Facebook' },
                   { value: 'telegram', label: 'Telegram' },
@@ -312,7 +312,7 @@ export default function AdminWasselniSettings() {
                   <button
                     key={option.value}
                     onClick={() => updateSetting('provider', option.value)}
-                    className={`px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                    className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
                       settings.provider === option.value
                         ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-md shadow-emerald-500/30'
                         : 'bg-slate-100 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600'
@@ -669,19 +669,19 @@ export default function AdminWasselniSettings() {
 
         {/* Bot Updates - Show when updates bot is selected */}
         {activeBot === 'updates' && (
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-lg shadow-violet-200/30 dark:shadow-black/20 mb-6 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-lg shadow-violet-200/30 dark:shadow-black/20 mb-4 animate-in fade-in slide-in-from-top-2 duration-300">
             <CustomerBot embedded={true} />
           </div>
         )}
 
         {/* Bot Tracking - Show when tracking bot is selected */}
         {activeBot === 'tracking' && (
-          <div className="space-y-4 mb-6 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="space-y-3 mb-4 animate-in fade-in slide-in-from-top-2 duration-300">
             {/* Tracking Overview */}
-            <div className="bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-2xl p-5 border border-orange-200 dark:border-orange-800/50 shadow-lg">
-              <div className="flex items-start gap-4">
-                <div className="p-3 rounded-xl bg-orange-100 dark:bg-orange-500/20">
-                  <Navigation className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+            <div className="bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-xl p-4 border border-orange-200 dark:border-orange-800/50 shadow-lg">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-500/20">
+                  <Navigation className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">{t('bot.realTimeTracking')}</h3>
@@ -693,9 +693,9 @@ export default function AdminWasselniSettings() {
             </div>
 
             {/* Tracking Status Messages */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-lg">
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-lg">
               <h3 className="text-base font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-500/20">
+                <div className="p-1.5 rounded-lg bg-orange-100 dark:bg-orange-500/20">
                   <Package className="h-4 w-4 text-orange-600 dark:text-orange-400" />
                 </div>
                 {t('bot.trackingStatusMessages')}
@@ -704,7 +704,7 @@ export default function AdminWasselniSettings() {
                 {t('bot.trackingStatusDesc')}
               </p>
               
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {/* Order Shipped */}
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
@@ -764,9 +764,9 @@ export default function AdminWasselniSettings() {
             </div>
 
             {/* Delivery Company Integration */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-lg">
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-lg">
               <h3 className="text-base font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-500/20">
+                <div className="p-1.5 rounded-lg bg-amber-100 dark:bg-amber-500/20">
                   <Truck className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                 </div>
                 {t('bot.deliveryCompanySettings')}
@@ -775,7 +775,7 @@ export default function AdminWasselniSettings() {
                 {t('bot.deliveryCompanyDesc')}
               </p>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.defaultDeliveryCompany')}</Label>
                   <Input
@@ -798,9 +798,9 @@ export default function AdminWasselniSettings() {
             </div>
 
             {/* Tracking Variables */}
-            <div className="bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-lg">
+            <div className="bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-700 shadow-lg">
               <div className="flex items-center gap-2 mb-4">
-                <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-500/20">
+                <div className="p-1.5 rounded-lg bg-orange-100 dark:bg-orange-500/20">
                   <Code2 className="h-4 w-4 text-orange-600 dark:text-orange-400" />
                 </div>
                 <h4 className="font-bold text-base text-slate-900 dark:text-white">{t('bot.trackingVariables')}</h4>
@@ -829,20 +829,20 @@ export default function AdminWasselniSettings() {
         )}
 
         {/* Save Button */}
-        <div className="fixed bottom-6 right-6">
+        <div className="fixed bottom-4 right-4">
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {saving ? (
               <>
-                <Loader2 className="h-5 w-5 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
                 {t('bot.saving')}
               </>
             ) : (
               <>
-                <Save className="h-5 w-5" />
+                <Save className="h-4 w-4" />
                 {t('bot.saveChanges')}
               </>
             )}

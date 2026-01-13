@@ -14,12 +14,12 @@ type InferredField = {
 
 type TemplateExtraction = {
   templateId: string;
-  filePath: string;
   fields: Record<string, InferredField>;
 };
 
 const WORKSPACE_ROOT = process.cwd();
-const TEMPLATE_DIR = path.join(WORKSPACE_ROOT, 'client', 'components', 'templates');
+// Storefront templates live under gold/<templateId>/*.tsx
+const TEMPLATE_DIR = path.join(WORKSPACE_ROOT, 'client', 'pages', 'storefront', 'templates', 'gold');
 const OUT_FILE = path.join(WORKSPACE_ROOT, 'client', 'lib', 'generatedTemplateSettings.ts');
 
 function isStringLiteral(node: ts.Node): node is ts.StringLiteral {
@@ -135,12 +135,12 @@ function extractDefaultsFromInitializer(node: ts.Expression): { key: string; def
   return null;
 }
 
-function walk(sourceFile: ts.SourceFile, extraction: TemplateExtraction) {
+function walk(sourceFile: ts.SourceFile, extraction: TemplateExtraction, sourcePath: string) {
   function visit(node: ts.Node) {
     // Any access like settings.foo
     const keyFromAccess = getSettingsKeyFromAccess(node);
     if (keyFromAccess) {
-      addKey(extraction, keyFromAccess, `${path.basename(extraction.filePath)}:${sourceFile.getLineAndCharacterOfPosition(node.getStart()).line + 1}`);
+      addKey(extraction, keyFromAccess, `${path.basename(sourcePath)}:${sourceFile.getLineAndCharacterOfPosition(node.getStart()).line + 1}`);
     }
 
     // const x = settings.foo || 'default'
@@ -150,7 +150,7 @@ function walk(sourceFile: ts.SourceFile, extraction: TemplateExtraction) {
         addKey(
           extraction,
           maybe.key,
-          `${path.basename(extraction.filePath)}:${sourceFile.getLineAndCharacterOfPosition(node.getStart()).line + 1}`,
+          `${path.basename(sourcePath)}:${sourceFile.getLineAndCharacterOfPosition(node.getStart()).line + 1}`,
           maybe.defaultValue
         );
       }
@@ -173,7 +173,7 @@ function walk(sourceFile: ts.SourceFile, extraction: TemplateExtraction) {
           addKey(
             extraction,
             key,
-            `${path.basename(extraction.filePath)}:${sourceFile.getLineAndCharacterOfPosition(element.getStart()).line + 1}`,
+            `${path.basename(sourcePath)}:${sourceFile.getLineAndCharacterOfPosition(element.getStart()).line + 1}`,
             defaultValue
           );
         }
@@ -186,29 +186,49 @@ function walk(sourceFile: ts.SourceFile, extraction: TemplateExtraction) {
   visit(sourceFile);
 }
 
-async function main() {
+async function listTemplateSourceFiles(): Promise<Array<{ templateId: string; filePaths: string[] }>> {
   const entries = await fs.readdir(TEMPLATE_DIR, { withFileTypes: true });
-  const templateFiles = entries
-    .filter((e) => e.isFile() && e.name.endsWith('.tsx'))
-    .map((e) => path.join(TEMPLATE_DIR, e.name));
+
+  const templateDirs = entries
+    .filter((e) => e.isDirectory())
+    .map((e) => e.name)
+    .filter((name) => !name.startsWith('__') && name !== 'types');
+
+  const results: Array<{ templateId: string; filePaths: string[] }> = [];
+
+  for (const templateId of templateDirs) {
+    const dirPath = path.join(TEMPLATE_DIR, templateId);
+    const files = await fs.readdir(dirPath, { withFileTypes: true });
+    const tsxFiles = files
+      .filter((f) => f.isFile() && f.name.endsWith('.tsx'))
+      .map((f) => path.join(dirPath, f.name))
+      .filter((filePath) => !filePath.endsWith('.test.tsx'));
+
+    if (tsxFiles.length === 0) continue;
+    results.push({ templateId, filePaths: tsxFiles });
+  }
+
+  return results;
+}
+
+async function main() {
+  const templateGroups = await listTemplateSourceFiles();
 
   const extractions: TemplateExtraction[] = [];
 
-  for (const filePath of templateFiles) {
-    const templateId = path.basename(filePath, '.tsx');
-    const src = await fs.readFile(filePath, 'utf8');
-    const sourceFile = ts.createSourceFile(filePath, src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-
+  for (const group of templateGroups) {
     const extraction: TemplateExtraction = {
-      templateId,
-      filePath,
+      templateId: group.templateId,
       fields: {},
     };
 
-    walk(sourceFile, extraction);
+    for (const filePath of group.filePaths) {
+      const src = await fs.readFile(filePath, 'utf8');
+      const sourceFile = ts.createSourceFile(filePath, src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+      walk(sourceFile, extraction, filePath);
+    }
 
-    // Keep only settings keys that look like actual template settings
-    // (avoid noise from local variables named settings in future)
+    // Keep only templates that actually reference settings.*
     const keys = Object.keys(extraction.fields);
     if (keys.length > 0) extractions.push(extraction);
   }

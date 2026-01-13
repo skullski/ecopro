@@ -145,8 +145,8 @@ export const getStorefrontSettings: RequestHandler = async (req, res) => {
         .replace(/^gold-/, '')
         .replace(/-gold$/, '');
       if (!raw) return 'pro';
-      if (raw === 'classic') return 'shiro-hana';
-      if (raw === 'baby') return 'babyos';
+      if (raw === 'shiro-hana') return 'pro';
+      if (raw === 'babyos' || raw === 'baby') return 'kids';
       return raw;
     };
     
@@ -293,6 +293,9 @@ export const getPublicProduct: RequestHandler = async (req, res) => {
     return res.status(400).json({ error: 'Invalid request' });
   }
 
+  const shouldTrackView = String((req.query as any)?.track_view || '') === '1' ||
+    String(req.get('x-track-view') || '') === '1';
+
   try {
     const pool = await ensureConnection();
     if (!isProduction) {
@@ -334,21 +337,28 @@ export const getPublicProduct: RequestHandler = async (req, res) => {
       }
 
       const mprod = mResult.rows[0];
-      await pool.query('UPDATE marketplace_products SET views = views + 1 WHERE id = $1', [mprod.id]);
-      return res.json({ ...mprod, views: (mprod.views || 0) + 1 });
+      if (shouldTrackView) {
+        await pool.query('UPDATE marketplace_products SET views = views + 1 WHERE id = $1', [mprod.id]);
+      }
+      return res.json({
+        ...mprod,
+        views: (mprod.views || 0) + (shouldTrackView ? 1 : 0),
+      });
     }
 
     const product = productResult.rows[0];
 
     // Increment view count
-    await pool.query(
-      'UPDATE client_store_products SET views = views + 1 WHERE id = $1',
-      [product.id]
-    );
+    if (shouldTrackView) {
+      await pool.query(
+        'UPDATE client_store_products SET views = views + 1 WHERE id = $1',
+        [product.id]
+      );
+    }
 
     res.json({
       ...product,
-      views: product.views + 1, // Return updated view count
+      views: (product.views || 0) + (shouldTrackView ? 1 : 0),
     });
   } catch (error) {
     console.error('Get public product error:', isProduction ? (error as any)?.message : error);

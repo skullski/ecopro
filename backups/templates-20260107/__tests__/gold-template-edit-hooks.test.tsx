@@ -7,8 +7,6 @@ import type { TemplateProps, StoreProduct } from '../../types';
 
 import BagsTemplate from '../bags/BagsTemplate';
 import JewelryTemplate from '../jewelry/JewelryTemplate';
-import BabyosTemplate from '../babyos/BabyosTemplate';
-import ShiroHanaTemplate from '../shiro-hana/ShiroHanaTemplate';
 
 beforeAll(() => {
   // Some templates use ResizeObserver to compute container-width breakpoints.
@@ -61,7 +59,7 @@ const makeBaseProps = (): TemplateProps => {
     filtered: products,
     settings: {
       store_name: 'Test Store',
-      template: 'shiro-hana',
+      template: 'pro',
     },
     categories: ['Test'],
     searchQuery: '',
@@ -186,13 +184,5 @@ describe('Templates: edit hooks', () => {
 
   it('Jewelry: clicking each data-edit-path triggers onSelect(path)', () => {
     expectAllEditHooksClickable(JewelryTemplate);
-  });
-
-  it('Babyos: clicking each data-edit-path triggers onSelect(path)', () => {
-    expectAllEditHooksClickable(BabyosTemplate);
-  });
-
-  it('Shiro Hana: clicking each data-edit-path triggers onSelect(path)', () => {
-    expectAllEditHooksClickable(ShiroHanaTemplate);
   });
 });

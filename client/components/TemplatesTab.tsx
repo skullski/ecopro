@@ -79,7 +79,8 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
       .toLowerCase()
       .replace(/^gold-/, '')
       .replace(/-gold$/, '');
-    if (raw === 'baby') return 'babyos';
+    if (raw === 'baby' || raw === 'babyos') return 'kids';
+    if (raw === 'shiro-hana') return 'pro';
     if (raw === 'simple') return 'minimal';
     if (raw === 'traditional') return 'classic';
     if (raw === 'bold') return 'modern';
@@ -143,8 +144,6 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
   // Fallback templates in case API fails
   const FALLBACK_TEMPLATES: Template[] = [
     // Original templates
-    { id: 'shiro-hana', name: 'Shiro Hana', category: 'Storefront', icon: '🍣', description: 'Clean modern storefront with hero + product grid.', image: '/template-previews/store.png', colors: { primary: '#111827', secondary: '#f8fafc', accent: '#22c55e' }, features: ['Hero', 'Product grid', 'Header & footer', 'Universal schema'] },
-    { id: 'babyos', name: 'Baby', category: 'Storefront', icon: '👶', description: 'Playful baby-storefront with editable layout and colors.', image: '/template-previews/baby.png', colors: { primary: '#F97316', secondary: '#FDF8F3', accent: '#F97316' }, features: ['Hero', 'Category pills', 'Product grid', 'Fully editable tokens'] },
     { id: 'bags', name: 'Bags', category: 'Storefront', icon: '👜', description: 'Editorial layout with spotlight cards and collection grid.', image: '/template-previews/bags.png', colors: { primary: '#111827', secondary: '#ffffff', accent: '#111827' }, features: ['Editorial hero', 'Spotlight cards', 'Collection grid', 'Shared edit contract'] },
     { id: 'jewelry', name: 'Jewelry', category: 'Storefront', icon: '💍', description: 'Minimal luxury jewelry with gold glow and collection filtering.', image: '/template-previews/jewelry.png', colors: { primary: '#111827', secondary: '#ffffff', accent: '#d4af37' }, features: ['Sticky header', 'Hero highlight', 'Collection filters', 'Product grid'] },
     { id: 'fashion', name: 'Fashion', category: 'Storefront', icon: '👗', description: 'Modern fashion storefront with editorial layout.', image: '/template-previews/fashion.png', colors: { primary: '#111827', secondary: '#ffffff', accent: '#ef4444' }, features: ['Editorial hero', 'Fashion grid', 'Dual CTAs', 'Badge editing'] },

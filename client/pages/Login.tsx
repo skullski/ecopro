@@ -104,15 +104,15 @@ export default function Login() {
   }
 
   return (
-    <section className="relative container mx-auto py-8 sm:py-12 min-h-[70vh] flex items-center justify-center overflow-hidden">
+    <section className="relative container mx-auto py-6 sm:py-10 min-h-[70vh] flex items-center justify-center overflow-hidden">
       <FloatingShapes variant="section" colors="cool" />
       
-      <div className="relative z-10 mx-auto max-w-sm sm:max-w-md w-full px-4">
-        <div className="rounded-xl sm:rounded-2xl border-2 border-primary/20 bg-gradient-to-br from-card via-card to-primary/5 p-6 sm:p-8 shadow-2xl backdrop-blur-sm">
+      <div className="relative z-10 mx-auto max-w-sm sm:max-w-sm w-full px-3">
+        <div className="rounded-xl sm:rounded-2xl border-2 border-primary/20 bg-gradient-to-br from-card via-card to-primary/5 p-5 sm:p-7 shadow-2xl backdrop-blur-sm">
           {/* Header */}
-          <div className="text-center mb-3 sm:mb-5">
-            <div className="inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-primary to-accent mb-3 shadow-lg">
-              <LogIn className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+          <div className="text-center mb-2 sm:mb-4">
+            <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-primary to-accent mb-2 shadow-lg">
+              <LogIn className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
             <h2 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               {t("login") || "Log in"}
@@ -121,12 +121,12 @@ export default function Login() {
           </div>
           
           {error && (
-            <div className={`p-4 rounded-xl text-sm ${isLocked 
+            <div className={`p-3 rounded-xl text-sm ${isLocked 
               ? 'bg-orange-500/10 border-2 border-orange-500/30' 
               : 'bg-red-500/10 border-2 border-red-500/20'}`}>
               {isLocked ? (
                 <div className="flex items-start gap-3">
-                  <AlertTriangle className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" />
+                  <AlertTriangle className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="font-semibold text-orange-600 dark:text-orange-400 mb-1">Account Locked</p>
                     <p className="text-orange-600/80 dark:text-orange-400/80">{error.replace('Account locked: ', '')}</p>
@@ -139,26 +139,26 @@ export default function Login() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-3">
+          <form onSubmit={handleSubmit} className="space-y-2">
             {/* Google Sign-In Button */}
             {googleEnabled && (
               <>
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full flex items-center justify-center gap-2 py-5 border-2 hover:bg-muted/50 transition-all"
+                  className="w-full flex items-center justify-center gap-2 py-4 border-2 hover:bg-muted/50 transition-all"
                   onClick={handleGoogleLogin}
                   disabled={loading || googleLoading}
                 >
                   {googleLoading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    <GoogleIcon className="w-5 h-5" />
+                    <GoogleIcon className="w-4 h-4" />
                   )}
                   <span>{t('login.google') || 'Continue with Google'}</span>
                 </Button>
                 
-                <div className="relative my-4">
+                <div className="relative my-3">
                   <div className="absolute inset-0 flex items-center">
                     <span className="w-full border-t border-muted-foreground/20" />
                   </div>
@@ -177,7 +177,7 @@ export default function Login() {
               <input 
                 value={email} 
                 onChange={(e) => setEmail(e.target.value)} 
-                className="w-full rounded-lg border-2 border-primary/20 bg-background px-3 py-2 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all" 
+                className="w-full rounded-lg border-2 border-primary/20 bg-background px-3 py-1.5 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all" 
                 placeholder={t("auth.email")}
                 type="email"
                 required
@@ -199,7 +199,7 @@ export default function Login() {
                 type="password" 
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
-                className="w-full rounded-lg border-2 border-primary/20 bg-background px-3 py-2 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all" 
+                className="w-full rounded-lg border-2 border-primary/20 bg-background px-3 py-1.5 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all" 
                 placeholder={t('auth.passwordPlaceholder')}
                 required
                 disabled={loading}
@@ -209,7 +209,7 @@ export default function Login() {
             <div className="flex items-center justify-between pt-1">
               <Button 
                 type="submit" 
-                className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-lg hover:shadow-xl transition-all py-4 sm:py-5 text-sm sm:text-base"
+                className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-lg hover:shadow-xl transition-all py-3 sm:py-4 text-sm sm:text-base"
                 disabled={loading}
               >
                 {loading ? (
@@ -224,7 +224,7 @@ export default function Login() {
             </div>
           </form>
           
-          <div className="mt-4 text-center">
+          <div className="mt-3 text-center">
             <p className="text-xs sm:text-sm text-muted-foreground">
               {t('login.noAccount')}{" "}
               <Link to="/signup" className="text-primary hover:underline font-medium">

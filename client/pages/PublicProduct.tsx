@@ -36,7 +36,7 @@ const PublicProduct: React.FC = () => {
     setError(null);
     setProduct(null);
     setSeller(null);
-    fetch(`/api/store/${storeSlug}/${productSlug}`)
+    fetch(`/api/store/${storeSlug}/${productSlug}?track_view=1`)
       .then(async (res) => {
         if (!res.ok) throw new Error('Product not found');
         return res.json();

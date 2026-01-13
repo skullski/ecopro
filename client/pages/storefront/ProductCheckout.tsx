@@ -778,6 +778,66 @@ export default function ProductCheckout() {
               </div>
             )}
 
+            {messengerInfo && (
+              <div className="bg-blue-600/10 border border-blue-600/20 rounded-xl p-4 mb-4 text-left">
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <div className="flex items-center gap-2">
+                    <MessageCircle className="w-5 h-5 text-blue-300" />
+                    <div>
+                      <p className="text-white font-bold text-sm">Messenger confirmation</p>
+                      <p className="text-white/70 text-xs">
+                        {messengerConnected
+                          ? 'Connected ✓'
+                          : waitingForMessengerConnection
+                            ? 'Waiting for connection...'
+                            : messengerInfo.enabled
+                              ? 'Not connected yet'
+                              : 'Not available'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {!messengerConnected ? (
+                    <button
+                      onClick={handleConnectMessenger}
+                      disabled={
+                        !messengerInfo.enabled ||
+                        !formData.phone ||
+                        formData.phone.replace(/\D/g, '').length < 9 ||
+                        waitingForMessengerConnection
+                      }
+                      className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold disabled:opacity-50 flex items-center gap-1"
+                    >
+                      {waitingForMessengerConnection ? (
+                        <>
+                          <span className="animate-spin">⏳</span>
+                          Waiting...
+                        </>
+                      ) : messengerInfo.enabled ? (
+                        'Connect'
+                      ) : (
+                        'Unavailable'
+                      )}
+                    </button>
+                  ) : (
+                    <span className="text-green-300 text-xs font-bold">Ready</span>
+                  )}
+                </div>
+
+                <div className="text-white/80 text-xs leading-relaxed">
+                  {messengerInfo.enabled ? (
+                    <>
+                      <p className="mb-1">You will receive:</p>
+                      <p>1) Order received message</p>
+                      <p>2) Confirmation buttons (Confirm / Cancel)</p>
+                    </>
+                  ) : (
+                    <p>Messenger tracking is not enabled for this store.</p>
+                  )}
+                </div>
+              </div>
+            )}
+
             <button
               onClick={() => navigate('/')}
               className="w-full py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold transition-all"
@@ -887,7 +947,7 @@ export default function ProductCheckout() {
                   {loadingDeliveryPrice ? (
                     <span className="text-white/40">Loading...</span>
                   ) : deliveryPrice !== null ? (
-                    <span className="text-white/80">{deliveryPrice.toLocaleString()} DZD</span>
+                    <span className="text-white font-semibold">+{deliveryPrice.toLocaleString()} DZD</span>
                   ) : (
                     <span className="text-white/40">Select wilaya</span>
                   )}
@@ -978,20 +1038,26 @@ export default function ProductCheckout() {
             )}
 
             {/* Messenger */}
-            {messengerInfo?.enabled && (
+            {messengerInfo && (
               <div className="flex items-center justify-between p-2 rounded-lg bg-blue-600/10 border border-blue-600/20">
                 <div className="flex items-center gap-2">
                   <MessageCircle className="w-4 h-4 text-blue-500" />
                   <span className="text-white text-sm">Track via Messenger</span>
                   {messengerConnected && <span className="text-green-400 text-xs">✓</span>}
+                  {!messengerInfo.enabled && <span className="text-white/50 text-xs">(Not available)</span>}
                 </div>
                 {!messengerConnected && (
-                  <button 
-                    onClick={handleConnectMessenger} 
-                    disabled={!formData.phone || formData.phone.replace(/\D/g, '').length < 9 || waitingForMessengerConnection} 
+                  <button
+                    onClick={handleConnectMessenger}
+                    disabled={
+                      !messengerInfo.enabled ||
+                      !formData.phone ||
+                      formData.phone.replace(/\D/g, '').length < 9 ||
+                      waitingForMessengerConnection
+                    }
                     className="px-3 py-1 rounded bg-blue-600 text-white text-xs font-bold disabled:opacity-50"
                   >
-                    {waitingForMessengerConnection ? 'Waiting...' : 'Connect'}
+                    {waitingForMessengerConnection ? 'Waiting...' : messengerInfo.enabled ? 'Connect' : 'Unavailable'}
                   </button>
                 )}
               </div>

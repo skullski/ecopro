@@ -43,13 +43,14 @@ export default function PixelScripts({ storeSlug }: PixelScriptsProps) {
       .then(res => res.json())
       .then(data => {
         setConfig(data);
+        setBackendPixelPreferenceFromConfig(data);
         // Track PageView to our backend when pixel config loads (only once per page)
         if (data.is_facebook_enabled || data.is_tiktok_enabled) {
           // Prevent duplicate PageView on same URL
-          const lastPageView = sessionStorage.getItem('last_pageview_url');
-          const currentUrl = window.location.pathname;
-          if (lastPageView !== currentUrl) {
-            sessionStorage.setItem('last_pageview_url', currentUrl);
+          const lastPageViewKey = sessionStorage.getItem('last_pageview_key');
+          const currentKey = `${storeSlug}|${window.location.pathname}${window.location.search}`;
+          if (lastPageViewKey !== currentKey) {
+            sessionStorage.setItem('last_pageview_key', currentKey);
             trackPageView(storeSlug);
           }
         }
@@ -159,13 +160,15 @@ export function trackTikTokEvent(eventName: string, params?: Record<string, any>
  */
 function trackToBackend(storeSlug: string, eventName: string, params?: Record<string, any>) {
   if (!storeSlug) return;
+
+  const pixelType = backendPixelTypePreference || 'facebook';
   
   fetch('/api/pixels/track', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       store_slug: storeSlug,
-      pixel_type: 'facebook', // We only need one record per event for stats
+      pixel_type: pixelType,
       event_name: eventName,
       event_data: params || {},
       page_url: window.location.href,
@@ -208,6 +211,22 @@ function getVisitorId(): string {
 
 // Store the current store slug for backend tracking
 let currentStoreSlug = '';
+
+// Used to choose the backend pixel_type for analytics buckets.
+// We intentionally keep ONE backend record per event.
+let backendPixelTypePreference: 'facebook' | 'tiktok' | '' = '';
+
+function setBackendPixelPreferenceFromConfig(data: PixelConfig) {
+  if (data?.is_facebook_enabled && data?.facebook_pixel_id) {
+    backendPixelTypePreference = 'facebook';
+    return;
+  }
+  if (data?.is_tiktok_enabled && data?.tiktok_pixel_id) {
+    backendPixelTypePreference = 'tiktok';
+    return;
+  }
+  backendPixelTypePreference = '';
+}
 
 export function setCurrentStoreSlug(slug: string) {
   currentStoreSlug = slug;

@@ -5,6 +5,15 @@ import { fileURLToPath } from 'url';
 
 let pool: Pool | null = null;
 
+let lastPingAt = 0;
+let pingInFlight: Promise<void> | null = null;
+
+function readBoolEnv(name: string, fallback: boolean): boolean {
+  const raw = String(process.env[name] ?? '').trim().toLowerCase();
+  if (!raw) return fallback;
+  return raw === '1' || raw === 'true' || raw === 'yes' || raw === 'on';
+}
+
 function readIntEnv(name: string, fallback: number): number {
   const raw = process.env[name];
   if (!raw) return fallback;
@@ -99,6 +108,8 @@ export async function ensureConnection(retries = getDbDefaults().retries): Promi
         console.log('Connection terminated - pool will be recreated on next query');
         const oldPool = pool;
         pool = null;
+        lastPingAt = 0;
+        pingInFlight = null;
         // Try to gracefully end the old pool (don't await, just let it clean up)
         if (oldPool) {
           oldPool.end().catch(() => {});
@@ -113,37 +124,62 @@ export async function ensureConnection(retries = getDbDefaults().retries): Promi
     throw new Error('Pool was reset during initialization - retrying');
   }
 
+  // IMPORTANT: avoid doing a DB ping on every request.
+  // Many routes call ensureConnection() before running their real query.
+  // Pinging here for every call adds an extra round-trip to Render Postgres and
+  // can make the server feel very slow under load.
+  const isProd = process.env.NODE_ENV === 'production';
+  const pingTtlMs = readIntEnv('DB_PING_TTL_MS', isProd ? 30_000 : 60_000);
+  const pingEveryCall = readBoolEnv('DB_PING_EVERY_CALL', false);
+
+  const now = Date.now();
+  const needsPing = pingEveryCall || pingTtlMs > 0 && (lastPingAt === 0 || now - lastPingAt > pingTtlMs);
+  if (!needsPing) {
+    return currentPool;
+  }
+
   let attempt = 0;
   let lastError: any = null;
   const defaults = getDbDefaults();
-  while (attempt <= retries) {
-    try {
-      // Check if pool was reset by error handler
-      if (!pool || pool !== currentPool) {
-        throw new Error('Pool was reset - need to reinitialize');
+
+  if (!pingInFlight) {
+    pingInFlight = (async () => {
+      while (attempt <= retries) {
+        try {
+          // Check if pool was reset by error handler
+          if (!pool || pool !== currentPool) {
+            throw new Error('Pool was reset - need to reinitialize');
+          }
+          const start = Date.now();
+          await currentPool.query('SELECT 1');
+          const elapsedMs = Date.now() - start;
+          lastPingAt = Date.now();
+          if (elapsedMs > 2000) {
+            console.warn(`DB ping succeeded but was slow (${elapsedMs}ms).`);
+          }
+          return;
+        } catch (err) {
+          lastError = err;
+          console.error(`DB connect attempt ${attempt + 1} failed:`, (err as any)?.message || err);
+
+          // If pool was reset, break out and let caller retry
+          if (!pool || pool !== currentPool) {
+            throw new Error('Pool reset during connection attempt');
+          }
+
+          const delay = Math.min(defaults.retryBaseDelayMs * Math.pow(2, attempt), defaults.retryMaxDelayMs);
+          await new Promise(res => setTimeout(res, delay));
+          attempt++;
+        }
       }
-      const start = Date.now();
-      await currentPool.query('SELECT 1');
-      const elapsedMs = Date.now() - start;
-      if (elapsedMs > 2000) {
-        console.warn(`DB ping succeeded but was slow (${elapsedMs}ms).`);
-      }
-      return currentPool;
-    } catch (err) {
-      lastError = err;
-      console.error(`DB connect attempt ${attempt + 1} failed:`, (err as any)?.message || err);
-      
-      // If pool was reset, break out and let caller retry
-      if (!pool || pool !== currentPool) {
-        throw new Error('Pool reset during connection attempt');
-      }
-      
-      const delay = Math.min(defaults.retryBaseDelayMs * Math.pow(2, attempt), defaults.retryMaxDelayMs);
-      await new Promise(res => setTimeout(res, delay));
-      attempt++;
-    }
+      throw lastError || new Error('Failed to establish database connection');
+    })().finally(() => {
+      pingInFlight = null;
+    });
   }
-  throw lastError || new Error('Failed to establish database connection');
+
+  await pingInFlight;
+  return currentPool;
 }
 
 // Get the current pool, ensuring connection first

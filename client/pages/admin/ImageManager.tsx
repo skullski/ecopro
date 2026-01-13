@@ -167,12 +167,12 @@ export default function ImageManager() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 space-y-4">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Image className="w-6 h-6" />
+            <Image className="w-5 h-5" />
             {t('imageManager.title') || 'Image Manager'}
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
@@ -186,11 +186,11 @@ export default function ImageManager() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <Card>
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <Image className="w-5 h-5 text-blue-600" />
+          <CardContent className="flex items-center gap-3 p-3">
+            <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+              <Image className="w-4 h-4 text-blue-600" />
             </div>
             <div>
               <p className="text-2xl font-bold">{data?.total || 0}</p>
@@ -199,9 +199,9 @@ export default function ImageManager() {
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-              <CheckCircle className="w-5 h-5 text-green-600" />
+          <CardContent className="flex items-center gap-3 p-3">
+            <div className="p-1.5 bg-green-100 dark:bg-green-900/30 rounded-lg">
+              <CheckCircle className="w-4 h-4 text-green-600" />
             </div>
             <div>
               <p className="text-2xl font-bold">{data?.inUse || 0}</p>
@@ -210,9 +210,9 @@ export default function ImageManager() {
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-              <FileWarning className="w-5 h-5 text-orange-600" />
+          <CardContent className="flex items-center gap-3 p-3">
+            <div className="p-1.5 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+              <FileWarning className="w-4 h-4 text-orange-600" />
             </div>
             <div>
               <p className="text-2xl font-bold">{data?.orphaned || 0}</p>
@@ -223,18 +223,18 @@ export default function ImageManager() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Search images..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="pl-9 h-9"
           />
         </div>
         <Select value={filterType} onValueChange={(v) => setFilterType(v as any)}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[170px] h-9">
             <Filter className="w-4 h-4 mr-2" />
             <SelectValue placeholder="Filter" />
           </SelectTrigger>
@@ -244,7 +244,7 @@ export default function ImageManager() {
             <SelectItem value="orphaned">Unused Only</SelectItem>
           </SelectContent>
         </Select>
-        <div className="flex border rounded-md">
+        <div className="flex border rounded-md h-9">
           <Button 
             variant={viewMode === 'grid' ? 'default' : 'ghost'} 
             size="sm"
@@ -267,11 +267,11 @@ export default function ImageManager() {
       {/* Images */}
       {filteredImages.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-          <Image className="w-16 h-16 mb-4 opacity-30" />
+          <Image className="w-14 h-14 mb-3 opacity-30" />
           <p>No images found</p>
         </div>
       ) : viewMode === 'grid' ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
           {filteredImages.map((img) => (
             <div 
               key={img.url}
@@ -294,7 +294,7 @@ export default function ImageManager() {
               {img.isOrphaned && (
                 <Badge 
                   variant="outline" 
-                  className="absolute top-2 left-2 bg-orange-100 text-orange-700 border-orange-300"
+                  className="absolute top-1.5 left-1.5 bg-orange-100 text-orange-700 border-orange-300"
                 >
                   Unused
                 </Badge>
@@ -302,38 +302,39 @@ export default function ImageManager() {
               {img.isExternal && (
                 <Badge 
                   variant="outline" 
-                  className="absolute top-2 right-2 bg-blue-100 text-blue-700 border-blue-300 text-[10px]"
+                  className="absolute top-1.5 right-1.5 bg-blue-100 text-blue-700 border-blue-300 text-[10px]"
                 >
                   URL
                 </Badge>
               )}
               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); setSelectedImage(img); }}>
+                <Button size="sm" variant="secondary" className="h-8 w-8 p-0" onClick={(e) => { e.stopPropagation(); setSelectedImage(img); }}>
                   <Eye className="w-4 h-4" />
                 </Button>
                 <Button 
                   size="sm" 
                   variant="destructive" 
+                  className="h-8 w-8 p-0"
                   onClick={(e) => { e.stopPropagation(); handleDeleteClick(img); }}
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
-              <div className="p-2 text-xs truncate">{img.filename.slice(0, 20)}...</div>
+              <div className="p-1.5 text-xs truncate">{img.filename.slice(0, 20)}...</div>
             </div>
           ))}
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           {filteredImages.map((img) => (
             <div 
               key={img.url}
-              className={`flex items-center gap-4 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer ${
+              className={`flex items-center gap-3 p-2.5 border rounded-lg hover:bg-muted/50 cursor-pointer ${
                 img.isOrphaned ? 'border-orange-300 dark:border-orange-700' : ''
               } ${img.isExternal ? 'border-dashed' : ''}`}
               onClick={() => setSelectedImage(img)}
             >
-              <div className="w-16 h-16 rounded overflow-hidden flex-shrink-0 bg-muted">
+              <div className="w-14 h-14 rounded overflow-hidden flex-shrink-0 bg-muted">
                 <img 
                   src={img.url} 
                   alt={img.filename}
@@ -371,6 +372,7 @@ export default function ImageManager() {
                 <Button 
                   size="sm" 
                   variant="destructive"
+                  className="h-8 w-8 p-0"
                   onClick={(e) => { e.stopPropagation(); handleDeleteClick(img); }}
                 >
                   <Trash2 className="w-4 h-4" />
@@ -383,10 +385,10 @@ export default function ImageManager() {
 
       {/* Image Detail Dialog */}
       <Dialog open={!!selectedImage} onOpenChange={(open) => !open && setSelectedImage(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl p-4">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Image className="w-5 h-5" />
+              <Image className="w-4 h-4" />
               Image Details
             </DialogTitle>
           </DialogHeader>
@@ -512,8 +514,8 @@ export default function ImageManager() {
 
       {/* Info Card */}
       <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
-        <CardContent className="flex gap-3 p-4">
-          <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+        <CardContent className="flex gap-2 p-3">
+          <Info className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-muted-foreground">
             <p className="font-medium text-foreground mb-1">About Image Management</p>
             <ul className="list-disc list-inside space-y-1">

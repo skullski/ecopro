@@ -8,12 +8,13 @@ import { apiFetch } from '@/lib/api';
 
 const FEATURES = [
   'Unlimited products & orders',
-  'Unlimited staff members',
-  '12 premium templates',
-  'WhatsApp, Telegram, Viber & Facebook bots',
+  'Staff accounts & permissions',
+  'Stock & inventory management',
+  '85 premium templates',
+  'Public storefront + checkout (Cash on Delivery)',
+  'WhatsApp, Telegram, Viber & Messenger bots',
   'Facebook & TikTok Pixel tracking',
   'Analytics dashboard',
-  'Custom domain support',
   'Delivery company integrations',
   'Voucher & discount codes',
   'No commissions',
@@ -81,10 +82,10 @@ export default function Pricing() {
               <h1 className="text-xl font-bold">Unlimited Plan</h1>
             </div>
             <div className="flex items-baseline justify-center gap-1">
-              <span className="text-4xl font-black">2,500</span>
+              <span className="text-4xl font-black">2000</span>
               <span className="text-lg opacity-90">DZD/mo</span>
             </div>
-            <p className="text-sm opacity-80 mt-1">~$10 USD</p>
+            <p className="text-sm opacity-80 mt-1">~$8/mo</p>
           </div>
 
           {/* Content */}
