@@ -41,11 +41,20 @@ export default function MonochromeTemplate(props: TemplateProps) {
   const cardBg = settings.template_card_bg || '#fafafa';
 
   const storeName = settings.store_name || 'MONO';
-  const heroTitle = settings.template_hero_heading || 'Pure Simplicity';
+  
+  
+  const copyright = asString(settings.template_copyright) || `© 2026 ${storeName}`;
+const storeLogo = asString(settings.store_logo);
+  const storeDescription = asString(settings.store_description);
+const heroTitle = settings.template_hero_heading || 'Pure Simplicity';
   const heroSubtitle = settings.template_hero_subtitle || 'Less is more';
   const ctaText = settings.template_button_text || 'SHOP';
 
-  // Layout settings
+  
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+  const addToCartLabel = asString(settings.template_add_to_cart_label) || 'View';
+// Layout settings
   const gridColumns = resolveInt(settings.template_grid_columns, 4, 2, 6);
   const gridGap = resolveInt(settings.template_grid_gap, 2, 0, 48);
   const baseSpacing = resolveInt(settings.template_spacing, 20, 8, 32);
@@ -65,7 +74,7 @@ export default function MonochromeTemplate(props: TemplateProps) {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: bg, color: text, fontFamily: 'system-ui, sans-serif' }} data-edit-path="__root">
       <header style={{ padding: '24px 32px', display: 'flex', justifyContent: 'center', alignItems: 'center', borderBottom: '1px solid #000' }} data-edit-path="layout.header" onClick={(e) => clickGuard(e, 'layout.header')}>
-        <h1 style={{ fontSize: '20px', fontWeight: 400, letterSpacing: '8px' }} data-edit-path="layout.header.logo" onClick={(e) => clickGuard(e, 'layout.header.logo')}>{storeName}</h1>
+        <h1 style={{ fontSize: '20px', fontWeight: 400, letterSpacing: '8px' }} data-edit-path="layout.header.logo" onClick={(e) => clickGuard(e, 'layout.header.logo')}>{settings.store_logo ? (<img src={settings.store_logo} alt={storeName} style={{ width: 40, height: 40, borderRadius: '9999px', objectFit: 'cover' }} />) : null}{storeName}</h1>
       </header>
 
       <section style={{ padding: '120px 24px', textAlign: 'center' }} data-edit-path="layout.hero" onClick={(e) => clickGuard(e, 'layout.hero')}>
@@ -82,20 +91,36 @@ export default function MonochromeTemplate(props: TemplateProps) {
         </div>
       )}
 
-      <section style={{ padding: `${sectionSpacing}px 24px`, maxWidth: '1400px', margin: '0 auto' }} data-edit-path="layout.products">
+      <section style={{ padding: `${sectionSpacing}px 24px`, maxWidth: '1400px', margin: '0 auto' }} data-edit-path="layout.grid">
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: `${gridGap}px` }}>
           {products.map(product => (
-            <div key={product.id} style={{ backgroundColor: cardBg, overflow: 'hidden', cursor: canManage ? 'default' : 'pointer', borderRadius: `${cardRadius}px`, transition: `transform ${animationSpeed}ms` }} data-edit-path={`layout.products.${product.id}`}
+            <div key={product.id} style={{ backgroundColor: cardBg, overflow: 'hidden', cursor: canManage ? 'default' : 'pointer', borderRadius: `${cardRadius}px`, transition: `transform ${animationSpeed}ms` }} data-edit-path={`layout.grid.items.${product.id}`}
               onMouseEnter={(e) => (e.currentTarget.style.transform = `scale(${hoverScale})`)}
               onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-              onClick={(e) => { e.stopPropagation(); if (!canManage && product.slug) props.navigate(product.slug); else if (canManage) onSelect(`layout.products.${product.id}`); }}>
+              onClick={(e) => { e.stopPropagation(); if (!canManage && product.slug) props.navigate(product.slug); else if (canManage) onSelect(`layout.grid.items.${product.id}`); }}>
               <div style={{ aspectRatio: '1', backgroundColor: '#f0f0f0', overflow: 'hidden' }}>
                 {product.images?.[0] && <img src={product.images[0]} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'grayscale(100%)' }} />}
               </div>
               <div style={{ padding: `${baseSpacing}px` }}>
                 <p style={{ fontSize: '10px', letterSpacing: '2px', color: '#999', marginBottom: '8px' }}>{product.category || 'ITEM'}</p>
-                <h3 style={{ fontSize: '14px', fontWeight: 400, marginBottom: '8px' }}>{product.title}</h3>
+                <h3 style={{ fontSize: '14px', fontWeight: 400, marginBottom: '8px', color: productTitleColor}}>{product.title}</h3>
                 <p style={{ fontSize: '14px', fontWeight: 400 }}>{props.formatPrice(product.price)}</p>
+                <button
+                  style={{
+                    marginTop: '12px',
+                    width: '100%',
+                    backgroundColor: accent,
+                    color: '#fff',
+                    padding: '10px 12px',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                  }}
+                >
+                  {addToCartLabel}
+                </button>
               </div>
             </div>
           ))}
@@ -103,7 +128,7 @@ export default function MonochromeTemplate(props: TemplateProps) {
       </section>
 
       <footer style={{ padding: `${sectionSpacing + 16}px 24px`, marginTop: `${sectionSpacing}px`, textAlign: 'center', borderTop: '1px solid #000' }} data-edit-path="layout.footer" onClick={(e) => clickGuard(e, 'layout.footer')}>
-        <p style={{ color: '#999', letterSpacing: '2px', fontSize: '12px' }}>© {new Date().getFullYear()} {storeName}</p>
+        <p style={{ color: '#999', letterSpacing: '2px', fontSize: '12px' }}>{copyright}{storeDescription ? ` — ${storeDescription}` : ''}</p>
       </footer>
     </div>
   );

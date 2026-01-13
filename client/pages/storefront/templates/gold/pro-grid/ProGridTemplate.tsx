@@ -50,15 +50,28 @@ export default function ProGridTemplate(props: TemplateProps) {
   const muted = asString(settings.template_muted_color) || '#6b7280';
   const accent = asString(settings.template_accent_color) || '#2563eb';
 
-  const storeName = asString(settings.store_name) || 'GRID';
-  const heroTitle = asString(settings.template_hero_heading) || 'Shop the Catalog';
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+
+  const cardBg = asString(settings.template_card_bg) || "#ffffff";
+const storeName = asString(settings.store_name) || 'GRID';
+  
+  const copyright = asString(settings.template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
+const heroTitle = asString(settings.template_hero_heading) || 'Shop the Catalog';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Everything you need, organized and ready';
   const cta = asString(settings.template_button_text) || 'Browse All';
 
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 30) || [];
 
-  const descText = asString(settings.template_description_text);
-  const descColor = asString(settings.template_description_color) || muted;
+  
+
+  const sectionTitle = asString(settings.template_featured_title) || "Featured";
+  const sectionSubtitle = asString(settings.template_featured_subtitle) || "";
+  const addToCartLabel = asString(settings.template_add_to_cart_label) || "View";
+const descText = (asString(settings.template_description_text) || asString(settings.store_description)).trim();
+const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 14, 10, 32);
 
   // Layout settings
@@ -72,6 +85,8 @@ export default function ProGridTemplate(props: TemplateProps) {
 
   return (
     <div
+      data-edit-path="__root"
+      onClick={() => canManage && onSelect("__root")}
       className="ecopro-storefront"
       style={{
         minHeight: '100vh',

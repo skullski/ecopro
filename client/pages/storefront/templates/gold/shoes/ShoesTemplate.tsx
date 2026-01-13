@@ -40,9 +40,35 @@ export default function ShoesTemplate(props: TemplateProps) {
   const accent = settings.template_accent_color || '#ef4444';
   const cardBg = settings.template_card_bg || '#ffffff';
 
+  const logoUrl = asString(settings.store_logo) || asString((settings as any).logo_url);
   const storeName = settings.store_name || 'STEP UP';
+  const storeDescription = asString(settings.store_description);
   const heroTitle = settings.template_hero_heading || 'Walk in Style 👟';
+  const heroSubtitle = asString(settings.template_hero_subtitle) || 'Fresh drops, timeless classics, and everyday comfort.';
   const ctaText = settings.template_button_text || 'SHOP NOW';
+
+  const addLabel = asString((settings as any).template_add_to_cart_label) || 'VIEW';
+  const productTitleColor = asString((settings as any).template_product_title_color) || text;
+  const productPriceColor = asString((settings as any).template_product_price_color) || text;
+
+  const featuredTitle = asString((settings as any).template_featured_title) || 'Featured drops';
+  const featuredSubtitle = asString((settings as any).template_featured_subtitle) || '';
+
+  const rawSocial = (settings as any).template_social_links;
+  const socialLinks: Array<{ platform: string; url: string }> = (() => {
+    if (Array.isArray(rawSocial)) return rawSocial as any;
+    if (typeof rawSocial !== 'string' || !rawSocial.trim()) return [];
+    try {
+      const parsed = JSON.parse(rawSocial);
+      return Array.isArray(parsed) ? (parsed as any) : [];
+    } catch {
+      return [];
+    }
+  })()
+    .map((l: any) => ({ platform: asString(l?.platform), url: asString(l?.url) }))
+    .filter((l) => l.platform && l.url);
+
+  const copyright = asString((settings as any).template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
 
   // Layout settings
   const gridColumns = resolveInt(settings.template_grid_columns, 4, 2, 6);
@@ -64,12 +90,25 @@ export default function ShoesTemplate(props: TemplateProps) {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: bg, color: text, fontFamily: 'system-ui, sans-serif' }} data-edit-path="__root">
       <header style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: cardBg, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }} data-edit-path="layout.header" onClick={(e) => clickGuard(e, 'layout.header')}>
-        <h1 style={{ fontSize: '24px', fontWeight: 900, letterSpacing: '-1px' }} data-edit-path="layout.header.logo" onClick={(e) => clickGuard(e, 'layout.header.logo')}>{storeName}</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }} data-edit-path="layout.header.logo" onClick={(e) => clickGuard(e, 'layout.header.logo')}>
+          {logoUrl && <img src={logoUrl} alt={storeName} style={{ width: 40, height: 40, borderRadius: 9999, objectFit: 'cover' }} />}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <h1 style={{ fontSize: '24px', fontWeight: 900, letterSpacing: '-1px', margin: 0 }}>{storeName}</h1>
+            {(canManage || storeDescription) && (
+              <div style={{ fontSize: 12, color: '#666', fontWeight: 500, lineHeight: 1.3 }}>
+                {storeDescription || (canManage ? 'Add store description...' : '')}
+              </div>
+            )}
+          </div>
+        </div>
       </header>
 
       <section style={{ padding: '80px 24px', textAlign: 'center', backgroundColor: '#171717', color: '#fff' }} data-edit-path="layout.hero" onClick={(e) => clickGuard(e, 'layout.hero')}>
         <p style={{ fontSize: '12px', letterSpacing: '3px', color: accent, marginBottom: '20px' }}>NEW ARRIVALS</p>
         <h2 style={{ fontSize: breakpoint === 'mobile' ? '36px' : '64px', fontWeight: 900, marginBottom: '24px', letterSpacing: '-2px' }} data-edit-path="layout.hero.title" onClick={(e) => clickGuard(e, 'layout.hero.title')}>{heroTitle}</h2>
+        <p style={{ fontSize: '16px', opacity: 0.85, margin: '0 0 24px' }} data-edit-path="layout.hero.subtitle" onClick={(e) => clickGuard(e, 'layout.hero.subtitle')}>
+          {heroSubtitle}
+        </p>
         <button style={{ backgroundColor: accent, color: '#fff', padding: '16px 48px', fontSize: '14px', fontWeight: 700, border: 'none', cursor: 'pointer' }} data-edit-path="layout.hero.cta" onClick={(e) => clickGuard(e, 'layout.hero.cta')}>{ctaText}</button>
       </section>
 
@@ -81,7 +120,34 @@ export default function ShoesTemplate(props: TemplateProps) {
         </div>
       )}
 
-      <section style={{ padding: `${baseSpacing}px`, maxWidth: '1400px', margin: '0 auto' }} data-edit-path="layout.products">
+      <div
+        style={{ padding: '0 24px', maxWidth: '1400px', margin: '0 auto', textAlign: 'center' }}
+        data-edit-path="layout.featured"
+        onClick={(e) => clickGuard(e, 'layout.featured')}
+      >
+        <h2
+          style={{ margin: '0 0 10px', fontSize: 22, fontWeight: 900, letterSpacing: '-1px' }}
+          data-edit-path="layout.featured.title"
+          onClick={(e) => clickGuard(e, 'layout.featured.title')}
+        >
+          {featuredTitle}
+        </h2>
+        {(canManage || featuredSubtitle) && (
+          <p
+            style={{ margin: '0 0 18px', opacity: 0.75, fontSize: 14 }}
+            data-edit-path="layout.featured.subtitle"
+            onClick={(e) => clickGuard(e, 'layout.featured.subtitle')}
+          >
+            {featuredSubtitle || (canManage ? 'Add section subtitle...' : '')}
+          </p>
+        )}
+      </div>
+
+      <section
+        style={{ padding: `${baseSpacing}px`, maxWidth: '1400px', margin: '0 auto' }}
+        data-edit-path="layout.grid"
+        onClick={(e) => clickGuard(e, 'layout.grid')}
+      >
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: `${gridGap}px` }}>
           {products.map(product => (
             <div key={product.id} style={{ backgroundColor: cardBg, borderRadius: `${cardRadius}px`, overflow: 'hidden', cursor: canManage ? 'default' : 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', transition: `transform ${animationSpeed}ms, box-shadow ${animationSpeed}ms` }} data-edit-path={`layout.products.${product.id}`}
@@ -93,8 +159,19 @@ export default function ShoesTemplate(props: TemplateProps) {
               </div>
               <div style={{ padding: '16px' }}>
                 <p style={{ fontSize: '11px', color: accent, fontWeight: 600, marginBottom: '4px' }}>{product.category || 'SNEAKERS'}</p>
-                <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '8px' }}>{product.title}</h3>
-                <p style={{ fontSize: '18px', fontWeight: 800 }}>{props.formatPrice(product.price)}</p>
+                <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '8px', color: productTitleColor }}>{product.title}</h3>
+                <p style={{ fontSize: '18px', fontWeight: 800, color: productPriceColor }}>{props.formatPrice(product.price)}</p>
+                <button
+                  style={{ marginTop: 12, backgroundColor: accent, color: '#fff', padding: '10px 14px', fontSize: 12, fontWeight: 800, border: 'none', cursor: 'pointer' }}
+                  data-edit-path="layout.featured.addLabel"
+                  onClick={(e) => {
+                    if (canManage) return clickGuard(e, 'layout.featured.addLabel');
+                    e.stopPropagation();
+                    if (product.slug) props.navigate(product.slug);
+                  }}
+                >
+                  {addLabel}
+                </button>
               </div>
             </div>
           ))}
@@ -102,7 +179,32 @@ export default function ShoesTemplate(props: TemplateProps) {
       </section>
 
       <footer style={{ padding: `${sectionSpacing}px ${baseSpacing}px`, backgroundColor: '#171717', color: '#fff', marginTop: `${sectionSpacing}px`, textAlign: 'center' }} data-edit-path="layout.footer" onClick={(e) => clickGuard(e, 'layout.footer')}>
-        <p style={{ fontSize: '14px', opacity: 0.7 }}>© {new Date().getFullYear()} {storeName}</p>
+        <p style={{ fontSize: '14px', opacity: 0.7, margin: 0 }} data-edit-path="layout.footer.copyright" onClick={(e) => clickGuard(e, 'layout.footer.copyright')}>
+          {copyright}
+        </p>
+        <div
+          style={{ display: 'flex', gap: 14, justifyContent: 'center', marginTop: 14, flexWrap: 'wrap', opacity: 0.9 }}
+          data-edit-path="layout.footer.social"
+          onClick={(e) => clickGuard(e, 'layout.footer.social')}
+        >
+          {(canManage || socialLinks.length > 0) &&
+            (socialLinks.length ? socialLinks : [{ platform: 'instagram', url: '#' }]).map((l) => (
+              <a
+                key={`${l.platform}-${l.url}`}
+                href={l.url}
+                style={{ color: '#fff', textDecoration: 'none', fontSize: 12 }}
+                onClick={(e) => {
+                  if (canManage) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onSelect('layout.footer.social');
+                  }
+                }}
+              >
+                {l.platform}
+              </a>
+            ))}
+        </div>
       </footer>
     </div>
   );

@@ -83,7 +83,11 @@ export default function FashionTemplate(props: TemplateProps) {
   const text = asString(settings.template_text_color) || '#e5e5e5';
   const muted = asString(settings.template_muted_color) || '#71717a';
   const accent = asString(settings.template_accent_color) || '#f97316';
-  const headerBg = asString(settings.template_header_bg) || '#050509';
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+const headerBg = asString(settings.template_header_bg) || '#050509';
   const headerText = asString(settings.template_header_text) || '#e5e5e5';
   const cardBg = asString(settings.template_card_bg) || '#050509';
   const footerBg = asString(settings.template_footer_bg) || bg;

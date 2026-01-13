@@ -50,15 +50,28 @@ export default function ProStudioTemplate(props: TemplateProps) {
   const muted = asString(settings.template_muted_color) || '#737373';
   const accent = asString(settings.template_accent_color) || '#f43f5e';
 
-  const storeName = asString(settings.store_name) || 'STUDIO';
-  const heroTitle = asString(settings.template_hero_heading) || 'Make a Statement';
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+
+  const cardBg = asString(settings.template_card_bg) || "#ffffff";
+const storeName = asString(settings.store_name) || 'STUDIO';
+  
+  const copyright = asString(settings.template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
+const heroTitle = asString(settings.template_hero_heading) || 'Make a Statement';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Bold designs for bold people';
   const cta = asString(settings.template_button_text) || 'Shop Now';
 
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 12) || [];
 
-  const descText = asString(settings.template_description_text);
-  const descColor = asString(settings.template_description_color) || muted;
+  
+
+  const sectionTitle = asString(settings.template_featured_title) || "Featured";
+  const sectionSubtitle = asString(settings.template_featured_subtitle) || "";
+  const addToCartLabel = asString(settings.template_add_to_cart_label) || "View";
+const descText = (asString(settings.template_description_text) || asString(settings.store_description)).trim();
+const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 15, 10, 32);
 
   // Layout settings
@@ -72,6 +85,8 @@ export default function ProStudioTemplate(props: TemplateProps) {
 
   return (
     <div
+      data-edit-path="__root"
+      onClick={() => canManage && onSelect("__root")}
       className="ecopro-storefront"
       style={{
         minHeight: '100vh',
@@ -227,9 +242,7 @@ export default function ProStudioTemplate(props: TemplateProps) {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40 }}>
             <div>
               <div style={{ fontSize: 12, color: accent, fontWeight: 800, letterSpacing: '0.2em', marginBottom: 8 }}>PRODUCTS</div>
-              <h2 style={{ fontSize: isMobile ? 28 : 42, fontWeight: 900, margin: 0, letterSpacing: '-0.02em' }}>
-                The Collection
-              </h2>
+              <h2 data-edit-path="layout.featured.title" style={{ fontSize: isMobile ? 28 : 42, fontWeight: 900, margin: 0, letterSpacing: '-0.02em' }}>{sectionTitle}</h2>
             </div>
             <button
               onClick={() => navigate('/products')}

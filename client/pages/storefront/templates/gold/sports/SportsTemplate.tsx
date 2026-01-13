@@ -3,6 +3,8 @@ import type { TemplateProps } from '../../types';
 
 type Breakpoint = 'mobile' | 'tablet' | 'desktop';
 
+type NavLink = { label: string; url: string };
+
 function asString(v: unknown): string {
   return typeof v === 'string' ? v : '';
 }
@@ -13,6 +15,29 @@ function resolveInt(value: unknown, fallback: number, min: number, max: number):
   const n = Number(str);
   if (!Number.isFinite(n)) return fallback;
   return Math.max(min, Math.min(max, Math.round(n)));
+}
+
+function safeParseNavLinks(value: unknown): NavLink[] {
+  if (Array.isArray(value)) {
+    return value
+      .map((v: any) => ({ label: typeof v?.label === 'string' ? v.label : '', url: typeof v?.url === 'string' ? v.url : '' }))
+      .filter((v) => v.label && v.url);
+  }
+  if (typeof value !== 'string' || !value.trim()) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return safeParseNavLinks(parsed);
+  } catch {
+    return [];
+  }
+}
+
+function normalizeUrl(url: string): string {
+  const u = url.trim();
+  if (!u) return '';
+  if (u.startsWith('/')) return u;
+  if (/^https?:\/\//i.test(u)) return u;
+  return '/' + u.replace(/^\/+/, '');
 }
 
 export default function SportsTemplate(props: TemplateProps) {
@@ -52,17 +77,28 @@ export default function SportsTemplate(props: TemplateProps) {
   const bg = settings.template_bg_color || '#0f172a';
   const text = settings.template_text_color || '#f8fafc';
   const accent = settings.template_accent_color || '#22c55e';
-  const muted = settings.template_muted_color || '#64748b';
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+const muted = settings.template_muted_color || '#64748b';
   const cardBg = settings.template_card_bg || '#1e293b';
 
   const storeName = settings.store_name || 'SPORTS GEAR';
-  const heroTitle = settings.template_hero_heading || 'PUSH YOUR LIMITS';
+  
+  const copyright = asString(settings.template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
+const heroTitle = settings.template_hero_heading || 'PUSH YOUR LIMITS';
   const heroSubtitle = settings.template_hero_subtitle || 'Premium athletic gear for champions';
   const ctaText = settings.template_button_text || 'SHOP NOW';
 
   const products = useMemo(() => {
     const list = props.filtered?.length ? props.filtered : props.products || [];
-    return categoryFilter ? list.filter(p => p.category === categoryFilter) : list;
+    
+
+  const sectionTitle = asString(settings.template_featured_title) || "Featured";
+  const sectionSubtitle = asString(settings.template_featured_subtitle) || "";
+  const addToCartLabel = asString(settings.template_add_to_cart_label) || "View";
+return categoryFilter ? list.filter(p => p.category === categoryFilter) : list;
   }, [props.filtered, props.products, categoryFilter]);
 
   const categories = useMemo(() => [...new Set(props.products?.map(p => p.category).filter(Boolean))], [props.products]);
@@ -85,6 +121,11 @@ export default function SportsTemplate(props: TemplateProps) {
   const hoverScale = asString(settings.template_hover_scale) || '1.02';
   const cardRadius = resolveInt(settings.template_card_border_radius, 12, 0, 32);
 
+  const navLinks = useMemo(() => {
+    const raw = (settings as any).template_nav_links;
+    return safeParseNavLinks(raw).map((l) => ({ ...l, url: normalizeUrl(l.url) })).filter((l) => l.label && l.url);
+  }, [(settings as any).template_nav_links]);
+
   const finalCols = isMobile ? 2 : breakpoint === 'tablet' ? 3 : gridColumns;
 
   return (
@@ -95,16 +136,39 @@ export default function SportsTemplate(props: TemplateProps) {
         data-edit-path="layout.header"
         onClick={(e) => clickGuard(e, 'layout.header')}
       >
-        <h1 
-          style={{ fontSize: '24px', fontWeight: 800, letterSpacing: '2px', color: accent }}
+        <h1
+          style={{ fontSize: '24px', fontWeight: 800, letterSpacing: '2px', color: accent, display: 'flex', alignItems: 'center', gap: 10 }}
           data-edit-path="layout.header.logo"
           onClick={(e) => clickGuard(e, 'layout.header.logo')}
         >
+          {asString(settings.store_logo) ? (
+            <img
+              src={asString(settings.store_logo)}
+              alt={storeName}
+              style={{ width: 32, height: 32, borderRadius: 8, objectFit: 'cover' }}
+            />
+          ) : null}
           {storeName}
         </h1>
         <nav style={{ display: 'flex', gap: '24px' }} data-edit-path="layout.header.nav" onClick={(e) => clickGuard(e, 'layout.header.nav')}>
-          {['Shop', 'New', 'Sale'].map(item => (
-            <span key={item} style={{ color: muted, cursor: 'pointer', fontSize: '14px', fontWeight: 600 }}>{item}</span>
+          {(navLinks.length ? navLinks : [
+            { label: 'Shop', url: '/products' },
+            { label: 'New', url: '/products' },
+            { label: 'Sale', url: '/products' },
+          ]).map((item) => (
+            <a
+              key={item.label}
+              href={item.url}
+              style={{ color: muted, cursor: 'pointer', fontSize: '14px', fontWeight: 600, textDecoration: 'none' }}
+              onClick={(e) => {
+                if (!canManage) return;
+                e.preventDefault();
+                e.stopPropagation();
+                onSelect('layout.header.nav');
+              }}
+            >
+              {item.label}
+            </a>
           ))}
         </nav>
       </header>
@@ -164,19 +228,19 @@ export default function SportsTemplate(props: TemplateProps) {
       )}
 
       {/* Products */}
-      <section style={{ padding: `${sectionSpacing}px ${baseSpacing}px`, maxWidth: '1400px', margin: '0 auto' }} data-edit-path="layout.products">
+      <section style={{ padding: `${sectionSpacing}px ${baseSpacing}px`, maxWidth: '1400px', margin: '0 auto' }} data-edit-path="layout.grid">
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${finalCols}, 1fr)`, gap: gridGap }}>
           {products.map(product => (
             <div 
               key={product.id} 
               style={{ backgroundColor: cardBg, borderRadius: cardRadius, overflow: 'hidden', cursor: canManage ? 'default' : 'pointer', transition: `transform ${animationSpeed}ms, box-shadow ${animationSpeed}ms` }}
-              data-edit-path={`layout.products.${product.id}`}
+              data-edit-path={`layout.grid.items.${product.id}`}
               onMouseEnter={(e) => { e.currentTarget.style.transform = `scale(${hoverScale})`; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.3)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}
               onClick={(e) => { 
                 e.stopPropagation(); 
                 if (!canManage && product.slug) props.navigate(product.slug); 
-                else if (canManage) onSelect(`layout.products.${product.id}`); 
+                else if (canManage) onSelect(`layout.grid.items.${product.id}`); 
               }}
             >
               <div style={{ aspectRatio: '1', backgroundColor: '#334155', overflow: 'hidden' }}>
@@ -184,8 +248,8 @@ export default function SportsTemplate(props: TemplateProps) {
               </div>
               <div style={{ padding: '16px' }}>
                 <p style={{ fontSize: '12px', color: accent, fontWeight: 600, marginBottom: '4px' }}>{product.category || 'GEAR'}</p>
-                <h3 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '8px' }}>{product.title}</h3>
-                <p style={{ fontSize: '18px', fontWeight: 800 }}>{props.formatPrice(product.price)}</p>
+                <h3 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '8px' , color: productTitleColor}}>{product.title}</h3>
+                <p style={{ fontSize: '18px', fontWeight: 800 , color: productPriceColor}}>{props.formatPrice(product.price)}</p>
               </div>
             </div>
           ))}
@@ -198,7 +262,7 @@ export default function SportsTemplate(props: TemplateProps) {
         data-edit-path="layout.footer"
         onClick={(e) => clickGuard(e, 'layout.footer')}
       >
-        <p style={{ color: muted, fontSize: '14px' }}>© {new Date().getFullYear()} {storeName}</p>
+        <p style={{ color: muted, fontSize: '14px' }}>{copyright}</p>
       </footer>
     </div>
   );

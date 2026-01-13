@@ -172,6 +172,14 @@ export default function Storefront() {
           store_slug: incomingSettings?.store_slug || storeSlug,
         };
         setStoreSettings(newSettings);
+
+        // Canonicalize the URL to prefer store name (prettier) when available.
+        // Backwards-compatible: backend accepts store_slug and normalized store_name.
+        const preferredSlug = newSettings.store_name ? storeNameToSlug(String(newSettings.store_name)) : '';
+        const canonical = preferredSlug || String(newSettings.store_slug || storeSlug);
+        if (canonical && canonical !== storeSlug && location.pathname === `/store/${storeSlug}`) {
+          navigate(`/store/${canonical}${location.search}`, { replace: true });
+        }
         
         // Save template and settings to localStorage for product pages
         // Exclude large base64 images to avoid quota exceeded errors

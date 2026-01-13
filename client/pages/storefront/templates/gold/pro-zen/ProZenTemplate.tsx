@@ -33,6 +33,12 @@ export default function ProZenTemplate(props: TemplateProps) {
       (props as any).onSelect(path);
     }
   };
+  const select = (e: React.MouseEvent, path: string) => {
+    if (!canManage) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onSelect(path);
+  };
 
   const [isMobile, setIsMobile] = React.useState((props as any).forcedBreakpoint === 'mobile');
   React.useEffect(() => {
@@ -50,14 +56,29 @@ export default function ProZenTemplate(props: TemplateProps) {
   const muted = asString(settings.template_muted_color) || '#9ca3af';
   const accent = asString(settings.template_accent_color) || '#3b82f6';
 
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+
+  const cardBg = asString(settings.template_card_bg) || "#ffffff";
+const logoUrl = asString(settings.store_logo) || asString((settings as any).logo_url);
   const storeName = asString(settings.store_name) || 'ZEN';
+  
+  const copyright = asString(settings.template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
+const storeDescription = asString(settings.store_description);
   const heroTitle = asString(settings.template_hero_heading) || 'Less is More';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Curated essentials for mindful living';
   const cta = asString(settings.template_button_text) || 'Explore';
 
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 9) || [];
 
-  const descText = asString(settings.template_description_text);
+  
+
+  const sectionTitle = asString(settings.template_featured_title) || "Featured";
+  const sectionSubtitle = asString(settings.template_featured_subtitle) || "";
+  const addToCartLabel = asString(settings.template_add_to_cart_label) || "View";
+const descText = asString(settings.template_description_text);
   const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 16, 10, 32);
 
@@ -72,6 +93,8 @@ export default function ProZenTemplate(props: TemplateProps) {
 
   return (
     <div
+      data-edit-path="__root"
+      onClick={() => canManage && onSelect("__root")}
       className="ecopro-storefront"
       style={{
         minHeight: '100vh',
@@ -96,7 +119,20 @@ export default function ProZenTemplate(props: TemplateProps) {
           alignItems: 'center',
         }}
       >
-        <span style={{ fontSize: 18, fontWeight: 300, letterSpacing: '0.3em' }}>{storeName}</span>
+        <div
+          data-edit-path="layout.header.logo"
+          onClick={(e) => select(e, 'layout.header.logo')}
+          style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: canManage ? 'pointer' : 'default' }}
+        >
+          {logoUrl && (
+            <img
+              src={logoUrl}
+              alt={storeName}
+              style={{ width: 40, height: 40, borderRadius: 9999, objectFit: 'cover' }}
+            />
+          )}
+          <span style={{ fontSize: 18, fontWeight: 300, letterSpacing: '0.3em' }}>{storeName}</span>
+        </div>
         <button
           onClick={() => navigate('/products')}
           style={{
@@ -167,6 +203,11 @@ export default function ProZenTemplate(props: TemplateProps) {
           <p style={{ maxWidth: 600, margin: '0 auto', color: descColor, fontSize: descSize, lineHeight: 2, fontWeight: 300 }}>
             {descText || (canManage ? 'Add description...' : '')}
           </p>
+          {(canManage || storeDescription) && (
+            <p style={{ maxWidth: 600, margin: '26px auto 0', color: muted, fontSize: 12, lineHeight: 1.9, fontWeight: 300 }}>
+              {storeDescription || (canManage ? 'Add store description...' : '')}
+            </p>
+          )}
         </section>
       )}
 

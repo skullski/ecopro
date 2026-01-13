@@ -3,16 +3,23 @@
  */
 
 /**
- * Convert store name to URL-friendly format
- * Preserves case and alphanumeric characters, removes spaces
- * Example: "My Fashion Store" -> "MyFashionStore"
+ * Convert a store identifier into a URL-safe slug.
+ *
+ * IMPORTANT:
+ * - If you already have `store_slug` from the backend, prefer using it directly.
+ * - This function is a backward-compatible sanitizer for older code paths that only have `store_name`.
+ *
+ * Normalizes store names to match backend storefront resolution:
+ * - lowercases
+ * - removes spaces and all non-alphanumeric characters
  */
 export function storeNameToSlug(storeName: string): string {
   return storeName
     .trim()
-    .replace(/\s+/g, '')           // Remove all spaces
-    .replace(/[^a-zA-Z0-9]/g, '')  // Remove non-alphanumeric (keep case)
-    || 'store';                    // Default if empty
+    .toLowerCase()
+    .replace(/\s+/g, '')          // Remove all spaces
+    .replace(/[^a-z0-9]/g, '')     // Remove non-alphanumeric
+    || 'store';                   // Default if empty
 }
 
 /**

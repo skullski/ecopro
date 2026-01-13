@@ -33,6 +33,12 @@ export default function ProAtelierTemplate(props: TemplateProps) {
       (props as any).onSelect(path);
     }
   };
+  const select = (e: React.MouseEvent, path: string) => {
+    if (!canManage) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onSelect(path);
+  };
 
   const [isMobile, setIsMobile] = React.useState((props as any).forcedBreakpoint === 'mobile');
   React.useEffect(() => {
@@ -50,14 +56,29 @@ export default function ProAtelierTemplate(props: TemplateProps) {
   const muted = asString(settings.template_muted_color) || '#78716c';
   const accent = asString(settings.template_accent_color) || '#b45309';
 
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+
+  const cardBg = asString(settings.template_card_bg) || "#ffffff";
+const logoUrl = asString(settings.store_logo) || asString((settings as any).logo_url);
   const storeName = asString(settings.store_name) || 'ATELIER';
+  
+  const copyright = asString(settings.template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
+const storeDescription = asString(settings.store_description);
   const heroTitle = asString(settings.template_hero_heading) || 'Crafted with Purpose';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Timeless pieces for the discerning eye';
   const cta = asString(settings.template_button_text) || 'Discover';
 
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 12) || [];
 
-  const descText = asString(settings.template_description_text);
+  
+
+  const sectionTitle = asString(settings.template_featured_title) || "Featured";
+  const sectionSubtitle = asString(settings.template_featured_subtitle) || "";
+  const addToCartLabel = asString(settings.template_add_to_cart_label) || "View";
+const descText = asString(settings.template_description_text);
   const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 16, 10, 32);
 
@@ -72,6 +93,8 @@ export default function ProAtelierTemplate(props: TemplateProps) {
 
   return (
     <div
+      data-edit-path="__root"
+      onClick={() => canManage && onSelect("__root")}
       className="ecopro-storefront"
       style={{
         minHeight: '100vh',
@@ -97,7 +120,20 @@ export default function ProAtelierTemplate(props: TemplateProps) {
           background: 'transparent',
         }}
       >
-        <span style={{ fontSize: 22, fontWeight: 600, letterSpacing: '0.2em' }}>{storeName}</span>
+        <div
+          data-edit-path="layout.header.logo"
+          onClick={(e) => select(e, 'layout.header.logo')}
+          style={{ display: 'flex', alignItems: 'center', gap: 14, cursor: canManage ? 'pointer' : 'default' }}
+        >
+          {logoUrl && (
+            <img
+              src={logoUrl}
+              alt={storeName}
+              style={{ width: 42, height: 42, borderRadius: 9999, objectFit: 'cover' }}
+            />
+          )}
+          <span style={{ fontSize: 22, fontWeight: 600, letterSpacing: '0.2em' }}>{storeName}</span>
+        </div>
         <button
           onClick={() => navigate('/products')}
           style={{
@@ -195,7 +231,7 @@ export default function ProAtelierTemplate(props: TemplateProps) {
         style={{ padding: isMobile ? '0 24px 60px' : '0 60px 100px' }}
       >
         <div style={{ textAlign: 'center', marginBottom: isMobile ? 40 : 60 }}>
-          <h2 style={{ fontSize: isMobile ? 28 : 42, fontWeight: 400, fontStyle: 'italic', margin: 0 }}>The Collection</h2>
+          <h2 data-edit-path="layout.featured.title" style={{ fontSize: isMobile ? 28 : 42, fontWeight: 400, fontStyle: 'italic', margin: 0 }}>{sectionTitle}</h2>
         </div>
 
         {products.slice(0, 6).map((p, idx) => (
@@ -230,12 +266,10 @@ export default function ProAtelierTemplate(props: TemplateProps) {
               <div style={{ fontSize: 11, color: muted, fontFamily: 'system-ui, sans-serif', letterSpacing: '0.2em', marginBottom: 12 }}>
                 ITEM {String(idx + 1).padStart(2, '0')}
               </div>
-              <h3 style={{ fontSize: isMobile ? 24 : 32, fontWeight: 400, margin: 0, fontStyle: 'italic' }}>
+              <h3 style={{ fontSize: isMobile ? 24 : 32, fontWeight: 400, margin: 0, fontStyle: 'italic' , color: productTitleColor}}>
                 {productTitle(p)}
               </h3>
-              <p style={{ marginTop: 16, color: muted, fontSize: 14, lineHeight: 1.7, fontFamily: 'system-ui, sans-serif' }}>
-                {String(p.description || '').slice(0, 150) || 'Expertly crafted with attention to every detail.'}
-              </p>
+              <p data-edit-path="layout.featured.subtitle" style={{ marginTop: 16, color: muted, fontSize: 14, lineHeight: 1.7, fontFamily: 'system-ui, sans-serif' }}>{sectionSubtitle}</p>
               <div style={{ marginTop: 20, fontSize: 20, fontWeight: 600, color: accent }}>
                 {formatPrice(Number(p.price) || 0)}
               </div>
@@ -298,7 +332,21 @@ export default function ProAtelierTemplate(props: TemplateProps) {
           textAlign: 'center',
         }}
       >
-        <div style={{ fontSize: 20, fontStyle: 'italic', marginBottom: 20 }}>{storeName}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+          {logoUrl && (
+            <img
+              src={logoUrl}
+              alt={storeName}
+              style={{ width: 56, height: 56, borderRadius: 9999, objectFit: 'cover' }}
+            />
+          )}
+          <div style={{ fontSize: 20, fontStyle: 'italic' }}>{storeName}</div>
+          {(canManage || storeDescription) && (
+            <div style={{ maxWidth: 560, color: muted, fontSize: 13, fontFamily: 'system-ui, sans-serif', lineHeight: 1.6 }}>
+              {storeDescription || (canManage ? 'Add store description...' : '')}
+            </div>
+          )}
+        </div>
         <p style={{ color: muted, fontSize: 13, fontFamily: 'system-ui, sans-serif' }}>
           © {new Date().getFullYear()} All rights reserved.
         </p>

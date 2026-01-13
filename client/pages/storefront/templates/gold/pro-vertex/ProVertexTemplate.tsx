@@ -50,7 +50,13 @@ export default function ProVertexTemplate(props: TemplateProps) {
   const muted = asString(settings.template_muted_color) || '#71717a';
   const accent = asString(settings.template_accent_color) || '#a855f7';
 
-  // Layout settings
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+
+  const cardBg = asString(settings.template_card_bg) || "#ffffff";
+// Layout settings
   const gridColumns = resolveInt(settings.template_grid_columns, 4, 2, 6);
   const gridGap = resolveInt(settings.template_grid_gap, 1, 0, 48);
   const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
@@ -60,20 +66,29 @@ export default function ProVertexTemplate(props: TemplateProps) {
   const cardRadius = resolveInt(settings.template_card_border_radius, 0, 0, 32);
 
   const storeName = asString(settings.store_name) || 'VERTEX';
-  const heroTitle = asString(settings.template_hero_heading) || 'Precision Design';
+  
+  const copyright = asString(settings.template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
+const heroTitle = asString(settings.template_hero_heading) || 'Precision Design';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Sharp aesthetics for modern taste';
   const cta = asString(settings.template_button_text) || 'Browse';
 
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 24) || [];
 
-  const descText = asString(settings.template_description_text);
-  const descColor = asString(settings.template_description_color) || muted;
+  
+
+  const sectionTitle = asString(settings.template_featured_title) || "Featured";
+  const sectionSubtitle = asString(settings.template_featured_subtitle) || "";
+  const addToCartLabel = asString(settings.template_add_to_cart_label) || "View";
+const descText = (asString(settings.template_description_text) || asString(settings.store_description)).trim();
+const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 14, 10, 32);
 
   const sidebarWidth = 240;
 
   return (
     <div
+      data-edit-path="__root"
+      onClick={() => canManage && onSelect("__root")}
       className="ecopro-storefront"
       style={{
         minHeight: '100vh',
@@ -261,8 +276,8 @@ export default function ProVertexTemplate(props: TemplateProps) {
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: baseSpacing * 2 }}>
             <div>
-              <h2 style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>All Products</h2>
-              <p style={{ color: muted, fontSize: 13, marginTop: 4 }}>{products.length} items</p>
+              <h2 data-edit-path="layout.featured.title" style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>{sectionTitle}</h2>
+              <p data-edit-path="layout.featured.subtitle" style={{ color: muted, fontSize: 13, marginTop: 4 }}>{sectionSubtitle}</p>
             </div>
           </div>
 

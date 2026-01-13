@@ -50,15 +50,28 @@ export default function CleanSingleTemplate(props: TemplateProps) {
   const muted = asString(settings.template_muted_color) || '#737373';
   const accent = asString(settings.template_accent_color) || '#3b82f6';
 
-  const storeName = asString(settings.store_name) || 'Clean Store';
-  const heroTitle = asString(settings.template_hero_heading) || 'Premium Quality';
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+
+  const cardBg = asString(settings.template_card_bg) || "#ffffff";
+const storeName = asString(settings.store_name) || 'Clean Store';
+  
+  const copyright = asString(settings.template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
+const heroTitle = asString(settings.template_hero_heading) || 'Premium Quality';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Designed for excellence';
   const cta = asString(settings.template_button_text) || 'Order Now';
 
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 12) || [];
 
-  const descText = asString(settings.template_description_text);
-  const descColor = asString(settings.template_description_color) || muted;
+  
+
+  const sectionTitle = asString(settings.template_featured_title) || "Featured";
+  const sectionSubtitle = asString(settings.template_featured_subtitle) || "";
+  const addToCartLabel = asString(settings.template_add_to_cart_label) || "View";
+const descText = (asString(settings.template_description_text) || asString(settings.store_description)).trim();
+const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 15, 10, 32);
 
   // Layout settings
@@ -74,6 +87,8 @@ export default function CleanSingleTemplate(props: TemplateProps) {
 
   return (
     <div
+      data-edit-path="__root"
+      onClick={() => canManage && onSelect("__root")}
       className="ecopro-storefront"
       style={{
         minHeight: '100vh',
@@ -227,7 +242,7 @@ export default function CleanSingleTemplate(props: TemplateProps) {
           onClick={() => canManage && onSelect('layout.grid')}
           style={{ maxWidth: 1200, margin: '0 auto', padding: `${sectionSpacing}px 32px 80px` }}
         >
-          <h2 style={{ fontSize: 24, fontWeight: 700, textAlign: 'center', marginBottom: 32 }}>More Products</h2>
+          <h2 data-edit-path="layout.featured.title" style={{ fontSize: 24, fontWeight: 700, textAlign: 'center', marginBottom: 32 }}>{sectionTitle}</h2>
           <div
             style={{
               display: 'grid',
@@ -257,7 +272,7 @@ export default function CleanSingleTemplate(props: TemplateProps) {
                   <img src={productImage(p)} alt={productTitle(p)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
                 <div style={{ padding: 16 }}>
-                  <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>{productTitle(p)}</h3>
+                  <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0 , color: productTitleColor}}>{productTitle(p)}</h3>
                   <div style={{ marginTop: 8, color: accent, fontWeight: 700 }}>{formatPrice(Number(p.price) || 0)}</div>
                 </div>
               </div>
@@ -274,7 +289,7 @@ export default function CleanSingleTemplate(props: TemplateProps) {
       >
         <div style={{ maxWidth: 1200, margin: '0 auto', textAlign: 'center' }}>
           <span style={{ fontSize: 18, fontWeight: 700 }}>{storeName}</span>
-          <p style={{ color: muted, fontSize: 13, marginTop: 12 }}>© {new Date().getFullYear()} All rights reserved.</p>
+          <p data-edit-path="layout.featured.subtitle" style={{ color: muted, fontSize: 13, marginTop: 12 }}>{sectionSubtitle}</p>
         </div>
       </footer>
     </div>

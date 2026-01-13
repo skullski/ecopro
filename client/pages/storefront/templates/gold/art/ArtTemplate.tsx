@@ -41,9 +41,34 @@ export default function ArtTemplate(props: TemplateProps) {
   const cardBg = settings.template_card_bg || '#ffffff';
 
   const storeName = settings.store_name || 'ARTISAN GALLERY';
+  const logoUrl = asString(settings.store_logo) || asString((settings as any).logo_url);
+  const storeDescription = asString(settings.store_description);
   const heroTitle = settings.template_hero_heading || 'Original Art & Prints';
   const heroSubtitle = settings.template_hero_subtitle || 'Curated collection';
   const ctaText = settings.template_button_text || 'VIEW GALLERY';
+
+  const addLabel = asString((settings as any).template_add_to_cart_label) || 'VIEW';
+  const productTitleColor = asString((settings as any).template_product_title_color) || text;
+  const productPriceColor = asString((settings as any).template_product_price_color) || accent;
+
+  const featuredTitle = asString((settings as any).template_featured_title) || 'Featured works';
+  const featuredSubtitle = asString((settings as any).template_featured_subtitle) || '';
+
+  const rawSocial = (settings as any).template_social_links;
+  const socialLinks: Array<{ platform: string; url: string }> = (() => {
+    if (Array.isArray(rawSocial)) return rawSocial as any;
+    if (typeof rawSocial !== 'string' || !rawSocial.trim()) return [];
+    try {
+      const parsed = JSON.parse(rawSocial);
+      return Array.isArray(parsed) ? (parsed as any) : [];
+    } catch {
+      return [];
+    }
+  })()
+    .map((l: any) => ({ platform: asString(l?.platform), url: asString(l?.url) }))
+    .filter((l) => l.platform && l.url);
+
+  const copyright = asString((settings as any).template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
 
   // Layout settings
   const gridColumns = resolveInt(settings.template_grid_columns, 3, 2, 6);
@@ -64,8 +89,28 @@ export default function ArtTemplate(props: TemplateProps) {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: bg, color: text, fontFamily: '"Playfair Display", Georgia, serif' }} data-edit-path="__root">
-      <header style={{ padding: '24px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e5e5e5' }} data-edit-path="layout.header" onClick={(e) => clickGuard(e, 'layout.header')}>
-        <h1 style={{ fontSize: '20px', fontWeight: 400, letterSpacing: '4px', textTransform: 'uppercase' }} data-edit-path="layout.header.logo" onClick={(e) => clickGuard(e, 'layout.header.logo')}>{storeName}</h1>
+      <header style={{ padding: '24px 32px', display: 'flex', justifyContent: 'center', alignItems: 'center', borderBottom: '1px solid #e5e5e5' }} data-edit-path="layout.header" onClick={(e) => clickGuard(e, 'layout.header')}>
+        <div
+          style={{ display: 'flex', alignItems: 'center', gap: 14, textAlign: 'center' }}
+          data-edit-path="layout.header.logo"
+          onClick={(e) => clickGuard(e, 'layout.header.logo')}
+        >
+          {logoUrl && (
+            <img
+              src={logoUrl}
+              alt={storeName}
+              style={{ width: 44, height: 44, borderRadius: 9999, objectFit: 'cover', border: `1px solid ${accent}` }}
+            />
+          )}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+            <h1 style={{ fontSize: '20px', fontWeight: 400, letterSpacing: '4px', textTransform: 'uppercase', margin: 0 }}>{storeName}</h1>
+            {(canManage || storeDescription) && (
+              <div style={{ fontSize: 12, opacity: 0.7, maxWidth: 560, lineHeight: 1.35 }}>
+                {storeDescription || (canManage ? 'Add store description...' : '')}
+              </div>
+            )}
+          </div>
+        </div>
       </header>
 
       <section style={{ padding: '100px 24px', textAlign: 'center', backgroundColor: '#18181b', color: '#fff' }} data-edit-path="layout.hero" onClick={(e) => clickGuard(e, 'layout.hero')}>
@@ -82,7 +127,34 @@ export default function ArtTemplate(props: TemplateProps) {
         </div>
       )}
 
-      <section style={{ padding: `${sectionSpacing}px`, maxWidth: '1400px', margin: '0 auto' }} data-edit-path="layout.products">
+      <div
+        style={{ padding: '0 32px', maxWidth: '1400px', margin: '0 auto', textAlign: 'center' }}
+        data-edit-path="layout.featured"
+        onClick={(e) => clickGuard(e, 'layout.featured')}
+      >
+        <h2
+          style={{ margin: '0 0 10px', fontSize: 22, fontWeight: 400, letterSpacing: '2px', textTransform: 'uppercase' }}
+          data-edit-path="layout.featured.title"
+          onClick={(e) => clickGuard(e, 'layout.featured.title')}
+        >
+          {featuredTitle}
+        </h2>
+        {(canManage || featuredSubtitle) && (
+          <p
+            style={{ margin: '0 0 18px', color: '#71717a', fontSize: 14 }}
+            data-edit-path="layout.featured.subtitle"
+            onClick={(e) => clickGuard(e, 'layout.featured.subtitle')}
+          >
+            {featuredSubtitle || (canManage ? 'Add section subtitle...' : '')}
+          </p>
+        )}
+      </div>
+
+      <section
+        style={{ padding: `${sectionSpacing}px`, maxWidth: '1400px', margin: '0 auto' }}
+        data-edit-path="layout.grid"
+        onClick={(e) => clickGuard(e, 'layout.grid')}
+      >
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: `${gridGap}px` }}>
           {products.map(product => (
             <div key={product.id} style={{ cursor: canManage ? 'default' : 'pointer' }} data-edit-path={`layout.products.${product.id}`}
@@ -90,16 +162,52 @@ export default function ArtTemplate(props: TemplateProps) {
               <div style={{ aspectRatio: '4/5', backgroundColor: cardBg, boxShadow: '0 20px 40px rgba(0,0,0,0.1)', marginBottom: `${baseSpacing}px`, overflow: 'hidden', borderRadius: cardRadius }}>
                 {product.images?.[0] && <img src={product.images[0]} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
               </div>
-              <h3 style={{ fontSize: '18px', fontWeight: 400, marginBottom: '8px', fontStyle: 'italic' }}>{product.title}</h3>
+              <h3 style={{ fontSize: '18px', fontWeight: 400, marginBottom: '8px', fontStyle: 'italic', color: productTitleColor }}>{product.title}</h3>
               <p style={{ fontSize: '14px', color: '#71717a', marginBottom: '8px' }}>{product.category}</p>
-              <p style={{ fontSize: '16px', fontWeight: 600, color: accent }}>{props.formatPrice(product.price)}</p>
+              <p style={{ fontSize: '16px', fontWeight: 600, color: productPriceColor }}>{props.formatPrice(product.price)}</p>
+              <button
+                style={{ marginTop: 10, backgroundColor: accent, color: '#fff', padding: '10px 16px', border: 'none', cursor: 'pointer', fontSize: 12 }}
+                data-edit-path="layout.featured.addLabel"
+                onClick={(e) => {
+                  if (canManage) return clickGuard(e, 'layout.featured.addLabel');
+                  e.stopPropagation();
+                  if (product.slug) props.navigate(product.slug);
+                }}
+              >
+                {addLabel}
+              </button>
             </div>
           ))}
         </div>
       </section>
 
       <footer style={{ padding: '64px 24px', backgroundColor: '#18181b', color: '#fff', marginTop: '64px', textAlign: 'center' }} data-edit-path="layout.footer" onClick={(e) => clickGuard(e, 'layout.footer')}>
-        <p style={{ fontSize: '12px', letterSpacing: '2px' }}>© {new Date().getFullYear()} {storeName}</p>
+        <p style={{ fontSize: '12px', letterSpacing: '2px', margin: 0 }} data-edit-path="layout.footer.copyright" onClick={(e) => clickGuard(e, 'layout.footer.copyright')}>
+          {copyright}
+        </p>
+        <div
+          style={{ display: 'flex', gap: 14, justifyContent: 'center', marginTop: 14, flexWrap: 'wrap', opacity: 0.85 }}
+          data-edit-path="layout.footer.social"
+          onClick={(e) => clickGuard(e, 'layout.footer.social')}
+        >
+          {(canManage || socialLinks.length > 0) &&
+            (socialLinks.length ? socialLinks : [{ platform: 'instagram', url: '#' }]).map((l) => (
+              <a
+                key={`${l.platform}-${l.url}`}
+                href={l.url}
+                style={{ color: '#fff', textDecoration: 'none', fontSize: 12 }}
+                onClick={(e) => {
+                  if (canManage) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onSelect('layout.footer.social');
+                  }
+                }}
+              >
+                {l.platform}
+              </a>
+            ))}
+        </div>
       </footer>
     </div>
   );

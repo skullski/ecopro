@@ -6,6 +6,7 @@ import { Sparkles, Menu, X, LogOut, LayoutDashboard, ShoppingBag, Crown, PlusCir
 import { useState, useEffect, useCallback, useRef } from "react";
 import { authApi } from "@/lib/auth";
 import { notifyNewMessage } from "@/utils/browserNotifications";
+import { storeNameToSlug } from "@/utils/storeUrl";
 
 // Key for storing last seen timestamp
 const CHAT_LAST_SEEN_KEY = 'chat_last_seen_at';
@@ -32,9 +33,9 @@ export default function Header() {
       fetch('/api/client/store/settings', { credentials: 'include' })
         .then(res => res.ok ? res.json() : null)
         .then(data => {
-          if (data?.store_slug) {
-            setStoreSlug(data.store_slug);
-          }
+          const preferred = data?.store_name ? storeNameToSlug(String(data.store_name)) : null;
+          const fallback = data?.store_slug ? String(data.store_slug) : null;
+          setStoreSlug(preferred || fallback);
         })
         .catch(() => {});
     }

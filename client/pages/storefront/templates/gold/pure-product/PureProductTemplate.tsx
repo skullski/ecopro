@@ -50,15 +50,28 @@ export default function PureProductTemplate(props: TemplateProps) {
   const muted = asString(settings.template_muted_color) || '#666666';
   const accent = asString(settings.template_accent_color) || '#0066ff';
 
-  const storeName = asString(settings.store_name) || 'Pure';
-  const heroTitle = asString(settings.template_hero_heading) || 'Exceptional Quality';
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+
+  const cardBg = asString(settings.template_card_bg) || "#ffffff";
+const storeName = asString(settings.store_name) || 'Pure';
+  
+  const copyright = asString(settings.template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
+const heroTitle = asString(settings.template_hero_heading) || 'Exceptional Quality';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Crafted with precision and care';
   const cta = asString(settings.template_button_text) || 'Buy Now';
 
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 12) || [];
 
-  const descText = asString(settings.template_description_text);
-  const descColor = asString(settings.template_description_color) || muted;
+  
+
+  const sectionTitle = asString(settings.template_featured_title) || "Featured";
+  const sectionSubtitle = asString(settings.template_featured_subtitle) || "";
+  const addToCartLabel = asString(settings.template_add_to_cart_label) || "View";
+const descText = (asString(settings.template_description_text) || asString(settings.store_description)).trim();
+const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 15, 10, 32);
 
   // Layout settings
@@ -74,6 +87,8 @@ export default function PureProductTemplate(props: TemplateProps) {
 
   return (
     <div
+      data-edit-path="__root"
+      onClick={() => canManage && onSelect("__root")}
       className="ecopro-storefront"
       style={{
         minHeight: '100vh',
@@ -237,7 +252,7 @@ export default function PureProductTemplate(props: TemplateProps) {
           onClick={() => canManage && onSelect('layout.grid')}
           style={{ maxWidth: 1000, margin: '0 auto', padding: `${sectionSpacing}px ${baseSpacing}px ${sectionSpacing * 1.5}px` }}
         >
-          <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 24 }}>You May Also Like</h2>
+          <h2 data-edit-path="layout.featured.title" style={{ fontSize: 20, fontWeight: 700, marginBottom: 24 }}>{sectionTitle}</h2>
           <div
             style={{
               display: 'grid',
@@ -264,7 +279,7 @@ export default function PureProductTemplate(props: TemplateProps) {
                   <img src={productImage(p)} alt={productTitle(p)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
                 <div style={{ padding: '12px 4px' }}>
-                  <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>{productTitle(p)}</h3>
+                  <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0 , color: productTitleColor}}>{productTitle(p)}</h3>
                   <div style={{ marginTop: 6, fontWeight: 700 }}>{formatPrice(Number(p.price) || 0)}</div>
                 </div>
               </div>

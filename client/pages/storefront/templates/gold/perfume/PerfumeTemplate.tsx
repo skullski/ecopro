@@ -112,13 +112,18 @@ export default function PerfumeTemplate(props: TemplateProps) {
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Discover our curated collection of rare and exquisite perfumes. Each scent tells a story.';
   const heroKicker = asString(settings.template_hero_kicker) || 'LUXURY FRAGRANCES';
   const ctaText = asString(settings.template_button_text) || 'EXPLORE COLLECTION';
-  const ctaSecondaryText = asString(settings.template_button_secondary_text) || 'OUR STORY';
+  
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+const ctaSecondaryText = asString(settings.template_button_secondary_text) || 'OUR STORY';
   const heroBadge = asString(settings.template_hero_badge) || '✦ EXCLUSIVE';
   const heroImage = asString(settings.banner_url) || (props.products?.[0]?.images?.[0] || '/placeholder.png');
 
   const storeName = asString(settings.store_name) || 'ESSENCE';
 
-  const navLinks = safeParseJsonArray<NavLink>(settings.template_nav_links)
+  
+  const storeDescription = asString(settings.store_description);
+const navLinks = safeParseJsonArray<NavLink>(settings.template_nav_links)
     .map((l) => ({ label: asString((l as any)?.label), url: normalizeUrl(asString((l as any)?.url)) }))
     .filter((l) => l.label && l.url);
 

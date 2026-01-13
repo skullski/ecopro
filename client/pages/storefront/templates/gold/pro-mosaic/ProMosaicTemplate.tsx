@@ -33,6 +33,12 @@ export default function ProMosaicTemplate(props: TemplateProps) {
       (props as any).onSelect(path);
     }
   };
+  const select = (e: React.MouseEvent, path: string) => {
+    if (!canManage) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onSelect(path);
+  };
 
   const [isMobile, setIsMobile] = React.useState((props as any).forcedBreakpoint === 'mobile');
   React.useEffect(() => {
@@ -50,7 +56,13 @@ export default function ProMosaicTemplate(props: TemplateProps) {
   const muted = asString(settings.template_muted_color) || '#71717a';
   const accent = asString(settings.template_accent_color) || '#ec4899';
 
-  // Layout settings
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+
+  const cardBg = asString(settings.template_card_bg) || "#ffffff";
+// Layout settings
   const gridColumns = resolveInt(settings.template_grid_columns, 4, 2, 6);
   const gridGap = resolveInt(settings.template_grid_gap, 16, 0, 48);
   const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
@@ -59,14 +71,23 @@ export default function ProMosaicTemplate(props: TemplateProps) {
   const hoverScale = asString(settings.template_hover_scale) || '1.02';
   const cardRadius = resolveInt(settings.template_card_border_radius, 12, 0, 32);
 
+  const logoUrl = asString(settings.store_logo) || asString((settings as any).logo_url);
   const storeName = asString(settings.store_name) || 'MOSAIC';
+  
+  const copyright = asString(settings.template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
+const storeDescription = asString(settings.store_description);
   const heroTitle = asString(settings.template_hero_heading) || 'Discover Your Style';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'A curated collection of unique finds';
   const cta = asString(settings.template_button_text) || 'Start Exploring';
 
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 20) || [];
 
-  const descText = asString(settings.template_description_text);
+  
+
+  const sectionTitle = asString(settings.template_featured_title) || "Featured";
+  const sectionSubtitle = asString(settings.template_featured_subtitle) || "";
+  const addToCartLabel = asString(settings.template_add_to_cart_label) || "View";
+const descText = asString(settings.template_description_text);
   const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 15, 10, 32);
 
@@ -78,6 +99,8 @@ export default function ProMosaicTemplate(props: TemplateProps) {
 
   return (
     <div
+      data-edit-path="__root"
+      onClick={() => canManage && onSelect("__root")}
       className="ecopro-storefront"
       style={{
         minHeight: '100vh',
@@ -101,7 +124,20 @@ export default function ProMosaicTemplate(props: TemplateProps) {
       >
         <div style={{ maxWidth: 1600, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-            <span style={{ fontSize: 22, fontWeight: 800, color: accent }}>{storeName}</span>
+            <div
+              data-edit-path="layout.header.logo"
+              onClick={(e) => select(e, 'layout.header.logo')}
+              style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: canManage ? 'pointer' : 'default' }}
+            >
+              {logoUrl && (
+                <img
+                  src={logoUrl}
+                  alt={storeName}
+                  style={{ width: 40, height: 40, borderRadius: 9999, objectFit: 'cover' }}
+                />
+              )}
+              <span style={{ fontSize: 22, fontWeight: 800, color: accent }}>{storeName}</span>
+            </div>
             {!isMobile && (
               <div style={{ display: 'flex', gap: 20, fontSize: 14, color: muted }}>
                 <button onClick={() => navigate('/')} style={{ background: 'none', border: 0, color: 'inherit', cursor: 'pointer' }}>Home</button>
@@ -207,7 +243,7 @@ export default function ProMosaicTemplate(props: TemplateProps) {
         style={{ maxWidth: 1600, margin: '0 auto', padding: `${sectionSpacing}px ${baseSpacing * 1.5}px ${sectionSpacing * 1.6}px` }}
       >
         <div style={{ marginBottom: baseSpacing * 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ fontSize: 24, fontWeight: 800, margin: 0 }}>Browse All</h2>
+          <h2 data-edit-path="layout.featured.title" style={{ fontSize: 24, fontWeight: 800, margin: 0 }}>{sectionTitle}</h2>
           <span style={{ color: muted, fontSize: 14 }}>{products.length} items</span>
         </div>
 
@@ -284,8 +320,22 @@ export default function ProMosaicTemplate(props: TemplateProps) {
           textAlign: 'center',
         }}
       >
-        <span style={{ fontSize: 18, fontWeight: 800, color: accent }}>{storeName}</span>
-        <p style={{ color: muted, fontSize: 13, marginTop: 12 }}>© {new Date().getFullYear()} All rights reserved.</p>
+        <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+          {logoUrl && (
+            <img
+              src={logoUrl}
+              alt={storeName}
+              style={{ width: 52, height: 52, borderRadius: 9999, objectFit: 'cover' }}
+            />
+          )}
+          <span style={{ fontSize: 18, fontWeight: 800, color: accent }}>{storeName}</span>
+          {(canManage || storeDescription) && (
+            <span style={{ color: muted, fontSize: 12, maxWidth: 560, lineHeight: 1.6 }}>
+              {storeDescription || (canManage ? 'Add store description...' : '')}
+            </span>
+          )}
+        </div>
+        <p data-edit-path="layout.featured.subtitle" style={{ color: muted, fontSize: 13, marginTop: 12 }}>{sectionSubtitle}</p>
       </footer>
     </div>
   );

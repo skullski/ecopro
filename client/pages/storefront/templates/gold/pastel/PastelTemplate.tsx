@@ -51,11 +51,20 @@ export default function PastelTemplate(props: TemplateProps) {
   const cardRadius = resolveInt(settings.template_card_border_radius, 24, 0, 32);
 
   const storeName = asString(settings.store_name) || 'Soft & Sweet';
-  const heroTitle = asString(settings.template_hero_heading) || 'Dreamy Collection 🌸';
+  
+  
+  const copyright = asString(settings.template_copyright) || `© 2026 ${storeName}`;
+const storeLogo = asString(settings.store_logo);
+  const storeDescription = asString(settings.store_description);
+const heroTitle = asString(settings.template_hero_heading) || 'Dreamy Collection 🌸';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Soft colors, beautiful styles';
   const ctaText = asString(settings.template_button_text) || 'Shop Now';
 
-  const products = useMemo(() => {
+  
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+  const addToCartLabel = asString(settings.template_add_to_cart_label) || 'View';
+const products = useMemo(() => {
     const list = props.filtered?.length ? props.filtered : props.products || [];
     return categoryFilter ? list.filter(p => p.category === categoryFilter) : list;
   }, [props.filtered, props.products, categoryFilter]);
@@ -66,7 +75,7 @@ export default function PastelTemplate(props: TemplateProps) {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: bg, color: text, fontFamily: 'system-ui, sans-serif' }} data-edit-path="__root">
       <header style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(90deg, #fbcfe8 0%, #ddd6fe 50%, #a5f3fc 100%)' }} data-edit-path="layout.header" onClick={(e) => clickGuard(e, 'layout.header')}>
-        <h1 style={{ fontSize: '24px', fontWeight: 600, color: '#fff' }} data-edit-path="layout.header.logo" onClick={(e) => clickGuard(e, 'layout.header.logo')}>🌸 {storeName}</h1>
+        <h1 style={{ fontSize: '24px', fontWeight: 600, color: '#fff' }} data-edit-path="layout.header.logo" onClick={(e) => clickGuard(e, 'layout.header.logo')}>{settings.store_logo ? (<img src={settings.store_logo} alt={storeName} style={{ width: 40, height: 40, borderRadius: '9999px', objectFit: 'cover' }} />) : null}🌸 {storeName}</h1>
       </header>
 
       <section style={{ padding: '80px 24px', textAlign: 'center' }} data-edit-path="layout.hero" onClick={(e) => clickGuard(e, 'layout.hero')}>
@@ -86,20 +95,36 @@ export default function PastelTemplate(props: TemplateProps) {
         </div>
       )}
 
-      <section style={{ padding: `${sectionSpacing}px ${baseSpacing}px`, maxWidth: '1400px', margin: '0 auto' }} data-edit-path="layout.products">
+      <section style={{ padding: `${sectionSpacing}px ${baseSpacing}px`, maxWidth: '1400px', margin: '0 auto' }} data-edit-path="layout.grid">
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: gridGap }}>
           {products.map(product => (
-            <div key={product.id} style={{ backgroundColor: cardBg, borderRadius: cardRadius, overflow: 'hidden', boxShadow: '0 4px 20px rgba(192,132,252,0.15)', cursor: canManage ? 'default' : 'pointer', transition: `transform ${animationSpeed}ms, box-shadow ${animationSpeed}ms` }} data-edit-path={`layout.products.${product.id}`}
+            <div key={product.id} style={{ backgroundColor: cardBg, borderRadius: cardRadius, overflow: 'hidden', boxShadow: '0 4px 20px rgba(192,132,252,0.15)', cursor: canManage ? 'default' : 'pointer', transition: `transform ${animationSpeed}ms, box-shadow ${animationSpeed}ms` }} data-edit-path={`layout.grid.items.${product.id}`}
               onMouseEnter={(e) => { e.currentTarget.style.transform = `scale(${hoverScale})`; e.currentTarget.style.boxShadow = '0 12px 32px rgba(192,132,252,0.25)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(192,132,252,0.15)'; }}
-              onClick={(e) => { e.stopPropagation(); if (!canManage && product.slug) props.navigate(product.slug); else if (canManage) onSelect(`layout.products.${product.id}`); }}>
+              onClick={(e) => { e.stopPropagation(); if (!canManage && product.slug) props.navigate(product.slug); else if (canManage) onSelect(`layout.grid.items.${product.id}`); }}>
               <div style={{ aspectRatio: '1', backgroundColor: '#fae8ff', overflow: 'hidden' }}>
                 {product.images?.[0] && <img src={product.images[0]} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
               </div>
               <div style={{ padding: '16px', textAlign: 'center' }}>
                 <p style={{ fontSize: '11px', color: '#ec4899', fontWeight: 600, marginBottom: '4px' }}>{product.category || 'PASTEL'}</p>
-                <h3 style={{ fontSize: '15px', fontWeight: 600, marginBottom: '8px' }}>{product.title}</h3>
-                <p style={{ fontSize: '18px', fontWeight: 700, color: accent }}>{props.formatPrice(product.price)}</p>
+                <h3 style={{ fontSize: '15px', fontWeight: 600, marginBottom: '8px', color: productTitleColor}}>{product.title}</h3>
+                <p style={{ fontSize: '18px', fontWeight: 700, color: productPriceColor }}>{props.formatPrice(product.price)}</p>
+                <button
+                  style={{
+                    marginTop: '12px',
+                    width: '100%',
+                    backgroundColor: accent,
+                    color: '#fff',
+                    padding: '10px 12px',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                  }}
+                >
+                  {addToCartLabel}
+                </button>
               </div>
             </div>
           ))}
@@ -107,7 +132,7 @@ export default function PastelTemplate(props: TemplateProps) {
       </section>
 
       <footer style={{ padding: `${sectionSpacing}px ${baseSpacing}px`, background: 'linear-gradient(90deg, #fbcfe8 0%, #ddd6fe 50%, #a5f3fc 100%)', marginTop: `${sectionSpacing}px`, textAlign: 'center' }} data-edit-path="layout.footer" onClick={(e) => clickGuard(e, 'layout.footer')}>
-        <p style={{ color: '#fff' }}>© {new Date().getFullYear()} {storeName} 💜</p>
+        <p style={{ color: '#fff' }}>{copyright}{storeDescription ? ` — ${storeDescription}` : ''} 💜</p>
       </footer>
     </div>
   );

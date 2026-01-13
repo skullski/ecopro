@@ -157,7 +157,10 @@ export const trackPixelEvent: RequestHandler = async (req, res) => {
     
     // Get client_id from store_slug
     const storeResult = await pool.query(
-      `SELECT client_id FROM client_store_settings WHERE store_slug = $1`,
+      `SELECT client_id
+       FROM client_store_settings
+       WHERE store_slug = $1
+          OR LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1)`,
       [store_slug]
     );
     
@@ -486,7 +489,10 @@ export const getPublicPixelConfig: RequestHandler = async (req, res) => {
     
     // Get client_id from store_slug
     const storeResult = await pool.query(
-      `SELECT client_id FROM client_store_settings WHERE store_slug = $1`,
+      `SELECT client_id
+       FROM client_store_settings
+       WHERE store_slug = $1
+          OR LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1)`,
       [storeSlug]
     );
     

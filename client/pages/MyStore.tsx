@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { storeNameToSlug } from '@/utils/storeUrl';
 
 export default function MyStore() {
   const navigate = useNavigate();
@@ -19,7 +20,9 @@ export default function MyStore() {
         }
 
         const data = await res.json().catch(() => ({} as any));
-        const storeSlug = data?.store_slug;
+        const preferred = data?.store_name ? storeNameToSlug(String(data.store_name)) : null;
+        const fallback = data?.store_slug ? String(data.store_slug) : null;
+        const storeSlug = preferred || fallback;
         if (storeSlug) {
           navigate(`/store/${storeSlug}`, { replace: true });
           return;

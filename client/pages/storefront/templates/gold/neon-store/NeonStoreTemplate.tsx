@@ -50,15 +50,28 @@ export default function NeonStoreTemplate(props: TemplateProps) {
   const muted = asString(settings.template_muted_color) || '#a3a3a3';
   const accent = asString(settings.template_accent_color) || '#00ff88';
 
-  const storeName = asString(settings.store_name) || 'NEON';
-  const heroTitle = asString(settings.template_hero_heading) || 'Next Level Products';
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+
+  const cardBg = asString(settings.template_card_bg) || "#ffffff";
+const storeName = asString(settings.store_name) || 'NEON';
+  
+  const copyright = asString(settings.template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
+const heroTitle = asString(settings.template_hero_heading) || 'Next Level Products';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Experience the future of shopping';
   const cta = asString(settings.template_button_text) || 'Shop Now';
 
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 12) || [];
 
-  const descText = asString(settings.template_description_text);
-  const descColor = asString(settings.template_description_color) || muted;
+  
+
+  const sectionTitle = asString(settings.template_featured_title) || "Featured";
+  const sectionSubtitle = asString(settings.template_featured_subtitle) || "";
+  const addToCartLabel = asString(settings.template_add_to_cart_label) || "View";
+const descText = (asString(settings.template_description_text) || asString(settings.store_description)).trim();
+const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 15, 10, 32);
 
   // Layout settings
@@ -72,6 +85,8 @@ export default function NeonStoreTemplate(props: TemplateProps) {
 
   return (
     <div
+      data-edit-path="__root"
+      onClick={() => canManage && onSelect("__root")}
       className="ecopro-storefront"
       style={{
         minHeight: '100vh',
@@ -205,7 +220,7 @@ export default function NeonStoreTemplate(props: TemplateProps) {
         style={{ maxWidth: 1200, margin: '0 auto', padding: `${sectionSpacing}px ${baseSpacing}px 80px` }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
-          <h2 style={{ fontSize: 24, fontWeight: 900, margin: 0, letterSpacing: '0.05em' }}>FEATURED</h2>
+          <h2 data-edit-path="layout.featured.title" style={{ fontSize: 24, fontWeight: 900, margin: 0, letterSpacing: '0.05em' }}>{sectionTitle}</h2>
           <button onClick={() => navigate('/products')} style={{ background: 'none', border: `1px solid ${accent}`, borderRadius: 4, padding: '10px 20px', color: accent, fontWeight: 700, cursor: 'pointer', fontSize: 12 }}>
             VIEW ALL
           </button>
@@ -249,7 +264,7 @@ export default function NeonStoreTemplate(props: TemplateProps) {
                 <img src={productImage(p)} alt={productTitle(p)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
               <div style={{ padding: 14 }}>
-                <h3 style={{ fontSize: 13, fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <h3 style={{ fontSize: 13, fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' , color: productTitleColor}}>
                   {productTitle(p)}
                 </h3>
                 <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -267,8 +282,8 @@ export default function NeonStoreTemplate(props: TemplateProps) {
       {/* CTA */}
       <section style={{ background: `linear-gradient(90deg, ${accent}20, transparent)`, padding: '60px 24px', borderTop: `1px solid ${accent}30` }}>
         <div style={{ maxWidth: 600, margin: '0 auto', textAlign: 'center' }}>
-          <h3 style={{ fontSize: 28, fontWeight: 900, margin: 0 }}>JOIN THE FUTURE</h3>
-          <p style={{ color: muted, marginTop: 12 }}>Subscribe for exclusive deals and early access</p>
+          <h3 style={{ fontSize: 28, fontWeight: 900, margin: 0 , color: productTitleColor}}>JOIN THE FUTURE</h3>
+          <p data-edit-path="layout.featured.subtitle" style={{ color: muted, marginTop: 12 }}>{sectionSubtitle}</p>
           <div style={{ marginTop: 24, display: 'flex', gap: 8 }}>
             <input 
               type="email" 
@@ -290,7 +305,7 @@ export default function NeonStoreTemplate(props: TemplateProps) {
       >
         <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 24 }}>
           <span style={{ fontSize: 24, fontWeight: 900, color: accent }}>{storeName}</span>
-          <span style={{ color: muted, fontSize: 13 }}>© {new Date().getFullYear()} {storeName}. All rights reserved.</span>
+          <span style={{ color: muted, fontSize: 13 }}>{copyright}</span>
         </div>
       </footer>
     </div>

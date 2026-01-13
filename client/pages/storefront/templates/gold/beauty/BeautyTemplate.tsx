@@ -83,7 +83,11 @@ export default function BeautyTemplate(props: TemplateProps) {
   const text = asString(settings.template_text_color) || '#1f1f1f';
   const muted = asString(settings.template_muted_color) || '#6b6b6b';
   const accent = asString(settings.template_accent_color) || '#b91c1c';
-  const headerBg = asString(settings.template_header_bg) || '#ffffff';
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+const headerBg = asString(settings.template_header_bg) || '#ffffff';
   const headerText = asString(settings.template_header_text) || '#1f1f1f';
   const cardBg = asString(settings.template_card_bg) || '#ffffff';
   const footerBg = asString(settings.template_footer_bg) || '#fff6fb';

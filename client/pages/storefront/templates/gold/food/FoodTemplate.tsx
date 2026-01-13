@@ -83,7 +83,11 @@ export default function FoodTemplate(props: TemplateProps) {
   const text = asString(settings.template_text_color) || '#ffffff';
   const muted = asString(settings.template_muted_color) || '#a3a3a3';
   const accent = asString(settings.template_accent_color) || '#ef4444';
-  const headerBg = asString(settings.template_header_bg) || 'rgba(26,26,26,0.95)';
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+const headerBg = asString(settings.template_header_bg) || 'rgba(26,26,26,0.95)';
   const headerText = asString(settings.template_header_text) || '#ffffff';
   const cardBg = asString(settings.template_card_bg) || '#262626';
   const footerBg = asString(settings.template_footer_bg) || '#0f0f0f';

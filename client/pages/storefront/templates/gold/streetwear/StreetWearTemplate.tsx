@@ -41,11 +41,20 @@ export default function StreetWearTemplate(props: TemplateProps) {
   const cardBg = settings.template_card_bg || '#1a1a1a';
 
   const storeName = settings.store_name || 'URBAN DRIP';
-  const heroTitle = settings.template_hero_heading || 'Street Culture 🔥';
+  
+  
+  const copyright = asString(settings.template_copyright) || `© 2026 ${storeName}`;
+const storeLogo = asString(settings.store_logo);
+  const storeDescription = asString(settings.store_description);
+const heroTitle = settings.template_hero_heading || 'Street Culture 🔥';
   const heroSubtitle = settings.template_hero_subtitle || 'Exclusive streetwear drops';
   const ctaText = settings.template_button_text || 'SHOP DROP';
 
-  const products = useMemo(() => {
+  
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+  const addToCartLabel = asString(settings.template_add_to_cart_label) || 'View';
+const products = useMemo(() => {
     const list = props.filtered?.length ? props.filtered : props.products || [];
     return categoryFilter ? list.filter(p => p.category === categoryFilter) : list;
   }, [props.filtered, props.products, categoryFilter]);
@@ -67,7 +76,7 @@ export default function StreetWearTemplate(props: TemplateProps) {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: bg, color: text, fontFamily: 'system-ui, sans-serif' }} data-edit-path="__root">
       <header style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} data-edit-path="layout.header" onClick={(e) => clickGuard(e, 'layout.header')}>
-        <h1 style={{ fontSize: '28px', fontWeight: 900, color: accent, letterSpacing: '-1px' }} data-edit-path="layout.header.logo" onClick={(e) => clickGuard(e, 'layout.header.logo')}>🔥 {storeName}</h1>
+        <h1 style={{ fontSize: '28px', fontWeight: 900, color: accent, letterSpacing: '-1px' }} data-edit-path="layout.header.logo" onClick={(e) => clickGuard(e, 'layout.header.logo')}>{settings.store_logo ? (<img src={settings.store_logo} alt={storeName} style={{ width: 40, height: 40, borderRadius: '9999px', objectFit: 'cover' }} />) : null}🔥 {storeName}</h1>
       </header>
 
       <section style={{ padding: '100px 24px', textAlign: 'center', background: `linear-gradient(180deg, ${accent}15 0%, transparent 100%)` }} data-edit-path="layout.hero" onClick={(e) => clickGuard(e, 'layout.hero')}>
@@ -85,20 +94,36 @@ export default function StreetWearTemplate(props: TemplateProps) {
         </div>
       )}
 
-      <section style={{ padding: `${sectionSpacing}px ${baseSpacing}px`, maxWidth: '1400px', margin: '0 auto' }} data-edit-path="layout.products">
+      <section style={{ padding: `${sectionSpacing}px ${baseSpacing}px`, maxWidth: '1400px', margin: '0 auto' }} data-edit-path="layout.grid">
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: gridGap }}>
           {products.map(product => (
-            <div key={product.id} style={{ backgroundColor: cardBg, borderRadius: cardRadius, overflow: 'hidden', cursor: canManage ? 'default' : 'pointer', transition: `transform ${animationSpeed}ms, box-shadow ${animationSpeed}ms` }} data-edit-path={`layout.products.${product.id}`}
+            <div key={product.id} style={{ backgroundColor: cardBg, borderRadius: cardRadius, overflow: 'hidden', cursor: canManage ? 'default' : 'pointer', transition: `transform ${animationSpeed}ms, box-shadow ${animationSpeed}ms` }} data-edit-path={`layout.grid.items.${product.id}`}
               onMouseEnter={(e) => { e.currentTarget.style.transform = `scale(${hoverScale})`; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.4)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}
-              onClick={(e) => { e.stopPropagation(); if (!canManage && product.slug) props.navigate(product.slug); else if (canManage) onSelect(`layout.products.${product.id}`); }}>
+              onClick={(e) => { e.stopPropagation(); if (!canManage && product.slug) props.navigate(product.slug); else if (canManage) onSelect(`layout.grid.items.${product.id}`); }}>
               <div style={{ aspectRatio: '1', backgroundColor: '#262626', overflow: 'hidden' }}>
                 {product.images?.[0] && <img src={product.images[0]} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
               </div>
               <div style={{ padding: '16px' }}>
-                <p style={{ fontSize: '10px', color: accent, fontWeight: 800, marginBottom: '4px' }}>{product.category || 'STREET'}</p>
-                <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '8px' }}>{product.title}</h3>
-                <p style={{ fontSize: '20px', fontWeight: 900, color: accent }}>{props.formatPrice(product.price)}</p>
+                <p style={{ fontSize: '10px', color: productPriceColor, fontWeight: 800, marginBottom: '4px' }}>{product.category || 'STREET'}</p>
+                <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '8px', color: productTitleColor}}>{product.title}</h3>
+                <p style={{ fontSize: '20px', fontWeight: 900, color: productPriceColor }}>{props.formatPrice(product.price)}</p>
+                <button
+                  style={{
+                    marginTop: '12px',
+                    width: '100%',
+                    backgroundColor: accent,
+                    color: '#fff',
+                    padding: '10px 12px',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                  }}
+                >
+                  {addToCartLabel}
+                </button>
               </div>
             </div>
           ))}
@@ -106,7 +131,7 @@ export default function StreetWearTemplate(props: TemplateProps) {
       </section>
 
       <footer style={{ padding: '48px 24px', marginTop: '48px', textAlign: 'center', borderTop: `2px solid ${accent}` }} data-edit-path="layout.footer" onClick={(e) => clickGuard(e, 'layout.footer')}>
-        <p style={{ color: '#525252' }}>© {new Date().getFullYear()} {storeName}</p>
+        <p style={{ color: '#525252' }}>{copyright}{storeDescription ? ` — ${storeDescription}` : ''}</p>
       </footer>
     </div>
   );

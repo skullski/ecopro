@@ -87,7 +87,11 @@ export default function ClassicTemplate(props: TemplateProps) {
   const text = asString(settings.template_text_color) || '#2d2a26';
   const muted = asString(settings.template_muted_color) || '#6b6560';
   const accent = asString(settings.template_accent_color) || '#c17f59';
-  const headerBg = asString(settings.template_header_bg) || '#ffffff';
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+const headerBg = asString(settings.template_header_bg) || '#ffffff';
   const headerText = asString(settings.template_header_text) || '#2d2a26';
   const cardBg = asString(settings.template_card_bg) || '#ffffff';
   const border = asString(settings.template_border_color) || '#e8e4df';
@@ -529,7 +533,7 @@ export default function ClassicTemplate(props: TemplateProps) {
                     <p style={{
                       fontSize: '16px',
                       fontWeight: '600',
-                      color: accent,
+                      color: productPriceColor,
                     }}>
                       {props.formatPrice(product.price)}
                     </p>
@@ -588,7 +592,7 @@ export default function ClassicTemplate(props: TemplateProps) {
             marginBottom: '32px',
           }}>
             <div style={{ textAlign: isMobile ? 'center' : 'left' }}>
-              <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '12px' }}>
+              <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '12px' , color: productTitleColor}}>
                 {storeName}
               </h3>
               <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.7)', maxWidth: '300px' }}>

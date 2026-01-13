@@ -33,6 +33,12 @@ export default function ExhibitStoreTemplate(props: TemplateProps) {
       (props as any).onSelect(path);
     }
   };
+  const select = (e: React.MouseEvent, path: string) => {
+    if (!canManage) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onSelect(path);
+  };
 
   const [isMobile, setIsMobile] = React.useState((props as any).forcedBreakpoint === 'mobile');
   
@@ -51,14 +57,29 @@ export default function ExhibitStoreTemplate(props: TemplateProps) {
   const muted = asString(settings.template_muted_color) || '#78716c';
   const accent = asString(settings.template_accent_color) || '#0d9488';
 
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+
+  const cardBg = asString(settings.template_card_bg) || "#ffffff";
+const logoUrl = asString(settings.store_logo) || asString((settings as any).logo_url);
   const storeName = asString(settings.store_name) || 'EXHIBIT';
+  
+  const copyright = asString(settings.template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
+const storeDescription = asString(settings.store_description);
   const heroTitle = asString(settings.template_hero_heading) || 'Curated Excellence';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Handpicked products for the discerning buyer';
   const cta = asString(settings.template_button_text) || 'Shop Now';
 
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 12) || [];
 
-  const descText = asString(settings.template_description_text);
+  
+
+  const sectionTitle = asString(settings.template_featured_title) || "Featured";
+  const sectionSubtitle = asString(settings.template_featured_subtitle) || "";
+  const addToCartLabel = asString(settings.template_add_to_cart_label) || "View";
+const descText = asString(settings.template_description_text);
   const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 15, 10, 32);
 
@@ -75,6 +96,8 @@ export default function ExhibitStoreTemplate(props: TemplateProps) {
 
   return (
     <div
+      data-edit-path="__root"
+      onClick={() => canManage && onSelect("__root")}
       className="ecopro-storefront"
       style={{
         minHeight: '100vh',
@@ -96,7 +119,20 @@ export default function ExhibitStoreTemplate(props: TemplateProps) {
           margin: '0 auto',
         }}
       >
-        <span style={{ fontSize: 28, fontWeight: 600, letterSpacing: '0.2em' }}>{storeName}</span>
+        <div
+          data-edit-path="layout.header.logo"
+          onClick={(e) => select(e, 'layout.header.logo')}
+          style={{ display: 'flex', alignItems: 'center', gap: 14, cursor: canManage ? 'pointer' : 'default' }}
+        >
+          {logoUrl && (
+            <img
+              src={logoUrl}
+              alt={storeName}
+              style={{ width: 44, height: 44, borderRadius: 9999, objectFit: 'cover' }}
+            />
+          )}
+          <span style={{ fontSize: 28, fontWeight: 600, letterSpacing: '0.2em' }}>{storeName}</span>
+        </div>
         
         {!isMobile && (
           <nav style={{ display: 'flex', gap: 40, fontSize: 14, fontFamily: '"Inter", sans-serif', letterSpacing: '0.1em' }}>
@@ -206,7 +242,7 @@ export default function ExhibitStoreTemplate(props: TemplateProps) {
         onClick={() => canManage && onSelect('layout.grid')}
         style={{ maxWidth: 1400, margin: '0 auto', padding: `${sectionSpacing}px 24px 100px` }}
       >
-        <h2 style={{ fontSize: 36, fontWeight: 500, textAlign: 'center', marginBottom: sectionSpacing, letterSpacing: '0.1em' }}>THE COLLECTION</h2>
+        <h2 data-edit-path="layout.featured.title" style={{ fontSize: 36, fontWeight: 500, textAlign: 'center', marginBottom: sectionSpacing, letterSpacing: '0.1em' }}>{sectionTitle}</h2>
         
         <div
           style={{
@@ -243,10 +279,8 @@ export default function ExhibitStoreTemplate(props: TemplateProps) {
                 />
               </div>
               <div style={{ padding: '20px 0' }}>
-                <h3 style={{ fontSize: 18, fontWeight: 500, margin: 0 }}>{productTitle(p)}</h3>
-                <p style={{ marginTop: 8, fontFamily: '"Inter", sans-serif', fontSize: 15, fontWeight: 600 }}>
-                  {formatPrice(Number(p.price) || 0)}
-                </p>
+                <h3 style={{ fontSize: 18, fontWeight: 500, margin: 0 , color: productTitleColor}}>{productTitle(p)}</h3>
+                <p data-edit-path="layout.featured.subtitle" style={{ marginTop: 8, fontFamily: '"Inter", sans-serif', fontSize: 15, fontWeight: 600 }}>{sectionSubtitle}</p>
               </div>
             </div>
           ))}
@@ -290,7 +324,7 @@ export default function ExhibitStoreTemplate(props: TemplateProps) {
       {/* Contact / Order */}
       <section style={{ padding: '80px 24px', background: '#fff' }}>
         <div style={{ maxWidth: 500, margin: '0 auto', textAlign: 'center' }}>
-          <h3 style={{ fontSize: 32, fontWeight: 500, margin: 0, letterSpacing: '0.1em' }}>INQUIRE</h3>
+          <h3 style={{ fontSize: 32, fontWeight: 500, margin: 0, letterSpacing: '0.1em' , color: productTitleColor}}>INQUIRE</h3>
           <p style={{ marginTop: 16, fontFamily: '"Inter", sans-serif', color: muted, fontSize: 15, lineHeight: 1.7 }}>
             Interested in a piece? Fill out the form and we'll get back to you.
           </p>
@@ -351,9 +385,16 @@ export default function ExhibitStoreTemplate(props: TemplateProps) {
         style={{ padding: '48px 24px', borderTop: '1px solid #e5e5e5' }}
       >
         <div style={{ maxWidth: 1400, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 24 }}>
-          <span style={{ fontSize: 20, fontWeight: 600, letterSpacing: '0.2em' }}>{storeName}</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <span style={{ fontSize: 20, fontWeight: 600, letterSpacing: '0.2em' }}>{storeName}</span>
+            {(canManage || storeDescription) && (
+              <span style={{ fontFamily: '"Inter", sans-serif', color: muted, fontSize: 12 }}>
+                {storeDescription || (canManage ? 'Add store description...' : '')}
+              </span>
+            )}
+          </div>
           <span style={{ fontFamily: '"Inter", sans-serif', color: muted, fontSize: 13 }}>
-            © {new Date().getFullYear()} {storeName}. All rights reserved.
+            {copyright}
           </span>
         </div>
       </footer>

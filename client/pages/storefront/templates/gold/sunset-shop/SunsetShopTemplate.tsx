@@ -50,15 +50,28 @@ export default function SunsetShopTemplate(props: TemplateProps) {
   const muted = asString(settings.template_muted_color) || '#6b7280';
   const accent = asString(settings.template_accent_color) || '#f97316';
 
-  const storeName = asString(settings.store_name) || 'Sunset Shop';
-  const heroTitle = asString(settings.template_hero_heading) || 'Discover Unique Styles';
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+
+  const cardBg = asString(settings.template_card_bg) || "#ffffff";
+const storeName = asString(settings.store_name) || 'Sunset Shop';
+  
+  const copyright = asString(settings.template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
+const heroTitle = asString(settings.template_hero_heading) || 'Discover Unique Styles';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Handcrafted pieces for every occasion';
   const cta = asString(settings.template_button_text) || 'Shop Now';
 
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 12) || [];
 
-  const descText = asString(settings.template_description_text);
-  const descColor = asString(settings.template_description_color) || muted;
+  
+
+  const sectionTitle = asString(settings.template_featured_title) || "Featured";
+  const sectionSubtitle = asString(settings.template_featured_subtitle) || "";
+  const addToCartLabel = asString(settings.template_add_to_cart_label) || "View";
+const descText = (asString(settings.template_description_text) || asString(settings.store_description)).trim();
+const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 15, 10, 32);
 
   // Layout settings
@@ -74,6 +87,8 @@ export default function SunsetShopTemplate(props: TemplateProps) {
 
   return (
     <div
+      data-edit-path="__root"
+      onClick={() => canManage && onSelect("__root")}
       className="ecopro-storefront"
       style={{
         minHeight: '100vh',
@@ -200,7 +215,7 @@ export default function SunsetShopTemplate(props: TemplateProps) {
         style={{ maxWidth: 1200, margin: '0 auto', padding: `${sectionSpacing}px ${baseSpacing}px` }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
-          <h2 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>Featured Products</h2>
+          <h2 data-edit-path="layout.featured.title" style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>{sectionTitle}</h2>
           <button onClick={() => navigate('/products')} style={{ background: 'none', border: 0, color: accent, fontWeight: 600, cursor: 'pointer' }}>
             View All →
           </button>
@@ -236,7 +251,7 @@ export default function SunsetShopTemplate(props: TemplateProps) {
                 <img src={productImage(p)} alt={productTitle(p)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
               <div style={{ padding: 14 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' , color: productTitleColor}}>
                   {productTitle(p)}
                 </h3>
                 <div style={{ marginTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -277,9 +292,7 @@ export default function SunsetShopTemplate(props: TemplateProps) {
         <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(4, 1fr)', gap: 32 }}>
           <div>
             <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>{storeName}</div>
-            <p style={{ opacity: 0.7, fontSize: 14, lineHeight: 1.7 }}>
-              Your trusted destination for quality products.
-            </p>
+            <p data-edit-path="layout.featured.subtitle" style={{ opacity: 0.7, fontSize: 14, lineHeight: 1.7 }}>{sectionSubtitle}</p>
           </div>
           {['Shop', 'Help', 'Company'].map((section) => (
             <div key={section}>
@@ -293,7 +306,7 @@ export default function SunsetShopTemplate(props: TemplateProps) {
           ))}
         </div>
         <div style={{ maxWidth: 1200, margin: '32px auto 0', paddingTop: 24, borderTop: '1px solid rgba(255,255,255,0.1)', textAlign: 'center', fontSize: 13, opacity: 0.6 }}>
-          © {new Date().getFullYear()} {storeName}. All rights reserved.
+          {copyright}
         </div>
       </footer>
     </div>

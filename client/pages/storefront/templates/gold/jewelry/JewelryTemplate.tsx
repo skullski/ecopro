@@ -80,6 +80,7 @@ export default function JewelryTemplate(props: TemplateProps) {
   };
 
   const storeName = asString(settings.store_name) || 'JEWELRYOS';
+  const storeDescription = asString(settings.store_description);
 
   // Advanced settings - properly parsed
   const gridGap = resolveInt((settings as any).template_grid_gap, 24, 8, 48);
@@ -103,7 +104,12 @@ export default function JewelryTemplate(props: TemplateProps) {
     'A focused collection of rings, bracelets, necklaces and earrings in 18K gold, silver and diamonds. Built for quiet luxury, worn every day.';
 
   const accent = asString(settings.template_accent_color) || '#d4af37';
-  const heroImage = asString(settings.banner_url) || (props.products?.[0]?.images?.[0] || '/placeholder.png');
+  const productTitleColor = asString(settings.template_product_title_color) || '#111827';
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+  const cardBg = asString(settings.template_card_bg) || '#ffffff';
+  const cardRadius = resolveInt(settings.template_card_border_radius, 18, 0, 32);
+  const addToCartLabel = asString(settings.template_add_to_cart_label) || 'View';
+const heroImage = asString(settings.banner_url) || (props.products?.[0]?.images?.[0] || '/placeholder.png');
 
   const ctaLabel = asString(settings.template_button_text) || 'Explore the collection';
 
@@ -150,7 +156,7 @@ export default function JewelryTemplate(props: TemplateProps) {
 
   const categoryList = ['' as const, ...(Array.isArray(props.categories) ? props.categories : [])].slice(0, 12);
 
-  const descriptionText = (asString((settings as any).template_description_text) || asString((settings as any).store_description)).trim();
+  const descriptionText = (asString((settings as any).template_description_text) || storeDescription).trim();
   const descriptionColor = asString((settings as any).template_description_color) || asString((settings as any).template_footer_text) || '#6b7280';
   const descriptionSize = resolveInt((settings as any).template_description_size, 14, 10, 32);
   const descriptionStyle = asString((settings as any).template_description_style) || 'normal';
@@ -446,8 +452,8 @@ export default function JewelryTemplate(props: TemplateProps) {
             return (
               <div
                 key={p.id}
-                className="bg-white rounded-[18px] border border-gray-200 overflow-hidden"
-                style={{ transition: `all ${animationSpeed}ms ease`, cursor: canManage ? 'default' : 'pointer' }}
+                className="border border-gray-200 overflow-hidden"
+                style={{ backgroundColor: cardBg, borderRadius: `${cardRadius}px`, transition: `all ${animationSpeed}ms ease`, cursor: canManage ? 'default' : 'pointer' }}
                 data-edit-path={`layout.featured.items.${p.id}`}
                 onClick={(e) => {
                   if (!canManage && p?.slug) {
@@ -474,11 +480,31 @@ export default function JewelryTemplate(props: TemplateProps) {
                   }}
                 />
                 <div className="p-4">
-                  <div className="text-sm font-serif text-gray-900" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</div>
+                  <div
+                    className="text-sm font-serif"
+                    style={{ color: productTitleColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                  >
+                    {p.title}
+                  </div>
                   {p.category ? <div className="text-[11px] text-gray-500 mt-1" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.category}</div> : null}
-                  <div className="text-[12px] font-semibold mt-2" style={{ color: accent, whiteSpace: 'nowrap' }}>
+                  <div className="text-[12px] font-semibold mt-2" style={{ color: productPriceColor, whiteSpace: 'nowrap' }}>
                     {props.formatPrice(p.price)}
                   </div>
+
+                  <button
+                    type="button"
+                    className="mt-3 text-[11px] uppercase tracking-[0.14em]"
+                    style={{ background: 'transparent', border: `1px solid ${accent}55`, color: accent, padding: '8px 10px', borderRadius: 9999, cursor: 'pointer' }}
+                    data-edit-path="layout.featured.addLabel"
+                    onClick={(e) => {
+                      if (!canManage) return;
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onSelect('layout.featured.addLabel');
+                    }}
+                  >
+                    {addToCartLabel}
+                  </button>
                 </div>
               </div>
             );

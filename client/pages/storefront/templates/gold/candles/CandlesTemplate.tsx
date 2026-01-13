@@ -41,9 +41,34 @@ export default function CandlesTemplate(props: TemplateProps) {
   const cardBg = settings.template_card_bg || '#292524';
 
   const storeName = settings.store_name || 'Warm Glow';
+  const logoUrl = asString(settings.store_logo) || asString((settings as any).logo_url);
+  const storeDescription = asString(settings.store_description);
   const heroTitle = settings.template_hero_heading || 'Light Up Your Space 🕯️';
   const heroSubtitle = settings.template_hero_subtitle || 'Premium scented candles for every mood';
   const ctaText = settings.template_button_text || 'Shop Candles';
+
+  const addLabel = asString((settings as any).template_add_to_cart_label) || 'VIEW';
+  const productTitleColor = asString((settings as any).template_product_title_color) || text;
+  const productPriceColor = asString((settings as any).template_product_price_color) || accent;
+
+  const featuredTitle = asString((settings as any).template_featured_title) || 'Featured candles';
+  const featuredSubtitle = asString((settings as any).template_featured_subtitle) || '';
+
+  const rawSocial = (settings as any).template_social_links;
+  const socialLinks: Array<{ platform: string; url: string }> = (() => {
+    if (Array.isArray(rawSocial)) return rawSocial as any;
+    if (typeof rawSocial !== 'string' || !rawSocial.trim()) return [];
+    try {
+      const parsed = JSON.parse(rawSocial);
+      return Array.isArray(parsed) ? (parsed as any) : [];
+    } catch {
+      return [];
+    }
+  })()
+    .map((l: any) => ({ platform: asString(l?.platform), url: asString(l?.url) }))
+    .filter((l) => l.platform && l.url);
+
+  const copyright = asString((settings as any).template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
 
   // Layout settings
   const gridColumns = resolveInt(settings.template_grid_columns, 4, 2, 6);
@@ -65,7 +90,27 @@ export default function CandlesTemplate(props: TemplateProps) {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: bg, color: text, fontFamily: 'Georgia, serif' }} data-edit-path="__root">
       <header style={{ padding: '20px 24px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} data-edit-path="layout.header" onClick={(e) => clickGuard(e, 'layout.header')}>
-        <h1 style={{ fontSize: '28px', fontWeight: 400, fontStyle: 'italic', color: accent }} data-edit-path="layout.header.logo" onClick={(e) => clickGuard(e, 'layout.header.logo')}>🕯️ {storeName}</h1>
+        <div
+          style={{ display: 'flex', alignItems: 'center', gap: 12, textAlign: 'center' }}
+          data-edit-path="layout.header.logo"
+          onClick={(e) => clickGuard(e, 'layout.header.logo')}
+        >
+          {logoUrl && (
+            <img
+              src={logoUrl}
+              alt={storeName}
+              style={{ width: 44, height: 44, borderRadius: 9999, objectFit: 'cover', border: `2px solid ${accent}` }}
+            />
+          )}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+            <h1 style={{ fontSize: '28px', fontWeight: 400, fontStyle: 'italic', color: accent, margin: 0 }}>🕯️ {storeName}</h1>
+            {(canManage || storeDescription) && (
+              <div style={{ fontSize: 12, color: '#a8a29e', maxWidth: 520, lineHeight: 1.35 }}>
+                {storeDescription || (canManage ? 'Add store description...' : '')}
+              </div>
+            )}
+          </div>
+        </div>
       </header>
 
       <section style={{ padding: '80px 24px', textAlign: 'center', background: `radial-gradient(circle at center, ${accent}22 0%, transparent 50%)` }} data-edit-path="layout.hero" onClick={(e) => clickGuard(e, 'layout.hero')}>
@@ -83,7 +128,34 @@ export default function CandlesTemplate(props: TemplateProps) {
         </div>
       )}
 
-      <section style={{ padding: `${sectionSpacing}px 24px`, maxWidth: '1400px', margin: '0 auto' }} data-edit-path="layout.products">
+      <div
+        style={{ padding: '0 24px', maxWidth: '1400px', margin: '0 auto', textAlign: 'center' }}
+        data-edit-path="layout.featured"
+        onClick={(e) => clickGuard(e, 'layout.featured')}
+      >
+        <h2
+          style={{ margin: '0 0 10px', fontSize: 22, fontWeight: 400, color: accent, fontStyle: 'italic' }}
+          data-edit-path="layout.featured.title"
+          onClick={(e) => clickGuard(e, 'layout.featured.title')}
+        >
+          {featuredTitle}
+        </h2>
+        {(canManage || featuredSubtitle) && (
+          <p
+            style={{ margin: '0 0 18px', color: '#a8a29e', fontSize: 14, fontStyle: 'italic' }}
+            data-edit-path="layout.featured.subtitle"
+            onClick={(e) => clickGuard(e, 'layout.featured.subtitle')}
+          >
+            {featuredSubtitle || (canManage ? 'Add section subtitle...' : '')}
+          </p>
+        )}
+      </div>
+
+      <section
+        style={{ padding: `${sectionSpacing}px 24px`, maxWidth: '1400px', margin: '0 auto' }}
+        data-edit-path="layout.grid"
+        onClick={(e) => clickGuard(e, 'layout.grid')}
+      >
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: `${gridGap}px` }}>
           {products.map(product => (
             <div key={product.id} style={{ backgroundColor: cardBg, borderRadius: cardRadius, overflow: 'hidden', cursor: canManage ? 'default' : 'pointer', transition: `transform ${animationSpeed}ms` }} data-edit-path={`layout.products.${product.id}`}
@@ -95,8 +167,19 @@ export default function CandlesTemplate(props: TemplateProps) {
               </div>
               <div style={{ padding: '20px', textAlign: 'center' }}>
                 <p style={{ fontSize: '10px', letterSpacing: '2px', color: accent, marginBottom: '8px' }}>{product.category || 'CANDLE'}</p>
-                <h3 style={{ fontSize: '16px', fontWeight: 400, fontStyle: 'italic', marginBottom: '10px' }}>{product.title}</h3>
-                <p style={{ fontSize: '18px', fontWeight: 600, color: accent }}>{props.formatPrice(product.price)}</p>
+                <h3 style={{ fontSize: '16px', fontWeight: 400, fontStyle: 'italic', marginBottom: '10px', color: productTitleColor }}>{product.title}</h3>
+                <p style={{ fontSize: '18px', fontWeight: 600, color: productPriceColor }}>{props.formatPrice(product.price)}</p>
+                <button
+                  style={{ marginTop: 12, backgroundColor: accent, color: bg, padding: '10px 16px', border: 'none', cursor: 'pointer', fontSize: 12, borderRadius: 4 }}
+                  data-edit-path="layout.featured.addLabel"
+                  onClick={(e) => {
+                    if (canManage) return clickGuard(e, 'layout.featured.addLabel');
+                    e.stopPropagation();
+                    if (product.slug) props.navigate(product.slug);
+                  }}
+                >
+                  {addLabel}
+                </button>
               </div>
             </div>
           ))}
@@ -104,7 +187,32 @@ export default function CandlesTemplate(props: TemplateProps) {
       </section>
 
       <footer style={{ padding: '48px 24px', borderTop: `1px solid ${accent}33`, marginTop: '48px', textAlign: 'center' }} data-edit-path="layout.footer" onClick={(e) => clickGuard(e, 'layout.footer')}>
-        <p style={{ color: '#78716c', fontStyle: 'italic' }}>© {new Date().getFullYear()} {storeName}</p>
+        <p style={{ color: '#78716c', fontStyle: 'italic', margin: 0 }} data-edit-path="layout.footer.copyright" onClick={(e) => clickGuard(e, 'layout.footer.copyright')}>
+          {copyright}
+        </p>
+        <div
+          style={{ display: 'flex', gap: 14, justifyContent: 'center', marginTop: 14, flexWrap: 'wrap' }}
+          data-edit-path="layout.footer.social"
+          onClick={(e) => clickGuard(e, 'layout.footer.social')}
+        >
+          {(canManage || socialLinks.length > 0) &&
+            (socialLinks.length ? socialLinks : [{ platform: 'instagram', url: '#' }]).map((l) => (
+              <a
+                key={`${l.platform}-${l.url}`}
+                href={l.url}
+                style={{ color: accent, textDecoration: 'none', fontSize: 12 }}
+                onClick={(e) => {
+                  if (canManage) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onSelect('layout.footer.social');
+                  }
+                }}
+              >
+                {l.platform}
+              </a>
+            ))}
+        </div>
       </footer>
     </div>
   );

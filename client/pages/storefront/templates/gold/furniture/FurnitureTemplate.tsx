@@ -83,7 +83,11 @@ export default function FurnitureTemplate(props: TemplateProps) {
   const text = asString(settings.template_text_color) || '#1c1917';
   const muted = asString(settings.template_muted_color) || '#78716c';
   const accent = asString(settings.template_accent_color) || '#78716c';
-  const headerBg = asString(settings.template_header_bg) || '#ffffff';
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+const headerBg = asString(settings.template_header_bg) || '#ffffff';
   const headerText = asString(settings.template_header_text) || '#1c1917';
   const cardBg = asString(settings.template_card_bg) || '#ffffff';
   const footerBg = asString(settings.template_footer_bg) || cardBg;

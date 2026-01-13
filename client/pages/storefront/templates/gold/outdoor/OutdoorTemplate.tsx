@@ -51,11 +51,20 @@ export default function OutdoorTemplate(props: TemplateProps) {
   const cardRadius = resolveInt(settings.template_card_border_radius, 8, 0, 32);
 
   const storeName = asString(settings.store_name) || 'WILD CAMP';
-  const heroTitle = asString(settings.template_hero_heading) || 'Explore The Outdoors 🏕️';
+  
+  
+  const copyright = asString(settings.template_copyright) || `© 2026 ${storeName}`;
+const storeLogo = asString(settings.store_logo);
+  const storeDescription = asString(settings.store_description);
+const heroTitle = asString(settings.template_hero_heading) || 'Explore The Outdoors 🏕️';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Premium camping & hiking gear';
   const ctaText = asString(settings.template_button_text) || 'GEAR UP';
 
-  const products = useMemo(() => {
+  
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+  const addToCartLabel = asString(settings.template_add_to_cart_label) || 'View';
+const products = useMemo(() => {
     const list = props.filtered?.length ? props.filtered : props.products || [];
     return categoryFilter ? list.filter(p => p.category === categoryFilter) : list;
   }, [props.filtered, props.products, categoryFilter]);
@@ -66,11 +75,11 @@ export default function OutdoorTemplate(props: TemplateProps) {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: bg, color: text, fontFamily: 'system-ui, sans-serif' }} data-edit-path="__root">
       <header style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#0c0a09' }} data-edit-path="layout.header" onClick={(e) => clickGuard(e, 'layout.header')}>
-        <h1 style={{ fontSize: '22px', fontWeight: 900, letterSpacing: '2px' }} data-edit-path="layout.header.logo" onClick={(e) => clickGuard(e, 'layout.header.logo')}>⛺ {storeName}</h1>
+        <h1 style={{ fontSize: '22px', fontWeight: 900, letterSpacing: '2px' }} data-edit-path="layout.header.logo" onClick={(e) => clickGuard(e, 'layout.header.logo')}>{settings.store_logo ? (<img src={settings.store_logo} alt={storeName} style={{ width: 40, height: 40, borderRadius: '9999px', objectFit: 'cover' }} />) : null}⛺ {storeName}</h1>
       </header>
 
       <section style={{ padding: '100px 24px', textAlign: 'center', background: `linear-gradient(135deg, #365314 0%, ${bg} 100%)` }} data-edit-path="layout.hero" onClick={(e) => clickGuard(e, 'layout.hero')}>
-        <p style={{ fontSize: '12px', letterSpacing: '4px', color: accent, marginBottom: '16px' }}>ADVENTURE AWAITS</p>
+        <p style={{ fontSize: '12px', letterSpacing: '4px', color: productPriceColor, marginBottom: '16px' }}>ADVENTURE AWAITS</p>
         <h2 style={{ fontSize: breakpoint === 'mobile' ? '36px' : '60px', fontWeight: 900, marginBottom: '20px' }} data-edit-path="layout.hero.title" onClick={(e) => clickGuard(e, 'layout.hero.title')}>{heroTitle}</h2>
         <p style={{ color: '#a8a29e', fontSize: '18px', marginBottom: '32px' }} data-edit-path="layout.hero.subtitle" onClick={(e) => clickGuard(e, 'layout.hero.subtitle')}>{heroSubtitle}</p>
         <button style={{ backgroundColor: accent, color: '#1c1917', padding: '16px 40px', fontSize: '14px', fontWeight: 800, border: 'none', borderRadius: '4px', cursor: 'pointer' }} data-edit-path="layout.hero.cta" onClick={(e) => clickGuard(e, 'layout.hero.cta')}>{ctaText}</button>
@@ -84,20 +93,36 @@ export default function OutdoorTemplate(props: TemplateProps) {
         </div>
       )}
 
-      <section style={{ padding: `${sectionSpacing}px ${baseSpacing}px`, maxWidth: '1400px', margin: '0 auto' }} data-edit-path="layout.products">
+      <section style={{ padding: `${sectionSpacing}px ${baseSpacing}px`, maxWidth: '1400px', margin: '0 auto' }} data-edit-path="layout.grid">
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: gridGap }}>
           {products.map(product => (
-            <div key={product.id} style={{ backgroundColor: cardBg, borderRadius: cardRadius, overflow: 'hidden', cursor: canManage ? 'default' : 'pointer', transition: `transform ${animationSpeed}ms, box-shadow ${animationSpeed}ms` }} data-edit-path={`layout.products.${product.id}`}
+            <div key={product.id} style={{ backgroundColor: cardBg, borderRadius: cardRadius, overflow: 'hidden', cursor: canManage ? 'default' : 'pointer', transition: `transform ${animationSpeed}ms, box-shadow ${animationSpeed}ms` }} data-edit-path={`layout.grid.items.${product.id}`}
               onMouseEnter={(e) => { e.currentTarget.style.transform = `scale(${hoverScale})`; e.currentTarget.style.boxShadow = `0 8px 24px rgba(132,204,22,0.2)`; }}
               onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}
-              onClick={(e) => { e.stopPropagation(); if (!canManage && product.slug) props.navigate(product.slug); else if (canManage) onSelect(`layout.products.${product.id}`); }}>
+              onClick={(e) => { e.stopPropagation(); if (!canManage && product.slug) props.navigate(product.slug); else if (canManage) onSelect(`layout.grid.items.${product.id}`); }}>
               <div style={{ aspectRatio: '1', backgroundColor: '#1c1917', overflow: 'hidden' }}>
                 {product.images?.[0] && <img src={product.images[0]} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
               </div>
               <div style={{ padding: '16px' }}>
-                <p style={{ fontSize: '10px', color: accent, fontWeight: 700, marginBottom: '4px' }}>{product.category || 'OUTDOOR'}</p>
-                <h3 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '8px' }}>{product.title}</h3>
-                <p style={{ fontSize: '18px', fontWeight: 800, color: accent }}>{props.formatPrice(product.price)}</p>
+                <p style={{ fontSize: '10px', color: productPriceColor, fontWeight: 700, marginBottom: '4px' }}>{product.category || 'OUTDOOR'}</p>
+                <h3 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '8px', color: productTitleColor}}>{product.title}</h3>
+                <p style={{ fontSize: '18px', fontWeight: 800, color: productPriceColor }}>{props.formatPrice(product.price)}</p>
+                <button
+                  style={{
+                    marginTop: '12px',
+                    width: '100%',
+                    backgroundColor: accent,
+                    color: '#fff',
+                    padding: '10px 12px',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                  }}
+                >
+                  {addToCartLabel}
+                </button>
               </div>
             </div>
           ))}
@@ -105,7 +130,7 @@ export default function OutdoorTemplate(props: TemplateProps) {
       </section>
 
       <footer style={{ padding: `${sectionSpacing}px ${baseSpacing}px`, backgroundColor: '#0c0a09', marginTop: `${sectionSpacing}px`, textAlign: 'center' }} data-edit-path="layout.footer" onClick={(e) => clickGuard(e, 'layout.footer')}>
-        <p style={{ color: '#78716c' }}>© {new Date().getFullYear()} {storeName}</p>
+        <p style={{ color: '#78716c' }}>{copyright}{storeDescription ? ` — ${storeDescription}` : ''}</p>
       </footer>
     </div>
   );

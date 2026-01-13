@@ -50,15 +50,28 @@ export default function MintEleganceTemplate(props: TemplateProps) {
   const muted = asString(settings.template_muted_color) || '#5c7a6e';
   const accent = asString(settings.template_accent_color) || '#3d9970';
 
-  const storeName = asString(settings.store_name) || 'Mint & Co';
-  const heroTitle = asString(settings.template_hero_heading) || 'Fresh Perspectives';
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+
+  const cardBg = asString(settings.template_card_bg) || "#ffffff";
+const storeName = asString(settings.store_name) || 'Mint & Co';
+  
+  const copyright = asString(settings.template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
+const heroTitle = asString(settings.template_hero_heading) || 'Fresh Perspectives';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Where modern design meets natural beauty';
   const cta = asString(settings.template_button_text) || 'Explore Now';
 
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 12) || [];
 
-  const descText = asString(settings.template_description_text);
-  const descColor = asString(settings.template_description_color) || muted;
+  
+
+  const sectionTitle = asString(settings.template_featured_title) || "Featured";
+  const sectionSubtitle = asString(settings.template_featured_subtitle) || "";
+  const addToCartLabel = asString(settings.template_add_to_cart_label) || "View";
+const descText = (asString(settings.template_description_text) || asString(settings.store_description)).trim();
+const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 15, 10, 32);
 
   // Layout settings
@@ -72,6 +85,8 @@ export default function MintEleganceTemplate(props: TemplateProps) {
 
   return (
     <div
+      data-edit-path="__root"
+      onClick={() => canManage && onSelect("__root")}
       className="ecopro-storefront"
       style={{
         minHeight: '100vh',
@@ -244,8 +259,8 @@ export default function MintEleganceTemplate(props: TemplateProps) {
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40 }}>
           <div>
-            <h2 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Popular Products</h2>
-            <p style={{ color: muted, marginTop: 8 }}>Our most loved items this season</p>
+            <h2 data-edit-path="layout.featured.title" style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>{sectionTitle}</h2>
+            <p data-edit-path="layout.featured.subtitle" style={{ color: muted, marginTop: 8 }}>{sectionSubtitle}</p>
           </div>
           <button
             onClick={() => navigate('/products')}
@@ -290,7 +305,7 @@ export default function MintEleganceTemplate(props: TemplateProps) {
                 <img src={productImage(p)} alt={productTitle(p)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
               <div style={{ padding: baseSpacing }}>
-                <h3 style={{ fontSize: 15, fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <h3 style={{ fontSize: 15, fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' , color: productTitleColor}}>
                   {productTitle(p)}
                 </h3>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
@@ -345,7 +360,7 @@ export default function MintEleganceTemplate(props: TemplateProps) {
             ))}
           </div>
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: 48, paddingTop: 24, textAlign: 'center', opacity: 0.6, fontSize: 13 }}>
-            © {new Date().getFullYear()} {storeName}. All rights reserved.
+            {copyright}
           </div>
         </div>
       </footer>

@@ -118,6 +118,7 @@ export default function BagsTemplate(props: TemplateProps) {
 
   const cardBg = asString(settings.template_card_bg) || '#FFFFFF';
   const borderRadius = resolveInt(settings.template_border_radius, 8, 0, 24);
+  const cardBorderRadius = resolveInt(settings.template_card_border_radius, borderRadius, 0, 32);
 
   const fontFamily = asString(settings.template_font_family) || 'system-ui, -apple-system, sans-serif';
   const headingFontFamily = 'Georgia, serif';
@@ -129,6 +130,7 @@ export default function BagsTemplate(props: TemplateProps) {
     asString(settings.template_hero_subtitle) ||
     'A focused edit of structured totes, city crossbody bags and evening silhouettes. Built in neutral materials for everyday precision.';
   const heroKicker = asString(settings.template_hero_kicker) || 'Bags / Leather · Canvas · Nylon';
+  const heroCtaText = asString(settings.template_button_text) || 'Shop now';
 
   const heroTitleColor = asString(settings.template_hero_title_color) || '#111827';
   const heroSubtitleColor = asString(settings.template_hero_subtitle_color) || '#4b5563';
@@ -166,6 +168,10 @@ export default function BagsTemplate(props: TemplateProps) {
   const gridColumns = resolveInt((settings as any).template_grid_columns, 4, 1, 6);
   const customCss = asString((settings as any).template_custom_css);
 
+  const addLabel = asString((settings as any).template_add_to_cart_label) || 'VIEW';
+  const productTitleColor = asString((settings as any).template_product_title_color) || '#111827';
+  const productPriceColor = asString((settings as any).template_product_price_color) || '#111827';
+
   const categoryPillBg = asString((settings as any).template_category_pill_bg) || 'rgba(255,255,255,0.7)';
   const categoryPillText = asString((settings as any).template_category_pill_text) || '#6b7280';
   const categoryPillActiveBg = asString((settings as any).template_category_pill_active_bg) || '#111827';
@@ -202,7 +208,7 @@ export default function BagsTemplate(props: TemplateProps) {
 
   const categoryList = ['' as const, ...(Array.isArray(props.categories) ? props.categories : [])].slice(0, 12);
 
-  const descriptionText = (asString((settings as any).template_description_text) || asString((settings as any).store_description)).trim();
+  const descriptionText = (asString((settings as any).template_description_text) || asString(settings.store_description)).trim();
   const descriptionColor = asString((settings as any).template_description_color) || muted;
   const descriptionSize = resolveInt((settings as any).template_description_size, 14, 10, 32);
   const descriptionStyle = asString((settings as any).template_description_style) || 'normal';
@@ -267,7 +273,7 @@ export default function BagsTemplate(props: TemplateProps) {
         onClick={handleProductClick}
       >
         <div
-          style={{ backgroundColor: cardBg, boxShadow: materialShadow(material), height: tall ? 320 : 280 }}
+          style={{ backgroundColor: cardBg, boxShadow: materialShadow(material), height: tall ? 320 : 280, borderRadius: cardBorderRadius, overflow: 'hidden' }}
           data-edit-path={`${path}.image`}
           onClick={(e) => { if (canManage) clickGuard(e, `${path}.image`); }}
         >
@@ -289,7 +295,7 @@ export default function BagsTemplate(props: TemplateProps) {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <div style={{ minWidth: 0, flex: 1 }}>
             <div
-              style={{ fontFamily: headingFontFamily, fontSize: 14, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+              style={{ fontFamily: headingFontFamily, fontSize: 14, color: productTitleColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
               data-edit-path={`${path}.title`}
               onClick={(e) => { if (canManage) clickGuard(e, `${path}.title`); }}
             >
@@ -300,13 +306,26 @@ export default function BagsTemplate(props: TemplateProps) {
             </div>
           </div>
           <div
-            style={{ textAlign: 'right', fontSize: 13, color: '#111827', whiteSpace: 'nowrap', flexShrink: 0 }}
+            style={{ textAlign: 'right', fontSize: 13, color: productPriceColor, whiteSpace: 'nowrap', flexShrink: 0 }}
             data-edit-path={`${path}.price`}
             onClick={(e) => { if (canManage) clickGuard(e, `${path}.price`); }}
           >
             {props.formatPrice(product?.price)}
           </div>
         </div>
+
+        <button
+          type="button"
+          style={{ alignSelf: 'flex-start', backgroundColor: 'transparent', border: hairline, padding: '10px 14px', cursor: 'pointer', fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: text, borderRadius: cardBorderRadius }}
+          data-edit-path="layout.featured.addLabel"
+          onClick={(e) => {
+            if (canManage) return clickGuard(e, 'layout.featured.addLabel');
+            e.stopPropagation();
+            if (product?.slug) props.navigate(product.slug);
+          }}
+        >
+          {addLabel}
+        </button>
       </div>
     );
   };
@@ -473,6 +492,18 @@ export default function BagsTemplate(props: TemplateProps) {
             data-edit-path="layout.hero.cta"
             onClick={(e) => clickGuard(e, 'layout.hero.cta')}
           />
+
+          <button
+            type="button"
+            style={{ backgroundColor: cardBg, border: paperBorder, padding: '12px 18px', cursor: 'pointer', fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#111827', borderRadius: cardBorderRadius }}
+            data-edit-path="layout.hero.cta"
+            onClick={(e) => {
+              if (canManage) return clickGuard(e, 'layout.hero.cta');
+              props.navigate('/products');
+            }}
+          >
+            {heroCtaText}
+          </button>
         </div>
 
         <div style={{ position: 'relative' }}>

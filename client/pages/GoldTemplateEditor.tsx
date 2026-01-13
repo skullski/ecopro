@@ -106,6 +106,25 @@ const TEMPLATE_PREVIEWS = [
   { id: 'gallery-pro', name: 'Gallery Pro', image: '/template-previews/gallery-pro.svg', categories: ['minimal', 'elegant'] },
   { id: 'showcase-plus', name: 'Showcase Plus', image: '/template-previews/showcase-plus.svg', categories: ['colorful'] },
   { id: 'exhibit-store', name: 'Exhibit Store', image: '/template-previews/exhibit-store.svg', categories: ['elegant', 'minimal'] },
+
+  // New Gold templates (2026 expansion)
+  { id: 'ocean-splash', name: 'Ocean Splash', image: '/template-previews/ocean-splash.svg', categories: ['colorful', 'elegant'] },
+  { id: 'noir-eclipse', name: 'Noir Eclipse', image: '/template-previews/noir-eclipse.svg', categories: ['dark', 'elegant'] },
+  { id: 'terra-market', name: 'Terra Market', image: '/template-previews/terra-market.svg', categories: ['colorful', 'industry'] },
+  { id: 'pixel-pop', name: 'Pixel Pop', image: '/template-previews/pixel-pop.svg', categories: ['colorful'] },
+  { id: 'zen-grove', name: 'Zen Grove', image: '/template-previews/zen-grove.svg', categories: ['minimal', 'elegant'] },
+  { id: 'skyline-editorial', name: 'Skyline Editorial', image: '/template-previews/skyline-editorial.svg', categories: ['minimal', 'elegant'] },
+  { id: 'copper-craft', name: 'Copper Craft', image: '/template-previews/copper-craft.svg', categories: ['elegant', 'industry'] },
+  { id: 'violet-vault', name: 'Violet Vault', image: '/template-previews/violet-vault.svg', categories: ['dark', 'colorful'] },
+  { id: 'chalk-cafe', name: 'Chalk Cafe', image: '/template-previews/chalk-cafe.svg', categories: ['colorful', 'industry'] },
+  { id: 'sunbeam', name: 'Sunbeam', image: '/template-previews/sunbeam.svg', categories: ['colorful'] },
+  { id: 'ice-glass', name: 'Ice Glass', image: '/template-previews/ice-glass.svg', categories: ['minimal'] },
+  { id: 'paperfold', name: 'Paperfold', image: '/template-previews/paperfold.svg', categories: ['minimal'] },
+  { id: 'orbit-mart', name: 'Orbit Mart', image: '/template-previews/orbit-mart.svg', categories: ['dark', 'industry'] },
+  { id: 'royal-boutique', name: 'Royal Boutique', image: '/template-previews/royal-boutique.svg', categories: ['elegant', 'dark'] },
+  { id: 'mono-press', name: 'Mono Press', image: '/template-previews/mono-press.svg', categories: ['minimal'] },
+  { id: 'citrus-bloom', name: 'Citrus Bloom', image: '/template-previews/citrus-bloom.svg', categories: ['colorful'] },
+  { id: 'harbor-ledger', name: 'Harbor Ledger', image: '/template-previews/harbor-ledger.svg', categories: ['minimal'] },
 ];
 
 const TEMPLATE_CATEGORIES = [
@@ -525,7 +544,7 @@ export default function GoldTemplateEditor() {
       const baseH = baseDeviceOuter.height || 1;
 
       // Allow scaling up more so the device fills the available space.
-      const maxScale = previewDevice === 'mobile' ? 2.6 : 2.08;
+      const maxScale = previewDevice === 'mobile' ? 3.0 : 2.35;
       const s = Math.min(availW / baseW, availH / baseH, maxScale);
       const clamped = Math.max(0.25, Math.min(maxScale, s));
       setDeviceScale(clamped);
@@ -988,6 +1007,33 @@ export default function GoldTemplateEditor() {
               {TEMPLATE_PREVIEWS.find((t) => t.id === String(settings.template || 'shiro-hana'))?.name || 'Shiro Hana'}
               <ChevronDown className="w-4 h-4" />
             </Button>
+
+            {activeTab === 'preview' && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={previewDevice === 'mobile' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setPreviewDevice('mobile')}
+                >
+                  {t('editor.mobile')}
+                </Button>
+                <Button
+                  variant={previewDevice === 'tablet' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setPreviewDevice('tablet')}
+                >
+                  {t('editor.tablet')}
+                </Button>
+                <Button
+                  variant={previewDevice === 'desktop' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setPreviewDevice('desktop')}
+                >
+                  {t('editor.desktop')}
+                </Button>
+              </div>
+            )}
+
             <Button
               variant={activeTab === 'preview' ? 'default' : 'outline'}
               size="sm"
@@ -1176,30 +1222,6 @@ export default function GoldTemplateEditor() {
         {activeTab === 'preview' ? (
           <div className="grid grid-cols-1 lg:grid-cols-[1fr,380px] gap-4 items-start">
             <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant={previewDevice === 'mobile' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setPreviewDevice('mobile')}
-                >
-                  {t('editor.mobile')}
-                </Button>
-                <Button
-                  variant={previewDevice === 'tablet' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setPreviewDevice('tablet')}
-                >
-                  {t('editor.tablet')}
-                </Button>
-                <Button
-                  variant={previewDevice === 'desktop' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setPreviewDevice('desktop')}
-                >
-                  {t('editor.desktop')}
-                </Button>
-              </div>
-
               {/* Device Frame Container */}
               <div ref={previewFitRef} className="w-full">
                 {previewDevice === 'desktop' ? (

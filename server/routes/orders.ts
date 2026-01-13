@@ -117,7 +117,14 @@ export const createOrder: RequestHandler = async (req, res) => {
     // Resolve owner from store_slug first (if given)
     if (store_slug) {
       if (!isProduction) console.log(`[Orders] Looking up store_slug in client_store_settings...`);
-      const cs = await pool.query('SELECT client_id FROM client_store_settings WHERE store_slug = $1 LIMIT 1', [store_slug]);
+      const cs = await pool.query(
+        `SELECT client_id
+         FROM client_store_settings
+         WHERE store_slug = $1
+            OR LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1)
+         LIMIT 1`,
+        [store_slug]
+      );
       if (cs.rows.length > 0) {
         resolvedClientId = Number(cs.rows[0].client_id);
         if (!isProduction) console.log(`[Orders] Found in client_store_settings, client_id=${resolvedClientId}`);

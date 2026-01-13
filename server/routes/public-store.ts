@@ -314,7 +314,9 @@ export const getPublicProduct: RequestHandler = async (req, res) => {
         s.owner_email AS seller_email
       FROM client_store_products p
       INNER JOIN client_store_settings s ON p.client_id = s.client_id
-      WHERE s.store_slug = $1 AND p.slug = $2`,
+      WHERE (s.store_slug = $1
+          OR LOWER(REGEXP_REPLACE(s.store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1))
+        AND p.slug = $2`,
       [storeSlug, productSlug]
     );
     if (!isProduction) {
@@ -328,7 +330,9 @@ export const getPublicProduct: RequestHandler = async (req, res) => {
          FROM marketplace_products p
          INNER JOIN seller_store_settings ss ON p.seller_id = ss.seller_id
          LEFT JOIN sellers sel ON p.seller_id = sel.id
-         WHERE ss.store_slug = $1 AND p.slug = $2`,
+         WHERE (ss.store_slug = $1
+            OR LOWER(REGEXP_REPLACE(ss.store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1))
+           AND p.slug = $2`,
         [storeSlug, productSlug]
       );
 
@@ -396,7 +400,9 @@ export const getStorefrontProductById: RequestHandler = async (req, res) => {
         s.owner_email AS seller_email
       FROM client_store_products p
       INNER JOIN client_store_settings s ON p.client_id = s.client_id
-      WHERE s.store_slug = $1 AND p.id = $2`,
+      WHERE (s.store_slug = $1
+          OR LOWER(REGEXP_REPLACE(s.store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1))
+        AND p.id = $2`,
       [storeSlug, productId]
     );
 
@@ -513,6 +519,14 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
       res.status(404).json({ error: 'Store not found' });
       return;
     }
+
+    // Prefer store name in URLs when available; fall back to the incoming identifier.
+    // Must stay compatible with server-side resolution (same normalization used in SQL).
+    const preferredStoreSlug = String(storeName || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '');
+    const storefrontSlugForLinks = preferredStoreSlug || String(storeSlug);
 
     // Ensure product belongs to this store (prevents cross-tenant product/order spoofing)
     const productRes = await pool.query(
@@ -800,7 +814,7 @@ Press one of the buttons to confirm or cancel:`;
             storeName,
             productTitle,
             orderTotalPrice,
-            storeSlug,
+            storefrontSlugForLinks,
             { skipTelegram: true }
           ).catch(() => {});
         }
@@ -814,7 +828,7 @@ Press one of the buttons to confirm or cancel:`;
           storeName,
           productTitle,
           orderTotalPrice,
-          storeSlug
+          storefrontSlugForLinks
         ).catch(() => {});
       }
     }
@@ -827,7 +841,7 @@ Press one of the buttons to confirm or cancel:`;
     let confirmationUrl: string | null = null;
     try {
       const token = await createConfirmationLink(Number(result.rows[0].id), Number(clientId));
-      confirmationUrl = `/store/${storeSlug}/order/${result.rows[0].id}/confirm?t=${encodeURIComponent(String(token))}`;
+      confirmationUrl = `/store/${storefrontSlugForLinks}/order/${result.rows[0].id}/confirm?t=${encodeURIComponent(String(token))}`;
     } catch {
       confirmationUrl = null;
     }

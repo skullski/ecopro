@@ -89,6 +89,26 @@ import SnowShopTemplate from './gold/snow-shop/SnowShopTemplate';
 import GalleryProTemplate from './gold/gallery-pro/GalleryProTemplate';
 import ShowcasePlusTemplate from './gold/showcase-plus/ShowcasePlusTemplate';
 import ExhibitStoreTemplate from './gold/exhibit-store/ExhibitStoreTemplate';
+// New Gold templates (2026 expansion)
+import OceanSplashTemplate from './gold/ocean-splash/OceanSplashTemplate';
+import NoirEclipseTemplate from './gold/noir-eclipse/NoirEclipseTemplate';
+import TerraMarketTemplate from './gold/terra-market/TerraMarketTemplate';
+import PixelPopTemplate from './gold/pixel-pop/PixelPopTemplate';
+import ZenGroveTemplate from './gold/zen-grove/ZenGroveTemplate';
+import SkylineEditorialTemplate from './gold/skyline-editorial/SkylineEditorialTemplate';
+import CopperCraftTemplate from './gold/copper-craft/CopperCraftTemplate';
+import VioletVaultTemplate from './gold/violet-vault/VioletVaultTemplate';
+import ChalkCafeTemplate from './gold/chalk-cafe/ChalkCafeTemplate';
+import SunbeamTemplate from './gold/sunbeam/SunbeamTemplate';
+import IceGlassTemplate from './gold/ice-glass/IceGlassTemplate';
+import PaperfoldTemplate from './gold/paperfold/PaperfoldTemplate';
+import OrbitMartTemplate from './gold/orbit-mart/OrbitMartTemplate';
+import RoyalBoutiqueTemplate from './gold/royal-boutique/RoyalBoutiqueTemplate';
+import MonoPressTemplate from './gold/mono-press/MonoPressTemplate';
+import CitrusBloomTemplate from './gold/citrus-bloom/CitrusBloomTemplate';
+import HarborLedgerTemplate from './gold/harbor-ledger/HarborLedgerTemplate';
+import FocusOneTemplate from './gold/focus-one/FocusOneTemplate';
+import SplitSpecsTemplate from './gold/split-specs/SplitSpecsTemplate';
 
 /**
  * Available template IDs.
@@ -177,7 +197,27 @@ export type TemplateId =
   | 'snow-shop'
   | 'gallery-pro'
   | 'showcase-plus'
-  | 'exhibit-store';
+  | 'exhibit-store'
+  // New Gold templates (2026 expansion)
+  | 'ocean-splash'
+  | 'noir-eclipse'
+  | 'terra-market'
+  | 'pixel-pop'
+  | 'zen-grove'
+  | 'skyline-editorial'
+  | 'copper-craft'
+  | 'violet-vault'
+  | 'chalk-cafe'
+  | 'sunbeam'
+  | 'ice-glass'
+  | 'paperfold'
+  | 'orbit-mart'
+  | 'royal-boutique'
+  | 'mono-press'
+  | 'citrus-bloom'
+  | 'harbor-ledger'
+  | 'focus-one'
+  | 'split-specs';
 
 /**
  * Normalize template ID.
@@ -279,6 +319,26 @@ export function normalizeTemplateId(t: string): TemplateId {
   if (raw === 'gallery-pro' || raw === 'gallery') return 'gallery-pro';
   if (raw === 'showcase-plus' || raw === 'showcase') return 'showcase-plus';
   if (raw === 'exhibit-store' || raw === 'exhibit') return 'exhibit-store';
+  // New Gold templates (2026 expansion)
+  if (raw === 'ocean-splash' || raw === 'ocean') return 'ocean-splash';
+  if (raw === 'noir-eclipse' || raw === 'noir') return 'noir-eclipse';
+  if (raw === 'terra-market' || raw === 'terra') return 'terra-market';
+  if (raw === 'pixel-pop' || raw === 'pixel') return 'pixel-pop';
+  if (raw === 'zen-grove' || raw === 'zen') return 'zen-grove';
+  if (raw === 'skyline-editorial' || raw === 'skyline') return 'skyline-editorial';
+  if (raw === 'copper-craft' || raw === 'copper') return 'copper-craft';
+  if (raw === 'violet-vault' || raw === 'violet') return 'violet-vault';
+  if (raw === 'chalk-cafe' || raw === 'chalk') return 'chalk-cafe';
+  if (raw === 'sunbeam' || raw === 'sun') return 'sunbeam';
+  if (raw === 'ice-glass' || raw === 'ice') return 'ice-glass';
+  if (raw === 'paperfold' || raw === 'paper-fold') return 'paperfold';
+  if (raw === 'orbit-mart' || raw === 'orbit') return 'orbit-mart';
+  if (raw === 'royal-boutique' || raw === 'royal') return 'royal-boutique';
+  if (raw === 'mono-press' || raw === 'mono') return 'mono-press';
+  if (raw === 'citrus-bloom' || raw === 'citrus') return 'citrus-bloom';
+  if (raw === 'harbor-ledger' || raw === 'harbor') return 'harbor-ledger';
+  if (raw === 'focus-one' || raw === 'focusone' || raw === 'focus_one') return 'focus-one';
+  if (raw === 'split-specs' || raw === 'splitspecs' || raw === 'split_specs') return 'split-specs';
   return 'pro';
 }
 
@@ -301,93 +361,249 @@ export function RenderStorefront(t: TemplateId | string, props: TemplateProps) {
     },
   };
 
+  // Compatibility layer: the editor writes global settings like template_font_family/template_bg_color/template_text_color.
+  // Many templates still don't wire these internally, so apply a safe wrapper to make edits take effect broadly.
+  const settingsAny = (sanitizedProps.settings || {}) as any;
+  const asStr = (v: unknown) => (typeof v === 'string' ? v : v == null ? '' : String(v));
+  const asNum = (v: unknown, fallback: number) => {
+    const n = typeof v === 'number' ? v : Number(String(v ?? '').trim());
+    return Number.isFinite(n) ? n : fallback;
+  };
+
+  const theme = {
+    bg: asStr(settingsAny.template_bg_color) || undefined,
+    text: asStr(settingsAny.template_text_color) || undefined,
+    muted: asStr(settingsAny.template_muted_color) || undefined,
+    accent: asStr(settingsAny.template_accent_color) || undefined,
+
+    headerBg: asStr(settingsAny.template_header_bg) || undefined,
+    headerText: asStr(settingsAny.template_header_text) || undefined,
+
+    footerText: asStr(settingsAny.template_footer_text) || undefined,
+    footerLink: asStr(settingsAny.template_footer_link_color) || undefined,
+
+    heroTitleColor: asStr(settingsAny.template_hero_title_color) || undefined,
+    heroTitleSize: asNum(settingsAny.template_hero_title_size, 0),
+    heroSubtitleColor: asStr(settingsAny.template_hero_subtitle_color) || undefined,
+    heroSubtitleSize: asNum(settingsAny.template_hero_subtitle_size, 0),
+    heroKickerColor: asStr(settingsAny.template_hero_kicker_color) || undefined,
+
+    fontFamily: asStr(settingsAny.template_font_family) || undefined,
+    fontWeight: asStr(settingsAny.template_font_weight) || undefined,
+    headingFontWeight: asStr(settingsAny.template_heading_font_weight) || undefined,
+
+    borderRadius: asNum(settingsAny.template_border_radius, 0),
+    cardBorderRadius: asNum(settingsAny.template_card_border_radius, 0),
+    buttonBorderRadius: asNum(settingsAny.template_button_border_radius, 0),
+
+    gridColumns: asNum(settingsAny.template_grid_columns, 0),
+    gridGap: asNum(settingsAny.template_grid_gap, 0),
+
+    customCss: asStr(settingsAny.template_custom_css) || '',
+  };
+
+  const injectedCss = `
+    .ecopro-themed {
+      ${theme.bg ? `background-color: ${theme.bg} !important;` : ''}
+      ${theme.text ? `color: ${theme.text} !important;` : ''}
+      ${theme.fontFamily ? `font-family: ${theme.fontFamily} !important;` : ''}
+      min-height: 100vh;
+    }
+
+    .ecopro-themed {
+      ${theme.gridColumns ? `--theme-grid-columns: ${theme.gridColumns};` : ''}
+      ${theme.gridGap ? `--theme-grid-gap: ${theme.gridGap}px;` : ''}
+      ${theme.cardBorderRadius ? `--theme-card-radius: ${theme.cardBorderRadius}px;` : ''}
+    }
+    .ecopro-themed * {
+      ${theme.fontFamily ? `font-family: ${theme.fontFamily} !important;` : ''}
+      ${theme.fontWeight ? `font-weight: ${theme.fontWeight} !important;` : ''}
+    }
+    .ecopro-themed h1,
+    .ecopro-themed h2,
+    .ecopro-themed h3,
+    .ecopro-themed h4,
+    .ecopro-themed h5,
+    .ecopro-themed h6 {
+      ${theme.headingFontWeight ? `font-weight: ${theme.headingFontWeight} !important;` : ''}
+    }
+
+    /* Header */
+    .ecopro-themed [data-edit-path="layout.header"] {
+      ${theme.headerBg ? `background-color: ${theme.headerBg} !important;` : ''}
+      ${theme.headerText ? `color: ${theme.headerText} !important;` : ''}
+    }
+    .ecopro-themed [data-edit-path="layout.header"] a,
+    .ecopro-themed [data-edit-path="layout.header"] button,
+    .ecopro-themed [data-edit-path="layout.header"] span,
+    .ecopro-themed [data-edit-path="layout.header"] p,
+    .ecopro-themed [data-edit-path="layout.header"] h1,
+    .ecopro-themed [data-edit-path="layout.header"] h2,
+    .ecopro-themed [data-edit-path="layout.header"] h3 {
+      ${theme.headerText ? `color: ${theme.headerText} !important;` : ''}
+    }
+
+    /* Footer */
+    .ecopro-themed [data-edit-path="layout.footer"] {
+      ${theme.footerText ? `color: ${theme.footerText} !important;` : ''}
+    }
+    .ecopro-themed [data-edit-path="layout.footer"] a {
+      ${theme.footerLink ? `color: ${theme.footerLink} !important;` : ''}
+    }
+
+    /* Hero */
+    .ecopro-themed [data-edit-path="layout.hero.title"] {
+      ${theme.heroTitleColor ? `color: ${theme.heroTitleColor} !important;` : ''}
+      ${theme.heroTitleSize ? `font-size: ${theme.heroTitleSize}px !important;` : ''}
+    }
+    .ecopro-themed [data-edit-path="layout.hero.subtitle"] {
+      ${theme.heroSubtitleColor ? `color: ${theme.heroSubtitleColor} !important;` : ''}
+      ${theme.heroSubtitleSize ? `font-size: ${theme.heroSubtitleSize}px !important;` : ''}
+    }
+    .ecopro-themed [data-edit-path="layout.hero.kicker"] {
+      ${theme.heroKickerColor ? `color: ${theme.heroKickerColor} !important;` : ''}
+    }
+    .ecopro-themed [data-edit-path="layout.hero.cta"] {
+      ${theme.accent ? `background-color: ${theme.accent} !important;` : ''}
+      ${theme.buttonBorderRadius ? `border-radius: ${theme.buttonBorderRadius}px !important;` : ''}
+    }
+
+    /* Radius helpers */
+    .ecopro-themed button {
+      ${theme.buttonBorderRadius ? `border-radius: ${theme.buttonBorderRadius}px !important;` : ''}
+    }
+
+    /* Grid helpers: best-effort for templates that use layout.products/layout.grid wrappers */
+    .ecopro-themed [data-edit-path="layout.products"] > div,
+    .ecopro-themed [data-edit-path="layout.grid"] > div {
+      ${theme.gridColumns ? `grid-template-columns: repeat(var(--theme-grid-columns), minmax(0, 1fr)) !important;` : ''}
+      ${theme.gridGap ? `gap: var(--theme-grid-gap) !important;` : ''}
+    }
+
+    ${theme.customCss || ''}
+  `;
+
+  const wrapperStyle: React.CSSProperties = {
+    minHeight: '100vh',
+    ...(settingsAny.template_font_family ? { fontFamily: String(settingsAny.template_font_family) } : {}),
+    ...(settingsAny.template_text_color ? { color: String(settingsAny.template_text_color) } : {}),
+    ...(settingsAny.template_bg_color ? { backgroundColor: String(settingsAny.template_bg_color) } : {}),
+  };
+
+  const wrap = (el: React.ReactElement) => (
+    <div className="ecopro-themed" style={wrapperStyle}>
+      {injectedCss.trim() ? <style dangerouslySetInnerHTML={{ __html: injectedCss }} /> : null}
+      {el}
+    </div>
+  );
+
   // Original templates
-  if (id === 'minimal') return <MinimalTemplate {...sanitizedProps} />;
-  if (id === 'classic') return <ClassicTemplate {...sanitizedProps} />;
-  if (id === 'modern') return <ModernTemplate {...sanitizedProps} />;
-  if (id === 'jewelry') return <JewelryTemplate {...sanitizedProps} />;
-  if (id === 'bags') return <BagsTemplate {...sanitizedProps} />;
-  if (id === 'fashion') return <FashionTemplate {...sanitizedProps} />;
-  if (id === 'electronics') return <ElectronicsTemplate {...sanitizedProps} />;
-  if (id === 'beauty') return <BeautyTemplate {...sanitizedProps} />;
-  if (id === 'food') return <FoodTemplate {...sanitizedProps} />;
-  if (id === 'cafe') return <CafeTemplate {...sanitizedProps} />;
-  if (id === 'furniture') return <FurnitureTemplate {...sanitizedProps} />;
-  if (id === 'perfume') return <PerfumeTemplate {...sanitizedProps} />;
+  if (id === 'minimal') return wrap(<MinimalTemplate {...sanitizedProps} />);
+  if (id === 'classic') return wrap(<ClassicTemplate {...sanitizedProps} />);
+  if (id === 'modern') return wrap(<ModernTemplate {...sanitizedProps} />);
+  if (id === 'jewelry') return wrap(<JewelryTemplate {...sanitizedProps} />);
+  if (id === 'bags') return wrap(<BagsTemplate {...sanitizedProps} />);
+  if (id === 'fashion') return wrap(<FashionTemplate {...sanitizedProps} />);
+  if (id === 'electronics') return wrap(<ElectronicsTemplate {...sanitizedProps} />);
+  if (id === 'beauty') return wrap(<BeautyTemplate {...sanitizedProps} />);
+  if (id === 'food') return wrap(<FoodTemplate {...sanitizedProps} />);
+  if (id === 'cafe') return wrap(<CafeTemplate {...sanitizedProps} />);
+  if (id === 'furniture') return wrap(<FurnitureTemplate {...sanitizedProps} />);
+  if (id === 'perfume') return wrap(<PerfumeTemplate {...sanitizedProps} />);
   // New templates
-  if (id === 'sports') return <SportsTemplate {...sanitizedProps} />;
-  if (id === 'books') return <BooksTemplate {...sanitizedProps} />;
-  if (id === 'pets') return <PetsTemplate {...sanitizedProps} />;
-  if (id === 'toys') return <ToysTemplate {...sanitizedProps} />;
-  if (id === 'garden') return <GardenTemplate {...sanitizedProps} />;
-  if (id === 'art') return <ArtTemplate {...sanitizedProps} />;
-  if (id === 'music') return <MusicTemplate {...sanitizedProps} />;
-  if (id === 'health') return <HealthTemplate {...sanitizedProps} />;
-  if (id === 'watches') return <WatchesTemplate {...sanitizedProps} />;
-  if (id === 'shoes') return <ShoesTemplate {...sanitizedProps} />;
-  if (id === 'gaming') return <GamingTemplate {...sanitizedProps} />;
-  if (id === 'automotive') return <AutomotiveTemplate {...sanitizedProps} />;
-  if (id === 'crafts') return <CraftsTemplate {...sanitizedProps} />;
-  if (id === 'outdoor') return <OutdoorTemplate {...sanitizedProps} />;
-  if (id === 'vintage') return <VintageTemplate {...sanitizedProps} />;
-  if (id === 'tech') return <TechTemplate {...sanitizedProps} />;
-  if (id === 'organic') return <OrganicTemplate {...sanitizedProps} />;
-  if (id === 'luxury') return <LuxuryTemplate {...sanitizedProps} />;
-  if (id === 'kids') return <KidsTemplate {...sanitizedProps} />;
-  if (id === 'travel') return <TravelTemplate {...sanitizedProps} />;
-  if (id === 'photography') return <PhotographyTemplate {...sanitizedProps} />;
-  if (id === 'wedding') return <WeddingTemplate {...sanitizedProps} />;
-  if (id === 'fitness') return <FitnessTemplate {...sanitizedProps} />;
-  if (id === 'gifts') return <GiftsTemplate {...sanitizedProps} />;
-  if (id === 'candles') return <CandlesTemplate {...sanitizedProps} />;
-  if (id === 'skincare') return <SkincareTemplate {...sanitizedProps} />;
-  if (id === 'supplements') return <SupplementsTemplate {...sanitizedProps} />;
-  if (id === 'phone-accessories') return <PhoneAccessoriesTemplate {...sanitizedProps} />;
-  if (id === 'tools') return <ToolsTemplate {...sanitizedProps} />;
-  if (id === 'office') return <OfficeTemplate {...sanitizedProps} />;
-  if (id === 'stationery') return <StationeryTemplate {...sanitizedProps} />;
-  if (id === 'neon') return <NeonTemplate {...sanitizedProps} />;
-  if (id === 'pastel') return <PastelTemplate {...sanitizedProps} />;
-  if (id === 'monochrome') return <MonochromeTemplate {...sanitizedProps} />;
-  if (id === 'gradient') return <GradientTemplate {...sanitizedProps} />;
-  if (id === 'florist') return <FloristTemplate {...sanitizedProps} />;
-  if (id === 'eyewear') return <EyewearTemplate {...sanitizedProps} />;
-  if (id === 'lingerie') return <LingerieTemplate {...sanitizedProps} />;
-  if (id === 'swimwear') return <SwimwearTemplate {...sanitizedProps} />;
-  if (id === 'streetwear') return <StreetWearTemplate {...sanitizedProps} />;
-  if (id === 'wine') return <WineTemplate {...sanitizedProps} />;
-  if (id === 'chocolate') return <ChocolateTemplate {...sanitizedProps} />;
-  if (id === 'tea') return <TeaTemplate {...sanitizedProps} />;
-  if (id === 'pro') return <ProTemplate {...sanitizedProps} />;
-  if (id === 'pro-aurora') return <ProAuroraTemplate {...sanitizedProps} />;
-  if (id === 'pro-vertex') return <ProVertexTemplate {...sanitizedProps} />;
-  if (id === 'pro-atelier') return <ProAtelierTemplate {...sanitizedProps} />;
-  if (id === 'pro-orbit') return <ProOrbitTemplate {...sanitizedProps} />;
-  if (id === 'pro-zen') return <ProZenTemplate {...sanitizedProps} />;
-  if (id === 'pro-studio') return <ProStudioTemplate {...sanitizedProps} />;
-  if (id === 'pro-mosaic') return <ProMosaicTemplate {...sanitizedProps} />;
-  if (id === 'pro-grid') return <ProGridTemplate {...sanitizedProps} />;
-  if (id === 'pro-catalog') return <ProCatalogTemplate {...sanitizedProps} />;
+  if (id === 'sports') return wrap(<SportsTemplate {...sanitizedProps} />);
+  if (id === 'books') return wrap(<BooksTemplate {...sanitizedProps} />);
+  if (id === 'pets') return wrap(<PetsTemplate {...sanitizedProps} />);
+  if (id === 'toys') return wrap(<ToysTemplate {...sanitizedProps} />);
+  if (id === 'garden') return wrap(<GardenTemplate {...sanitizedProps} />);
+  if (id === 'art') return wrap(<ArtTemplate {...sanitizedProps} />);
+  if (id === 'music') return wrap(<MusicTemplate {...sanitizedProps} />);
+  if (id === 'health') return wrap(<HealthTemplate {...sanitizedProps} />);
+  if (id === 'watches') return wrap(<WatchesTemplate {...sanitizedProps} />);
+  if (id === 'shoes') return wrap(<ShoesTemplate {...sanitizedProps} />);
+  if (id === 'gaming') return wrap(<GamingTemplate {...sanitizedProps} />);
+  if (id === 'automotive') return wrap(<AutomotiveTemplate {...sanitizedProps} />);
+  if (id === 'crafts') return wrap(<CraftsTemplate {...sanitizedProps} />);
+  if (id === 'outdoor') return wrap(<OutdoorTemplate {...sanitizedProps} />);
+  if (id === 'vintage') return wrap(<VintageTemplate {...sanitizedProps} />);
+  if (id === 'tech') return wrap(<TechTemplate {...sanitizedProps} />);
+  if (id === 'organic') return wrap(<OrganicTemplate {...sanitizedProps} />);
+  if (id === 'luxury') return wrap(<LuxuryTemplate {...sanitizedProps} />);
+  if (id === 'kids') return wrap(<KidsTemplate {...sanitizedProps} />);
+  if (id === 'travel') return wrap(<TravelTemplate {...sanitizedProps} />);
+  if (id === 'photography') return wrap(<PhotographyTemplate {...sanitizedProps} />);
+  if (id === 'wedding') return wrap(<WeddingTemplate {...sanitizedProps} />);
+  if (id === 'fitness') return wrap(<FitnessTemplate {...sanitizedProps} />);
+  if (id === 'gifts') return wrap(<GiftsTemplate {...sanitizedProps} />);
+  if (id === 'candles') return wrap(<CandlesTemplate {...sanitizedProps} />);
+  if (id === 'skincare') return wrap(<SkincareTemplate {...sanitizedProps} />);
+  if (id === 'supplements') return wrap(<SupplementsTemplate {...sanitizedProps} />);
+  if (id === 'phone-accessories') return wrap(<PhoneAccessoriesTemplate {...sanitizedProps} />);
+  if (id === 'tools') return wrap(<ToolsTemplate {...sanitizedProps} />);
+  if (id === 'office') return wrap(<OfficeTemplate {...sanitizedProps} />);
+  if (id === 'stationery') return wrap(<StationeryTemplate {...sanitizedProps} />);
+  if (id === 'neon') return wrap(<NeonTemplate {...sanitizedProps} />);
+  if (id === 'pastel') return wrap(<PastelTemplate {...sanitizedProps} />);
+  if (id === 'monochrome') return wrap(<MonochromeTemplate {...sanitizedProps} />);
+  if (id === 'gradient') return wrap(<GradientTemplate {...sanitizedProps} />);
+  if (id === 'florist') return wrap(<FloristTemplate {...sanitizedProps} />);
+  if (id === 'eyewear') return wrap(<EyewearTemplate {...sanitizedProps} />);
+  if (id === 'lingerie') return wrap(<LingerieTemplate {...sanitizedProps} />);
+  if (id === 'swimwear') return wrap(<SwimwearTemplate {...sanitizedProps} />);
+  if (id === 'streetwear') return wrap(<StreetWearTemplate {...sanitizedProps} />);
+  if (id === 'wine') return wrap(<WineTemplate {...sanitizedProps} />);
+  if (id === 'chocolate') return wrap(<ChocolateTemplate {...sanitizedProps} />);
+  if (id === 'tea') return wrap(<TeaTemplate {...sanitizedProps} />);
+  if (id === 'pro') return wrap(<ProTemplate {...sanitizedProps} />);
+  if (id === 'pro-aurora') return wrap(<ProAuroraTemplate {...sanitizedProps} />);
+  if (id === 'pro-vertex') return wrap(<ProVertexTemplate {...sanitizedProps} />);
+  if (id === 'pro-atelier') return wrap(<ProAtelierTemplate {...sanitizedProps} />);
+  if (id === 'pro-orbit') return wrap(<ProOrbitTemplate {...sanitizedProps} />);
+  if (id === 'pro-zen') return wrap(<ProZenTemplate {...sanitizedProps} />);
+  if (id === 'pro-studio') return wrap(<ProStudioTemplate {...sanitizedProps} />);
+  if (id === 'pro-mosaic') return wrap(<ProMosaicTemplate {...sanitizedProps} />);
+  if (id === 'pro-grid') return wrap(<ProGridTemplate {...sanitizedProps} />);
+  if (id === 'pro-catalog') return wrap(<ProCatalogTemplate {...sanitizedProps} />);
   // Screenshot-inspired templates
-  if (id === 'sage-boutique') return <SageBoutiqueTemplate {...sanitizedProps} />;
-  if (id === 'mint-elegance') return <MintEleganceTemplate {...sanitizedProps} />;
-  if (id === 'forest-store') return <ForestStoreTemplate {...sanitizedProps} />;
-  if (id === 'sunset-shop') return <SunsetShopTemplate {...sanitizedProps} />;
-  if (id === 'coral-market') return <CoralMarketTemplate {...sanitizedProps} />;
-  if (id === 'amber-store') return <AmberStoreTemplate {...sanitizedProps} />;
-  if (id === 'magenta-mall') return <MagentaMallTemplate {...sanitizedProps} />;
-  if (id === 'berry-market') return <BerryMarketTemplate {...sanitizedProps} />;
-  if (id === 'rose-catalog') return <RoseCatalogTemplate {...sanitizedProps} />;
-  if (id === 'lime-direct') return <LimeDirectTemplate {...sanitizedProps} />;
-  if (id === 'emerald-shop') return <EmeraldShopTemplate {...sanitizedProps} />;
-  if (id === 'neon-store') return <NeonStoreTemplate {...sanitizedProps} />;
-  if (id === 'clean-single') return <CleanSingleTemplate {...sanitizedProps} />;
-  if (id === 'pure-product') return <PureProductTemplate {...sanitizedProps} />;
-  if (id === 'snow-shop') return <SnowShopTemplate {...sanitizedProps} />;
-  if (id === 'gallery-pro') return <GalleryProTemplate {...sanitizedProps} />;
-  if (id === 'showcase-plus') return <ShowcasePlusTemplate {...sanitizedProps} />;
-  if (id === 'exhibit-store') return <ExhibitStoreTemplate {...sanitizedProps} />;
-  return <ProTemplate {...sanitizedProps} />;
+  if (id === 'sage-boutique') return wrap(<SageBoutiqueTemplate {...sanitizedProps} />);
+  if (id === 'mint-elegance') return wrap(<MintEleganceTemplate {...sanitizedProps} />);
+  if (id === 'forest-store') return wrap(<ForestStoreTemplate {...sanitizedProps} />);
+  if (id === 'sunset-shop') return wrap(<SunsetShopTemplate {...sanitizedProps} />);
+  if (id === 'coral-market') return wrap(<CoralMarketTemplate {...sanitizedProps} />);
+  if (id === 'amber-store') return wrap(<AmberStoreTemplate {...sanitizedProps} />);
+  if (id === 'magenta-mall') return wrap(<MagentaMallTemplate {...sanitizedProps} />);
+  if (id === 'berry-market') return wrap(<BerryMarketTemplate {...sanitizedProps} />);
+  if (id === 'rose-catalog') return wrap(<RoseCatalogTemplate {...sanitizedProps} />);
+  if (id === 'lime-direct') return wrap(<LimeDirectTemplate {...sanitizedProps} />);
+  if (id === 'emerald-shop') return wrap(<EmeraldShopTemplate {...sanitizedProps} />);
+  if (id === 'neon-store') return wrap(<NeonStoreTemplate {...sanitizedProps} />);
+  if (id === 'clean-single') return wrap(<CleanSingleTemplate {...sanitizedProps} />);
+  if (id === 'pure-product') return wrap(<PureProductTemplate {...sanitizedProps} />);
+  if (id === 'snow-shop') return wrap(<SnowShopTemplate {...sanitizedProps} />);
+  if (id === 'gallery-pro') return wrap(<GalleryProTemplate {...sanitizedProps} />);
+  if (id === 'showcase-plus') return wrap(<ShowcasePlusTemplate {...sanitizedProps} />);
+  if (id === 'exhibit-store') return wrap(<ExhibitStoreTemplate {...sanitizedProps} />);
+  // New Gold templates (2026 expansion)
+  if (id === 'ocean-splash') return wrap(<OceanSplashTemplate {...sanitizedProps} />);
+  if (id === 'noir-eclipse') return wrap(<NoirEclipseTemplate {...sanitizedProps} />);
+  if (id === 'terra-market') return wrap(<TerraMarketTemplate {...sanitizedProps} />);
+  if (id === 'pixel-pop') return wrap(<PixelPopTemplate {...sanitizedProps} />);
+  if (id === 'zen-grove') return wrap(<ZenGroveTemplate {...sanitizedProps} />);
+  if (id === 'skyline-editorial') return wrap(<SkylineEditorialTemplate {...sanitizedProps} />);
+  if (id === 'copper-craft') return wrap(<CopperCraftTemplate {...sanitizedProps} />);
+  if (id === 'violet-vault') return wrap(<VioletVaultTemplate {...sanitizedProps} />);
+  if (id === 'chalk-cafe') return wrap(<ChalkCafeTemplate {...sanitizedProps} />);
+  if (id === 'sunbeam') return wrap(<SunbeamTemplate {...sanitizedProps} />);
+  if (id === 'ice-glass') return wrap(<IceGlassTemplate {...sanitizedProps} />);
+  if (id === 'paperfold') return wrap(<PaperfoldTemplate {...sanitizedProps} />);
+  if (id === 'orbit-mart') return wrap(<OrbitMartTemplate {...sanitizedProps} />);
+  if (id === 'royal-boutique') return wrap(<RoyalBoutiqueTemplate {...sanitizedProps} />);
+  if (id === 'mono-press') return wrap(<MonoPressTemplate {...sanitizedProps} />);
+  if (id === 'citrus-bloom') return wrap(<CitrusBloomTemplate {...sanitizedProps} />);
+  if (id === 'harbor-ledger') return wrap(<HarborLedgerTemplate {...sanitizedProps} />);
+  if (id === 'focus-one') return wrap(<FocusOneTemplate {...sanitizedProps} />);
+  if (id === 'split-specs') return wrap(<SplitSpecsTemplate {...sanitizedProps} />);
+  return wrap(<ProTemplate {...sanitizedProps} />);
 }
 
 // Re-export all templates
@@ -476,3 +692,23 @@ export { SnowShopTemplate };
 export { GalleryProTemplate };
 export { ShowcasePlusTemplate };
 export { ExhibitStoreTemplate };
+// New Gold templates (2026 expansion)
+export { OceanSplashTemplate };
+export { NoirEclipseTemplate };
+export { TerraMarketTemplate };
+export { PixelPopTemplate };
+export { ZenGroveTemplate };
+export { SkylineEditorialTemplate };
+export { CopperCraftTemplate };
+export { VioletVaultTemplate };
+export { ChalkCafeTemplate };
+export { SunbeamTemplate };
+export { IceGlassTemplate };
+export { PaperfoldTemplate };
+export { OrbitMartTemplate };
+export { RoyalBoutiqueTemplate };
+export { MonoPressTemplate };
+export { CitrusBloomTemplate };
+export { HarborLedgerTemplate };
+export { FocusOneTemplate };
+export { SplitSpecsTemplate };

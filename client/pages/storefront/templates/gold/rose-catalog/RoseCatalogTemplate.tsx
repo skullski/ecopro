@@ -50,15 +50,28 @@ export default function RoseCatalogTemplate(props: TemplateProps) {
   const muted = asString(settings.template_muted_color) || '#78716c';
   const accent = asString(settings.template_accent_color) || '#e11d48';
 
-  const storeName = asString(settings.store_name) || 'Rose Catalog';
-  const heroTitle = asString(settings.template_hero_heading) || 'Curated With Love';
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+
+  const cardBg = asString(settings.template_card_bg) || "#ffffff";
+const storeName = asString(settings.store_name) || 'Rose Catalog';
+  
+  const copyright = asString(settings.template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
+const heroTitle = asString(settings.template_hero_heading) || 'Curated With Love';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Discover our handpicked collection of beautiful products';
   const cta = asString(settings.template_button_text) || 'Browse Catalog';
 
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 16) || [];
 
-  const descText = asString(settings.template_description_text);
-  const descColor = asString(settings.template_description_color) || muted;
+  
+
+  const sectionTitle = asString(settings.template_featured_title) || "Featured";
+  const sectionSubtitle = asString(settings.template_featured_subtitle) || "";
+  const addToCartLabel = asString(settings.template_add_to_cart_label) || "View";
+const descText = (asString(settings.template_description_text) || asString(settings.store_description)).trim();
+const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 15, 10, 32);
 
   // Layout settings
@@ -72,6 +85,8 @@ export default function RoseCatalogTemplate(props: TemplateProps) {
 
   return (
     <div
+      data-edit-path="__root"
+      onClick={() => canManage && onSelect("__root")}
       className="ecopro-storefront"
       style={{
         minHeight: '100vh',
@@ -268,7 +283,7 @@ export default function RoseCatalogTemplate(props: TemplateProps) {
                 )}
               </div>
               <div style={{ padding: 16 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' , color: productTitleColor}}>
                   {productTitle(p)}
                 </h3>
                 <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -338,7 +353,7 @@ export default function RoseCatalogTemplate(props: TemplateProps) {
           ))}
         </div>
         <div style={{ maxWidth: 1200, margin: '32px auto 0', paddingTop: 24, borderTop: '1px solid #f3f4f6', textAlign: 'center', fontSize: 13, color: muted }}>
-          © {new Date().getFullYear()} {storeName}. All rights reserved.
+          {copyright}
         </div>
       </footer>
     </div>

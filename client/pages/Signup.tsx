@@ -3,7 +3,7 @@ import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/i18n";
 import { FloatingShapes } from "@/components/ui/floating-shapes";
-import { UserPlus, Mail, Lock, Sparkles, User, Loader2, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { UserPlus, Mail, Lock, Sparkles, User, Loader2, ArrowLeft, CheckCircle2, Eye, EyeOff } from "lucide-react";
 
 // Google Icon Component
 function GoogleIcon({ className }: { className?: string }) {
@@ -39,6 +39,7 @@ export default function Signup() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [verificationCode, setVerificationCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -283,17 +284,28 @@ export default function Signup() {
                   <Lock className="w-3.5 h-3.5 text-accent" />
                   {t("auth.password") || "Password"}
                 </label>
-                <input 
-                  type="password" 
-                  value={password} 
-                  onChange={(e) => setPassword(e.target.value)} 
-                  className="w-full rounded-lg border-2 border-accent/20 bg-background px-3 py-1.5 text-sm focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all" 
-                  placeholder={t('auth.passwordPlaceholder') || "Enter your password"}
-                  required
-                  disabled={loading}
-                  minLength={8}
-                  autoComplete="new-password"
-                />
+                <div className="relative">
+                  <input 
+                    type={showPassword ? "text" : "password"}
+                    value={password} 
+                    onChange={(e) => setPassword(e.target.value)} 
+                    className="w-full rounded-lg border-2 border-accent/20 bg-background px-3 py-1.5 pr-10 text-sm focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all" 
+                    placeholder={t('auth.passwordPlaceholder') || "Enter your password"}
+                    required
+                    disabled={loading}
+                    minLength={8}
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label={showPassword ? (t('auth.hidePassword') || 'Hide password') : (t('auth.showPassword') || 'Show password')}
+                    disabled={loading}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
                 <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
                   {t("auth.passwordHint") || "At least 8 characters"}
                 </p>

@@ -223,7 +223,7 @@ const templates: Template[] = [
   {
     id: 'lime-direct',
     name: 'Lime Direct',
-    category: 'Storefront',
+    category: 'Single Product',
     icon: '💚',
     description: 'Bright lime green direct sales with quick order form.',
     image: '/template-previews/lime-direct.svg',
@@ -254,7 +254,7 @@ const templates: Template[] = [
   {
     id: 'clean-single',
     name: 'Clean Single',
-    category: 'Storefront',
+    category: 'Single Product',
     icon: '⬜',
     description: 'Ultra-minimal single product focus with clean order form.',
     image: '/template-previews/clean-single.svg',
@@ -264,7 +264,7 @@ const templates: Template[] = [
   {
     id: 'pure-product',
     name: 'Pure Product',
-    category: 'Storefront',
+    category: 'Single Product',
     icon: '✨',
     description: 'Product-centric with sticky mobile CTA.',
     image: '/template-previews/pure-product.svg',
@@ -285,7 +285,7 @@ const templates: Template[] = [
   {
     id: 'gallery-pro',
     name: 'Gallery Pro',
-    category: 'Storefront',
+    category: 'Single Product',
     icon: '🖼️',
     description: 'Image gallery focused with thumbnail navigation.',
     image: '/template-previews/gallery-pro.svg',
@@ -295,7 +295,7 @@ const templates: Template[] = [
   {
     id: 'showcase-plus',
     name: 'Showcase Plus',
-    category: 'Storefront',
+    category: 'Single Product',
     icon: '🎯',
     description: 'Multi-image showcase with carousel and color variants.',
     image: '/template-previews/showcase-plus.svg',
@@ -305,12 +305,32 @@ const templates: Template[] = [
   {
     id: 'exhibit-store',
     name: 'Exhibit Store',
-    category: 'Storefront',
+    category: 'Single Product',
     icon: '🏛️',
     description: 'Museum-style exhibition with floating info card.',
     image: '/template-previews/exhibit-store.svg',
     colors: { primary: '#f5f5f4', secondary: '#ffffff', accent: '#0d9488' },
     features: ['Exhibition style', 'Large images', 'Serif fonts', 'Elegant inquiry'],
+  },
+  {
+    id: 'focus-one',
+    name: 'Focus One',
+    category: 'Single Product',
+    icon: '🎯',
+    description: 'High-conversion single-product landing with sticky CTA and upsells.',
+    image: '/template-previews/focus-one.svg',
+    colors: { primary: '#0b1220', secondary: '#0f172a', accent: '#22c55e' },
+    features: ['Split hero', 'Sticky CTA', 'Trust badges', 'Optional upsells'],
+  },
+  {
+    id: 'split-specs',
+    name: 'Split Specs',
+    category: 'Single Product',
+    icon: '📋',
+    description: 'Detail-first one-product page with specs + FAQ emphasis.',
+    image: '/template-previews/split-specs.svg',
+    colors: { primary: '#ffffff', secondary: '#f8fafc', accent: '#2563eb' },
+    features: ['Specs section', 'FAQ blocks', 'Clean layout', 'Optional upsells'],
   },
   {
     id: 'babyos',

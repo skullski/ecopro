@@ -50,15 +50,28 @@ export default function AmberStoreTemplate(props: TemplateProps) {
   const muted = asString(settings.template_muted_color) || '#78716c';
   const accent = asString(settings.template_accent_color) || '#d97706';
 
-  const storeName = asString(settings.store_name) || 'Amber';
-  const heroTitle = asString(settings.template_hero_heading) || 'Timeless Elegance';
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+
+  const cardBg = asString(settings.template_card_bg) || "#ffffff";
+const storeName = asString(settings.store_name) || 'Amber';
+  
+  const copyright = asString(settings.template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
+const heroTitle = asString(settings.template_hero_heading) || 'Timeless Elegance';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Discover artisan craftsmanship';
   const cta = asString(settings.template_button_text) || 'Explore Collection';
 
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 12) || [];
 
-  const descText = asString(settings.template_description_text);
-  const descColor = asString(settings.template_description_color) || muted;
+  
+
+  const sectionTitle = asString(settings.template_featured_title) || "Featured";
+  const sectionSubtitle = asString(settings.template_featured_subtitle) || "";
+  const addToCartLabel = asString(settings.template_add_to_cart_label) || "View";
+const descText = (asString(settings.template_description_text) || asString(settings.store_description)).trim();
+const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 16, 10, 32);
 
   // Layout settings
@@ -72,6 +85,8 @@ export default function AmberStoreTemplate(props: TemplateProps) {
 
   return (
     <div
+      data-edit-path="__root"
+      onClick={() => canManage && onSelect("__root")}
       className="ecopro-storefront"
       style={{
         minHeight: '100vh',
@@ -215,8 +230,8 @@ export default function AmberStoreTemplate(props: TemplateProps) {
         style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 24px 80px' }}
       >
         <div style={{ textAlign: 'center', marginBottom: 48 }}>
-          <h2 style={{ fontSize: 36, fontWeight: 400, margin: 0, fontStyle: 'italic' }}>Curated Selection</h2>
-          <p style={{ color: muted, marginTop: 12, fontFamily: '"Inter", sans-serif' }}>Handpicked pieces for you</p>
+          <h2 data-edit-path="layout.featured.title" style={{ fontSize: 36, fontWeight: 400, margin: 0, fontStyle: 'italic' }}>{sectionTitle}</h2>
+          <p data-edit-path="layout.featured.subtitle" style={{ color: muted, marginTop: 12, fontFamily: '"Inter", sans-serif' }}>{sectionSubtitle}</p>
         </div>
 
         <div
@@ -236,7 +251,7 @@ export default function AmberStoreTemplate(props: TemplateProps) {
               }}
               style={{ cursor: 'pointer' }}
             >
-              <div style={{ aspectRatio: '3/4', overflow: 'hidden', marginBottom: baseSpacing, background: '#f5f0eb', borderRadius: cardRadius }}>
+              <div style={{ aspectRatio: '3/4', overflow: 'hidden', marginBottom: baseSpacing, background: cardBg, borderRadius: cardRadius }}>
                 <img 
                   src={productImage(p)} 
                   alt={productTitle(p)} 
@@ -245,8 +260,8 @@ export default function AmberStoreTemplate(props: TemplateProps) {
                   onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
                 />
               </div>
-              <h3 style={{ fontSize: 18, fontWeight: 400, margin: 0, fontStyle: 'italic' }}>{productTitle(p)}</h3>
-              <p style={{ color: accent, fontSize: 15, marginTop: 8, fontFamily: '"Inter", sans-serif', fontWeight: 600 }}>
+              <h3 style={{ fontSize: 18, fontWeight: 400, margin: 0, fontStyle: 'italic' , color: productTitleColor}}>{productTitle(p)}</h3>
+              <p style={{ color: productPriceColor, fontSize: 15, marginTop: 8, fontFamily: '"Inter", sans-serif', fontWeight: 600 }}>
                 {formatPrice(Number(p.price) || 0)}
               </p>
             </div>
@@ -310,7 +325,7 @@ export default function AmberStoreTemplate(props: TemplateProps) {
             ))}
           </div>
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: 48, paddingTop: 24, textAlign: 'center', fontSize: 13, opacity: 0.5, fontFamily: '"Inter", sans-serif' }}>
-            © {new Date().getFullYear()} {storeName}. All rights reserved.
+            {copyright}
           </div>
         </div>
       </footer>

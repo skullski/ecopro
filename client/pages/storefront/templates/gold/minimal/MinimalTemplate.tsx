@@ -87,7 +87,11 @@ export default function MinimalTemplate(props: TemplateProps) {
   const text = asString(settings.template_text_color) || '#111111';
   const muted = asString(settings.template_muted_color) || '#666666';
   const accent = asString(settings.template_accent_color) || '#000000';
-  const headerBg = asString(settings.template_header_bg) || '#ffffff';
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+const headerBg = asString(settings.template_header_bg) || '#ffffff';
   const headerText = asString(settings.template_header_text) || '#111111';
   const cardBg = asString(settings.template_card_bg) || '#fafafa';
   const border = asString(settings.template_border_color) || '#e5e5e5';
@@ -136,6 +140,7 @@ export default function MinimalTemplate(props: TemplateProps) {
   }, [products, categoryFilter]);
 
   const sectionTitle = asString(settings.template_featured_title) || 'Products';
+  const sectionSubtitle = asString(settings.template_featured_subtitle) || '';
   const addToCartLabel = asString(settings.template_add_to_cart_label) || 'View';
 
   const copyright = asString(settings.template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
@@ -415,6 +420,20 @@ export default function MinimalTemplate(props: TemplateProps) {
             {sectionTitle}
           </h2>
 
+          <p
+            style={{
+              margin: '0 0 48px',
+              color: muted,
+              fontSize: '13px',
+              letterSpacing: '0.02em',
+              textAlign: 'center',
+            }}
+            data-edit-path="layout.featured.subtitle"
+            onClick={(e) => clickGuard(e, 'layout.featured.subtitle')}
+          >
+            {sectionSubtitle || (canManage ? 'Add subtitle...' : '')}
+          </p>
+
           {/* Product Grid */}
           <div
             style={{
@@ -435,7 +454,7 @@ export default function MinimalTemplate(props: TemplateProps) {
                   e.stopPropagation();
                   if (canManage) {
                     // In editor mode, select for editing instead of navigating
-                    onSelect(`layout.products.${product.id}`);
+                    onSelect(`layout.grid.items.${product.id}`);
                     return;
                   }
                   // In storefront, navigate to product page (relative path)

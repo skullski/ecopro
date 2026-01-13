@@ -43,6 +43,12 @@ data/
 # Uploaded assets (generated at runtime)
 public/uploads/
 
+# Local runtime artifacts (repo root)
+uploads/
+
+# One-off generated reports
+tmp/template-editability-report.ts
+
 # Local backups
 *.dump
 backup-*.dump

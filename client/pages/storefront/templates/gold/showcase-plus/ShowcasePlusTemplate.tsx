@@ -52,15 +52,28 @@ export default function ShowcasePlusTemplate(props: TemplateProps) {
   const muted = asString(settings.template_muted_color) || '#78716c';
   const accent = asString(settings.template_accent_color) || '#ea580c';
 
-  const storeName = asString(settings.store_name) || 'Showcase+';
-  const heroTitle = asString(settings.template_hero_heading) || 'Featured Product';
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+
+  const cardBg = asString(settings.template_card_bg) || "#ffffff";
+const storeName = asString(settings.store_name) || 'Showcase+';
+  
+  const copyright = asString(settings.template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
+const heroTitle = asString(settings.template_hero_heading) || 'Featured Product';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Discover the perfect blend of quality and style';
   const cta = asString(settings.template_button_text) || 'Add to Cart';
 
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 12) || [];
 
-  const descText = asString(settings.template_description_text);
-  const descColor = asString(settings.template_description_color) || muted;
+  
+
+  const sectionTitle = asString(settings.template_featured_title) || "Featured";
+  const sectionSubtitle = asString(settings.template_featured_subtitle) || "";
+  const addToCartLabel = asString(settings.template_add_to_cart_label) || "View";
+const descText = (asString(settings.template_description_text) || asString(settings.store_description)).trim();
+const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 15, 10, 32);
 
   // Layout settings
@@ -82,6 +95,8 @@ export default function ShowcasePlusTemplate(props: TemplateProps) {
 
   return (
     <div
+      data-edit-path="__root"
+      onClick={() => canManage && onSelect("__root")}
       className="ecopro-storefront"
       style={{
         minHeight: '100vh',
@@ -347,7 +362,7 @@ export default function ShowcasePlusTemplate(props: TemplateProps) {
           onClick={() => canManage && onSelect('layout.grid')}
           style={{ maxWidth: 1200, margin: '0 auto', padding: `${baseSpacing}px ${baseSpacing}px ${sectionSpacing * 1.5}px` }}
         >
-          <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 24, textAlign: 'center' }}>You May Also Like</h2>
+          <h2 data-edit-path="layout.featured.title" style={{ fontSize: 24, fontWeight: 700, marginBottom: 24, textAlign: 'center' }}>{sectionTitle}</h2>
           <div
             style={{
               display: 'grid',
@@ -378,7 +393,7 @@ export default function ShowcasePlusTemplate(props: TemplateProps) {
                   <img src={productImage(p)} alt={productTitle(p)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
                 <div style={{ padding: 14 }}>
-                  <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>{productTitle(p)}</h3>
+                  <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0 , color: productTitleColor}}>{productTitle(p)}</h3>
                   <div style={{ marginTop: 8, fontWeight: 700, color: accent }}>{formatPrice(Number(p.price) || 0)}</div>
                 </div>
               </div>
@@ -396,9 +411,9 @@ export default function ShowcasePlusTemplate(props: TemplateProps) {
         <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 24 }}>
           <div>
             <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>{storeName}</div>
-            <p style={{ color: '#a8a29e', fontSize: 13 }}>Quality products you can trust</p>
+            <p data-edit-path="layout.featured.subtitle" style={{ color: '#a8a29e', fontSize: 13 }}>{sectionSubtitle}</p>
           </div>
-          <p style={{ color: '#a8a29e', fontSize: 13 }}>© {new Date().getFullYear()} {storeName}. All rights reserved.</p>
+          <p style={{ color: '#a8a29e', fontSize: 13 }}>{copyright}</p>
         </div>
       </footer>
     </div>

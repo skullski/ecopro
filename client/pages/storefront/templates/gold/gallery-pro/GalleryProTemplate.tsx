@@ -59,15 +59,28 @@ export default function GalleryProTemplate(props: TemplateProps) {
   const muted = asString(settings.template_muted_color) || '#71717a';
   const accent = asString(settings.template_accent_color) || '#2563eb';
 
-  const storeName = asString(settings.store_name) || 'Gallery Pro';
-  const heroTitle = asString(settings.template_hero_heading) || 'Premium Selection';
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+
+  const cardBg = asString(settings.template_card_bg) || "#ffffff";
+const storeName = asString(settings.store_name) || 'Gallery Pro';
+  
+  const copyright = asString(settings.template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
+const heroTitle = asString(settings.template_hero_heading) || 'Premium Selection';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Browse our exclusive collection of premium products';
   const cta = asString(settings.template_button_text) || 'Order Now';
 
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 12) || [];
 
-  const descText = asString(settings.template_description_text);
-  const descColor = asString(settings.template_description_color) || muted;
+  
+
+  const sectionTitle = asString(settings.template_featured_title) || "Featured";
+  const sectionSubtitle = asString(settings.template_featured_subtitle) || "";
+  const addToCartLabel = asString(settings.template_add_to_cart_label) || "View";
+const descText = (asString(settings.template_description_text) || asString(settings.store_description)).trim();
+const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 15, 10, 32);
 
   // Layout settings
@@ -85,6 +98,8 @@ export default function GalleryProTemplate(props: TemplateProps) {
 
   return (
     <div
+      data-edit-path="__root"
+      onClick={() => canManage && onSelect("__root")}
       className="ecopro-storefront"
       style={{
         minHeight: '100vh',
@@ -233,7 +248,7 @@ export default function GalleryProTemplate(props: TemplateProps) {
 
             {/* Order Form */}
             <div style={{ marginTop: 24, borderTop: '1px solid #e4e4e7', paddingTop: 24 }}>
-              <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 }}>Quick Order</h3>
+              <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 , color: productTitleColor}}>Quick Order</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <input placeholder="Full Name" style={{ padding: '14px', border: '1px solid #e4e4e7', borderRadius: 10, fontSize: 14, background: '#fff' }} />
                 <input placeholder="Phone" style={{ padding: '14px', border: '1px solid #e4e4e7', borderRadius: 10, fontSize: 14, background: '#fff' }} />
@@ -293,7 +308,7 @@ export default function GalleryProTemplate(props: TemplateProps) {
           onClick={() => canManage && onSelect('layout.grid')}
           style={{ maxWidth: 1300, margin: '0 auto', padding: `${sectionSpacing}px 24px ${sectionSpacing * 2}px` }}
         >
-          <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: baseSpacing * 1.5 }}>Related Products</h2>
+          <h2 data-edit-path="layout.featured.title" style={{ fontSize: 22, fontWeight: 700, marginBottom: baseSpacing * 1.5 }}>{sectionTitle}</h2>
           <div
             style={{
               display: 'grid',
@@ -323,7 +338,7 @@ export default function GalleryProTemplate(props: TemplateProps) {
                   <img src={productImage(p)} alt={productTitle(p)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
                 <div style={{ padding: 12 }}>
-                  <h3 style={{ fontSize: 13, fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <h3 style={{ fontSize: 13, fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' , color: productTitleColor}}>
                     {productTitle(p)}
                   </h3>
                   <div style={{ marginTop: 8, fontWeight: 700, color: accent }}>{formatPrice(Number(p.price) || 0)}</div>
@@ -342,7 +357,7 @@ export default function GalleryProTemplate(props: TemplateProps) {
       >
         <div style={{ maxWidth: 1300, margin: '0 auto', textAlign: 'center' }}>
           <span style={{ fontSize: 18, fontWeight: 700 }}>{storeName}</span>
-          <p style={{ color: muted, fontSize: 13, marginTop: 12 }}>© {new Date().getFullYear()} {storeName}. All rights reserved.</p>
+          <p data-edit-path="layout.featured.subtitle" style={{ color: muted, fontSize: 13, marginTop: 12 }}>{sectionSubtitle}</p>
         </div>
       </footer>
     </div>

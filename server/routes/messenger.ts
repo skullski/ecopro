@@ -39,6 +39,7 @@ export const getMessengerPageLink: RequestHandler = async (req, res) => {
       `SELECT client_id, store_name
        FROM client_store_settings
        WHERE store_slug = $1
+          OR LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1)
        LIMIT 1`,
       [storeSlug]
     );
@@ -130,7 +131,11 @@ export const checkMessengerConnection: RequestHandler = async (req, res) => {
 
     // Get client_id from store slug
     const storeRes = await pool.query(
-      `SELECT client_id FROM client_store_settings WHERE store_slug = $1 LIMIT 1`,
+      `SELECT client_id
+       FROM client_store_settings
+       WHERE store_slug = $1
+         OR LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1)
+       LIMIT 1`,
       [storeSlug]
     );
 

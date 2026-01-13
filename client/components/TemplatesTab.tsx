@@ -36,6 +36,8 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [activeCategory, setActiveCategory] = useState<string>('All');
+
   const [switchOpen, setSwitchOpen] = useState(false);
   const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
   const [switchMode, setSwitchMode] = useState<'defaults' | 'import'>('import');
@@ -224,17 +226,19 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
     { id: 'berry-market', name: 'Berry Market', category: 'Storefront', icon: '🫐', description: 'Purple-tinted market with category tiles and flash deals.', image: '/template-previews/berry-market.svg', colors: { primary: '#faf5ff', secondary: '#ffffff', accent: '#7c3aed' }, features: ['Berry purple', 'Category tiles', 'Flash deals', 'Gradient hero'] },
     { id: 'rose-catalog', name: 'Rose Catalog', category: 'Storefront', icon: '🌹', description: 'Rose pink catalog with filters and wishlist hearts.', image: '/template-previews/rose-catalog.svg', colors: { primary: '#fff1f2', secondary: '#ffffff', accent: '#e11d48' }, features: ['Rose pink', 'Filter dropdowns', 'NEW badges', 'Clean catalog'] },
     // Screenshot-inspired templates - Batch 4 (Lime/Green)
-    { id: 'lime-direct', name: 'Lime Direct', category: 'Storefront', icon: '💚', description: 'Bright lime green direct sales with quick order form.', image: '/template-previews/lime-direct.svg', colors: { primary: '#f0fdf4', secondary: '#ffffff', accent: '#22c55e' }, features: ['Lime green', 'Quick order', 'Feature badges', 'Direct sales'] },
+    { id: 'lime-direct', name: 'Lime Direct', category: 'Single Product', icon: '💚', description: 'Bright lime green direct sales with quick order form.', image: '/template-previews/lime-direct.svg', colors: { primary: '#f0fdf4', secondary: '#ffffff', accent: '#22c55e' }, features: ['Lime green', 'Quick order', 'Feature badges', 'Direct sales'] },
     { id: 'emerald-shop', name: 'Emerald Shop', category: 'Storefront', icon: '💎', description: 'Rich emerald theme with feature highlights and testimonials.', image: '/template-previews/emerald-shop.svg', colors: { primary: '#ecfdf5', secondary: '#ffffff', accent: '#059669' }, features: ['Emerald green', 'Feature cards', 'Testimonial', 'Stats hero'] },
     { id: 'neon-store', name: 'Neon Store', category: 'Storefront', icon: '🔋', description: 'Electric neon green on dark with glowing effects.', image: '/template-previews/neon-store.svg', colors: { primary: '#0a0a0a', secondary: '#141414', accent: '#00ff88' }, features: ['Neon green', 'Dark theme', 'Glow effects', 'Tech style'] },
     // Screenshot-inspired templates - Batch 5 (Clean/Minimal)
-    { id: 'clean-single', name: 'Clean Single', category: 'Storefront', icon: '⬜', description: 'Ultra-minimal single product focus with clean order form.', image: '/template-previews/clean-single.svg', colors: { primary: '#ffffff', secondary: '#fafafa', accent: '#3b82f6' }, features: ['Single focus', 'Clean form', 'Feature list', 'Minimal design'] },
-    { id: 'pure-product', name: 'Pure Product', category: 'Storefront', icon: '✨', description: 'Product-centric with sticky mobile CTA.', image: '/template-previews/pure-product.svg', colors: { primary: '#fefefe', secondary: '#f5f5f5', accent: '#0066ff' }, features: ['Product focus', 'Sticky CTA', 'Specs table', 'Apple-like'] },
+    { id: 'clean-single', name: 'Clean Single', category: 'Single Product', icon: '⬜', description: 'Ultra-minimal single product focus with clean order form.', image: '/template-previews/clean-single.svg', colors: { primary: '#ffffff', secondary: '#fafafa', accent: '#3b82f6' }, features: ['Single focus', 'Clean form', 'Feature list', 'Minimal design'] },
+    { id: 'pure-product', name: 'Pure Product', category: 'Single Product', icon: '✨', description: 'Product-centric with sticky mobile CTA.', image: '/template-previews/pure-product.svg', colors: { primary: '#fefefe', secondary: '#f5f5f5', accent: '#0066ff' }, features: ['Product focus', 'Sticky CTA', 'Specs table', 'Apple-like'] },
     { id: 'snow-shop', name: 'Snow Shop', category: 'Storefront', icon: '❄️', description: 'Crisp white with soft shadows and card layout.', image: '/template-previews/snow-shop.svg', colors: { primary: '#f8fafc', secondary: '#ffffff', accent: '#6366f1' }, features: ['Snow white', 'Soft shadows', 'Card layout', 'Newsletter'] },
     // Screenshot-inspired templates - Batch 6 (Gallery)
-    { id: 'gallery-pro', name: 'Gallery Pro', category: 'Storefront', icon: '🖼️', description: 'Image gallery focused with thumbnail navigation.', image: '/template-previews/gallery-pro.svg', colors: { primary: '#ffffff', secondary: '#fafafa', accent: '#2563eb' }, features: ['Gallery view', 'Thumbnails', 'Quick order', 'Many images'] },
-    { id: 'showcase-plus', name: 'Showcase Plus', category: 'Storefront', icon: '🎯', description: 'Multi-image showcase with carousel and color variants.', image: '/template-previews/showcase-plus.svg', colors: { primary: '#faf9f7', secondary: '#ffffff', accent: '#ea580c' }, features: ['Image carousel', 'Color options', 'Reviews', 'Promo banner'] },
-    { id: 'exhibit-store', name: 'Exhibit Store', category: 'Storefront', icon: '🏛️', description: 'Museum-style exhibition with floating info card.', image: '/template-previews/exhibit-store.svg', colors: { primary: '#f5f5f4', secondary: '#ffffff', accent: '#0d9488' }, features: ['Exhibition style', 'Large images', 'Serif fonts', 'Elegant inquiry'] },
+    { id: 'gallery-pro', name: 'Gallery Pro', category: 'Single Product', icon: '🖼️', description: 'Image gallery focused with thumbnail navigation.', image: '/template-previews/gallery-pro.svg', colors: { primary: '#ffffff', secondary: '#fafafa', accent: '#2563eb' }, features: ['Gallery view', 'Thumbnails', 'Quick order', 'Many images'] },
+    { id: 'showcase-plus', name: 'Showcase Plus', category: 'Single Product', icon: '🎯', description: 'Multi-image showcase with carousel and color variants.', image: '/template-previews/showcase-plus.svg', colors: { primary: '#faf9f7', secondary: '#ffffff', accent: '#ea580c' }, features: ['Image carousel', 'Color options', 'Reviews', 'Promo banner'] },
+    { id: 'exhibit-store', name: 'Exhibit Store', category: 'Single Product', icon: '🏛️', description: 'Museum-style exhibition with floating info card.', image: '/template-previews/exhibit-store.svg', colors: { primary: '#f5f5f4', secondary: '#ffffff', accent: '#0d9488' }, features: ['Exhibition style', 'Large images', 'Serif fonts', 'Elegant inquiry'] },
+    { id: 'focus-one', name: 'Focus One', category: 'Single Product', icon: '🎯', description: 'High-conversion single-product landing with sticky CTA and upsells.', image: '/template-previews/focus-one.svg', colors: { primary: '#0b1220', secondary: '#0f172a', accent: '#22c55e' }, features: ['Split hero', 'Sticky CTA', 'Trust badges', 'Optional upsells'] },
+    { id: 'split-specs', name: 'Split Specs', category: 'Single Product', icon: '📋', description: 'Detail-first one-product page with specs + FAQ emphasis.', image: '/template-previews/split-specs.svg', colors: { primary: '#ffffff', secondary: '#f8fafc', accent: '#2563eb' }, features: ['Specs section', 'FAQ blocks', 'Clean layout', 'Optional upsells'] },
   ];
 
   useEffect(() => {
@@ -282,6 +286,11 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
       </div>
     );
   }
+
+  const categories = Array.from(new Set(templates.map((t) => t.category).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+  const visibleTemplates = activeCategory === 'All'
+    ? templates
+    : templates.filter((t) => t.category === activeCategory);
 
   return (
     <div className="space-y-3 md:space-y-4">
@@ -366,6 +375,35 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
         <p className="text-sm text-slate-700 dark:text-slate-300">Select how your store should appear to customers. Each template is fully customizable.</p>
       </div>
 
+      {/* Category Filter */}
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setActiveCategory('All')}
+          className={`px-3 py-1.5 rounded-full text-sm border transition ${
+            activeCategory === 'All'
+              ? 'bg-blue-600 text-white border-blue-600'
+              : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+          }`}
+        >
+          All
+        </button>
+        {categories.map((c) => (
+          <button
+            key={c}
+            type="button"
+            onClick={() => setActiveCategory(c)}
+            className={`px-3 py-1.5 rounded-full text-sm border transition ${
+              activeCategory === c
+                ? 'bg-blue-600 text-white border-blue-600'
+                : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+            }`}
+          >
+            {c}
+          </button>
+        ))}
+      </div>
+
       {/* Template Carousel - Infinite scroll */}
       <div className="relative overflow-hidden rounded-lg bg-gradient-to-b from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 p-4">
         <style>{`
@@ -385,7 +423,7 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
         
         <div className="carousel-track" style={{ width: 'fit-content' }}>
           {/* Double the templates for seamless loop */}
-          {[...templates, ...templates].map((template, idx) => (
+          {[...visibleTemplates, ...visibleTemplates].map((template, idx) => (
             <button
               key={`${template.id}-${idx}`}
               onClick={() => openTemplateSwitch(template.id)}
@@ -430,7 +468,7 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
 
       {/* Quick Select Grid - Compact view */}
       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 bg-slate-50 dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
-        {templates.map((template) => (
+        {visibleTemplates.map((template) => (
           <button
             key={template.id}
             onClick={() => openTemplateSwitch(template.id)}

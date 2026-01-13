@@ -50,15 +50,28 @@ export default function BerryMarketTemplate(props: TemplateProps) {
   const muted = asString(settings.template_muted_color) || '#6366f1';
   const accent = asString(settings.template_accent_color) || '#7c3aed';
 
-  const storeName = asString(settings.store_name) || 'Berry Market';
-  const heroTitle = asString(settings.template_hero_heading) || 'Shop Smart, Live Better';
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+
+  const cardBg = asString(settings.template_card_bg) || "#ffffff";
+const storeName = asString(settings.store_name) || 'Berry Market';
+  
+  const copyright = asString(settings.template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
+const heroTitle = asString(settings.template_hero_heading) || 'Shop Smart, Live Better';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Thousands of products at unbeatable prices';
   const cta = asString(settings.template_button_text) || 'Start Shopping';
 
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 20) || [];
 
-  const descText = asString(settings.template_description_text);
-  const descColor = asString(settings.template_description_color) || muted;
+  
+
+  const sectionTitle = asString(settings.template_featured_title) || "Featured";
+  const sectionSubtitle = asString(settings.template_featured_subtitle) || "";
+  const addToCartLabel = asString(settings.template_add_to_cart_label) || "View";
+const descText = (asString(settings.template_description_text) || asString(settings.store_description)).trim();
+const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 15, 10, 32);
 
   // Layout settings
@@ -72,6 +85,8 @@ export default function BerryMarketTemplate(props: TemplateProps) {
 
   return (
     <div
+      data-edit-path="__root"
+      onClick={() => canManage && onSelect("__root")}
       className="ecopro-storefront"
       style={{
         minHeight: '100vh',
@@ -284,7 +299,7 @@ export default function BerryMarketTemplate(props: TemplateProps) {
         onClick={() => canManage && onSelect('layout.grid')}
         style={{ maxWidth: 1300, margin: '0 auto', padding: `24px 24px ${sectionSpacing}px` }}
       >
-        <h2 style={{ fontSize: 22, fontWeight: 800, marginBottom: 20 }}>All Products</h2>
+        <h2 data-edit-path="layout.featured.title" style={{ fontSize: 22, fontWeight: 800, marginBottom: 20 }}>{sectionTitle}</h2>
         <div
           style={{
             display: 'grid',
@@ -336,9 +351,7 @@ export default function BerryMarketTemplate(props: TemplateProps) {
         <div style={{ maxWidth: 1300, margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(4, 1fr)', gap: 32 }}>
           <div>
             <div style={{ fontSize: 24, fontWeight: 800, marginBottom: 16 }}>{storeName}</div>
-            <p style={{ opacity: 0.6, fontSize: 14, lineHeight: 1.7 }}>
-              Your trusted online marketplace.
-            </p>
+            <p data-edit-path="layout.featured.subtitle" style={{ opacity: 0.6, fontSize: 14, lineHeight: 1.7 }}>{sectionSubtitle}</p>
           </div>
           {['Shop', 'Help', 'About'].map((section) => (
             <div key={section}>

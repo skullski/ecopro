@@ -60,6 +60,7 @@ export const GENERATED_TEMPLATE_DEFAULTS: Record<string, Record<string, unknown>
     "template_hero_subtitle": "Premium scented candles for every mood",
     "template_text_color": "#fef3c7"
   },
+  "chalk-cafe": {},
   "chocolate": {
     "store_name": "Cocoa Dreams",
     "template_accent_color": "#d97706",
@@ -70,8 +71,10 @@ export const GENERATED_TEMPLATE_DEFAULTS: Record<string, Record<string, unknown>
     "template_hero_subtitle": "Handcrafted luxury chocolates",
     "template_text_color": "#fef3c7"
   },
+  "citrus-bloom": {},
   "classic": {},
   "clean-single": {},
+  "copper-craft": {},
   "coral-market": {},
   "crafts": {
     "store_name": "Handmade Studio",
@@ -161,6 +164,7 @@ export const GENERATED_TEMPLATE_DEFAULTS: Record<string, Record<string, unknown>
     "template_hero_subtitle": "Express yourself with color",
     "template_text_color": "#f8fafc"
   },
+  "harbor-ledger": {},
   "health": {
     "store_name": "WELLNESS SHOP",
     "template_accent_color": "#14b8a6",
@@ -171,6 +175,7 @@ export const GENERATED_TEMPLATE_DEFAULTS: Record<string, Record<string, unknown>
     "template_hero_subtitle": "Natural supplements & wellness products",
     "template_text_color": "#0f766e"
   },
+  "ice-glass": {},
   "jewelry": {},
   "kids": {
     "store_name": "Little Stars ⭐",
@@ -207,6 +212,7 @@ export const GENERATED_TEMPLATE_DEFAULTS: Record<string, Record<string, unknown>
   "minimal": {},
   "mint-elegance": {},
   "modern": {},
+  "mono-press": {},
   "monochrome": {
     "store_name": "MONO",
     "template_accent_color": "#000000",
@@ -229,9 +235,13 @@ export const GENERATED_TEMPLATE_DEFAULTS: Record<string, Record<string, unknown>
   },
   "neon": {},
   "neon-store": {},
+  "noir-eclipse": {},
+  "ocean-splash": {},
   "office": {},
+  "orbit-mart": {},
   "organic": {},
   "outdoor": {},
+  "paperfold": {},
   "pastel": {},
   "perfume": {},
   "pets": {},
@@ -255,6 +265,7 @@ export const GENERATED_TEMPLATE_DEFAULTS: Record<string, Record<string, unknown>
     "template_hero_subtitle": "Professional camera gear & accessories",
     "template_text_color": "#fafafa"
   },
+  "pixel-pop": {},
   "pro": {},
   "pro-atelier": {},
   "pro-aurora": {},
@@ -267,6 +278,7 @@ export const GENERATED_TEMPLATE_DEFAULTS: Record<string, Record<string, unknown>
   "pro-zen": {},
   "pure-product": {},
   "rose-catalog": {},
+  "royal-boutique": {},
   "sage-boutique": {},
   "shoes": {
     "store_name": "STEP UP",
@@ -288,6 +300,7 @@ export const GENERATED_TEMPLATE_DEFAULTS: Record<string, Record<string, unknown>
     "template_hero_subtitle": "Clean, effective skincare for all skin types",
     "template_text_color": "#4c1d95"
   },
+  "skyline-editorial": {},
   "snow-shop": {},
   "sports": {
     "store_name": "SPORTS GEAR",
@@ -320,6 +333,7 @@ export const GENERATED_TEMPLATE_DEFAULTS: Record<string, Record<string, unknown>
     "template_hero_subtitle": "Exclusive streetwear drops",
     "template_text_color": "#fafafa"
   },
+  "sunbeam": {},
   "sunset-shop": {},
   "supplements": {
     "store_name": "VITAL FORCE",
@@ -361,6 +375,7 @@ export const GENERATED_TEMPLATE_DEFAULTS: Record<string, Record<string, unknown>
     "template_hero_subtitle": "Cutting-edge gadgets & accessories",
     "template_text_color": "#f9fafb"
   },
+  "terra-market": {},
   "tools": {
     "store_name": "Tool Pro",
     "template_accent_color": "#ea580c",
@@ -400,6 +415,7 @@ export const GENERATED_TEMPLATE_DEFAULTS: Record<string, Record<string, unknown>
     "template_hero_subtitle": "Curated antiques & collectibles",
     "template_text_color": "#3d3022"
   },
+  "violet-vault": {},
   "watches": {
     "store_name": "TIMEPIECE",
     "template_accent_color": "#d4af37",
@@ -429,11 +445,17 @@ export const GENERATED_TEMPLATE_DEFAULTS: Record<string, Record<string, unknown>
     "template_hero_heading": "Fine Wines 🍷",
     "template_hero_subtitle": "Curated wines from around the world",
     "template_text_color": "#fef2f2"
-  }
+  },
+  "zen-grove": {}
 };
 
 export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   "amber-store": [
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
     {
       "key": "store_logo",
       "label": "Store Logo",
@@ -448,6 +470,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -465,8 +492,18 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
       "key": "template_card_border_radius",
       "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
       "type": "text"
     },
     {
@@ -483,6 +520,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_description_text",
       "label": "Description Text",
       "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
     },
     {
       "key": "template_grid_columns",
@@ -515,6 +562,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "color"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -531,6 +588,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
     }
   ],
   "art": [
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
     {
       "defaultValue": "ARTISAN GALLERY",
       "key": "store_name",
@@ -617,6 +684,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "automotive": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "defaultValue": "AUTO PARTS",
       "key": "store_name",
       "label": "Store Name",
@@ -627,6 +704,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -657,6 +739,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -684,6 +771,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -707,6 +804,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "image"
     },
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
       "key": "store_logo",
       "label": "Store Logo",
       "type": "image"
@@ -727,8 +829,18 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
       "key": "template_card_bg",
       "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
       "type": "text"
     },
     {
@@ -1019,6 +1131,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "url"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -1041,6 +1163,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "berry-market": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
       "key": "store_logo",
       "label": "Store Logo",
       "type": "image"
@@ -1054,6 +1181,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -1071,8 +1203,18 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
       "key": "template_card_border_radius",
       "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
       "type": "text"
     },
     {
@@ -1089,6 +1231,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_description_text",
       "label": "Description Text",
       "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
     },
     {
       "key": "template_grid_columns",
@@ -1121,6 +1273,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "color"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -1137,6 +1299,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
     }
   ],
   "books": [
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
     {
       "defaultValue": "THE BOOKSHELF",
       "key": "store_name",
@@ -1439,6 +1611,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "url"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -1460,6 +1642,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
     }
   ],
   "candles": [
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
     {
       "defaultValue": "Warm Glow",
       "key": "store_name",
@@ -1544,7 +1736,169 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "color"
     }
   ],
+  "chalk-cafe": [
+    {
+      "key": "banner_url",
+      "label": "Banner Url",
+      "type": "image"
+    },
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_border_radius",
+      "label": "Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_border_radius",
+      "label": "Button Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_button2_text",
+      "label": "Button2 Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
+    },
+    {
+      "key": "template_font_family",
+      "label": "Font Family",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_kicker",
+      "label": "Hero Kicker",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_nav_links",
+      "label": "Nav Links",
+      "type": "url"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_social_links",
+      "label": "Social Links",
+      "type": "url"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
   "chocolate": [
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
     {
       "defaultValue": "Cocoa Dreams",
       "key": "store_name",
@@ -1556,6 +1910,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -1586,6 +1945,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -1613,6 +1977,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -1624,6 +1998,158 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
     },
     {
       "defaultValue": "#fef3c7",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "citrus-bloom": [
+    {
+      "key": "banner_url",
+      "label": "Banner Url",
+      "type": "image"
+    },
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_border_radius",
+      "label": "Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_border_radius",
+      "label": "Button Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_button2_text",
+      "label": "Button2 Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
+    },
+    {
+      "key": "template_font_family",
+      "label": "Font Family",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_kicker",
+      "label": "Hero Kicker",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_nav_links",
+      "label": "Nav Links",
+      "type": "url"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_social_links",
+      "label": "Social Links",
+      "type": "url"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
       "key": "template_text_color",
       "label": "Text Color",
       "type": "color"
@@ -1791,6 +2317,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "url"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -1813,6 +2349,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "clean-single": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
       "key": "store_logo",
       "label": "Store Logo",
       "type": "image"
@@ -1826,6 +2367,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -1843,8 +2389,18 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
       "key": "template_card_border_radius",
       "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
       "type": "text"
     },
     {
@@ -1861,6 +2417,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_description_text",
       "label": "Description Text",
       "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
     },
     {
       "key": "template_grid_columns",
@@ -1890,6 +2456,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
     {
       "key": "template_muted_color",
       "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
       "type": "color"
     },
     {
@@ -1908,7 +2484,17 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "color"
     }
   ],
-  "coral-market": [
+  "copper-craft": [
+    {
+      "key": "banner_url",
+      "label": "Banner Url",
+      "type": "image"
+    },
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
     {
       "key": "store_logo",
       "label": "Store Logo",
@@ -1923,6 +2509,158 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_border_radius",
+      "label": "Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_border_radius",
+      "label": "Button Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_button2_text",
+      "label": "Button2 Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
+    },
+    {
+      "key": "template_font_family",
+      "label": "Font Family",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_kicker",
+      "label": "Hero Kicker",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_nav_links",
+      "label": "Nav Links",
+      "type": "url"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_social_links",
+      "label": "Social Links",
+      "type": "url"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "coral-market": [
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -1940,8 +2678,18 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
       "key": "template_card_border_radius",
       "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
       "type": "text"
     },
     {
@@ -1958,6 +2706,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_description_text",
       "label": "Description Text",
       "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
     },
     {
       "key": "template_grid_columns",
@@ -1987,6 +2745,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
     {
       "key": "template_muted_color",
       "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
       "type": "color"
     },
     {
@@ -2007,6 +2775,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "crafts": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "defaultValue": "Handmade Studio",
       "key": "store_name",
       "label": "Store Name",
@@ -2017,6 +2795,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -2047,6 +2830,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -2072,6 +2860,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_hover_scale",
       "label": "Hover Scale",
       "type": "text"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
     },
     {
       "key": "template_section_spacing",
@@ -2302,6 +3100,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "url"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -2324,6 +3132,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "emerald-shop": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
       "key": "store_logo",
       "label": "Store Logo",
       "type": "image"
@@ -2337,6 +3150,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -2354,8 +3172,18 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
       "key": "template_card_border_radius",
       "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
       "type": "text"
     },
     {
@@ -2372,6 +3200,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_description_text",
       "label": "Description Text",
       "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
     },
     {
       "key": "template_grid_columns",
@@ -2401,6 +3239,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
     {
       "key": "template_muted_color",
       "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
       "type": "color"
     },
     {
@@ -2421,6 +3269,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "exhibit-store": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "key": "store_name",
       "label": "Store Name",
       "type": "text"
@@ -2429,6 +3287,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -2446,8 +3309,18 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
       "key": "template_card_border_radius",
       "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
       "type": "text"
     },
     {
@@ -2464,6 +3337,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_description_text",
       "label": "Description Text",
       "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
     },
     {
       "key": "template_grid_columns",
@@ -2496,6 +3379,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "color"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -2513,6 +3406,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "eyewear": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "defaultValue": "OPTIX",
       "key": "store_name",
       "label": "Store Name",
@@ -2523,6 +3426,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -2553,6 +3461,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -2578,6 +3491,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_hover_scale",
       "label": "Hover Scale",
       "type": "text"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
     },
     {
       "key": "template_section_spacing",
@@ -2808,6 +3731,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "url"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -2830,6 +3763,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "fitness": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "defaultValue": "IRON FORCE",
       "key": "store_name",
       "label": "Store Name",
@@ -2840,6 +3783,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -2870,6 +3818,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -2897,6 +3850,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -2915,6 +3878,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "florist": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "defaultValue": "Bloom & Blossom",
       "key": "store_name",
       "label": "Store Name",
@@ -2925,6 +3898,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -2955,6 +3933,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -2980,6 +3963,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_hover_scale",
       "label": "Hover Scale",
       "type": "text"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
     },
     {
       "key": "template_section_spacing",
@@ -3210,6 +4203,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "url"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -3232,6 +4235,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "forest-store": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
       "key": "store_logo",
       "label": "Store Logo",
       "type": "image"
@@ -3245,6 +4253,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -3262,8 +4275,18 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
       "key": "template_card_border_radius",
       "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
       "type": "text"
     },
     {
@@ -3280,6 +4303,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_description_text",
       "label": "Description Text",
       "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
     },
     {
       "key": "template_grid_columns",
@@ -3309,6 +4342,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
     {
       "key": "template_muted_color",
       "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
       "type": "color"
     },
     {
@@ -3539,6 +4582,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "url"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -3561,6 +4614,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "gallery-pro": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
       "key": "store_logo",
       "label": "Store Logo",
       "type": "image"
@@ -3574,6 +4632,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -3591,8 +4654,18 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
       "key": "template_card_border_radius",
       "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
       "type": "text"
     },
     {
@@ -3609,6 +4682,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_description_text",
       "label": "Description Text",
       "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
     },
     {
       "key": "template_grid_columns",
@@ -3641,6 +4724,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "color"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -3658,6 +4751,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "gaming": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "defaultValue": "GAME ZONE",
       "key": "store_name",
       "label": "Store Name",
@@ -3668,6 +4771,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -3698,6 +4806,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -3725,6 +4838,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -3743,6 +4866,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "garden": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "defaultValue": "GREEN GARDEN",
       "key": "store_name",
       "label": "Store Name",
@@ -3753,6 +4886,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -3783,6 +4921,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -3810,6 +4953,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -3828,6 +4981,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "gifts": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "defaultValue": "Gift Box",
       "key": "store_name",
       "label": "Store Name",
@@ -3838,6 +5001,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -3868,6 +5036,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -3895,6 +5068,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -3913,6 +5096,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "gradient": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "defaultValue": "Spectrum",
       "key": "store_name",
       "label": "Store Name",
@@ -3923,6 +5116,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -3953,6 +5151,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -3980,6 +5183,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -3996,7 +5209,169 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "color"
     }
   ],
+  "harbor-ledger": [
+    {
+      "key": "banner_url",
+      "label": "Banner Url",
+      "type": "image"
+    },
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_border_radius",
+      "label": "Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_border_radius",
+      "label": "Button Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_button2_text",
+      "label": "Button2 Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
+    },
+    {
+      "key": "template_font_family",
+      "label": "Font Family",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_kicker",
+      "label": "Hero Kicker",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_nav_links",
+      "label": "Nav Links",
+      "type": "url"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_social_links",
+      "label": "Social Links",
+      "type": "url"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
   "health": [
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
     {
       "defaultValue": "WELLNESS SHOP",
       "key": "store_name",
@@ -4008,6 +5383,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -4038,6 +5418,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -4065,6 +5450,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -4081,11 +5476,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "color"
     }
   ],
-  "jewelry": [
+  "ice-glass": [
     {
       "key": "banner_url",
       "label": "Banner Url",
       "type": "image"
+    },
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
     },
     {
       "key": "store_logo",
@@ -4103,8 +5503,175 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "color"
     },
     {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_border_radius",
+      "label": "Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_border_radius",
+      "label": "Button Border Radius",
+      "type": "text"
+    },
+    {
       "key": "template_button_text",
       "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_button2_text",
+      "label": "Button2 Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
+    },
+    {
+      "key": "template_font_family",
+      "label": "Font Family",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_kicker",
+      "label": "Hero Kicker",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_nav_links",
+      "label": "Nav Links",
+      "type": "url"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_social_links",
+      "label": "Social Links",
+      "type": "url"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "jewelry": [
+    {
+      "key": "banner_url",
+      "label": "Banner Url",
+      "type": "image"
+    },
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
       "type": "text"
     },
     {
@@ -4136,9 +5703,29 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_hero_subtitle",
       "label": "Hero Subtitle",
       "type": "textarea"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
     }
   ],
   "kids": [
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
     {
       "defaultValue": "Little Stars ⭐",
       "key": "store_name",
@@ -4150,6 +5737,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -4180,6 +5772,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -4207,6 +5804,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -4225,6 +5832,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "lime-direct": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
       "key": "store_logo",
       "label": "Store Logo",
       "type": "image"
@@ -4238,6 +5850,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -4255,8 +5872,18 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
       "key": "template_card_border_radius",
       "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
       "type": "text"
     },
     {
@@ -4273,6 +5900,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_description_text",
       "label": "Description Text",
       "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
     },
     {
       "key": "template_grid_columns",
@@ -4305,6 +5942,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "color"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -4322,6 +5969,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "lingerie": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "defaultValue": "Intimate",
       "key": "store_name",
       "label": "Store Name",
@@ -4332,6 +5989,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -4362,6 +6024,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -4389,6 +6056,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -4407,6 +6084,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "luxury": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "defaultValue": "MAISON LUXE",
       "key": "store_name",
       "label": "Store Name",
@@ -4417,6 +6104,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -4447,6 +6139,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -4474,6 +6171,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -4492,6 +6199,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "magenta-mall": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
       "key": "store_logo",
       "label": "Store Logo",
       "type": "image"
@@ -4505,6 +6217,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -4522,8 +6239,18 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
       "key": "template_card_border_radius",
       "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
       "type": "text"
     },
     {
@@ -4540,6 +6267,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_description_text",
       "label": "Description Text",
       "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
     },
     {
       "key": "template_grid_columns",
@@ -4569,6 +6306,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
     {
       "key": "template_muted_color",
       "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
       "type": "color"
     },
     {
@@ -4684,6 +6431,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "textarea"
     },
     {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
       "key": "template_featured_title",
       "label": "Featured Title",
       "type": "text"
@@ -4744,6 +6496,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "url"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -4766,6 +6528,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "mint-elegance": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
       "key": "store_logo",
       "label": "Store Logo",
       "type": "image"
@@ -4779,6 +6546,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -4796,8 +6568,18 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
       "key": "template_card_border_radius",
       "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
       "type": "text"
     },
     {
@@ -4814,6 +6596,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_description_text",
       "label": "Description Text",
       "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
     },
     {
       "key": "template_grid_columns",
@@ -4843,6 +6635,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
     {
       "key": "template_muted_color",
       "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
       "type": "color"
     },
     {
@@ -5033,6 +6835,168 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "url"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_social_links",
+      "label": "Social Links",
+      "type": "url"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "mono-press": [
+    {
+      "key": "banner_url",
+      "label": "Banner Url",
+      "type": "image"
+    },
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_border_radius",
+      "label": "Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_border_radius",
+      "label": "Button Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_button2_text",
+      "label": "Button2 Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
+    },
+    {
+      "key": "template_font_family",
+      "label": "Font Family",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_kicker",
+      "label": "Hero Kicker",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_nav_links",
+      "label": "Nav Links",
+      "type": "url"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -5055,6 +7019,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "monochrome": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "defaultValue": "MONO",
       "key": "store_name",
       "label": "Store Name",
@@ -5065,6 +7039,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -5095,6 +7074,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -5122,6 +7106,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -5140,6 +7134,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "music": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "defaultValue": "SOUND STATION",
       "key": "store_name",
       "label": "Store Name",
@@ -5150,6 +7154,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -5180,6 +7189,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -5207,6 +7221,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -5225,6 +7249,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "neon": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "key": "store_name",
       "label": "Store Name",
       "type": "text"
@@ -5233,6 +7267,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -5257,6 +7296,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
     {
       "key": "template_card_border_radius",
       "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
       "type": "text"
     },
     {
@@ -5285,6 +7329,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -5302,6 +7356,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "neon-store": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
       "key": "store_logo",
       "label": "Store Logo",
       "type": "image"
@@ -5315,6 +7374,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -5332,8 +7396,18 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
       "key": "template_card_border_radius",
       "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
       "type": "text"
     },
     {
@@ -5350,6 +7424,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_description_text",
       "label": "Description Text",
       "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
     },
     {
       "key": "template_grid_columns",
@@ -5382,9 +7466,323 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "color"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "noir-eclipse": [
+    {
+      "key": "banner_url",
+      "label": "Banner Url",
+      "type": "image"
+    },
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_border_radius",
+      "label": "Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_border_radius",
+      "label": "Button Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_button2_text",
+      "label": "Button2 Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
+    },
+    {
+      "key": "template_font_family",
+      "label": "Font Family",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_kicker",
+      "label": "Hero Kicker",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_nav_links",
+      "label": "Nav Links",
+      "type": "url"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_social_links",
+      "label": "Social Links",
+      "type": "url"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "ocean-splash": [
+    {
+      "key": "banner_url",
+      "label": "Banner Url",
+      "type": "image"
+    },
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_border_radius",
+      "label": "Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_border_radius",
+      "label": "Button Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_button2_text",
+      "label": "Button2 Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
+    },
+    {
+      "key": "template_font_family",
+      "label": "Font Family",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_kicker",
+      "label": "Hero Kicker",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_nav_links",
+      "label": "Nav Links",
+      "type": "url"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_social_links",
+      "label": "Social Links",
+      "type": "url"
     },
     {
       "key": "template_spacing",
@@ -5399,6 +7797,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "office": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "key": "store_name",
       "label": "Store Name",
       "type": "text"
@@ -5407,6 +7815,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -5434,6 +7847,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -5457,6 +7875,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_hover_scale",
       "label": "Hover Scale",
       "type": "text"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
     },
     {
       "key": "template_section_spacing",
@@ -5474,7 +7902,22 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "color"
     }
   ],
-  "organic": [
+  "orbit-mart": [
+    {
+      "key": "banner_url",
+      "label": "Banner Url",
+      "type": "image"
+    },
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
     {
       "key": "store_name",
       "label": "Store Name",
@@ -5484,6 +7927,158 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_border_radius",
+      "label": "Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_border_radius",
+      "label": "Button Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_button2_text",
+      "label": "Button2 Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
+    },
+    {
+      "key": "template_font_family",
+      "label": "Font Family",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_kicker",
+      "label": "Hero Kicker",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_nav_links",
+      "label": "Nav Links",
+      "type": "url"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_social_links",
+      "label": "Social Links",
+      "type": "url"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "organic": [
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -5511,6 +8106,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -5534,6 +8134,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_hover_scale",
       "label": "Hover Scale",
       "type": "text"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
     },
     {
       "key": "template_section_spacing",
@@ -5553,6 +8163,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "outdoor": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "key": "store_name",
       "label": "Store Name",
       "type": "text"
@@ -5561,6 +8181,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -5588,6 +8213,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -5611,6 +8241,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_hover_scale",
       "label": "Hover Scale",
       "type": "text"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
     },
     {
       "key": "template_section_spacing",
@@ -5628,7 +8268,22 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "color"
     }
   ],
-  "pastel": [
+  "paperfold": [
+    {
+      "key": "banner_url",
+      "label": "Banner Url",
+      "type": "image"
+    },
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
     {
       "key": "store_name",
       "label": "Store Name",
@@ -5638,6 +8293,158 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_border_radius",
+      "label": "Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_border_radius",
+      "label": "Button Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_button2_text",
+      "label": "Button2 Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
+    },
+    {
+      "key": "template_font_family",
+      "label": "Font Family",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_kicker",
+      "label": "Hero Kicker",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_nav_links",
+      "label": "Nav Links",
+      "type": "url"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_social_links",
+      "label": "Social Links",
+      "type": "url"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "pastel": [
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -5665,6 +8472,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -5688,6 +8500,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_hover_scale",
       "label": "Hover Scale",
       "type": "text"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
     },
     {
       "key": "template_section_spacing",
@@ -5710,6 +8532,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "banner_url",
       "label": "Banner Url",
       "type": "image"
+    },
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
     },
     {
       "key": "store_logo",
@@ -5887,6 +8714,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "url"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -5909,6 +8746,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "pets": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "key": "store_name",
       "label": "Store Name",
       "type": "text"
@@ -5917,6 +8764,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -5941,6 +8793,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
     {
       "key": "template_card_border_radius",
       "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
       "type": "text"
     },
     {
@@ -5974,6 +8831,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "color"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -5991,6 +8858,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "phone-accessories": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "defaultValue": "Phone Hub",
       "key": "store_name",
       "label": "Store Name",
@@ -6001,6 +8878,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -6031,6 +8913,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -6058,6 +8945,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -6076,6 +8973,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "photography": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "defaultValue": "LENS & LIGHT",
       "key": "store_name",
       "label": "Store Name",
@@ -6086,6 +8993,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -6116,6 +9028,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -6143,6 +9060,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -6154,6 +9081,158 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
     },
     {
       "defaultValue": "#fafafa",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "pixel-pop": [
+    {
+      "key": "banner_url",
+      "label": "Banner Url",
+      "type": "image"
+    },
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_border_radius",
+      "label": "Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_border_radius",
+      "label": "Button Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_button2_text",
+      "label": "Button2 Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
+    },
+    {
+      "key": "template_font_family",
+      "label": "Font Family",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_kicker",
+      "label": "Hero Kicker",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_nav_links",
+      "label": "Nav Links",
+      "type": "url"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_social_links",
+      "label": "Social Links",
+      "type": "url"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
       "key": "template_text_color",
       "label": "Text Color",
       "type": "color"
@@ -6443,6 +9522,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "pro-atelier": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "key": "store_name",
       "label": "Store Name",
       "type": "text"
@@ -6451,6 +9540,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -6468,8 +9562,18 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
       "key": "template_card_border_radius",
       "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
       "type": "text"
     },
     {
@@ -6486,6 +9590,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_description_text",
       "label": "Description Text",
       "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
     },
     {
       "key": "template_grid_columns",
@@ -6515,6 +9629,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
     {
       "key": "template_muted_color",
       "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
       "type": "color"
     },
     {
@@ -6535,6 +9659,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "pro-aurora": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
       "key": "store_logo",
       "label": "Store Logo",
       "type": "image"
@@ -6548,6 +9677,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -6565,8 +9699,18 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
       "key": "template_card_border_radius",
       "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
       "type": "text"
     },
     {
@@ -6583,6 +9727,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_description_text",
       "label": "Description Text",
       "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
     },
     {
       "key": "template_grid_columns",
@@ -6612,6 +9766,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
     {
       "key": "template_muted_color",
       "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
       "type": "color"
     },
     {
@@ -6632,6 +9796,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "pro-catalog": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
       "key": "store_logo",
       "label": "Store Logo",
       "type": "image"
@@ -6645,6 +9814,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -6662,8 +9836,18 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
       "key": "template_card_border_radius",
       "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
       "type": "text"
     },
     {
@@ -6680,6 +9864,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_description_text",
       "label": "Description Text",
       "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
     },
     {
       "key": "template_grid_columns",
@@ -6709,6 +9903,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
     {
       "key": "template_muted_color",
       "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
       "type": "color"
     },
     {
@@ -6729,6 +9933,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "pro-grid": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
       "key": "store_logo",
       "label": "Store Logo",
       "type": "image"
@@ -6742,6 +9951,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -6759,8 +9973,18 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
       "key": "template_card_border_radius",
       "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
       "type": "text"
     },
     {
@@ -6777,6 +10001,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_description_text",
       "label": "Description Text",
       "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
     },
     {
       "key": "template_grid_columns",
@@ -6806,6 +10040,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
     {
       "key": "template_muted_color",
       "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
       "type": "color"
     },
     {
@@ -6826,6 +10070,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "pro-mosaic": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "key": "store_name",
       "label": "Store Name",
       "type": "text"
@@ -6834,6 +10088,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -6851,8 +10110,18 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
       "key": "template_card_border_radius",
       "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
       "type": "text"
     },
     {
@@ -6869,6 +10138,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_description_text",
       "label": "Description Text",
       "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
     },
     {
       "key": "template_grid_columns",
@@ -6898,6 +10177,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
     {
       "key": "template_muted_color",
       "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
       "type": "color"
     },
     {
@@ -6918,6 +10207,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "pro-orbit": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
       "key": "store_logo",
       "label": "Store Logo",
       "type": "image"
@@ -6931,6 +10225,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -6948,8 +10247,18 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
       "key": "template_card_border_radius",
       "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
       "type": "text"
     },
     {
@@ -6966,6 +10275,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_description_text",
       "label": "Description Text",
       "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
     },
     {
       "key": "template_grid_columns",
@@ -6995,6 +10314,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
     {
       "key": "template_muted_color",
       "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
       "type": "color"
     },
     {
@@ -7015,6 +10344,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "pro-studio": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
       "key": "store_logo",
       "label": "Store Logo",
       "type": "image"
@@ -7028,6 +10362,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -7045,8 +10384,18 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
       "key": "template_card_border_radius",
       "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
       "type": "text"
     },
     {
@@ -7063,6 +10412,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_description_text",
       "label": "Description Text",
       "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
     },
     {
       "key": "template_grid_columns",
@@ -7092,6 +10451,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
     {
       "key": "template_muted_color",
       "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
       "type": "color"
     },
     {
@@ -7112,6 +10481,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "pro-vertex": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
       "key": "store_logo",
       "label": "Store Logo",
       "type": "image"
@@ -7125,6 +10499,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -7142,8 +10521,18 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
       "key": "template_card_border_radius",
       "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
       "type": "text"
     },
     {
@@ -7160,6 +10549,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_description_text",
       "label": "Description Text",
       "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
     },
     {
       "key": "template_grid_columns",
@@ -7189,6 +10588,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
     {
       "key": "template_muted_color",
       "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
       "type": "color"
     },
     {
@@ -7209,6 +10618,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "pro-zen": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "key": "store_name",
       "label": "Store Name",
       "type": "text"
@@ -7217,6 +10636,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -7234,8 +10658,18 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
       "key": "template_card_border_radius",
       "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
       "type": "text"
     },
     {
@@ -7252,6 +10686,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_description_text",
       "label": "Description Text",
       "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
     },
     {
       "key": "template_grid_columns",
@@ -7281,6 +10725,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
     {
       "key": "template_muted_color",
       "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
       "type": "color"
     },
     {
@@ -7301,6 +10755,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "pure-product": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
       "key": "store_logo",
       "label": "Store Logo",
       "type": "image"
@@ -7314,6 +10773,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -7331,8 +10795,18 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
       "key": "template_card_border_radius",
       "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
       "type": "text"
     },
     {
@@ -7349,6 +10823,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_description_text",
       "label": "Description Text",
       "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
     },
     {
       "key": "template_grid_columns",
@@ -7378,6 +10862,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
     {
       "key": "template_muted_color",
       "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
       "type": "color"
     },
     {
@@ -7398,6 +10892,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "rose-catalog": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
       "key": "store_logo",
       "label": "Store Logo",
       "type": "image"
@@ -7411,6 +10910,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -7428,8 +10932,18 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
       "key": "template_card_border_radius",
       "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
       "type": "text"
     },
     {
@@ -7446,6 +10960,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_description_text",
       "label": "Description Text",
       "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
     },
     {
       "key": "template_grid_columns",
@@ -7475,6 +10999,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
     {
       "key": "template_muted_color",
       "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
       "type": "color"
     },
     {
@@ -7493,7 +11027,17 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "color"
     }
   ],
-  "sage-boutique": [
+  "royal-boutique": [
+    {
+      "key": "banner_url",
+      "label": "Banner Url",
+      "type": "image"
+    },
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
     {
       "key": "store_logo",
       "label": "Store Logo",
@@ -7508,6 +11052,158 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_border_radius",
+      "label": "Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_border_radius",
+      "label": "Button Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_button2_text",
+      "label": "Button2 Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
+    },
+    {
+      "key": "template_font_family",
+      "label": "Font Family",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_kicker",
+      "label": "Hero Kicker",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_nav_links",
+      "label": "Nav Links",
+      "type": "url"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_social_links",
+      "label": "Social Links",
+      "type": "url"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "sage-boutique": [
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -7525,8 +11221,18 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
       "key": "template_card_border_radius",
       "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
       "type": "text"
     },
     {
@@ -7543,6 +11249,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_description_text",
       "label": "Description Text",
       "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
     },
     {
       "key": "template_grid_columns",
@@ -7572,6 +11288,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
     {
       "key": "template_muted_color",
       "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
       "type": "color"
     },
     {
@@ -7591,6 +11317,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
     }
   ],
   "shoes": [
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
     {
       "defaultValue": "STEP UP",
       "key": "store_name",
@@ -7648,6 +11384,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
       "key": "template_hover_scale",
       "label": "Hover Scale",
       "type": "text"
@@ -7671,6 +11412,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "showcase-plus": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
       "key": "store_logo",
       "label": "Store Logo",
       "type": "image"
@@ -7684,6 +11430,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -7701,8 +11452,18 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
       "key": "template_card_border_radius",
       "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
       "type": "text"
     },
     {
@@ -7719,6 +11480,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_description_text",
       "label": "Description Text",
       "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
     },
     {
       "key": "template_grid_columns",
@@ -7751,6 +11522,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "color"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -7768,6 +11549,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "skincare": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "defaultValue": "Glow Lab",
       "key": "store_name",
       "label": "Store Name",
@@ -7778,6 +11569,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -7808,6 +11604,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -7835,6 +11636,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -7851,7 +11662,17 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "color"
     }
   ],
-  "snow-shop": [
+  "skyline-editorial": [
+    {
+      "key": "banner_url",
+      "label": "Banner Url",
+      "type": "image"
+    },
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
     {
       "key": "store_logo",
       "label": "Store Logo",
@@ -7866,6 +11687,163 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_border_radius",
+      "label": "Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_border_radius",
+      "label": "Button Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_button2_text",
+      "label": "Button2 Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
+    },
+    {
+      "key": "template_font_family",
+      "label": "Font Family",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_header_cta_text",
+      "label": "Header Cta Text",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_kicker",
+      "label": "Hero Kicker",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_nav_links",
+      "label": "Nav Links",
+      "type": "url"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_social_links",
+      "label": "Social Links",
+      "type": "url"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "snow-shop": [
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -7883,8 +11861,18 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
       "key": "template_card_border_radius",
       "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
       "type": "text"
     },
     {
@@ -7901,6 +11889,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_description_text",
       "label": "Description Text",
       "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
     },
     {
       "key": "template_grid_columns",
@@ -7933,6 +11931,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "color"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -7955,6 +11963,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "textarea"
     },
     {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "defaultValue": "SPORTS GEAR",
       "key": "store_name",
       "label": "Store Name",
@@ -7965,6 +11978,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -7995,6 +12013,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_description_color",
       "label": "Description Color",
       "type": "color"
@@ -8018,6 +12041,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_description_weight",
       "label": "Description Weight",
       "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
     },
     {
       "key": "template_grid_columns",
@@ -8053,6 +12086,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "color"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -8071,6 +12114,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "stationery": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "defaultValue": "Paper & Pen",
       "key": "store_name",
       "label": "Store Name",
@@ -8081,6 +12134,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -8111,6 +12169,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -8138,6 +12201,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -8156,6 +12229,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "streetwear": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "defaultValue": "URBAN DRIP",
       "key": "store_name",
       "label": "Store Name",
@@ -8166,6 +12249,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -8196,6 +12284,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -8223,6 +12316,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -8239,7 +12342,17 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "color"
     }
   ],
-  "sunset-shop": [
+  "sunbeam": [
+    {
+      "key": "banner_url",
+      "label": "Banner Url",
+      "type": "image"
+    },
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
     {
       "key": "store_logo",
       "label": "Store Logo",
@@ -8254,6 +12367,158 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_border_radius",
+      "label": "Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_border_radius",
+      "label": "Button Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_button2_text",
+      "label": "Button2 Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
+    },
+    {
+      "key": "template_font_family",
+      "label": "Font Family",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_kicker",
+      "label": "Hero Kicker",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_nav_links",
+      "label": "Nav Links",
+      "type": "url"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_social_links",
+      "label": "Social Links",
+      "type": "url"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "sunset-shop": [
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -8271,8 +12536,18 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
       "key": "template_card_border_radius",
       "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
       "type": "text"
     },
     {
@@ -8289,6 +12564,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_description_text",
       "label": "Description Text",
       "type": "textarea"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
     },
     {
       "key": "template_grid_columns",
@@ -8321,6 +12606,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "color"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -8338,6 +12633,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "supplements": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "defaultValue": "VITAL FORCE",
       "key": "store_name",
       "label": "Store Name",
@@ -8348,6 +12653,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -8378,6 +12688,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -8405,6 +12720,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -8423,6 +12748,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "swimwear": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "defaultValue": "Wave Rider",
       "key": "store_name",
       "label": "Store Name",
@@ -8433,6 +12768,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -8463,6 +12803,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -8490,6 +12835,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -8508,6 +12863,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "tea": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "defaultValue": "Zen Tea House",
       "key": "store_name",
       "label": "Store Name",
@@ -8518,6 +12883,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -8548,6 +12918,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -8575,6 +12950,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -8593,6 +12978,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "tech": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "defaultValue": "TECH HUB",
       "key": "store_name",
       "label": "Store Name",
@@ -8603,6 +12998,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -8633,6 +13033,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -8660,6 +13065,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -8676,7 +13091,169 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "color"
     }
   ],
+  "terra-market": [
+    {
+      "key": "banner_url",
+      "label": "Banner Url",
+      "type": "image"
+    },
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_border_radius",
+      "label": "Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_border_radius",
+      "label": "Button Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_button2_text",
+      "label": "Button2 Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
+    },
+    {
+      "key": "template_font_family",
+      "label": "Font Family",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_kicker",
+      "label": "Hero Kicker",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_nav_links",
+      "label": "Nav Links",
+      "type": "url"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_social_links",
+      "label": "Social Links",
+      "type": "url"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
   "tools": [
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
     {
       "defaultValue": "Tool Pro",
       "key": "store_name",
@@ -8688,6 +13265,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -8718,6 +13300,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -8745,6 +13332,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -8762,6 +13359,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
     }
   ],
   "toys": [
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
     {
       "defaultValue": "TOY WORLD",
       "key": "store_name",
@@ -8819,6 +13426,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
       "key": "template_hover_scale",
       "label": "Hover Scale",
       "type": "text"
@@ -8842,6 +13454,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "travel": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "defaultValue": "Wanderlust",
       "key": "store_name",
       "label": "Store Name",
@@ -8852,6 +13474,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -8882,6 +13509,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -8909,6 +13541,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -8927,6 +13569,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "vintage": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "defaultValue": "The Vintage Emporium",
       "key": "store_name",
       "label": "Store Name",
@@ -8937,6 +13589,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -8967,6 +13624,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -8994,6 +13656,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -9010,7 +13682,169 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "color"
     }
   ],
+  "violet-vault": [
+    {
+      "key": "banner_url",
+      "label": "Banner Url",
+      "type": "image"
+    },
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_border_radius",
+      "label": "Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_border_radius",
+      "label": "Button Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_button2_text",
+      "label": "Button2 Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
+    },
+    {
+      "key": "template_font_family",
+      "label": "Font Family",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_kicker",
+      "label": "Hero Kicker",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_nav_links",
+      "label": "Nav Links",
+      "type": "url"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_social_links",
+      "label": "Social Links",
+      "type": "url"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
   "watches": [
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
     {
       "defaultValue": "TIMEPIECE",
       "key": "store_name",
@@ -9022,6 +13856,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -9052,6 +13891,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -9079,6 +13923,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -9097,6 +13951,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "wedding": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "defaultValue": "Forever Yours",
       "key": "store_name",
       "label": "Store Name",
@@ -9107,6 +13971,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -9137,6 +14006,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -9164,6 +14038,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -9182,6 +14066,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
   ],
   "wine": [
     {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
       "defaultValue": "Château Rouge",
       "key": "store_name",
       "label": "Store Name",
@@ -9192,6 +14086,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "key": "template_accent_color",
       "label": "Accent Color",
       "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
     },
     {
       "key": "template_animation_speed",
@@ -9222,6 +14121,11 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
       "key": "template_grid_columns",
       "label": "Grid Columns",
       "type": "text"
@@ -9249,6 +14153,16 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
       "type": "text"
     },
     {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
       "key": "template_section_spacing",
       "label": "Section Spacing",
       "type": "text"
@@ -9260,6 +14174,158 @@ export const GENERATED_TEMPLATE_FIELDS: Record<string, InferredField[]> = {
     },
     {
       "defaultValue": "#fef2f2",
+      "key": "template_text_color",
+      "label": "Text Color",
+      "type": "color"
+    }
+  ],
+  "zen-grove": [
+    {
+      "key": "banner_url",
+      "label": "Banner Url",
+      "type": "image"
+    },
+    {
+      "key": "store_description",
+      "label": "Store Description",
+      "type": "textarea"
+    },
+    {
+      "key": "store_logo",
+      "label": "Store Logo",
+      "type": "image"
+    },
+    {
+      "key": "store_name",
+      "label": "Store Name",
+      "type": "text"
+    },
+    {
+      "key": "template_accent_color",
+      "label": "Accent Color",
+      "type": "color"
+    },
+    {
+      "key": "template_add_to_cart_label",
+      "label": "Add To Cart Label",
+      "type": "text"
+    },
+    {
+      "key": "template_bg_color",
+      "label": "Bg Color",
+      "type": "color"
+    },
+    {
+      "key": "template_border_radius",
+      "label": "Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_border_radius",
+      "label": "Button Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_button_text",
+      "label": "Button Text",
+      "type": "text"
+    },
+    {
+      "key": "template_button2_text",
+      "label": "Button2 Text",
+      "type": "text"
+    },
+    {
+      "key": "template_card_bg",
+      "label": "Card Bg",
+      "type": "text"
+    },
+    {
+      "key": "template_card_border_radius",
+      "label": "Card Border Radius",
+      "type": "text"
+    },
+    {
+      "key": "template_copyright",
+      "label": "Copyright",
+      "type": "text"
+    },
+    {
+      "key": "template_featured_subtitle",
+      "label": "Featured Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_featured_title",
+      "label": "Featured Title",
+      "type": "text"
+    },
+    {
+      "key": "template_font_family",
+      "label": "Font Family",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_columns",
+      "label": "Grid Columns",
+      "type": "text"
+    },
+    {
+      "key": "template_grid_gap",
+      "label": "Grid Gap",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_heading",
+      "label": "Hero Heading",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_kicker",
+      "label": "Hero Kicker",
+      "type": "text"
+    },
+    {
+      "key": "template_hero_subtitle",
+      "label": "Hero Subtitle",
+      "type": "textarea"
+    },
+    {
+      "key": "template_muted_color",
+      "label": "Muted Color",
+      "type": "color"
+    },
+    {
+      "key": "template_nav_links",
+      "label": "Nav Links",
+      "type": "url"
+    },
+    {
+      "key": "template_product_price_color",
+      "label": "Product Price Color",
+      "type": "color"
+    },
+    {
+      "key": "template_product_title_color",
+      "label": "Product Title Color",
+      "type": "color"
+    },
+    {
+      "key": "template_section_spacing",
+      "label": "Section Spacing",
+      "type": "text"
+    },
+    {
+      "key": "template_social_links",
+      "label": "Social Links",
+      "type": "url"
+    },
+    {
+      "key": "template_spacing",
+      "label": "Spacing",
+      "type": "text"
+    },
+    {
       "key": "template_text_color",
       "label": "Text Color",
       "type": "color"

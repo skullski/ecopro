@@ -50,15 +50,28 @@ export default function SageBoutiqueTemplate(props: TemplateProps) {
   const muted = asString(settings.template_muted_color) || '#5a6b5a';
   const accent = asString(settings.template_accent_color) || '#4a7c59';
 
-  const storeName = asString(settings.store_name) || 'Sage Boutique';
-  const heroTitle = asString(settings.template_hero_heading) || 'Refined Elegance';
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+
+  const cardBg = asString(settings.template_card_bg) || "#ffffff";
+const storeName = asString(settings.store_name) || 'Sage Boutique';
+  
+  const copyright = asString(settings.template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
+const heroTitle = asString(settings.template_hero_heading) || 'Refined Elegance';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Discover our curated collection of timeless pieces';
   const cta = asString(settings.template_button_text) || 'Shop Collection';
 
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 12) || [];
 
-  const descText = asString(settings.template_description_text);
-  const descColor = asString(settings.template_description_color) || muted;
+  
+
+  const sectionTitle = asString(settings.template_featured_title) || "Featured";
+  const sectionSubtitle = asString(settings.template_featured_subtitle) || "";
+  const addToCartLabel = asString(settings.template_add_to_cart_label) || "View";
+const descText = (asString(settings.template_description_text) || asString(settings.store_description)).trim();
+const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 15, 10, 32);
 
   // Layout settings
@@ -72,6 +85,8 @@ export default function SageBoutiqueTemplate(props: TemplateProps) {
 
   return (
     <div
+      data-edit-path="__root"
+      onClick={() => canManage && onSelect("__root")}
       className="ecopro-storefront"
       style={{
         minHeight: '100vh',
@@ -182,8 +197,8 @@ export default function SageBoutiqueTemplate(props: TemplateProps) {
         style={{ maxWidth: 1200, margin: '0 auto', padding: `${sectionSpacing}px ${baseSpacing}px` }}
       >
         <div style={{ textAlign: 'center', marginBottom: sectionSpacing }}>
-          <h2 style={{ fontSize: 32, fontWeight: 400, margin: 0 }}>Featured Pieces</h2>
-          <p style={{ color: muted, marginTop: 12 }}>Handpicked selections for you</p>
+          <h2 data-edit-path="layout.featured.title" style={{ fontSize: 32, fontWeight: 400, margin: 0 }}>{sectionTitle}</h2>
+          <p data-edit-path="layout.featured.subtitle" style={{ color: muted, marginTop: 12 }}>{sectionSubtitle}</p>
         </div>
 
         <div
@@ -212,8 +227,8 @@ export default function SageBoutiqueTemplate(props: TemplateProps) {
                   onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
                 />
               </div>
-              <h3 style={{ fontSize: 16, fontWeight: 500, margin: 0 }}>{productTitle(p)}</h3>
-              <p style={{ color: accent, fontSize: 15, marginTop: 6 }}>{formatPrice(Number(p.price) || 0)}</p>
+              <h3 style={{ fontSize: 16, fontWeight: 500, margin: 0 , color: productTitleColor}}>{productTitle(p)}</h3>
+              <p style={{ color: productPriceColor, fontSize: 15, marginTop: 6 }}>{formatPrice(Number(p.price) || 0)}</p>
             </div>
           ))}
         </div>
@@ -291,7 +306,7 @@ export default function SageBoutiqueTemplate(props: TemplateProps) {
             </div>
           </div>
           <div style={{ borderTop: `1px solid ${accent}20`, marginTop: 40, paddingTop: 24, textAlign: 'center', color: muted, fontSize: 13 }}>
-            © {new Date().getFullYear()} {storeName}. All rights reserved.
+            {copyright}
           </div>
         </div>
       </footer>

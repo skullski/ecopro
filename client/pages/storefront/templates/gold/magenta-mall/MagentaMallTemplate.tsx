@@ -50,15 +50,28 @@ export default function MagentaMallTemplate(props: TemplateProps) {
   const muted = asString(settings.template_muted_color) || '#6b7280';
   const accent = asString(settings.template_accent_color) || '#db2777';
 
-  const storeName = asString(settings.store_name) || 'Magenta Mall';
-  const heroTitle = asString(settings.template_hero_heading) || 'Mega Sale Event';
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+
+  const cardBg = asString(settings.template_card_bg) || "#ffffff";
+const storeName = asString(settings.store_name) || 'Magenta Mall';
+  
+  const copyright = asString(settings.template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
+const heroTitle = asString(settings.template_hero_heading) || 'Mega Sale Event';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Up to 70% off on thousands of items';
   const cta = asString(settings.template_button_text) || 'Shop Deals';
 
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 24) || [];
 
-  const descText = asString(settings.template_description_text);
-  const descColor = asString(settings.template_description_color) || muted;
+  
+
+  const sectionTitle = asString(settings.template_featured_title) || "Featured";
+  const sectionSubtitle = asString(settings.template_featured_subtitle) || "";
+  const addToCartLabel = asString(settings.template_add_to_cart_label) || "View";
+const descText = (asString(settings.template_description_text) || asString(settings.store_description)).trim();
+const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 14, 10, 32);
 
   // Layout settings
@@ -74,6 +87,8 @@ export default function MagentaMallTemplate(props: TemplateProps) {
 
   return (
     <div
+      data-edit-path="__root"
+      onClick={() => canManage && onSelect("__root")}
       className="ecopro-storefront"
       style={{
         minHeight: '100vh',
@@ -294,7 +309,7 @@ export default function MagentaMallTemplate(props: TemplateProps) {
                     )}
                   </div>
                   <div style={{ padding: baseSpacing }}>
-                    <h3 style={{ fontSize: 12, fontWeight: 500, margin: 0, height: 32, overflow: 'hidden', lineHeight: 1.3 }}>
+                    <h3 style={{ fontSize: 12, fontWeight: 500, margin: 0, height: 32, overflow: 'hidden', lineHeight: 1.3 , color: productTitleColor}}>
                       {productTitle(p)}
                     </h3>
                     <div style={{ marginTop: 8 }}>

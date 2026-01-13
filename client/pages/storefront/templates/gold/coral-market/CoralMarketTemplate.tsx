@@ -50,15 +50,28 @@ export default function CoralMarketTemplate(props: TemplateProps) {
   const muted = asString(settings.template_muted_color) || '#737373';
   const accent = asString(settings.template_accent_color) || '#f472b6';
 
-  const storeName = asString(settings.store_name) || 'Coral Market';
-  const heroTitle = asString(settings.template_hero_heading) || 'Shop the Latest Trends';
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+
+  const cardBg = asString(settings.template_card_bg) || "#ffffff";
+const storeName = asString(settings.store_name) || 'Coral Market';
+  
+  const copyright = asString(settings.template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
+const heroTitle = asString(settings.template_hero_heading) || 'Shop the Latest Trends';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Fresh styles delivered to your door';
   const cta = asString(settings.template_button_text) || 'Start Shopping';
 
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 16) || [];
 
-  const descText = asString(settings.template_description_text);
-  const descColor = asString(settings.template_description_color) || muted;
+  
+
+  const sectionTitle = asString(settings.template_featured_title) || "Featured";
+  const sectionSubtitle = asString(settings.template_featured_subtitle) || "";
+  const addToCartLabel = asString(settings.template_add_to_cart_label) || "View";
+const descText = (asString(settings.template_description_text) || asString(settings.store_description)).trim();
+const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 15, 10, 32);
 
   // Layout settings
@@ -72,6 +85,8 @@ export default function CoralMarketTemplate(props: TemplateProps) {
 
   return (
     <div
+      data-edit-path="__root"
+      onClick={() => canManage && onSelect("__root")}
       className="ecopro-storefront"
       style={{
         minHeight: '100vh',
@@ -204,7 +219,7 @@ export default function CoralMarketTemplate(props: TemplateProps) {
         style={{ maxWidth: 1280, margin: '0 auto', padding: '40px 24px 80px' }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
-          <h2 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>Trending Now</h2>
+          <h2 data-edit-path="layout.featured.title" style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>{sectionTitle}</h2>
           <div style={{ display: 'flex', gap: 8 }}>
             <select style={{ padding: '8px 16px', border: '1px solid #e5e5e5', borderRadius: 8, fontSize: 13, background: '#fff' }}>
               <option>Sort by: Popular</option>
@@ -247,7 +262,7 @@ export default function CoralMarketTemplate(props: TemplateProps) {
                 </button>
               </div>
               <div style={{ padding: 14 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' , color: productTitleColor}}>
                   {productTitle(p)}
                 </h3>
                 <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -279,8 +294,8 @@ export default function CoralMarketTemplate(props: TemplateProps) {
       {/* Newsletter */}
       <section style={{ background: '#fff', padding: '60px 24px' }}>
         <div style={{ maxWidth: 500, margin: '0 auto', textAlign: 'center' }}>
-          <h3 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>Stay in the Loop</h3>
-          <p style={{ color: muted, marginTop: 8 }}>Subscribe for exclusive deals and updates</p>
+          <h3 style={{ fontSize: 24, fontWeight: 700, margin: 0 , color: productTitleColor}}>Stay in the Loop</h3>
+          <p data-edit-path="layout.featured.subtitle" style={{ color: muted, marginTop: 8 }}>{sectionSubtitle}</p>
           <div style={{ marginTop: 24, display: 'flex', gap: 8 }}>
             <input type="email" placeholder="Enter your email" style={{ flex: 1, padding: '14px 18px', border: '2px solid #f0f0f0', borderRadius: 28, fontSize: 14 }} />
             <button style={{ background: accent, border: 0, borderRadius: 28, padding: '14px 24px', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>

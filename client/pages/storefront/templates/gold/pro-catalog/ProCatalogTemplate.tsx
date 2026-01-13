@@ -50,15 +50,28 @@ export default function ProCatalogTemplate(props: TemplateProps) {
   const muted = asString(settings.template_muted_color) || '#6b7280';
   const accent = asString(settings.template_accent_color) || '#7c3aed';
 
-  const storeName = asString(settings.store_name) || 'CATALOG';
-  const heroTitle = asString(settings.template_hero_heading) || 'The Complete Collection';
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+
+  const cardBg = asString(settings.template_card_bg) || "#ffffff";
+const storeName = asString(settings.store_name) || 'CATALOG';
+  
+  const copyright = asString(settings.template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
+const heroTitle = asString(settings.template_hero_heading) || 'The Complete Collection';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Browse our full inventory with detailed specifications';
   const cta = asString(settings.template_button_text) || 'View All';
 
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 20) || [];
 
-  const descText = asString(settings.template_description_text);
-  const descColor = asString(settings.template_description_color) || muted;
+  
+
+  const sectionTitle = asString(settings.template_featured_title) || "Featured";
+  const sectionSubtitle = asString(settings.template_featured_subtitle) || "";
+  const addToCartLabel = asString(settings.template_add_to_cart_label) || "View";
+const descText = (asString(settings.template_description_text) || asString(settings.store_description)).trim();
+const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 14, 10, 32);
 
   // Layout settings
@@ -72,6 +85,8 @@ export default function ProCatalogTemplate(props: TemplateProps) {
 
   return (
     <div
+      data-edit-path="__root"
+      onClick={() => canManage && onSelect("__root")}
       className="ecopro-storefront"
       style={{
         minHeight: '100vh',
@@ -210,7 +225,7 @@ export default function ProCatalogTemplate(props: TemplateProps) {
         style={{ maxWidth: 1200, margin: '0 auto', padding: `${sectionSpacing}px ${baseSpacing}px` }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>All Products ({products.length})</h2>
+          <h2 data-edit-path="layout.featured.title" style={{ fontSize: 20, fontWeight: 800, margin: 0 }}>{sectionTitle}</h2>
           <div style={{ display: 'flex', gap: 8 }}>
             <button style={{ background: accent, border: 0, borderRadius: 6, padding: '8px 12px', color: '#fff', fontSize: 12, cursor: 'pointer' }}>List</button>
             <button style={{ background: '#e5e7eb', border: 0, borderRadius: 6, padding: '8px 12px', color: text, fontSize: 12, cursor: 'pointer' }}>Grid</button>
@@ -255,9 +270,7 @@ export default function ProCatalogTemplate(props: TemplateProps) {
               <div>
                 <div style={{ fontSize: 11, color: muted, marginBottom: 4 }}>#{String(idx + 1).padStart(3, '0')}</div>
                 <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>{productTitle(p)}</div>
-                <p style={{ fontSize: 13, color: muted, lineHeight: 1.5, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any, overflow: 'hidden' }}>
-                  {String(p.description || '').trim() || 'High-quality product with excellent specifications.'}
-                </p>
+                <p data-edit-path="layout.featured.subtitle" style={{ fontSize: 13, color: muted, lineHeight: 1.5, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any, overflow: 'hidden' }}>{sectionSubtitle}</p>
                 {isMobile && (
                   <div style={{ marginTop: 8, fontSize: 18, fontWeight: 800, color: accent }}>
                     {formatPrice(Number(p.price) || 0)}

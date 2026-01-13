@@ -50,7 +50,13 @@ export default function ProOrbitTemplate(props: TemplateProps) {
   const muted = asString(settings.template_muted_color) || '#64748b';
   const accent = asString(settings.template_accent_color) || '#10b981';
 
-  // Layout settings
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+
+  const cardBg = asString(settings.template_card_bg) || "#ffffff";
+// Layout settings
   const gridColumns = resolveInt(settings.template_grid_columns, 4, 2, 6);
   const gridGap = resolveInt(settings.template_grid_gap, 24, 8, 48);
   const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
@@ -60,18 +66,27 @@ export default function ProOrbitTemplate(props: TemplateProps) {
   const cardRadius = resolveInt(settings.template_card_border_radius, 16, 0, 32);
 
   const storeName = asString(settings.store_name) || 'ORBIT';
-  const heroTitle = asString(settings.template_hero_heading) || 'Circle of Excellence';
+  
+  const copyright = asString(settings.template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
+const heroTitle = asString(settings.template_hero_heading) || 'Circle of Excellence';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Products that revolve around your lifestyle';
   const cta = asString(settings.template_button_text) || 'Start Shopping';
 
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 16) || [];
 
-  const descText = asString(settings.template_description_text);
-  const descColor = asString(settings.template_description_color) || muted;
+  
+
+  const sectionTitle = asString(settings.template_featured_title) || "Featured";
+  const sectionSubtitle = asString(settings.template_featured_subtitle) || "";
+  const addToCartLabel = asString(settings.template_add_to_cart_label) || "View";
+const descText = (asString(settings.template_description_text) || asString(settings.store_description)).trim();
+const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 15, 10, 32);
 
   return (
     <div
+      data-edit-path="__root"
+      onClick={() => canManage && onSelect("__root")}
       className="ecopro-storefront"
       style={{
         minHeight: '100vh',
@@ -280,8 +295,8 @@ export default function ProOrbitTemplate(props: TemplateProps) {
         style={{ maxWidth: 1200, margin: '0 auto', padding: `0 ${baseSpacing}px ${sectionSpacing}px` }}
       >
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <h2 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Featured Products</h2>
-          <p style={{ color: muted, marginTop: 8 }}>Handpicked just for you</p>
+          <h2 data-edit-path="layout.featured.title" style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>{sectionTitle}</h2>
+          <p data-edit-path="layout.featured.subtitle" style={{ color: muted, marginTop: 8 }}>{sectionSubtitle}</p>
         </div>
 
         <div

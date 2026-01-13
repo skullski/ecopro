@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { TemplatesTab } from '@/components/TemplatesTab';
-import { generateStoreUrl, storeNameToSlug } from '@/utils/storeUrl';
+import { generateStoreUrl } from '@/utils/storeUrl';
 import { useTranslation } from '@/lib/i18n';
 import {
   Dialog,
@@ -62,13 +62,28 @@ export default function Store() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   // Products Management was duplicated with Overview; keep a single Store page.
+
+  const getStorefrontPath = (settings: any) => {
+    const name = settings?.store_name;
+    if (name) return generateStoreUrl(name, false);
+    const slug = settings?.store_slug;
+    if (slug) return `/store/${slug}`;
+    return '';
+  };
+
+  const getStorefrontFullUrl = (settings: any) => {
+    const p = getStorefrontPath(settings);
+    if (!p) return '';
+    return `${window.location.origin}${p}`;
+  };
+
   // Copy store link to clipboard
   // This must be above all JSX usage
   let storeSettingsRef: any = null;
   let setStoreLinkCopiedRef: any = null;
   const copyStoreLink = () => {
-    if (!storeSettingsRef?.store_name) return;
-    const storeUrl = `${window.location.origin}${generateStoreUrl(storeSettingsRef.store_name, false)}`;
+    const storeUrl = getStorefrontFullUrl(storeSettingsRef);
+    if (!storeUrl) return;
     navigator.clipboard.writeText(storeUrl);
     setStoreLinkCopiedRef(true);
     setTimeout(() => setStoreLinkCopiedRef(false), 2000);
@@ -615,11 +630,12 @@ export default function Store() {
             <Button 
               variant="outline"
               onClick={() => {
-                if (storeSettings.store_name) {
-                  window.open(generateStoreUrl(storeSettings.store_name, false), '_blank');
+                const url = getStorefrontPath(storeSettings);
+                if (url) {
+                  window.open(url, '_blank');
                 }
               }}
-              disabled={!storeSettings.store_name}
+              disabled={!getStorefrontPath(storeSettings)}
               className="h-9 px-3"
             >
               <StoreIcon className="w-4 h-4 mr-2" />
@@ -705,11 +721,12 @@ export default function Store() {
                   size="sm"
                   variant="outline"
                   onClick={() => {
-                    if (storeSettings.store_name) {
-                      window.open(generateStoreUrl(storeSettings.store_name, false), '_blank');
+                    const url = getStorefrontPath(storeSettings);
+                    if (url) {
+                      window.open(url, '_blank');
                     }
                   }}
-                  disabled={!storeSettings.store_name}
+                  disabled={!getStorefrontPath(storeSettings)}
                 >
                   <ExternalLink className="w-4 h-4 mr-2" />
                   Open Store
@@ -719,11 +736,11 @@ export default function Store() {
 
             <div className="mt-3 flex gap-2 items-center">
               <Input
-                value={storeSettings.store_slug ? `${window.location.origin}/store/${storeSettings.store_slug}` : ''}
+                value={getStorefrontFullUrl(storeSettings)}
                 readOnly
                 className="font-mono text-sm flex-1"
               />
-              <Button onClick={copyStoreLink} variant="outline" disabled={!storeSettings.store_slug}>
+              <Button onClick={copyStoreLink} variant="outline" disabled={!getStorefrontPath(storeSettings)}>
                 {storeLinkCopied ? (
                   <Check className="w-4 h-4 text-green-500" />
                 ) : (

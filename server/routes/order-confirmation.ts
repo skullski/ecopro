@@ -61,7 +61,10 @@ async function resolvePendingConfirmableOrder(args: { storeSlug: string; orderId
      FROM store_orders o
      INNER JOIN client_store_settings s ON o.client_id = s.client_id
      LEFT JOIN client_store_products p ON o.product_id = p.id
-     WHERE o.id = $1 AND s.store_slug = $2 AND o.status = 'pending'
+     WHERE o.id = $1
+       AND (s.store_slug = $2
+         OR LOWER(REGEXP_REPLACE(s.store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($2))
+       AND o.status = 'pending'
      LIMIT 1`,
     [orderId, storeSlug]
   );
@@ -121,7 +124,10 @@ export const getOrderForConfirmation: RequestHandler = async (req, res) => {
        FROM store_orders o
        LEFT JOIN client_store_products p ON o.product_id = p.id
        LEFT JOIN client_store_settings s ON o.client_id = s.client_id
-       WHERE o.id = $1 AND s.store_slug = $2 AND o.status = 'pending'`,
+       WHERE o.id = $1
+         AND (s.store_slug = $2
+           OR LOWER(REGEXP_REPLACE(s.store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($2))
+         AND o.status = 'pending'`,
       [orderId, storeSlug]
     );
 

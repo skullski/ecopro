@@ -83,7 +83,11 @@ export default function CafeTemplate(props: TemplateProps) {
   const text = asString(settings.template_text_color) || '#422006';
   const muted = asString(settings.template_muted_color) || '#92400e';
   const accent = asString(settings.template_accent_color) || '#d97706';
-  const headerBg = asString(settings.template_header_bg) || '#fffbf5';
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+const headerBg = asString(settings.template_header_bg) || '#fffbf5';
   const headerText = asString(settings.template_header_text) || '#422006';
   const cardBg = asString(settings.template_card_bg) || '#ffffff';
   const footerBg = asString(settings.template_footer_bg) || '#fffbf5';

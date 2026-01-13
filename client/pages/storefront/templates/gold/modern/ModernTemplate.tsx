@@ -87,7 +87,11 @@ export default function ModernTemplate(props: TemplateProps) {
   const text = asString(settings.template_text_color) || '#0f172a';
   const muted = asString(settings.template_muted_color) || '#64748b';
   const accent = asString(settings.template_accent_color) || '#6366f1';
-  const accentSecondary = asString(settings.template_accent_secondary_color) || '#8b5cf6';
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+const accentSecondary = asString(settings.template_accent_secondary_color) || '#8b5cf6';
   const headerBg = asString(settings.template_header_bg) || '#ffffff';
   const headerText = asString(settings.template_header_text) || '#0f172a';
   const cardBg = asString(settings.template_card_bg) || '#ffffff';

@@ -45,9 +45,34 @@ export default function BooksTemplate(props: TemplateProps) {
   const cardBg = settings.template_card_bg || '#ffffff';
 
   const storeName = settings.store_name || 'THE BOOKSHELF';
+  const logoUrl = asString(settings.store_logo) || asString((settings as any).logo_url);
+  const storeDescription = asString(settings.store_description);
   const heroTitle = settings.template_hero_heading || 'Discover Your Next Adventure';
   const heroSubtitle = settings.template_hero_subtitle || 'Curated books for curious minds';
   const ctaText = settings.template_button_text || 'Browse Collection';
+
+  const addLabel = asString((settings as any).template_add_to_cart_label) || 'VIEW';
+  const productTitleColor = asString((settings as any).template_product_title_color) || text;
+  const productPriceColor = asString((settings as any).template_product_price_color) || accent;
+
+  const featuredTitle = asString((settings as any).template_featured_title) || 'Featured picks';
+  const featuredSubtitle = asString((settings as any).template_featured_subtitle) || '';
+
+  const rawSocial = (settings as any).template_social_links;
+  const socialLinks: Array<{ platform: string; url: string }> = (() => {
+    if (Array.isArray(rawSocial)) return rawSocial as any;
+    if (typeof rawSocial !== 'string' || !rawSocial.trim()) return [];
+    try {
+      const parsed = JSON.parse(rawSocial);
+      return Array.isArray(parsed) ? (parsed as any) : [];
+    } catch {
+      return [];
+    }
+  })()
+    .map((l: any) => ({ platform: asString(l?.platform), url: asString(l?.url) }))
+    .filter((l) => l.platform && l.url);
+
+  const copyright = asString((settings as any).template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
 
   // Layout settings
   const gridColumns = resolveInt(settings.template_grid_columns, 5, 2, 6);
@@ -70,8 +95,28 @@ export default function BooksTemplate(props: TemplateProps) {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: bg, color: text, fontFamily: 'Georgia, serif' }} data-edit-path="__root">
       {/* Header */}
-      <header style={{ padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${accent}22` }} data-edit-path="layout.header" onClick={(e) => clickGuard(e, 'layout.header')}>
-        <h1 style={{ fontSize: '28px', fontWeight: 400, fontStyle: 'italic', color: accent }} data-edit-path="layout.header.logo" onClick={(e) => clickGuard(e, 'layout.header.logo')}>{storeName}</h1>
+      <header style={{ padding: '20px 24px', display: 'flex', justifyContent: 'center', alignItems: 'center', borderBottom: `1px solid ${accent}22` }} data-edit-path="layout.header" onClick={(e) => clickGuard(e, 'layout.header')}>
+        <div
+          style={{ display: 'flex', alignItems: 'center', gap: 12, textAlign: 'center' }}
+          data-edit-path="layout.header.logo"
+          onClick={(e) => clickGuard(e, 'layout.header.logo')}
+        >
+          {logoUrl && (
+            <img
+              src={logoUrl}
+              alt={storeName}
+              style={{ width: 44, height: 44, borderRadius: 9999, objectFit: 'cover', border: `2px solid ${accent}` }}
+            />
+          )}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+            <h1 style={{ fontSize: '28px', fontWeight: 400, fontStyle: 'italic', color: accent, margin: 0 }}>{storeName}</h1>
+            {(canManage || storeDescription) && (
+              <div style={{ fontSize: 12, color: muted, maxWidth: 520, lineHeight: 1.35 }}>
+                {storeDescription || (canManage ? 'Add store description...' : '')}
+              </div>
+            )}
+          </div>
+        </div>
       </header>
 
       {/* Hero */}
@@ -92,7 +137,33 @@ export default function BooksTemplate(props: TemplateProps) {
       )}
 
       {/* Products */}
-      <section style={{ padding: `${sectionSpacing}px 24px`, maxWidth: '1400px', margin: '0 auto' }} data-edit-path="layout.products">
+      <div
+        style={{ padding: '0 24px', maxWidth: '1400px', margin: '0 auto', textAlign: 'center' }}
+        data-edit-path="layout.featured"
+        onClick={(e) => clickGuard(e, 'layout.featured')}
+      >
+        <h2
+          style={{ margin: '0 0 10px', fontSize: 22, fontWeight: 600, color: accent, fontStyle: 'italic' }}
+          data-edit-path="layout.featured.title"
+          onClick={(e) => clickGuard(e, 'layout.featured.title')}
+        >
+          {featuredTitle}
+        </h2>
+        {(canManage || featuredSubtitle) && (
+          <p
+            style={{ margin: '0 0 18px', color: muted, fontSize: 14 }}
+            data-edit-path="layout.featured.subtitle"
+            onClick={(e) => clickGuard(e, 'layout.featured.subtitle')}
+          >
+            {featuredSubtitle || (canManage ? 'Add section subtitle...' : '')}
+          </p>
+        )}
+      </div>
+      <section
+        style={{ padding: `${sectionSpacing}px 24px`, maxWidth: '1400px', margin: '0 auto' }}
+        data-edit-path="layout.grid"
+        onClick={(e) => clickGuard(e, 'layout.grid')}
+      >
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: `${gridGap}px` }}>
           {products.map(product => (
             <div key={product.id} style={{ cursor: canManage ? 'default' : 'pointer', textAlign: 'center', transition: `transform ${animationSpeed}ms` }} data-edit-path={`layout.products.${product.id}`}
@@ -102,9 +173,20 @@ export default function BooksTemplate(props: TemplateProps) {
               <div style={{ aspectRatio: '2/3', backgroundColor: cardBg, boxShadow: '4px 4px 12px rgba(0,0,0,0.1)', marginBottom: `${baseSpacing}px`, overflow: 'hidden', borderRadius: cardRadius }}>
                 {product.images?.[0] && <img src={product.images[0]} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
               </div>
-              <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '4px' }}>{product.title}</h3>
+              <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '4px', color: productTitleColor }}>{product.title}</h3>
               <p style={{ fontSize: '12px', color: muted, marginBottom: '4px' }}>{product.category}</p>
-              <p style={{ fontSize: '16px', fontWeight: 700, color: accent }}>{props.formatPrice(product.price)}</p>
+              <p style={{ fontSize: '16px', fontWeight: 700, color: productPriceColor }}>{props.formatPrice(product.price)}</p>
+              <button
+                style={{ marginTop: 10, backgroundColor: accent, color: '#fff', padding: '10px 16px', border: 'none', cursor: 'pointer', fontSize: 12 }}
+                data-edit-path="layout.featured.addLabel"
+                onClick={(e) => {
+                  if (canManage) return clickGuard(e, 'layout.featured.addLabel');
+                  e.stopPropagation();
+                  if (product.slug) props.navigate(product.slug);
+                }}
+              >
+                {addLabel}
+              </button>
             </div>
           ))}
         </div>
@@ -112,7 +194,32 @@ export default function BooksTemplate(props: TemplateProps) {
 
       {/* Footer */}
       <footer style={{ padding: '48px 24px', backgroundColor: accent, color: '#fff', marginTop: '48px', textAlign: 'center' }} data-edit-path="layout.footer" onClick={(e) => clickGuard(e, 'layout.footer')}>
-        <p style={{ fontSize: '14px', opacity: 0.8 }}>© {new Date().getFullYear()} {storeName}</p>
+        <p style={{ fontSize: '14px', opacity: 0.8, margin: 0 }} data-edit-path="layout.footer.copyright" onClick={(e) => clickGuard(e, 'layout.footer.copyright')}>
+          {copyright}
+        </p>
+        <div
+          style={{ display: 'flex', gap: 14, justifyContent: 'center', marginTop: 14, flexWrap: 'wrap' }}
+          data-edit-path="layout.footer.social"
+          onClick={(e) => clickGuard(e, 'layout.footer.social')}
+        >
+          {(canManage || socialLinks.length > 0) &&
+            (socialLinks.length ? socialLinks : [{ platform: 'instagram', url: '#' }]).map((l) => (
+              <a
+                key={`${l.platform}-${l.url}`}
+                href={l.url}
+                style={{ color: '#fff', textDecoration: 'none', fontSize: 12, opacity: 0.9 }}
+                onClick={(e) => {
+                  if (canManage) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onSelect('layout.footer.social');
+                  }
+                }}
+              >
+                {l.platform}
+              </a>
+            ))}
+        </div>
       </footer>
     </div>
   );

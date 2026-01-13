@@ -50,15 +50,28 @@ export default function EmeraldShopTemplate(props: TemplateProps) {
   const muted = asString(settings.template_muted_color) || '#047857';
   const accent = asString(settings.template_accent_color) || '#059669';
 
-  const storeName = asString(settings.store_name) || 'Emerald Shop';
-  const heroTitle = asString(settings.template_hero_heading) || 'Discover Excellence';
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+
+  const cardBg = asString(settings.template_card_bg) || "#ffffff";
+const storeName = asString(settings.store_name) || 'Emerald Shop';
+  
+  const copyright = asString(settings.template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
+const heroTitle = asString(settings.template_hero_heading) || 'Discover Excellence';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Premium products crafted for quality-conscious buyers';
   const cta = asString(settings.template_button_text) || 'Shop Now';
 
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 12) || [];
 
-  const descText = asString(settings.template_description_text);
-  const descColor = asString(settings.template_description_color) || muted;
+  
+
+  const sectionTitle = asString(settings.template_featured_title) || "Featured";
+  const sectionSubtitle = asString(settings.template_featured_subtitle) || "";
+  const addToCartLabel = asString(settings.template_add_to_cart_label) || "View";
+const descText = (asString(settings.template_description_text) || asString(settings.store_description)).trim();
+const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 15, 10, 32);
 
   // Layout settings
@@ -72,6 +85,8 @@ export default function EmeraldShopTemplate(props: TemplateProps) {
 
   return (
     <div
+      data-edit-path="__root"
+      onClick={() => canManage && onSelect("__root")}
       className="ecopro-storefront"
       style={{
         minHeight: '100vh',
@@ -216,7 +231,7 @@ export default function EmeraldShopTemplate(props: TemplateProps) {
           ].map((f) => (
             <div key={f.title} style={{ background: '#fff', borderRadius: 16, padding: 28, textAlign: 'center' }}>
               <div style={{ fontSize: 40, marginBottom: 16 }}>{f.icon}</div>
-              <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>{f.title}</h3>
+              <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 , color: productTitleColor}}>{f.title}</h3>
               <p style={{ color: muted, fontSize: 14, lineHeight: 1.6 }}>{f.desc}</p>
             </div>
           ))}
@@ -230,7 +245,7 @@ export default function EmeraldShopTemplate(props: TemplateProps) {
         style={{ maxWidth: 1200, margin: '0 auto', padding: `${baseSpacing}px 24px ${sectionSpacing}px` }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
-          <h2 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Our Products</h2>
+          <h2 data-edit-path="layout.featured.title" style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>{sectionTitle}</h2>
           <button onClick={() => navigate('/products')} style={{ background: 'none', border: 0, color: accent, fontWeight: 700, cursor: 'pointer' }}>
             View All →
           </button>
@@ -271,7 +286,7 @@ export default function EmeraldShopTemplate(props: TemplateProps) {
                 <img src={productImage(p)} alt={productTitle(p)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
               <div style={{ padding: 16 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' , color: productTitleColor}}>
                   {productTitle(p)}
                 </h3>
                 <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -290,9 +305,7 @@ export default function EmeraldShopTemplate(props: TemplateProps) {
       <section style={{ background: text, padding: '60px 24px', color: '#fff', textAlign: 'center' }}>
         <div style={{ maxWidth: 700, margin: '0 auto' }}>
           <div style={{ fontSize: 48, marginBottom: 20 }}>⭐⭐⭐⭐⭐</div>
-          <p style={{ fontSize: 20, fontStyle: 'italic', lineHeight: 1.7, opacity: 0.9 }}>
-            "Best purchase I've ever made. The quality is outstanding and delivery was super fast. Highly recommend!"
-          </p>
+          <p data-edit-path="layout.featured.subtitle" style={{ fontSize: 20, fontStyle: 'italic', lineHeight: 1.7, opacity: 0.9 }}>{sectionSubtitle}</p>
           <p style={{ marginTop: 20, fontWeight: 700 }}>— Verified Customer</p>
         </div>
       </section>
@@ -324,7 +337,7 @@ export default function EmeraldShopTemplate(props: TemplateProps) {
           ))}
         </div>
         <div style={{ maxWidth: 1200, margin: '32px auto 0', paddingTop: 24, borderTop: '1px solid #e5e7eb', textAlign: 'center', fontSize: 13, color: muted }}>
-          © {new Date().getFullYear()} {storeName}. All rights reserved.
+          {copyright}
         </div>
       </footer>
     </div>

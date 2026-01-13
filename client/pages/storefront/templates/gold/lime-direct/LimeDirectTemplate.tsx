@@ -50,15 +50,28 @@ export default function LimeDirectTemplate(props: TemplateProps) {
   const muted = asString(settings.template_muted_color) || '#166534';
   const accent = asString(settings.template_accent_color) || '#22c55e';
 
-  const storeName = asString(settings.store_name) || 'Lime Direct';
-  const heroTitle = asString(settings.template_hero_heading) || 'Premium Quality Products';
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+
+  const cardBg = asString(settings.template_card_bg) || "#ffffff";
+const storeName = asString(settings.store_name) || 'Lime Direct';
+  
+  const copyright = asString(settings.template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
+const heroTitle = asString(settings.template_hero_heading) || 'Premium Quality Products';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Direct from manufacturer to your doorstep';
   const cta = asString(settings.template_button_text) || 'Order Now';
 
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 12) || [];
 
-  const descText = asString(settings.template_description_text);
-  const descColor = asString(settings.template_description_color) || muted;
+  
+
+  const sectionTitle = asString(settings.template_featured_title) || "Featured";
+  const sectionSubtitle = asString(settings.template_featured_subtitle) || "";
+  const addToCartLabel = asString(settings.template_add_to_cart_label) || "View";
+const descText = (asString(settings.template_description_text) || asString(settings.store_description)).trim();
+const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 15, 10, 32);
 
   // Layout settings
@@ -72,6 +85,8 @@ export default function LimeDirectTemplate(props: TemplateProps) {
 
   return (
     <div
+      data-edit-path="__root"
+      onClick={() => canManage && onSelect("__root")}
       className="ecopro-storefront"
       style={{
         minHeight: '100vh',
@@ -243,7 +258,7 @@ export default function LimeDirectTemplate(props: TemplateProps) {
         onClick={() => canManage && onSelect('layout.grid')}
         style={{ maxWidth: 1200, margin: '0 auto', padding: `${sectionSpacing}px 24px 60px` }}
       >
-        <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 24, textAlign: 'center' }}>More Products</h2>
+        <h2 data-edit-path="layout.featured.title" style={{ fontSize: 24, fontWeight: 800, marginBottom: 24, textAlign: 'center' }}>{sectionTitle}</h2>
         <div
           style={{
             display: 'grid',
@@ -280,7 +295,7 @@ export default function LimeDirectTemplate(props: TemplateProps) {
                 <img src={productImage(p)} alt={productTitle(p)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
               <div style={{ padding: baseSpacing }}>
-                <h3 style={{ fontSize: 13, fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <h3 style={{ fontSize: 13, fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' , color: productTitleColor}}>
                   {productTitle(p)}
                 </h3>
                 <div style={{ marginTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -297,8 +312,8 @@ export default function LimeDirectTemplate(props: TemplateProps) {
 
       {/* Contact */}
       <section style={{ background: text, color: '#fff', padding: `${sectionSpacing}px 24px`, textAlign: 'center' }}>
-        <h3 style={{ fontSize: 24, fontWeight: 800, margin: 0 }}>Need Help?</h3>
-        <p style={{ marginTop: 12, opacity: 0.8 }}>Contact us anytime for support</p>
+        <h3 style={{ fontSize: 24, fontWeight: 800, margin: 0 , color: productTitleColor}}>Need Help?</h3>
+        <p data-edit-path="layout.featured.subtitle" style={{ marginTop: 12, opacity: 0.8 }}>{sectionSubtitle}</p>
         <div style={{ marginTop: 20, display: 'flex', justifyContent: 'center', gap: 24, flexWrap: 'wrap' }}>
           <span>📞 +1 234 567 8900</span>
           <span>📧 support@{storeName.toLowerCase().replace(/\s/g, '')}.com</span>
@@ -313,7 +328,7 @@ export default function LimeDirectTemplate(props: TemplateProps) {
       >
         <div style={{ maxWidth: 1200, margin: '0 auto', textAlign: 'center' }}>
           <div style={{ fontSize: 20, fontWeight: 800, color: accent, marginBottom: 12 }}>{storeName}</div>
-          <p style={{ color: muted, fontSize: 13 }}>© {new Date().getFullYear()} {storeName}. All rights reserved.</p>
+          <p style={{ color: muted, fontSize: 13 }}>{copyright}</p>
         </div>
       </footer>
     </div>

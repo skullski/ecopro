@@ -50,15 +50,28 @@ export default function SnowShopTemplate(props: TemplateProps) {
   const muted = asString(settings.template_muted_color) || '#64748b';
   const accent = asString(settings.template_accent_color) || '#6366f1';
 
-  const storeName = asString(settings.store_name) || 'Snow Shop';
-  const heroTitle = asString(settings.template_hero_heading) || 'Discover Amazing Products';
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+
+  const cardBg = asString(settings.template_card_bg) || "#ffffff";
+const storeName = asString(settings.store_name) || 'Snow Shop';
+  
+  const copyright = asString(settings.template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
+const heroTitle = asString(settings.template_hero_heading) || 'Discover Amazing Products';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Quality items delivered to your door';
   const cta = asString(settings.template_button_text) || 'Shop Now';
 
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 12) || [];
 
-  const descText = asString(settings.template_description_text);
-  const descColor = asString(settings.template_description_color) || muted;
+  
+
+  const sectionTitle = asString(settings.template_featured_title) || "Featured";
+  const sectionSubtitle = asString(settings.template_featured_subtitle) || "";
+  const addToCartLabel = asString(settings.template_add_to_cart_label) || "View";
+const descText = (asString(settings.template_description_text) || asString(settings.store_description)).trim();
+const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 15, 10, 32);
 
   // Layout settings
@@ -74,6 +87,8 @@ export default function SnowShopTemplate(props: TemplateProps) {
 
   return (
     <div
+      data-edit-path="__root"
+      onClick={() => canManage && onSelect("__root")}
       className="ecopro-storefront"
       style={{
         minHeight: '100vh',
@@ -245,7 +260,7 @@ export default function SnowShopTemplate(props: TemplateProps) {
         style={{ maxWidth: 1200, margin: '0 auto', padding: `${sectionSpacing}px ${baseSpacing}px` }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <h2 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>Featured Products</h2>
+          <h2 data-edit-path="layout.featured.title" style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>{sectionTitle}</h2>
           <button onClick={() => navigate('/products')} style={{ background: 'none', border: 0, color: accent, fontWeight: 600, cursor: 'pointer' }}>
             View All →
           </button>
@@ -287,7 +302,7 @@ export default function SnowShopTemplate(props: TemplateProps) {
                 <img src={productImage(p)} alt={productTitle(p)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
               <div style={{ padding: 16 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' , color: productTitleColor}}>
                   {productTitle(p)}
                 </h3>
                 <div style={{ marginTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -305,8 +320,8 @@ export default function SnowShopTemplate(props: TemplateProps) {
       {/* Newsletter */}
       <section style={{ background: '#fff', padding: '60px 24px' }}>
         <div style={{ maxWidth: 500, margin: '0 auto', textAlign: 'center' }}>
-          <h3 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>Stay Updated</h3>
-          <p style={{ color: muted, marginTop: 12, fontSize: 15 }}>Subscribe to get exclusive offers and updates</p>
+          <h3 style={{ fontSize: 24, fontWeight: 700, margin: 0 , color: productTitleColor}}>Stay Updated</h3>
+          <p data-edit-path="layout.featured.subtitle" style={{ color: muted, marginTop: 12, fontSize: 15 }}>{sectionSubtitle}</p>
           <div style={{ marginTop: 24, display: 'flex', gap: 10 }}>
             <input 
               type="email" 
@@ -345,7 +360,7 @@ export default function SnowShopTemplate(props: TemplateProps) {
             ))}
           </div>
           <div style={{ marginTop: 40, paddingTop: 24, borderTop: '1px solid #334155', textAlign: 'center', fontSize: 13, color: '#64748b' }}>
-            © {new Date().getFullYear()} {storeName}. All rights reserved.
+            {copyright}
           </div>
         </div>
       </footer>

@@ -41,11 +41,20 @@ export default function EyewearTemplate(props: TemplateProps) {
   const cardBg = settings.template_card_bg || '#ffffff';
 
   const storeName = settings.store_name || 'OPTIX';
-  const heroTitle = settings.template_hero_heading || 'See The World 👓';
+  
+  
+  const copyright = asString(settings.template_copyright) || `© 2026 ${storeName}`;
+const storeLogo = asString(settings.store_logo);
+  const storeDescription = asString(settings.store_description);
+const heroTitle = settings.template_hero_heading || 'See The World 👓';
   const heroSubtitle = settings.template_hero_subtitle || 'Premium eyewear for every style';
   const ctaText = settings.template_button_text || 'BROWSE FRAMES';
 
-  const products = useMemo(() => {
+  
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+  const addToCartLabel = asString(settings.template_add_to_cart_label) || 'View';
+const products = useMemo(() => {
     const list = props.filtered?.length ? props.filtered : props.products || [];
     return categoryFilter ? list.filter(p => p.category === categoryFilter) : list;
   }, [props.filtered, props.products, categoryFilter]);
@@ -66,11 +75,11 @@ export default function EyewearTemplate(props: TemplateProps) {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: bg, color: text, fontFamily: 'system-ui, sans-serif' }} data-edit-path="__root">
       <header style={{ padding: '20px 24px', display: 'flex', justifyContent: 'center', alignItems: 'center' }} data-edit-path="layout.header" onClick={(e) => clickGuard(e, 'layout.header')}>
-        <h1 style={{ fontSize: '24px', fontWeight: 300, letterSpacing: '6px' }} data-edit-path="layout.header.logo" onClick={(e) => clickGuard(e, 'layout.header.logo')}>👓 {storeName}</h1>
+        <h1 style={{ fontSize: '24px', fontWeight: 300, letterSpacing: '6px' }} data-edit-path="layout.header.logo" onClick={(e) => clickGuard(e, 'layout.header.logo')}>{settings.store_logo ? (<img src={settings.store_logo} alt={storeName} style={{ width: 40, height: 40, borderRadius: '9999px', objectFit: 'cover' }} />) : null}👓 {storeName}</h1>
       </header>
 
       <section style={{ padding: '100px 24px', textAlign: 'center' }} data-edit-path="layout.hero" onClick={(e) => clickGuard(e, 'layout.hero')}>
-        <p style={{ fontSize: '12px', letterSpacing: '4px', color: accent, marginBottom: '20px' }}>DESIGNER FRAMES</p>
+        <p style={{ fontSize: '12px', letterSpacing: '4px', color: productPriceColor, marginBottom: '20px' }}>DESIGNER FRAMES</p>
         <h2 style={{ fontSize: breakpoint === 'mobile' ? '36px' : '60px', fontWeight: 200, marginBottom: '20px', letterSpacing: '-1px' }} data-edit-path="layout.hero.title" onClick={(e) => clickGuard(e, 'layout.hero.title')}>{heroTitle}</h2>
         <p style={{ color: '#a8a29e', fontSize: '16px', marginBottom: '32px' }} data-edit-path="layout.hero.subtitle" onClick={(e) => clickGuard(e, 'layout.hero.subtitle')}>{heroSubtitle}</p>
         <button style={{ backgroundColor: text, color: bg, padding: '16px 48px', fontSize: '12px', fontWeight: 400, letterSpacing: '3px', border: 'none', cursor: 'pointer' }} data-edit-path="layout.hero.cta" onClick={(e) => clickGuard(e, 'layout.hero.cta')}>{ctaText}</button>
@@ -84,20 +93,36 @@ export default function EyewearTemplate(props: TemplateProps) {
         </div>
       )}
 
-      <section style={{ padding: `${sectionSpacing}px 24px`, maxWidth: '1400px', margin: '0 auto' }} data-edit-path="layout.products">
+      <section style={{ padding: `${sectionSpacing}px 24px`, maxWidth: '1400px', margin: '0 auto' }} data-edit-path="layout.grid">
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: `${gridGap}px` }}>
           {products.map(product => (
-            <div key={product.id} style={{ backgroundColor: cardBg, overflow: 'hidden', cursor: canManage ? 'default' : 'pointer', borderRadius: cardRadius, transition: `transform ${animationSpeed}ms, box-shadow ${animationSpeed}ms` }} data-edit-path={`layout.products.${product.id}`}
+            <div key={product.id} style={{ backgroundColor: cardBg, overflow: 'hidden', cursor: canManage ? 'default' : 'pointer', borderRadius: cardRadius, transition: `transform ${animationSpeed}ms, box-shadow ${animationSpeed}ms` }} data-edit-path={`layout.grid.items.${product.id}`}
               onMouseEnter={(e) => { e.currentTarget.style.transform = `scale(${hoverScale})`; }}
               onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
-              onClick={(e) => { e.stopPropagation(); if (!canManage && product.slug) props.navigate(product.slug); else if (canManage) onSelect(`layout.products.${product.id}`); }}>
+              onClick={(e) => { e.stopPropagation(); if (!canManage && product.slug) props.navigate(product.slug); else if (canManage) onSelect(`layout.grid.items.${product.id}`); }}>
               <div style={{ aspectRatio: '16/9', backgroundColor: '#e7e5e4', overflow: 'hidden' }}>
                 {product.images?.[0] && <img src={product.images[0]} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
               </div>
               <div style={{ padding: '20px' }}>
-                <p style={{ fontSize: '10px', letterSpacing: '2px', color: accent, marginBottom: '8px' }}>{product.category || 'EYEWEAR'}</p>
-                <h3 style={{ fontSize: '14px', fontWeight: 400, marginBottom: '8px' }}>{product.title}</h3>
+                <p style={{ fontSize: '10px', letterSpacing: '2px', color: productPriceColor, marginBottom: '8px' }}>{product.category || 'EYEWEAR'}</p>
+                <h3 style={{ fontSize: '14px', fontWeight: 400, marginBottom: '8px', color: productTitleColor}}>{product.title}</h3>
                 <p style={{ fontSize: '16px', fontWeight: 400 }}>{props.formatPrice(product.price)}</p>
+                <button
+                  style={{
+                    marginTop: '12px',
+                    width: '100%',
+                    backgroundColor: accent,
+                    color: '#fff',
+                    padding: '10px 12px',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                  }}
+                >
+                  {addToCartLabel}
+                </button>
               </div>
             </div>
           ))}
@@ -105,7 +130,7 @@ export default function EyewearTemplate(props: TemplateProps) {
       </section>
 
       <footer style={{ padding: '48px 24px', marginTop: '48px', textAlign: 'center', borderTop: `1px solid ${accent}` }} data-edit-path="layout.footer" onClick={(e) => clickGuard(e, 'layout.footer')}>
-        <p style={{ color: accent, letterSpacing: '2px', fontSize: '12px' }}>© {new Date().getFullYear()} {storeName}</p>
+        <p style={{ color: accent, letterSpacing: '2px', fontSize: '12px' }}>{copyright}{storeDescription ? ` — ${storeDescription}` : ''}</p>
       </footer>
     </div>
   );

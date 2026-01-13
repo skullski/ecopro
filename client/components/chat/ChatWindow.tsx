@@ -48,11 +48,24 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
   const prevMessagesLengthRef = useRef<number>(0);
   const isUserScrollingRef = useRef<boolean>(false);
   const shouldScrollRef = useRef<boolean>(true);
+  const scrollRafRef = useRef<number | null>(null);
 
-  const scrollToBottom = (force = false) => {
+  const scrollToBottom = (options?: { force?: boolean; behavior?: ScrollBehavior }) => {
+    const force = options?.force ?? false;
+    const behavior = options?.behavior ?? 'smooth';
     if (force || shouldScrollRef.current) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      messagesEndRef.current?.scrollIntoView({ behavior });
     }
+  };
+
+  const scheduleScrollToBottom = (options?: { force?: boolean; behavior?: ScrollBehavior }) => {
+    if (scrollRafRef.current) {
+      cancelAnimationFrame(scrollRafRef.current);
+    }
+    scrollRafRef.current = requestAnimationFrame(() => {
+      scrollRafRef.current = null;
+      scrollToBottom(options);
+    });
   };
 
   // Check if user is near bottom of chat
@@ -76,7 +89,9 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
 
   // Handle input focus - scroll to bottom when user clicks on input
   const handleInputFocus = () => {
-    scrollToBottom(true);
+    isUserScrollingRef.current = false;
+    shouldScrollRef.current = true;
+    scheduleScrollToBottom({ force: true, behavior: 'smooth' });
   };
 
   useEffect(() => {
@@ -97,7 +112,7 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
     const hasNewMessages = messages.length > prevMessagesLengthRef.current;
     
     if (isInitialLoad) {
-      scrollToBottom(true);
+      scrollToBottom({ force: true });
     } else if (hasNewMessages && !isUserScrollingRef.current) {
       scrollToBottom();
     }
@@ -217,6 +232,14 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
     // Auto-grow textarea
     e.target.style.height = 'auto';
     e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+
+    // If the user is typing, keep the chat pinned to the newest messages.
+    // (This avoids the situation where the user scrolls up, focuses input, then types while still not at bottom.)
+    if (document.activeElement === inputRef.current) {
+      isUserScrollingRef.current = false;
+      shouldScrollRef.current = true;
+      scheduleScrollToBottom({ force: true, behavior: 'auto' });
+    }
   };
 
   const addEmoji = (emoji: string) => {

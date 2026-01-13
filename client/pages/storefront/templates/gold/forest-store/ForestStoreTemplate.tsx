@@ -50,15 +50,28 @@ export default function ForestStoreTemplate(props: TemplateProps) {
   const muted = asString(settings.template_muted_color) || '#a3b8a3';
   const accent = asString(settings.template_accent_color) || '#7cb87c';
 
-  const storeName = asString(settings.store_name) || 'Forest';
-  const heroTitle = asString(settings.template_hero_heading) || 'Nature\'s Finest';
+  
+
+  const productTitleColor = asString(settings.template_product_title_color) || text;
+  const productPriceColor = asString(settings.template_product_price_color) || accent;
+
+  const cardBg = asString(settings.template_card_bg) || "#ffffff";
+const storeName = asString(settings.store_name) || 'Forest';
+  
+  const copyright = asString(settings.template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
+const heroTitle = asString(settings.template_hero_heading) || 'Nature\'s Finest';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Sustainable products inspired by nature';
   const cta = asString(settings.template_button_text) || 'Shop Sustainably';
 
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 12) || [];
 
-  const descText = asString(settings.template_description_text);
-  const descColor = asString(settings.template_description_color) || muted;
+  
+
+  const sectionTitle = asString(settings.template_featured_title) || "Featured";
+  const sectionSubtitle = asString(settings.template_featured_subtitle) || "";
+  const addToCartLabel = asString(settings.template_add_to_cart_label) || "View";
+const descText = (asString(settings.template_description_text) || asString(settings.store_description)).trim();
+const descColor = asString(settings.template_description_color) || muted;
   const descSize = resolveInt(settings.template_description_size, 15, 10, 32);
 
   // Layout settings
@@ -72,6 +85,8 @@ export default function ForestStoreTemplate(props: TemplateProps) {
 
   return (
     <div
+      data-edit-path="__root"
+      onClick={() => canManage && onSelect("__root")}
       className="ecopro-storefront"
       style={{
         minHeight: '100vh',
@@ -194,7 +209,7 @@ export default function ForestStoreTemplate(props: TemplateProps) {
           ].map((f) => (
             <div key={f.title} style={{ textAlign: 'center', padding: 24 }}>
               <div style={{ fontSize: 40, marginBottom: 16 }}>{f.icon}</div>
-              <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>{f.title}</h3>
+              <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 , color: productTitleColor}}>{f.title}</h3>
               <p style={{ color: muted, fontSize: 14, lineHeight: 1.6 }}>{f.desc}</p>
             </div>
           ))}
@@ -208,8 +223,8 @@ export default function ForestStoreTemplate(props: TemplateProps) {
         style={{ maxWidth: 1200, margin: '0 auto', padding: `${sectionSpacing}px 24px` }}
       >
         <div style={{ textAlign: 'center', marginBottom: sectionSpacing }}>
-          <h2 style={{ fontSize: 32, fontWeight: 800, margin: 0 }}>Our Collection</h2>
-          <p style={{ color: muted, marginTop: 12 }}>Handpicked sustainable products</p>
+          <h2 data-edit-path="layout.featured.title" style={{ fontSize: 32, fontWeight: 800, margin: 0 }}>{sectionTitle}</h2>
+          <p data-edit-path="layout.featured.subtitle" style={{ color: muted, marginTop: 12 }}>{sectionSubtitle}</p>
         </div>
 
         <div
@@ -244,7 +259,7 @@ export default function ForestStoreTemplate(props: TemplateProps) {
                 </div>
               </div>
               <div style={{ padding: 20 }}>
-                <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>{productTitle(p)}</h3>
+                <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 , color: productTitleColor}}>{productTitle(p)}</h3>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
                   <span style={{ color: accent, fontWeight: 800, fontSize: 18 }}>{formatPrice(Number(p.price) || 0)}</span>
                   <button style={{ background: accent, border: 0, borderRadius: 8, padding: '10px 18px', color: bg, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
@@ -319,7 +334,7 @@ export default function ForestStoreTemplate(props: TemplateProps) {
             ))}
           </div>
           <div style={{ borderTop: `1px solid ${accent}20`, marginTop: 48, paddingTop: 24, textAlign: 'center', color: muted, fontSize: 13 }}>
-            © {new Date().getFullYear()} {storeName}. All rights reserved. 🌍
+            {copyright} 🌍
           </div>
         </div>
       </footer>
