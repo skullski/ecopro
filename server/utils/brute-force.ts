@@ -118,7 +118,7 @@ export function checkLoginAllowed(ip: string, email?: string): {
 export async function recordFailedLogin(
   req: any,
   email: string,
-  reason: 'user_not_found' | 'bad_password' | 'account_locked' | 'account_blocked',
+  reason: 'user_not_found' | 'bad_password' | 'account_locked' | 'account_blocked' | 'admin_portal_required',
   loginContext?: string
 ): Promise<{ blocked: boolean; blockedUntil?: number }> {
   const ip = getClientIp(req);

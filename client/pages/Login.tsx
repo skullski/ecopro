@@ -94,6 +94,17 @@ export default function Login() {
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Login failed";
+
+      // Admins must use the dedicated platform admin login page.
+      if (
+        /platform-admin\/login/i.test(errorMessage) ||
+        /ADMIN_LOGIN_REQUIRED/i.test(errorMessage)
+      ) {
+        setError("Admin accounts must sign in from the platform admin login page.");
+        navigate("/platform-admin/login", { replace: true });
+        return;
+      }
+
       // Check if this is a locked account error
       if (errorMessage.toLowerCase().includes("locked")) {
         setIsLocked(true);

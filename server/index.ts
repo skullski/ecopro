@@ -82,7 +82,17 @@ export function createServer(options?: { skipDbInit?: boolean }) {
     })
   );
   // Single body parsers with elevated limits BEFORE routes
-  app.use(express.json({ limit: "50mb" }));
+  app.use(
+    express.json({
+      limit: '50mb',
+      verify: (req: any, _res, buf) => {
+        const url = String(req.originalUrl || req.url || '');
+        if (url.startsWith('/api/messenger/webhook')) {
+          req.rawBody = buf;
+        }
+      },
+    })
+  );
   app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
   // Initialize database then run pending migrations
@@ -304,7 +314,7 @@ export function createServer(options?: { skipDbInit?: boolean }) {
       },
       credentials: true,
       methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-      allowedHeaders: ["Content-Type", "X-CSRF-Token"],
+      allowedHeaders: ["Content-Type", "X-CSRF-Token", "X-Login-Context"],
     })
   );
 
@@ -341,7 +351,7 @@ export function createServer(options?: { skipDbInit?: boolean }) {
     // Never require CSRF for initial authentication endpoints.
     // (A stale/other auth cookie like ecopro_kernel_at should not block login.)
     const p = req.path;
-    if (p === '/api/auth/login' || p === '/api/auth/register') return next();
+    if (p === '/api/auth/login' || p === '/api/auth/register' || p === '/api/admin/login') return next();
 
     const hasAuthCookie = Boolean(
       req.cookies?.[ACCESS_COOKIE] ||
@@ -495,6 +505,15 @@ export function createServer(options?: { skipDbInit?: boolean }) {
     loginValidation,
     validate,
     authRoutes.login
+  );
+
+  // Platform admin login (admin-only)
+  app.post(
+    '/api/admin/login',
+    authLimiter,
+    loginValidation,
+    validate,
+    adminRoutes.adminLogin
   );
   app.post(
     "/api/auth/refresh",

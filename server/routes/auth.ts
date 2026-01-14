@@ -258,6 +258,18 @@ export const login: RequestHandler = async (req, res) => {
       return jsonError(res, 401, "Invalid email or password");
     }
 
+    // Admin accounts must NOT authenticate via the public /api/auth/login endpoint.
+    // They must use the dedicated admin portal endpoint (/api/admin/login).
+    // Record as a failed attempt to keep brute-force protections effective.
+    const isAdminAccount = (user as any).role === 'admin' || (user as any).user_type === 'admin';
+    if (isAdminAccount) {
+      await recordFailedLogin(req, email, 'admin_portal_required', loginContext);
+      return res.status(403).json({
+        error: 'Admin accounts must sign in via /platform-admin/login',
+        code: 'ADMIN_PORTAL_REQUIRED',
+      });
+    }
+
     // Verify password
     const isValidPassword = await comparePassword(password, user.password);
     
@@ -285,6 +297,49 @@ export const login: RequestHandler = async (req, res) => {
 
     // Admin 2FA gate (TOTP or backup code)
     const isAdmin = (user as any).role === 'admin' || (user as any).user_type === 'admin';
+
+    // Enforce separate admin login entry-point.
+    // Admin accounts must use the dedicated platform admin login page.
+    if (isAdmin && loginContext !== 'platform_admin') {
+      try {
+        const ua = (req.headers['user-agent'] as string | undefined) || null;
+        const geo = getGeo(req as any, ip);
+        const fpCookie = parseCookie(req as any, 'ecopro_fp');
+        const fingerprint = computeFingerprint({ ip, userAgent: ua, cookie: fpCookie });
+
+        await logSecurityEvent({
+          event_type: 'platform_admin_login_wrong_entry',
+          severity: 'warn',
+          request_id: (req as any).requestId || null,
+          method: req.method,
+          path: req.path,
+          status_code: 403,
+          ip,
+          user_agent: ua,
+          fingerprint,
+          country_code: geo.country_code,
+          region: geo.region,
+          city: geo.city,
+          user_id: String((user as any).id || ''),
+          user_type: 'admin',
+          role: 'admin',
+          metadata: {
+            scope: 'platform_admin',
+            login_context: loginContext || null,
+            required_login_context: 'platform_admin',
+          },
+        });
+      } catch {
+        // best-effort
+      }
+
+      clearAuthCookies(res as any);
+      return res.status(403).json({
+        error: 'Platform admin accounts must sign in via /platform-admin/login',
+        code: 'ADMIN_LOGIN_REQUIRED',
+      });
+    }
+
     const totpEnabled = Boolean((user as any).totp_enabled);
     if (isAdmin && totpEnabled) {
       const secretEnc = (user as any).totp_secret_encrypted as string | null | undefined;

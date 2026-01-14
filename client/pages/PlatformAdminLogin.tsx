@@ -78,11 +78,10 @@ export default function PlatformAdminLogin() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch("/api/admin/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Login-Context": "platform_admin",
         },
         credentials: "include",
         body: JSON.stringify({

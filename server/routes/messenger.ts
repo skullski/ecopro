@@ -10,6 +10,7 @@
 import { Router, RequestHandler } from 'express';
 import { ensureConnection } from '../utils/database';
 import crypto from 'crypto';
+import { replaceTemplateVariables } from '../utils/bot-messaging';
 
 const router = Router();
 
@@ -52,7 +53,7 @@ export const getMessengerPageLink: RequestHandler = async (req, res) => {
     const storeName = storeRes.rows[0].store_name || 'EcoPro Store';
 
     const botRes = await pool.query(
-      `SELECT messenger_enabled, fb_page_id
+      `SELECT messenger_enabled, fb_page_id, fb_page_access_token
        FROM bot_settings
        WHERE client_id = $1
        LIMIT 1`,
@@ -65,8 +66,14 @@ export const getMessengerPageLink: RequestHandler = async (req, res) => {
 
     const enabled = Boolean(botRes.rows[0].messenger_enabled);
     const pageId = botRes.rows[0].fb_page_id ? String(botRes.rows[0].fb_page_id).trim() : '';
-    if (!enabled || !pageId) {
-      return res.json({ enabled: false });
+    const pageAccessToken = botRes.rows[0].fb_page_access_token
+      ? String(botRes.rows[0].fb_page_access_token).trim()
+      : '';
+    if (!enabled || !pageId || !pageAccessToken) {
+      return res.json({
+        enabled: false,
+        ...(enabled && pageId && !pageAccessToken ? { reason: 'missing_page_access_token' } : {}),
+      });
     }
 
     let messengerUrl = `https://m.me/${encodeURIComponent(pageId)}`;
@@ -171,16 +178,23 @@ function verifyFBSignature(req: any): boolean {
   
   const signature = req.headers['x-hub-signature-256'];
   if (!signature) return false;
+
+  const signatureValue = Array.isArray(signature) ? signature[0] : signature;
+  if (typeof signatureValue !== 'string' || !signatureValue.startsWith('sha256=')) return false;
+
+  const rawBody: Buffer = Buffer.isBuffer(req.rawBody)
+    ? req.rawBody
+    : Buffer.from(JSON.stringify(req.body ?? {}));
   
   const expectedSignature = 'sha256=' + crypto
     .createHmac('sha256', FB_APP_SECRET)
-    .update(JSON.stringify(req.body))
+    .update(rawBody)
     .digest('hex');
-    
-  return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(expectedSignature)
-  );
+
+  const a = Buffer.from(signatureValue);
+  const b = Buffer.from(expectedSignature);
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
 }
 
 /**
@@ -460,11 +474,11 @@ async function handleReferral(pageId: string, senderId: string, referral: any) {
     );
     const storeName = storeRes.rows[0]?.store_name || 'Store';
 
-    // Send welcome message - replace placeholders
+    // Send welcome message
     const defaultGreeting = `مرحباً بك في ${storeName}! 🎉\n\n✅ تم ربط حسابك بنجاح.\n\nيمكنك الآن العودة لإتمام طلبك وستتلقى التأكيد هنا مباشرة! 📦`;
     
     let greeting = template_greeting || defaultGreeting;
-    greeting = greeting.replace(/\{storeName\}/g, storeName).replace(/\{customerName\}/g, '');
+    greeting = replaceTemplateVariables(greeting, { storeName, customerName: '' });
     
     await sendMessengerMessage(
       fb_page_access_token,

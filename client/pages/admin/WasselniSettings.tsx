@@ -485,6 +485,43 @@ export default function AdminWasselniSettings() {
                       <strong>Setup:</strong> Create a Facebook App, add Messenger product, and get a Page Access Token from <a href="https://developers.facebook.com" target="_blank" rel="noopener noreferrer" className="underline">developers.facebook.com</a>
                     </p>
                   </div>
+
+                  {(() => {
+                    const pageId = String(settings.fbPageId || settings.facebookPageId || '').trim();
+                    const token = String(settings.fbPageAccessToken || settings.facebookAccessToken || '').trim();
+                    const wantsMessenger = Boolean(settings.messengerEnabled);
+
+                    if (!wantsMessenger) {
+                      return (
+                        <div className="p-3 rounded-xl border bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-700">
+                          <p className="text-xs text-slate-600 dark:text-slate-300">
+                            Messenger is currently <strong>disabled</strong>. Enable it below after you connect a Facebook Page in Meta and paste the Page ID + Page Access Token here.
+                          </p>
+                        </div>
+                      );
+                    }
+
+                    if (!pageId || !token) {
+                      return (
+                        <div className="p-3 rounded-xl border bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30">
+                          <p className="text-xs text-amber-800 dark:text-amber-200">
+                            <strong>Not connected yet:</strong> Messenger is enabled, but EcoPro can’t send/receive until a Facebook Page is connected in Meta and a <strong>Page Access Token</strong> is saved.
+                            {' '}
+                            If Meta shows <strong>“No FB pages yet”</strong>, it means the app has <strong>zero Pages connected</strong>, so there is no Page token to generate.
+                          </p>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="p-3 rounded-xl border bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30">
+                        <p className="text-xs text-emerald-800 dark:text-emerald-200">
+                          <strong>Configured:</strong> Page ID + access token are set. Webhook events and customer linking should work once Meta webhooks are active.
+                        </p>
+                      </div>
+                    );
+                  })()}
+
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.facebookPageId') || 'Facebook Page ID'}</Label>
                     <Input

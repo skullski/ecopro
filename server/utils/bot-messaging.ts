@@ -266,10 +266,17 @@ export function replaceTemplateVariables(
   template: string,
   variables: Record<string, string | number>
 ): string {
-  let result = template;
-  Object.entries(variables).forEach(([key, value]) => {
-    result = result.replace(new RegExp(`{${key}}`, "g"), String(value));
-  });
+  let result = String(template ?? '');
+
+  for (const [key, rawValue] of Object.entries(variables || {})) {
+    const value = String(rawValue);
+    // Support both {key} and {{key}} styles.
+    const p1 = `{${key}}`;
+    const p2 = `{{${key}}}`;
+    if (result.includes(p1)) result = result.split(p1).join(value);
+    if (result.includes(p2)) result = result.split(p2).join(value);
+  }
+
   return result;
 }
 

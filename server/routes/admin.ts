@@ -5,6 +5,12 @@ import { requireAdmin } from "../middleware/auth";
 import { findUserByEmail, updateUser } from "../utils/database";
 import { clearSecurityBlockCache } from '../utils/security';
 import { clearBruteForceMemory } from '../utils/brute-force';
+import crypto from 'crypto';
+import { comparePassword, generateRefreshToken, generateToken } from '../utils/auth';
+import { clearAuthCookies, getCookieOptions, cookieNames } from '../utils/auth-cookies';
+import { checkLoginAllowed, recordFailedLogin, recordSuccessfulLogin } from '../utils/brute-force';
+import { decryptData, hashData } from '../utils/encryption';
+import { verifyTotp } from '../utils/totp';
 import os from 'os';
 import fs from 'fs';
 import { performance } from 'perf_hooks';
@@ -12,6 +18,162 @@ import v8 from 'v8';
 import path from 'path';
 
 const isProduction = process.env.NODE_ENV === 'production';
+
+const ACCESS_COOKIE = cookieNames.ACCESS_COOKIE;
+const REFRESH_COOKIE = cookieNames.REFRESH_COOKIE;
+const CSRF_COOKIE = cookieNames.CSRF_COOKIE;
+
+function setAuthCookies(res: any, accessToken: string, refreshToken: string) {
+  const { isProduction, sameSite, domain } = getCookieOptions();
+
+  res.cookie(ACCESS_COOKIE, accessToken, {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite,
+    domain,
+    path: '/',
+    maxAge: 15 * 60 * 1000,
+  });
+
+  res.cookie(REFRESH_COOKIE, refreshToken, {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite,
+    domain,
+    path: '/api/auth',
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+  });
+
+  // Ensure CSRF cookie exists (readable by JS)
+  if (!res.req?.cookies?.[CSRF_COOKIE]) {
+    const csrf = crypto.randomBytes(32).toString('hex');
+    res.cookie(CSRF_COOKIE, csrf, {
+      httpOnly: false,
+      secure: isProduction,
+      sameSite,
+      domain,
+      path: '/',
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+    });
+  }
+}
+
+/**
+ * Admin-only login endpoint
+ * POST /api/admin/login
+ */
+export const adminLogin: RequestHandler = async (req, res) => {
+  try {
+    const { email, password, totp_code, backup_code } = req.body as any;
+    const ip = (req as any).clientIp || (req.headers['cf-connecting-ip'] as string | undefined) || null;
+
+    if (!email || !password) {
+      return jsonError(res, 400, 'Email and password required');
+    }
+
+    const bruteCheck = checkLoginAllowed(String(ip || ''), String(email));
+    if (!bruteCheck.allowed) {
+      const waitTime = bruteCheck.blockedUntil
+        ? Math.ceil((bruteCheck.blockedUntil - Date.now()) / 1000 / 60)
+        : 30;
+      return jsonError(res, 429, `Too many login attempts. Please try again in ${waitTime} minutes.`);
+    }
+
+    const user = await findUserByEmail(String(email));
+    const isAdminAccount = user && (((user as any).role === 'admin') || ((user as any).user_type === 'admin'));
+    if (!user || !isAdminAccount) {
+      await recordFailedLogin(req, String(email), 'user_not_found', 'platform_admin');
+      return jsonError(res, 401, 'Invalid email or password');
+    }
+
+    const okPassword = await comparePassword(String(password), (user as any).password);
+    if (!okPassword) {
+      await recordFailedLogin(req, String(email), 'bad_password', 'platform_admin');
+      return jsonError(res, 401, 'Invalid email or password');
+    }
+
+    if ((user as any).is_blocked) {
+      await recordFailedLogin(req, String(email), 'account_blocked', 'platform_admin');
+      const reason = (user as any).blocked_reason || 'Account blocked by administrator';
+      clearAuthCookies(res as any);
+      return res.status(403).json({
+        error: `Account blocked: ${reason}`,
+        blocked: true,
+        blocked_reason: reason,
+      });
+    }
+
+    // Admin 2FA gate (TOTP or backup code)
+    const totpEnabled = Boolean((user as any).totp_enabled);
+    if (totpEnabled) {
+      const secretEnc = (user as any).totp_secret_encrypted as string | null | undefined;
+      if (!secretEnc) {
+        return jsonError(res, 500, 'Two-factor authentication misconfigured');
+      }
+
+      let twoFaOk = false;
+
+      if (typeof totp_code === 'string' && totp_code.trim()) {
+        twoFaOk = verifyTotp(decryptData(secretEnc), totp_code.trim());
+      }
+
+      if (!twoFaOk && typeof backup_code === 'string' && backup_code.trim()) {
+        try {
+          const hashes: string[] = Array.isArray((user as any).totp_backup_codes_hashes)
+            ? (user as any).totp_backup_codes_hashes
+            : [];
+          const providedHash = hashData(backup_code.trim());
+          if (hashes.includes(providedHash)) {
+            const remaining = hashes.filter((h) => h !== providedHash);
+            await pool.query(
+              'UPDATE admins SET totp_backup_codes_hashes = $2, updated_at = NOW() WHERE id = $1',
+              [user.id, remaining]
+            );
+            twoFaOk = true;
+          }
+        } catch {
+          // fail closed below
+        }
+      }
+
+      if (!twoFaOk) {
+        return res.status(401).json({ error: 'Two-factor authentication required', twoFactorRequired: true });
+      }
+    }
+
+    const accessToken = generateToken({
+      id: String(user.id),
+      email: String(user.email),
+      role: 'admin',
+      user_type: 'admin',
+    } as any);
+
+    const refreshToken = generateRefreshToken({
+      id: String(user.id),
+      email: String(user.email),
+      role: 'admin',
+      user_type: 'admin',
+    } as any);
+
+    setAuthCookies(res as any, accessToken, refreshToken);
+    recordSuccessfulLogin(String(ip || ''), String(email));
+
+    return res.json({
+      message: 'Login successful',
+      token: accessToken,
+      user: {
+        id: String(user.id),
+        email: String(user.email),
+        name: (user as any).name || null,
+        role: 'admin',
+        user_type: 'admin',
+      },
+    });
+  } catch (error) {
+    console.error('[ADMIN LOGIN] error:', error);
+    return jsonError(res, 500, 'Login failed');
+  }
+};
 
 // Promote a user to admin
 export const promoteUserToAdmin: RequestHandler = async (req, res) => {
