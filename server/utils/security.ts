@@ -36,6 +36,53 @@ type SecurityEvent = {
   metadata?: any;
 };
 
+type HitCounter = {
+  count: number;
+  firstSeen: number;
+  lastSeen: number;
+};
+
+const suspiciousProbeCounters = new Map<string, HitCounter>();
+const adminProbeCounters = new Map<string, HitCounter>();
+
+function bumpCounter(map: Map<string, HitCounter>, key: string, now: number, windowMs: number): number {
+  const existing = map.get(key);
+  if (!existing || now - existing.firstSeen > windowMs) {
+    map.set(key, { count: 1, firstSeen: now, lastSeen: now });
+    return 1;
+  }
+  existing.count += 1;
+  existing.lastSeen = now;
+  map.set(key, existing);
+  return existing.count;
+}
+
+function cleanupCounters(map: Map<string, HitCounter>, now: number, windowMs: number): void {
+  // O(n) but maps are small; keep it simple.
+  for (const [k, v] of map.entries()) {
+    if (now - v.lastSeen > windowMs) map.delete(k);
+  }
+}
+
+async function autoBlockIp(ip: string, reason: string): Promise<void> {
+  try {
+    const pool = await ensureConnection();
+    await pool.query(
+      `INSERT INTO security_ip_blocks (ip, reason, is_active, created_by, created_at, updated_at)
+       VALUES ($1, $2, true, 'system', NOW(), NOW())
+       ON CONFLICT (ip) DO UPDATE SET
+         is_active = true,
+         reason = $2,
+         updated_at = NOW()`,
+      [ip, reason]
+    );
+    // Make blocks effective quickly (cache refresh)
+    clearSecurityBlockCache();
+  } catch {
+    // Fail open: never block request flow
+  }
+}
+
 function normalizeIp(raw: string | undefined | null): string | null {
   if (!raw) return null;
   const ip = raw.trim();
@@ -357,6 +404,7 @@ export function securityMiddleware(options: {
       const status = res.statusCode;
       const dur = Date.now() - start;
       const u = (req as any).user;
+      const now = Date.now();
 
       if ((status === 401 || status === 403) && path.startsWith('/api/admin')) {
         void logSecurityEvent({
@@ -379,6 +427,35 @@ export function securityMiddleware(options: {
         });
       }
 
+      // Auto-block repeated anonymous probing of admin/kernel endpoints.
+      // This is effective against VPN/bot scanners and does not affect normal storefront traffic.
+      const isSensitive = path.startsWith('/api/admin') || path.startsWith('/api/kernel');
+      const isAnonSensitiveProbe = isSensitive && (status === 401 || status === 403) && !u;
+      if (isAnonSensitiveProbe && ip && !isPrivateIp(ip)) {
+        const windowMs = 10 * 60 * 1000;
+        cleanupCounters(adminProbeCounters, now, windowMs);
+        const n = bumpCounter(adminProbeCounters, ip, now, windowMs);
+        // Threshold: 12 failed hits within 10 minutes => block
+        if (n >= 12) {
+          void autoBlockIp(ip, 'AUTO:admin_kernel_probe');
+          void logSecurityEvent({
+            event_type: 'ip_block',
+            severity: 'error',
+            request_id: requestId,
+            method: req.method,
+            path,
+            status_code: status,
+            ip,
+            user_agent: userAgent,
+            fingerprint,
+            country_code: geo.country_code,
+            region: geo.region,
+            city: geo.city,
+            metadata: { reason: 'AUTO:admin_kernel_probe', hits: n, windowMs, ms: dur },
+          });
+        }
+      }
+
       // Log obvious suspicious probes (noisy but valuable)
       const suspicious = /\.env|wp-admin|wp-login|phpmyadmin|\.git|config\.php|sqlmap|\.bak|\.old|\.zip/i.test(path);
       if (suspicious && status >= 400) {
@@ -397,6 +474,31 @@ export function securityMiddleware(options: {
           city: geo.city,
           metadata: { ms: dur },
         });
+
+        // Auto-block repeat scanners (3+ probes within 10 minutes)
+        if (ip && !isPrivateIp(ip)) {
+          const windowMs = 10 * 60 * 1000;
+          cleanupCounters(suspiciousProbeCounters, now, windowMs);
+          const n = bumpCounter(suspiciousProbeCounters, ip, now, windowMs);
+          if (n >= 3) {
+            void autoBlockIp(ip, 'AUTO:suspicious_probe');
+            void logSecurityEvent({
+              event_type: 'ip_block',
+              severity: 'error',
+              request_id: requestId,
+              method: req.method,
+              path,
+              status_code: status,
+              ip,
+              user_agent: userAgent,
+              fingerprint,
+              country_code: geo.country_code,
+              region: geo.region,
+              city: geo.city,
+              metadata: { reason: 'AUTO:suspicious_probe', hits: n, windowMs, ms: dur },
+            });
+          }
+        }
       }
     });
 
