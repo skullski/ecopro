@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { logSecurityEvent, getClientIp, getGeo, computeFingerprint, parseCookie, isPrivateIp } from '../utils/security';
+import { logSecurityEvent, getClientIp, getGeo, computeFingerprint, parseCookie, isPrivateIp, isLikelyBrowserUserAgent } from '../utils/security';
 import { ensureConnection } from '../utils/database';
 
 const router = Router();
@@ -116,10 +116,18 @@ async function trapHandler(req: any, res: any) {
   const ip = getClientIp(req);
   const ua = (req.headers['user-agent'] as string | undefined) || null;
   const linuxUa = !!ua && /Linux/i.test(ua) && !/Android/i.test(ua);
+  const likelyBrowser = isLikelyBrowserUserAgent(ua);
   const geo = getGeo(req, ip);
   const fpCookie = parseCookie(req, 'ecopro_fp');
   const fingerprint = computeFingerprint({ ip, userAgent: ua, cookie: fpCookie });
   const u = req.user;
+
+  // If a Linux non-browser UA hits any trap endpoint, treat it as a scanner and block forever.
+  // Reason: most automated scanners run on Linux and use curl/wget/python/go/etc style UAs.
+  // We explicitly avoid blocking legit Linux Chrome/Firefox users.
+  if (ip && linuxUa && !likelyBrowser) {
+    await autoBlockIp(ip, `Trap hit (linux_scanner): ${req.path || req.url}`, fingerprint);
+  }
 
   await logSecurityEvent({
     event_type: 'trap_hit',

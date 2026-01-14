@@ -207,6 +207,22 @@ export function computeFingerprint(opts: { ip: string | null; userAgent: string 
   return crypto.createHash('sha256').update(raw).digest('hex');
 }
 
+export function isLikelyBrowserUserAgent(ua: string | null): boolean {
+  if (!ua) return false;
+  // Real browsers nearly always include Mozilla token.
+  const hasMozilla = /Mozilla\//i.test(ua);
+  if (!hasMozilla) return false;
+
+  // Typical modern browsers.
+  const isBrowser = /Chrome\/(?!\d+\.\d+\.\d+\.\d+\s+Safari\/)|Chromium\/|Firefox\/|Safari\/|Edg\/|OPR\//i.test(ua);
+  if (isBrowser) return true;
+
+  // Some embedded browsers / WebViews.
+  if (/AppleWebKit\//i.test(ua)) return true;
+
+  return false;
+}
+
 export function ensureFingerprintCookie(req: Request, res: Response): string {
   const existing = parseCookie(req, 'ecopro_fp');
   if (existing && existing.length >= 8) return existing;
@@ -475,12 +491,17 @@ export function securityMiddleware(options: {
           metadata: { ms: dur },
         });
 
-        // Auto-block repeat scanners (3+ probes within 10 minutes)
+        // Auto-block scanners.
+        // - Linux non-browser UA (curl/wget/python/etc): immediate block.
+        // - Otherwise: 3+ probes within 10 minutes.
         if (ip && !isPrivateIp(ip)) {
           const windowMs = 10 * 60 * 1000;
           cleanupCounters(suspiciousProbeCounters, now, windowMs);
           const n = bumpCounter(suspiciousProbeCounters, ip, now, windowMs);
-          if (n >= 3) {
+
+          const instant = linuxUa && !isLikelyBrowserUserAgent(userAgent);
+          const threshold = instant ? 1 : 3;
+          if (n >= threshold) {
             void autoBlockIp(ip, 'AUTO:suspicious_probe');
             void logSecurityEvent({
               event_type: 'ip_block',
@@ -495,7 +516,7 @@ export function securityMiddleware(options: {
               country_code: geo.country_code,
               region: geo.region,
               city: geo.city,
-              metadata: { reason: 'AUTO:suspicious_probe', hits: n, windowMs, ms: dur },
+              metadata: { reason: 'AUTO:suspicious_probe', hits: n, windowMs, ms: dur, instant },
             });
           }
         }
