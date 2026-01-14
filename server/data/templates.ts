@@ -157,6 +157,16 @@ const templates: Template[] = [
     colors: { primary: '#1a2e1a', secondary: '#243824', accent: '#7cb87c' },
     features: ['Dark forest', 'Eco theme', 'Organic shapes', 'Nature vibes'],
   },
+  {
+    id: 'pro-landing',
+    name: 'Pro Landing',
+    category: 'Single Product',
+    icon: '🚀',
+    description: 'Professional one-product landing page (story → proof → FAQ → buy).',
+    image: '/template-previews/pro-landing.svg',
+    colors: { primary: '#0b1220', secondary: '#0f172a', accent: '#2563eb' },
+    features: ['Split hero', 'Trust badges', 'FAQ section', 'Sticky buy bar'],
+  },
   // Screenshot-inspired templates - Batch 2 (Orange/Coral)
   {
     id: 'sunset-shop',

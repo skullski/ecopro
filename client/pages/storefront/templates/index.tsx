@@ -109,6 +109,7 @@ import CitrusBloomTemplate from './gold/citrus-bloom/CitrusBloomTemplate';
 import HarborLedgerTemplate from './gold/harbor-ledger/HarborLedgerTemplate';
 import FocusOneTemplate from './gold/focus-one/FocusOneTemplate';
 import SplitSpecsTemplate from './gold/split-specs/SplitSpecsTemplate';
+import ProLandingTemplate from './gold/pro-landing/ProLandingTemplate';
 
 /**
  * Available template IDs.
@@ -217,7 +218,8 @@ export type TemplateId =
   | 'citrus-bloom'
   | 'harbor-ledger'
   | 'focus-one'
-  | 'split-specs';
+  | 'split-specs'
+  | 'pro-landing';
 
 /**
  * Normalize template ID.
@@ -339,6 +341,7 @@ export function normalizeTemplateId(t: string): TemplateId {
   if (raw === 'harbor-ledger' || raw === 'harbor') return 'harbor-ledger';
   if (raw === 'focus-one' || raw === 'focusone' || raw === 'focus_one') return 'focus-one';
   if (raw === 'split-specs' || raw === 'splitspecs' || raw === 'split_specs') return 'split-specs';
+  if (raw === 'pro-landing' || raw === 'prolanding' || raw === 'landing-pro' || raw === 'landing-pro-one') return 'pro-landing';
   return 'pro';
 }
 
@@ -603,6 +606,7 @@ export function RenderStorefront(t: TemplateId | string, props: TemplateProps) {
   if (id === 'harbor-ledger') return wrap(<HarborLedgerTemplate {...sanitizedProps} />);
   if (id === 'focus-one') return wrap(<FocusOneTemplate {...sanitizedProps} />);
   if (id === 'split-specs') return wrap(<SplitSpecsTemplate {...sanitizedProps} />);
+  if (id === 'pro-landing') return wrap(<ProLandingTemplate {...sanitizedProps} />);
   return wrap(<ProTemplate {...sanitizedProps} />);
 }
 
