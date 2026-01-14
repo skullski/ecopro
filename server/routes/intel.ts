@@ -9,7 +9,7 @@
 
 import { Router, RequestHandler } from 'express';
 import { getIPIntelligence, isIPSuspicious, saveClientFingerprint, logSecurityDecision, IPIntelligence } from '../services/ip-intelligence';
-import { getClientIp, computeFingerprint, parseCookie, getGeo } from '../utils/security';
+import { getClientIp, computeFingerprint, parseCookie, getGeo, logSecurityEvent } from '../utils/security';
 import { ensureConnection } from '../utils/database';
 
 const router = Router();
@@ -151,6 +151,68 @@ router.post('/fingerprint', async (req, res) => {
   } catch (err) {
     console.error('[intel] /fingerprint error:', err);
     res.status(500).json({ error: 'Failed to save fingerprint' });
+  }
+});
+
+/**
+ * POST /api/intel/event
+ * Lightweight client-side event logging (public) for high-signal security UX.
+ * Allowlisted to avoid becoming a spam sink.
+ */
+router.post('/event', async (req, res) => {
+  try {
+    const ip = getClientIp(req);
+    const ua = req.headers['user-agent'] || null;
+    const fpCookie = parseCookie(req, 'ecopro_fp');
+    const fingerprint = computeFingerprint({ ip, userAgent: typeof ua === 'string' ? ua : null, cookie: fpCookie });
+    const geo = getGeo(req, ip);
+
+    const { event_type, metadata } = (req.body || {}) as { event_type?: unknown; metadata?: unknown };
+    const type = typeof event_type === 'string' ? event_type.trim() : '';
+
+    const allowed = new Set<string>([
+      'platform_admin_login_page_view',
+      'platform_admin_login_failed',
+      'platform_admin_login_success',
+      'platform_admin_login_2fa_required',
+      'platform_admin_login_non_admin',
+      'platform_admin_login_error',
+    ]);
+
+    if (!type || !allowed.has(type)) {
+      return res.status(400).json({ error: 'Invalid event_type' });
+    }
+
+    let safeMeta: any = null;
+    if (metadata && typeof metadata === 'object') {
+      // Cap payload size; store small structured metadata only.
+      const raw = JSON.stringify(metadata);
+      if (raw.length <= 4000) safeMeta = metadata;
+      else safeMeta = { note: 'metadata_too_large' };
+    }
+
+    await logSecurityEvent({
+      event_type: type,
+      severity: 'warn',
+      method: req.method,
+      path: req.path,
+      status_code: 200,
+      ip,
+      user_agent: typeof ua === 'string' ? ua : null,
+      fingerprint,
+      country_code: geo.country_code,
+      region: geo.region,
+      city: geo.city,
+      metadata: {
+        scope: 'platform_admin',
+        ...((safeMeta && typeof safeMeta === 'object') ? safeMeta : {}),
+      },
+    });
+
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('[intel] /event error:', err);
+    return res.status(500).json({ error: 'Failed to log event' });
   }
 });
 

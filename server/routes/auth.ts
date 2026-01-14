@@ -239,6 +239,7 @@ export const login: RequestHandler = async (req, res) => {
   try {
     const { email, password, totp_code, backup_code } = req.body as any;
     const ip = getClientIp(req as any);
+    const loginContext = (req.headers['x-login-context'] as string | undefined) || undefined;
 
     // BRUTE FORCE CHECK: Block if too many failed attempts
     const bruteCheck = checkLoginAllowed(ip, email);
@@ -253,7 +254,7 @@ export const login: RequestHandler = async (req, res) => {
     const user = await findUserByEmail(email);
     if (!user) {
       // Record failed login for brute force protection
-      await recordFailedLogin(req, email, 'user_not_found');
+      await recordFailedLogin(req, email, 'user_not_found', loginContext);
       return jsonError(res, 401, "Invalid email or password");
     }
 
@@ -262,13 +263,13 @@ export const login: RequestHandler = async (req, res) => {
     
     if (!isValidPassword) {
       // Record failed login for brute force protection
-      await recordFailedLogin(req, email, 'bad_password');
+      await recordFailedLogin(req, email, 'bad_password', loginContext);
       return jsonError(res, 401, "Invalid email or password");
     }
 
     // Check if account is BLOCKED (admin action - cannot login at all)
     if ((user as any).is_blocked) {
-      await recordFailedLogin(req, email, 'account_blocked');
+      await recordFailedLogin(req, email, 'account_blocked', loginContext);
       const reason = (user as any).blocked_reason || "Account blocked by administrator";
       clearAuthCookies(res as any);
       return res.status(403).json({ 

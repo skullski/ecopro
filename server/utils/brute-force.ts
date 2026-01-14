@@ -118,7 +118,8 @@ export function checkLoginAllowed(ip: string, email?: string): {
 export async function recordFailedLogin(
   req: any,
   email: string,
-  reason: 'user_not_found' | 'bad_password' | 'account_locked' | 'account_blocked'
+  reason: 'user_not_found' | 'bad_password' | 'account_locked' | 'account_blocked',
+  loginContext?: string
 ): Promise<{ blocked: boolean; blockedUntil?: number }> {
   const ip = getClientIp(req);
   const ua = (req.headers['user-agent'] as string | undefined) || null;
@@ -186,6 +187,10 @@ export async function recordFailedLogin(
   const severity = isCredentialStuffing ? 'error' : (shouldBlockIp || shouldBlockAccount ? 'warn' : 'info');
   
   try {
+    const normalizedLoginContext = typeof loginContext === 'string' && loginContext.trim()
+      ? loginContext.trim().slice(0, 64)
+      : null;
+
     await logSecurityEvent({
       event_type: isCredentialStuffing ? 'brute_force_attack' : 'auth_login_failed',
       severity,
@@ -205,6 +210,7 @@ export async function recordFailedLogin(
       metadata: {
         scope: 'auth',
         action: 'login_failed',
+        login_context: normalizedLoginContext,
         reason,
         email_hash: email ? Buffer.from(email.toLowerCase()).toString('base64').substring(0, 16) : null,
         ip_attempts: ipData.count,

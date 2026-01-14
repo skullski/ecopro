@@ -562,6 +562,7 @@ export const staffLogin: RequestHandler = async (req, res) => {
       const schema = await getStaffPasswordSchema(pool);
       const passwordCol = schema.hasPasswordHash ? 'password_hash' : 'password';
     const ip = getClientIp(req as any);
+    const loginContext = (req.headers['x-login-context'] as string | undefined) || 'staff';
 
     if (!username || !password) {
       return res.status(400).json({ error: 'Username and password required' });
@@ -588,7 +589,7 @@ export const staffLogin: RequestHandler = async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      await recordFailedLogin(req, username, 'user_not_found');
+      await recordFailedLogin(req, username, 'user_not_found', loginContext);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
@@ -597,13 +598,13 @@ export const staffLogin: RequestHandler = async (req, res) => {
     // Check password
     const passwordMatch = await comparePassword(password, staffMember.password_hash);
     if (!passwordMatch) {
-      await recordFailedLogin(req, username, 'bad_password');
+      await recordFailedLogin(req, username, 'bad_password', loginContext);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     // Check status
     if (staffMember.status === 'inactive' || staffMember.status === 'suspended') {
-      await recordFailedLogin(req, username, 'account_locked');
+      await recordFailedLogin(req, username, 'account_locked', loginContext);
       return res.status(403).json({ error: 'Your account has been deactivated' });
     }
 

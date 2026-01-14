@@ -17,6 +17,7 @@ import Index from "./pages/Index";
 // import AppPlaceholder from "./pages/AppPlaceholder";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
+import PlatformAdminLogin from "./pages/PlatformAdminLogin";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
@@ -306,13 +307,13 @@ function GuardPlatformAuthPages({ children }: { children: JSX.Element }) {
 // Strict admin guard: render 404 if not admin
 function RequireAdmin({ children }: { children: JSX.Element }) {
   const userStr = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
-  if (!userStr) return <NotFound />;
+  if (!userStr) return <Navigate to="/platform-admin/login" replace />;
   try {
     const user = JSON.parse(userStr);
     if (user?.role === 'admin') return children;
     return <NotFound />;
   } catch {
-    return <NotFound />;
+    return <Navigate to="/platform-admin/login" replace />;
   }
 }
 
@@ -373,6 +374,7 @@ const App = () => (
                     }
                   />
                   {/* Platform Admin routes (guarded) */}
+                  <Route path="/platform-admin/login" element={<PlatformAdminLogin />} />
                   <Route path="/platform-admin" element={<RequireAdmin><PlatformAdmin /></RequireAdmin>} />
                   <Route path="/platform-admin/chats" element={<RequireAdmin><AdminChats /></RequireAdmin>} />
                   <Route path="/platform-admin/chat" element={<RequireAdmin><AdminChat /></RequireAdmin>} />
