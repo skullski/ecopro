@@ -368,7 +368,12 @@ export const bulkAssignDelivery: RequestHandler = async (req, res) => {
 
     const companyName = String(companyInfo.rows[0]?.name || '');
     const companyFeatures = companyInfo.rows[0]?.features || {};
-    const supportsApiUpload = Boolean(companyFeatures?.createShipment) || companyName.trim().toLowerCase().includes('noest');
+    const supportsApiUpload =
+      companyName.trim().toLowerCase().includes('noest') ||
+      Boolean(companyFeatures?.supports_tracking) ||
+      Boolean(companyFeatures?.supports_labels) ||
+      Boolean(companyFeatures?.supports_webhooks) ||
+      Boolean(companyFeatures?.requires_credentials);
 
     // If we need to talk to the courier API (upload and/or labels), ensure integration exists first.
     if (supportsApiUpload) {

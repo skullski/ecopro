@@ -34,6 +34,16 @@ interface DeliveryCompany {
   apiRating: number; // 1-5 stars
 }
 
+const LOGO_FALLBACK_SRC = '/delivery-logos/placeholder.svg';
+
+function toCompanyLookupKey(name: string): string {
+  return String(name || '')
+    .trim()
+    .replace(/\s*\([^)]*\)\s*/g, ' ')
+    .replace(/\s+/g, ' ')
+    .toLowerCase();
+}
+
 export default function DeliveryCompanies() {
   const { t } = useTranslation();
   const [selectedCompany, setSelectedCompany] = useState<DeliveryCompany | null>(null);
@@ -135,7 +145,7 @@ export default function DeliveryCompanies() {
     // 🔗 AGGREGATOR: Dolivroo - Unified API for all providers
     {
       id: "dolivroo",
-      name: "Dolivroo (Aggregator)",
+      name: "Dolivroo",
       logo: "/delivery-logos/dolivroo.png",
       description: "🔗 UNIFIED API - One integration for Yalidine, Ecotrack & more. Best choice!",
       apiFields: [
@@ -195,6 +205,109 @@ export default function DeliveryCompanies() {
       docsUrl: "https://anderson-ecommerce.ecotrack.dz",
       apiRating: 4,
     },
+
+    // ============================
+    // COMING SOON: Listed providers (no verified integration yet)
+    // ============================
+    {
+      id: "procolis",
+      name: "ProColis",
+      logo: "/delivery-logos/procolis.png",
+      description: "Aggregator platform provider (coming soon).",
+      apiFields: [],
+      enabled: false,
+      hasApi: false,
+      features: { createShipment: false, tracking: false, labels: false, cod: false, webhooks: false },
+      apiRating: 1,
+    },
+    {
+      id: "nord-et-ouest",
+      name: "Nord Et Ouest",
+      logo: "/delivery-logos/nord-et-ouest.png",
+      description: "Delivery provider (coming soon).",
+      apiFields: [],
+      enabled: false,
+      hasApi: false,
+      features: { createShipment: false, tracking: false, labels: false, cod: false, webhooks: false },
+      apiRating: 1,
+    },
+    {
+      id: "elogistia",
+      name: "Elogistia",
+      logo: "/delivery-logos/elogistia.png",
+      description: "Delivery provider (coming soon).",
+      apiFields: [],
+      enabled: false,
+      hasApi: false,
+      features: { createShipment: false, tracking: false, labels: false, cod: false, webhooks: false },
+      apiRating: 1,
+    },
+    {
+      id: "colivraison-express",
+      name: "Colivraison Express",
+      logo: "/delivery-logos/colivraison-express.png",
+      description: "Delivery provider (coming soon).",
+      apiFields: [],
+      enabled: false,
+      hasApi: false,
+      features: { createShipment: false, tracking: false, labels: false, cod: false, webhooks: false },
+      apiRating: 1,
+    },
+    {
+      id: "mdm-express",
+      name: "MDM Express",
+      logo: "/delivery-logos/mdm-express.png",
+      description: "Delivery provider (coming soon).",
+      apiFields: [],
+      enabled: false,
+      hasApi: false,
+      features: { createShipment: false, tracking: false, labels: false, cod: false, webhooks: false },
+      apiRating: 1,
+    },
+    {
+      id: "yalitec",
+      name: "Yalitec",
+      logo: "/delivery-logos/yalitec.png",
+      description: "Delivery provider (coming soon).",
+      apiFields: [],
+      enabled: false,
+      hasApi: false,
+      features: { createShipment: false, tracking: false, labels: false, cod: false, webhooks: false },
+      apiRating: 1,
+    },
+    {
+      id: "mylerz-algerie",
+      name: "Mylerz Algérie",
+      logo: "/delivery-logos/mylerz-algerie.png",
+      description: "Delivery provider (coming soon).",
+      apiFields: [],
+      enabled: false,
+      hasApi: false,
+      features: { createShipment: false, tracking: false, labels: false, cod: false, webhooks: false },
+      apiRating: 1,
+    },
+    {
+      id: "ecom-delivery",
+      name: "Ecom Delivery",
+      logo: "/delivery-logos/ecom-delivery.png",
+      description: "Delivery provider (coming soon).",
+      apiFields: [],
+      enabled: false,
+      hasApi: false,
+      features: { createShipment: false, tracking: false, labels: false, cod: false, webhooks: false },
+      apiRating: 1,
+    },
+    {
+      id: "flash-delivery",
+      name: "Flash Delivery",
+      logo: "/delivery-logos/flash-delivery.png",
+      description: "Delivery provider (coming soon).",
+      apiFields: [],
+      enabled: false,
+      hasApi: false,
+      features: { createShipment: false, tracking: false, labels: false, cod: false, webhooks: false },
+      apiRating: 1,
+    },
   ]);
 
   useEffect(() => {
@@ -206,7 +319,7 @@ export default function DeliveryCompanies() {
         const data = await res.json();
         const map: Record<string, number> = {};
         for (const c of Array.isArray(data) ? data : []) {
-          const key = String(c?.name || '').trim().toLowerCase();
+          const key = toCompanyLookupKey(String(c?.name || ''));
           const id = Number(c?.id);
           if (key && Number.isFinite(id)) map[key] = id;
         }
@@ -239,7 +352,7 @@ export default function DeliveryCompanies() {
 
           setCompanies((prev) =>
             prev.map((company) => {
-              const dbId = map[String(company.name || '').trim().toLowerCase()];
+              const dbId = map[toCompanyLookupKey(String(company.name || ''))];
               if (!dbId) return company;
               return enabledIds.has(dbId) ? { ...company, enabled: true } : { ...company, enabled: false };
             })
@@ -266,7 +379,7 @@ export default function DeliveryCompanies() {
     setSaving(true);
 
     try {
-      const dbId = companyIdByName[String(selectedCompany.name || '').trim().toLowerCase()];
+      const dbId = companyIdByName[toCompanyLookupKey(String(selectedCompany.name || ''))];
       if (!dbId) {
         throw new Error('Delivery company not found on server. Make sure migrations are applied and the company exists.');
       }
@@ -275,9 +388,70 @@ export default function DeliveryCompanies() {
 
       // Map UI credentials → backend schema
       // - api_key: primary token
-      // - api_secret: secondary credential (e.g., GUID / API ID / Account ID)
-      const apiKey = (credentials.apiToken || credentials.apiKey || '').trim();
-      const apiSecret = (credentials.apiId || credentials.accountId || '').trim() || (credentials.apiKey || '').trim();
+      // - api_secret: secondary credential (e.g., GUID / API ID / Account ID / Store ID / Secret Key)
+      const { apiKey, apiSecret } = (() => {
+        const id = selectedCompany.id;
+        if (id === 'yalidine') {
+          return {
+            apiKey: (credentials.apiToken || '').trim(),
+            apiSecret: (credentials.apiId || '').trim() || undefined,
+          };
+        }
+        if (id === 'guepex') {
+          return {
+            apiKey: (credentials.apiToken || '').trim(),
+            apiSecret: (credentials.apiKey || '').trim() || undefined,
+          };
+        }
+        if (id === 'zr-express') {
+          return {
+            apiKey: (credentials.apiKey || '').trim(),
+            apiSecret: (credentials.apiId || '').trim() || undefined,
+          };
+        }
+        if (id === 'ecotrack') {
+          return {
+            apiKey: (credentials.apiToken || '').trim(),
+            apiSecret: (credentials.accountId || '').trim() || undefined,
+          };
+        }
+        if (id === 'maystro') {
+          return {
+            apiKey: (credentials.apiToken || '').trim(),
+            apiSecret: (credentials.storeId || '').trim() || undefined,
+          };
+        }
+        if (id === 'dolivroo') {
+          return {
+            apiKey: (credentials.apiKey || '').trim(),
+            apiSecret: (credentials.secretKey || '').trim() || undefined,
+          };
+        }
+        if (id === 'noest') {
+          return {
+            apiKey: (credentials.apiToken || '').trim(),
+            apiSecret: (credentials.apiKey || '').trim() || undefined,
+          };
+        }
+        if (id === 'zimou-express') {
+          return {
+            apiKey: (credentials.apiToken || '').trim(),
+            apiSecret: undefined,
+          };
+        }
+        if (id === 'anderson') {
+          return {
+            apiKey: (credentials.apiToken || '').trim(),
+            apiSecret: (credentials.accountId || '').trim() || undefined,
+          };
+        }
+
+        // Generic fallback
+        const primary = (credentials.apiToken || credentials.apiKey || '').trim();
+        const secondary =
+          (credentials.apiId || credentials.accountId || credentials.storeId || credentials.secretKey || '').trim() || undefined;
+        return { apiKey: primary, apiSecret: secondary };
+      })();
 
       // If already configured, don't force re-entry. Secrets are intentionally not shown.
       if (!apiKey) {
@@ -367,6 +541,9 @@ export default function DeliveryCompanies() {
       ? integrationMetaByCompanyId[selectedCompanyDbId]
       : undefined;
 
+  const canConnectSelectedCompany =
+    Boolean(selectedCompany?.hasApi) && (selectedCompany?.apiFields?.length || 0) > 0;
+
   return (
     <div className="space-y-6">
       {/* Header Section */}
@@ -420,6 +597,13 @@ export default function DeliveryCompanies() {
                 <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 drop-shadow-md" />
               </div>
             )}
+            {!company.enabled && !company.hasApi && (
+              <div className="absolute top-2 left-2 z-10">
+                <Badge variant="secondary" className="text-xs">
+                  {t('delivery.comingSoon')}
+                </Badge>
+              </div>
+            )}
             {company.id === 'dolivroo' && !company.enabled && (
               <div className="absolute top-2 right-2 z-10">
                 <Badge variant="secondary" className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200 text-xs">
@@ -438,7 +622,9 @@ export default function DeliveryCompanies() {
                       className="w-full h-full object-contain p-1.5"
                       onError={(e) => {
                         const target = e.currentTarget as HTMLImageElement;
-                        target.style.display = 'none';
+                        if (target.getAttribute('data-fallback-applied') === '1') return;
+                        target.setAttribute('data-fallback-applied', '1');
+                        target.src = LOGO_FALLBACK_SRC;
                       }}
                     />
                   ) : (
@@ -508,7 +694,9 @@ export default function DeliveryCompanies() {
                     className="w-full h-full object-contain p-2 rounded-lg"
                     onError={(e) => {
                       const target = e.currentTarget as HTMLImageElement;
-                      target.style.display = 'none';
+                      if (target.getAttribute('data-fallback-applied') === '1') return;
+                      target.setAttribute('data-fallback-applied', '1');
+                      target.src = LOGO_FALLBACK_SRC;
                     }}
                   />
                 ) : (
@@ -562,8 +750,16 @@ export default function DeliveryCompanies() {
               </div>
             )}
 
+            {/* Coming soon message */}
+            {selectedCompany && !canConnectSelectedCompany && (
+              <div className="bg-muted/30 rounded-lg p-3">
+                <p className="text-sm font-medium">{t('delivery.comingSoon')}</p>
+                <p className="text-xs text-muted-foreground mt-1">{t('delivery.comingSoonDesc')}</p>
+              </div>
+            )}
+
             {/* Credential Fields */}
-            {selectedCompany?.apiFields.map((field) => (
+            {canConnectSelectedCompany && selectedCompany?.apiFields.map((field) => (
               <div key={field.field} className="space-y-2">
                 <Label htmlFor={field.field} className="text-sm font-medium">
                   {field.label}
@@ -672,11 +868,11 @@ export default function DeliveryCompanies() {
             <Button 
               size="sm"
               onClick={handleSaveCredentials}
-              disabled={saving}
+              disabled={saving || !canConnectSelectedCompany}
               className="bg-gradient-to-r from-primary to-accent hover:shadow-lg"
             >
               <CheckCircle2 className="w-4 h-4 mr-1.5" />
-              {t('delivery.connectActivate')}
+              {canConnectSelectedCompany ? t('delivery.connectActivate') : t('delivery.comingSoon')}
             </Button>
           </DialogFooter>
         </DialogContent>

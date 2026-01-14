@@ -1318,7 +1318,7 @@ export const en = {
 
   // Delivery Companies Page
   "delivery.title": "Delivery Companies",
-  "delivery.subtitle": "Connect your store with Algerian delivery providers. All companies below have verified APIs.",
+  "delivery.subtitle": "Connect your store with Algerian delivery providers. Providers marked as Coming soon are not integrated yet.",
   "delivery.recommended": "Recommended: Use Yalidine or Dolivroo (Aggregator)",
   "delivery.recommendedDesc": "Yalidine has the best API documentation. Dolivroo provides a single API for all providers.",
   "delivery.shipments": "Shipments",
@@ -1337,6 +1337,8 @@ export const en = {
   "delivery.docs": "Docs",
   "delivery.disconnect": "Disconnect",
   "delivery.connectActivate": "Connect & Activate",
+  "delivery.comingSoon": "Coming soon",
+  "delivery.comingSoonDesc": "This provider isn’t integrated yet. You’ll be able to connect it in a future update.",
   
   // Delivery Pricing Page
   "delivery.pricingTitle": "Delivery Pricing",

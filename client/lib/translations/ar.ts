@@ -1329,7 +1329,7 @@ export const ar = {
 
   // Delivery Companies Page
   "delivery.title": "شركات التوصيل",
-  "delivery.subtitle": "اربط متجرك مع مزودي التوصيل الجزائريين. جميع الشركات أدناه لديها APIs موثقة.",
+  "delivery.subtitle": "اربط متجرك مع مزودي التوصيل الجزائريين. الشركات المعلّمة بـ قريباً ليست مدمجة بعد.",
   "delivery.recommended": "موصى به: استخدم Yalidine أو Dolivroo (مجمّع)",
   "delivery.recommendedDesc": "Yalidine لديها أفضل توثيق API. Dolivroo توفر API واحد لجميع المزودين.",
   "delivery.shipments": "الشحنات",
@@ -1348,6 +1348,8 @@ export const ar = {
   "delivery.docs": "التوثيق",
   "delivery.disconnect": "قطع الاتصال",
   "delivery.connectActivate": "الاتصال والتفعيل",
+  "delivery.comingSoon": "قريباً",
+  "delivery.comingSoonDesc": "هذا المزود غير مدمج بعد. ستتمكن من ربطه في تحديث قادم.",
 
   // Delivery Pricing Page
   "delivery.pricingTitle": "أسعار التوصيل",
