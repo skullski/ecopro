@@ -117,6 +117,14 @@ async function trapHandler(req: any, res: any) {
   const ua = (req.headers['user-agent'] as string | undefined) || null;
   const linuxUa = !!ua && /Linux/i.test(ua) && !/Android/i.test(ua);
   const likelyBrowser = isLikelyBrowserUserAgent(ua);
+  // Browser signal heuristics to catch UA spoofing.
+  // Attackers can spoof UA strings, but often miss modern browser fetch/client-hint headers.
+  const hasAcceptLanguage = Boolean(req.headers['accept-language']);
+  const hasAcceptEncoding = Boolean(req.headers['accept-encoding']);
+  const hasSecFetch = Boolean(req.headers['sec-fetch-site'] || req.headers['sec-fetch-mode'] || req.headers['sec-fetch-dest']);
+  const hasClientHints = Boolean(req.headers['sec-ch-ua'] || req.headers['sec-ch-ua-platform'] || req.headers['sec-ch-ua-mobile']);
+  const hasUpgradeInsecure = Boolean(req.headers['upgrade-insecure-requests']);
+  const hasBrowserSignals = hasSecFetch || hasClientHints || hasAcceptLanguage || hasUpgradeInsecure;
   const geo = getGeo(req, ip);
   const fpCookie = parseCookie(req, 'ecopro_fp');
   const fingerprint = computeFingerprint({ ip, userAgent: ua, cookie: fpCookie });
@@ -125,8 +133,31 @@ async function trapHandler(req: any, res: any) {
   // If a Linux non-browser UA hits any trap endpoint, treat it as a scanner and block forever.
   // Reason: most automated scanners run on Linux and use curl/wget/python/go/etc style UAs.
   // We explicitly avoid blocking legit Linux Chrome/Firefox users.
-  if (ip && linuxUa && !likelyBrowser) {
+  // Also block Linux + spoofed browser UA that is missing browser header signals.
+  if (ip && linuxUa && (!likelyBrowser || !hasBrowserSignals)) {
     await autoBlockIp(ip, `Trap hit (linux_scanner): ${req.path || req.url}`, fingerprint);
+  }
+
+  // DB-backed escalation: if an IP hits 2+ trap endpoints within 24 hours, block it.
+  // This catches UA spoofers (they typically probe multiple endpoints).
+  if (ip && !isPrivateIp(ip)) {
+    try {
+      const pool = await ensureConnection();
+      const c = await pool.query(
+        `SELECT COUNT(*)::int AS n
+         FROM security_events
+         WHERE ip = $1
+           AND event_type IN ('trap_hit','honeypot_trap')
+           AND created_at > NOW() - INTERVAL '24 hours'`,
+        [ip]
+      );
+      const n = Number(c.rows?.[0]?.n || 0);
+      if (n >= 2) {
+        await autoBlockIp(ip, `Trap hit (repeat_24h): ${req.path || req.url}`, fingerprint);
+      }
+    } catch {
+      // Fail open
+    }
   }
 
   await logSecurityEvent({
