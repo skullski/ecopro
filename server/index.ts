@@ -366,7 +366,7 @@ export function createServer(options?: { skipDbInit?: boolean }) {
   // Lightweight in-memory traffic capture (used by Kernel portal)
   app.use(trafficMiddleware);
 
-  // Security monitoring: DZ-only hard block for unauth traffic + event logging
+  // Security monitoring: DZ-only hard block for unauth admin/kernel traffic + event logging
   app.use(
     securityMiddleware({
       dzOnlyUnauth: true,

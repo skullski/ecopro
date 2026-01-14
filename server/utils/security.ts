@@ -314,8 +314,12 @@ export function securityMiddleware(options: {
       }
     }
 
-    // DZ-only hard block for unauth traffic
-    if (dzOnlyUnauth && isUnauth && !isHealth && !isWebhook && !isPrivacyPolicy) {
+    // DZ-only hard block for unauth traffic (scoped).
+    // IMPORTANT: Do NOT apply this globally (it would break public storefront access from outside DZ).
+    // We only apply it to sensitive areas that should never be hit anonymously.
+    const isSensitiveGeoBlockPath = path.startsWith('/api/admin') || path.startsWith('/api/kernel');
+
+    if (dzOnlyUnauth && isUnauth && isSensitiveGeoBlockPath && !isHealth && !isWebhook && !isPrivacyPolicy) {
       const cc = geo.country_code;
       const isDz = cc === 'DZ';
       const unknown = !cc;
@@ -336,6 +340,7 @@ export function securityMiddleware(options: {
           city: geo.city,
           metadata: {
             reason: unknown ? 'geo_unknown' : 'geo_not_dz',
+            scope: 'admin_or_kernel',
             ms: Date.now() - start,
           },
         });

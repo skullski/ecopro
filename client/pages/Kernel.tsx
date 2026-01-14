@@ -253,14 +253,9 @@ export default function Kernel() {
       if (a.fingerprint) fps.add(a.fingerprint);
     });
     
-    // Add blacklisted/VPN/Tor from intel cache - only if NOT blocked
+    // Add blacklisted/VPN/Tor/high-risk from intel cache - only if NOT blocked
     intelCache.forEach(c => {
       if (c.is_blacklisted || c.is_tor || c.risk_level === 'critical' || c.risk_level === 'high') {
-        addIfNotBlocked(c.ip);
-      }
-      // Non-Algeria = 100% threat (but server auto-blocks these, so they get blocked)
-      // Only flash if somehow not blocked yet
-      if (c.country_code && c.country_code !== 'DZ') {
         addIfNotBlocked(c.ip);
       }
     });
@@ -271,75 +266,11 @@ export default function Kernel() {
         addIfNotBlocked(ev.ip);
         if (ev.fingerprint) fps.add(ev.fingerprint);
       }
-      // Non-Algeria events = threat (server should auto-block, but flash if not blocked yet)
-      if (ev.country_code && ev.country_code !== 'DZ') {
-        addIfNotBlocked(ev.ip);
-      }
-    });
-    
-    // Traffic from non-Algeria - flash if NOT blocked yet (server should block these)
-    traffic.forEach(t => {
-      if (t.country_code && t.country_code !== 'DZ') {
-        addIfNotBlocked(t.ip);
-      }
-    });
-    
-    // Linux actors from non-Algeria - flash if NOT blocked
-    linuxActors.forEach(a => {
-      if (a.country_code && a.country_code !== 'DZ') {
-        addIfNotBlocked(a.ip);
-      }
     });
     
     setThreatIps(ips);
     setThreatFingerprints(fps);
   }, [emergencyActors, intelCache, blocks, events, traffic, linuxActors]);
-
-  // Track IPs pending auto-block (non-DZ IPs detected)
-  const [pendingAutoBlock, setPendingAutoBlock] = React.useState<Set<string>>(new Set());
-  
-  // Detect non-DZ IPs that need auto-blocking
-  React.useEffect(() => {
-    const toBlock = new Set<string>();
-    
-    // Get already blocked IPs
-    const blockedIpSet = new Set<string>();
-    blocks.forEach(b => {
-      if (b.ip) blockedIpSet.add(b.ip);
-    });
-    
-    // Check traffic for non-DZ IPs
-    traffic.forEach(t => {
-      if (t.ip && t.country_code && t.country_code !== 'DZ' && !blockedIpSet.has(t.ip)) {
-        toBlock.add(t.ip);
-      }
-    });
-    
-    // Check events for non-DZ IPs  
-    events.forEach(ev => {
-      if (ev.ip && ev.country_code && ev.country_code !== 'DZ' && !blockedIpSet.has(ev.ip)) {
-        toBlock.add(ev.ip);
-      }
-    });
-    
-    // Check Linux actors for non-DZ
-    linuxActors.forEach(a => {
-      if (a.ip && a.country_code && a.country_code !== 'DZ' && !blockedIpSet.has(a.ip)) {
-        toBlock.add(a.ip);
-      }
-    });
-    
-    // Check intel cache for non-DZ
-    intelCache.forEach(c => {
-      if (c.ip && c.country_code && c.country_code !== 'DZ' && !blockedIpSet.has(c.ip)) {
-        toBlock.add(c.ip);
-      }
-    });
-    
-    if (toBlock.size > 0) {
-      setPendingAutoBlock(toBlock);
-    }
-  }, [traffic, events, linuxActors, intelCache, blocks]);
 
   // Helper to check if an IP or fingerprint is a threat
   const isThreat = (ip?: string | null, fingerprint?: string | null): boolean => {
@@ -635,32 +566,6 @@ export default function Kernel() {
       setError(e?.message || 'Failed to clear events');
     }
   }
-
-  // AUTO-BLOCK: Immediately block any non-DZ IP detected
-  React.useEffect(() => {
-    if (!token || pendingAutoBlock.size === 0) return;
-    
-    const autoBlockAll = async () => {
-      for (const ip of pendingAutoBlock) {
-        try {
-          await fetch('/api/kernel/blocks', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ ip, reason: 'AUTO:non_dz_geo' }),
-          });
-        } catch (e) {
-          console.error('Auto-block failed for', ip, e);
-        }
-      }
-      setPendingAutoBlock(new Set());
-      // Refresh data
-      await loadAll();
-    };
-    
-    void autoBlockAll();
-  }, [token, pendingAutoBlock]);
 
   React.useEffect(() => {
     if (token) {
