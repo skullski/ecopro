@@ -72,6 +72,7 @@ const TEMPLATE_PREVIEWS = [
   { id: 'chocolate', name: 'Chocolate & Sweets', image: '/template-previews/chocolate.svg', categories: ['colorful', 'industry'] },
   { id: 'tea', name: 'Tea & Coffee', image: '/template-previews/tea.svg', categories: ['elegant', 'industry'] },
   { id: 'pro', name: 'Pro (Professional)', image: '/template-previews/pro.svg', categories: ['popular', 'pro', 'minimal'] },
+  { id: 'pro-landing', name: 'Pro Landing', image: '/template-previews/pro-landing.svg', categories: ['popular', 'pro', 'minimal'] },
   // Pro variants (new)
   { id: 'pro-aurora', name: 'Pro Aurora', image: '/template-previews/pro-aurora.svg', categories: ['pro', 'colorful'] },
   { id: 'pro-vertex', name: 'Pro Vertex', image: '/template-previews/pro-vertex.svg', categories: ['pro', 'dark'] },
