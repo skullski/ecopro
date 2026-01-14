@@ -11,21 +11,21 @@ BEGIN
   END IF;
 END $$;
 
--- Insert/update additional providers as inactive placeholders.
--- Note: Keeping is_active = false prevents these from appearing in order-assignment flows
--- until an actual courier service integration exists.
+-- Insert/update additional providers as assignment-ready entries.
+-- Note: These are active so merchants can assign orders to them, but API capabilities are OFF
+-- (supports_tracking/labels/webhooks) to avoid calling courier APIs without an adapter.
 
 INSERT INTO delivery_companies (name, api_url, contact_email, contact_phone, features, is_active)
 VALUES
-  ('ProColis', '', NULL, NULL, '{"supports_cod": false, "supports_tracking": false, "supports_labels": false, "supports_webhooks": false, "api_rating": 1, "coming_soon": true, "source": "procolis_catalog"}'::jsonb, false),
-  ('Nord Et Ouest', '', NULL, NULL, '{"supports_cod": false, "supports_tracking": false, "supports_labels": false, "supports_webhooks": false, "api_rating": 1, "coming_soon": true, "source": "procolis_catalog"}'::jsonb, false),
-  ('Elogistia', '', NULL, NULL, '{"supports_cod": false, "supports_tracking": false, "supports_labels": false, "supports_webhooks": false, "api_rating": 1, "coming_soon": true, "source": "procolis_catalog"}'::jsonb, false),
-  ('Colivraison Express', '', NULL, NULL, '{"supports_cod": false, "supports_tracking": false, "supports_labels": false, "supports_webhooks": false, "api_rating": 1, "coming_soon": true, "source": "procolis_catalog"}'::jsonb, false),
-  ('MDM Express', '', NULL, NULL, '{"supports_cod": false, "supports_tracking": false, "supports_labels": false, "supports_webhooks": false, "api_rating": 1, "coming_soon": true, "source": "procolis_catalog"}'::jsonb, false),
-  ('Yalitec', '', NULL, NULL, '{"supports_cod": false, "supports_tracking": false, "supports_labels": false, "supports_webhooks": false, "api_rating": 1, "coming_soon": true, "source": "procolis_catalog"}'::jsonb, false),
-  ('Mylerz Algérie', '', NULL, NULL, '{"supports_cod": false, "supports_tracking": false, "supports_labels": false, "supports_webhooks": false, "api_rating": 1, "coming_soon": true, "source": "procolis_catalog"}'::jsonb, false),
-  ('Ecom Delivery', '', NULL, NULL, '{"supports_cod": false, "supports_tracking": false, "supports_labels": false, "supports_webhooks": false, "api_rating": 1, "coming_soon": true, "source": "procolis_catalog"}'::jsonb, false),
-  ('Flash Delivery', '', NULL, NULL, '{"supports_cod": false, "supports_tracking": false, "supports_labels": false, "supports_webhooks": false, "api_rating": 1, "coming_soon": true, "source": "procolis_catalog"}'::jsonb, false)
+  ('ProColis', '', NULL, NULL, '{"supports_cod": true, "supports_tracking": false, "supports_labels": false, "supports_webhooks": false, "api_rating": 1, "source": "procolis_catalog", "manual_assignment": true}'::jsonb, true),
+  ('Nord Et Ouest', '', NULL, NULL, '{"supports_cod": true, "supports_tracking": false, "supports_labels": false, "supports_webhooks": false, "api_rating": 1, "source": "procolis_catalog", "manual_assignment": true}'::jsonb, true),
+  ('Elogistia', '', NULL, NULL, '{"supports_cod": true, "supports_tracking": false, "supports_labels": false, "supports_webhooks": false, "api_rating": 1, "source": "procolis_catalog", "manual_assignment": true}'::jsonb, true),
+  ('Colivraison Express', '', NULL, NULL, '{"supports_cod": true, "supports_tracking": false, "supports_labels": false, "supports_webhooks": false, "api_rating": 1, "source": "procolis_catalog", "manual_assignment": true}'::jsonb, true),
+  ('MDM Express', '', NULL, NULL, '{"supports_cod": true, "supports_tracking": false, "supports_labels": false, "supports_webhooks": false, "api_rating": 1, "source": "procolis_catalog", "manual_assignment": true}'::jsonb, true),
+  ('Yalitec', '', NULL, NULL, '{"supports_cod": true, "supports_tracking": false, "supports_labels": false, "supports_webhooks": false, "api_rating": 1, "source": "procolis_catalog", "manual_assignment": true}'::jsonb, true),
+  ('Mylerz Algérie', '', NULL, NULL, '{"supports_cod": true, "supports_tracking": false, "supports_labels": false, "supports_webhooks": false, "api_rating": 1, "source": "procolis_catalog", "manual_assignment": true}'::jsonb, true),
+  ('Ecom Delivery', '', NULL, NULL, '{"supports_cod": true, "supports_tracking": false, "supports_labels": false, "supports_webhooks": false, "api_rating": 1, "source": "procolis_catalog", "manual_assignment": true}'::jsonb, true),
+  ('Flash Delivery', '', NULL, NULL, '{"supports_cod": true, "supports_tracking": false, "supports_labels": false, "supports_webhooks": false, "api_rating": 1, "source": "procolis_catalog", "manual_assignment": true}'::jsonb, true)
 ON CONFLICT (name) DO UPDATE SET
   api_url = EXCLUDED.api_url,
   contact_email = EXCLUDED.contact_email,
