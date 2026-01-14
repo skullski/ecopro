@@ -154,6 +154,17 @@ export const trackPixelEvent: RequestHandler = async (req, res) => {
     }
     
     const pool = await getPool();
+
+    // Normalize page path from page_url (for dedupe + analytics)
+    let pagePath: string | null = null;
+    if (typeof page_url === 'string' && page_url) {
+      try {
+        const u = new URL(page_url);
+        pagePath = u.pathname || null;
+      } catch {
+        pagePath = null;
+      }
+    }
     
     // Get client_id from store_slug
     const storeResult = await pool.query(
@@ -187,12 +198,51 @@ export const trackPixelEvent: RequestHandler = async (req, res) => {
     if (pixel_type === 'tiktok' && !settings.is_tiktok_enabled) {
       return res.json({ tracked: false, reason: 'TikTok pixel disabled' });
     }
+
+    // De-duplicate noisy events (refresh, React strict-mode double effects, multiple mounts).
+    // This keeps the dashboard usable and closer to “unique per session per page”.
+    // Window: short TTL to still allow legitimate repeat navigation.
+    const dedupeWindowMinutes = 10;
+    if (session_id && (event_name === 'PageView' || event_name === 'ViewContent')) {
+      const dedupeParams: any[] = [clientId, event_name, session_id];
+      let dedupeWhere = `client_id = $1 AND event_name = $2 AND session_id = $3 AND created_at > NOW() - INTERVAL '${dedupeWindowMinutes} minutes'`;
+
+      if (event_name === 'PageView' && pagePath) {
+        dedupeWhere += ` AND (event_data->>'page_path') = $4`;
+        dedupeParams.push(pagePath);
+      }
+
+      if (event_name === 'ViewContent' && product_id) {
+        dedupeWhere += ` AND product_id = $4`;
+        dedupeParams.push(product_id);
+      }
+
+      // Only dedupe when we have a stable key (page_path for PageView, product_id for ViewContent)
+      const shouldDedupe =
+        (event_name === 'PageView' && Boolean(pagePath)) ||
+        (event_name === 'ViewContent' && Boolean(product_id));
+
+      if (shouldDedupe) {
+        const exists = await pool.query(
+          `SELECT 1 FROM pixel_events WHERE ${dedupeWhere} LIMIT 1`,
+          dedupeParams
+        );
+        if (exists.rows.length > 0) {
+          return res.json({ tracked: false, reason: 'Deduped' });
+        }
+      }
+    }
     
     // Get IP and User Agent
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || null;
     const userAgent = req.headers['user-agent'] || null;
     
     // Insert event
+    const mergedEventData = {
+      ...(event_data && typeof event_data === 'object' ? event_data : {}),
+      ...(pagePath ? { page_path: pagePath } : {}),
+    };
+
     await pool.query(
       `INSERT INTO pixel_events (
         client_id, pixel_type, event_name, event_data, page_url,
@@ -203,7 +253,7 @@ export const trackPixelEvent: RequestHandler = async (req, res) => {
         clientId,
         pixel_type,
         event_name,
-        JSON.stringify(event_data || {}),
+        JSON.stringify(mergedEventData),
         page_url || null,
         userAgent,
         ip ? String(ip).split(',')[0].trim() : null,

@@ -300,6 +300,28 @@ export default function PixelStatistics() {
     );
   };
 
+  const PlatformExplanation = () => (
+    <Card className="border-dashed">
+      <CardContent className="p-3 md:p-4">
+        <div className="flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 mt-0.5 text-muted-foreground" />
+          <div className="text-sm text-muted-foreground leading-relaxed">
+            <div className="font-semibold text-foreground">Important</div>
+            <div>
+              The “Facebook” and “TikTok” sections here are <b>pixel platform buckets</b> (which pixel is enabled/used),
+              not a guarantee that the visitor came from an ad.
+              Pixels fire on any visit (direct link, WhatsApp, inside the store, etc).
+            </div>
+            <div className="mt-2">
+              “Page Views” are event counts. Refreshing can increase them; we de-duplicate rapid duplicates server-side,
+              but this is still not the same as “unique visitors”.
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   // Funnel visualization
   const FunnelChart = ({ data, platform }: { data: FunnelData | undefined; platform: string }) => {
     if (!data) return null;
@@ -365,7 +387,7 @@ export default function PixelStatistics() {
             Pixel Statistics
           </h1>
           <p className="text-muted-foreground text-xs md:text-sm mt-0.5">
-            Track Facebook and TikTok pixel performance
+            Track pixel events and conversions
           </p>
         </div>
         
@@ -457,6 +479,7 @@ export default function PixelStatistics() {
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-3 md:space-y-4">
+          <PlatformExplanation />
           {/* Summary Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
             <Card>

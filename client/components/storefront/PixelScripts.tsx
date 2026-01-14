@@ -48,7 +48,8 @@ export default function PixelScripts({ storeSlug }: PixelScriptsProps) {
         if (data.is_facebook_enabled || data.is_tiktok_enabled) {
           // Prevent duplicate PageView on same URL
           const lastPageViewKey = sessionStorage.getItem('last_pageview_key');
-          const currentKey = `${storeSlug}|${window.location.pathname}${window.location.search}`;
+          // Only use pathname for de-dupe so changing query params (fbclid/ttclid/utm) don't inflate views.
+          const currentKey = `${storeSlug}|${window.location.pathname}`;
           if (lastPageViewKey !== currentKey) {
             sessionStorage.setItem('last_pageview_key', currentKey);
             trackPageView(storeSlug);
@@ -162,6 +163,23 @@ function trackToBackend(storeSlug: string, eventName: string, params?: Record<st
   if (!storeSlug) return;
 
   const pixelType = backendPixelTypePreference || 'facebook';
+
+  const url = typeof window !== 'undefined' ? new URL(window.location.href) : null;
+  const utm_source = url?.searchParams.get('utm_source') || '';
+  const utm_medium = url?.searchParams.get('utm_medium') || '';
+  const utm_campaign = url?.searchParams.get('utm_campaign') || '';
+  const fbclid = url?.searchParams.get('fbclid') || '';
+  const ttclid = url?.searchParams.get('ttclid') || '';
+  const gclid = url?.searchParams.get('gclid') || '';
+
+  const referrer = typeof document !== 'undefined' ? document.referrer || '' : '';
+  const refLower = (referrer || '').toLowerCase();
+  const derivedSource =
+    utm_source ||
+    (fbclid || refLower.includes('facebook.com') || refLower.includes('fb.com') ? 'facebook' : '') ||
+    (ttclid || refLower.includes('tiktok.com') ? 'tiktok' : '') ||
+    (gclid ? 'google' : '') ||
+    'direct';
   
   fetch('/api/pixels/track', {
     method: 'POST',
@@ -170,7 +188,18 @@ function trackToBackend(storeSlug: string, eventName: string, params?: Record<st
       store_slug: storeSlug,
       pixel_type: pixelType,
       event_name: eventName,
-      event_data: params || {},
+      event_data: {
+        ...(params || {}),
+        page_path: typeof window !== 'undefined' ? window.location.pathname : '',
+        referrer,
+        utm_source,
+        utm_medium,
+        utm_campaign,
+        fbclid,
+        ttclid,
+        gclid,
+        source: derivedSource,
+      },
       page_url: window.location.href,
       product_id: params?.content_ids?.[0],
       order_id: params?.order_id,
