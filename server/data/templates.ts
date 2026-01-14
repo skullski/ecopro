@@ -162,10 +162,10 @@ const templates: Template[] = [
     name: 'Pro Landing',
     category: 'Single Product',
     icon: '🚀',
-    description: 'Professional one-product landing page (story → proof → FAQ → buy).',
+    description: 'Screenshot-inspired one-product landing (order card + gallery + story strip).',
     image: '/template-previews/pro-landing.svg',
-    colors: { primary: '#0b1220', secondary: '#0f172a', accent: '#2563eb' },
-    features: ['Split hero', 'Trust badges', 'FAQ section', 'Sticky buy bar'],
+    colors: { primary: '#ffffff', secondary: '#f8fafc', accent: '#b45309' },
+    features: ['Order card', 'Image gallery', 'Story images strip', 'Reviews + FAQ'],
   },
   // Screenshot-inspired templates - Batch 2 (Orange/Coral)
   {

@@ -1,61 +1,55 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#0b1220"/>
-      <stop offset="1" stop-color="#0f172a"/>
-    </linearGradient>
     <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#2563eb"/>
-      <stop offset="1" stop-color="#22d3ee"/>
+      <stop offset="0" stop-color="#b45309"/>
+      <stop offset="1" stop-color="#f59e0b"/>
     </linearGradient>
     <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#000" flood-opacity="0.35"/>
+      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#0f172a" flood-opacity="0.18"/>
     </filter>
   </defs>
 
-  <rect width="1200" height="800" fill="url(#bg)"/>
+  <rect width="1200" height="800" fill="#ffffff"/>
 
   <!-- header -->
-  <rect x="60" y="50" width="1080" height="70" rx="18" fill="#0b1220" stroke="rgba(148,163,184,0.22)"/>
-  <rect x="90" y="70" width="40" height="40" rx="12" fill="url(#accent)"/>
-  <rect x="145" y="78" width="210" height="10" rx="5" fill="rgba(226,232,240,0.85)"/>
-  <rect x="145" y="95" width="160" height="8" rx="4" fill="rgba(148,163,184,0.75)"/>
-  <rect x="1020" y="72" width="95" height="36" rx="14" fill="url(#accent)"/>
+  <rect x="60" y="48" width="1080" height="72" rx="18" fill="#ffffff" stroke="rgba(15,23,42,0.12)"/>
+  <rect x="90" y="68" width="40" height="40" rx="12" fill="url(#accent)"/>
+  <rect x="145" y="78" width="220" height="10" rx="5" fill="rgba(15,23,42,0.85)"/>
+  <rect x="145" y="96" width="160" height="8" rx="4" fill="rgba(107,114,128,0.9)"/>
+  <rect x="1040" y="72" width="85" height="34" rx="14" fill="url(#accent)"/>
 
-  <!-- hero left -->
-  <rect x="60" y="160" width="620" height="430" rx="28" fill="rgba(2,6,23,0.35)" stroke="rgba(148,163,184,0.18)"/>
-  <rect x="100" y="200" width="220" height="10" rx="5" fill="rgba(37,99,235,0.95)"/>
-  <rect x="100" y="235" width="520" height="26" rx="13" fill="rgba(226,232,240,0.92)"/>
-  <rect x="100" y="270" width="460" height="26" rx="13" fill="rgba(226,232,240,0.88)"/>
-  <rect x="100" y="315" width="500" height="10" rx="5" fill="rgba(148,163,184,0.75)"/>
-  <rect x="100" y="335" width="455" height="10" rx="5" fill="rgba(148,163,184,0.65)"/>
-
-  <!-- badges -->
-  <rect x="100" y="370" width="140" height="34" rx="17" fill="rgba(15,23,42,0.6)" stroke="rgba(148,163,184,0.18)"/>
-  <rect x="250" y="370" width="140" height="34" rx="17" fill="rgba(15,23,42,0.6)" stroke="rgba(148,163,184,0.18)"/>
-  <rect x="400" y="370" width="160" height="34" rx="17" fill="rgba(15,23,42,0.6)" stroke="rgba(148,163,184,0.18)"/>
-
-  <!-- CTA row -->
-  <rect x="100" y="425" width="160" height="46" rx="16" fill="url(#accent)"/>
-  <rect x="270" y="425" width="160" height="46" rx="16" fill="rgba(2,6,23,0.25)" stroke="rgba(148,163,184,0.22)"/>
-
-  <!-- 3 feature cards -->
-  <rect x="100" y="495" width="170" height="75" rx="18" fill="#0f172a" stroke="rgba(148,163,184,0.18)"/>
-  <rect x="285" y="495" width="170" height="75" rx="18" fill="#0f172a" stroke="rgba(148,163,184,0.18)"/>
-  <rect x="470" y="495" width="170" height="75" rx="18" fill="#0f172a" stroke="rgba(148,163,184,0.18)"/>
-
-  <!-- hero right product card -->
+  <!-- two-column: order card + gallery -->
   <g filter="url(#shadow)">
-    <rect x="720" y="160" width="420" height="510" rx="28" fill="#0f172a" stroke="rgba(148,163,184,0.18)"/>
-    <rect x="740" y="180" width="380" height="320" rx="22" fill="rgba(2,6,23,0.55)"/>
-    <rect x="760" y="520" width="260" height="16" rx="8" fill="rgba(226,232,240,0.88)"/>
-    <rect x="760" y="545" width="210" height="10" rx="5" fill="rgba(148,163,184,0.75)"/>
-    <rect x="1015" y="520" width="95" height="34" rx="17" fill="url(#accent)"/>
-    <rect x="760" y="585" width="340" height="14" rx="7" fill="rgba(148,163,184,0.6)"/>
-    <rect x="760" y="612" width="340" height="14" rx="7" fill="rgba(148,163,184,0.5)"/>
-    <rect x="760" y="639" width="340" height="14" rx="7" fill="rgba(148,163,184,0.4)"/>
+    <rect x="60" y="150" width="420" height="430" rx="26" fill="#ffffff" stroke="rgba(15,23,42,0.12)"/>
+    <rect x="88" y="182" width="330" height="16" rx="8" fill="rgba(15,23,42,0.86)"/>
+    <rect x="88" y="208" width="260" height="10" rx="5" fill="rgba(107,114,128,0.9)"/>
+    <rect x="88" y="236" width="160" height="18" rx="9" fill="rgba(180,83,9,0.95)"/>
+    <rect x="255" y="238" width="90" height="10" rx="5" fill="rgba(107,114,128,0.9)"/>
+
+    <rect x="88" y="276" width="152" height="40" rx="12" fill="rgba(15,23,42,0.04)" stroke="rgba(15,23,42,0.12)"/>
+    <rect x="266" y="276" width="152" height="40" rx="12" fill="rgba(15,23,42,0.04)" stroke="rgba(15,23,42,0.12)"/>
+    <rect x="88" y="330" width="152" height="40" rx="12" fill="rgba(15,23,42,0.04)" stroke="rgba(15,23,42,0.12)"/>
+    <rect x="266" y="330" width="152" height="40" rx="12" fill="rgba(15,23,42,0.04)" stroke="rgba(15,23,42,0.12)"/>
+
+    <rect x="88" y="392" width="330" height="46" rx="16" fill="url(#accent)"/>
+    <rect x="88" y="454" width="90" height="26" rx="13" fill="#ffffff" stroke="rgba(15,23,42,0.12)"/>
+    <rect x="186" y="454" width="90" height="26" rx="13" fill="#ffffff" stroke="rgba(15,23,42,0.12)"/>
+    <rect x="284" y="454" width="90" height="26" rx="13" fill="#ffffff" stroke="rgba(15,23,42,0.12)"/>
   </g>
 
+  <g filter="url(#shadow)">
+    <rect x="510" y="150" width="630" height="430" rx="26" fill="#ffffff" stroke="rgba(15,23,42,0.12)"/>
+    <rect x="536" y="176" width="578" height="310" rx="22" fill="rgba(15,23,42,0.06)"/>
+    <rect x="536" y="506" width="78" height="62" rx="12" fill="rgba(15,23,42,0.06)"/>
+    <rect x="626" y="506" width="78" height="62" rx="12" fill="rgba(15,23,42,0.06)"/>
+    <rect x="716" y="506" width="78" height="62" rx="12" fill="rgba(15,23,42,0.06)"/>
+    <rect x="806" y="506" width="78" height="62" rx="12" fill="rgba(15,23,42,0.06)"/>
+  </g>
+
+  <!-- story strip preview -->
+  <rect x="760" y="610" width="180" height="150" rx="22" fill="rgba(15,23,42,0.06)" stroke="rgba(15,23,42,0.12)"/>
+  <rect x="950" y="610" width="180" height="150" rx="22" fill="rgba(15,23,42,0.06)" stroke="rgba(15,23,42,0.12)"/>
+
   <!-- footer -->
-  <rect x="60" y="720" width="1080" height="50" rx="18" fill="#0b1220" stroke="rgba(148,163,184,0.18)"/>
+  <rect x="60" y="740" width="1080" height="40" rx="16" fill="#ffffff" stroke="rgba(15,23,42,0.12)"/>
 </svg>

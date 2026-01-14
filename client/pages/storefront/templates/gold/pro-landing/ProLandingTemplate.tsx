@@ -31,6 +31,66 @@ function safePrice(value: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+function isRtlText(text: string): boolean {
+  return /[\u0600-\u06FF]/.test(text);
+}
+
+function parseImageList(value: unknown): string[] {
+  if (Array.isArray(value)) return value.filter((v): v is string => typeof v === 'string' && v.trim().length > 0);
+  if (typeof value !== 'string') return [];
+  const trimmed = value.trim();
+  if (!trimmed) return [];
+  // JSON array support
+  if (trimmed.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) return parsed.filter((v): v is string => typeof v === 'string' && v.trim().length > 0);
+    } catch {
+      // fall through
+    }
+  }
+  // Comma/newline separated
+  return trimmed
+    .split(/[\n,]/g)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+type Variant = { id: string; label: string; price?: number; original_price?: number; note?: string };
+
+function parseVariants(value: unknown): Variant[] {
+  if (!value) return [];
+  if (Array.isArray(value)) {
+    return value
+      .map((v) => {
+        if (!v || typeof v !== 'object') return null;
+        const obj = v as any;
+        const id = String(obj.id || obj.label || '').trim();
+        const label = String(obj.label || obj.name || '').trim();
+        if (!label) return null;
+        return {
+          id: id || label,
+          label,
+          price: typeof obj.price === 'number' ? obj.price : safePrice(obj.price),
+          original_price: typeof obj.original_price === 'number' ? obj.original_price : safePrice(obj.original_price),
+          note: typeof obj.note === 'string' ? obj.note : undefined,
+        };
+      })
+      .filter(Boolean) as Variant[];
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+    try {
+      const parsed = JSON.parse(trimmed);
+      return parseVariants(parsed);
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
 export default function ProLandingTemplate(props: TemplateProps) {
   const { settings, formatPrice, navigate } = props;
   const canManage = Boolean(props.canManage);
@@ -53,22 +113,29 @@ export default function ProLandingTemplate(props: TemplateProps) {
     return () => window.removeEventListener('resize', check);
   }, [(props as any).forcedBreakpoint]);
 
-  const bg = asString(settings.template_bg_color) || '#0b1220';
-  const text = asString(settings.template_text_color) || '#e5e7eb';
-  const muted = asString(settings.template_muted_color) || '#94a3b8';
-  const accent = asString(settings.template_accent_color) || '#2563eb';
-  const cardBg = asString(settings.template_card_bg) || '#0f172a';
-  const border = 'rgba(148,163,184,0.18)';
-
   const storeName = asString(settings.store_name) || 'Pro Landing';
-  const heroTitle = asString(settings.template_hero_heading) || 'A professional landing page for your one best product.';
+  const heroTitle = asString(settings.template_hero_heading) || storeName;
   const heroSubtitle =
     asString(settings.template_hero_subtitle) ||
-    'Tell a clear story, build trust, and convert on mobile — with a clean “Buy Now” flow.';
-  const cta = asString(settings.template_button_text) || 'Buy Now';
+    'A professional one-product landing page optimized for mobile conversions.';
+
+  const explicitDir = asString((settings as any).template_direction).toLowerCase();
+  const autoRtl = isRtlText(`${storeName} ${heroTitle} ${heroSubtitle}`);
+  const dir: 'rtl' | 'ltr' = explicitDir === 'rtl' || explicitDir === 'ltr' ? (explicitDir as any) : autoRtl ? 'rtl' : 'ltr';
+  const isRtl = dir === 'rtl';
+
+  const bg = asString(settings.template_bg_color) || '#ffffff';
+  const text = asString(settings.template_text_color) || '#0f172a';
+  const muted = asString(settings.template_muted_color) || '#6b7280';
+  const accent = asString(settings.template_accent_color) || '#b45309';
+  const cardBg = asString((settings as any).template_card_bg) || '#ffffff';
+  const border = 'rgba(15,23,42,0.12)';
+  const soft = 'rgba(15,23,42,0.04)';
+
+  const cta = asString(settings.template_button_text) || (isRtl ? 'اطلب الآن' : 'Order Now');
 
   const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
-  const sectionSpacing = resolveInt(settings.template_section_spacing, 64, 24, 96);
+  const sectionSpacing = resolveInt(settings.template_section_spacing, 44, 24, 96);
   const cardRadius = resolveInt(settings.template_card_border_radius, 18, 0, 32);
   const buttonRadius = resolveInt((settings as any).template_button_border_radius, 14, 0, 50);
 
@@ -76,7 +143,10 @@ export default function ProLandingTemplate(props: TemplateProps) {
   const mainProduct = products[0];
 
   const mainSlug = (mainProduct as any)?.slug || '/products';
-  const mainPrice = mainProduct ? formatPrice(safePrice((mainProduct as any).price)) : '';
+  const priceValue = mainProduct ? safePrice((mainProduct as any).price) : 0;
+  const originalValue = mainProduct ? safePrice((mainProduct as any).original_price) : 0;
+  const mainPrice = mainProduct ? formatPrice(priceValue) : '';
+  const originalPrice = originalValue > priceValue ? formatPrice(originalValue) : '';
 
   const descText = (asString((settings as any).template_description_text) || asString(settings.store_description)).trim();
   const descColor = asString((settings as any).template_description_color) || muted;
@@ -90,6 +160,70 @@ export default function ProLandingTemplate(props: TemplateProps) {
 
   const [faqOpen, setFaqOpen] = React.useState<number | null>(0);
 
+  const images: string[] = Array.isArray((mainProduct as any)?.images)
+    ? ((mainProduct as any).images as unknown[]).filter((v): v is string => typeof v === 'string' && v.trim().length > 0)
+    : [];
+  const [activeImg, setActiveImg] = React.useState<string>(() => productImage(mainProduct));
+  React.useEffect(() => {
+    setActiveImg(productImage(mainProduct));
+  }, [mainProduct ? (mainProduct as any).id : undefined]);
+
+  const storyImages = (() => {
+    const fromSetting = parseImageList((settings as any).template_story_images);
+    if (fromSetting.length) return fromSetting;
+    // Fallback: use remaining product images as story strip
+    return images.slice(1, 7);
+  })();
+
+  const variants = (() => {
+    const parsed = parseVariants((settings as any).template_variants);
+    if (parsed.length) return parsed;
+    if (mainProduct && originalValue > priceValue) {
+      return [
+        {
+          id: 'promo',
+          label: isRtl ? 'عرض خاص' : 'Special Offer',
+          price: priceValue,
+          original_price: originalValue,
+          note: isRtl ? 'كمية محدودة' : 'Limited stock',
+        },
+      ];
+    }
+    return [];
+  })();
+  const [selectedVariantId, setSelectedVariantId] = React.useState<string>(() => variants[0]?.id || '');
+  React.useEffect(() => {
+    setSelectedVariantId(variants[0]?.id || '');
+  }, [variants.length]);
+
+  const selectedVariant = variants.find((v) => v.id === selectedVariantId) || null;
+  const displayPrice = (() => {
+    if (!mainProduct) return '';
+    const vPrice = selectedVariant?.price;
+    if (typeof vPrice === 'number' && Number.isFinite(vPrice) && vPrice > 0) return formatPrice(vPrice);
+    return mainPrice;
+  })();
+  const displayOriginal = (() => {
+    if (!mainProduct) return '';
+    const vOrig = selectedVariant?.original_price;
+    if (typeof vOrig === 'number' && Number.isFinite(vOrig) && vOrig > 0) {
+      const vPrice = selectedVariant?.price || 0;
+      if (vOrig > vPrice) return formatPrice(vOrig);
+    }
+    return originalPrice;
+  })();
+
+  const proofText =
+    asString((settings as any).template_social_proof_text) || (isRtl ? '190 مبيع' : '190 sold');
+  const ratingText = asString((settings as any).template_rating_text) || '★★★★★ 4.8';
+  const badge1 = asString((settings as any).template_badge_1) || (isRtl ? 'الدفع عند الاستلام' : 'Cash on delivery');
+  const badge2 = asString((settings as any).template_badge_2) || (isRtl ? 'توصيل سريع' : 'Fast delivery');
+  const badge3 = asString((settings as any).template_badge_3) || (isRtl ? 'ضمان' : 'Guarantee');
+
+  const [qty, setQty] = React.useState(1);
+  const incQty = () => setQty((q) => Math.min(99, q + 1));
+  const decQty = () => setQty((q) => Math.max(1, q - 1));
+
   const stopIfManage = (e: React.MouseEvent) => {
     if (!canManage) return;
     e.preventDefault();
@@ -101,7 +235,13 @@ export default function ProLandingTemplate(props: TemplateProps) {
       data-edit-path="__root"
       onClick={() => canManage && onSelect('__root')}
       className="ecopro-storefront"
-      style={{ minHeight: '100vh', background: bg, color: text, fontFamily: 'Inter, system-ui, sans-serif' }}
+      style={{
+        minHeight: '100vh',
+        background: bg,
+        color: text,
+        fontFamily: isRtl ? 'Cairo, Inter, system-ui, sans-serif' : 'Inter, system-ui, sans-serif',
+        direction: dir,
+      }}
     >
       {/* Header */}
       <header
@@ -111,9 +251,9 @@ export default function ProLandingTemplate(props: TemplateProps) {
       >
         <div
           style={{
-            maxWidth: 1200,
+            maxWidth: 1160,
             margin: '0 auto',
-            padding: '14px 18px',
+            padding: '12px 18px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -134,7 +274,7 @@ export default function ProLandingTemplate(props: TemplateProps) {
                   height: 38,
                   borderRadius: 12,
                   background: accent,
-                  color: '#071426',
+                  color: '#fff',
                   display: 'grid',
                   placeItems: 'center',
                   fontWeight: 900,
@@ -148,7 +288,7 @@ export default function ProLandingTemplate(props: TemplateProps) {
               <div style={{ fontWeight: 900, fontSize: 14, letterSpacing: '0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {storeName}
               </div>
-              <div style={{ fontSize: 12, color: muted }}>Professional Single-Product Landing</div>
+              <div style={{ fontSize: 12, color: muted }}>{isRtl ? 'صفحة منتج واحدة' : 'Single Product Landing'}</div>
             </div>
           </div>
 
@@ -157,11 +297,20 @@ export default function ProLandingTemplate(props: TemplateProps) {
               <button
                 onClick={(e) => {
                   stopIfManage(e);
-                  scrollTo('details');
+                  scrollTo('story');
                 }}
                 style={{ background: 'transparent', border: `1px solid ${border}`, color: text, borderRadius: 999, padding: '8px 12px', cursor: 'pointer', fontWeight: 800, fontSize: 12 }}
               >
-                Details
+                {isRtl ? 'المميزات' : 'Benefits'}
+              </button>
+              <button
+                onClick={(e) => {
+                  stopIfManage(e);
+                  scrollTo('reviews');
+                }}
+                style={{ background: 'transparent', border: `1px solid ${border}`, color: text, borderRadius: 999, padding: '8px 12px', cursor: 'pointer', fontWeight: 800, fontSize: 12 }}
+              >
+                {isRtl ? 'المراجعات' : 'Reviews'}
               </button>
               <button
                 onClick={(e) => {
@@ -170,7 +319,7 @@ export default function ProLandingTemplate(props: TemplateProps) {
                 }}
                 style={{ background: 'transparent', border: `1px solid ${border}`, color: text, borderRadius: 999, padding: '8px 12px', cursor: 'pointer', fontWeight: 800, fontSize: 12 }}
               >
-                FAQ
+                {isRtl ? 'الأسئلة' : 'FAQ'}
               </button>
             </nav>
           )}
@@ -188,7 +337,7 @@ export default function ProLandingTemplate(props: TemplateProps) {
               padding: '10px 14px',
               fontWeight: 900,
               cursor: 'pointer',
-              color: '#071426',
+              color: '#fff',
               fontSize: 13,
               whiteSpace: 'nowrap',
             }}
@@ -198,252 +347,385 @@ export default function ProLandingTemplate(props: TemplateProps) {
         </div>
       </header>
 
-      {/* Hero */}
+      {/* Top: product page layout (like your screenshots) */}
       <section
         data-edit-path="layout.hero"
         onClick={() => canManage && onSelect('layout.hero')}
-        style={{ padding: `${sectionSpacing}px ${baseSpacing}px ${Math.round(sectionSpacing * 0.75)}px` }}
+        style={{ padding: `${Math.round(sectionSpacing * 0.7)}px ${baseSpacing}px ${sectionSpacing}px` }}
       >
         <div
           style={{
-            maxWidth: 1200,
+            maxWidth: 1160,
             margin: '0 auto',
             display: 'grid',
-            gridTemplateColumns: isMobile ? '1fr' : '1.08fr 0.92fr',
+            gridTemplateColumns: isMobile ? '1fr' : '420px 1fr',
             gap: isMobile ? 18 : 28,
             alignItems: 'center',
           }}
         >
-          <div>
-            <div data-edit-path="layout.hero.kicker" style={{ color: accent, fontWeight: 900, letterSpacing: '0.14em', fontSize: 12 }}>
-              CONVERSION-FIRST • MOBILE-FIRST
+          {/* Order card */}
+          <div
+            style={{
+              background: cardBg,
+              border: `1px solid ${border}`,
+              borderRadius: cardRadius,
+              padding: 14,
+              position: isMobile ? 'relative' : 'sticky',
+              top: 86,
+            }}
+          >
+            <div data-edit-path="layout.hero.title" style={{ fontWeight: 950 as any, fontSize: 16, lineHeight: 1.35 }}>
+              {mainProduct ? productTitle(mainProduct) : heroTitle}
             </div>
-
-            <h1
-              data-edit-path="layout.hero.title"
-              style={{ margin: '14px 0 0', fontSize: isMobile ? 34 : 56, lineHeight: 1.03, fontWeight: 950 as any, letterSpacing: '-0.03em' }}
-            >
-              {heroTitle}
-            </h1>
-
-            <p
-              data-edit-path="layout.hero.subtitle"
-              style={{ marginTop: 14, color: muted, fontSize: isMobile ? 14 : 16, lineHeight: 1.85, maxWidth: 620 }}
-            >
-              {heroSubtitle}
-            </p>
-
-            <div style={{ marginTop: 18, display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-              {['Cash on delivery', 'Fast delivery', 'Support included'].map((t) => (
-                <span
-                  key={t}
-                  style={{
-                    border: `1px solid ${border}`,
-                    borderRadius: 999,
-                    padding: '8px 12px',
-                    fontSize: 12,
-                    color: text,
-                    background: 'rgba(15, 23, 42, 0.55)',
-                  }}
-                >
-                  {t}
-                </span>
-              ))}
+            <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+              <div style={{ fontSize: 12, color: muted }}>
+                <span style={{ color: '#f59e0b', letterSpacing: '0.06em' }}>{ratingText}</span> • {proofText}
+              </div>
+              <span style={{ fontSize: 12, color: muted }}>{isRtl ? 'متوفر' : 'In stock'}</span>
             </div>
 
             {mainProduct ? (
-              <div style={{ marginTop: 22, display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
-                <div style={{ fontSize: isMobile ? 28 : 36, fontWeight: 950 as any }}>{mainPrice}</div>
-                <div style={{ color: muted, fontSize: 13 }}>Limited stock • Easy returns</div>
+              <div style={{ marginTop: 10, display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+                <div style={{ fontSize: 26, fontWeight: 950 as any, color: accent }}>{displayPrice}</div>
+                {displayOriginal ? (
+                  <div style={{ fontSize: 13, color: muted, textDecoration: 'line-through' }}>{displayOriginal}</div>
+                ) : null}
               </div>
             ) : (
-              <div style={{ marginTop: 22, color: muted, fontSize: 13 }}>Add at least one product to show price & hero image.</div>
+              <div style={{ marginTop: 10, fontSize: 13, color: muted }}>{isRtl ? 'أضف منتج لعرض السعر.' : 'Add a product to show pricing.'}</div>
             )}
 
-            <div style={{ marginTop: 18, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <label style={{ display: 'grid', gap: 6 }}>
+                  <span style={{ fontSize: 12, color: muted }}>{isRtl ? 'الاسم' : 'Name'}</span>
+                  <input
+                    disabled
+                    style={{
+                      width: '100%',
+                      border: `1px solid ${border}`,
+                      borderRadius: 12,
+                      padding: '10px 12px',
+                      background: soft,
+                      color: text,
+                      outline: 'none',
+                    }}
+                    placeholder={isRtl ? 'الاسم الكامل' : 'Full name'}
+                  />
+                </label>
+                <label style={{ display: 'grid', gap: 6 }}>
+                  <span style={{ fontSize: 12, color: muted }}>{isRtl ? 'الهاتف' : 'Phone'}</span>
+                  <input
+                    disabled
+                    style={{
+                      width: '100%',
+                      border: `1px solid ${border}`,
+                      borderRadius: 12,
+                      padding: '10px 12px',
+                      background: soft,
+                      color: text,
+                      outline: 'none',
+                    }}
+                    placeholder={isRtl ? 'مثال: 07xxxxxxxx' : 'e.g. 07xxxxxxxx'}
+                  />
+                </label>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <label style={{ display: 'grid', gap: 6 }}>
+                  <span style={{ fontSize: 12, color: muted }}>{isRtl ? 'الولاية' : 'State'}</span>
+                  <select
+                    disabled
+                    style={{
+                      width: '100%',
+                      border: `1px solid ${border}`,
+                      borderRadius: 12,
+                      padding: '10px 12px',
+                      background: soft,
+                      color: text,
+                      outline: 'none',
+                      appearance: 'none',
+                    }}
+                  >
+                    <option>{isRtl ? 'اختر الولاية' : 'Select state'}</option>
+                  </select>
+                </label>
+                <label style={{ display: 'grid', gap: 6 }}>
+                  <span style={{ fontSize: 12, color: muted }}>{isRtl ? 'البلدية' : 'City'}</span>
+                  <select
+                    disabled
+                    style={{
+                      width: '100%',
+                      border: `1px solid ${border}`,
+                      borderRadius: 12,
+                      padding: '10px 12px',
+                      background: soft,
+                      color: text,
+                      outline: 'none',
+                      appearance: 'none',
+                    }}
+                  >
+                    <option>{isRtl ? 'اختر البلدية' : 'Select city'}</option>
+                  </select>
+                </label>
+              </div>
+
+              {variants.length > 0 && (
+                <div>
+                  <div style={{ fontSize: 12, color: muted, marginBottom: 8 }}>{isRtl ? 'اختر العرض' : 'Choose option'}</div>
+                  <div style={{ display: 'grid', gap: 10 }}>
+                    {variants.map((v) => {
+                      const active = v.id === selectedVariantId;
+                      const vPrice = typeof v.price === 'number' && v.price > 0 ? formatPrice(v.price) : '';
+                      const vOrig =
+                        typeof v.original_price === 'number' && typeof v.price === 'number' && v.original_price > v.price
+                          ? formatPrice(v.original_price)
+                          : '';
+                      return (
+                        <button
+                          key={v.id}
+                          onClick={(e) => {
+                            stopIfManage(e);
+                            setSelectedVariantId(v.id);
+                          }}
+                          style={{
+                            textAlign: 'start',
+                            border: `1px solid ${active ? accent : border}`,
+                            background: active ? 'rgba(180,83,9,0.08)' : '#fff',
+                            borderRadius: 14,
+                            padding: 12,
+                            cursor: 'pointer',
+                            color: text,
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                            <div>
+                              <div style={{ fontWeight: 950 as any, fontSize: 13 }}>{v.label}</div>
+                              {v.note ? <div style={{ marginTop: 4, fontSize: 12, color: muted }}>{v.note}</div> : null}
+                            </div>
+                            <div style={{ textAlign: 'end' as any }}>
+                              {vPrice ? <div style={{ fontWeight: 950 as any, color: accent, fontSize: 13 }}>{vPrice}</div> : null}
+                              {vOrig ? <div style={{ fontSize: 12, color: muted, textDecoration: 'line-through' }}>{vOrig}</div> : null}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, border: `1px solid ${border}`, borderRadius: 14, padding: 12, background: soft }}>
+                <div style={{ fontSize: 12, color: muted }}>{isRtl ? 'الكمية' : 'Quantity'}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <button
+                    onClick={(e) => {
+                      stopIfManage(e);
+                      decQty();
+                    }}
+                    style={{ width: 34, height: 34, borderRadius: 10, border: `1px solid ${border}`, background: '#fff', cursor: 'pointer', fontWeight: 950 as any }}
+                  >
+                    −
+                  </button>
+                  <div style={{ fontWeight: 950 as any, minWidth: 18, textAlign: 'center' }}>{qty}</div>
+                  <button
+                    onClick={(e) => {
+                      stopIfManage(e);
+                      incQty();
+                    }}
+                    style={{ width: 34, height: 34, borderRadius: 10, border: `1px solid ${border}`, background: '#fff', cursor: 'pointer', fontWeight: 950 as any }}
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
               <button
                 data-edit-path="layout.hero.cta"
                 onClick={(e) => {
                   stopIfManage(e);
                   navigate(mainSlug);
                 }}
-                style={{ background: accent, border: 0, borderRadius: buttonRadius, padding: '14px 18px', fontWeight: 950 as any, cursor: 'pointer', color: '#071426' }}
+                style={{
+                  width: '100%',
+                  background: accent,
+                  border: 0,
+                  borderRadius: buttonRadius,
+                  padding: '13px 16px',
+                  fontWeight: 950 as any,
+                  cursor: 'pointer',
+                  color: '#fff',
+                  fontSize: 14,
+                }}
               >
                 {cta}
               </button>
-              <button
-                onClick={(e) => {
-                  stopIfManage(e);
-                  scrollTo('details');
-                }}
-                style={{ background: 'transparent', border: `1px solid ${border}`, borderRadius: buttonRadius, padding: '14px 18px', fontWeight: 900, cursor: 'pointer', color: text }}
-              >
-                Learn More
-              </button>
-            </div>
 
-            <div style={{ marginTop: 18, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: 10 }}>
-              {[
-                { t: 'Trust badges', d: 'Show delivery & guarantees.' },
-                { t: 'FAQ section', d: 'Handle objections fast.' },
-                { t: 'Sticky buy bar', d: 'Always visible CTA.' },
-              ].map((c) => (
-                <div key={c.t} style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: cardRadius, padding: 14 }}>
-                  <div style={{ fontWeight: 950 as any, fontSize: 13 }}>{c.t}</div>
-                  <div style={{ marginTop: 6, color: muted, fontSize: 12, lineHeight: 1.65 }}>{c.d}</div>
-                </div>
-              ))}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 2 }}>
+                {[badge1, badge2, badge3].filter(Boolean).map((b) => (
+                  <span key={b} style={{ fontSize: 12, color: muted, border: `1px solid ${border}`, borderRadius: 999, padding: '6px 10px', background: '#fff' }}>
+                    {b}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Product card */}
+          {/* Gallery */}
           <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: cardRadius, overflow: 'hidden' }}>
-            <div style={{ position: 'relative', aspectRatio: isMobile ? '4/3' : '1/1', background: '#050913' }}>
-              <img
-                src={productImage(mainProduct)}
-                alt={mainProduct ? productTitle(mainProduct) : ''}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.96 }}
-              />
-              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0) 38%, rgba(0,0,0,0.75) 100%)' }} />
-
-              <div style={{ position: 'absolute', left: 14, right: 14, bottom: 14 }}>
-                <div style={{ fontWeight: 950 as any, fontSize: 14, lineHeight: 1.25 }}>{mainProduct ? productTitle(mainProduct) : 'Your product name'}</div>
-                <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                  <div style={{ fontSize: 12, color: muted }}>★★★★★ 4.9 (1,200+)</div>
-                  <button
-                    onClick={(e) => {
-                      stopIfManage(e);
-                      navigate(mainSlug);
-                    }}
-                    style={{ background: accent, border: 0, borderRadius: 999, padding: '10px 12px', fontWeight: 950 as any, cursor: 'pointer', color: '#071426', fontSize: 12 }}
-                  >
-                    {cta}
-                  </button>
-                </div>
+            <div style={{ background: '#fff' }}>
+              <div style={{ position: 'relative', aspectRatio: isMobile ? '4/3' : '16/11', background: '#f3f4f6' }}>
+                <img src={activeImg} alt={mainProduct ? productTitle(mainProduct) : ''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
-            </div>
-
-            <div style={{ padding: 14, display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
-              {[
-                { k: 'Delivery', v: '24–72 hours' },
-                { k: 'Payment', v: 'Cash on delivery' },
-                { k: 'Support', v: 'WhatsApp available' },
-              ].map((row) => (
-                <div key={row.k} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, borderBottom: `1px solid ${border}`, paddingBottom: 10 }}>
-                  <div style={{ color: muted, fontSize: 12 }}>{row.k}</div>
-                  <div style={{ fontWeight: 900, fontSize: 12 }}>{row.v}</div>
+              {images.length > 1 && (
+                <div style={{ padding: 12, display: 'flex', gap: 10, overflowX: 'auto' }}>
+                  {images.slice(0, 8).map((img) => {
+                    const active = img === activeImg;
+                    return (
+                      <button
+                        key={img}
+                        onClick={(e) => {
+                          stopIfManage(e);
+                          setActiveImg(img);
+                        }}
+                        style={{
+                          border: `2px solid ${active ? accent : 'transparent'}`,
+                          borderRadius: 12,
+                          padding: 0,
+                          background: 'transparent',
+                          cursor: 'pointer',
+                          flex: '0 0 auto',
+                        }}
+                      >
+                        <img src={img} alt="" style={{ width: 78, height: 62, objectFit: 'cover', borderRadius: 10, display: 'block' }} />
+                      </button>
+                    );
+                  })}
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>
       </section>
 
-      {/* Details */}
-      <section id="details" style={{ padding: `0 ${baseSpacing}px ${sectionSpacing}px` }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 14 }}>
-          <div
-            data-edit-path="layout.categories"
-            onClick={() => canManage && onSelect('layout.categories')}
-            style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: cardRadius, padding: 18 }}
-          >
-            <div style={{ fontWeight: 950 as any, fontSize: 14 }}>Why you’ll love it</div>
-            <div style={{ marginTop: 10, color: descColor, fontSize: descSize, lineHeight: 1.9 }}>
-              {descText || (canManage ? 'Click and edit: add your product story, benefits, and what makes it unique.' : '')}
-            </div>
-          </div>
-
-          <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: cardRadius, padding: 18 }}>
-            <div style={{ fontWeight: 950 as any, fontSize: 14 }}>What you get</div>
-            <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
-              {[
-                { t: 'Premium build', d: 'Designed to last with quality materials.' },
-                { t: 'Fast setup', d: 'Clear checkout flow with COD.' },
-                { t: 'Confidence', d: 'Guarantee + support reduces hesitation.' },
-              ].map((b) => (
-                <div key={b.t} style={{ border: `1px solid ${border}`, borderRadius: 14, padding: 14, background: 'rgba(2,6,23,0.35)' }}>
-                  <div style={{ fontWeight: 950 as any, fontSize: 13 }}>{b.t}</div>
-                  <div style={{ marginTop: 6, color: muted, fontSize: 12, lineHeight: 1.7 }}>{b.d}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Optional upsells (only if more than one product) */}
-      {products.length > 1 && (
-        <section
-          data-edit-path="layout.grid"
-          onClick={() => canManage && onSelect('layout.grid')}
-          style={{ padding: `0 ${baseSpacing}px ${sectionSpacing}px` }}
-        >
-          <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-              <div>
-                <div data-edit-path="layout.featured.title" style={{ fontWeight: 950 as any, fontSize: 16 }}>
-                  Optional upsells
-                </div>
-                <div data-edit-path="layout.featured.subtitle" style={{ marginTop: 6, color: muted, fontSize: 13 }}>
-                  Shown only if you add multiple products.
-                </div>
+      {/* Story / long images (like your vertical creatives) */}
+      <section id="story" style={{ padding: `0 ${baseSpacing}px ${sectionSpacing}px` }}>
+        <div style={{ maxWidth: 1160, margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ fontWeight: 950 as any, fontSize: 18 }}>{isRtl ? 'لماذا تختارنا؟' : 'Why choose us?'}</div>
+              <div data-edit-path="layout.hero.subtitle" style={{ marginTop: 6, color: muted, fontSize: 13 }}>
+                {heroSubtitle}
               </div>
             </div>
+          </div>
 
+          <div style={{ marginTop: 14, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 420px', gap: 16, alignItems: 'start' }}>
             <div
-              style={{
-                marginTop: 14,
-                display: 'grid',
-                gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
-                gap: 12,
-              }}
+              data-edit-path="layout.categories"
+              onClick={() => canManage && onSelect('layout.categories')}
+              style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: cardRadius, padding: 18 }}
             >
-              {products.slice(1, 9).map((p) => (
-                <button
-                  key={(p as any).id}
-                  onClick={(e) => {
-                    stopIfManage(e);
-                    navigate((p as any).slug || '/products');
-                  }}
-                  style={{ textAlign: 'left', background: cardBg, border: `1px solid ${border}`, borderRadius: cardRadius, overflow: 'hidden', cursor: 'pointer', padding: 0 }}
-                >
-                  <div style={{ aspectRatio: '4/3', background: '#050913' }}>
-                    <img src={productImage(p)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <div style={{ color: accent, fontWeight: 950 as any, fontSize: 12, letterSpacing: '0.12em' }}>
+                {isRtl ? 'مميزات' : 'BENEFITS'}
+              </div>
+              <div style={{ marginTop: 10, color: descColor, fontSize: descSize, lineHeight: 1.95 }}>
+                {descText || (canManage ? (isRtl ? 'اضغط للتعديل: اكتب قصة المنتج والفوائد.' : 'Click to edit: add product story and benefits.') : '')}
+              </div>
+              <div style={{ marginTop: 14, display: 'grid', gap: 10 }}>
+                {[
+                  isRtl ? 'جودة عالية ونتيجة ممتازة' : 'High quality with great results',
+                  isRtl ? 'سهولة التركيب والاستعمال' : 'Easy to use and install',
+                  isRtl ? 'توصيل سريع والدفع عند الاستلام' : 'Fast delivery + cash on delivery',
+                ].map((t) => (
+                  <div key={t} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', border: `1px solid ${border}`, borderRadius: 14, padding: 12, background: soft }}>
+                    <div style={{ width: 10, height: 10, borderRadius: 999, background: accent, marginTop: 4 }} />
+                    <div style={{ fontWeight: 900, fontSize: 13 }}>{t}</div>
                   </div>
-                  <div style={{ padding: 12 }}>
-                    <div style={{ fontWeight: 950 as any, fontSize: 13, lineHeight: 1.2 }}>{productTitle(p)}</div>
-                    <div style={{ marginTop: 6, color: muted, fontSize: 12 }}>{formatPrice(safePrice((p as any).price))}</div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gap: 12 }}>
+              {storyImages.length ? (
+                storyImages.map((img) => (
+                  <div key={img} style={{ borderRadius: cardRadius, overflow: 'hidden', border: `1px solid ${border}`, background: '#f3f4f6' }}>
+                    <img src={img} alt="" style={{ width: '100%', height: 'auto', display: 'block' }} />
                   </div>
-                </button>
-              ))}
+                ))
+              ) : (
+                <div style={{ borderRadius: cardRadius, border: `1px dashed ${border}`, padding: 16, color: muted, fontSize: 12 }}>
+                  {isRtl
+                    ? 'لإظهار صور عمودية: أضف صوراً إضافية للمنتج أو ضع روابط في template_story_images.'
+                    : 'To show vertical creatives: add more product images or set template_story_images.'}
+                </div>
+              )}
             </div>
           </div>
-        </section>
-      )}
+        </div>
+      </section>
+
+      {/* Reviews */}
+      <section id="reviews" style={{ padding: `0 ${baseSpacing}px ${sectionSpacing}px` }}>
+        <div style={{ maxWidth: 1160, margin: '0 auto' }}>
+          <div style={{ fontWeight: 950 as any, fontSize: 18 }}>{isRtl ? 'مراجعات الزبائن' : 'Customer reviews'}</div>
+          <div style={{ marginTop: 6, color: muted, fontSize: 13 }}>
+            {isRtl ? 'صور وتجارب حقيقية تزيد الثقة.' : 'Social proof that increases trust.'}
+          </div>
+
+          <div style={{ marginTop: 14, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 12 }}>
+            {[0, 1].map((idx) => (
+              <div key={idx} style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: cardRadius, padding: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ width: 34, height: 34, borderRadius: 999, background: soft, border: `1px solid ${border}` }} />
+                    <div>
+                      <div style={{ fontWeight: 950 as any, fontSize: 13 }}>{isRtl ? 'زبون' : 'Customer'} #{idx + 1}</div>
+                      <div style={{ fontSize: 12, color: muted }}>{ratingText}</div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 12, color: muted }}>{isRtl ? 'مؤكد' : 'Verified'}</div>
+                </div>
+                <div style={{ marginTop: 10, color: text, fontSize: 13, lineHeight: 1.9 }}>
+                  {isRtl
+                    ? 'منتج رائع، جودة ممتازة والتوصيل كان سريع. أنصح به.'
+                    : 'Great product, solid quality, and fast delivery. Highly recommended.'}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* FAQ */}
       <section id="faq" style={{ padding: `0 ${baseSpacing}px ${sectionSpacing}px` }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', background: cardBg, border: `1px solid ${border}`, borderRadius: cardRadius, padding: 18 }}>
+        <div style={{ maxWidth: 1160, margin: '0 auto', background: cardBg, border: `1px solid ${border}`, borderRadius: cardRadius, padding: 18 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
             <div>
-              <div style={{ fontWeight: 950 as any, fontSize: 16 }}>FAQ</div>
-              <div style={{ marginTop: 6, color: muted, fontSize: 13 }}>Answer the top objections before your customer asks.</div>
+              <div style={{ fontWeight: 950 as any, fontSize: 16 }}>{isRtl ? 'الأسئلة الشائعة' : 'FAQ'}</div>
+              <div style={{ marginTop: 6, color: muted, fontSize: 13 }}>
+                {isRtl ? 'أجب على أهم الأسئلة قبل الشراء.' : 'Answer objections before purchase.'}
+              </div>
             </div>
           </div>
 
           <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
             {[
               {
-                q: 'How do I pay?',
-                a: 'Cash on delivery (COD). You pay when you receive the product.',
+                q: isRtl ? 'كيف يكون الدفع؟' : 'How do I pay?',
+                a: isRtl ? 'الدفع عند الاستلام. تدفع عند وصول المنتج.' : 'Cash on delivery (COD). You pay when you receive the product.',
               },
               {
-                q: 'How long does delivery take?',
-                a: 'Usually 24–72 hours depending on your city and delivery availability.',
+                q: isRtl ? 'كم مدة التوصيل؟' : 'How long does delivery take?',
+                a: isRtl
+                  ? 'عادةً من 24 إلى 72 ساعة حسب الولاية وتوفر التوصيل.'
+                  : 'Usually 24–72 hours depending on your city and delivery availability.',
               },
               {
-                q: 'Is there a warranty or return policy?',
-                a: 'Yes — add your warranty/return details in the description section for full clarity.',
+                q: isRtl ? 'هل يوجد ضمان أو إرجاع؟' : 'Is there a warranty or return policy?',
+                a: isRtl
+                  ? 'نعم — ضع تفاصيل الضمان والإرجاع في قسم الوصف لزيادة الثقة.'
+                  : 'Yes — add your warranty/return details in the description section for full clarity.',
               },
             ].map((item, idx) => {
               const open = faqOpen === idx;
@@ -454,7 +736,15 @@ export default function ProLandingTemplate(props: TemplateProps) {
                     stopIfManage(e);
                     setFaqOpen((prev) => (prev === idx ? null : idx));
                   }}
-                  style={{ textAlign: 'left', background: 'rgba(2,6,23,0.35)', border: `1px solid ${border}`, borderRadius: 14, padding: 14, cursor: 'pointer', color: text }}
+                  style={{
+                    textAlign: isRtl ? 'right' : 'left',
+                    background: soft,
+                    border: `1px solid ${border}`,
+                    borderRadius: 14,
+                    padding: 14,
+                    cursor: 'pointer',
+                    color: text,
+                  }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                     <div style={{ fontWeight: 950 as any, fontSize: 13 }}>{item.q}</div>
@@ -476,11 +766,11 @@ export default function ProLandingTemplate(props: TemplateProps) {
               pointerEvents: 'auto',
               maxWidth: 950,
               margin: '0 auto',
-              background: 'rgba(2,6,23,0.78)',
+              background: '#ffffff',
               border: `1px solid ${border}`,
               borderRadius: 18,
               padding: '12px 14px',
-              backdropFilter: 'blur(10px)',
+              boxShadow: '0 18px 45px rgba(15,23,42,0.14)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -489,11 +779,11 @@ export default function ProLandingTemplate(props: TemplateProps) {
           >
             <div style={{ minWidth: 0 }}>
               <div style={{ fontWeight: 950 as any, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{productTitle(mainProduct)}</div>
-              <div style={{ color: muted, fontSize: 12 }}>{mainPrice} • Cash on delivery</div>
+              <div style={{ color: muted, fontSize: 12 }}>{displayPrice} • {isRtl ? 'الدفع عند الاستلام' : 'Cash on delivery'}</div>
             </div>
             <button
               onClick={() => navigate(mainSlug)}
-              style={{ background: accent, border: 0, borderRadius: 999, padding: '10px 14px', fontWeight: 950 as any, cursor: 'pointer', color: '#071426' }}
+              style={{ background: accent, border: 0, borderRadius: 999, padding: '10px 14px', fontWeight: 950 as any, cursor: 'pointer', color: '#fff' }}
             >
               {cta}
             </button>
@@ -507,7 +797,7 @@ export default function ProLandingTemplate(props: TemplateProps) {
         onClick={() => canManage && onSelect('layout.footer')}
         style={{ padding: '30px 18px', borderTop: `1px solid ${border}`, color: muted }}
       >
-        <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ maxWidth: 1160, margin: '0 auto', display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
           <div style={{ fontSize: 12 }}>© {new Date().getFullYear()} {storeName}</div>
           <div style={{ fontSize: 12 }}>Powered by EcoPro</div>
         </div>
