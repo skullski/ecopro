@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertTriangle, RefreshCw, Home, Bug } from 'lucide-react';
+import { reportClientError } from '../utils/telemetry';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -28,10 +29,14 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
     // Log error to console in development
     console.error('ErrorBoundary caught an error:', error, errorInfo);
     
-    // In production, you could send this to an error tracking service
-    // e.g., Sentry, LogRocket, etc.
+    // In production, report to server telemetry for the admin dashboard.
     if (process.env.NODE_ENV === 'production') {
-      // Example: sendToErrorTracking(error, errorInfo);
+      reportClientError({
+        message: error?.message || String(error),
+        name: (error as any)?.name,
+        stack: (error as any)?.stack,
+        componentStack: errorInfo?.componentStack,
+      });
     }
   }
 

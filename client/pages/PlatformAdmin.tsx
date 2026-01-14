@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from '@/lib/i18n';
 import { useNavigate } from 'react-router-dom';
 import { removeAuthToken } from '@/lib/auth';
@@ -45,7 +45,6 @@ import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
 import { Badge } from '@/components/ui/badge';
 import { GradientCard } from '@/components/ui/GradientCard';
 import { Button } from '@/components/ui/button';
-
 interface PlatformStats {
   totalUsers: number;
   totalClients: number;
@@ -865,7 +864,13 @@ export default function PlatformAdmin() {
   const [adminAuditLogs, setAdminAuditLogs] = useState<AdminAuditLog[]>([]);
   const [logMode, setLogMode] = useState<'staff' | 'admin'>('staff');
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stores' | 'products' | 'activity' | 'health' | 'settings' | 'billing' | 'payment-failures' | 'codes' | 'tools'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stores' | 'products' | 'activity' | 'errors' | 'health' | 'settings' | 'billing' | 'payment-failures' | 'codes' | 'tools'>('overview');
+
+  const [platformErrorDays, setPlatformErrorDays] = useState(3);
+  const [platformErrorSource, setPlatformErrorSource] = useState<'all' | 'client' | 'server'>('all');
+  const [platformErrorsLoading, setPlatformErrorsLoading] = useState(false);
+  const [platformErrorsError, setPlatformErrorsError] = useState<string | null>(null);
+  const [platformErrors, setPlatformErrors] = useState<any[]>([]);
   const [serverHealth, setServerHealth] = useState<ServerHealth | null>(null);
   const [healthLoading, setHealthLoading] = useState(false);
   const [healthError, setHealthError] = useState<string | null>(null);
@@ -903,6 +908,43 @@ export default function PlatformAdmin() {
   const [lastGeneratedCode, setLastGeneratedCode] = useState<any>(null);
   const [expireClientEmail, setExpireClientEmail] = useState('');
   const [expiringClient, setExpiringClient] = useState(false);
+
+  const reloadPlatformErrors = useCallback(async () => {
+    setPlatformErrorsLoading(true);
+    setPlatformErrorsError(null);
+
+    try {
+      const params = new URLSearchParams();
+      params.set('days', String(platformErrorDays));
+      if (platformErrorSource && platformErrorSource !== 'all') {
+        params.set('source', platformErrorSource);
+      }
+      params.set('limit', '200');
+
+      const res = await fetch(`/api/telemetry/platform-errors?${params.toString()}`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      const text = await res.text();
+      if (!res.ok) {
+        throw new Error(text || `Failed to load errors (${res.status})`);
+      }
+
+      const data = text ? JSON.parse(text) : {};
+      setPlatformErrors(Array.isArray(data?.events) ? data.events : []);
+    } catch (e: any) {
+      setPlatformErrorsError(e?.message || 'Failed to load errors');
+      setPlatformErrors([]);
+    } finally {
+      setPlatformErrorsLoading(false);
+    }
+  }, [platformErrorDays, platformErrorSource]);
+
+  useEffect(() => {
+    if (activeTab !== 'errors') return;
+    void reloadPlatformErrors();
+  }, [activeTab, reloadPlatformErrors]);
 
   useEffect(() => {
     loadPlatformData();
@@ -1745,6 +1787,16 @@ export default function PlatformAdmin() {
             <span className="sm:hidden">A</span>
           </Button>
           <Button
+            variant={activeTab === 'errors' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('errors')}
+            className="whitespace-nowrap text-slate-200"
+            style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.375rem, 0.8vh, 0.5rem) clamp(0.75rem, 1.5vh, 1rem)', height: 'clamp(2rem, 4vh, 2.5rem)' }}
+          >
+            <AlertTriangle style={{ width: 'clamp(0.875rem, 1.8vh, 1rem)', height: 'clamp(0.875rem, 1.8vh, 1rem)', marginRight: 'clamp(0.375rem, 0.75vh, 0.5rem)' }} />
+            <span className="hidden sm:inline">Errors</span>
+            <span className="sm:hidden">E</span>
+          </Button>
+          <Button
             variant={activeTab === 'billing' ? 'default' : 'ghost'}
             onClick={() => { 
               setActiveTab('billing');
@@ -1805,6 +1857,126 @@ export default function PlatformAdmin() {
             <span className="sm:hidden">ST</span>
           </Button>
         </div>
+
+        {/* Errors Tab */}
+        {activeTab === 'errors' && (
+          <div className="space-y-3">
+            <div className="bg-slate-900/40 border border-slate-700/60 rounded-xl p-4">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div>
+                  <h3 className="text-white font-bold flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-400" /> Runtime Errors
+                  </h3>
+                  <p className="text-slate-400 text-sm">
+                    Collected from real user sessions (client + server).
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="text-xs text-slate-400">Days</label>
+                  <select
+                    className="bg-slate-900 border border-slate-700 text-slate-200 rounded-md px-2 py-1 text-sm"
+                    value={platformErrorDays}
+                    onChange={(e) => setPlatformErrorDays(Number(e.target.value) || 3)}
+                  >
+                    <option value={1}>1</option>
+                    <option value={3}>3</option>
+                    <option value={7}>7</option>
+                    <option value={14}>14</option>
+                    <option value={30}>30</option>
+                  </select>
+
+                  <label className="text-xs text-slate-400">Source</label>
+                  <select
+                    className="bg-slate-900 border border-slate-700 text-slate-200 rounded-md px-2 py-1 text-sm"
+                    value={platformErrorSource}
+                    onChange={(e) => setPlatformErrorSource(e.target.value as any)}
+                  >
+                    <option value="all">All</option>
+                    <option value="client">Client</option>
+                    <option value="server">Server</option>
+                  </select>
+
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => reloadPlatformErrors()}
+                  >
+                    Refresh
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {platformErrorsError && (
+              <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-red-200 text-sm">
+                {platformErrorsError}
+              </div>
+            )}
+
+            <div className="bg-slate-900/40 border border-slate-700/60 rounded-xl overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-slate-900/70 text-slate-300">
+                    <tr>
+                      <th className="text-left px-3 py-2">Time</th>
+                      <th className="text-left px-3 py-2">Source</th>
+                      <th className="text-left px-3 py-2">Message</th>
+                      <th className="text-left px-3 py-2">Where</th>
+                      <th className="text-left px-3 py-2">User</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800">
+                    {platformErrorsLoading ? (
+                      <tr>
+                        <td className="px-3 py-4 text-slate-400" colSpan={5}>
+                          Loading…
+                        </td>
+                      </tr>
+                    ) : platformErrors.length === 0 ? (
+                      <tr>
+                        <td className="px-3 py-4 text-slate-400" colSpan={5}>
+                          No errors in the selected range.
+                        </td>
+                      </tr>
+                    ) : (
+                      platformErrors.map((ev: any) => {
+                        const when = ev.created_at ? new Date(ev.created_at).toLocaleString() : '';
+                        const src = String(ev.source || '').toUpperCase();
+                        const msg = String(ev.message || '').slice(0, 220);
+                        const where = ev.path ? `${ev.method || ''} ${ev.path}`.trim() : (ev.url || '');
+                        const user = ev.user_id ? `${ev.user_type || ''}:${ev.user_id}` : (ev.client_id ? `client:${ev.client_id}` : '—');
+                        return (
+                          <tr key={ev.id} className="hover:bg-slate-900/50">
+                            <td className="px-3 py-2 text-slate-400 whitespace-nowrap">{when}</td>
+                            <td className="px-3 py-2">
+                              <span className={`px-2 py-0.5 rounded-full text-xs border ${ev.source === 'server' ? 'border-red-500/40 text-red-200 bg-red-500/10' : 'border-amber-500/40 text-amber-200 bg-amber-500/10'}`}>
+                                {src}
+                              </span>
+                              {ev.status_code ? (
+                                <span className="ml-2 text-xs text-slate-400">{ev.status_code}</span>
+                              ) : null}
+                            </td>
+                            <td className="px-3 py-2 text-slate-200">
+                              <div className="font-medium">{msg}</div>
+                              {ev.stack ? (
+                                <div className="text-xs text-slate-500 mt-1 line-clamp-2">
+                                  {String(ev.stack).split('\n').slice(0, 2).join(' — ')}
+                                </div>
+                              ) : null}
+                            </td>
+                            <td className="px-3 py-2 text-slate-300 max-w-[420px] truncate">{where}</td>
+                            <td className="px-3 py-2 text-slate-400 whitespace-nowrap">{user}</td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Overview Tab */}
         {activeTab === 'overview' && (

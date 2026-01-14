@@ -1,3 +1,4 @@
+import telemetryRouter from './routes/telemetry';
 import "dotenv/config";
 import express from "express";
 import compression from "compression";
@@ -548,6 +549,7 @@ export function createServer(options?: { skipDbInit?: boolean }) {
 
   // Facebook Messenger webhook (public for FB verification)
   app.use('/api/messenger', messengerRouter);
+  app.use('/api/telemetry', telemetryRouter);
 
   // Kernel (root-only) APIs
   app.use('/api/kernel', kernelRouter);
@@ -1295,10 +1297,43 @@ export function createServer(options?: { skipDbInit?: boolean }) {
   });
 
   // Global error handler (after routes)
-  app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
     if (res.headersSent) return;
     const status = Number(err?.status) || 500;
     console.error('Unhandled error:', err);
+
+    // Best-effort platform error telemetry (server-side).
+    if (status >= 500) {
+      try {
+        const ip = (req as any).clientIp || (req.headers['cf-connecting-ip'] as string | undefined) || null;
+        const ua = (req.headers['user-agent'] as string | undefined) || null;
+        const user = (req as any).user as any;
+
+        void import('./utils/error-telemetry')
+          .then(({ logPlatformErrorEvent }) =>
+            logPlatformErrorEvent({
+              source: 'server',
+              message: err?.message || 'Unhandled error',
+              stack: err?.stack || null,
+              url: (req as any).originalUrl || req.url,
+              method: req.method,
+              path: req.path,
+              status_code: status,
+              request_id: (req as any).requestId || null,
+              ip,
+              user_agent: ua,
+              user_id: user?.id ? String(user.id) : null,
+              user_type: user?.user_type ? String(user.user_type) : null,
+              role: user?.role ? String(user.role) : null,
+              client_id: user?.user_type === 'client' && user?.id ? Number(user.id) : null,
+              metadata: { name: err?.name || null },
+            })
+          )
+          .catch(() => null);
+      } catch {
+        // ignore
+      }
+    }
 
     const message =
       status >= 500

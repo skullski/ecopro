@@ -1,6 +1,7 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
+import { reportClientError } from "./utils/telemetry";
 
 function getCookie(name: string): string | null {
   if (typeof document === 'undefined') return null;
@@ -67,5 +68,34 @@ if (typeof window !== 'undefined' && typeof window.fetch === 'function') {
 
 const container = document.getElementById("root");
 if (container) {
+  // Global error telemetry (production only)
+  if (import.meta.env.PROD) {
+    window.addEventListener('error', (event) => {
+      try {
+        const err = (event as any).error as any;
+        reportClientError({
+          message: err?.message || (event as any).message || 'Unhandled error',
+          name: err?.name,
+          stack: err?.stack,
+        });
+      } catch {
+        // ignore
+      }
+    });
+
+    window.addEventListener('unhandledrejection', (event) => {
+      try {
+        const reason: any = (event as any).reason;
+        reportClientError({
+          message: reason?.message || String(reason || 'Unhandled promise rejection'),
+          name: reason?.name,
+          stack: reason?.stack,
+        });
+      } catch {
+        // ignore
+      }
+    });
+  }
+
   createRoot(container).render(<App />);
 }
