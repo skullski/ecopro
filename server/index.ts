@@ -46,6 +46,7 @@ import { handleDbCheck } from "./routes/db-check";
 import { hashPassword } from "./utils/auth";
 import { purgeOldSecurityEvents, securityMiddleware } from "./utils/security";
 import { startScheduledMessageWorker } from "./utils/scheduled-messages";
+import { startBotMessageWorker } from "./utils/bot-messaging";
 import oauthRouter from "./routes/oauth";
 import messengerRouter from "./routes/messenger";
 import legalRouter from "./routes/legal";
@@ -115,12 +116,14 @@ export function createServer(options?: { skipDbInit?: boolean }) {
           console.log('⏭️ SKIP_MIGRATIONS=true — skipping SQL migrations');
           await initKernel().catch((e) => console.error('Kernel init failed:', e));
           startScheduledMessageWorker();
+          startBotMessageWorker({ intervalMs: 30 * 1000 });
           return;
         }
         await runPendingMigrations();
         await initKernel().catch((e) => console.error('Kernel init failed:', e));
         // Start the scheduled message worker (for bot confirmations)
         startScheduledMessageWorker();
+        startBotMessageWorker({ intervalMs: 30 * 1000 });
       })
       .catch((err) => {
         console.error('Failed to initialize database:', err);

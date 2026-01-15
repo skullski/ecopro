@@ -178,6 +178,15 @@ export const updateBotSettings: RequestHandler = async (req, res) => {
 
     const effectiveProvider = provider ?? 'telegram';
 
+    // If the platform shared Page is available and the client is pointing at it,
+    // do not store a Page Access Token in the database. Use env-based token instead.
+    // This avoids stale/invalid DB tokens causing OAuthException 190 failures.
+    const normalizedFbPageId = typeof fbPageId === 'string' ? fbPageId.trim() : '';
+    const usingPlatformPage = !!normalizedFbPageId && normalizedFbPageId === PLATFORM_FB_PAGE_ID;
+    const effectiveFbPageAccessToken = (PLATFORM_MESSENGER_AVAILABLE && usingPlatformPage)
+      ? null
+      : (fbPageAccessToken ?? null);
+
     let effectiveEnabled: boolean = enabled ?? true;
     let botDisabledReason: string | undefined;
 
@@ -231,7 +240,7 @@ export const updateBotSettings: RequestHandler = async (req, res) => {
           templateShipping ?? null,
           messengerEnabled ?? false,
           fbPageId ?? null,
-          fbPageAccessToken ?? null,
+          effectiveFbPageAccessToken,
           messengerDelayMinutes ?? 5,
         ]
       );
@@ -285,7 +294,7 @@ export const updateBotSettings: RequestHandler = async (req, res) => {
           templateShipping ?? null,
           messengerEnabled ?? false,
           fbPageId ?? null,
-          fbPageAccessToken ?? null,
+          effectiveFbPageAccessToken,
           messengerDelayMinutes ?? 5,
         ]
       );

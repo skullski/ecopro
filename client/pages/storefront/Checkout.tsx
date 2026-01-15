@@ -715,7 +715,7 @@ export default function Checkout() {
                       <p className="text-xs text-red-600 mt-1">Please enter a valid phone number</p>
                     )}
 
-                    {telegramBotInfo?.enabled && settings?.store_slug && (
+                    {telegramBotInfo && settings?.store_slug && (
                       <div className={`mt-2 p-2 rounded-lg border ${style.border}`}>
                         <div className="flex items-center justify-between gap-2">
                           <div className="text-[11px] sm:text-xs font-bold opacity-75">
@@ -726,25 +726,35 @@ export default function Checkout() {
                               ? 'Checking…'
                               : telegramConnected
                               ? 'Connected ✓'
-                              : 'Not connected'}
+                              : telegramBotInfo.enabled
+                              ? 'Not connected'
+                              : 'Unavailable'}
                           </div>
                         </div>
                         <button
                           type="button"
                           onClick={handleConnectTelegram}
-                          disabled={(formData.phone || '').replace(/\D/g, '').length < 9}
+                          disabled={
+                            !telegramBotInfo.enabled ||
+                            (formData.phone || '').replace(/\D/g, '').length < 9
+                          }
                           className={`mt-2 w-full py-1.5 sm:py-2 rounded-lg font-bold text-xs sm:text-sm transition disabled:opacity-60 ${style.button}`}
                           style={{ backgroundColor: accentColor, color: style.bg === 'bg-black' ? '#000' : '#fff' }}
                         >
-                          Connect Telegram
+                          {telegramBotInfo.enabled ? 'Connect Telegram' : 'Telegram Unavailable'}
                         </button>
+                        {!telegramBotInfo.enabled && (
+                          <div className="mt-1 text-[10px] sm:text-[11px] opacity-60">
+                            Telegram is not configured for this store.
+                          </div>
+                        )}
                         <div className="mt-1 text-[10px] sm:text-[11px] opacity-60">
                           Add your phone number first, then connect to receive instant order updates.
                         </div>
                       </div>
                     )}
 
-                    {messengerInfo?.enabled && settings?.store_slug && (
+                    {messengerInfo && settings?.store_slug && (
                       <div className={`mt-2 p-2 rounded-lg border ${style.border}`}>
                         <div className="flex items-center justify-between gap-2">
                           <div className="text-[11px] sm:text-xs font-bold opacity-75">Messenger (Optional)</div>
@@ -755,18 +765,33 @@ export default function Checkout() {
                               ? 'Connected ✓'
                               : waitingForMessengerConnection
                               ? 'Waiting…'
-                              : 'Not connected'}
+                              : messengerInfo.enabled
+                              ? 'Not connected'
+                              : 'Unavailable'}
                           </div>
                         </div>
                         <button
                           type="button"
                           onClick={handleConnectMessenger}
-                          disabled={(formData.phone || '').replace(/\D/g, '').length < 9 || waitingForMessengerConnection}
+                          disabled={
+                            !messengerInfo.enabled ||
+                            (formData.phone || '').replace(/\D/g, '').length < 9 ||
+                            waitingForMessengerConnection
+                          }
                           className={`mt-2 w-full py-1.5 sm:py-2 rounded-lg font-bold text-xs sm:text-sm transition disabled:opacity-60 ${style.button}`}
                           style={{ backgroundColor: accentColor, color: style.bg === 'bg-black' ? '#000' : '#fff' }}
                         >
-                          {waitingForMessengerConnection ? 'Connecting…' : 'Connect Messenger'}
+                          {waitingForMessengerConnection
+                            ? 'Connecting…'
+                            : messengerInfo.enabled
+                            ? 'Connect Messenger'
+                            : 'Messenger Unavailable'}
                         </button>
+                        {!messengerInfo.enabled && (
+                          <div className="mt-1 text-[10px] sm:text-[11px] opacity-60">
+                            Messenger is not configured for this store.
+                          </div>
+                        )}
                         <div className="mt-1 text-[10px] sm:text-[11px] opacity-60">
                           Add your phone number first, then connect to receive instant order updates.
                         </div>

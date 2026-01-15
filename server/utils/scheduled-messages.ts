@@ -20,7 +20,7 @@ export async function processScheduledMessages(): Promise<void> {
     const result = await pool.query(
       `SELECT sm.*, bs.telegram_bot_token
        FROM scheduled_messages sm
-       JOIN bot_settings bs ON sm.client_id = bs.client_id AND bs.provider = 'telegram' AND bs.enabled = true
+       JOIN bot_settings bs ON sm.client_id = bs.client_id AND bs.enabled = true AND bs.telegram_bot_token IS NOT NULL
        WHERE sm.status = 'pending' 
          AND sm.scheduled_at <= NOW()
        ORDER BY sm.scheduled_at ASC

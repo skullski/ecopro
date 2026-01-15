@@ -262,7 +262,7 @@ export const createOrder: RequestHandler = async (req, res) => {
         [resolvedClientId]
       )).rows?.[0];
       const storeName = storeRow?.store_name || 'EcoPro Store';
-      const storeSlug = storeRow?.store_slug || store_slug;
+      const storeSlug = store_slug || storeRow?.store_slug || String(resolvedClientId);
 
       if (storeSlug) {
         const productTitle = (await pool.query(
@@ -277,7 +277,7 @@ export const createOrder: RequestHandler = async (req, res) => {
             `SELECT telegram_bot_token, template_instant_order, template_pin_instructions,
                     telegram_delay_minutes, template_order_confirmation
              FROM bot_settings
-             WHERE client_id = $1 AND enabled = true AND provider = 'telegram'
+             WHERE client_id = $1 AND enabled = true AND telegram_bot_token IS NOT NULL
              LIMIT 1`,
             [resolvedClientId]
           );
@@ -374,20 +374,21 @@ Press one of the buttons to confirm or cancel:`;
             if (sent.success) {
               await sendTelegramMessage(botToken, telegramChatId, String(pinTemplate));
             }
-
-            // Also schedule Messenger messages (if enabled) without duplicating Telegram.
-            sendBotMessagesForOrder(
-              order.id,
-              Number(resolvedClientId),
-              toPhone,
-              customer_name,
-              storeName,
-              productTitle,
-              Number(order.total_price ?? expectedTotalPrice),
-              storeSlug,
-              { skipTelegram: true }
-            ).catch(() => {/* swallow errors */});
           }
+
+          // Schedule non-Telegram bot messages (Messenger) regardless of Telegram connection.
+          // Telegram is handled above (instant) + via scheduled_messages (confirmation with buttons).
+          sendBotMessagesForOrder(
+            order.id,
+            Number(resolvedClientId),
+            toPhone,
+            customer_name,
+            storeName,
+            productTitle,
+            Number(order.total_price ?? expectedTotalPrice),
+            storeSlug,
+            { skipTelegram: true }
+          ).catch(() => {/* swallow errors */});
 
           // Always schedule confirmation message with buttons (worker will wait for chat link if needed)
           if (botToken) {

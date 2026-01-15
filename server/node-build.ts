@@ -1,5 +1,6 @@
 import { createServer } from "./index";
 import { startScheduledMessageWorker, stopScheduledMessageWorker } from "./utils/scheduled-messages";
+import { startBotMessageWorker, stopBotMessageWorker } from "./utils/bot-messaging";
 
 async function startServer() {
   try {
@@ -35,18 +36,22 @@ async function startServer() {
       
       // Start the scheduled message worker
       startScheduledMessageWorker();
+      // Process bot_messages (Messenger instant/pin/confirmations, etc.)
+      startBotMessageWorker({ intervalMs: 30 * 1000 });
     });
 
     // Graceful shutdown
     process.on("SIGTERM", () => {
       console.log("🛑 Received SIGTERM, shutting down gracefully");
       stopScheduledMessageWorker();
+      stopBotMessageWorker();
       process.exit(0);
     });
 
     process.on("SIGINT", () => {
       console.log("🛑 Received SIGINT, shutting down gracefully");
       stopScheduledMessageWorker();
+      stopBotMessageWorker();
       process.exit(0);
     });
   } catch (error) {

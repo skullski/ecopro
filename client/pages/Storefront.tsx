@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Search, Grid, List
@@ -44,6 +44,7 @@ export default function Storefront() {
   const storeSlug = (params as any).storeSlug || (params as any).clientId;
   const navigate = useNavigate();
   const location = useLocation();
+  const trackedViewRef = useRef<string | null>(null);
   
   const [products, setProducts] = useState<StoreProduct[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<StoreProduct[]>([]);
@@ -171,8 +172,19 @@ export default function Storefront() {
         // Backwards-compatible: backend accepts store_slug and normalized store_name.
         const preferredSlug = newSettings.store_name ? storeNameToSlug(String(newSettings.store_name)) : '';
         const canonical = preferredSlug || String(newSettings.store_slug || storeSlug);
+
+        // If we need to canonicalize, do it first; view tracking will happen on the next render.
         if (canonical && canonical !== storeSlug && location.pathname === `/store/${storeSlug}`) {
           navigate(`/store/${canonical}${location.search}`, { replace: true });
+          return;
+        }
+
+        // Track storefront page view once per canonical slug.
+        if (canonical && trackedViewRef.current !== canonical) {
+          trackedViewRef.current = canonical;
+          fetch(`/api/storefront/${encodeURIComponent(canonical)}/track-view`, { method: 'POST' }).catch(() => {
+            // non-critical
+          });
         }
         
         // Save template and settings to localStorage for product pages

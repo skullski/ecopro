@@ -37,6 +37,12 @@ function resolveEffectivePageConfig(botRow: any): { enabled: boolean; pageId: st
   const storePageId = botRow?.fb_page_id ? String(botRow.fb_page_id).trim() : '';
   const storeToken = botRow?.fb_page_access_token ? String(botRow.fb_page_access_token).trim() : '';
 
+  // If the store is configured to use the platform shared Page, always use the platform env token.
+  // This ensures one token is used for all stores and avoids stale per-store tokens causing OAuth 190.
+  if (storePageId && PLATFORM_MESSENGER_ENABLED && storePageId === PLATFORM_FB_PAGE_ID && PLATFORM_FB_PAGE_ACCESS_TOKEN) {
+    return { enabled: true, pageId: PLATFORM_FB_PAGE_ID, pageAccessToken: PLATFORM_FB_PAGE_ACCESS_TOKEN, usingPlatform: true };
+  }
+
   if (storePageId && storeToken) {
     return { enabled: true, pageId: storePageId, pageAccessToken: storeToken, usingPlatform: false };
   }
@@ -640,11 +646,12 @@ async function handlePostback(pageId: string, senderId: string, postback: any) {
     if (settingsResult.rows.length > 0) {
       client_id = Number(settingsResult.rows[0].client_id);
       store_name = settingsResult.rows[0].store_name || store_name;
-      pageAccessToken = settingsResult.rows[0].fb_page_access_token
-        ? String(settingsResult.rows[0].fb_page_access_token).trim()
-        : isPlatformPage(pageId)
-          ? PLATFORM_FB_PAGE_ACCESS_TOKEN
-          : '';
+      // Prefer platform env token when this event is for the shared platform Page.
+      pageAccessToken = isPlatformPage(pageId)
+        ? PLATFORM_FB_PAGE_ACCESS_TOKEN
+        : (settingsResult.rows[0].fb_page_access_token
+            ? String(settingsResult.rows[0].fb_page_access_token).trim()
+            : '');
     } else if (isPlatformPage(pageId)) {
       // Platform page: resolve client by existing subscriber mapping, or by uniquely claiming
       // the latest pending preconnect token (safe fallback).
@@ -853,11 +860,12 @@ async function handleMessage(pageId: string, senderId: string, message: any) {
     if (settingsResult.rows.length > 0) {
       client_id = Number(settingsResult.rows[0].client_id);
       store_name = settingsResult.rows[0].store_name || store_name;
-      pageAccessToken = settingsResult.rows[0].fb_page_access_token
-        ? String(settingsResult.rows[0].fb_page_access_token).trim()
-        : isPlatformPage(pageId)
-          ? PLATFORM_FB_PAGE_ACCESS_TOKEN
-          : '';
+      // Prefer platform env token when this event is for the shared platform Page.
+      pageAccessToken = isPlatformPage(pageId)
+        ? PLATFORM_FB_PAGE_ACCESS_TOKEN
+        : (settingsResult.rows[0].fb_page_access_token
+            ? String(settingsResult.rows[0].fb_page_access_token).trim()
+            : '');
     } else if (isPlatformPage(pageId)) {
       // Platform page: resolve client by previously stored mapping
       const subRes = await pool.query(
@@ -1084,7 +1092,7 @@ const setupGetStarted: RequestHandler = async (req, res) => {
     }
 
     const result = await setupGetStartedButton(effectiveToken);
-    if (!result.ok) {
+    if (result.ok === false) {
       const status = typeof result.status === 'number' ? result.status : 400;
       return res.status(status).json({ success: false, error: result.error, details: result.details });
     }

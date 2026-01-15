@@ -33,4 +33,14 @@ services:
         value: https://ecopro-1lbl.onrender.com
       - key: BASE_URL
         value: https://ecopro-1lbl.onrender.com
+      # Messenger (platform shared Page)
+      # Page ID is not secret; token must be set in Render Dashboard.
+      - key: PLATFORM_FB_PAGE_ID
+        value: "929814950220320"
+      - key: PLATFORM_FB_PAGE_ACCESS_TOKEN
+        sync: false
+      - key: PLATFORM_MESSENGER_ENABLED
+        value: "true"
+      - key: FB_MESSENGER_VERIFY_TOKEN
+        sync: false
     healthCheckPath: /api/ping

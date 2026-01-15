@@ -117,16 +117,36 @@ export const getStoreProduct: RequestHandler = async (req, res) => {
     const user = (req as any).user;
     if (user && (user.role === 'admin' || user.user_type === 'admin')) return res.status(403).json({ error: 'Admins are not allowed to manage client storefronts' });
     const clientId = (req as any).user.id;
-    const { id } = req.params;
-
-    const result = await pool.query(
-      `SELECT * FROM client_store_products 
-       WHERE id = $1 AND client_id = $2`,
-      [id, clientId]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Product not found" });
+    try {
+      const statsRes = await pool.query(
+        `SELECT
+          (SELECT COUNT(*)::int FROM client_store_products WHERE client_id = $1) AS total_products,
+          (SELECT COUNT(*)::int FROM client_store_products WHERE client_id = $1 AND status='active') AS active_products,
+          (SELECT COUNT(*)::int FROM client_store_products WHERE client_id = $1 AND status='draft') AS draft_products,
+          (SELECT COALESCE(SUM(views), 0)::int FROM client_store_products WHERE client_id = $1) AS total_product_views,
+          (SELECT COALESCE(page_views, 0)::int FROM client_store_settings WHERE client_id = $1) AS page_views,
+          -- Backward-compatible field name (historically meant product views)
+          (SELECT COALESCE(SUM(views), 0)::int FROM client_store_products WHERE client_id = $1) AS total_views`,
+        [clientId]
+      );
+      res.json(statsRes.rows[0]);
+    } catch (err: any) {
+      // If page_views column isn't present yet (migration not applied), fall back safely.
+      if (err?.code === '42703') {
+        const statsRes = await pool.query(
+          `SELECT
+            (SELECT COUNT(*)::int FROM client_store_products WHERE client_id = $1) AS total_products,
+            (SELECT COUNT(*)::int FROM client_store_products WHERE client_id = $1 AND status='active') AS active_products,
+            (SELECT COUNT(*)::int FROM client_store_products WHERE client_id = $1 AND status='draft') AS draft_products,
+            (SELECT COALESCE(SUM(views), 0)::int FROM client_store_products WHERE client_id = $1) AS total_product_views,
+            0::int AS page_views,
+            (SELECT COALESCE(SUM(views), 0)::int FROM client_store_products WHERE client_id = $1) AS total_views`,
+          [clientId]
+        );
+        res.json(statsRes.rows[0]);
+      } else {
+        throw err;
+      }
     }
 
     res.json(result.rows[0]);

@@ -378,6 +378,49 @@ export default function ProductCheckout() {
     };
   }, [orderSuccess, storeSlug, product?.store_slug, formData.phone, telegramConnected, telegramBotInfo?.enabled]);
 
+  // After placing an order, poll briefly for Messenger connection so UI updates automatically.
+  useEffect(() => {
+    if (!orderSuccess) return;
+
+    const slug = storeSlug || product?.store_slug || localStorage.getItem('currentStoreSlug');
+    const normalizedPhone = (formData.phone || '').replace(/\D/g, '');
+
+    if (!slug) return;
+    if (messengerConnected) return;
+    if (!messengerInfo?.enabled) return;
+    if (normalizedPhone.length < 9) return;
+
+    let stopped = false;
+    let tries = 0;
+
+    const tick = async () => {
+      if (stopped) return;
+      tries++;
+      try {
+        const res = await fetch(`/api/messenger/check-connection/${slug}?phone=${normalizedPhone}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.connected) {
+            setMessengerConnected(true);
+            setWaitingForMessengerConnection(false);
+            stopped = true;
+          }
+        }
+      } catch {
+        // non-fatal
+      }
+
+      if (!stopped && tries < 20) {
+        setTimeout(tick, 1000);
+      }
+    };
+
+    setTimeout(tick, 1000);
+    return () => {
+      stopped = true;
+    };
+  }, [orderSuccess, storeSlug, product?.store_slug, formData.phone, messengerConnected, messengerInfo?.enabled]);
+
   // Poll for Telegram connection after clicking Connect button
   useEffect(() => {
     if (!waitingForTelegramConnection) return;
@@ -733,7 +776,7 @@ export default function ProductCheckout() {
               </div>
             </div>
 
-            {telegramBotInfo?.enabled && (
+            {telegramBotInfo && (
               <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 mb-4 text-left">
                 <div className="flex items-center justify-between gap-3 mb-3">
                   <div className="flex items-center gap-2">
@@ -745,7 +788,9 @@ export default function ProductCheckout() {
                           ? 'Connected ✓' 
                           : waitingForTelegramConnection 
                             ? 'Waiting for connection...' 
-                            : 'Not connected yet'}
+                            : telegramBotInfo.enabled
+                              ? 'Not connected yet'
+                              : 'Unavailable'}
                       </p>
                     </div>
                   </div>
@@ -753,7 +798,12 @@ export default function ProductCheckout() {
                   {!telegramConnected ? (
                     <button
                       onClick={handleConnectTelegram}
-                      disabled={!formData.phone || formData.phone.replace(/\D/g, '').length < 9 || waitingForTelegramConnection}
+                      disabled={
+                        !telegramBotInfo.enabled ||
+                        !formData.phone ||
+                        formData.phone.replace(/\D/g, '').length < 9 ||
+                        waitingForTelegramConnection
+                      }
                       className="px-3 py-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold disabled:opacity-50 flex items-center gap-1"
                     >
                       {waitingForTelegramConnection ? (
@@ -762,7 +812,7 @@ export default function ProductCheckout() {
                           Waiting...
                         </>
                       ) : (
-                        'Connect'
+                        telegramBotInfo.enabled ? 'Connect' : 'Unavailable'
                       )}
                     </button>
                   ) : (
@@ -1037,15 +1087,26 @@ export default function ProductCheckout() {
             </div>
 
             {/* Telegram */}
-            {telegramBotInfo?.enabled && (
+            {telegramBotInfo && (
               <div className="flex items-center justify-between p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
                 <div className="flex items-center gap-2">
                   <Send className="w-4 h-4 text-blue-400" />
                   <span className="text-white text-sm">Track via Telegram</span>
                   {telegramConnected && <span className="text-green-400 text-xs">✓</span>}
+                  {!telegramBotInfo.enabled && <span className="text-white/50 text-xs">(Not available)</span>}
                 </div>
                 {!telegramConnected && (
-                  <button onClick={handleConnectTelegram} disabled={!formData.phone || formData.phone.replace(/\D/g, '').length < 9} className="px-3 py-1 rounded bg-blue-500 text-white text-xs font-bold disabled:opacity-50">Connect</button>
+                  <button
+                    onClick={handleConnectTelegram}
+                    disabled={
+                      !telegramBotInfo.enabled ||
+                      !formData.phone ||
+                      formData.phone.replace(/\D/g, '').length < 9
+                    }
+                    className="px-3 py-1 rounded bg-blue-500 text-white text-xs font-bold disabled:opacity-50"
+                  >
+                    {telegramBotInfo.enabled ? 'Connect' : 'Unavailable'}
+                  </button>
                 )}
               </div>
             )}

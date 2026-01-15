@@ -467,6 +467,19 @@ export async function processPendingMessages(): Promise<void> {
        LIMIT 100`
     );
 
+    const isRetryableNetworkError = (err: unknown): boolean => {
+      const msg = String(err || '').toLowerCase();
+      return (
+        msg.includes('fetch failed') ||
+        msg.includes('etimedout') ||
+        msg.includes('enotfound') ||
+        msg.includes('econnreset') ||
+        msg.includes('econnrefused') ||
+        msg.includes('socket hang up') ||
+        msg.includes('network')
+      );
+    };
+
     for (const message of result.rows) {
       try {
         let sendResult;
@@ -555,6 +568,14 @@ export async function processPendingMessages(): Promise<void> {
             [message.client_id]
           );
           const pageAccessToken = String(settingsResult.rows[0]?.fb_page_access_token || '').trim() || PLATFORM_FB_PAGE_ACCESS_TOKEN;
+
+          if (!pageAccessToken) {
+            await pool.query(
+              `UPDATE bot_messages SET status = 'failed', error_message = $1, updated_at = NOW() WHERE id = $2`,
+              ['MISSING_MESSENGER_PAGE_ACCESS_TOKEN', message.id]
+            );
+            continue;
+          }
           
           // Try to get PSID from order_messenger_chats first, then customer_messaging_ids
           let psid: string | null = null;
@@ -599,10 +620,23 @@ export async function processPendingMessages(): Promise<void> {
             [message.id]
           );
         } else {
-          await pool.query(
-            `UPDATE bot_messages SET status = 'failed', error_message = $1, updated_at = NOW() WHERE id = $2`,
-            [sendResult?.error || "Unknown error", message.id]
-          );
+          // If we cannot reach the provider (transient network/DNS issue), retry later instead of failing permanently.
+          if (message.message_type === 'messenger' && isRetryableNetworkError(sendResult?.error)) {
+            await pool.query(
+              `UPDATE bot_messages
+               SET send_at = NOW() + INTERVAL '5 minutes',
+                   status = 'pending',
+                   error_message = $1,
+                   updated_at = NOW()
+               WHERE id = $2`,
+              [sendResult?.error || 'NETWORK_ERROR', message.id]
+            );
+          } else {
+            await pool.query(
+              `UPDATE bot_messages SET status = 'failed', error_message = $1, updated_at = NOW() WHERE id = $2`,
+              [sendResult?.error || "Unknown error", message.id]
+            );
+          }
         }
       } catch (error) {
         console.error(`Error processing message ${message.id}:`, error);
@@ -618,6 +652,32 @@ export async function processPendingMessages(): Promise<void> {
   } catch (error) {
     console.error("Error in processPendingMessages:", error);
   }
+}
+
+let botMessageWorkerInterval: ReturnType<typeof setInterval> | null = null;
+
+export function startBotMessageWorker(options?: { intervalMs?: number }): void {
+  if (botMessageWorkerInterval) {
+    console.log('[BotMessages] Worker already running');
+    return;
+  }
+
+  const intervalMs = Math.max(5_000, Number(options?.intervalMs ?? 30_000));
+  console.log(`[BotMessages] Starting worker (${Math.round(intervalMs / 1000)}s interval)`);
+
+  // Run immediately on start
+  processPendingMessages().catch((err) => console.error('[BotMessages] Worker error:', err));
+
+  botMessageWorkerInterval = setInterval(() => {
+    processPendingMessages().catch((err) => console.error('[BotMessages] Worker error:', err));
+  }, intervalMs);
+}
+
+export function stopBotMessageWorker(): void {
+  if (!botMessageWorkerInterval) return;
+  clearInterval(botMessageWorkerInterval);
+  botMessageWorkerInterval = null;
+  console.log('[BotMessages] Worker stopped');
 }
 
 /**

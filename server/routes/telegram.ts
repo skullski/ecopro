@@ -13,7 +13,13 @@ export const setWebhookSecret: RequestHandler = async (req, res) => {
     const pool = await ensureConnection();
     const result = await pool.query(
       `UPDATE bot_settings SET telegram_webhook_secret = $1, updated_at = NOW()
-       WHERE client_id = (SELECT client_id FROM client_store_settings WHERE store_slug = $2 OR LOWER(store_name) = LOWER($2) LIMIT 1)
+       WHERE client_id = (
+         SELECT client_id
+         FROM client_store_settings
+         WHERE store_slug = $2
+            OR LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER(REGEXP_REPLACE($2, '[^a-zA-Z0-9]', '', 'g'))
+         LIMIT 1
+       )
        RETURNING client_id`,
       [secret, storeSlug]
     );
@@ -92,7 +98,8 @@ export const getTelegramBotLink: RequestHandler = async (req, res) => {
     // Get client_id from store slug OR store name (for backwards compatibility)
     const storeRes = await pool.query(
       `SELECT client_id, store_name, store_slug FROM client_store_settings 
-       WHERE store_slug = $1 OR LOWER(store_name) = LOWER($1) 
+       WHERE store_slug = $1
+          OR LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER(REGEXP_REPLACE($1, '[^a-zA-Z0-9]', '', 'g'))
        LIMIT 1`,
       [storeSlug]
     );
@@ -107,9 +114,12 @@ export const getTelegramBotLink: RequestHandler = async (req, res) => {
     
     // Get bot settings
     const botRes = await pool.query(
-      `SELECT enabled, provider, telegram_bot_username 
-       FROM bot_settings 
-       WHERE client_id = $1 AND enabled = true AND provider = 'telegram'
+      `SELECT enabled, provider, telegram_bot_username, telegram_bot_token
+       FROM bot_settings
+       WHERE client_id = $1
+         AND enabled = true
+         AND telegram_bot_username IS NOT NULL
+         AND telegram_bot_token IS NOT NULL
        LIMIT 1`,
       [clientId]
     );
@@ -188,7 +198,8 @@ export const checkTelegramConnection: RequestHandler = async (req, res) => {
     // Get client_id from store slug OR store name
     const storeRes = await pool.query(
       `SELECT client_id FROM client_store_settings 
-       WHERE store_slug = $1 OR LOWER(store_name) = LOWER($1) 
+       WHERE store_slug = $1
+          OR LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER(REGEXP_REPLACE($1, '[^a-zA-Z0-9]', '', 'g'))
        LIMIT 1`,
       [storeSlug]
     );
