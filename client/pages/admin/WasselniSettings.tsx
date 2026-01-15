@@ -28,6 +28,8 @@ interface BotSettings {
   fbPageId?: string;
   fbPageAccessToken?: string;
   messengerDelayMinutes?: number;
+  platformMessengerAvailable?: boolean;
+  platformMessengerPageId?: string;
   templateGreeting?: string;
   templateInstantOrder?: string;
   templatePinInstructions?: string;
@@ -41,6 +43,8 @@ export default function AdminWasselniSettings() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [settingUpMessenger, setSettingUpMessenger] = useState(false);
+  const [storeSlug, setStoreSlug] = useState<string>('');
   const [activeBot, setActiveBot] = useState<'confirmation' | 'updates' | 'tracking' | null>(null);
   const [settings, setSettings] = useState<BotSettings>({
     enabled: true,
@@ -61,6 +65,8 @@ export default function AdminWasselniSettings() {
     fbPageId: '',
     fbPageAccessToken: '',
     messengerDelayMinutes: 5,
+    platformMessengerAvailable: false,
+    platformMessengerPageId: '',
     templateGreeting: `شكراً لطلبك من {storeName}، {customerName}! 🎉\n\n✅ فعّل الإشعارات لتلقي تأكيد الطلب وتحديثات التتبع.`,
     templateInstantOrder: `🎉 شكراً لك {customerName}!\n\nتم استلام طلبك بنجاح ✅\n\n━━━━━━━━━━━━━━━━\n📦 تفاصيل الطلب\n━━━━━━━━━━━━━━━━\n🔢 رقم الطلب: #{orderId}\n📱 المنتج: {productName}\n💰 السعر: {totalPrice} دج\n📍 الكمية: {quantity}\n\n━━━━━━━━━━━━━━━━\n👤 معلومات التوصيل\n━━━━━━━━━━━━━━━━\n📛 الاسم: {customerName}\n📞 الهاتف: {customerPhone}\n🏠 العنوان: {address}\n\n━━━━━━━━━━━━━━━━\n🚚 حالة الطلب: قيد المعالجة\n━━━━━━━━━━━━━━━━\n\nسنتصل بك قريباً للتأكيد 📞\n\n⭐ من {storeName}`,
     templatePinInstructions: `📌 نصيحة مهمة:\n\nاضغط مطولاً على الرسالة السابقة واختر "تثبيت" لتتبع طلبك بسهولة!\n\n🔔 تأكد من:\n• تفعيل الإشعارات\n• عدم كتم المحادثة\n• ستتلقى تحديثات حالة الطلب هنا مباشرة`,
@@ -82,6 +88,17 @@ export default function AdminWasselniSettings() {
       if (response.ok) {
         const data = await response.json();
         setSettings(data);
+      }
+
+      // Also load store settings so we can call Messenger setup endpoints without asking for slug.
+      try {
+        const storeRes = await fetch('/api/client/store/settings');
+        if (storeRes.ok) {
+          const storeData = await storeRes.json();
+          setStoreSlug(String(storeData?.store_slug || ''));
+        }
+      } catch {
+        // ignore
       }
     } catch (error) {
       console.error('Failed to load bot settings:', error);
@@ -129,6 +146,43 @@ export default function AdminWasselniSettings() {
 
   const updateSetting = (key: keyof BotSettings, value: any) => {
     setSettings(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleSetupMessengerGetStarted = async () => {
+    // Requires store slug + saved page token
+    const slug = String(storeSlug || '').trim();
+    if (!slug) {
+      toast({
+        title: 'Error',
+        description: 'Store slug not available yet. Please refresh this page.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSettingUpMessenger(true);
+    try {
+      const res = await fetch(`/api/messenger/setup-get-started/${encodeURIComponent(slug)}`, {
+        method: 'POST',
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.error || 'Failed to setup Get Started');
+      }
+      toast({
+        title: 'Success',
+        description: 'Messenger Get Started button configured.',
+      });
+    } catch (error) {
+      console.error('Failed to setup Messenger Get Started:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to setup Messenger Get Started',
+        variant: 'destructive',
+      });
+    } finally {
+      setSettingUpMessenger(false);
+    }
   };
 
   if (loading) {
@@ -482,7 +536,13 @@ export default function AdminWasselniSettings() {
                 <div className="space-y-3 pt-3 border-t border-slate-200 dark:border-slate-700">
                   <div className="p-3 bg-blue-50 dark:bg-blue-500/10 rounded-xl border border-blue-200 dark:border-blue-500/30 mb-3">
                     <p className="text-xs text-blue-700 dark:text-blue-300">
-                      <strong>Setup:</strong> Create a Facebook App, add Messenger product, and get a Page Access Token from <a href="https://developers.facebook.com" target="_blank" rel="noopener noreferrer" className="underline">developers.facebook.com</a>
+                      <strong>Setup:</strong>
+                      {' '}
+                      If you have your own Facebook Page, connect it in Meta and paste the Page ID + Page Access Token.
+                      {' '}
+                      {settings.platformMessengerAvailable
+                        ? 'Or enable Messenger below to use the EcoPro platform Page (no Page/token needed).'
+                        : 'If you don’t have a Page yet, EcoPro needs a Page + token to send/receive.'}
                     </p>
                   </div>
 
@@ -490,18 +550,36 @@ export default function AdminWasselniSettings() {
                     const pageId = String(settings.fbPageId || settings.facebookPageId || '').trim();
                     const token = String(settings.fbPageAccessToken || settings.facebookAccessToken || '').trim();
                     const wantsMessenger = Boolean(settings.messengerEnabled);
+                    const platformAvailable = Boolean(settings.platformMessengerAvailable);
+                    const hasStorePageConfig = Boolean(pageId && token);
 
                     if (!wantsMessenger) {
                       return (
                         <div className="p-3 rounded-xl border bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-700">
                           <p className="text-xs text-slate-600 dark:text-slate-300">
-                            Messenger is currently <strong>disabled</strong>. Enable it below after you connect a Facebook Page in Meta and paste the Page ID + Page Access Token here.
+                            Messenger is currently <strong>disabled</strong>.
+                            {' '}
+                            {platformAvailable
+                              ? 'Enable it below to use the EcoPro platform Page, or paste your own Page ID + token.'
+                              : 'Enable it below after you connect a Facebook Page in Meta and paste the Page ID + Page Access Token here.'}
                           </p>
                         </div>
                       );
                     }
 
-                    if (!pageId || !token) {
+                    if (!hasStorePageConfig && platformAvailable) {
+                      return (
+                        <div className="p-3 rounded-xl border bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30">
+                          <p className="text-xs text-emerald-800 dark:text-emerald-200">
+                            <strong>Configured (platform mode):</strong>
+                            {' '}
+                            EcoPro will use the platform Messenger Page to send/receive messages for your store.
+                          </p>
+                        </div>
+                      );
+                    }
+
+                    if (!hasStorePageConfig) {
                       return (
                         <div className="p-3 rounded-xl border bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30">
                           <p className="text-xs text-amber-800 dark:text-amber-200">
@@ -527,7 +605,7 @@ export default function AdminWasselniSettings() {
                     <Input
                       value={settings.fbPageId || settings.facebookPageId || ''}
                       onChange={(e) => updateSetting('fbPageId', e.target.value)}
-                      placeholder="e.g. 123456789012345"
+                      placeholder={settings.platformMessengerAvailable ? "Optional if using EcoPro platform Page" : "e.g. 123456789012345"}
                     />
                   </div>
                   <div className="space-y-2">
@@ -536,7 +614,7 @@ export default function AdminWasselniSettings() {
                       type="password"
                       value={settings.fbPageAccessToken || settings.facebookAccessToken || ''}
                       onChange={(e) => updateSetting('fbPageAccessToken', e.target.value)}
-                      placeholder="Paste Page Access Token from Facebook"
+                      placeholder={settings.platformMessengerAvailable ? "Optional if using EcoPro platform Page" : "Paste Page Access Token from Facebook"}
                     />
                   </div>
                   <div className="space-y-2">
@@ -576,6 +654,25 @@ export default function AdminWasselniSettings() {
                     <Label className="text-sm text-slate-700 dark:text-slate-300">
                       {t('bot.messengerEnabled') || 'Enable Messenger notifications'}
                     </Label>
+                  </div>
+
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={handleSetupMessengerGetStarted}
+                      disabled={
+                        settingUpMessenger ||
+                        !storeSlug ||
+                        (((!String(settings.fbPageId || '').trim() || !String(settings.fbPageAccessToken || '').trim()) && !Boolean(settings.platformMessengerAvailable))) ||
+                        !(settings.messengerEnabled ?? false)
+                      }
+                      className="w-full px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {settingUpMessenger ? 'Setting up…' : 'Setup Messenger Get Started'}
+                    </button>
+                    <p className="text-xs text-slate-500 mt-2">
+                      This configures the Page “Get Started” button so customers can link faster after clicking Connect.
+                    </p>
                   </div>
                 </div>
               )}

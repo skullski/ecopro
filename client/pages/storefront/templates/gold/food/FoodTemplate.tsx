@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import type { TemplateProps } from '../../types';
+import { formatMoneyAmount } from '../../../../../utils/money';
 
 type Breakpoint = 'mobile' | 'tablet' | 'desktop';
 type NavLink = { label: string; url: string };
@@ -500,7 +501,7 @@ const headerBg = asString(settings.template_header_bg) || 'rgba(26,26,26,0.95)';
                   </h3>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
                     <span style={{ color: accent, fontSize: '14px', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                      {props.formatPrice?.(product.price) || `${product.price} DZD`}
+                      {props.formatPrice?.(product.price) || `${formatMoneyAmount(product.price, props.settings?.currency_code || 'DZD')} ${props.settings?.currency_code || 'DZD'}`}
                     </span>
                     <button
                       style={{

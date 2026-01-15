@@ -42,6 +42,19 @@ export default function Checkout() {
   >(null);
   const [telegramConnected, setTelegramConnected] = useState(false);
   const [checkingTelegramConnection, setCheckingTelegramConnection] = useState(false);
+  const [messengerInfo, setMessengerInfo] = useState<
+    | {
+        enabled?: boolean;
+        storeName?: string;
+        pageId?: string;
+        url?: string;
+        refToken?: string;
+      }
+    | null
+  >(null);
+  const [messengerConnected, setMessengerConnected] = useState(false);
+  const [checkingMessengerConnection, setCheckingMessengerConnection] = useState(false);
+  const [waitingForMessengerConnection, setWaitingForMessengerConnection] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [addr, setAddr] = useState<AddressFormValue & { hai?: string }>({
     name: "",
@@ -124,6 +137,26 @@ export default function Checkout() {
     fetchTelegramInfo();
   }, [storeSlug]);
 
+  // Fetch Messenger info for this store
+  useEffect(() => {
+    const fetchMessengerInfo = async () => {
+      if (!storeSlug) {
+        setMessengerInfo(null);
+        return;
+      }
+      try {
+        const res = await fetch(`/api/messenger/page-link/${encodeURIComponent(storeSlug)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setMessengerInfo(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch Messenger info:', error);
+      }
+    };
+    fetchMessengerInfo();
+  }, [storeSlug]);
+
   // Check Telegram connection when phone changes
   useEffect(() => {
     const checkConnection = async () => {
@@ -158,6 +191,41 @@ export default function Checkout() {
     return () => window.clearTimeout(timeout);
   }, [storeSlug, addr.phone]);
 
+  // Check Messenger connection when phone changes
+  useEffect(() => {
+    const checkConnection = async () => {
+      if (!storeSlug) {
+        setMessengerConnected(false);
+        return;
+      }
+
+      const normalizedPhone = (addr.phone || '').replace(/\D/g, '');
+      if (normalizedPhone.length < 9) {
+        setMessengerConnected(false);
+        return;
+      }
+
+      setCheckingMessengerConnection(true);
+      try {
+        const res = await fetch(
+          `/api/messenger/check-connection/${encodeURIComponent(storeSlug)}?phone=${encodeURIComponent(normalizedPhone)}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setMessengerConnected(Boolean(data?.connected));
+          if (data?.connected) setWaitingForMessengerConnection(false);
+        }
+      } catch (error) {
+        console.error('Failed to check Messenger connection:', error);
+      } finally {
+        setCheckingMessengerConnection(false);
+      }
+    };
+
+    const timeout = window.setTimeout(checkConnection, 500);
+    return () => window.clearTimeout(timeout);
+  }, [storeSlug, addr.phone]);
+
   const handleConnectTelegram = async () => {
     if (!storeSlug || !telegramBotInfo?.botUsername) return;
     let url = `https://t.me/${telegramBotInfo.botUsername}`;
@@ -176,6 +244,55 @@ export default function Checkout() {
       }
     }
     window.open(url, '_blank');
+  };
+
+  const handleConnectMessenger = async () => {
+    if (!storeSlug || !messengerInfo?.pageId) return;
+
+    let url = messengerInfo.url || `https://m.me/${encodeURIComponent(messengerInfo.pageId)}`;
+    const normalizedPhone = (addr.phone || '').replace(/\D/g, '');
+    if (normalizedPhone.length >= 9) {
+      try {
+        const res = await fetch(
+          `/api/messenger/page-link/${encodeURIComponent(storeSlug)}?phone=${encodeURIComponent(normalizedPhone)}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.url) url = String(data.url);
+        }
+      } catch (error) {
+        console.error('Failed to get Messenger link:', error);
+      }
+    }
+
+    setWaitingForMessengerConnection(true);
+    window.open(url, '_blank');
+
+    if (normalizedPhone.length < 9) return;
+    let tries = 0;
+    const poll = window.setInterval(async () => {
+      tries++;
+      if (tries > 60) {
+        window.clearInterval(poll);
+        setWaitingForMessengerConnection(false);
+        return;
+      }
+      try {
+        const res = await fetch(
+          `/api/messenger/check-connection/${encodeURIComponent(storeSlug)}?phone=${encodeURIComponent(normalizedPhone)}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.connected) {
+            setMessengerConnected(true);
+            setWaitingForMessengerConnection(false);
+            window.clearInterval(poll);
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }, 2000);
   };
 
   useEffect(() => {
@@ -487,6 +604,34 @@ export default function Checkout() {
                     className="w-full mt-3 py-2 rounded-lg bg-gradient-to-r from-cyan-400 to-cyan-500 text-white font-bold shadow hover:from-cyan-500 hover:to-cyan-600 focus:ring-2 focus:ring-cyan-400 focus:outline-none transition-all disabled:opacity-60"
                   >
                     Connect Telegram
+                  </button>
+                  <div className="text-xs text-gray-500 mt-2">
+                    Add your phone number first, then connect to receive instant order updates.
+                  </div>
+                </div>
+              )}
+
+              {storeSlug && messengerInfo?.enabled && (
+                <div className="rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="text-sm font-semibold text-gray-200">Messenger (Optional)</div>
+                    <div className="text-xs text-gray-400">
+                      {checkingMessengerConnection
+                        ? 'Checking…'
+                        : messengerConnected
+                        ? 'Connected ✓'
+                        : waitingForMessengerConnection
+                        ? 'Waiting…'
+                        : 'Not connected'}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleConnectMessenger}
+                    disabled={(addr.phone || '').replace(/\D/g, '').length < 9 || waitingForMessengerConnection}
+                    className="w-full mt-3 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold shadow hover:from-blue-600 hover:to-blue-700 focus:ring-2 focus:ring-blue-400 focus:outline-none transition-all disabled:opacity-60"
+                  >
+                    {waitingForMessengerConnection ? 'Connecting…' : 'Connect Messenger'}
                   </button>
                   <div className="text-xs text-gray-500 mt-2">
                     Add your phone number first, then connect to receive instant order updates.

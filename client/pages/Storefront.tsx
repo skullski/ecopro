@@ -10,6 +10,7 @@ import { storeNameToSlug } from '@/utils/storeUrl';
 import UniversalStyleInjector from '@/components/storefront/UniversalStyleInjector';
 import PixelScripts from '@/components/storefront/PixelScripts';
 import { setWindowTemplateSettings } from '@/lib/templateWindow';
+import { formatMoney } from '@/utils/money';
 
 interface StoreProduct {
   id: number;
@@ -73,15 +74,8 @@ export default function Storefront() {
   const secondaryColor = storeSettings.secondary_color || '#0ea5e9';
   const bannerUrl = storeSettings.banner_url || '';
 
-  // Price formatter based on store currency (no decimals)
-  const formatPrice = (n: number) => {
-    const code = storeSettings.currency_code || 'DZD';
-    try {
-      return new Intl.NumberFormat(undefined, { style: 'currency', currency: code, maximumFractionDigits: 0, minimumFractionDigits: 0 }).format(Math.round(n));
-    } catch {
-      return `${Math.round(n)} ${code}`;
-    }
-  };
+  // Price formatter based on store currency (DZD has no cents)
+  const formatPrice = (n: number) => formatMoney(n, storeSettings.currency_code || 'DZD');
 
   // Recompute filtered products when query/category/sort changes
   useEffect(() => {
@@ -208,6 +202,9 @@ export default function Storefront() {
             secondary_color: newSettings.secondary_color,
           }));
         }
+        
+        // Track page view (fire and forget - don't await)
+        fetch(`/api/storefront/${storeSlug}/track-view`, { method: 'POST' }).catch(() => {});
         
         const items = (productsData?.products || productsData || []) as StoreProduct[];
         // Strip categories from products for all storefront templates.

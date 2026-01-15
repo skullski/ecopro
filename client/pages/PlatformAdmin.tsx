@@ -2815,7 +2815,7 @@ export default function PlatformAdmin() {
                           <p className="text-xs text-slate-500">{product.seller_email}</p>
                         </div>
                       </td>
-                      <td className="p-4 font-bold text-emerald-400">${product.price}</td>
+                      <td className="p-4 font-bold text-emerald-400">${Math.round(Number(product.price) || 0)}</td>
                       <td className="p-4">
                         <Badge className={product.status === 'active' ? 'bg-emerald-500/80' : product.flagged ? 'bg-red-500/80' : 'bg-slate-500/80'}>
                           {product.flagged ? 'Flagged' : product.status}

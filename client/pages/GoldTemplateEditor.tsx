@@ -386,6 +386,10 @@ export default function GoldTemplateEditor() {
   };
 
   const handlePreviewClickCapture = useCallback((e: React.MouseEvent) => {
+    // If the template picker is open, any click in the preview should hide it
+    // so users can focus on selecting/editing elements inside the phone.
+    setTemplatePickerOpen(false);
+
     const target = e.target as HTMLElement | null;
     if (!target) return;
 
@@ -401,6 +405,11 @@ export default function GoldTemplateEditor() {
     e.stopPropagation();
     setSelectedEditPath(path);
   }, []);
+
+  // Close the template picker if the user switches away from Preview.
+  useEffect(() => {
+    if (activeTab !== 'preview') setTemplatePickerOpen(false);
+  }, [activeTab]);
 
   useEffect(() => {
     const root = previewRootRef.current;
@@ -427,6 +436,12 @@ export default function GoldTemplateEditor() {
       }
     }
   }, [selectedEditPath]);
+
+  const previewGridCols = useMemo(() => {
+    if (previewDevice === 'desktop') return 'lg:grid-cols-[1fr,380px]';
+    if (previewDevice === 'tablet') return 'lg:grid-cols-[620px,1fr]';
+    return 'lg:grid-cols-[420px,1fr]';
+  }, [previewDevice]);
 
   useEffect(() => {
     const root = previewRootRef.current;
@@ -1059,153 +1074,6 @@ export default function GoldTemplateEditor() {
         </div>
       </div>
 
-      {templatePickerOpen && (
-        <div className="border-b bg-background">
-          <div className="container mx-auto px-4 py-4">
-            <div className="flex items-center justify-between gap-3 mb-3">
-              <div className="text-sm font-semibold">{(t('editor.chooseTemplate') as any) || 'Choose Template'}</div>
-              <Button type="button" variant="ghost" size="sm" onClick={() => setTemplatePickerOpen(false)}>
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-
-            <div className="mb-3 flex items-center justify-between p-3 bg-primary/10 rounded-lg border border-primary/20">
-              <div className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-primary" />
-                <span className="text-sm text-muted-foreground">{(t('editor.currentTemplate') as any) || 'Current'}:</span>
-                <span className="font-semibold text-primary">
-                  {TEMPLATE_PREVIEWS.find((t) => t.id === String(settings.template || 'shiro-hana'))?.name || 'Shiro Hana'}
-                </span>
-              </div>
-              <Button variant="outline" size="sm" onClick={handleResetTemplate} className="text-xs">
-                🔄 Reset Template
-              </Button>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3 mb-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Search templates..."
-                  value={templateSearch}
-                  onChange={(e) => setTemplateSearch(e.target.value)}
-                  className="pl-10 pr-8"
-                />
-                {templateSearch && (
-                  <button
-                    type="button"
-                    onClick={() => setTemplateSearch('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    aria-label="Clear search"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-2 mb-3">
-              {TEMPLATE_CATEGORIES.map((cat) => (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => setTemplateCategory(cat.id)}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                    templateCategory === cat.id
-                      ? 'bg-primary text-primary-foreground shadow-md'
-                      : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
-                  }`}
-                >
-                  <span className="mr-1">{cat.icon}</span>
-                  {cat.name}
-                </button>
-              ))}
-            </div>
-
-            <p className="text-sm text-muted-foreground mb-3">
-              Showing {filteredTemplates.length} of {TEMPLATE_PREVIEWS.length} templates
-            </p>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 max-h-[420px] overflow-y-auto pr-2">
-              {filteredTemplates.map((template) => {
-                const isSelected = String(settings.template || 'shiro-hana') === template.id;
-                return (
-                  <div
-                    key={template.id}
-                    onClick={() => {
-                      handleTemplateChange(template.id);
-                      setTemplatePickerOpen(false);
-                    }}
-                    className={`relative cursor-pointer group transition-all duration-200 ${
-                      isSelected ? 'scale-105 z-10' : 'hover:scale-105'
-                    }`}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        handleTemplateChange(template.id);
-                        setTemplatePickerOpen(false);
-                      }
-                    }}
-                  >
-                    <div
-                      className={`relative aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all ${
-                        isSelected
-                          ? 'border-primary shadow-lg shadow-primary/25 ring-2 ring-primary/50'
-                          : 'border-border/50 hover:border-primary/50'
-                      }`}
-                    >
-                      <img
-                        src={template.image}
-                        alt={template.name}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                      <div
-                        className={`absolute inset-0 transition-opacity ${
-                          isSelected ? 'bg-primary/10' : 'bg-black/0 group-hover:bg-black/20'
-                        }`}
-                      />
-                      {isSelected && (
-                        <div className="absolute top-2 right-2 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                          <Check className="w-3 h-3 text-primary-foreground" />
-                        </div>
-                      )}
-                    </div>
-                    <p
-                      className={`mt-2 text-center text-xs font-medium truncate ${
-                        isSelected ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
-                      }`}
-                    >
-                      {template.name}
-                    </p>
-                  </div>
-                );
-              })}
-
-              {filteredTemplates.length === 0 && (
-                <div className="col-span-full py-10 text-center">
-                  <div className="text-4xl mb-2">🔍</div>
-                  <p className="text-muted-foreground">No templates found</p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setTemplateSearch('');
-                      setTemplateCategory('all');
-                    }}
-                    className="mt-2 text-sm text-primary hover:underline"
-                  >
-                    Clear filters
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Alerts */}
       {error && (
         <Alert variant="destructive" className="m-4">
@@ -1221,7 +1089,7 @@ export default function GoldTemplateEditor() {
       {/* Content */}
       <div className="container mx-auto px-4 py-6">
         {activeTab === 'preview' ? (
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr,380px] gap-4 items-start">
+          <div className={`grid grid-cols-1 ${previewGridCols} gap-4 items-start`}>
             <div className="space-y-3">
               {/* Device Frame Container */}
               <div ref={previewFitRef} className="w-full">
@@ -1255,8 +1123,8 @@ export default function GoldTemplateEditor() {
                 ) : (
                   <div
                     style={{
-                      width: `${Math.round(baseDeviceOuter.width * deviceScale)}px`,
-                      height: `${Math.round(baseDeviceOuter.height * deviceScale)}px`,
+                      width: `${baseDeviceOuter.width * deviceScale}px`,
+                      height: `${baseDeviceOuter.height * deviceScale}px`,
                     }}
                   >
                     <div
@@ -1362,7 +1230,169 @@ export default function GoldTemplateEditor() {
             </div>
 
             <div className="sticky top-24">
-              {editPanel}
+              <div className="relative">
+                {/* Edit panel stays mounted (so it feels instant when templates hide) */}
+                <div
+                  className={`transition-opacity duration-200 ${
+                    templatePickerOpen ? 'opacity-30 pointer-events-none select-none' : 'opacity-100'
+                  }`}
+                >
+                  {editPanel}
+                </div>
+
+                {/* Templates panel slides over the edit panel */}
+                <div
+                  className={
+                    `absolute inset-0 transition-all duration-200 ease-out will-change-transform ${
+                      templatePickerOpen
+                        ? 'opacity-100 translate-x-0 pointer-events-auto'
+                        : 'opacity-0 translate-x-6 pointer-events-none'
+                    }`
+                  }
+                >
+                  <Card className="h-full">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <CardTitle className="text-base">{(t('editor.chooseTemplate') as any) || 'Choose Template'}</CardTitle>
+                        <Button type="button" variant="ghost" size="sm" onClick={() => setTemplatePickerOpen(false)}>
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg border border-primary/20">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Check className="w-4 h-4 text-primary" />
+                          <span className="text-sm text-muted-foreground whitespace-nowrap">{(t('editor.currentTemplate') as any) || 'Current'}:</span>
+                          <span className="font-semibold text-primary truncate">
+                            {TEMPLATE_PREVIEWS.find((t) => t.id === String(settings.template || 'shiro-hana'))?.name || 'Shiro Hana'}
+                          </span>
+                        </div>
+                        <Button variant="outline" size="sm" onClick={handleResetTemplate} className="text-xs">
+                          🔄 Reset
+                        </Button>
+                      </div>
+
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          type="text"
+                          placeholder="Search templates..."
+                          value={templateSearch}
+                          onChange={(e) => setTemplateSearch(e.target.value)}
+                          className="pl-10 pr-8"
+                        />
+                        {templateSearch && (
+                          <button
+                            type="button"
+                            onClick={() => setTemplateSearch('')}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            aria-label="Clear search"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        {TEMPLATE_CATEGORIES.map((cat) => (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => setTemplateCategory(cat.id)}
+                            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                              templateCategory === cat.id
+                                ? 'bg-primary text-primary-foreground shadow-md'
+                                : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
+                            }`}
+                          >
+                            <span className="mr-1">{cat.icon}</span>
+                            {cat.name}
+                          </button>
+                        ))}
+                      </div>
+
+                      <p className="text-sm text-muted-foreground">
+                        Showing {filteredTemplates.length} of {TEMPLATE_PREVIEWS.length}
+                      </p>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-3 max-h-[540px] overflow-y-auto pr-1">
+                        {filteredTemplates.map((template) => {
+                          const isSelected = String(settings.template || 'shiro-hana') === template.id;
+                          return (
+                            <div
+                              key={template.id}
+                              onClick={() => {
+                                handleTemplateChange(template.id);
+                              }}
+                              className={`relative cursor-pointer group transition-all duration-200 ${
+                                isSelected ? 'scale-[1.01]' : 'hover:scale-[1.01]'
+                              }`}
+                              role="button"
+                              tabIndex={0}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  handleTemplateChange(template.id);
+                                }
+                              }}
+                            >
+                              <div
+                                className={`relative aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all ${
+                                  isSelected
+                                    ? 'border-primary shadow-lg shadow-primary/25 ring-2 ring-primary/50'
+                                    : 'border-border/50 hover:border-primary/50'
+                                }`}
+                              >
+                                <img
+                                  src={template.image}
+                                  alt={template.name}
+                                  className="w-full h-full object-cover"
+                                  loading="lazy"
+                                />
+                                <div
+                                  className={`absolute inset-0 transition-opacity ${
+                                    isSelected ? 'bg-primary/10' : 'bg-black/0 group-hover:bg-black/20'
+                                  }`}
+                                />
+                                {isSelected && (
+                                  <div className="absolute top-2 right-2 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                                    <Check className="w-3 h-3 text-primary-foreground" />
+                                  </div>
+                                )}
+                              </div>
+                              <p
+                                className={`mt-2 text-center text-xs font-medium truncate ${
+                                  isSelected ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
+                                }`}
+                              >
+                                {template.name}
+                              </p>
+                            </div>
+                          );
+                        })}
+
+                        {filteredTemplates.length === 0 && (
+                          <div className="col-span-full py-8 text-center">
+                            <div className="text-3xl mb-2">🔍</div>
+                            <p className="text-muted-foreground">No templates found</p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setTemplateSearch('');
+                                setTemplateCategory('all');
+                              }}
+                              className="mt-2 text-sm text-primary hover:underline"
+                            >
+                              Clear filters
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
             </div>
           </div>
         ) : (

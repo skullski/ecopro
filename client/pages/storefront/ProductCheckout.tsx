@@ -154,6 +154,19 @@ export default function ProductCheckout() {
     queryKey: ['product', productIdentifier],
     queryFn: async () => {
       const sessionId = searchParams.get('session');
+
+      // Public product page view tracking (counts views)
+      // Only applies when visiting via /store/:storeSlug/:productSlug
+      if (storeSlug && productSlug) {
+        const res = await fetch(
+          `/api/store/${encodeURIComponent(String(storeSlug))}/${encodeURIComponent(String(productSlug))}?track_view=1`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          localStorage.setItem(`product_${productIdentifier}`, JSON.stringify(data));
+          return data;
+        }
+      }
       
       if (sessionId) {
         try {

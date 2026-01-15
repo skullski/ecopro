@@ -993,4 +993,48 @@ export const getProductWithStoreInfo: RequestHandler = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch product' });
   }
 };
+
+// Track storefront page view (increments page_views counter in client_store_settings)
+export const trackStorefrontPageView: RequestHandler = async (req, res) => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  let storeSlug: string;
+  try {
+    storeSlug = StoreSlugSchema.parse(req.params.storeSlug);
+  } catch {
+    return res.status(400).json({ error: 'Invalid store ID' });
+  }
+
+  try {
+    const pool = await ensureConnection();
+    
+    // Update page_views for client store
+    const result = await pool.query(
+      `UPDATE client_store_settings 
+       SET page_views = COALESCE(page_views, 0) + 1
+       WHERE store_slug = $1 
+          OR LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1)
+       RETURNING page_views`,
+      [storeSlug]
+    );
+
+    if (result.rows.length === 0) {
+      // Try seller store
+      await pool.query(
+        `UPDATE seller_store_settings 
+         SET page_views = COALESCE(page_views, 0) + 1
+         WHERE store_slug = $1 
+            OR LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1)`,
+        [storeSlug]
+      );
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    if (!isProduction) {
+      console.error('Track page view error:', error);
+    }
+    // Don't fail the request - page view tracking is non-critical
+    res.json({ success: false });
+  }
+};
 // trigger rebuild

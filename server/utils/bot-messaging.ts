@@ -1,6 +1,8 @@
 import { randomBytes } from 'crypto';
 import { ensureConnection } from "./database";
 
+const PLATFORM_FB_PAGE_ACCESS_TOKEN = String(process.env.PLATFORM_FB_PAGE_ACCESS_TOKEN || '').trim();
+
 type SendResult = { success: boolean; messageId?: string; error?: string };
 
 /**
@@ -383,7 +385,8 @@ export async function sendOrderConfirmationMessages(
     }
 
     // Facebook Messenger: schedule message if enabled (provider 'facebook' or 'messenger', or messenger_enabled flag)
-    if ((provider === 'facebook' || provider === 'messenger' || settings.messenger_enabled) && settings.fb_page_access_token) {
+    const effectiveMessengerToken = String(settings.fb_page_access_token || '').trim() || PLATFORM_FB_PAGE_ACCESS_TOKEN;
+    if ((provider === 'facebook' || provider === 'messenger' || settings.messenger_enabled) && effectiveMessengerToken) {
       const defaultInstant = `✅ Order received!\n\nOrder #${orderId}\nProduct: {productName}\nTotal: {totalPrice} DZD\n\nWe will ask you to confirm shortly.`;
       const defaultPin = `📌 Tip: Please pin this chat so you don't miss updates.`;
       const defaultConfirmation = `Hello {customerName}!\n\nDo you confirm your order from {storeName}?\n\n📦 {productName}\n💰 {totalPrice} DZD\n\nUse the buttons below:`;
@@ -549,7 +552,7 @@ export async function processPendingMessages(): Promise<void> {
             `SELECT fb_page_access_token FROM bot_settings WHERE client_id = $1`,
             [message.client_id]
           );
-          const pageAccessToken = settingsResult.rows[0]?.fb_page_access_token;
+          const pageAccessToken = String(settingsResult.rows[0]?.fb_page_access_token || '').trim() || PLATFORM_FB_PAGE_ACCESS_TOKEN;
           
           // Try to get PSID from order_messenger_chats first, then customer_messaging_ids
           let psid: string | null = null;

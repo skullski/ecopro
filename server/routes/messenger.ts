@@ -18,6 +18,42 @@ const router = Router();
 const FB_VERIFY_TOKEN = process.env.FB_MESSENGER_VERIFY_TOKEN || 'ecopro_messenger_verify';
 const FB_APP_SECRET = process.env.FB_APP_SECRET || '';
 
+// Optional platform-wide fallback page (shared) for stores without their own Page.
+// NOTE: Page Access Token is secret; never expose it via public endpoints.
+const PLATFORM_FB_PAGE_ID = String(process.env.PLATFORM_FB_PAGE_ID || '').trim();
+const PLATFORM_FB_PAGE_ACCESS_TOKEN = String(process.env.PLATFORM_FB_PAGE_ACCESS_TOKEN || '').trim();
+const PLATFORM_MESSENGER_ENABLED =
+  String(process.env.PLATFORM_MESSENGER_ENABLED || '').toLowerCase() === 'true' ||
+  (!!PLATFORM_FB_PAGE_ID && !!PLATFORM_FB_PAGE_ACCESS_TOKEN);
+
+function isPlatformPage(pageId: string): boolean {
+  return !!PLATFORM_FB_PAGE_ID && String(pageId) === PLATFORM_FB_PAGE_ID;
+}
+
+function resolveEffectivePageConfig(botRow: any): { enabled: boolean; pageId: string; pageAccessToken: string; usingPlatform: boolean; reason?: string } {
+  const enabled = Boolean(botRow?.messenger_enabled);
+  if (!enabled) return { enabled: false, pageId: '', pageAccessToken: '', usingPlatform: false };
+
+  const storePageId = botRow?.fb_page_id ? String(botRow.fb_page_id).trim() : '';
+  const storeToken = botRow?.fb_page_access_token ? String(botRow.fb_page_access_token).trim() : '';
+
+  if (storePageId && storeToken) {
+    return { enabled: true, pageId: storePageId, pageAccessToken: storeToken, usingPlatform: false };
+  }
+
+  if (PLATFORM_MESSENGER_ENABLED && PLATFORM_FB_PAGE_ID && PLATFORM_FB_PAGE_ACCESS_TOKEN) {
+    return { enabled: true, pageId: PLATFORM_FB_PAGE_ID, pageAccessToken: PLATFORM_FB_PAGE_ACCESS_TOKEN, usingPlatform: true };
+  }
+
+  return {
+    enabled: false,
+    pageId: storePageId,
+    pageAccessToken: '',
+    usingPlatform: false,
+    reason: storePageId && !storeToken ? 'missing_page_access_token' : 'missing_page_config',
+  };
+}
+
 /**
  * Generate a unique ref token for Messenger preconnect
  */
@@ -64,17 +100,16 @@ export const getMessengerPageLink: RequestHandler = async (req, res) => {
       return res.json({ enabled: false });
     }
 
-    const enabled = Boolean(botRes.rows[0].messenger_enabled);
-    const pageId = botRes.rows[0].fb_page_id ? String(botRes.rows[0].fb_page_id).trim() : '';
-    const pageAccessToken = botRes.rows[0].fb_page_access_token
-      ? String(botRes.rows[0].fb_page_access_token).trim()
-      : '';
-    if (!enabled || !pageId || !pageAccessToken) {
+    const effective = resolveEffectivePageConfig(botRes.rows[0]);
+    if (!effective.enabled || !effective.pageId || !effective.pageAccessToken) {
       return res.json({
         enabled: false,
-        ...(enabled && pageId && !pageAccessToken ? { reason: 'missing_page_access_token' } : {}),
+        ...(effective.reason ? { reason: effective.reason } : {}),
       });
     }
+
+    const pageId = effective.pageId;
+    const usingPlatform = effective.usingPlatform;
 
     let messengerUrl = `https://m.me/${encodeURIComponent(pageId)}`;
     let refToken = '';
@@ -105,6 +140,7 @@ export const getMessengerPageLink: RequestHandler = async (req, res) => {
       pageId,
       url: messengerUrl,
       refToken: refToken || undefined,
+      usingPlatform,
       instructions: {
         ar: 'اضغط على الزر لفتح Messenger وبدء محادثة. ثم ارجع هنا لإتمام طلبك وستتلقى التأكيد مباشرة!',
         en: 'Click the button to open Messenger and start a chat. Then come back here to place your order and receive instant confirmation!'
@@ -420,7 +456,7 @@ async function handleReferral(pageId: string, senderId: string, referral: any) {
 
     // Look up the preconnect token
     const preconnectRes = await pool.query(
-      `SELECT client_id, customer_phone FROM messenger_preconnect_tokens
+      `SELECT client_id, customer_phone, page_id FROM messenger_preconnect_tokens
        WHERE ref_token = $1 AND expires_at > NOW()
        LIMIT 1`,
       [refToken]
@@ -431,18 +467,42 @@ async function handleReferral(pageId: string, senderId: string, referral: any) {
       return;
     }
 
-    const { client_id, customer_phone } = preconnectRes.rows[0];
+    const preconnect = preconnectRes.rows[0];
+    const client_id = Number(preconnect.client_id);
+    const customer_phone = String(preconnect.customer_phone);
+
+    // Ensure the token was created for the page that is receiving this event.
+    // This matters a lot when platform page is shared.
+    const tokenPageId = preconnect.page_id ? String(preconnect.page_id) : '';
+    if (tokenPageId && String(tokenPageId) !== String(pageId)) {
+      console.warn(`[Messenger] Referral token page mismatch. tokenPageId=${tokenPageId} eventPageId=${pageId}`);
+      return;
+    }
 
     // Get store settings
     const settingsRes = await pool.query(
-      `SELECT fb_page_access_token, template_greeting FROM bot_settings 
-       WHERE client_id = $1 AND messenger_enabled = true`,
+      `SELECT fb_page_access_token, template_greeting, messenger_enabled
+       FROM bot_settings
+       WHERE client_id = $1
+       LIMIT 1`,
       [client_id]
     );
 
     if (!settingsRes.rows.length) return;
 
-    const { fb_page_access_token, template_greeting } = settingsRes.rows[0];
+    const { fb_page_access_token, template_greeting, messenger_enabled } = settingsRes.rows[0];
+    if (!messenger_enabled) return;
+
+    const pageAccessToken = fb_page_access_token
+      ? String(fb_page_access_token).trim()
+      : isPlatformPage(pageId)
+        ? PLATFORM_FB_PAGE_ACCESS_TOKEN
+        : '';
+
+    if (!pageAccessToken) {
+      console.warn(`[Messenger] Missing page access token for referral client ${client_id} page ${pageId}`);
+      return;
+    }
 
     // Save the phone->PSID mapping
     await pool.query(
@@ -481,7 +541,7 @@ async function handleReferral(pageId: string, senderId: string, referral: any) {
     greeting = replaceTemplateVariables(greeting, { storeName, customerName: '' });
     
     await sendMessengerMessage(
-      fb_page_access_token,
+      pageAccessToken,
       senderId,
       greeting
     );
@@ -503,19 +563,56 @@ async function handlePostback(pageId: string, senderId: string, postback: any) {
   try {
     const pool = await ensureConnection();
 
+    let client_id: number | null = null;
+    let store_name = 'Store';
+    let pageAccessToken = '';
+
     // Get client_id and page access token
     const settingsResult = await pool.query(
       `SELECT fb_page_access_token, client_id, store_name FROM bot_settings 
-       WHERE fb_page_id = $1 AND messenger_enabled = true`,
+       WHERE fb_page_id = $1 AND messenger_enabled = true
+       LIMIT 1`,
       [pageId]
     );
 
-    if (settingsResult.rows.length === 0) {
+    if (settingsResult.rows.length > 0) {
+      client_id = Number(settingsResult.rows[0].client_id);
+      store_name = settingsResult.rows[0].store_name || store_name;
+      pageAccessToken = settingsResult.rows[0].fb_page_access_token
+        ? String(settingsResult.rows[0].fb_page_access_token).trim()
+        : isPlatformPage(pageId)
+          ? PLATFORM_FB_PAGE_ACCESS_TOKEN
+          : '';
+    } else if (isPlatformPage(pageId)) {
+      // Platform page: resolve client by the current sender (only works after linking)
+      const subRes = await pool.query(
+        `SELECT client_id FROM messenger_subscribers
+         WHERE psid = $1 AND page_id = $2
+         ORDER BY last_interaction DESC
+         LIMIT 1`,
+        [senderId, pageId]
+      );
+      client_id = subRes.rows[0]?.client_id ? Number(subRes.rows[0].client_id) : null;
+      if (!client_id) {
+        console.warn(`[Messenger] No client mapping found for platform page ${pageId} sender ${senderId}`);
+        return;
+      }
+      pageAccessToken = PLATFORM_FB_PAGE_ACCESS_TOKEN;
+
+      const storeRes = await pool.query(
+        `SELECT store_name FROM client_store_settings WHERE client_id = $1 LIMIT 1`,
+        [client_id]
+      );
+      store_name = storeRes.rows[0]?.store_name || store_name;
+    } else {
       console.warn(`[Messenger] No settings found for page ${pageId}`);
       return;
     }
 
-    const { fb_page_access_token, client_id, store_name } = settingsResult.rows[0];
+    if (!pageAccessToken) {
+      console.warn(`[Messenger] Missing page access token for postback page ${pageId}`);
+      return;
+    }
 
     // Handle GET_STARTED - this fires when user clicks m.me link or Get Started button
     if (payload === 'GET_STARTED') {
@@ -528,9 +625,9 @@ async function handlePostback(pageId: string, senderId: string, postback: any) {
       // Check for pending preconnect token
       const pendingToken = await pool.query(
         `SELECT customer_phone, ref_token FROM messenger_preconnect_tokens 
-         WHERE client_id = $1 AND used_at IS NULL AND expires_at > NOW()
+         WHERE client_id = $1 AND page_id = $2 AND used_at IS NULL AND expires_at > NOW()
          ORDER BY created_at DESC LIMIT 1`,
-        [client_id]
+        [client_id, String(pageId)]
       );
 
       if (pendingToken.rows.length > 0) {
@@ -553,7 +650,7 @@ async function handlePostback(pageId: string, senderId: string, postback: any) {
         console.log(`[Messenger] Linked PSID ${senderId} to phone ${customer_phone} via GET_STARTED`);
 
         await sendMessengerMessage(
-          fb_page_access_token,
+          pageAccessToken,
           senderId,
           `✅ تم ربط حسابك بنجاح!\n\nيمكنك الآن العودة لإتمام طلبك. ستتلقى تأكيدات الطلبات هنا! 📦`
         );
@@ -562,7 +659,7 @@ async function handlePostback(pageId: string, senderId: string, postback: any) {
 
       // Default welcome if no preconnect
       await sendMessengerMessage(
-        fb_page_access_token,
+        pageAccessToken,
         senderId,
         `مرحباً بك! 👋\n\nأنا مساعدك الآلي من ${store_name}.\n\nسأرسل لك تأكيدات الطلبات وتحديثات الشحن.`
       );
@@ -591,13 +688,13 @@ async function handlePostback(pageId: string, senderId: string, postback: any) {
           [orderId, client_id]
         );
         await sendMessengerMessage(
-          fb_page_access_token,
+          pageAccessToken,
           senderId,
           `✅ تم تأكيد طلبك #${orderId}. شكراً لك!`
         );
       } else {
         await sendMessengerMessage(
-          fb_page_access_token,
+          pageAccessToken,
           senderId,
           `تمت معالجة هذا الطلب مسبقاً.`
         );
@@ -625,13 +722,13 @@ async function handlePostback(pageId: string, senderId: string, postback: any) {
           [orderId, client_id]
         );
         await sendMessengerMessage(
-          fb_page_access_token,
+          pageAccessToken,
           senderId,
           `❌ تم إلغاء طلبك #${orderId}. شكراً لتواصلك مع ${store_name}.`
         );
       } else {
         await sendMessengerMessage(
-          fb_page_access_token,
+          pageAccessToken,
           senderId,
           `تمت معالجة هذا الطلب مسبقاً.`
         );
@@ -651,7 +748,7 @@ async function handlePostback(pageId: string, senderId: string, postback: any) {
       const storeName = storeResult.rows[0]?.store_name || store_name;
 
       await sendMessengerMessage(
-        fb_page_access_token,
+        pageAccessToken,
         senderId,
         `للتواصل مع ${storeName}:\n📞 ${phone}\n\nسنرد عليك في أقرب وقت! 💬`
       );
@@ -671,38 +768,66 @@ async function handleMessage(pageId: string, senderId: string, message: any) {
   try {
     const pool = await ensureConnection();
 
-    // Get page access token - try both exact match and partial match
-    let settingsResult = await pool.query(
+    let client_id: number | null = null;
+    let store_name = 'Store';
+    let pageAccessToken = '';
+
+    // Get page access token (must match the exact page id)
+    const settingsResult = await pool.query(
       `SELECT fb_page_access_token, client_id, store_name FROM bot_settings 
-       WHERE fb_page_id = $1 AND messenger_enabled = true`,
+       WHERE fb_page_id = $1 AND messenger_enabled = true
+       LIMIT 1`,
       [pageId]
     );
 
-    // Fallback: if no exact match, try finding by partial match or any enabled messenger
-    if (settingsResult.rows.length === 0) {
-      console.log(`[Messenger] No exact match for pageId ${pageId}, trying fallback...`);
-      settingsResult = await pool.query(
-        `SELECT fb_page_access_token, client_id, store_name FROM bot_settings 
-         WHERE messenger_enabled = true AND fb_page_access_token IS NOT NULL
-         LIMIT 1`
+    if (settingsResult.rows.length > 0) {
+      client_id = Number(settingsResult.rows[0].client_id);
+      store_name = settingsResult.rows[0].store_name || store_name;
+      pageAccessToken = settingsResult.rows[0].fb_page_access_token
+        ? String(settingsResult.rows[0].fb_page_access_token).trim()
+        : isPlatformPage(pageId)
+          ? PLATFORM_FB_PAGE_ACCESS_TOKEN
+          : '';
+    } else if (isPlatformPage(pageId)) {
+      // Platform page: resolve client by previously stored mapping
+      const subRes = await pool.query(
+        `SELECT client_id FROM messenger_subscribers
+         WHERE psid = $1 AND page_id = $2
+         ORDER BY last_interaction DESC
+         LIMIT 1`,
+        [senderId, pageId]
       );
-    }
+      client_id = subRes.rows[0]?.client_id ? Number(subRes.rows[0].client_id) : null;
+      if (!client_id) {
+        console.log(`[Messenger] No client mapping found for platform page ${pageId} sender ${senderId}`);
+        return;
+      }
+      pageAccessToken = PLATFORM_FB_PAGE_ACCESS_TOKEN;
 
-    if (settingsResult.rows.length === 0) {
+      const storeRes = await pool.query(
+        `SELECT store_name FROM client_store_settings WHERE client_id = $1 LIMIT 1`,
+        [client_id]
+      );
+      store_name = storeRes.rows[0]?.store_name || store_name;
+    } else {
       console.log(`[Messenger] No settings found for page ${pageId}`);
       return;
     }
 
-    const { fb_page_access_token, client_id, store_name } = settingsResult.rows[0];
+    if (!pageAccessToken) {
+      console.warn(`[Messenger] Missing page access token for message page ${pageId}`);
+      return;
+    }
+
     console.log(`[Messenger] Found client ${client_id} for page ${pageId}`);
 
     // Check if there's a pending preconnect token for this PSID (user just clicked m.me link)
     // First check if we have any unexpired token for this client where the user might be connecting
     const pendingToken = await pool.query(
       `SELECT customer_phone, ref_token FROM messenger_preconnect_tokens 
-       WHERE client_id = $1 AND used_at IS NULL AND expires_at > NOW()
+       WHERE client_id = $1 AND page_id = $2 AND used_at IS NULL AND expires_at > NOW()
        ORDER BY created_at DESC LIMIT 1`,
-      [client_id]
+        [client_id, String(pageId)]
     );
 
     if (pendingToken.rows.length > 0) {
@@ -727,7 +852,7 @@ async function handleMessage(pageId: string, senderId: string, message: any) {
 
       // Send welcome/confirmation
       await sendMessengerMessage(
-        fb_page_access_token,
+        pageAccessToken,
         senderId,
         `✅ تم ربط حسابك بنجاح!\n\nيمكنك الآن العودة لإتمام طلبك. ستتلقى تأكيدات الطلبات هنا مباشرة! 📦`
       );
@@ -744,7 +869,7 @@ async function handleMessage(pageId: string, senderId: string, message: any) {
     // Handle help command
     if (text.includes('مساعدة') || text.includes('help')) {
       await sendMessengerMessage(
-        fb_page_access_token,
+        pageAccessToken,
         senderId,
         `كيف يمكنني مساعدتك؟ 🤔\n\n• للاستفسار عن طلب، أرسل رقم الطلب\n• للتواصل مع الدعم، اكتب "دعم"\n• لمعرفة حالة طلبك، اكتب "طلباتي"`
       );
@@ -760,13 +885,13 @@ async function handleMessage(pageId: string, senderId: string, message: any) {
       );
 
       if (ordersResult.rows.length === 0) {
-        await sendMessengerMessage(fb_page_access_token, senderId, 'لا توجد طلبات حالياً.');
+        await sendMessengerMessage(pageAccessToken, senderId, 'لا توجد طلبات حالياً.');
       } else {
         const ordersList = ordersResult.rows
           .map(o => `📦 #${o.id} - ${o.status} - ${o.total_price} دج`)
           .join('\n');
         await sendMessengerMessage(
-          fb_page_access_token,
+          pageAccessToken,
           senderId,
           `طلباتك الأخيرة:\n\n${ordersList}`
         );
@@ -818,14 +943,21 @@ const setupGetStarted: RequestHandler = async (req, res) => {
     }
 
     const botRes = await pool.query(
-      `SELECT fb_page_access_token FROM bot_settings WHERE client_id = $1 AND messenger_enabled = true`,
+      `SELECT fb_page_access_token, messenger_enabled FROM bot_settings WHERE client_id = $1 LIMIT 1`,
       [storeRes.rows[0].client_id]
     );
-    if (botRes.rows.length === 0 || !botRes.rows[0].fb_page_access_token) {
+
+    if (botRes.rows.length === 0 || !botRes.rows[0].messenger_enabled) {
+      return res.status(400).json({ error: 'Messenger is disabled' });
+    }
+
+    const storeToken = botRes.rows[0].fb_page_access_token ? String(botRes.rows[0].fb_page_access_token).trim() : '';
+    const effectiveToken = storeToken || (PLATFORM_MESSENGER_ENABLED ? PLATFORM_FB_PAGE_ACCESS_TOKEN : '');
+    if (!effectiveToken) {
       return res.status(400).json({ error: 'Messenger not configured' });
     }
 
-    const success = await setupGetStartedButton(botRes.rows[0].fb_page_access_token);
+    const success = await setupGetStartedButton(effectiveToken);
     res.json({ success });
   } catch (error) {
     console.error('[Messenger] Setup Get Started error:', error);
@@ -841,6 +973,8 @@ const getConfig: RequestHandler = async (req, res) => {
     enabled: !!process.env.FB_APP_SECRET,
     webhookUrl: `${process.env.BASE_URL || 'https://ecopro-1lbl.onrender.com'}/api/messenger/webhook`,
     verifyToken: FB_VERIFY_TOKEN,
+    platformAvailable: PLATFORM_MESSENGER_ENABLED && !!PLATFORM_FB_PAGE_ID && !!PLATFORM_FB_PAGE_ACCESS_TOKEN,
+    platformPageId: PLATFORM_MESSENGER_ENABLED && PLATFORM_FB_PAGE_ID ? PLATFORM_FB_PAGE_ID : undefined,
   });
 };
 

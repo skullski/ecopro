@@ -1037,17 +1037,39 @@ export const getStoreStats: RequestHandler = async (req, res) => {
     const user = (req as any).user;
     if (user && (user.role === 'admin' || user.user_type === 'admin')) return res.status(403).json({ error: 'Admins do not have a client store' });
     const clientId = (req as any).user.id;
-    const statsRes = await pool.query(
+    
+    // Get product stats
+    const productStatsRes = await pool.query(
       `SELECT 
         COUNT(*) AS total_products,
         COUNT(*) FILTER (WHERE status='active') AS active_products,
         COUNT(*) FILTER (WHERE status='draft') AS draft_products,
-        COALESCE(SUM(views),0) AS total_views
+        COALESCE(SUM(views),0) AS total_product_views
        FROM client_store_products
        WHERE client_id = $1`,
       [clientId]
     );
-    res.json(statsRes.rows[0]);
+    
+    // Get page views from store settings
+    const pageViewsRes = await pool.query(
+      `SELECT COALESCE(page_views, 0) AS page_views
+       FROM client_store_settings
+       WHERE client_id = $1`,
+      [clientId]
+    );
+    
+    const productStats = productStatsRes.rows[0];
+    const pageViews = pageViewsRes.rows[0]?.page_views || 0;
+    
+    res.json({
+      total_products: productStats.total_products,
+      active_products: productStats.active_products,
+      draft_products: productStats.draft_products,
+      total_product_views: productStats.total_product_views,
+      page_views: pageViews,
+      // Keep total_views for backward compatibility (now means page views)
+      total_views: pageViews
+    });
   } catch (e) {
     console.error('Get store stats error:', e);
     res.status(500).json({ error: 'Failed to fetch stats' });

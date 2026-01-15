@@ -2,6 +2,10 @@ import { RequestHandler } from "express";
 import { pool } from "../utils/database";
 import { registerTelegramWebhook, upsertTelegramWebhookSecret } from "../utils/telegram";
 
+const PLATFORM_FB_PAGE_ID = String(process.env.PLATFORM_FB_PAGE_ID || '').trim();
+const PLATFORM_FB_PAGE_ACCESS_TOKEN = String(process.env.PLATFORM_FB_PAGE_ACCESS_TOKEN || '').trim();
+const PLATFORM_MESSENGER_AVAILABLE = !!PLATFORM_FB_PAGE_ID && !!PLATFORM_FB_PAGE_ACCESS_TOKEN;
+
 async function getClientAccessState(clientId: string | number): Promise<{ allowBot: boolean; reason?: string }>
 {
   // Check if user is locked - is_locked means subscription issue, bot should be disabled
@@ -79,6 +83,8 @@ export const getBotSettings: RequestHandler = async (req, res) => {
         fbPageId: '',
         fbPageAccessToken: '',
         messengerDelayMinutes: 5,
+        platformMessengerAvailable: PLATFORM_MESSENGER_AVAILABLE,
+        platformMessengerPageId: PLATFORM_MESSENGER_AVAILABLE ? PLATFORM_FB_PAGE_ID : '',
         templateGreeting: `شكراً لطلبك من {storeName}، {customerName}! 🎉\n\n✅ فعّل الإشعارات لتلقي تأكيد الطلب وتحديثات التتبع.`,
         templateInstantOrder: `🎉 شكراً لك {customerName}!\n\nتم استلام طلبك بنجاح ✅\n\n━━━━━━━━━━━━━━━━\n📦 تفاصيل الطلب\n━━━━━━━━━━━━━━━━\n🔢 رقم الطلب: #{orderId}\n📱 المنتج: {productName}\n💰 السعر: {totalPrice} دج\n📍 الكمية: {quantity}\n\n━━━━━━━━━━━━━━━━\n👤 معلومات التوصيل\n━━━━━━━━━━━━━━━━\n📛 الاسم: {customerName}\n📞 الهاتف: {customerPhone}\n🏠 العنوان: {address}\n\n━━━━━━━━━━━━━━━━\n🚚 حالة الطلب: قيد المعالجة\n━━━━━━━━━━━━━━━━\n\nسنتصل بك قريباً للتأكيد 📞\n\n⭐ من {storeName}`,
         templatePinInstructions: `📌 نصيحة مهمة:\n\nاضغط مطولاً على الرسالة السابقة واختر "تثبيت" لتتبع طلبك بسهولة!\n\n🔔 تأكد من:\n• تفعيل الإشعارات\n• عدم كتم المحادثة\n• ستتلقى تحديثات حالة الطلب هنا مباشرة`,
@@ -123,6 +129,8 @@ export const getBotSettings: RequestHandler = async (req, res) => {
       fbPageId: settings.fb_page_id || '',
       fbPageAccessToken: settings.fb_page_access_token || '',
       messengerDelayMinutes: settings.messenger_delay_minutes || 5,
+      platformMessengerAvailable: PLATFORM_MESSENGER_AVAILABLE,
+      platformMessengerPageId: PLATFORM_MESSENGER_AVAILABLE ? PLATFORM_FB_PAGE_ID : '',
     };
 
     res.json(response);

@@ -63,6 +63,28 @@ export default function Store() {
   const { t } = useTranslation();
   // Products Management was duplicated with Overview; keep a single Store page.
 
+  const applyFilters = (
+    list: StoreProduct[],
+    q: string,
+    status: string
+  ): StoreProduct[] => {
+    let out = Array.isArray(list) ? [...list] : [];
+    const query = String(q || '').trim().toLowerCase();
+
+    if (status && status !== 'all') {
+      out = out.filter((p) => p.status === status);
+    }
+    if (query) {
+      out = out.filter((p) => {
+        const title = String(p.title || '').toLowerCase();
+        const desc = String(p.description || '').toLowerCase();
+        const slug = String(p.slug || '').toLowerCase();
+        return title.includes(query) || desc.includes(query) || slug.includes(query);
+      });
+    }
+    return out;
+  };
+
   const getStorefrontPath = (settings: any) => {
     const name = settings?.store_name;
     if (name) return generateStoreUrl(name, false);
@@ -94,10 +116,11 @@ export default function Store() {
     const fetchData = async () => {
       try {
         // Fetch all data in PARALLEL for faster loading
-        const [settingsRes, productsRes, inventoryRes] = await Promise.all([
+        const [settingsRes, productsRes, inventoryRes, statsRes] = await Promise.all([
           fetch('/api/client/store/settings'),
           fetch('/api/client/store/products'),
           fetch('/api/client/stock'),
+          fetch('/api/client/store/stats'),
         ]);
         
         // Process settings
@@ -110,13 +133,19 @@ export default function Store() {
         if (productsRes.ok) {
           const productsData = await productsRes.json();
           setProducts(productsData);
-          setFilteredProducts(productsData);
+          setFilteredProducts(applyFilters(productsData, searchQuery, statusFilter));
         }
         
         // Process inventory
         if (inventoryRes.ok) {
           const inventoryData = await inventoryRes.json();
           setInventoryProducts(inventoryData);
+        }
+        
+        // Process stats
+        if (statsRes.ok) {
+          const statsData = await statsRes.json();
+          setStatsServer(statsData);
         }
       } catch (err) {
         console.error('Failed to fetch store data', err);
@@ -125,6 +154,38 @@ export default function Store() {
       }
     };
     fetchData();
+  }, []);
+
+  // Refresh stats + product views every 5s
+  useEffect(() => {
+    let stopped = false;
+    const refresh = async () => {
+      try {
+        const [productsRes, statsRes] = await Promise.all([
+          fetch('/api/client/store/products'),
+          fetch('/api/client/store/stats'),
+        ]);
+
+        if (!stopped && productsRes.ok) {
+          const productsData = await productsRes.json();
+          setProducts(productsData);
+          setFilteredProducts(applyFilters(productsData, searchQuery, statusFilter));
+        }
+
+        if (!stopped && statsRes.ok) {
+          const statsData = await statsRes.json();
+          setStatsServer(statsData);
+        }
+      } catch (err) {
+        // non-fatal; polling should be silent
+      }
+    };
+
+    const intervalId = window.setInterval(refresh, 5_000);
+    return () => {
+      stopped = true;
+      window.clearInterval(intervalId);
+    };
   }, []);
   // Product action states
   const [showShareModal, setShowShareModal] = useState(false);
@@ -239,7 +300,7 @@ export default function Store() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   // Product logic
   const [savingSettings, setSavingSettings] = useState(false);
-  const [statsServer, setStatsServer] = useState<{total_products:number;active_products:number;draft_products:number;total_views:number}|null>(null);
+  const [statsServer, setStatsServer] = useState<{total_products:number;active_products:number;draft_products:number;total_views:number;page_views?:number;total_product_views?:number}|null>(null);
   // Handler for saving store settings
   const saveStoreSettings = async () => {
           try {
@@ -597,12 +658,13 @@ export default function Store() {
     total: statsServer.total_products,
     active: statsServer.active_products,
     draft: statsServer.draft_products,
-    totalViews: statsServer.total_views,
+    // Storefront (store) views
+    totalViews: (statsServer.page_views ?? statsServer.total_views ?? 0) as number,
   } : {
     total: products.length,
     active: products.filter(p => p.status === 'active').length,
     draft: products.filter(p => p.status === 'draft').length,
-    totalViews: products.reduce((sum, p) => sum + p.views, 0),
+    totalViews: 0,
   };
 
   if (loading) {
@@ -771,13 +833,23 @@ export default function Store() {
                 <Input
                   placeholder={t('store.searchProducts')}
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    setSearchQuery(next);
+                    setFilteredProducts(applyFilters(products, next, statusFilter));
+                  }}
                   className="pl-9 h-9"
                 />
               </div>
             </div>
 
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select
+              value={statusFilter}
+              onValueChange={(v) => {
+                setStatusFilter(v);
+                setFilteredProducts(applyFilters(products, searchQuery, v));
+              }}
+            >
               <SelectTrigger className="w-[170px] h-9">
                 <SelectValue placeholder={t('store.filterByStatus')} />
               </SelectTrigger>
@@ -842,12 +914,22 @@ export default function Store() {
                       <ImageIcon className="w-10 h-10 text-muted-foreground opacity-20" />
                     </div>
                   )}
-                  {product.is_featured && (
-                    <Badge className="absolute top-1.5 left-1.5 bg-yellow-500 text-[10px] px-1.5 py-0.5">
-                      <Star className="w-2.5 h-2.5 mr-0.5" />
-                      Featured
+                  <div className="absolute top-1.5 left-1.5 flex flex-col gap-1">
+                    <Badge
+                      variant="secondary"
+                      className="text-[10px] px-1.5 py-0.5 bg-background/70 backdrop-blur border border-border/60"
+                      title={t('store.views')}
+                    >
+                      <Eye className="w-2.5 h-2.5 mr-0.5" />
+                      {product.views ?? 0}
                     </Badge>
-                  )}
+                    {product.is_featured && (
+                      <Badge className="bg-yellow-500 text-[10px] px-1.5 py-0.5">
+                        <Star className="w-2.5 h-2.5 mr-0.5" />
+                        Featured
+                      </Badge>
+                    )}
+                  </div>
                   <Badge className="absolute top-1.5 right-1.5 text-[10px] px-1.5 py-0.5" variant={
                     product.status === 'active' ? 'default' :
                     product.status === 'draft' ? 'secondary' : 'outline'
@@ -856,22 +938,20 @@ export default function Store() {
                      product.status === 'draft' ? t('store.drafts') : 
                      t('store.archived')}
                   </Badge>
-                  
+                </div>
+
+                <div className="p-2 space-y-1.5">
                   <div className="flex items-center justify-between">
                     <div>
                       <span className="text-sm font-bold text-primary">
-                        ${product.price}
+                        ${Math.round(Number(product.price) || 0)}
                       </span>
                       {product.original_price && (
                         <span className="text-xs text-muted-foreground line-through ml-1">
-                          ${product.original_price}
+                          ${Math.round(Number(product.original_price) || 0)}
                         </span>
                       )}
                     </div>
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">
-                      <Eye className="w-2.5 h-2.5 mr-0.5" />
-                      {product.views}
-                    </Badge>
                   </div>
 
                   {/* Actions */}
@@ -949,7 +1029,7 @@ export default function Store() {
                     </div>
                     <div className="flex items-center gap-4 mt-2">
                       <span className="text-lg font-bold text-primary">
-                        ${product.price}
+                        ${Math.round(Number(product.price) || 0)}
                       </span>
                       <Badge variant="outline" className="text-xs">
                         <Eye className="w-3 h-3 mr-1" />
@@ -1238,7 +1318,7 @@ export default function Store() {
                   step="0.01"
                   value={formData.price || ''}
                   onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
-                  placeholder="0.00"
+                  placeholder="0"
                 />
               </div>
 
@@ -1250,7 +1330,7 @@ export default function Store() {
                   step="0.01"
                   value={formData.original_price || ''}
                   onChange={(e) => setFormData({ ...formData, original_price: parseFloat(e.target.value) || undefined })}
-                  placeholder="0.00"
+                  placeholder="0"
                 />
               </div>
             </div>

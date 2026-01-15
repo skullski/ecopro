@@ -99,16 +99,16 @@ export default function AddOrder() {
         <CardContent className="space-y-3">
           <div className="flex justify-between py-2">
             <span className="text-muted-foreground">{t('admin.orders.addOrder.subtotal')}</span>
-            <span className="font-medium">0.00 DZD</span>
+            <span className="font-medium">0 DZD</span>
           </div>
           <div className="flex justify-between py-2">
             <span className="text-muted-foreground">{t('admin.orders.addOrder.deliveryFee')}</span>
-            <span className="font-medium">0.00 DZD</span>
+            <span className="font-medium">0 DZD</span>
           </div>
           <div className="h-px bg-border" />
           <div className="flex justify-between py-2">
             <span className="font-bold text-lg">{t('admin.orders.addOrder.grandTotal')}</span>
-            <span className="font-bold text-lg text-primary">0.00 DZD</span>
+            <span className="font-bold text-lg text-primary">0 DZD</span>
           </div>
         </CardContent>
       </Card>

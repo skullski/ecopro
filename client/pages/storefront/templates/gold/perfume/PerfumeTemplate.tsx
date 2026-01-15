@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import type { TemplateProps } from '../../types';
+import { formatMoneyAmount } from '../../../../../utils/money';
 
 type Breakpoint = 'mobile' | 'tablet' | 'desktop';
 type NavLink = { label: string; url: string };
@@ -458,7 +459,7 @@ const navLinks = safeParseJsonArray<NavLink>(settings.template_nav_links)
                     <p style={{ fontSize: '10px', color: muted, marginBottom: '12px', letterSpacing: '0.15em', textTransform: 'uppercase', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.category}</p>
                   )}
                   <div style={{ color: accent, fontSize: isMobile ? '15px' : '17px', fontWeight: 400, marginBottom: '16px', whiteSpace: 'nowrap' }}>
-                    {props.formatPrice?.(product.price) || `${product.price} DZD`}
+                    {props.formatPrice?.(product.price) || `${formatMoneyAmount(product.price, props.settings?.currency_code || 'DZD')} ${props.settings?.currency_code || 'DZD'}`}
                   </div>
                   <button
                     style={{

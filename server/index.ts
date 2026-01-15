@@ -48,6 +48,7 @@ import { purgeOldSecurityEvents, securityMiddleware } from "./utils/security";
 import { startScheduledMessageWorker } from "./utils/scheduled-messages";
 import oauthRouter from "./routes/oauth";
 import messengerRouter from "./routes/messenger";
+import legalRouter from "./routes/legal";
 import deliveryPricesRouter, { getStorefrontDeliveryPrices } from "./routes/delivery-prices";
 import {
   validate,
@@ -604,11 +605,11 @@ export function createServer(options?: { skipDbInit?: boolean }) {
     staffRoutes.staffLogout
   );
 
-  // Subscription check middleware: Enforce active subscriptions on /api/client/*, /api/seller/*, and /api/store/* routes
+  // Subscription check middleware: Enforce active subscriptions on /api/client/*, /api/seller/* routes
   // This must come AFTER staff/login (public route) but BEFORE authenticated routes
+  // Note: /api/store/* is intentionally NOT included here as it contains public-facing product routes
   app.use(/^\/api\/client\//, authenticate, requireActiveSubscription);
   app.use(/^\/api\/seller\//, authenticate, requireActiveSubscription);
-  app.use(/^\/api\/store\//, authenticate, requireActiveSubscription);
 
   // Staff management routes (authenticated store owners/clients only)
   app.post(
@@ -1148,6 +1149,7 @@ export function createServer(options?: { skipDbInit?: boolean }) {
   app.get("/api/storefront/:storeSlug/products/:productId", publicStoreRoutes.getStorefrontProductById);
   app.get("/api/storefront/:storeSlug/settings", publicStoreRoutes.getStorefrontSettings);
   app.get("/api/storefront/:storeSlug/address/hai-suggestions", publicStoreRoutes.getStorefrontHaiSuggestions);
+  app.post("/api/storefront/:storeSlug/track-view", publicStoreRoutes.trackStorefrontPageView);
   app.get("/api/store/:storeSlug/:productSlug", publicStoreRoutes.getPublicProduct);
   app.get("/api/product-info/:productId", publicStoreRoutes.getProductWithStoreInfo);
   app.post(
@@ -1228,6 +1230,9 @@ export function createServer(options?: { skipDbInit?: boolean }) {
 
   // Serve uploaded files via signed URLs (private storage, no public directory exposure)
   app.get('/uploads/:filename', serveSignedUpload);
+
+  // Public legal pages (required for Meta app review)
+  app.use('/', legalRouter);
 
   // Serve static files from React build (only in production)
   if (process.env.NODE_ENV === "production") {

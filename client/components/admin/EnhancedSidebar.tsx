@@ -184,7 +184,7 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
             }
           }}
           className={cn(
-            "group relative flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200",
+            "group relative flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-all duration-200",
             level > 0 && (isRTL ? "mr-3" : "ml-3"),
             active 
               ? "shadow-sm font-medium"
@@ -211,7 +211,7 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
           
           {!collapsed && (
             <>
-              <span className="flex-1 font-semibold text-[14px] leading-none">{t(item.titleKey)}</span>
+              <span className="flex-1 font-semibold text-[15px] leading-none">{t(item.titleKey)}</span>
               
               {!hasAccess && (
                 <Lock className="w-3 h-3 text-gray-400" />
@@ -388,7 +388,7 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
       <aside className={cn(
         "hidden lg:block fixed top-0 h-screen transition-all duration-300 z-40",
         isRTL ? "right-0 border-l shadow-2xl" : "left-0 border-r shadow-2xl",
-        collapsed ? "w-16" : "w-56"
+        collapsed ? "w-20" : "w-64"
       )}
       style={{
         backgroundColor: SIDEBAR_THEMES[activeTheme].bg,
@@ -408,7 +408,7 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
             onClick={() => setMobileOpen(false)}
           />
           <aside className={cn(
-            "lg:hidden fixed top-0 h-screen w-60 z-[70] border-r transition-all duration-300",
+            "lg:hidden fixed top-0 h-screen w-64 z-[70] border-r transition-all duration-300",
             isRTL ? "right-0" : "left-0"
           )}
           style={{
