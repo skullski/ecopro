@@ -525,8 +525,8 @@ export default function GoldTemplateEditor() {
       // iPad Pro 11" scaled to 65%: 542x776
       return { width: '542px', maxWidth: '542px', height: '776px', aspectRatio: '542/776' } as const;
     }
-    // Desktop: cap width so the editor panels stay usable.
-    return { width: '100%', maxWidth: '1100px', height: '700px', aspectRatio: 'auto' } as const;
+    // Desktop: cap width so the editor panels stay usable; height is controlled by layout.
+    return { width: '100%', maxWidth: '1100px', height: '100%', aspectRatio: 'auto' } as const;
   }, [previewDevice]);
 
   const baseDeviceOuter = useMemo(() => {
@@ -1000,7 +1000,7 @@ export default function GoldTemplateEditor() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-dvh flex flex-col overflow-hidden bg-background">
       {/* Header */}
       <div className="sticky top-0 z-50 bg-background border-b">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
@@ -1075,25 +1075,30 @@ export default function GoldTemplateEditor() {
         </div>
       </div>
 
-      {/* Alerts */}
-      {error && (
-        <Alert variant="destructive" className="m-4">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      {success && (
-        <Alert className="m-4 border-green-500 text-green-700">
-          <AlertDescription>{success}</AlertDescription>
-        </Alert>
-      )}
+      <div className="flex-1 overflow-hidden flex flex-col">
+        {/* Alerts */}
+        {(error || success) && (
+          <div className="mx-4 mt-4 space-y-3 shrink-0">
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            {success && (
+              <Alert className="border-green-500 text-green-700">
+                <AlertDescription>{success}</AlertDescription>
+              </Alert>
+            )}
+          </div>
+        )}
 
-      {/* Content */}
-      <div className="container mx-auto px-4 py-6">
+        {/* Content */}
+        <div className="container mx-auto px-4 py-4 flex-1 overflow-hidden">
         {activeTab === 'preview' ? (
-          <div className={`grid grid-cols-1 ${previewGridCols} gap-4 items-start`}>
-            <div className="space-y-3 min-w-0">
+          <div className={`grid grid-cols-1 ${previewGridCols} gap-4 items-start h-full overflow-hidden`}>
+            <div className="space-y-3 min-w-0 h-full overflow-hidden flex flex-col">
               {/* Device Frame Container */}
-              <div ref={previewFitRef} className="w-full">
+              <div ref={previewFitRef} className="w-full h-full overflow-hidden">
                 {previewDevice === 'desktop' ? (
                   <div
                     style={{
@@ -1103,6 +1108,7 @@ export default function GoldTemplateEditor() {
                       borderRadius: '8px',
                       width: '100%',
                       maxWidth: deviceFrame.maxWidth as any,
+                      height: '100%',
                     }}
                   >
                     <div
@@ -1235,15 +1241,15 @@ export default function GoldTemplateEditor() {
               </div>
             </div>
 
-            <div className="sticky top-24 min-w-0">
-              <div className="relative">
+            <div className="min-w-0 h-full overflow-hidden">
+              <div className="relative h-full overflow-hidden">
                 {/* Edit panel stays mounted (so it feels instant when templates hide) */}
                 <div
                   className={`transition-opacity duration-200 ${
                     templatePickerOpen ? 'opacity-30 pointer-events-none select-none' : 'opacity-100'
                   }`}
                 >
-                  {editPanel}
+                  <div className="h-full overflow-y-auto pr-1">{editPanel}</div>
                 </div>
 
                 {/* Templates panel slides over the edit panel */}
@@ -1256,7 +1262,7 @@ export default function GoldTemplateEditor() {
                     }`
                   }
                 >
-                  <Card className="h-full">
+                  <Card className="h-full flex flex-col">
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between gap-3">
                         <CardTitle className="text-base">{(t('editor.chooseTemplate') as any) || 'Choose Template'}</CardTitle>
@@ -1265,7 +1271,7 @@ export default function GoldTemplateEditor() {
                         </Button>
                       </div>
                     </CardHeader>
-                    <CardContent className="space-y-3">
+                    <CardContent className="flex-1 min-h-0 flex flex-col gap-3 overflow-hidden">
                       <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg border border-primary/20">
                         <div className="flex items-center gap-2 min-w-0">
                           <Check className="w-4 h-4 text-primary" />
@@ -1322,7 +1328,7 @@ export default function GoldTemplateEditor() {
                         Showing {filteredTemplates.length} of {TEMPLATE_PREVIEWS.length}
                       </p>
 
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-3 max-h-[540px] overflow-y-auto pr-1">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-3 flex-1 min-h-0 overflow-y-auto pr-1">
                         {filteredTemplates.map((template) => {
                           const isSelected = String(settings.template || 'shiro-hana') === template.id;
                           return (
@@ -1402,7 +1408,8 @@ export default function GoldTemplateEditor() {
             </div>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="h-full overflow-y-auto pr-1">
+            <div className="space-y-6">
             {/* Basic Settings */}
             <div className="max-w-2xl mx-auto space-y-6">
             <Card>
@@ -1521,7 +1528,9 @@ export default function GoldTemplateEditor() {
             </Card>
             </div>
           </div>
+          </div>
         )}
+      </div>
       </div>
     </div>
   );
