@@ -644,15 +644,17 @@ export default function AdminWasselniSettings() {
                           placeholder="e.g. 123456789012345"
                         />
                       </div>
-                      <div className="space-y-2">
+                      <form className="space-y-2" onSubmit={(e) => e.preventDefault()}>
                         <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.facebookAccessToken') || 'Page Access Token'}</Label>
                         <Input
+                          name="fbPageAccessToken"
+                          autoComplete="new-password"
                           type="password"
                           value={settings.fbPageAccessToken || settings.facebookAccessToken || ''}
                           onChange={(e) => updateSetting('fbPageAccessToken', e.target.value)}
                           placeholder="Paste Page Access Token from Facebook"
                         />
-                      </div>
+                      </form>
                     </>
                   )}
                   <div className="space-y-2">

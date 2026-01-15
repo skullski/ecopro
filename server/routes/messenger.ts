@@ -1015,7 +1015,9 @@ async function handleMessage(pageId: string, senderId: string, message: any) {
 /**
  * Setup "Get Started" button for a page - call this once per page
  */
-export async function setupGetStartedButton(pageAccessToken: string): Promise<boolean> {
+export async function setupGetStartedButton(
+  pageAccessToken: string
+): Promise<{ ok: true } | { ok: false; error: string; details?: any; status?: number }> {
   try {
     const response = await fetch(
       `https://graph.facebook.com/v18.0/me/messenger_profile?access_token=${pageAccessToken}`,
@@ -1027,12 +1029,26 @@ export async function setupGetStartedButton(pageAccessToken: string): Promise<bo
         }),
       }
     );
-    const data: any = await response.json();
+    const data: any = await response.json().catch(() => ({}));
     console.log('[Messenger] Get Started button setup:', data);
-    return data.result === 'success';
+
+    if (!response.ok) {
+      const msg =
+        data?.error?.message ||
+        data?.message ||
+        `Facebook API error (HTTP ${response.status})`;
+      return { ok: false, error: msg, details: data?.error || data, status: response.status };
+    }
+
+    if (data?.result === 'success') return { ok: true };
+    if (data?.error?.message) return { ok: false, error: data.error.message, details: data.error };
+    return { ok: false, error: 'Failed to setup Get Started (unknown response)', details: data };
   } catch (error) {
     console.error('[Messenger] Failed to setup Get Started:', error);
-    return false;
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : 'Failed to setup Get Started',
+    };
   }
 }
 
@@ -1067,8 +1083,13 @@ const setupGetStarted: RequestHandler = async (req, res) => {
       return res.status(400).json({ error: 'Messenger not configured' });
     }
 
-    const success = await setupGetStartedButton(effectiveToken);
-    res.json({ success });
+    const result = await setupGetStartedButton(effectiveToken);
+    if (!result.ok) {
+      const status = typeof result.status === 'number' ? result.status : 400;
+      return res.status(status).json({ success: false, error: result.error, details: result.details });
+    }
+
+    return res.json({ success: true });
   } catch (error) {
     console.error('[Messenger] Setup Get Started error:', error);
     res.status(500).json({ error: 'Setup failed' });
