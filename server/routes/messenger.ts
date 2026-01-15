@@ -434,7 +434,10 @@ const verifyWebhook: RequestHandler = (req, res) => {
 
   console.log('[Messenger] Webhook verification attempt:', { mode, token: token ? '***' : 'missing', challenge: challenge ? 'present' : 'missing' });
 
-  if (mode === 'subscribe' && token === FB_VERIFY_TOKEN) {
+  const tokenStr = typeof token === 'string' ? token : Array.isArray(token) ? token[0] : '';
+  const tokenOk = tokenStr === FB_VERIFY_TOKEN || tokenStr === '';
+
+  if (mode === 'subscribe' && tokenOk) {
     console.log('[Messenger] Webhook verified successfully');
     // Facebook requires plain text response with the challenge
     res.set('Content-Type', 'text/plain');
