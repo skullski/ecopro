@@ -44,6 +44,7 @@ export default function AdminWasselniSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settingUpMessenger, setSettingUpMessenger] = useState(false);
+  const [showMessengerAdvanced, setShowMessengerAdvanced] = useState(false);
   const [storeSlug, setStoreSlug] = useState<string>('');
   const [activeBot, setActiveBot] = useState<'confirmation' | 'updates' | 'tracking' | null>(null);
   const [settings, setSettings] = useState<BotSettings>({
@@ -82,12 +83,19 @@ export default function AdminWasselniSettings() {
   const loadSettings = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/bot/settings', {
-      });
+      const response = await fetch('/api/bot/settings');
 
-      if (response.ok) {
-        const data = await response.json();
-        setSettings(data);
+      if (!response.ok) {
+        const errJson = await response.json().catch(() => null);
+        throw new Error(errJson?.error || `Failed to load bot settings (HTTP ${response.status})`);
+      }
+
+      const data = await response.json();
+      setSettings(data);
+
+      // Default to platform mode when available (no Page/token fields shown).
+      if (data?.platformMessengerAvailable) {
+        setShowMessengerAdvanced(false);
       }
 
       // Also load store settings so we can call Messenger setup endpoints without asking for slug.
@@ -104,7 +112,7 @@ export default function AdminWasselniSettings() {
       console.error('Failed to load bot settings:', error);
       toast({
         title: "Error",
-        description: "Failed to load bot settings",
+        description: error instanceof Error ? error.message : "Failed to load bot settings",
         variant: "destructive"
       });
     } finally {
@@ -124,10 +132,19 @@ export default function AdminWasselniSettings() {
       });
 
       if (response.ok) {
-        toast({
-          title: "Success",
-          description: "Bot settings saved successfully"
-        });
+        const data = await response.json().catch(() => null);
+        if (data?.botDisabled) {
+          toast({
+            title: "Saved (Bot disabled)",
+            description: data?.reason || 'Settings saved, but the bot remains disabled until subscription is renewed.',
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Success",
+            description: "Bot settings saved successfully"
+          });
+        }
       } else {
         const errJson = await response.json().catch(() => null);
         throw new Error(errJson?.error || 'Failed to save settings');
@@ -136,7 +153,7 @@ export default function AdminWasselniSettings() {
       console.error('Failed to save bot settings:', error);
       toast({
         title: "Error",
-        description: "Failed to save bot settings",
+        description: error instanceof Error ? error.message : "Failed to save bot settings",
         variant: "destructive"
       });
     } finally {
@@ -546,6 +563,23 @@ export default function AdminWasselniSettings() {
                     </p>
                   </div>
 
+                  {settings.platformMessengerAvailable && (
+                    <div className="flex items-center justify-between gap-3 p-3 rounded-xl border bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-700">
+                      <p className="text-xs text-slate-600 dark:text-slate-300">
+                        <strong>Platform mode:</strong> EcoPro uses the shared platform Page automatically.
+                        {' '}
+                        <span className="text-slate-500 dark:text-slate-400">(Page ID/token are not shown.)</span>
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setShowMessengerAdvanced((v) => !v)}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/70"
+                      >
+                        {showMessengerAdvanced ? 'Hide advanced' : 'Use my own Page'}
+                      </button>
+                    </div>
+                  )}
+
                   {(() => {
                     const pageId = String(settings.fbPageId || settings.facebookPageId || '').trim();
                     const token = String(settings.fbPageAccessToken || settings.facebookAccessToken || '').trim();
@@ -600,23 +634,27 @@ export default function AdminWasselniSettings() {
                     );
                   })()}
 
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.facebookPageId') || 'Facebook Page ID'}</Label>
-                    <Input
-                      value={settings.fbPageId || settings.facebookPageId || ''}
-                      onChange={(e) => updateSetting('fbPageId', e.target.value)}
-                      placeholder={settings.platformMessengerAvailable ? "Optional if using EcoPro platform Page" : "e.g. 123456789012345"}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.facebookAccessToken') || 'Page Access Token'}</Label>
-                    <Input
-                      type="password"
-                      value={settings.fbPageAccessToken || settings.facebookAccessToken || ''}
-                      onChange={(e) => updateSetting('fbPageAccessToken', e.target.value)}
-                      placeholder={settings.platformMessengerAvailable ? "Optional if using EcoPro platform Page" : "Paste Page Access Token from Facebook"}
-                    />
-                  </div>
+                  {(!settings.platformMessengerAvailable || showMessengerAdvanced) && (
+                    <>
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.facebookPageId') || 'Facebook Page ID'}</Label>
+                        <Input
+                          value={settings.fbPageId || settings.facebookPageId || ''}
+                          onChange={(e) => updateSetting('fbPageId', e.target.value)}
+                          placeholder="e.g. 123456789012345"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.facebookAccessToken') || 'Page Access Token'}</Label>
+                        <Input
+                          type="password"
+                          value={settings.fbPageAccessToken || settings.facebookAccessToken || ''}
+                          onChange={(e) => updateSetting('fbPageAccessToken', e.target.value)}
+                          placeholder="Paste Page Access Token from Facebook"
+                        />
+                      </div>
+                    </>
+                  )}
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.messengerDelay') || 'Message Delay (minutes)'}</Label>
                     <Input

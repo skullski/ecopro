@@ -1082,9 +1082,9 @@ const getConfig: RequestHandler = async (req, res) => {
   res.json({
     enabled: !!process.env.FB_APP_SECRET,
     webhookUrl: `${process.env.BASE_URL || 'https://ecopro-1lbl.onrender.com'}/api/messenger/webhook`,
-    verifyToken: FB_VERIFY_TOKEN,
     platformAvailable: PLATFORM_MESSENGER_ENABLED && !!PLATFORM_FB_PAGE_ID && !!PLATFORM_FB_PAGE_ACCESS_TOKEN,
-    platformPageId: PLATFORM_MESSENGER_ENABLED && PLATFORM_FB_PAGE_ID ? PLATFORM_FB_PAGE_ID : undefined,
+    // Intentionally do NOT expose verify token or platform Page ID publicly.
+    verifyTokenSet: !!FB_VERIFY_TOKEN,
   });
 };
 

@@ -84,7 +84,8 @@ export const getBotSettings: RequestHandler = async (req, res) => {
         fbPageAccessToken: '',
         messengerDelayMinutes: 5,
         platformMessengerAvailable: PLATFORM_MESSENGER_AVAILABLE,
-        platformMessengerPageId: PLATFORM_MESSENGER_AVAILABLE ? PLATFORM_FB_PAGE_ID : '',
+        // Do not expose platform Page ID to store owners.
+        platformMessengerPageId: '',
         templateGreeting: `شكراً لطلبك من {storeName}، {customerName}! 🎉\n\n✅ فعّل الإشعارات لتلقي تأكيد الطلب وتحديثات التتبع.`,
         templateInstantOrder: `🎉 شكراً لك {customerName}!\n\nتم استلام طلبك بنجاح ✅\n\n━━━━━━━━━━━━━━━━\n📦 تفاصيل الطلب\n━━━━━━━━━━━━━━━━\n🔢 رقم الطلب: #{orderId}\n📱 المنتج: {productName}\n💰 السعر: {totalPrice} دج\n📍 الكمية: {quantity}\n\n━━━━━━━━━━━━━━━━\n👤 معلومات التوصيل\n━━━━━━━━━━━━━━━━\n📛 الاسم: {customerName}\n📞 الهاتف: {customerPhone}\n🏠 العنوان: {address}\n\n━━━━━━━━━━━━━━━━\n🚚 حالة الطلب: قيد المعالجة\n━━━━━━━━━━━━━━━━\n\nسنتصل بك قريباً للتأكيد 📞\n\n⭐ من {storeName}`,
         templatePinInstructions: `📌 نصيحة مهمة:\n\nاضغط مطولاً على الرسالة السابقة واختر "تثبيت" لتتبع طلبك بسهولة!\n\n🔔 تأكد من:\n• تفعيل الإشعارات\n• عدم كتم المحادثة\n• ستتلقى تحديثات حالة الطلب هنا مباشرة`,
@@ -130,7 +131,8 @@ export const getBotSettings: RequestHandler = async (req, res) => {
       fbPageAccessToken: settings.fb_page_access_token || '',
       messengerDelayMinutes: settings.messenger_delay_minutes || 5,
       platformMessengerAvailable: PLATFORM_MESSENGER_AVAILABLE,
-      platformMessengerPageId: PLATFORM_MESSENGER_AVAILABLE ? PLATFORM_FB_PAGE_ID : '',
+      // Do not expose platform Page ID to store owners.
+      platformMessengerPageId: '',
     };
 
     res.json(response);
@@ -176,15 +178,16 @@ export const updateBotSettings: RequestHandler = async (req, res) => {
 
     const effectiveProvider = provider ?? 'telegram';
 
+    let effectiveEnabled: boolean = enabled ?? true;
+    let botDisabledReason: string | undefined;
+
     // Do not allow enabling the bot while subscription is ended or payment-locked.
     if (enabled === true) {
       const access = await getClientAccessState(clientId);
       if (!access.allowBot) {
-        return res.status(403).json({
-          error: access.reason || 'Subscription ended. Please renew to enable the bot.',
-          paymentRequired: true,
-          code: 'SUBSCRIPTION_REQUIRED_FOR_BOT'
-        });
+        // Allow saving other settings (Messenger credentials/templates/etc), but hard-disable the bot.
+        effectiveEnabled = false;
+        botDisabledReason = access.reason || 'Subscription ended. Please renew to enable the bot.';
       }
     }
 
@@ -207,7 +210,7 @@ export const updateBotSettings: RequestHandler = async (req, res) => {
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, NOW(), NOW())`,
         [
           clientId,
-          enabled ?? true,
+          effectiveEnabled,
           updatesEnabled ?? false,
           trackingEnabled ?? false,
           effectiveProvider,
@@ -262,7 +265,7 @@ export const updateBotSettings: RequestHandler = async (req, res) => {
         WHERE client_id = $1`,
         [
           clientId,
-          enabled ?? true,
+          effectiveEnabled,
           updatesEnabled ?? false,
           trackingEnabled ?? false,
           effectiveProvider,
@@ -289,7 +292,7 @@ export const updateBotSettings: RequestHandler = async (req, res) => {
     }
 
     // Auto-register Telegram webhook when Telegram is enabled/configured.
-    if ((enabled ?? true) && effectiveProvider === 'telegram' && telegramBotToken && telegramBotUsername) {
+    if (effectiveEnabled && effectiveProvider === 'telegram' && telegramBotToken && telegramBotUsername) {
       const secret = await upsertTelegramWebhookSecret(clientId);
       const baseUrl = process.env.BASE_URL || 'https://ecopro-1lbl.onrender.com';
       const hook = await registerTelegramWebhook({
@@ -303,6 +306,17 @@ export const updateBotSettings: RequestHandler = async (req, res) => {
           error: hook.error || 'Failed to register Telegram webhook. Check token/username and BASE_URL.',
         });
       }
+    }
+
+    if (botDisabledReason) {
+      return res.json({
+        success: true,
+        message: 'Settings saved, but the bot remains disabled until subscription is renewed.',
+        botDisabled: true,
+        reason: botDisabledReason,
+        paymentRequired: true,
+        code: 'SUBSCRIPTION_REQUIRED_FOR_BOT',
+      });
     }
 
     res.json({ success: true, message: 'Bot settings updated successfully' });

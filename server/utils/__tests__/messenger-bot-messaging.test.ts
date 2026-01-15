@@ -23,7 +23,7 @@ describe('Messenger bot messaging payloads', () => {
     vi.restoreAllMocks();
   });
 
-  it('sendMessengerMessageDirect uses RESPONSE (no MESSAGE_TAG)', async () => {
+  it('sendMessengerMessageDirect uses MESSAGE_TAG (POST_PURCHASE_UPDATE)', async () => {
     const res = await sendMessengerMessageDirect('PAGE_TOKEN', 'PSID_1', 'hello');
     expect(res.success).toBe(true);
 
@@ -31,13 +31,13 @@ describe('Messenger bot messaging payloads', () => {
     const [_url, init] = (global.fetch as any).mock.calls[0];
     const body = JSON.parse(init.body);
 
-    expect(body.messaging_type).toBe('RESPONSE');
-    expect(body.tag).toBeUndefined();
+    expect(body.messaging_type).toBe('MESSAGE_TAG');
+    expect(body.tag).toBe('POST_PURCHASE_UPDATE');
     expect(body.recipient.id).toBe('PSID_1');
     expect(body.message.text).toBe('hello');
   });
 
-  it('sendMessengerOrderConfirmationDirect sends button template with approve/decline postbacks', async () => {
+  it('sendMessengerOrderConfirmationDirect sends button template with approve/decline postbacks (MESSAGE_TAG)', async () => {
     const res = await sendMessengerOrderConfirmationDirect('PAGE_TOKEN', 'PSID_2', {
       text: 'Please confirm',
       orderId: 42,
@@ -48,8 +48,8 @@ describe('Messenger bot messaging payloads', () => {
     const [_url, init] = (global.fetch as any).mock.calls[0];
     const body = JSON.parse(init.body);
 
-    expect(body.messaging_type).toBe('RESPONSE');
-    expect(body.tag).toBeUndefined();
+    expect(body.messaging_type).toBe('MESSAGE_TAG');
+    expect(body.tag).toBe('POST_PURCHASE_UPDATE');
 
     const buttons = body.message.attachment.payload.buttons;
     expect(buttons).toHaveLength(2);
