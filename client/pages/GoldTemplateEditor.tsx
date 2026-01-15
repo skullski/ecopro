@@ -524,8 +524,8 @@ export default function GoldTemplateEditor() {
       // iPad Pro 11" scaled to 65%: 542x776
       return { width: '542px', maxWidth: '542px', height: '776px', aspectRatio: '542/776' } as const;
     }
-    // Desktop: full width, auto height
-    return { width: '100%', maxWidth: '100%', height: '700px', aspectRatio: 'auto' } as const;
+    // Desktop: cap width so the editor panels stay usable.
+    return { width: '100%', maxWidth: '1100px', height: '700px', aspectRatio: 'auto' } as const;
   }, [previewDevice]);
 
   const baseDeviceOuter = useMemo(() => {
@@ -1096,11 +1096,12 @@ export default function GoldTemplateEditor() {
                 {previewDevice === 'desktop' ? (
                   <div
                     style={{
-                      marginLeft: '0',
+                      marginLeft: 'auto',
                       marginRight: 'auto',
                       border: '1px solid #e5e7eb',
                       borderRadius: '8px',
                       width: '100%',
+                      maxWidth: deviceFrame.maxWidth as any,
                     }}
                   >
                     <div
@@ -1115,7 +1116,11 @@ export default function GoldTemplateEditor() {
                       }}
                     >
                       <style>{`[data-edit-selected="true"]{outline:2px solid hsl(var(--primary)); outline-offset:2px;}`}</style>
-                      <div ref={previewRootRef} onClickCapture={handlePreviewClickCapture} className="flex-1 overflow-y-auto">
+                      <div
+                        ref={previewRootRef}
+                        onClickCapture={handlePreviewClickCapture}
+                        className="flex-1 overflow-y-auto overflow-x-hidden"
+                      >
                         {RenderStorefront(selectedTemplateId, templateProps as any)}
                       </div>
                     </div>
@@ -1199,7 +1204,7 @@ export default function GoldTemplateEditor() {
                           <div
                             ref={previewRootRef}
                             onClickCapture={handlePreviewClickCapture}
-                            className="flex-1 overflow-y-auto"
+                            className="flex-1 overflow-y-auto overflow-x-hidden"
                           >
                             {RenderStorefront(selectedTemplateId, templateProps as any)}
                           </div>
