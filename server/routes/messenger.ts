@@ -821,6 +821,8 @@ async function handleMessage(pageId: string, senderId: string, message: any) {
 
     console.log(`[Messenger] Found client ${client_id} for page ${pageId}`);
 
+    let linkedViaToken = false;
+
     // Check if there's a pending preconnect token for this PSID (user just clicked m.me link)
     // First check if we have any unexpired token for this client where the user might be connecting
     const pendingToken = await pool.query(
@@ -856,6 +858,8 @@ async function handleMessage(pageId: string, senderId: string, message: any) {
         senderId,
         `✅ تم ربط حسابك بنجاح!\n\nيمكنك الآن العودة لإتمام طلبك. ستتلقى تأكيدات الطلبات هنا مباشرة! 📦`
       );
+
+      linkedViaToken = true;
     }
 
     // Store/update customer's PSID for future messaging
@@ -866,12 +870,34 @@ async function handleMessage(pageId: string, senderId: string, message: any) {
       [client_id, senderId, pageId]
     );
 
+    // If the user just linked via token, don't spam additional menu replies.
+    if (linkedViaToken) return;
+
     // Handle help command
     if (text.includes('مساعدة') || text.includes('help')) {
       await sendMessengerMessage(
         pageAccessToken,
         senderId,
         `كيف يمكنني مساعدتك؟ 🤔\n\n• للاستفسار عن طلب، أرسل رقم الطلب\n• للتواصل مع الدعم، اكتب "دعم"\n• لمعرفة حالة طلبك، اكتب "طلباتي"`
+      );
+    } else if (text.includes('دعم') || text.includes('support')) {
+      let phone = '';
+      try {
+        const storeRes = await pool.query(
+          `SELECT phone FROM client_store_settings WHERE client_id = $1 LIMIT 1`,
+          [client_id]
+        );
+        phone = storeRes.rows[0]?.phone ? String(storeRes.rows[0].phone) : '';
+      } catch {
+        // ignore
+      }
+
+      await sendMessengerMessage(
+        pageAccessToken,
+        senderId,
+        phone
+          ? `📞 للتواصل مع ${store_name}: ${phone}\n\nاكتب أيضاً رقم الطلب إن وجد.`
+          : `اكتب رقم الطلب إن وجد، وسيتواصل معك ${store_name} قريباً. ✅`
       );
     } else if (text.includes('طلباتي') || text.includes('orders')) {
       // Get recent orders for this customer
@@ -896,6 +922,13 @@ async function handleMessage(pageId: string, senderId: string, message: any) {
           `طلباتك الأخيرة:\n\n${ordersList}`
         );
       }
+    } else {
+      // Default reply so users don't get silence when they say "hi" or similar.
+      await sendMessengerMessage(
+        pageAccessToken,
+        senderId,
+        `مرحباً 👋\n\nاكتب "help" أو "مساعدة" لعرض الخيارات.\nاكتب "طلباتي" لعرض آخر الطلبات.\nاكتب "دعم" للتواصل مع المتجر.`
+      );
     }
   } catch (error) {
     console.error('[Messenger] Message handler error:', error);
