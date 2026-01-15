@@ -438,9 +438,10 @@ export default function GoldTemplateEditor() {
   }, [selectedEditPath]);
 
   const previewGridCols = useMemo(() => {
-    if (previewDevice === 'desktop') return 'lg:grid-cols-[1fr,380px]';
-    if (previewDevice === 'tablet') return 'lg:grid-cols-[620px,1fr]';
-    return 'lg:grid-cols-[420px,1fr]';
+    // Use minmax(0, ...) so wide preview content can't force horizontal overflow.
+    if (previewDevice === 'desktop') return 'lg:grid-cols-[minmax(0,1fr),380px]';
+    if (previewDevice === 'tablet') return 'lg:grid-cols-[minmax(0,620px),minmax(0,1fr)]';
+    return 'lg:grid-cols-[minmax(0,420px),minmax(0,1fr)]';
   }, [previewDevice]);
 
   useEffect(() => {
@@ -1090,7 +1091,7 @@ export default function GoldTemplateEditor() {
       <div className="container mx-auto px-4 py-6">
         {activeTab === 'preview' ? (
           <div className={`grid grid-cols-1 ${previewGridCols} gap-4 items-start`}>
-            <div className="space-y-3">
+            <div className="space-y-3 min-w-0">
               {/* Device Frame Container */}
               <div ref={previewFitRef} className="w-full">
                 {previewDevice === 'desktop' ? (
@@ -1234,7 +1235,7 @@ export default function GoldTemplateEditor() {
               </div>
             </div>
 
-            <div className="sticky top-24">
+            <div className="sticky top-24 min-w-0">
               <div className="relative">
                 {/* Edit panel stays mounted (so it feels instant when templates hide) */}
                 <div
