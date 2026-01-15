@@ -54,6 +54,65 @@ function resolveEffectivePageConfig(botRow: any): { enabled: boolean; pageId: st
   };
 }
 
+async function tryLinkPlatformSenderToLatestToken(
+  pool: any,
+  params: { pageId: string; senderId: string }
+): Promise<{ clientId: number; storeName: string; customerPhone: string } | null> {
+  // Safety: only auto-claim if there is exactly one recent pending token for this platform page.
+  // This prevents cross-store mis-linking when multiple customers are connecting at once.
+  const candidateRes = await pool.query(
+    `SELECT client_id, customer_phone, ref_token
+     FROM messenger_preconnect_tokens
+     WHERE page_id = $1
+       AND used_at IS NULL
+       AND expires_at > NOW()
+       AND created_at > NOW() - INTERVAL '30 minutes'
+     ORDER BY created_at DESC
+     LIMIT 2`,
+    [String(params.pageId)]
+  );
+
+  if (candidateRes.rows.length !== 1) return null;
+
+  const row = candidateRes.rows[0];
+  const clientId = Number(row.client_id);
+  const customerPhone = String(row.customer_phone);
+  const refToken = String(row.ref_token);
+  if (!clientId || !customerPhone || !refToken) return null;
+
+  await pool.query(
+    `INSERT INTO customer_messaging_ids (client_id, customer_phone, messenger_psid, created_at, updated_at)
+     VALUES ($1, $2, $3, NOW(), NOW())
+     ON CONFLICT (client_id, customer_phone)
+     DO UPDATE SET messenger_psid = EXCLUDED.messenger_psid, updated_at = NOW()`,
+    [clientId, customerPhone, String(params.senderId)]
+  );
+
+  await pool.query(
+    `INSERT INTO messenger_subscribers (client_id, psid, page_id, customer_phone, subscribed_at, last_interaction)
+     VALUES ($1, $2, $3, $4, NOW(), NOW())
+     ON CONFLICT (client_id, psid)
+     DO UPDATE SET page_id = EXCLUDED.page_id, customer_phone = EXCLUDED.customer_phone, last_interaction = NOW()`,
+    [clientId, String(params.senderId), String(params.pageId), customerPhone]
+  );
+
+  await pool.query(
+    `UPDATE messenger_preconnect_tokens SET used_at = NOW() WHERE ref_token = $1`,
+    [refToken]
+  );
+
+  const storeRes = await pool.query(
+    `SELECT store_name FROM client_store_settings WHERE client_id = $1 LIMIT 1`,
+    [clientId]
+  );
+
+  return {
+    clientId,
+    storeName: storeRes.rows[0]?.store_name || 'Store',
+    customerPhone,
+  };
+}
+
 /**
  * Generate a unique ref token for Messenger preconnect
  */
@@ -584,7 +643,8 @@ async function handlePostback(pageId: string, senderId: string, postback: any) {
           ? PLATFORM_FB_PAGE_ACCESS_TOKEN
           : '';
     } else if (isPlatformPage(pageId)) {
-      // Platform page: resolve client by the current sender (only works after linking)
+      // Platform page: resolve client by existing subscriber mapping, or by uniquely claiming
+      // the latest pending preconnect token (safe fallback).
       const subRes = await pool.query(
         `SELECT client_id FROM messenger_subscribers
          WHERE psid = $1 AND page_id = $2
@@ -593,17 +653,24 @@ async function handlePostback(pageId: string, senderId: string, postback: any) {
         [senderId, pageId]
       );
       client_id = subRes.rows[0]?.client_id ? Number(subRes.rows[0].client_id) : null;
-      if (!client_id) {
-        console.warn(`[Messenger] No client mapping found for platform page ${pageId} sender ${senderId}`);
-        return;
-      }
+
       pageAccessToken = PLATFORM_FB_PAGE_ACCESS_TOKEN;
 
-      const storeRes = await pool.query(
-        `SELECT store_name FROM client_store_settings WHERE client_id = $1 LIMIT 1`,
-        [client_id]
-      );
-      store_name = storeRes.rows[0]?.store_name || store_name;
+      if (!client_id) {
+        const linked = await tryLinkPlatformSenderToLatestToken(pool, { pageId, senderId });
+        if (!linked) {
+          console.warn(`[Messenger] No client mapping found for platform page ${pageId} sender ${senderId}`);
+          return;
+        }
+        client_id = linked.clientId;
+        store_name = linked.storeName;
+      } else {
+        const storeRes = await pool.query(
+          `SELECT store_name FROM client_store_settings WHERE client_id = $1 LIMIT 1`,
+          [client_id]
+        );
+        store_name = storeRes.rows[0]?.store_name || store_name;
+      }
     } else {
       console.warn(`[Messenger] No settings found for page ${pageId}`);
       return;
@@ -799,8 +866,15 @@ async function handleMessage(pageId: string, senderId: string, message: any) {
       );
       client_id = subRes.rows[0]?.client_id ? Number(subRes.rows[0].client_id) : null;
       if (!client_id) {
-        console.log(`[Messenger] No client mapping found for platform page ${pageId} sender ${senderId}`);
-        return;
+        // Fallback: if there is exactly one recent pending token for this page,
+        // auto-link so the store can receive confirmations.
+        const linked = await tryLinkPlatformSenderToLatestToken(pool, { pageId, senderId });
+        if (!linked) {
+          console.log(`[Messenger] No client mapping found for platform page ${pageId} sender ${senderId}`);
+          return;
+        }
+        client_id = linked.clientId;
+        store_name = linked.storeName;
       }
       pageAccessToken = PLATFORM_FB_PAGE_ACCESS_TOKEN;
 

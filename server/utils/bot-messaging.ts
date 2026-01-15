@@ -137,7 +137,8 @@ export async function sendMessengerMessageDirect(
     const payload = {
       recipient: { id: recipientPsid },
       message: { text: message },
-      messaging_type: 'RESPONSE',
+      messaging_type: 'MESSAGE_TAG',
+      tag: 'POST_PURCHASE_UPDATE',
     };
 
     const response = await fetch(
@@ -204,7 +205,8 @@ export async function sendMessengerOrderConfirmationDirect(
           },
         },
       },
-      messaging_type: 'RESPONSE',
+      messaging_type: 'MESSAGE_TAG',
+      tag: 'POST_PURCHASE_UPDATE',
     };
 
     const response = await fetch(
