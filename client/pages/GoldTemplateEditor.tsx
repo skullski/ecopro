@@ -72,7 +72,9 @@ const TEMPLATE_PREVIEWS = [
   { id: 'chocolate', name: 'Chocolate & Sweets', image: '/template-previews/chocolate.svg', categories: ['colorful', 'industry'] },
   { id: 'tea', name: 'Tea & Coffee', image: '/template-previews/tea.svg', categories: ['elegant', 'industry'] },
   { id: 'pro', name: 'Pro (Professional)', image: '/template-previews/pro.svg', categories: ['popular', 'pro', 'minimal'] },
-  { id: 'pro-landing', name: 'Pro Landing', image: '/template-previews/pro-landing.svg', categories: ['popular', 'pro', 'minimal'] },
+  { id: 'pro-landing', name: 'Pro Landing', image: '/template-previews/pro-landing.svg', categories: ['popular', 'pro', 'minimal', 'landing'] },
+  { id: 'focus-one', name: 'Focus One', image: '/template-previews/focus-one.svg', categories: ['landing', 'popular', 'minimal'] },
+  { id: 'split-specs', name: 'Split Specs', image: '/template-previews/split-specs.svg', categories: ['landing', 'minimal', 'elegant'] },
   // Pro variants (new)
   { id: 'pro-aurora', name: 'Pro Aurora', image: '/template-previews/pro-aurora.svg', categories: ['pro', 'colorful'] },
   { id: 'pro-vertex', name: 'Pro Vertex', image: '/template-previews/pro-vertex.svg', categories: ['pro', 'dark'] },
@@ -96,17 +98,17 @@ const TEMPLATE_PREVIEWS = [
   { id: 'berry-market', name: 'Berry Market', image: '/template-previews/berry-market.svg', categories: ['colorful'] },
   { id: 'rose-catalog', name: 'Rose Catalog', image: '/template-previews/rose-catalog.svg', categories: ['colorful', 'elegant'] },
   // Screenshot-inspired templates - Batch 4 (Lime/Green)
-  { id: 'lime-direct', name: 'Lime Direct', image: '/template-previews/lime-direct.svg', categories: ['colorful', 'minimal'] },
+  { id: 'lime-direct', name: 'Lime Direct', image: '/template-previews/lime-direct.svg', categories: ['colorful', 'minimal', 'landing'] },
   { id: 'emerald-shop', name: 'Emerald Shop', image: '/template-previews/emerald-shop.svg', categories: ['colorful', 'elegant'] },
   { id: 'neon-store', name: 'Neon Store', image: '/template-previews/neon-store.svg', categories: ['dark', 'colorful'] },
   // Screenshot-inspired templates - Batch 5 (Clean/Minimal)
-  { id: 'clean-single', name: 'Clean Single', image: '/template-previews/clean-single.svg', categories: ['minimal', 'popular'] },
-  { id: 'pure-product', name: 'Pure Product', image: '/template-previews/pure-product.svg', categories: ['minimal'] },
+  { id: 'clean-single', name: 'Clean Single', image: '/template-previews/clean-single.svg', categories: ['minimal', 'popular', 'landing'] },
+  { id: 'pure-product', name: 'Pure Product', image: '/template-previews/pure-product.svg', categories: ['minimal', 'landing'] },
   { id: 'snow-shop', name: 'Snow Shop', image: '/template-previews/snow-shop.svg', categories: ['minimal'] },
   // Screenshot-inspired templates - Batch 6 (Gallery)
-  { id: 'gallery-pro', name: 'Gallery Pro', image: '/template-previews/gallery-pro.svg', categories: ['minimal', 'elegant'] },
-  { id: 'showcase-plus', name: 'Showcase Plus', image: '/template-previews/showcase-plus.svg', categories: ['colorful'] },
-  { id: 'exhibit-store', name: 'Exhibit Store', image: '/template-previews/exhibit-store.svg', categories: ['elegant', 'minimal'] },
+  { id: 'gallery-pro', name: 'Gallery Pro', image: '/template-previews/gallery-pro.svg', categories: ['minimal', 'elegant', 'landing'] },
+  { id: 'showcase-plus', name: 'Showcase Plus', image: '/template-previews/showcase-plus.svg', categories: ['colorful', 'landing'] },
+  { id: 'exhibit-store', name: 'Exhibit Store', image: '/template-previews/exhibit-store.svg', categories: ['elegant', 'minimal', 'landing'] },
 
   // New Gold templates (2026 expansion)
   { id: 'ocean-splash', name: 'Ocean Splash', image: '/template-previews/ocean-splash.svg', categories: ['colorful', 'elegant'] },
@@ -131,6 +133,7 @@ const TEMPLATE_PREVIEWS = [
 const TEMPLATE_CATEGORIES = [
   { id: 'all', name: 'All Templates', icon: '🎨' },
   { id: 'popular', name: 'Popular', icon: '⭐' },
+  { id: 'landing', name: 'Landing Pages', icon: '📄' },
   { id: 'minimal', name: 'Minimal & Clean', icon: '✨' },
   { id: 'colorful', name: 'Colorful', icon: '🌈' },
   { id: 'dark', name: 'Dark Mode', icon: '🌙' },

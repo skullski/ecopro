@@ -604,7 +604,7 @@ export default function AdminWasselniSettings() {
                     <Input
                       value={settings.viberSenderName || ''}
                       onChange={(e) => updateSetting('viberSenderName', e.target.value)}
-                      placeholder="sahla-E"
+                      placeholder="SAHLA4ECO"
                     />
                   </div>
                   <div className="space-y-2">

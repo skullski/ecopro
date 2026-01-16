@@ -25,7 +25,7 @@ export const en = {
   "home.activeVendors": "Active Vendors",
   "home.thisWeek": "this week",
   "home.featuresTitle": "All-in-one",
-  "home.featuresSubtitle": "E-commerce Platform",
+  "home.featuresSubtitle": "Smart Ecommerce Automation",
   "home.featuresDescription": "Everything you need to sell online, manage your business, and grow your brand.",
   "home.feature.storefront.title": "Beautiful Storefronts",
   "home.feature.storefront.desc": "Create a stunning online store with customizable themes and layouts.",
@@ -157,7 +157,7 @@ export const en = {
   "user.role.seller": "Seller",
 
   // Navigation & Brand
-  "brand": "sahla-E",
+  "brand": "SAHLA4ECO",
   "dashboard.title": "Dashboard",
   
   // Onboarding Guide
@@ -809,9 +809,9 @@ export const en = {
 
   // Admin Panel - Billing
   "admin.billing.title": "Billing & Subscription",
-  "admin.billing.subtitle": "Manage your sahla-E subscription and payment history",
+  "admin.billing.subtitle": "Manage your SAHLA4ECO subscription and payment history",
   "admin.billing.currentSubscription": "Current Subscription",
-  "admin.billing.subscriptionDesc": "Your sahla-E subscription status and billing information",
+  "admin.billing.subscriptionDesc": "Your SAHLA4ECO subscription status and billing information",
   "admin.billing.expiredAlert": "Your subscription has expired",
   "admin.billing.freeTrial": "Free Trial",
   "admin.billing.basic": "Basic",
@@ -1154,7 +1154,7 @@ export const en = {
   "tiers.platinum": "Platinum",
 
   // Footer
-  "footer.copyright": "© {year} sahla-E. All rights reserved",
+  "footer.copyright": "© {year} SAHLA4ECO. All rights reserved",
 
   // Sidebar Navigation
   "sidebar.home": "Home",
@@ -1170,7 +1170,7 @@ export const en = {
   "sidebar.pixels": "Pixel Statistics",
   "sidebar.wasselni": "Bot",
   "sidebar.staff": "Staff",
-  "sidebar.brand": "sahla-E",
+  "sidebar.brand": "SAHLA4ECO",
   "sidebar.controlPanel": "Control Panel",
   "sidebar.selectTheme": "Select Theme",
   "sidebar.expandMenu": "Expand Menu",

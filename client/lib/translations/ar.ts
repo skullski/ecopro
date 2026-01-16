@@ -35,7 +35,7 @@ export const ar = {
   "home.activeVendors": "البائعون النشطون",
   "home.thisWeek": "هذا الأسبوع",
   "home.featuresTitle": "الكل في واحد",
-  "home.featuresSubtitle": "منصة التجارة الإلكترونية",
+  "home.featuresSubtitle": "أتمتة التجارة الإلكترونية الذكية",
   "home.featuresDescription": "كل ما تحتاجه للبيع عبر الإنترنت، إدارة عملك، ونمو علامتك التجارية.",
   "home.feature.storefront.title": "واجهات متاجر جميلة",
   "home.feature.storefront.desc": "أنشئ متجراً رائعاً عبر الإنترنت مع قوالب وتصاميم قابلة للتخصيص.",
@@ -167,7 +167,7 @@ export const ar = {
   "user.role.seller": "بائع",
 
   // Navigation & Brand
-  "brand": "sahla-E",
+  "brand": "SAHLA4ECO",
   "dashboard.title": "لوحة التحكم",
   
   // Onboarding Guide
@@ -819,7 +819,7 @@ export const ar = {
 
   // Admin Panel - Billing
   "admin.billing.title": "الفواتير والاشتراك",
-  "admin.billing.subtitle": "إدارة اشتراك sahla-E وسجل المدفوعات",
+  "admin.billing.subtitle": "إدارة اشتراك SAHLA4ECO وسجل المدفوعات",
   "admin.billing.currentSubscription": "الاشتراك الحالي",
   "admin.billing.subscriptionDesc": "حالة اشتراكك ومعلومات الفواتير",
   "admin.billing.expiredAlert": "انتهى اشتراكك",
@@ -1164,7 +1164,7 @@ export const ar = {
   "tiers.platinum": "بلاتيني",
 
   // Footer
-  "footer.copyright": "© {year} sahla-E. جميع الحقوق محفوظة",
+  "footer.copyright": "© {year} SAHLA4ECO. جميع الحقوق محفوظة",
 
   // Sidebar Navigation
   "sidebar.home": "الرئيسية",
@@ -1180,7 +1180,7 @@ export const ar = {
   "sidebar.pixels": "إحصائيات البكسل",
   "sidebar.wasselni": "Bot",
   "sidebar.staff": "الموظفون",
-  "sidebar.brand": "sahla-E",
+  "sidebar.brand": "SAHLA4ECO",
   "sidebar.controlPanel": "لوحة التحكم",
   "sidebar.selectTheme": "اختر المظهر",
   "sidebar.expandMenu": "توسيع القائمة",

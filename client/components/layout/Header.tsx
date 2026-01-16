@@ -111,7 +111,12 @@ export default function Header() {
                   className="relative flex items-center justify-center rounded-lg bg-gradient-to-br from-primary via-accent to-purple-600 shadow-lg shadow-primary/30 group-hover:shadow-xl group-hover:scale-110 transition-all duration-300 border border-primary/20"
                   style={{ width: 'clamp(2rem, 4.5vh, 2.5rem)', height: 'clamp(2rem, 4.5vh, 2.5rem)' }}
                 >
-                  <ShoppingBag className="text-white drop-shadow" style={{ width: 'clamp(1rem, 2.2vh, 1.25rem)', height: 'clamp(1rem, 2.2vh, 1.25rem)' }} strokeWidth={2.5} />
+                  <img
+                    src="/brand/sahla4eco-mark.svg"
+                    alt="SAHLA4ECO"
+                    className="drop-shadow"
+                    style={{ width: 'clamp(1.25rem, 2.6vh, 1.5rem)', height: 'clamp(1.25rem, 2.6vh, 1.5rem)' }}
+                  />
                   <div className="absolute -top-0.5 -right-0.5 bg-green-500 rounded-full border border-background animate-pulse" style={{ width: 'clamp(0.5rem, 1vh, 0.5rem)', height: 'clamp(0.5rem, 1vh, 0.5rem)' }}></div>
                 </div>
               </div>

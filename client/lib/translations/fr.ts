@@ -25,7 +25,7 @@ export const fr = {
   "home.activeVendors": "Vendeurs actifs",
   "home.thisWeek": "cette semaine",
   "home.featuresTitle": "Tout-en-un",
-  "home.featuresSubtitle": "Plateforme e-commerce",
+  "home.featuresSubtitle": "Automatisation e-commerce intelligente",
   "home.featuresDescription": "Tout ce dont vous avez besoin pour vendre en ligne, gérer votre entreprise et développer votre marque.",
   "home.feature.storefront.title": "Vitrines magnifiques",
   "home.feature.storefront.desc": "Créez une boutique en ligne époustouflante avec des thèmes et des mises en page personnalisables.",
@@ -153,7 +153,7 @@ export const fr = {
   "user.role.seller": "Vendeur",
 
   // Navigation & Brand
-  "brand": "sahla-E",
+  "brand": "SAHLA4ECO",
   "dashboard.title": "Tableau de Bord",
   "dashboard.subtitle": "Résumé des performances de votre boutique",
   "dashboard.welcome": "Bienvenue",
@@ -602,7 +602,7 @@ export const fr = {
 
   // Admin Panel - Billing
   "admin.billing.title": "Facturation et Abonnement",
-  "admin.billing.subtitle": "Gérez votre abonnement sahla-E et l'historique des paiements",
+  "admin.billing.subtitle": "Gérez votre abonnement SAHLA4ECO et l'historique des paiements",
   "admin.billing.currentSubscription": "Abonnement Actuel",
   "admin.billing.subscriptionDesc": "Statut de votre abonnement et informations de facturation",
   "admin.billing.expiredAlert": "Votre abonnement a expiré",
@@ -895,7 +895,7 @@ export const fr = {
   "tiers.platinum": "Platine",
 
   // Footer
-  "footer.copyright": "© {year} sahla-E. Tous droits réservés",
+  "footer.copyright": "© {year} SAHLA4ECO. Tous droits réservés",
 
   // Sidebar Navigation
   "sidebar.home": "Accueil",
@@ -909,7 +909,7 @@ export const fr = {
   "sidebar.pixels": "Statistiques Pixel",
   "sidebar.wasselni": "Bot",
   "sidebar.staff": "Personnel",
-  "sidebar.brand": "sahla-E",
+  "sidebar.brand": "SAHLA4ECO",
   "sidebar.controlPanel": "Panneau de contrôle",
   "sidebar.selectTheme": "Choisir le thème",
   "sidebar.expandMenu": "Développer le menu",

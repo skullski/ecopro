@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
-import { AnimatedLogo } from "@/components/ui/animated-logo";
 import { useTranslation } from "@/lib/i18n";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useStaffPermissions } from "@/contexts/StaffPermissionContext";
@@ -260,18 +259,26 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
           borderColor: SIDEBAR_THEMES[activeTheme].border,
           lineHeight: '1.2',
         }}>
-        {!collapsed && (
-          <div>
-            <span className="font-bold block transition-colors duration-200" 
-              style={{ color: SIDEBAR_THEMES[activeTheme].accent, fontSize: '12px' }}>
-              {t('sidebar.brand')}
-            </span>
-            <span className="transition-colors duration-200" 
-              style={{ color: SIDEBAR_THEMES[activeTheme].text, fontSize: '14px' }}>
-              {t("sidebar.controlPanel")}
-            </span>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <img
+            src="/brand/sahla4eco-mark.svg"
+            alt="SAHLA4ECO"
+            className="rounded-md"
+            style={{ width: collapsed ? '22px' : '26px', height: collapsed ? '22px' : '26px' }}
+          />
+          {!collapsed && (
+            <div>
+              <span className="font-bold block transition-colors duration-200" 
+                style={{ color: SIDEBAR_THEMES[activeTheme].accent, fontSize: '12px' }}>
+                {t('sidebar.brand')}
+              </span>
+              <span className="transition-colors duration-200" 
+                style={{ color: SIDEBAR_THEMES[activeTheme].text, fontSize: '14px' }}>
+                {t("sidebar.controlPanel")}
+              </span>
+            </div>
+          )}
+        </div>
         
         <div className="flex items-center gap-2">
           {/* Theme toggle button */}

@@ -160,7 +160,7 @@ const templates: Template[] = [
   {
     id: 'pro-landing',
     name: 'Pro Landing',
-    category: 'Single Product',
+    category: 'Landing Pages',
     icon: '🚀',
     description: 'Screenshot-inspired one-product landing (order card + gallery + story strip).',
     image: '/template-previews/pro-landing.svg',
@@ -233,7 +233,7 @@ const templates: Template[] = [
   {
     id: 'lime-direct',
     name: 'Lime Direct',
-    category: 'Single Product',
+    category: 'Landing Pages',
     icon: '💚',
     description: 'Bright lime green direct sales with quick order form.',
     image: '/template-previews/lime-direct.svg',
@@ -264,7 +264,7 @@ const templates: Template[] = [
   {
     id: 'clean-single',
     name: 'Clean Single',
-    category: 'Single Product',
+    category: 'Landing Pages',
     icon: '⬜',
     description: 'Ultra-minimal single product focus with clean order form.',
     image: '/template-previews/clean-single.svg',
@@ -274,7 +274,7 @@ const templates: Template[] = [
   {
     id: 'pure-product',
     name: 'Pure Product',
-    category: 'Single Product',
+    category: 'Landing Pages',
     icon: '✨',
     description: 'Product-centric with sticky mobile CTA.',
     image: '/template-previews/pure-product.svg',
@@ -295,7 +295,7 @@ const templates: Template[] = [
   {
     id: 'gallery-pro',
     name: 'Gallery Pro',
-    category: 'Single Product',
+    category: 'Landing Pages',
     icon: '🖼️',
     description: 'Image gallery focused with thumbnail navigation.',
     image: '/template-previews/gallery-pro.svg',
@@ -305,7 +305,7 @@ const templates: Template[] = [
   {
     id: 'showcase-plus',
     name: 'Showcase Plus',
-    category: 'Single Product',
+    category: 'Landing Pages',
     icon: '🎯',
     description: 'Multi-image showcase with carousel and color variants.',
     image: '/template-previews/showcase-plus.svg',
@@ -315,7 +315,7 @@ const templates: Template[] = [
   {
     id: 'exhibit-store',
     name: 'Exhibit Store',
-    category: 'Single Product',
+    category: 'Landing Pages',
     icon: '🏛️',
     description: 'Museum-style exhibition with floating info card.',
     image: '/template-previews/exhibit-store.svg',
@@ -325,7 +325,7 @@ const templates: Template[] = [
   {
     id: 'focus-one',
     name: 'Focus One',
-    category: 'Single Product',
+    category: 'Landing Pages',
     icon: '🎯',
     description: 'High-conversion single-product landing with sticky CTA and upsells.',
     image: '/template-previews/focus-one.svg',
@@ -335,7 +335,7 @@ const templates: Template[] = [
   {
     id: 'split-specs',
     name: 'Split Specs',
-    category: 'Single Product',
+    category: 'Landing Pages',
     icon: '📋',
     description: 'Detail-first one-product page with specs + FAQ emphasis.',
     image: '/template-previews/split-specs.svg',
@@ -383,5 +383,17 @@ export function getTemplate(id: string): Template | undefined {
 }
 
 export function getTemplatesByCategory(category: string): Template[] {
-  return templates.filter(t => t.category === category);
+  const normalized = String(category || '').trim().toLowerCase();
+  // Backwards-compatible aliases
+  const resolvedCategory =
+    normalized === 'single product' ||
+    normalized === 'single-product' ||
+    normalized === 'single_product' ||
+    normalized === 'landing pages' ||
+    normalized === 'landing-pages' ||
+    normalized === 'landing_pages'
+      ? 'Landing Pages'
+      : category;
+
+  return templates.filter(t => t.category === resolvedCategory);
 }

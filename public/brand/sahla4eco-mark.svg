@@ -11,16 +11,22 @@
     </linearGradient>
   </defs>
 
+  <!-- Mark (transparent background; designed for light/dark UI) -->
   <g>
+    <!-- Left tower -->
     <path d="M300 430 L412 330 V790 H300 V430 Z" fill="url(#g2)"/>
+    <!-- Center tower -->
     <path d="M456 312 L568 214 V790 H456 V312 Z" fill="url(#g1)"/>
+    <!-- Right tower -->
     <path d="M612 382 L724 300 V790 H612 V382 Z" fill="url(#g2)"/>
 
+    <!-- White line-work (simplified building wireframe) -->
     <path d="M512 352 V790" stroke="#FFFFFF" stroke-width="22" stroke-linecap="round" opacity="0.95"/>
     <path d="M360 520 L512 405 L664 520" stroke="#FFFFFF" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" opacity="0.95"/>
     <path d="M360 520 V790" stroke="#FFFFFF" stroke-width="22" stroke-linecap="round" opacity="0.95"/>
     <path d="M664 520 V790" stroke="#FFFFFF" stroke-width="22" stroke-linecap="round" opacity="0.95"/>
 
+    <!-- Base grid lines -->
     <path d="M320 790 H704" stroke="#FFFFFF" stroke-width="22" stroke-linecap="round" opacity="0.95"/>
     <path d="M360 620 H664" stroke="#FFFFFF" stroke-width="16" stroke-linecap="round" opacity="0.85"/>
     <path d="M360 700 H664" stroke="#FFFFFF" stroke-width="16" stroke-linecap="round" opacity="0.85"/>
