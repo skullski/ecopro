@@ -114,7 +114,7 @@ export async function createOrderTelegramLink(opts: {
     [startToken, opts.orderId, opts.clientId, opts.customerPhone, opts.customerName]
   );
 
-  const canUseTelegram = !!settings?.enabled && (settings?.provider === 'telegram') && !!botUsername;
+  const canUseTelegram = !!settings?.enabled && !!botUsername;
   const startUrl = canUseTelegram ? `https://t.me/${encodeURIComponent(botUsername)}?start=${encodeURIComponent(startToken)}` : null;
 
   return { startToken, startUrl };

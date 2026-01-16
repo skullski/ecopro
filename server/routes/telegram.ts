@@ -263,7 +263,6 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
          FROM bot_settings
          WHERE telegram_webhook_secret = $1
            AND enabled = true
-           AND provider = 'telegram'
            AND telegram_bot_token IS NOT NULL
          LIMIT 1`,
         [secret]
@@ -290,7 +289,6 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
              FROM bot_settings
              WHERE client_id = $1
                AND enabled = true
-               AND provider = 'telegram'
                AND telegram_bot_token IS NOT NULL
              LIMIT 1`,
             [cbClientId]
@@ -384,7 +382,6 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
            FROM bot_settings
            WHERE client_id = $1
              AND enabled = true
-             AND provider = 'telegram'
              AND telegram_bot_token IS NOT NULL
            LIMIT 1`,
           [clientId]
@@ -473,7 +470,6 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
           `SELECT telegram_bot_token
            FROM bot_settings
            WHERE enabled = true
-             AND provider = 'telegram'
              AND telegram_bot_token IS NOT NULL
            ORDER BY updated_at DESC NULLS LAST
            LIMIT 1`
@@ -514,7 +510,6 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
            FROM bot_settings
            WHERE client_id = $1
              AND enabled = true
-             AND provider = 'telegram'
              AND telegram_bot_token IS NOT NULL
            LIMIT 1`,
           [resolvedClientId]
@@ -552,7 +547,7 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
       const tmplRes = await pool.query(
         `SELECT template_greeting
          FROM bot_settings
-         WHERE client_id = $1 AND enabled = true AND provider = 'telegram'
+         WHERE client_id = $1 AND enabled = true
          LIMIT 1`,
         [resolvedClientId]
       );
@@ -611,7 +606,6 @@ We will send you order confirmation directly here! 📦`;
          FROM bot_settings
          WHERE client_id = $1
            AND enabled = true
-           AND provider = 'telegram'
            AND telegram_bot_token IS NOT NULL
          LIMIT 1`,
         [clientId]
@@ -652,7 +646,7 @@ We will send you order confirmation directly here! 📦`;
     const tmplRes = await pool.query(
       `SELECT template_greeting
        FROM bot_settings
-       WHERE client_id = $1 AND enabled = true AND provider = 'telegram'
+       WHERE client_id = $1 AND enabled = true
        LIMIT 1`,
       [clientId]
     );
