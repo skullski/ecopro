@@ -676,8 +676,8 @@ export default function Store() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-7xl mx-auto space-y-2 md:space-y-3">
+    <div className="min-h-screen bg-background p-[14px]">
+      <div className="max-w-6xl mx-auto space-y-2 md:space-y-3">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -698,7 +698,7 @@ export default function Store() {
                 }
               }}
               disabled={!getStorefrontPath(storeSettings)}
-              className="h-9 px-3"
+              className="h-8 px-[11px]"
             >
               <StoreIcon className="w-4 h-4 mr-2" />
               {t('store.viewStorefront')}
@@ -706,7 +706,7 @@ export default function Store() {
             <Button
               variant="outline"
               onClick={() => navigate('/template-editor')}
-              className="h-9 px-3"
+              className="h-8 px-[11px]"
             >
               <Settings className="w-4 h-4 mr-2" />
               {t('store.templateEditor')}
@@ -717,7 +717,7 @@ export default function Store() {
                 setSelectedInventoryProduct(null);
                 setInventoryStockQuantity(1);
               }}
-              className="bg-gradient-to-r from-primary to-purple-600 h-9 px-3"
+              className="bg-gradient-to-r from-primary to-purple-600 h-8 px-[11px]"
             >
               <Plus className="w-4 h-4 mr-2" />
               {t('store.addProduct')}
@@ -727,43 +727,43 @@ export default function Store() {
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-3 text-white">
+          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-[11px] text-white">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm opacity-90">{t('store.totalProducts')}</p>
                 <p className="text-xl md:text-2xl font-bold mt-1">{stats.total}</p>
               </div>
-              <Package className="w-8 h-8 opacity-80" />
+              <Package className="w-7 h-7 opacity-80" />
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-3 text-white">
+          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-[11px] text-white">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm opacity-90">{t('store.active')}</p>
                 <p className="text-xl md:text-2xl font-bold mt-1">{stats.active}</p>
               </div>
-              <Check className="w-8 h-8 opacity-80" />
+              <Check className="w-7 h-7 opacity-80" />
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-3 text-white">
+          <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-[11px] text-white">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm opacity-90">{t('store.drafts')}</p>
                 <p className="text-xl md:text-2xl font-bold mt-1">{stats.draft}</p>
               </div>
-              <Edit className="w-8 h-8 opacity-80" />
+              <Edit className="w-7 h-7 opacity-80" />
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-3 text-white">
+          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-[11px] text-white">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm opacity-90">{t('store.totalViews')}</p>
                 <p className="text-xl md:text-2xl font-bold mt-1">{stats.totalViews}</p>
               </div>
-              <Eye className="w-8 h-8 opacity-80" />
+              <Eye className="w-7 h-7 opacity-80" />
             </div>
           </div>
         </div>
@@ -825,7 +825,7 @@ export default function Store() {
         )}
 
         {/* Filters */}
-        <div className="bg-card rounded-xl border p-3">
+        <div className="bg-card rounded-xl border p-[11px]">
           <div className="flex flex-wrap gap-3 items-center">
             <div className="flex-1 min-w-[200px]">
               <div className="relative">
@@ -838,7 +838,7 @@ export default function Store() {
                     setSearchQuery(next);
                     setFilteredProducts(applyFilters(products, next, statusFilter));
                   }}
-                  className="pl-9 h-9"
+                  className="pl-8 h-8"
                 />
               </div>
             </div>
@@ -850,7 +850,7 @@ export default function Store() {
                 setFilteredProducts(applyFilters(products, searchQuery, v));
               }}
             >
-              <SelectTrigger className="w-[170px] h-9">
+              <SelectTrigger className="w-[153px] h-8">
                 <SelectValue placeholder={t('store.filterByStatus')} />
               </SelectTrigger>
               <SelectContent>
@@ -883,7 +883,7 @@ export default function Store() {
         {/* Products Grid/List */}
         {/* Store Summary will render at bottom of page */}
         {filteredProducts.length === 0 ? (
-          <div className="bg-card rounded-xl border p-4 md:p-4 text-center">
+          <div className="bg-card rounded-xl border p-[14px] md:p-[14px] text-center">
             <Package className="w-10 md:w-14 h-10 md:h-14 mx-auto text-muted-foreground opacity-20 mb-2" />
             <h3 className="text-base md:text-lg font-semibold mb-2">{t('store.noProductsYet')}</h3>
             <p className="text-muted-foreground mb-4">
