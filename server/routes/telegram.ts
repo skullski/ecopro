@@ -297,7 +297,7 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
           const upd = await pool.query(
             `UPDATE store_orders SET status = 'confirmed', updated_at = NOW()
              WHERE id = $1 AND client_id = $2 AND status IN ('pending')
-             RETURNING id`,
+             RETURNING *`,
             [orderId, clientId]
           );
           if (upd.rows.length) {
@@ -307,6 +307,9 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
                ON CONFLICT DO NOTHING`,
               [orderId, clientId]
             );
+            if ((global as any).broadcastOrderUpdate) {
+              (global as any).broadcastOrderUpdate(upd.rows[0]);
+            }
             await answerCallbackQuery({ botToken, callbackQueryId: callbackId, text: 'Confirmed ✅' });
             await sendTelegramMessage(botToken, chatId, '✅ Your order has been confirmed!\n\nWe will contact you soon to arrange delivery. Thank you for your trust! 🙏');
           } else {
@@ -316,9 +319,9 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
 
         if (action === 'cancel') {
           const upd = await pool.query(
-            `UPDATE store_orders SET status = 'declined', updated_at = NOW()
+            `UPDATE store_orders SET status = 'cancelled', updated_at = NOW()
              WHERE id = $1 AND client_id = $2 AND status IN ('pending')
-             RETURNING id`,
+             RETURNING *`,
             [orderId, clientId]
           );
           if (upd.rows.length) {
@@ -328,6 +331,9 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
                ON CONFLICT DO NOTHING`,
               [orderId, clientId]
             );
+            if ((global as any).broadcastOrderUpdate) {
+              (global as any).broadcastOrderUpdate(upd.rows[0]);
+            }
             await answerCallbackQuery({ botToken, callbackQueryId: callbackId, text: 'Cancelled ❌' });
             await sendTelegramMessage(botToken, chatId, '❌ Order declined.\n\nIf you change your mind, you can order again from the store.');
           } else {
@@ -373,7 +379,7 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
         const upd = await pool.query(
           `UPDATE store_orders SET status = 'confirmed', updated_at = NOW()
            WHERE id = $1 AND client_id = $2 AND status IN ('pending')
-           RETURNING id`,
+           RETURNING *`,
           [orderId, clientId]
         );
         if (upd.rows.length) {
@@ -382,6 +388,9 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
              VALUES ($1, $2, 'approved', 'telegram', NOW())`,
             [orderId, clientId]
           );
+          if ((global as any).broadcastOrderUpdate) {
+            (global as any).broadcastOrderUpdate(upd.rows[0]);
+          }
           await answerCallbackQuery({ botToken, callbackQueryId: callbackId, text: 'Confirmed' });
           await sendTelegramMessage(botToken, chatId, '✅ Order confirmed. Thank you!');
         } else {
@@ -391,9 +400,9 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
 
       if (parsed.action === 'decline') {
         const upd = await pool.query(
-          `UPDATE store_orders SET status = 'declined', updated_at = NOW()
+          `UPDATE store_orders SET status = 'cancelled', updated_at = NOW()
            WHERE id = $1 AND client_id = $2 AND status IN ('pending')
-           RETURNING id`,
+           RETURNING *`,
           [orderId, clientId]
         );
         if (upd.rows.length) {
@@ -402,6 +411,9 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
              VALUES ($1, $2, 'declined', 'telegram', NOW())`,
             [orderId, clientId]
           );
+          if ((global as any).broadcastOrderUpdate) {
+            (global as any).broadcastOrderUpdate(upd.rows[0]);
+          }
           await answerCallbackQuery({ botToken, callbackQueryId: callbackId, text: 'Declined' });
           await sendTelegramMessage(botToken, chatId, '❌ Order cancelled.');
         } else {

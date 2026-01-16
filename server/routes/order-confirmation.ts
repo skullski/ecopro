@@ -2,6 +2,7 @@ import { RequestHandler } from "express";
 import { pool } from "../utils/database";
 import { createConfirmationLink, sendOrderConfirmationMessages } from "../utils/bot-messaging";
 import { z, ZodError } from 'zod';
+import { getPublicBaseUrl } from '../utils/public-url';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -240,12 +241,17 @@ export const confirmOrder: RequestHandler = async (req, res) => {
 
       res.json({ success: true, message: "Order confirmed" });
     } else if (action === "decline") {
-      // Mark order as declined
-      await pool.query(
-        `UPDATE store_orders SET status = 'declined', updated_at = NOW()
-         WHERE id = $1 AND client_id = $2 AND status = 'pending'`,
+      // Mark order as cancelled
+      const updateResult = await pool.query(
+        `UPDATE store_orders SET status = 'cancelled', updated_at = NOW()
+         WHERE id = $1 AND client_id = $2 AND status = 'pending'
+         RETURNING *`,
         [orderId, clientId]
       );
+
+      if (updateResult.rows.length === 0) {
+        return res.status(404).json({ error: "Order not found" });
+      }
 
       // Record confirmation
       await pool.query(
@@ -254,7 +260,11 @@ export const confirmOrder: RequestHandler = async (req, res) => {
         [orderId, clientId]
       );
 
-      res.json({ success: true, message: "Order declined" });
+      if ((global as any).broadcastOrderUpdate) {
+        (global as any).broadcastOrderUpdate(updateResult.rows[0]);
+      }
+
+      res.json({ success: true, message: "Order cancelled" });
     } else {
       res.status(400).json({ error: "Invalid action" });
     }
@@ -395,7 +405,7 @@ export async function sendBotMessagesForOrder(
       confirmationToken = await createConfirmationLink(orderId, clientId);
     }
 
-    const baseUrl = process.env.BASE_URL || "https://ecopro-1lbl.onrender.com";
+    const baseUrl = getPublicBaseUrl();
     const confirmationLink = `${baseUrl}/store/${storeSlug}/order/${orderId}/confirm?t=${encodeURIComponent(String(confirmationToken))}`;
 
     // Send bot messages

@@ -11,6 +11,7 @@ import { Router, RequestHandler } from 'express';
 import { ensureConnection } from '../utils/database';
 import crypto from 'crypto';
 import { replaceTemplateVariables } from '../utils/bot-messaging';
+import { getPublicBaseUrl } from '../utils/public-url';
 
 const router = Router();
 
@@ -631,6 +632,204 @@ async function handlePostback(pageId: string, senderId: string, postback: any) {
   try {
     const pool = await ensureConnection();
 
+    // Order-specific postbacks should resolve by order_id (not only by pageId),
+    // so confirmations always update the correct order even in platform/shared-page setups.
+    if (
+      payload.startsWith('CONFIRM_ORDER_') ||
+      payload.startsWith('DECLINE_ORDER_') ||
+      payload.startsWith('CANCEL_ORDER_') ||
+      payload.startsWith('CONTACT_STORE_')
+    ) {
+      const parseOrderId = (raw: string): number | null => {
+        const n = parseInt(raw, 10);
+        return Number.isFinite(n) && n > 0 ? n : null;
+      };
+
+      const orderId = payload.startsWith('CONFIRM_ORDER_')
+        ? parseOrderId(payload.replace('CONFIRM_ORDER_', ''))
+        : payload.startsWith('DECLINE_ORDER_')
+          ? parseOrderId(payload.replace('DECLINE_ORDER_', ''))
+          : payload.startsWith('CANCEL_ORDER_')
+            ? parseOrderId(payload.replace('CANCEL_ORDER_', ''))
+            : payload.startsWith('CONTACT_STORE_')
+              ? parseOrderId(payload.replace('CONTACT_STORE_', ''))
+              : null;
+
+      if (!orderId) {
+        console.warn('[Messenger] Invalid orderId in postback payload:', payload);
+        return;
+      }
+
+      const orderRes = await pool.query(
+        `SELECT id, client_id, customer_phone, status
+         FROM store_orders
+         WHERE id = $1
+         LIMIT 1`,
+        [orderId]
+      );
+
+      if (!orderRes.rows.length) {
+        console.warn(`[Messenger] Order not found for postback: ${orderId}`);
+        return;
+      }
+
+      const orderRow = orderRes.rows[0];
+      const client_id = Number(orderRow.client_id);
+      const customer_phone = String(orderRow.customer_phone || '').trim();
+      const currentStatus = String(orderRow.status || '').trim();
+
+      // Basic authorization: sender must match stored PSID for this order or for this customer phone.
+      let authorized = false;
+      try {
+        const orderChatRes = await pool.query(
+          `SELECT messenger_psid FROM order_messenger_chats WHERE order_id = $1 AND client_id = $2 LIMIT 1`,
+          [orderId, client_id]
+        );
+        const orderPsid = orderChatRes.rows[0]?.messenger_psid ? String(orderChatRes.rows[0].messenger_psid) : '';
+        if (orderPsid && orderPsid === senderId) authorized = true;
+      } catch {}
+
+      if (!authorized && customer_phone) {
+        try {
+          const idRes = await pool.query(
+            `SELECT messenger_psid FROM customer_messaging_ids WHERE client_id = $1 AND customer_phone = $2 LIMIT 1`,
+            [client_id, customer_phone]
+          );
+          const phonePsid = idRes.rows[0]?.messenger_psid ? String(idRes.rows[0].messenger_psid) : '';
+          if (phonePsid && phonePsid === senderId) authorized = true;
+        } catch {}
+      }
+
+      if (!authorized) {
+        console.warn(`[Messenger] Unauthorized postback for order ${orderId} (client ${client_id}) from sender ${senderId}`);
+        return;
+      }
+
+      // Resolve a token to reply back (optional; order update should still happen even if we cannot reply).
+      let pageAccessToken = '';
+      let store_name = 'Store';
+      try {
+        const storeRes = await pool.query(
+          `SELECT store_name FROM client_store_settings WHERE client_id = $1 LIMIT 1`,
+          [client_id]
+        );
+        store_name = storeRes.rows[0]?.store_name || store_name;
+      } catch {}
+
+      if (isPlatformPage(pageId)) {
+        pageAccessToken = PLATFORM_FB_PAGE_ACCESS_TOKEN;
+      } else {
+        // Prefer matching pageId first.
+        const byPageRes = await pool.query(
+          `SELECT fb_page_access_token
+           FROM bot_settings
+           WHERE fb_page_id = $1 AND client_id = $2 AND messenger_enabled = true
+           LIMIT 1`,
+          [pageId, client_id]
+        );
+        pageAccessToken = byPageRes.rows[0]?.fb_page_access_token ? String(byPageRes.rows[0].fb_page_access_token).trim() : '';
+
+        // Fallback: client-level token if the page mapping is missing.
+        if (!pageAccessToken) {
+          const byClientRes = await pool.query(
+            `SELECT fb_page_access_token
+             FROM bot_settings
+             WHERE client_id = $1 AND messenger_enabled = true
+             LIMIT 1`,
+            [client_id]
+          );
+          pageAccessToken = byClientRes.rows[0]?.fb_page_access_token ? String(byClientRes.rows[0].fb_page_access_token).trim() : '';
+        }
+      }
+
+      const safeReply = async (text: string) => {
+        if (!pageAccessToken) return;
+        await sendMessengerMessage(pageAccessToken, senderId, text);
+      };
+
+      if (payload.startsWith('CONTACT_STORE_')) {
+        const storeResult = await pool.query(
+          `SELECT cs.phone, cs.store_name FROM client_store_settings cs
+           JOIN store_orders so ON so.client_id = cs.client_id
+           WHERE so.id = $1`,
+          [orderId]
+        );
+
+        const phone = storeResult.rows[0]?.phone || 'غير متوفر';
+        const storeName = storeResult.rows[0]?.store_name || store_name;
+        await safeReply(`للتواصل مع ${storeName}:\n📞 ${phone}\n\nسنرد عليك في أقرب وقت! 💬`);
+        return;
+      }
+
+      // Confirm / Decline are idempotent: only pending can change.
+      if (payload.startsWith('CONFIRM_ORDER_')) {
+        if (currentStatus !== 'pending') {
+          await safeReply(`هذا الطلب تمت معالجته مسبقاً (الحالة الحالية: ${currentStatus}).`);
+          return;
+        }
+
+        const upd = await pool.query(
+          `UPDATE store_orders
+           SET status = 'confirmed', updated_at = NOW()
+           WHERE id = $1 AND client_id = $2 AND status = 'pending'
+           RETURNING *`,
+          [orderId, client_id]
+        );
+
+        if (upd.rows.length) {
+          await pool.query(
+            `INSERT INTO order_confirmations (order_id, client_id, response_type, confirmed_via, confirmed_at)
+             SELECT $1, $2, 'approved', 'messenger', NOW()
+             WHERE NOT EXISTS (
+               SELECT 1 FROM order_confirmations WHERE order_id = $1 AND client_id = $2
+             )`,
+            [orderId, client_id]
+          );
+          if ((global as any).broadcastOrderUpdate) {
+            (global as any).broadcastOrderUpdate(upd.rows[0]);
+          }
+          await safeReply(`✅ تم تأكيد طلبك #${orderId}. شكراً لك!`);
+        } else {
+          await safeReply(`تمت معالجة هذا الطلب مسبقاً.`);
+        }
+        return;
+      }
+
+      // Decline/Cancellation
+      if (payload.startsWith('DECLINE_ORDER_') || payload.startsWith('CANCEL_ORDER_')) {
+        if (currentStatus !== 'pending') {
+          await safeReply(`هذا الطلب تمت معالجته مسبقاً (الحالة الحالية: ${currentStatus}).`);
+          return;
+        }
+
+        const upd = await pool.query(
+          `UPDATE store_orders
+           SET status = 'cancelled', updated_at = NOW()
+           WHERE id = $1 AND client_id = $2 AND status = 'pending'
+           RETURNING *`,
+          [orderId, client_id]
+        );
+
+        if (upd.rows.length) {
+          await pool.query(
+            `INSERT INTO order_confirmations (order_id, client_id, response_type, confirmed_via, confirmed_at)
+             SELECT $1, $2, 'declined', 'messenger', NOW()
+             WHERE NOT EXISTS (
+               SELECT 1 FROM order_confirmations WHERE order_id = $1 AND client_id = $2
+             )`,
+            [orderId, client_id]
+          );
+          if ((global as any).broadcastOrderUpdate) {
+            (global as any).broadcastOrderUpdate(upd.rows[0]);
+          }
+          await safeReply(`❌ تم إلغاء طلبك #${orderId}. شكراً لتواصلك مع ${store_name}.`);
+        } else {
+          await safeReply(`تمت معالجة هذا الطلب مسبقاً.`);
+        }
+        return;
+      }
+    }
+
     let client_id: number | null = null;
     let store_name = 'Store';
     let pageAccessToken = '';
@@ -682,8 +881,38 @@ async function handlePostback(pageId: string, senderId: string, postback: any) {
         store_name = storeRes.rows[0]?.store_name || store_name;
       }
     } else {
-      console.warn(`[Messenger] No settings found for page ${pageId}`);
-      return;
+      // Fallback: if platform token is configured but fb_page_id isn't stored in bot_settings,
+      // do not silently ignore the webhook. Try to resolve the store by subscriber mapping or
+      // by claiming the latest pending token; otherwise still respond with a generic welcome.
+      if (PLATFORM_FB_PAGE_ACCESS_TOKEN) {
+        pageAccessToken = PLATFORM_FB_PAGE_ACCESS_TOKEN;
+
+        const subRes = await pool.query(
+          `SELECT client_id FROM messenger_subscribers
+           WHERE psid = $1 AND page_id = $2
+           ORDER BY last_interaction DESC
+           LIMIT 1`,
+          [senderId, pageId]
+        );
+        client_id = subRes.rows[0]?.client_id ? Number(subRes.rows[0].client_id) : null;
+
+        if (client_id) {
+          const storeRes = await pool.query(
+            `SELECT store_name FROM client_store_settings WHERE client_id = $1 LIMIT 1`,
+            [client_id]
+          );
+          store_name = storeRes.rows[0]?.store_name || store_name;
+        } else {
+          const linked = await tryLinkPlatformSenderToLatestToken(pool, { pageId, senderId });
+          if (linked) {
+            client_id = linked.clientId;
+            store_name = linked.storeName;
+          }
+        }
+      } else {
+        console.warn(`[Messenger] No settings found for page ${pageId}`);
+        return;
+      }
     }
 
     if (!pageAccessToken) {
@@ -697,6 +926,16 @@ async function handlePostback(pageId: string, senderId: string, postback: any) {
       if (referral?.ref) {
         await handleReferral(pageId, senderId, referral);
         return; // handleReferral sends its own message
+      }
+
+      // If we couldn't resolve the store/client, still reply (avoid "nothing happens" UX).
+      if (!client_id) {
+        await sendMessengerMessage(
+          pageAccessToken,
+          senderId,
+          `مرحباً بك! 👋\n\nتم فتح المحادثة بنجاح.\n\nارجع الآن لصفحة الدفع لإتمام ربط الحساب واستلام تأكيدات الطلبات. 📦`
+        );
+        return;
       }
 
       // Check for pending preconnect token
@@ -743,93 +982,7 @@ async function handlePostback(pageId: string, senderId: string, postback: any) {
       return;
     }
 
-    // Handle different postback payloads
-    if (payload.startsWith('CONFIRM_ORDER_')) {
-      const orderId = parseInt(payload.replace('CONFIRM_ORDER_', ''), 10);
-
-      const upd = await pool.query(
-        `UPDATE store_orders
-         SET status = 'confirmed', updated_at = NOW()
-         WHERE id = $1 AND client_id = $2 AND status IN ('pending')
-         RETURNING id`,
-        [orderId, client_id]
-      );
-
-      if (upd.rows.length) {
-        await pool.query(
-          `INSERT INTO order_confirmations (order_id, client_id, response_type, confirmed_via, confirmed_at)
-           SELECT $1, $2, 'approved', 'messenger', NOW()
-           WHERE NOT EXISTS (
-             SELECT 1 FROM order_confirmations WHERE order_id = $1 AND client_id = $2
-           )`,
-          [orderId, client_id]
-        );
-        await sendMessengerMessage(
-          pageAccessToken,
-          senderId,
-          `✅ تم تأكيد طلبك #${orderId}. شكراً لك!`
-        );
-      } else {
-        await sendMessengerMessage(
-          pageAccessToken,
-          senderId,
-          `تمت معالجة هذا الطلب مسبقاً.`
-        );
-      }
-    } else if (payload.startsWith('DECLINE_ORDER_') || payload.startsWith('CANCEL_ORDER_')) {
-      const orderId = payload.startsWith('DECLINE_ORDER_')
-        ? parseInt(payload.replace('DECLINE_ORDER_', ''), 10)
-        : parseInt(payload.replace('CANCEL_ORDER_', ''), 10);
-
-      const upd = await pool.query(
-        `UPDATE store_orders
-         SET status = 'declined', updated_at = NOW()
-         WHERE id = $1 AND client_id = $2 AND status IN ('pending')
-         RETURNING id`,
-        [orderId, client_id]
-      );
-
-      if (upd.rows.length) {
-        await pool.query(
-          `INSERT INTO order_confirmations (order_id, client_id, response_type, confirmed_via, confirmed_at)
-           SELECT $1, $2, 'declined', 'messenger', NOW()
-           WHERE NOT EXISTS (
-             SELECT 1 FROM order_confirmations WHERE order_id = $1 AND client_id = $2
-           )`,
-          [orderId, client_id]
-        );
-        await sendMessengerMessage(
-          pageAccessToken,
-          senderId,
-          `❌ تم إلغاء طلبك #${orderId}. شكراً لتواصلك مع ${store_name}.`
-        );
-      } else {
-        await sendMessengerMessage(
-          pageAccessToken,
-          senderId,
-          `تمت معالجة هذا الطلب مسبقاً.`
-        );
-      }
-    } else if (payload.startsWith('CONTACT_STORE_')) {
-      const orderId = parseInt(payload.replace('CONTACT_STORE_', ''), 10);
-      
-      // Get store contact info
-      const storeResult = await pool.query(
-        `SELECT cs.phone, cs.store_name FROM client_store_settings cs
-         JOIN store_orders so ON so.client_id = cs.client_id
-         WHERE so.id = $1`,
-        [orderId]
-      );
-
-      const phone = storeResult.rows[0]?.phone || 'غير متوفر';
-      const storeName = storeResult.rows[0]?.store_name || store_name;
-
-      await sendMessengerMessage(
-        pageAccessToken,
-        senderId,
-        `للتواصل مع ${storeName}:\n📞 ${phone}\n\nسنرد عليك في أقرب وقت! 💬`
-      );
-    }
+    // Other postback payloads are handled above (order actions) or here (non-order actions).
   } catch (error) {
     console.error('[Messenger] Postback handler error:', error);
   }
@@ -895,12 +1048,48 @@ async function handleMessage(pageId: string, senderId: string, message: any) {
       );
       store_name = storeRes.rows[0]?.store_name || store_name;
     } else {
-      console.log(`[Messenger] No settings found for page ${pageId}`);
-      return;
+      if (PLATFORM_FB_PAGE_ACCESS_TOKEN) {
+        pageAccessToken = PLATFORM_FB_PAGE_ACCESS_TOKEN;
+
+        const subRes = await pool.query(
+          `SELECT client_id FROM messenger_subscribers
+           WHERE psid = $1 AND page_id = $2
+           ORDER BY last_interaction DESC
+           LIMIT 1`,
+          [senderId, pageId]
+        );
+        client_id = subRes.rows[0]?.client_id ? Number(subRes.rows[0].client_id) : null;
+
+        if (!client_id) {
+          const linked = await tryLinkPlatformSenderToLatestToken(pool, { pageId, senderId });
+          if (linked) {
+            client_id = linked.clientId;
+            store_name = linked.storeName;
+          }
+        } else {
+          const storeRes = await pool.query(
+            `SELECT store_name FROM client_store_settings WHERE client_id = $1 LIMIT 1`,
+            [client_id]
+          );
+          store_name = storeRes.rows[0]?.store_name || store_name;
+        }
+      } else {
+        console.log(`[Messenger] No settings found for page ${pageId}`);
+        return;
+      }
     }
 
     if (!pageAccessToken) {
       console.warn(`[Messenger] Missing page access token for message page ${pageId}`);
+      return;
+    }
+
+    if (!client_id) {
+      await sendMessengerMessage(
+        pageAccessToken,
+        senderId,
+        `مرحباً بك! 👋\n\nارجع الآن لصفحة الدفع لإتمام ربط الحساب واستلام تأكيدات الطلبات. 📦`
+      );
       return;
     }
 
@@ -1110,7 +1299,7 @@ const setupGetStarted: RequestHandler = async (req, res) => {
 const getConfig: RequestHandler = async (req, res) => {
   res.json({
     enabled: !!process.env.FB_APP_SECRET,
-    webhookUrl: `${process.env.BASE_URL || 'https://ecopro-1lbl.onrender.com'}/api/messenger/webhook`,
+    webhookUrl: `${getPublicBaseUrl(req)}/api/messenger/webhook`,
     platformAvailable: PLATFORM_MESSENGER_ENABLED && !!PLATFORM_FB_PAGE_ID && !!PLATFORM_FB_PAGE_ACCESS_TOKEN,
     // Intentionally do NOT expose verify token or platform Page ID publicly.
     verifyTokenSet: !!FB_VERIFY_TOKEN,
