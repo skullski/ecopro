@@ -1,5 +1,9 @@
 import telemetryRouter from './routes/telemetry';
-import "dotenv/config";
+import dotenv from 'dotenv';
+// Load env files for local/dev. Render should provide env vars directly.
+// Order matters: .env then .env.local override.
+dotenv.config({ path: '.env' });
+dotenv.config({ path: '.env.local', override: true });
 import express from "express";
 import compression from "compression";
 import cors from "cors";

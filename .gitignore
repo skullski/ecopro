@@ -24,7 +24,6 @@ dist-ssr
 *.sw?
 
 .config/
-!.env
 
 # User data database
 data/
@@ -35,10 +34,11 @@ data/
 # Vercel
 .vercel
 
-# Environment files (keep .env for deployment)
+# Environment files
+.env
+.env.production
 .env.local
 .env.*.local
-.env.local
 
 # Uploaded assets (generated at runtime)
 public/uploads/

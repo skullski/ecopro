@@ -5,10 +5,14 @@ import pg from 'pg';
 
 const { Pool } = pg;
 
-// Load env from .env then fall back to .env.production (without printing secrets)
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+// Prefer environment variables (Render). Only load local files if DATABASE_URL isn't set.
 if (!process.env.DATABASE_URL) {
-  dotenv.config({ path: path.resolve(process.cwd(), '.env.production') });
+  // Local/dev convenience: allow secrets in .env.local (gitignored)
+  dotenv.config({ path: path.resolve(process.cwd(), '.env.local'), override: true });
+  dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+  if (!process.env.DATABASE_URL) {
+    dotenv.config({ path: path.resolve(process.cwd(), '.env.production') });
+  }
 }
 
 function getConnectionString() {
