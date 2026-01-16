@@ -1269,14 +1269,32 @@ export function createServer(options?: { skipDbInit?: boolean }) {
 
     // Serve hashed assets directly and never fall through to the SPA HTML handler.
     // If an asset is missing, return 404 instead of serving index.html (which causes MIME-type errors).
-    app.use(
-      '/assets',
-      express.static(path.join(spaBuildPath, 'assets'), {
-        fallthrough: false,
-        immutable: true,
-        maxAge: '365d',
-      })
-    );
+    const assetsStatic = express.static(path.join(spaBuildPath, 'assets'), {
+      fallthrough: false,
+      immutable: true,
+      maxAge: '365d',
+    });
+
+    // IMPORTANT: when fallthrough=false and the file is missing, express.static calls next(err).
+    // Our global error handler returns JSON, which can get cached and causes strict MIME failures.
+    // Convert missing assets into a plain 404 response (no long cache) instead.
+    app.use('/assets', (req, res, next) => {
+      assetsStatic(req, res, (err: any) => {
+        if (!err) return next();
+
+        const status = Number(err?.status) || Number(err?.statusCode) || 500;
+        const isMissing = status === 404 || err?.code === 'ENOENT';
+
+        if (isMissing) {
+          res.status(404);
+          res.setHeader('Cache-Control', 'no-store');
+          res.type('text/plain').send('Not found');
+          return;
+        }
+
+        next(err);
+      });
+    });
 
     // Serve other static files (icons, manifest, etc). Do NOT serve index.html here;
     // we want all HTML to go through the nonce-injection handler below.
@@ -1323,11 +1341,34 @@ export function createServer(options?: { skipDbInit?: boolean }) {
 
   // Lightweight health endpoint
   app.get('/api/health', (_req, res) => {
-    res.json({
-      status: 'ok',
-      uptime_seconds: process.uptime(),
-      timestamp: new Date().toISOString(),
-      commit: process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || null
+    const getSpaAssets = async () => {
+      if (process.env.NODE_ENV !== 'production') return null;
+      try {
+        const spaBuildPath = path.join(__dirname, '../spa');
+        const indexPath = path.join(spaBuildPath, 'index.html');
+        const html = await fs.readFile(indexPath, 'utf8');
+
+        const styles = Array.from(
+          html.matchAll(/<link[^>]*rel=["']stylesheet["'][^>]*href=["']([^"']+)["'][^>]*>/gi)
+        ).map((m) => m[1]);
+        const scripts = Array.from(
+          html.matchAll(/<script[^>]*type=["']module["'][^>]*src=["']([^"']+)["'][^>]*>/gi)
+        ).map((m) => m[1]);
+
+        return { styles, scripts };
+      } catch {
+        return null;
+      }
+    };
+
+    void getSpaAssets().then((spa_assets) => {
+      res.json({
+        status: 'ok',
+        uptime_seconds: process.uptime(),
+        timestamp: new Date().toISOString(),
+        commit: process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || null,
+        spa_assets,
+      });
     });
   });
 
