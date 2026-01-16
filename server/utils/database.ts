@@ -211,18 +211,31 @@ export async function initializeDatabase(): Promise<void> {
 
 // Run pending .sql migrations in migrations directory
 export async function runPendingMigrations(): Promise<void> {
-  // Prefer the source tree migrations directory so production builds can find .sql files
+  // Prefer the source tree migrations directories so production builds can find .sql files.
+  // This repo has migrations in BOTH:
+  // - server/migrations
+  // - migrations (top-level)
   const candidates = [
     path.resolve(process.cwd(), 'server', 'migrations'),
+    path.resolve(process.cwd(), 'migrations'),
     path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'migrations'),
     path.join(path.dirname(fileURLToPath(import.meta.url)), 'migrations'),
   ];
-  const migrationsDir = candidates.find((p) => fs.existsSync(p));
-  if (!migrationsDir) {
+  const existingDirs = candidates.filter((p) => fs.existsSync(p));
+  if (existingDirs.length === 0) {
     console.log('No migrations directory found; skipping SQL migrations');
     return;
   }
-  const files = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort();
+
+  const fileMap = new Map<string, string>();
+  for (const dir of existingDirs) {
+    const entries = fs.readdirSync(dir).filter((f) => f.endsWith('.sql')).sort();
+    for (const filename of entries) {
+      if (fileMap.has(filename)) continue;
+      fileMap.set(filename, path.join(dir, filename));
+    }
+  }
+  const files = Array.from(fileMap.keys()).sort();
   if (!pool) {
     await ensureConnection();
   }
@@ -241,7 +254,8 @@ export async function runPendingMigrations(): Promise<void> {
       }
       const exists = await client.query('SELECT 1 FROM schema_migrations WHERE filename = $1', [file]);
       if (exists.rowCount) continue;
-      const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf-8');
+      const fullPath = fileMap.get(file) || '';
+      const sql = fs.readFileSync(fullPath, 'utf-8');
       console.log(`Applying migration: ${file}`);
       try {
         await client.query('BEGIN');

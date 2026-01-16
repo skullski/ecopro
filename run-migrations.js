@@ -102,13 +102,26 @@ async function withRetries(fn, opts) {
 }
 
 async function runPendingMigrationsDirect() {
-  const migrationsDir = path.resolve(process.cwd(), 'server', 'migrations');
-  if (!fs.existsSync(migrationsDir)) {
+  const candidateDirs = [
+    path.resolve(process.cwd(), 'server', 'migrations'),
+    path.resolve(process.cwd(), 'migrations'),
+  ];
+  const existingDirs = candidateDirs.filter((d) => fs.existsSync(d));
+  if (existingDirs.length === 0) {
     console.log('No migrations directory found; skipping SQL migrations');
     return;
   }
 
-  const files = fs.readdirSync(migrationsDir).filter((f) => f.endsWith('.sql')).sort();
+  // Merge migrations from multiple dirs. Keyed by filename to match schema_migrations PK.
+  const fileMap = new Map();
+  for (const dir of existingDirs) {
+    const entries = fs.readdirSync(dir).filter((f) => f.endsWith('.sql')).sort();
+    for (const filename of entries) {
+      if (fileMap.has(filename)) continue;
+      fileMap.set(filename, path.join(dir, filename));
+    }
+  }
+  const files = Array.from(fileMap.keys()).sort();
 
 
   const attempts = Number(process.env.MIGRATION_CONNECT_RETRIES || 10);
@@ -144,7 +157,8 @@ async function runPendingMigrationsDirect() {
           const exists = await client.query('SELECT 1 FROM schema_migrations WHERE filename = $1', [file]);
           if (exists.rowCount) continue;
 
-          const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf-8');
+          const fullPath = fileMap.get(file);
+          const sql = fs.readFileSync(fullPath, 'utf-8');
           console.log(`Applying migration: ${file}`);
           try {
             await client.query('BEGIN');
