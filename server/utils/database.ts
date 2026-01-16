@@ -260,7 +260,7 @@ export async function runPendingMigrations(): Promise<void> {
       try {
         await client.query('BEGIN');
         await client.query(sql);
-        await client.query('INSERT INTO schema_migrations(filename) VALUES ($1)', [file]);
+        await client.query('INSERT INTO schema_migrations(filename) VALUES ($1) ON CONFLICT DO NOTHING', [file]);
         await client.query('COMMIT');
         console.log(`✅ Migration applied: ${file}`);
       } catch (e) {
