@@ -12,6 +12,7 @@ import { ensureConnection } from '../utils/database';
 import crypto from 'crypto';
 import { replaceTemplateVariables } from '../utils/bot-messaging';
 import { getPublicBaseUrl } from '../utils/public-url';
+import { logSecurityEvent } from '../utils/security';
 
 const router = Router();
 
@@ -357,6 +358,60 @@ export async function sendMessengerMessage(
     console.error(`[Messenger] Failed to send message: ${errorMsg}`);
     return { success: false, error: errorMsg };
   }
+}
+
+function hashPsid(psid: string): string {
+  try {
+    return crypto.createHash('sha256').update(String(psid)).digest('hex').slice(0, 12);
+  } catch {
+    return 'hash_error';
+  }
+}
+
+async function sendMessengerAction(
+  pageAccessToken: string,
+  recipientId: string,
+  action: 'typing_on' | 'typing_off' | 'mark_seen'
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    if (!pageAccessToken) return { success: false, error: 'Page access token missing' };
+    if (!recipientId) return { success: false, error: 'Recipient PSID missing' };
+
+    const payload: any = {
+      recipient: { id: recipientId },
+      sender_action: action,
+    };
+
+    const response = await fetch(
+      `https://graph.facebook.com/v18.0/me/messages?access_token=${pageAccessToken}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    const data: any = await response.json().catch(() => null);
+    if (!response.ok || data?.error) {
+      return { success: false, error: data?.error?.message || `Action failed (${response.status})` };
+    }
+
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: (e as any)?.message || String(e) };
+  }
+}
+
+async function sendMessengerTextWithRetry(
+  pageAccessToken: string,
+  recipientId: string,
+  message: string
+): Promise<{ success: boolean; messageId?: string; error?: string; attempts: number }> {
+  const first = await sendMessengerMessage(pageAccessToken, recipientId, message);
+  if (first.success) return { ...first, attempts: 1 };
+  await new Promise((r) => setTimeout(r, 500));
+  const second = await sendMessengerMessage(pageAccessToken, recipientId, message);
+  return { ...second, attempts: 2 };
 }
 
 /**
@@ -922,6 +977,12 @@ async function handlePostback(pageId: string, senderId: string, postback: any) {
 
     // Handle GET_STARTED - this fires when user clicks m.me link or Get Started button
     if (payload === 'GET_STARTED') {
+      // Improve perceived responsiveness on the very first interaction.
+      // Some Messenger clients occasionally don't render the first bot message until refresh;
+      // sending sender actions + one retry makes this much less likely.
+      await sendMessengerAction(pageAccessToken, senderId, 'mark_seen');
+      await sendMessengerAction(pageAccessToken, senderId, 'typing_on');
+
       // Check for ref in referral (from m.me link)
       if (referral?.ref) {
         await handleReferral(pageId, senderId, referral);
@@ -930,11 +991,27 @@ async function handlePostback(pageId: string, senderId: string, postback: any) {
 
       // If we couldn't resolve the store/client, still reply (avoid "nothing happens" UX).
       if (!client_id) {
-        await sendMessengerMessage(
+        const sendRes = await sendMessengerTextWithRetry(
           pageAccessToken,
           senderId,
           `مرحباً بك! 👋\n\nتم فتح المحادثة بنجاح.\n\nارجع الآن لصفحة الدفع لإتمام ربط الحساب واستلام تأكيدات الطلبات. 📦`
         );
+        await sendMessengerAction(pageAccessToken, senderId, 'typing_off');
+        void logSecurityEvent({
+          event_type: 'messenger_get_started',
+          severity: sendRes.success ? 'info' : 'warn',
+          method: 'POST',
+          path: '/api/messenger/webhook',
+          status_code: 200,
+          metadata: {
+            pageId,
+            sender: hashPsid(senderId),
+            resolvedClientId: null,
+            sendSuccess: sendRes.success,
+            attempts: sendRes.attempts,
+            error: sendRes.error || null,
+          },
+        });
         return;
       }
 
@@ -965,20 +1042,52 @@ async function handlePostback(pageId: string, senderId: string, postback: any) {
 
         console.log(`[Messenger] Linked PSID ${senderId} to phone ${customer_phone} via GET_STARTED`);
 
-        await sendMessengerMessage(
+        const sendRes = await sendMessengerTextWithRetry(
           pageAccessToken,
           senderId,
           `✅ تم ربط حسابك بنجاح!\n\nيمكنك الآن العودة لإتمام طلبك. ستتلقى تأكيدات الطلبات هنا! 📦`
         );
+        await sendMessengerAction(pageAccessToken, senderId, 'typing_off');
+        void logSecurityEvent({
+          event_type: 'messenger_get_started',
+          severity: sendRes.success ? 'info' : 'warn',
+          method: 'POST',
+          path: '/api/messenger/webhook',
+          status_code: 200,
+          metadata: {
+            pageId,
+            sender: hashPsid(senderId),
+            resolvedClientId: client_id,
+            sendSuccess: sendRes.success,
+            attempts: sendRes.attempts,
+            error: sendRes.error || null,
+          },
+        });
         return;
       }
 
       // Default welcome if no preconnect
-      await sendMessengerMessage(
+      const sendRes = await sendMessengerTextWithRetry(
         pageAccessToken,
         senderId,
         `مرحباً بك! 👋\n\nأنا مساعدك الآلي من ${store_name}.\n\nسأرسل لك تأكيدات الطلبات وتحديثات الشحن.`
       );
+      await sendMessengerAction(pageAccessToken, senderId, 'typing_off');
+      void logSecurityEvent({
+        event_type: 'messenger_get_started',
+        severity: sendRes.success ? 'info' : 'warn',
+        method: 'POST',
+        path: '/api/messenger/webhook',
+        status_code: 200,
+        metadata: {
+          pageId,
+          sender: hashPsid(senderId),
+          resolvedClientId: client_id,
+          sendSuccess: sendRes.success,
+          attempts: sendRes.attempts,
+          error: sendRes.error || null,
+        },
+      });
       return;
     }
 

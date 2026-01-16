@@ -3,6 +3,7 @@ import { ensureConnection } from '../utils/database';
 import { replaceTemplateVariables, sendTelegramMessage } from '../utils/bot-messaging';
 import { registerTelegramWebhook, upsertTelegramWebhookSecret } from '../utils/telegram';
 import { getPublicBaseUrl } from '../utils/public-url';
+import { logSecurityEvent, getClientIp, computeFingerprint } from '../utils/security';
 import crypto from 'crypto';
 
 // Temporary endpoint to set webhook secret for testing
@@ -464,6 +465,24 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
     // If the user presses "Start" without a payload, Telegram sends plain `/start`.
     // In a shared-bot platform, we can't infer the store without a token, but we should still respond.
     if (!startToken) {
+      void logSecurityEvent({
+        event_type: 'telegram_webhook',
+        severity: 'info',
+        method: req.method,
+        path: req.path,
+        ip: getClientIp(req),
+        user_agent: String(req.get('user-agent') || ''),
+        fingerprint: computeFingerprint(req),
+        status_code: 200,
+        metadata: {
+          kind: 'start_no_payload',
+          hasSecretHeader: Boolean(secret),
+          updateId: update?.update_id ?? null,
+          chatId: chatId,
+          telegramUserId,
+        },
+      });
+
       // If we don't know which bot token to use (missing secret header), try the most recent enabled token.
       if (!botToken) {
         const anyTokenRes = await pool.query(
@@ -518,6 +537,25 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
       }
 
       if (!botToken) return res.status(200).json({ ok: true });
+
+      void logSecurityEvent({
+        event_type: 'telegram_webhook',
+        severity: 'info',
+        method: req.method,
+        path: req.path,
+        ip: getClientIp(req),
+        user_agent: String(req.get('user-agent') || ''),
+        fingerprint: computeFingerprint(req),
+        status_code: 200,
+        metadata: {
+          kind: 'preconnect_start',
+          hasSecretHeader: Boolean(secret),
+          updateId: update?.update_id ?? null,
+          chatId: chatId,
+          telegramUserId,
+          clientId: resolvedClientId,
+        },
+      });
 
       // This is a preconnect - customer is connecting before placing order
       
@@ -614,6 +652,26 @@ We will send you order confirmation directly here! 📦`;
     }
 
     if (!botToken) return res.status(200).json({ ok: true });
+
+    void logSecurityEvent({
+      event_type: 'telegram_webhook',
+      severity: 'info',
+      method: req.method,
+      path: req.path,
+      ip: getClientIp(req),
+      user_agent: String(req.get('user-agent') || ''),
+      fingerprint: computeFingerprint(req),
+      status_code: 200,
+      metadata: {
+        kind: 'order_start',
+        hasSecretHeader: Boolean(secret),
+        updateId: update?.update_id ?? null,
+        chatId: chatId,
+        telegramUserId,
+        clientId,
+        orderId,
+      },
+    });
 
     // Bind this Telegram chat to this order (order-scoped).
     await pool.query(
