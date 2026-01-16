@@ -472,7 +472,11 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
         path: req.path,
         ip: getClientIp(req),
         user_agent: String(req.get('user-agent') || ''),
-        fingerprint: computeFingerprint(req),
+        fingerprint: computeFingerprint({
+          ip: getClientIp(req),
+          userAgent: String(req.get('user-agent') || ''),
+          cookie: String(req.headers.cookie || ''),
+        }),
         status_code: 200,
         metadata: {
           kind: 'start_no_payload',
@@ -545,7 +549,11 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
         path: req.path,
         ip: getClientIp(req),
         user_agent: String(req.get('user-agent') || ''),
-        fingerprint: computeFingerprint(req),
+        fingerprint: computeFingerprint({
+          ip: getClientIp(req),
+          userAgent: String(req.get('user-agent') || ''),
+          cookie: String(req.headers.cookie || ''),
+        }),
         status_code: 200,
         metadata: {
           kind: 'preconnect_start',
@@ -660,7 +668,11 @@ We will send you order confirmation directly here! 📦`;
       path: req.path,
       ip: getClientIp(req),
       user_agent: String(req.get('user-agent') || ''),
-      fingerprint: computeFingerprint(req),
+      fingerprint: computeFingerprint({
+        ip: getClientIp(req),
+        userAgent: String(req.get('user-agent') || ''),
+        cookie: String(req.headers.cookie || ''),
+      }),
       status_code: 200,
       metadata: {
         kind: 'order_start',

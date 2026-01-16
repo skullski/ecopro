@@ -15,7 +15,9 @@ interface BotSettings {
   provider: 'whatsapp_cloud' | 'telegram' | 'viber' | 'facebook' | 'messenger' | string;
   whatsappPhoneId: string;
   whatsappToken: string;
+  whatsappTokenConfigured?: boolean;
   telegramBotToken?: string;
+  telegramTokenConfigured?: boolean;
   telegramBotUsername?: string;
   telegramDelayMinutes?: number;
   autoExpireHours?: number;
@@ -27,9 +29,15 @@ interface BotSettings {
   messengerEnabled?: boolean;
   fbPageId?: string;
   fbPageAccessToken?: string;
+  fbPageAccessTokenConfigured?: boolean;
   messengerDelayMinutes?: number;
   platformMessengerAvailable?: boolean;
   platformMessengerPageId?: string;
+  platformTelegramAvailable?: boolean;
+  usePlatformMessenger?: boolean;
+  messengerUsingPlatform?: boolean;
+  usePlatformTelegram?: boolean;
+  telegramUsingPlatform?: boolean;
   templateGreeting?: string;
   templateInstantOrder?: string;
   templatePinInstructions?: string;
@@ -45,6 +53,7 @@ export default function AdminWasselniSettings() {
   const [saving, setSaving] = useState(false);
   const [settingUpMessenger, setSettingUpMessenger] = useState(false);
   const [showMessengerAdvanced, setShowMessengerAdvanced] = useState(false);
+  const [showTelegramAdvanced, setShowTelegramAdvanced] = useState(false);
   const [storeSlug, setStoreSlug] = useState<string>('');
   const [activeBot, setActiveBot] = useState<'confirmation' | 'updates' | 'tracking' | null>(null);
   const [settings, setSettings] = useState<BotSettings>({
@@ -54,7 +63,9 @@ export default function AdminWasselniSettings() {
     provider: 'telegram',
     whatsappPhoneId: '',
     whatsappToken: '',
+    whatsappTokenConfigured: false,
     telegramBotToken: '',
+    telegramTokenConfigured: false,
     telegramBotUsername: '',
     telegramDelayMinutes: 5,
     autoExpireHours: 24,
@@ -65,9 +76,15 @@ export default function AdminWasselniSettings() {
     messengerEnabled: false,
     fbPageId: '',
     fbPageAccessToken: '',
+    fbPageAccessTokenConfigured: false,
     messengerDelayMinutes: 5,
     platformMessengerAvailable: false,
     platformMessengerPageId: '',
+    platformTelegramAvailable: false,
+    usePlatformMessenger: false,
+    messengerUsingPlatform: false,
+    usePlatformTelegram: false,
+    telegramUsingPlatform: false,
     templateGreeting: `شكراً لطلبك من {storeName}، {customerName}! 🎉\n\n✅ فعّل الإشعارات لتلقي تأكيد الطلب وتحديثات التتبع.`,
     templateInstantOrder: `🎉 شكراً لك {customerName}!\n\nتم استلام طلبك بنجاح ✅\n\n━━━━━━━━━━━━━━━━\n📦 تفاصيل الطلب\n━━━━━━━━━━━━━━━━\n🔢 رقم الطلب: #{orderId}\n📱 المنتج: {productName}\n💰 السعر: {totalPrice} دج\n📍 الكمية: {quantity}\n\n━━━━━━━━━━━━━━━━\n👤 معلومات التوصيل\n━━━━━━━━━━━━━━━━\n📛 الاسم: {customerName}\n📞 الهاتف: {customerPhone}\n🏠 العنوان: {address}\n\n━━━━━━━━━━━━━━━━\n🚚 حالة الطلب: قيد المعالجة\n━━━━━━━━━━━━━━━━\n\nسنتصل بك قريباً للتأكيد 📞\n\n⭐ من {storeName}`,
     templatePinInstructions: `📌 نصيحة مهمة:\n\nاضغط مطولاً على الرسالة السابقة واختر "تثبيت" لتتبع طلبك بسهولة!\n\n🔔 تأكد من:\n• تفعيل الإشعارات\n• عدم كتم المحادثة\n• ستتلقى تحديثات حالة الطلب هنا مباشرة`,
@@ -95,7 +112,11 @@ export default function AdminWasselniSettings() {
 
       // Default to platform mode when available (no Page/token fields shown).
       if (data?.platformMessengerAvailable) {
-        setShowMessengerAdvanced(false);
+        setShowMessengerAdvanced(!(data?.usePlatformMessenger ?? data?.messengerUsingPlatform ?? true));
+      }
+
+      if (data?.platformTelegramAvailable) {
+        setShowTelegramAdvanced(!(data?.usePlatformTelegram ?? data?.telegramUsingPlatform ?? true));
       }
 
       // Also load store settings so we can call Messenger setup endpoints without asking for slug.
@@ -123,12 +144,45 @@ export default function AdminWasselniSettings() {
   const handleSave = async () => {
     setSaving(true);
     try {
+      const payload: any = { ...settings };
+
+      // Derive platform-mode flags from UI state (never trust hidden fields).
+      payload.usePlatformMessenger = Boolean(settings.platformMessengerAvailable) && !showMessengerAdvanced;
+      payload.usePlatformTelegram = Boolean(settings.platformTelegramAvailable) && !showTelegramAdvanced;
+
+      // Never send empty secrets; server preserves existing secrets unless replaced.
+      const maybeDeleteEmpty = (key: string) => {
+        const v = payload[key];
+        if (typeof v !== 'string' || !v.trim()) {
+          delete payload[key];
+        }
+      };
+      maybeDeleteEmpty('whatsappToken');
+      maybeDeleteEmpty('telegramBotToken');
+      maybeDeleteEmpty('telegramBotUsername');
+      maybeDeleteEmpty('fbPageAccessToken');
+      maybeDeleteEmpty('facebookAccessToken');
+      maybeDeleteEmpty('fbPageId');
+      maybeDeleteEmpty('facebookPageId');
+
+      // In platform mode, do not send any page/token/username; server will apply env-based config.
+      if (payload.usePlatformMessenger) {
+        delete payload.fbPageId;
+        delete payload.fbPageAccessToken;
+        delete payload.facebookPageId;
+        delete payload.facebookAccessToken;
+      }
+      if (payload.usePlatformTelegram) {
+        delete payload.telegramBotToken;
+        delete payload.telegramBotUsername;
+      }
+
       const response = await fetch('/api/bot/settings', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(settings)
+        body: JSON.stringify(payload)
       });
 
       if (response.ok) {
@@ -397,22 +451,59 @@ export default function AdminWasselniSettings() {
               {/* Provider-specific settings */}
               {settings.provider === 'telegram' && (
                 <div className="space-y-3 pt-3 border-t border-slate-200 dark:border-slate-700">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.telegramBotToken')}</Label>
-                    <Input
-                      value={settings.telegramBotToken || ''}
-                      onChange={(e) => updateSetting('telegramBotToken', e.target.value)}
-                      placeholder="123456:ABCDEF..."
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.telegramBotUsername')}</Label>
-                    <Input
-                      value={settings.telegramBotUsername || ''}
-                      onChange={(e) => updateSetting('telegramBotUsername', e.target.value)}
-                      placeholder="@YourBotUsername"
-                    />
-                  </div>
+                  {settings.platformTelegramAvailable && (
+                    <div className="flex items-center justify-between gap-3 p-3 rounded-xl border bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-700">
+                      <p className="text-xs text-slate-600 dark:text-slate-300">
+                        <strong>{!showTelegramAdvanced ? 'Platform mode:' : 'Custom mode:'}</strong>
+                        {' '}
+                        {!showTelegramAdvanced
+                          ? 'EcoPro uses the shared platform Telegram bot automatically. (Token is never shown.)'
+                          : 'Use your own Telegram bot token + username.'}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setShowTelegramAdvanced((v) => !v)}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/70"
+                      >
+                        {showTelegramAdvanced ? 'Use platform bot' : 'Use my own bot'}
+                      </button>
+                    </div>
+                  )}
+
+                  {!showTelegramAdvanced && settings.platformTelegramAvailable && (
+                    <div className="p-3 rounded-xl border bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30">
+                      <p className="text-xs text-emerald-800 dark:text-emerald-200">
+                        <strong>Configured (platform mode):</strong> EcoPro will use the platform Telegram bot for your store.
+                      </p>
+                    </div>
+                  )}
+
+                  {(showTelegramAdvanced || !settings.platformTelegramAvailable) && (
+                    <>
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.telegramBotToken')}</Label>
+                        <Input
+                          type="password"
+                          value={settings.telegramBotToken || ''}
+                          onChange={(e) => updateSetting('telegramBotToken', e.target.value)}
+                          placeholder="123456:ABCDEF..."
+                        />
+                        {settings.telegramTokenConfigured && !String(settings.telegramBotToken || '').trim() && (
+                          <p className="text-xs text-slate-500">
+                            Token is saved (hidden). Paste a new token to replace it.
+                          </p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.telegramBotUsername')}</Label>
+                        <Input
+                          value={settings.telegramBotUsername || ''}
+                          onChange={(e) => updateSetting('telegramBotUsername', e.target.value)}
+                          placeholder="@YourBotUsername"
+                        />
+                      </div>
+                    </>
+                  )}
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-slate-900 dark:text-white">{t('bot.messengerDelay') || 'Message Delay (minutes)'}</Label>
                     <Input
@@ -585,7 +676,7 @@ export default function AdminWasselniSettings() {
                     const token = String(settings.fbPageAccessToken || settings.facebookAccessToken || '').trim();
                     const wantsMessenger = Boolean(settings.messengerEnabled);
                     const platformAvailable = Boolean(settings.platformMessengerAvailable);
-                    const hasStorePageConfig = Boolean(pageId && token);
+                    const hasStorePageConfig = Boolean(pageId && (token || settings.fbPageAccessTokenConfigured));
 
                     if (!wantsMessenger) {
                       return (
@@ -654,6 +745,11 @@ export default function AdminWasselniSettings() {
                           onChange={(e) => updateSetting('fbPageAccessToken', e.target.value)}
                           placeholder="Paste Page Access Token from Facebook"
                         />
+                        {settings.fbPageAccessTokenConfigured && !String(settings.fbPageAccessToken || settings.facebookAccessToken || '').trim() && (
+                          <p className="text-xs text-slate-500">
+                            Token is saved (hidden). Paste a new token to replace it.
+                          </p>
+                        )}
                       </form>
                     </>
                   )}
@@ -703,7 +799,7 @@ export default function AdminWasselniSettings() {
                       disabled={
                         settingUpMessenger ||
                         !storeSlug ||
-                        (((!String(settings.fbPageId || '').trim() || !String(settings.fbPageAccessToken || '').trim()) && !Boolean(settings.platformMessengerAvailable))) ||
+                        (((!String(settings.fbPageId || '').trim() || (!String(settings.fbPageAccessToken || '').trim() && !Boolean(settings.fbPageAccessTokenConfigured))) && !Boolean(settings.platformMessengerAvailable))) ||
                         !(settings.messengerEnabled ?? false)
                       }
                       className="w-full px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200 bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"

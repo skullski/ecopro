@@ -7,6 +7,10 @@ const PLATFORM_FB_PAGE_ID = String(process.env.PLATFORM_FB_PAGE_ID || '').trim()
 const PLATFORM_FB_PAGE_ACCESS_TOKEN = String(process.env.PLATFORM_FB_PAGE_ACCESS_TOKEN || '').trim();
 const PLATFORM_MESSENGER_AVAILABLE = !!PLATFORM_FB_PAGE_ID && !!PLATFORM_FB_PAGE_ACCESS_TOKEN;
 
+const PLATFORM_TELEGRAM_BOT_TOKEN = String(process.env.PLATFORM_TELEGRAM_BOT_TOKEN || '').trim();
+const PLATFORM_TELEGRAM_BOT_USERNAME = String(process.env.PLATFORM_TELEGRAM_BOT_USERNAME || '').trim();
+const PLATFORM_TELEGRAM_AVAILABLE = !!PLATFORM_TELEGRAM_BOT_TOKEN && !!PLATFORM_TELEGRAM_BOT_USERNAME;
+
 async function getClientAccessState(clientId: string | number): Promise<{ allowBot: boolean; reason?: string }>
 {
   // Check if user is locked - is_locked means subscription issue, bot should be disabled
@@ -73,8 +77,11 @@ export const getBotSettings: RequestHandler = async (req, res) => {
         enabled: access.allowBot,
         provider: 'telegram',
         whatsappPhoneId: '',
+        // Never expose tokens/secrets to store owners.
         whatsappToken: '',
+        whatsappTokenConfigured: false,
         telegramBotToken: '',
+        telegramTokenConfigured: PLATFORM_TELEGRAM_AVAILABLE,
         telegramBotUsername: '',
         telegramDelayMinutes: 5,
         autoExpireHours: 24,
@@ -83,8 +90,14 @@ export const getBotSettings: RequestHandler = async (req, res) => {
         messengerEnabled: false,
         fbPageId: '',
         fbPageAccessToken: '',
+        fbPageAccessTokenConfigured: false,
         messengerDelayMinutes: 5,
         platformMessengerAvailable: PLATFORM_MESSENGER_AVAILABLE,
+        platformTelegramAvailable: PLATFORM_TELEGRAM_AVAILABLE,
+        usePlatformMessenger: PLATFORM_MESSENGER_AVAILABLE,
+        messengerUsingPlatform: PLATFORM_MESSENGER_AVAILABLE,
+        usePlatformTelegram: PLATFORM_TELEGRAM_AVAILABLE,
+        telegramUsingPlatform: PLATFORM_TELEGRAM_AVAILABLE,
         // Do not expose platform Page ID to store owners.
         platformMessengerPageId: '',
         templateGreeting: `شكراً لطلبك من {storeName}، {customerName}! 🎉\n\n✅ فعّل الإشعارات لتلقي تأكيد الطلب وتحديثات التتبع.`,
@@ -108,15 +121,31 @@ export const getBotSettings: RequestHandler = async (req, res) => {
       );
     }
 
+    const storedTelegramToken = String(settings.telegram_bot_token || '').trim();
+    const storedTelegramUsername = String(settings.telegram_bot_username || '').trim();
+    const telegramTokenConfigured = !!storedTelegramToken;
+    const telegramUsingPlatform = PLATFORM_TELEGRAM_AVAILABLE && (!storedTelegramToken || storedTelegramToken === PLATFORM_TELEGRAM_BOT_TOKEN);
+
+    const storedFbPageId = String(settings.fb_page_id || '').trim();
+    const storedFbPageAccessToken = String(settings.fb_page_access_token || '').trim();
+    const messengerTokenConfigured = !!storedFbPageAccessToken;
+    const messengerUsingPlatform = PLATFORM_MESSENGER_AVAILABLE && (!storedFbPageId || storedFbPageId === PLATFORM_FB_PAGE_ID);
+
+    const whatsappTokenConfigured = !!String(settings.whatsapp_token || '').trim();
+
     const response = {
       enabled: effectiveEnabled,
       updatesEnabled: !!settings.updates_enabled,
       trackingEnabled: !!settings.tracking_enabled,
       provider: settings.provider || 'telegram',
       whatsappPhoneId: settings.whatsapp_phone_id,
-      whatsappToken: settings.whatsapp_token,
-      telegramBotToken: settings.telegram_bot_token,
-      telegramBotUsername: settings.telegram_bot_username,
+      // Never expose tokens/secrets to store owners.
+      whatsappToken: '',
+      whatsappTokenConfigured,
+      telegramBotToken: '',
+      telegramTokenConfigured: telegramTokenConfigured || telegramUsingPlatform,
+      // Username isn't secret, but hide it when platform bot is used.
+      telegramBotUsername: telegramUsingPlatform ? '' : storedTelegramUsername,
       telegramDelayMinutes: settings.telegram_delay_minutes || 5,
       autoExpireHours: settings.auto_expire_hours || 24,
       viberAuthToken: settings.viber_auth_token,
@@ -128,10 +157,16 @@ export const getBotSettings: RequestHandler = async (req, res) => {
       templatePayment: settings.template_payment,
       templateShipping: settings.template_shipping,
       messengerEnabled: !!settings.messenger_enabled,
-      fbPageId: settings.fb_page_id || '',
-      fbPageAccessToken: settings.fb_page_access_token || '',
+      fbPageId: messengerUsingPlatform ? '' : (settings.fb_page_id || ''),
+      fbPageAccessToken: '',
+      fbPageAccessTokenConfigured: messengerTokenConfigured || messengerUsingPlatform,
       messengerDelayMinutes: settings.messenger_delay_minutes || 5,
       platformMessengerAvailable: PLATFORM_MESSENGER_AVAILABLE,
+      platformTelegramAvailable: PLATFORM_TELEGRAM_AVAILABLE,
+      usePlatformMessenger: messengerUsingPlatform,
+      messengerUsingPlatform,
+      usePlatformTelegram: telegramUsingPlatform,
+      telegramUsingPlatform,
       // Do not expose platform Page ID to store owners.
       platformMessengerPageId: '',
     };
@@ -174,19 +209,88 @@ export const updateBotSettings: RequestHandler = async (req, res) => {
       messengerEnabled,
       fbPageId,
       fbPageAccessToken,
-      messengerDelayMinutes
+      messengerDelayMinutes,
+      usePlatformMessenger,
+      usePlatformTelegram,
     } = req.body;
 
     const effectiveProvider = provider ?? 'telegram';
 
-    // If the platform shared Page is available and the client is pointing at it,
-    // do not store a Page Access Token in the database. Use env-based token instead.
-    // This avoids stale/invalid DB tokens causing OAuthException 190 failures.
+    const normalizedWhatsappToken = typeof whatsappToken === 'string' ? whatsappToken.trim() : '';
+    const normalizedTelegramBotToken = typeof telegramBotToken === 'string' ? telegramBotToken.trim() : '';
+    const normalizedTelegramBotUsername = typeof telegramBotUsername === 'string' ? telegramBotUsername.trim() : '';
     const normalizedFbPageId = typeof fbPageId === 'string' ? fbPageId.trim() : '';
-    const usingPlatformPage = !!normalizedFbPageId && normalizedFbPageId === PLATFORM_FB_PAGE_ID;
-    const effectiveFbPageAccessToken = (PLATFORM_MESSENGER_AVAILABLE && usingPlatformPage)
-      ? null
-      : (fbPageAccessToken ?? null);
+    const normalizedFbPageAccessToken = typeof fbPageAccessToken === 'string' ? fbPageAccessToken.trim() : '';
+
+    // Load existing secrets so we can preserve them unless explicitly replaced.
+    const existingSecretsRes = await pool.query(
+      `SELECT whatsapp_token, telegram_bot_token, telegram_bot_username, fb_page_id, fb_page_access_token
+       FROM bot_settings WHERE client_id = $1`,
+      [clientId]
+    );
+    const existingSecrets = existingSecretsRes.rows[0] || {};
+
+    const existingTelegramIsPlatform = PLATFORM_TELEGRAM_AVAILABLE
+      && String(existingSecrets.telegram_bot_token || '').trim() === PLATFORM_TELEGRAM_BOT_TOKEN;
+    const existingMessengerIsPlatform = PLATFORM_MESSENGER_AVAILABLE
+      && String(existingSecrets.fb_page_id || '').trim() === PLATFORM_FB_PAGE_ID;
+
+    const wantsPlatformMessenger = usePlatformMessenger === true
+      || (usePlatformMessenger == null && existingMessengerIsPlatform);
+    const wantsPlatformTelegram = usePlatformTelegram === true
+      || (usePlatformTelegram == null && existingTelegramIsPlatform);
+
+    let finalWhatsappToken: string | null = existingSecrets.whatsapp_token ?? null;
+    if (normalizedWhatsappToken) {
+      finalWhatsappToken = normalizedWhatsappToken;
+    }
+
+    let finalTelegramBotToken: string | null = existingSecrets.telegram_bot_token ?? null;
+    let finalTelegramBotUsername: string | null = existingSecrets.telegram_bot_username ?? null;
+
+    if (wantsPlatformTelegram) {
+      if (!PLATFORM_TELEGRAM_AVAILABLE) {
+        return res.status(400).json({ error: 'Platform Telegram bot is not configured on the server.' });
+      }
+      finalTelegramBotToken = PLATFORM_TELEGRAM_BOT_TOKEN;
+      finalTelegramBotUsername = PLATFORM_TELEGRAM_BOT_USERNAME;
+    } else {
+      const switchingFromPlatform = existingTelegramIsPlatform;
+      if (switchingFromPlatform && !normalizedTelegramBotToken) {
+        return res.status(400).json({ error: 'Paste your Telegram bot token when switching to a custom bot.' });
+      }
+      if (normalizedTelegramBotToken) {
+        finalTelegramBotToken = normalizedTelegramBotToken;
+      }
+      if (normalizedTelegramBotUsername) {
+        finalTelegramBotUsername = normalizedTelegramBotUsername;
+      }
+    }
+
+    // Messenger page/token behavior.
+    let finalFbPageId: string | null = existingSecrets.fb_page_id ?? null;
+    let finalFbPageAccessToken: string | null = existingSecrets.fb_page_access_token ?? null;
+
+    if (wantsPlatformMessenger) {
+      if (!PLATFORM_MESSENGER_AVAILABLE) {
+        return res.status(400).json({ error: 'Platform Messenger page is not configured on the server.' });
+      }
+      finalFbPageId = PLATFORM_FB_PAGE_ID;
+      // Use env-based token instead; never store platform token in DB.
+      finalFbPageAccessToken = null;
+    } else {
+      const switchingFromPlatform = existingMessengerIsPlatform;
+      if (switchingFromPlatform && (!normalizedFbPageId || !normalizedFbPageAccessToken)) {
+        return res.status(400).json({ error: 'Paste your Facebook Page ID + Page Access Token when switching to a custom Page.' });
+      }
+
+      if (normalizedFbPageId) {
+        finalFbPageId = normalizedFbPageId;
+      }
+      if (normalizedFbPageAccessToken) {
+        finalFbPageAccessToken = normalizedFbPageAccessToken;
+      }
+    }
 
     let effectiveEnabled: boolean = enabled ?? true;
     let botDisabledReason: string | undefined;
@@ -225,13 +329,13 @@ export const updateBotSettings: RequestHandler = async (req, res) => {
           trackingEnabled ?? false,
           effectiveProvider,
           whatsappPhoneId ?? null,
-          whatsappToken ?? null,
-          telegramBotToken ?? null,
+          finalWhatsappToken,
+          finalTelegramBotToken,
           telegramDelayMinutes ?? 5,
           autoExpireHours ?? 24,
           viberAuthToken ?? null,
           viberSenderName ?? null,
-          telegramBotUsername ?? null,
+          finalTelegramBotUsername,
           null,
           templateGreeting ?? null,
           templateInstantOrder ?? null,
@@ -240,8 +344,8 @@ export const updateBotSettings: RequestHandler = async (req, res) => {
           templatePayment ?? null,
           templateShipping ?? null,
           messengerEnabled ?? false,
-          fbPageId ?? null,
-          effectiveFbPageAccessToken,
+          finalFbPageId,
+          finalFbPageAccessToken,
           messengerDelayMinutes ?? 5,
         ]
       );
@@ -280,13 +384,13 @@ export const updateBotSettings: RequestHandler = async (req, res) => {
           trackingEnabled ?? false,
           effectiveProvider,
           whatsappPhoneId ?? null,
-          whatsappToken ?? null,
-          telegramBotToken ?? null,
+          finalWhatsappToken,
+          finalTelegramBotToken,
           telegramDelayMinutes ?? 5,
           autoExpireHours ?? 24,
           viberAuthToken ?? null,
           viberSenderName ?? null,
-          telegramBotUsername ?? null,
+          finalTelegramBotUsername,
           templateGreeting ?? null,
           templateInstantOrder ?? null,
           templatePinInstructions ?? null,
@@ -294,19 +398,19 @@ export const updateBotSettings: RequestHandler = async (req, res) => {
           templatePayment ?? null,
           templateShipping ?? null,
           messengerEnabled ?? false,
-          fbPageId ?? null,
-          effectiveFbPageAccessToken,
+          finalFbPageId,
+          finalFbPageAccessToken,
           messengerDelayMinutes ?? 5,
         ]
       );
     }
 
     // Auto-register Telegram webhook when Telegram is enabled/configured.
-    if (effectiveEnabled && effectiveProvider === 'telegram' && telegramBotToken && telegramBotUsername) {
-      const secret = await upsertTelegramWebhookSecret(clientId, telegramBotToken);
+    if (effectiveEnabled && effectiveProvider === 'telegram' && finalTelegramBotToken && finalTelegramBotUsername) {
+      const secret = await upsertTelegramWebhookSecret(clientId, finalTelegramBotToken);
       const baseUrl = getPublicBaseUrl(req);
       const hook = await registerTelegramWebhook({
-        botToken: telegramBotToken,
+        botToken: finalTelegramBotToken,
         baseUrl,
         secretToken: secret,
       });

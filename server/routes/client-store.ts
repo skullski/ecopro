@@ -149,7 +149,6 @@ export const getStoreProduct: RequestHandler = async (req, res) => {
       }
     }
 
-    res.json(result.rows[0]);
   } catch (error) {
     console.error("Get store product error:", error);
     res.status(500).json({ error: "Failed to fetch product" });
