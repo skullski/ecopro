@@ -33,6 +33,16 @@ interface Product {
   description?: string;
   category?: string;
   stock_quantity?: number;
+  variants?: Array<{
+    id: number;
+    color?: string | null;
+    size?: string | null;
+    variant_name?: string | null;
+    price?: number | null;
+    stock_quantity: number;
+    images?: string[] | null;
+    sort_order?: number | null;
+  }>;
   [key: string]: any;
 }
 
@@ -54,6 +64,9 @@ export default function ProductCheckout() {
   
   // States
   const [quantity, setQuantity] = useState(1);
+  const [selectedColor, setSelectedColor] = useState<string>('');
+  const [selectedSize, setSelectedSize] = useState<string>('');
+  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
   const [wishlist, setWishlist] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [showCheckout, setShowCheckout] = useState(false);
@@ -183,9 +196,15 @@ export default function ProductCheckout() {
       const cachedProduct = localStorage.getItem(`product_${productIdentifier}`);
       if (cachedProduct) {
         const parsed = JSON.parse(cachedProduct);
-        // Only use cache if it includes stock_quantity.
-        // Older cached payloads may miss it and can allow out-of-stock checkout.
-        if (parsed.store_slug && typeof parsed.stock_quantity === 'number') return parsed;
+        // Only use cache if it includes stock_quantity and variants.
+        // Older cached payloads may miss these and can allow out-of-stock checkout or hide variant selection.
+        if (
+          parsed.store_slug &&
+          typeof parsed.stock_quantity === 'number' &&
+          Array.isArray(parsed.variants)
+        ) {
+          return parsed;
+        }
       }
       
       // Try the new product-info endpoint that returns store_slug
@@ -221,6 +240,33 @@ export default function ProductCheckout() {
       });
     }
   }, [product?.id]);
+
+  // Initialize default variant selection (when variants exist)
+  useEffect(() => {
+    const variants = Array.isArray((product as any)?.variants) ? ((product as any).variants as any[]) : [];
+    if (!variants.length) return;
+    if (selectedVariantId != null) return;
+
+    const first = variants.find((v) => Number(v?.stock_quantity ?? 0) > 0) || variants[0];
+    if (!first) return;
+    setSelectedVariantId(Number(first.id));
+    setSelectedColor(String(first.color || ''));
+    setSelectedSize(String(first.size || ''));
+  }, [product, selectedVariantId]);
+
+  // Clamp quantity when variant changes
+  useEffect(() => {
+    const variants = Array.isArray((product as any)?.variants) ? ((product as any).variants as any[]) : [];
+    if (!variants.length) return;
+
+    const selected = variants.find((v) => Number(v.id) === Number(selectedVariantId));
+    const stock = Number(selected?.stock_quantity ?? 0);
+    if (!Number.isFinite(stock) || stock <= 0) {
+      setQuantity(1);
+      return;
+    }
+    setQuantity((q) => Math.min(q, stock));
+  }, [product, selectedVariantId]);
 
   // Auto-scroll to checkout when opened & track InitiateCheckout
   useEffect(() => {
@@ -592,13 +638,23 @@ export default function ProductCheckout() {
   }, [storeSlug, product?.store_slug, formData.wilayaId]);
 
   const handleSubmitOrder = async () => {
-    const currentStock = Number(product?.stock_quantity ?? 0);
+    const variants = Array.isArray((product as any)?.variants) ? ((product as any).variants as any[]) : [];
+    const hasVariants = variants.length > 0;
+    const selectedVariant = hasVariants
+      ? (variants.find((v) => Number(v.id) === Number(selectedVariantId)) || null)
+      : null;
+    const currentStock = hasVariants ? Number(selectedVariant?.stock_quantity ?? 0) : Number(product?.stock_quantity ?? 0);
     if (Number.isFinite(currentStock) && currentStock <= 0) {
       alert('Out of stock');
       return;
     }
     if (Number.isFinite(currentStock) && quantity > currentStock) {
       alert('Insufficient stock');
+      return;
+    }
+
+    if (hasVariants && !selectedVariantId) {
+      alert('Please select a variant');
       return;
     }
     if (!formData.fullName || !formData.phone || !formData.wilayaId || !formData.communeId || !formData.address) {
@@ -618,10 +674,15 @@ export default function ProductCheckout() {
       const selectedCommune = getAlgeriaCommuneById(formData.communeId);
 
       // Build order data matching the API expectations
-      const orderData = {
+      const effectiveUnitPrice = hasVariants
+        ? Number(selectedVariant?.price ?? product.price ?? 0)
+        : Number(product.price ?? 0);
+
+      const orderData: any = {
         product_id: product.id,
+        ...(hasVariants && selectedVariantId ? { variant_id: selectedVariantId } : {}),
         quantity: quantity,
-        total_price: ((product.price || 0) * quantity) + (deliveryPrice || 0),
+        total_price: (effectiveUnitPrice * quantity) + (deliveryPrice || 0),
         delivery_fee: deliveryPrice || 0,
         delivery_type: 'home',
         customer_name: formData.fullName,
@@ -680,7 +741,7 @@ export default function ProductCheckout() {
           content_name: product.title || product.name,
           content_ids: [product.id],
           content_type: 'product',
-          value: product.price * quantity,
+          value: (hasVariants ? Number(selectedVariant?.price ?? product.price ?? 0) : Number(product.price ?? 0)) * quantity,
           currency: settings.currency_code || 'DZD',
           num_items: quantity,
           order_id: result.orderId || result.id
@@ -726,10 +787,49 @@ export default function ProductCheckout() {
 
   const productImage = product.images?.[0] || 'https://via.placeholder.com/500';
   const productImages = product.images || [productImage];
-  const productPrice = product.price || 0;
+  const variants = Array.isArray((product as any)?.variants) ? ((product as any).variants as any[]) : [];
+  const hasVariants = variants.length > 0;
+  const colors = Array.from(
+    new Set(
+      variants
+        .map((v) => String(v?.color || '').trim())
+        .filter((v) => v.length > 0)
+    )
+  );
+  const sizes = Array.from(
+    new Set(
+      variants
+        .map((v) => String(v?.size || '').trim())
+        .filter((v) => v.length > 0)
+    )
+  );
+  const filteredByColor = selectedColor
+    ? variants.filter((v) => String(v?.color || '').trim() === selectedColor)
+    : variants;
+  const sizesForSelectedColor = Array.from(
+    new Set(
+      filteredByColor
+        .map((v) => String(v?.size || '').trim())
+        .filter((v) => v.length > 0)
+    )
+  );
+
+  const resolvedVariant = hasVariants
+    ? (variants.find((v) => Number(v.id) === Number(selectedVariantId)) ||
+        variants.find((v) => {
+          const c = String(v?.color || '').trim();
+          const s = String(v?.size || '').trim();
+          if (selectedColor && c !== selectedColor) return false;
+          if (selectedSize && s !== selectedSize) return false;
+          return true;
+        }) ||
+        null)
+    : null;
+
+  const productPrice = hasVariants ? Number(resolvedVariant?.price ?? product.price ?? 0) : (product.price || 0);
   const productName = product.title || product.name || 'Product';
   const productDesc = product.description || 'High quality product';
-  const availableStock = Number(product.stock_quantity ?? 0);
+  const availableStock = hasVariants ? Number(resolvedVariant?.stock_quantity ?? 0) : Number(product.stock_quantity ?? 0);
   const inStock = Number.isFinite(availableStock) && availableStock > 0;
   const subtotalPrice = productPrice * quantity;
   const totalPrice = subtotalPrice + (deliveryPrice || 0);
@@ -978,6 +1078,113 @@ export default function ProductCheckout() {
               </div>
               <p className="text-2xl font-bold" style={{ color: accentColor }}>{productPrice.toLocaleString()} DZD</p>
             </div>
+
+            {/* Variants */}
+            {hasVariants && (
+              <div className="grid grid-cols-2 gap-2">
+                {colors.length > 0 && (
+                  <Select
+                    value={selectedColor}
+                    onValueChange={(nextColor) => {
+                      setSelectedColor(nextColor);
+                      const candidates = variants.filter(
+                        (v) => String(v?.color || '').trim() === String(nextColor).trim()
+                      );
+
+                      const candidateSizes = Array.from(
+                        new Set(
+                          candidates
+                            .map((v) => String(v?.size || '').trim())
+                            .filter((v) => v.length > 0)
+                        )
+                      );
+
+                      let nextSize = selectedSize;
+                      if (candidateSizes.length > 0 && !candidateSizes.includes(nextSize)) {
+                        nextSize = candidateSizes[0];
+                      }
+                      setSelectedSize(nextSize);
+
+                      const picked =
+                        candidates.find(
+                          (v) => !nextSize || String(v?.size || '').trim() === String(nextSize).trim()
+                        ) || candidates[0];
+                      setSelectedVariantId(picked ? Number(picked.id) : null);
+                    }}
+                  >
+                    <SelectTrigger className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm focus:outline-none h-auto">
+                      <SelectValue placeholder="Color" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {colors.map((c) => (
+                        <SelectItem key={c} value={c}>
+                          {c}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {(sizesForSelectedColor.length > 0 || (sizes.length > 0 && colors.length === 0)) && (
+                  <Select
+                    value={selectedSize}
+                    onValueChange={(nextSize) => {
+                      setSelectedSize(nextSize);
+                      const candidates = variants.filter((v) => {
+                        const c = String(v?.color || '').trim();
+                        const s = String(v?.size || '').trim();
+                        if (selectedColor && c !== String(selectedColor).trim()) return false;
+                        return s === String(nextSize).trim();
+                      });
+                      const picked = candidates[0] || null;
+                      setSelectedVariantId(picked ? Number(picked.id) : null);
+                    }}
+                  >
+                    <SelectTrigger className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm focus:outline-none h-auto">
+                      <SelectValue placeholder="Size" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(colors.length > 0 ? sizesForSelectedColor : sizes).map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {s}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {colors.length === 0 && sizes.length === 0 && (
+                  <Select
+                    value={selectedVariantId ? String(selectedVariantId) : ''}
+                    onValueChange={(nextId) => {
+                      const v = variants.find((x) => String(x.id) === String(nextId));
+                      setSelectedVariantId(v ? Number(v.id) : null);
+                      setSelectedColor(String(v?.color || ''));
+                      setSelectedSize(String(v?.size || ''));
+                    }}
+                  >
+                    <SelectTrigger className="px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm focus:outline-none h-auto col-span-2">
+                      <SelectValue placeholder="Select option" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {variants.map((v) => {
+                        const label =
+                          String(v?.variant_name || '').trim() ||
+                          [String(v?.color || '').trim(), String(v?.size || '').trim()]
+                            .filter(Boolean)
+                            .join(' / ') ||
+                          `Option #${v.id}`;
+                        return (
+                          <SelectItem key={v.id} value={String(v.id)}>
+                            {label}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            )}
 
             {/* Quantity */}
             <div className="flex items-center justify-between py-2 border-y border-white/10">

@@ -14,6 +14,7 @@ import { handleDemo } from "./routes/demo";
 import * as authRoutes from "./routes/auth";
 import * as stockRoutes from "./routes/stock";
 import * as clientStoreRoutes from "./routes/client-store";
+import * as productVariantsRoutes from "./routes/product-variants";
 import * as publicStoreRoutes from "./routes/public-store";
 import * as templateRoutes from "./routes/templates";
 import { createProduct as createStorefrontProduct, updateProduct as updateStorefrontProduct, deleteProduct as deleteStorefrontProduct, handleUploadImages as uploadStorefrontImages } from "./routes/storefront";
@@ -1078,6 +1079,21 @@ export function createServer(options?: { skipDbInit?: boolean }) {
     authenticate,
     requireClient,
     clientStoreRoutes.deleteStoreProduct
+  );
+
+  // Product variant routes (colors/sizes)
+  app.get(
+    "/api/client/store/products/:id/variants",
+    authenticate,
+    requireClient,
+    productVariantsRoutes.getClientProductVariants
+  );
+  app.put(
+    "/api/client/store/products/:id/variants",
+    authenticate,
+    requireClient,
+    apiLimiter,
+    productVariantsRoutes.putClientProductVariants
   );
   
   // Media Library routes

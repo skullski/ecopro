@@ -193,6 +193,76 @@ export default function Store() {
   const [linkCopied, setLinkCopied] = useState(false);
   const [uploading, setUploading] = useState(false);
 
+  type ProductVariantDraft = {
+    id?: number;
+    color?: string;
+    size?: string;
+    variant_name?: string;
+    price?: number;
+    stock_quantity: number;
+    is_active?: boolean;
+    sort_order?: number;
+  };
+
+  const [variantsDraft, setVariantsDraft] = useState<ProductVariantDraft[]>([]);
+  const [variantsLoaded, setVariantsLoaded] = useState(false);
+  const [variantsDirty, setVariantsDirty] = useState(false);
+  const [loadingVariants, setLoadingVariants] = useState(false);
+
+  const loadProductVariants = async (productId: number) => {
+    setLoadingVariants(true);
+    try {
+      const res = await fetch(`/api/client/store/products/${productId}/variants`);
+      if (!res.ok) throw new Error('Failed to load variants');
+      const data = await res.json();
+      const variants = Array.isArray(data?.variants) ? data.variants : [];
+      setVariantsDraft(
+        variants.map((v: any, idx: number) => ({
+          id: v.id,
+          color: v.color ?? '',
+          size: v.size ?? '',
+          variant_name: v.variant_name ?? '',
+          price: v.price == null ? undefined : Number(v.price),
+          stock_quantity: Number(v.stock_quantity ?? 0),
+          is_active: v.is_active == null ? true : Boolean(v.is_active),
+          sort_order: v.sort_order == null ? idx : Number(v.sort_order),
+        }))
+      );
+      setVariantsLoaded(true);
+      setVariantsDirty(false);
+    } catch (e) {
+      console.error('Failed to load variants', e);
+      setVariantsDraft([]);
+      setVariantsLoaded(true);
+      setVariantsDirty(false);
+    } finally {
+      setLoadingVariants(false);
+    }
+  };
+
+  const saveProductVariants = async (productId: number) => {
+    const res = await fetch(`/api/client/store/products/${productId}/variants`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        variants: variantsDraft.map((v, idx) => ({
+          ...(v.id ? { id: v.id } : {}),
+          color: (v.color || '').trim() || undefined,
+          size: (v.size || '').trim() || undefined,
+          variant_name: (v.variant_name || '').trim() || undefined,
+          price: v.price === undefined || v.price === null || Number.isNaN(Number(v.price)) ? undefined : Number(v.price),
+          stock_quantity: Number(v.stock_quantity ?? 0),
+          is_active: v.is_active ?? true,
+          sort_order: v.sort_order == null ? idx : Number(v.sort_order),
+        })),
+      }),
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}));
+      throw new Error(error?.error || 'Failed to save variants');
+    }
+  };
+
           // Product action handlers
           // Helper to reload products
           const reloadProducts = async () => {
@@ -218,10 +288,18 @@ export default function Store() {
                 body: JSON.stringify(formData)
               });
               if (res.ok) {
+                const created = await res.json().catch(() => null);
+                const createdId = Number(created?.id);
+                if (createdId && variantsDraft.length > 0) {
+                  await saveProductVariants(createdId);
+                }
                 // reload products
                 await reloadProducts();
                 setShowAddModal(false);
                 setFormData({ status: 'active', is_featured: false, stock_quantity: 0 });
+                setVariantsDraft([]);
+                setVariantsLoaded(false);
+                setVariantsDirty(false);
               } else {
                 const error = await res.json();
                 alert(error.error || 'Failed to create product');
@@ -242,11 +320,17 @@ export default function Store() {
                 body: JSON.stringify(formData)
               });
               if (res.ok) {
+                if (variantsDirty) {
+                  await saveProductVariants(Number(selectedProduct.id));
+                }
                 // reload products
                 await reloadProducts();
                 setShowEditModal(false);
                 setSelectedProduct(null);
                 setFormData({ status: 'active', is_featured: false, stock_quantity: 0 });
+                setVariantsDraft([]);
+                setVariantsLoaded(false);
+                setVariantsDirty(false);
               } else {
                 const error = await res.json();
                 alert(error.error || 'Failed to update product');
@@ -647,6 +731,10 @@ export default function Store() {
     setSelectedProduct(product);
     setFormData(product);
     setShowEditModal(true);
+    setVariantsDraft([]);
+    setVariantsLoaded(false);
+    setVariantsDirty(false);
+    loadProductVariants(Number(product.id));
   };
 
   const openDeleteDialog = (product: StoreProduct) => {
@@ -676,8 +764,8 @@ export default function Store() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-[14px]">
-      <div className="max-w-6xl mx-auto space-y-2 md:space-y-3">
+    <div className="min-h-screen bg-background p-4">
+      <div className="max-w-7xl mx-auto space-y-2 md:space-y-3">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -698,7 +786,7 @@ export default function Store() {
                 }
               }}
               disabled={!getStorefrontPath(storeSettings)}
-              className="h-8 px-[11px]"
+              className="h-9 px-3"
             >
               <StoreIcon className="w-4 h-4 mr-2" />
               {t('store.viewStorefront')}
@@ -706,7 +794,7 @@ export default function Store() {
             <Button
               variant="outline"
               onClick={() => navigate('/template-editor')}
-              className="h-8 px-[11px]"
+              className="h-9 px-3"
             >
               <Settings className="w-4 h-4 mr-2" />
               {t('store.templateEditor')}
@@ -717,7 +805,7 @@ export default function Store() {
                 setSelectedInventoryProduct(null);
                 setInventoryStockQuantity(1);
               }}
-              className="bg-gradient-to-r from-primary to-purple-600 h-8 px-[11px]"
+              className="bg-gradient-to-r from-primary to-purple-600 h-9 px-3"
             >
               <Plus className="w-4 h-4 mr-2" />
               {t('store.addProduct')}
@@ -727,43 +815,43 @@ export default function Store() {
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-[11px] text-white">
+          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-3 text-white">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm opacity-90">{t('store.totalProducts')}</p>
                 <p className="text-xl md:text-2xl font-bold mt-1">{stats.total}</p>
               </div>
-              <Package className="w-7 h-7 opacity-80" />
+              <Package className="w-8 h-8 opacity-80" />
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-[11px] text-white">
+          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-3 text-white">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm opacity-90">{t('store.active')}</p>
                 <p className="text-xl md:text-2xl font-bold mt-1">{stats.active}</p>
               </div>
-              <Check className="w-7 h-7 opacity-80" />
+              <Check className="w-8 h-8 opacity-80" />
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-[11px] text-white">
+          <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-3 text-white">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm opacity-90">{t('store.drafts')}</p>
                 <p className="text-xl md:text-2xl font-bold mt-1">{stats.draft}</p>
               </div>
-              <Edit className="w-7 h-7 opacity-80" />
+              <Edit className="w-8 h-8 opacity-80" />
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-[11px] text-white">
+          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-3 text-white">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm opacity-90">{t('store.totalViews')}</p>
                 <p className="text-xl md:text-2xl font-bold mt-1">{stats.totalViews}</p>
               </div>
-              <Eye className="w-7 h-7 opacity-80" />
+              <Eye className="w-8 h-8 opacity-80" />
             </div>
           </div>
         </div>
@@ -825,7 +913,7 @@ export default function Store() {
         )}
 
         {/* Filters */}
-        <div className="bg-card rounded-xl border p-[11px]">
+        <div className="bg-card rounded-xl border p-3">
           <div className="flex flex-wrap gap-3 items-center">
             <div className="flex-1 min-w-[200px]">
               <div className="relative">
@@ -838,7 +926,7 @@ export default function Store() {
                     setSearchQuery(next);
                     setFilteredProducts(applyFilters(products, next, statusFilter));
                   }}
-                  className="pl-8 h-8"
+                  className="pl-9 h-9"
                 />
               </div>
             </div>
@@ -850,7 +938,7 @@ export default function Store() {
                 setFilteredProducts(applyFilters(products, searchQuery, v));
               }}
             >
-              <SelectTrigger className="w-[153px] h-8">
+              <SelectTrigger className="w-[170px] h-9">
                 <SelectValue placeholder={t('store.filterByStatus')} />
               </SelectTrigger>
               <SelectContent>
@@ -883,13 +971,18 @@ export default function Store() {
         {/* Products Grid/List */}
         {/* Store Summary will render at bottom of page */}
         {filteredProducts.length === 0 ? (
-          <div className="bg-card rounded-xl border p-[14px] md:p-[14px] text-center">
+          <div className="bg-card rounded-xl border p-4 md:p-4 text-center">
             <Package className="w-10 md:w-14 h-10 md:h-14 mx-auto text-muted-foreground opacity-20 mb-2" />
             <h3 className="text-base md:text-lg font-semibold mb-2">{t('store.noProductsYet')}</h3>
             <p className="text-muted-foreground mb-4">
               {t('store.createFirstProduct')}
             </p>
-            <Button onClick={() => setShowAddModal(true)}>
+            <Button onClick={() => {
+              setVariantsDraft([]);
+              setVariantsLoaded(true);
+              setVariantsDirty(false);
+              setShowAddModal(true);
+            }}>
               <Plus className="w-4 h-4 mr-2" />
               {t('store.addFirstProduct')}
             </Button>
@@ -1277,6 +1370,9 @@ export default function Store() {
           setShowEditModal(false);
           setFormData({ status: 'active', is_featured: false, stock_quantity: 0 });
           setSelectedProduct(null);
+          setVariantsDraft([]);
+          setVariantsLoaded(false);
+          setVariantsDirty(false);
         }
       }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -1356,6 +1452,151 @@ export default function Store() {
                   min="0"
                 />
               </div>
+            </div>
+
+            <div className="space-y-2 border rounded-lg p-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <Label>Variants (Size / Color)</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Optional. If you add variants, total product stock is automatically the sum of active variant stock.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setVariantsDraft((prev) => [
+                      ...prev,
+                      {
+                        color: '',
+                        size: '',
+                        variant_name: '',
+                        stock_quantity: 0,
+                        is_active: true,
+                        sort_order: prev.length,
+                      },
+                    ]);
+                    setVariantsDirty(true);
+                    setVariantsLoaded(true);
+                  }}
+                >
+                  Add Variant
+                </Button>
+              </div>
+
+              {loadingVariants && (
+                <div className="text-sm text-muted-foreground">Loading variants…</div>
+              )}
+
+              {!loadingVariants && variantsLoaded && variantsDraft.length === 0 && (
+                <div className="text-sm text-muted-foreground">No variants. Customers will buy the main product as-is.</div>
+              )}
+
+              {!loadingVariants && variantsDraft.length > 0 && (
+                <div className="space-y-2">
+                  {variantsDraft.map((v, idx) => (
+                    <div key={v.id ?? idx} className="grid grid-cols-2 md:grid-cols-6 gap-2 items-end">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Color</Label>
+                        <Input
+                          value={v.color || ''}
+                          onChange={(e) => {
+                            const next = e.target.value;
+                            setVariantsDraft((prev) =>
+                              prev.map((row, i) => (i === idx ? { ...row, color: next } : row))
+                            );
+                            setVariantsDirty(true);
+                          }}
+                          placeholder="e.g., Red"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-xs">Size</Label>
+                        <Input
+                          value={v.size || ''}
+                          onChange={(e) => {
+                            const next = e.target.value;
+                            setVariantsDraft((prev) =>
+                              prev.map((row, i) => (i === idx ? { ...row, size: next } : row))
+                            );
+                            setVariantsDirty(true);
+                          }}
+                          placeholder="e.g., M"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-xs">Stock</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={Number(v.stock_quantity ?? 0)}
+                          onChange={(e) => {
+                            const next = Number(e.target.value || 0);
+                            setVariantsDraft((prev) =>
+                              prev.map((row, i) => (i === idx ? { ...row, stock_quantity: next } : row))
+                            );
+                            setVariantsDirty(true);
+                          }}
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label className="text-xs">Price (optional)</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          value={v.price === undefined ? '' : String(v.price)}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            const next = raw === '' ? undefined : Number(raw);
+                            setVariantsDraft((prev) =>
+                              prev.map((row, i) => (i === idx ? { ...row, price: next } : row))
+                            );
+                            setVariantsDirty(true);
+                          }}
+                          placeholder="Use product price"
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-2 h-10">
+                        <input
+                          type="checkbox"
+                          checked={v.is_active ?? true}
+                          onChange={(e) => {
+                            const next = e.target.checked;
+                            setVariantsDraft((prev) =>
+                              prev.map((row, i) => (i === idx ? { ...row, is_active: next } : row))
+                            );
+                            setVariantsDirty(true);
+                          }}
+                          className="w-4 h-4"
+                        />
+                        <Label className="text-xs">Active</Label>
+                      </div>
+
+                      <div className="flex justify-end">
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => {
+                            setVariantsDraft((prev) => prev.filter((_, i) => i !== idx));
+                            setVariantsDirty(true);
+                            setVariantsLoaded(true);
+                          }}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -1450,6 +1691,9 @@ export default function Store() {
               setShowAddModal(false);
               setShowEditModal(false);
               setFormData({ status: 'active', is_featured: false, stock_quantity: 0 });
+              setVariantsDraft([]);
+              setVariantsLoaded(false);
+              setVariantsDirty(false);
             }}>
               Cancel
             </Button>

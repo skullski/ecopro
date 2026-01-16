@@ -57,6 +57,7 @@ async function resolvePendingConfirmableOrder(args: { storeSlug: string; orderId
   const { storeSlug, orderId } = args;
   const result = await pool.query(
     `SELECT o.id, o.client_id, o.product_id, o.status, o.quantity, o.total_price,
+            o.variant_id, o.variant_color, o.variant_size, o.variant_name, o.unit_price,
             p.title as product_title, p.price as product_price,
             s.store_name
      FROM store_orders o
@@ -159,6 +160,11 @@ export const getOrderForConfirmation: RequestHandler = async (req, res) => {
       order: {
         id: order.id,
         product_title: order.product_title,
+        variant_id: order.variant_id || null,
+        variant_name: order.variant_name || null,
+        variant_color: order.variant_color || null,
+        variant_size: order.variant_size || null,
+        unit_price: order.unit_price || null,
         quantity: order.quantity,
         total_price: order.total_price,
         customer_name: order.customer_name,

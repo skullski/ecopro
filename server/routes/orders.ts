@@ -14,6 +14,10 @@ export const ordersRouter = Router();
 const createOrderBodySchema = z
   .object({
     product_id: z.preprocess((v) => (typeof v === 'string' ? Number(v) : v), z.number().int().positive()).optional(),
+    variant_id: z.preprocess(
+      (v) => (v === '' || v === null || v === undefined ? undefined : typeof v === 'string' ? Number(v) : v),
+      z.number().int().positive()
+    ).optional(),
     client_id: z.preprocess((v) => (typeof v === 'string' ? Number(v) : v), z.number().int().positive()).optional(),
     store_slug: z.string().trim().min(1).max(100).optional(),
     quantity: z.preprocess((v) => (typeof v === 'string' ? Number(v) : v), z.number().int().positive().max(9999)),
@@ -84,6 +88,7 @@ export const createOrder: RequestHandler = async (req, res) => {
     }
     const {
       product_id,
+      variant_id,
       client_id,
       store_slug,
       quantity,
@@ -154,14 +159,35 @@ export const createOrder: RequestHandler = async (req, res) => {
       return res.status(400).json({ error: 'Product is not available' });
     }
 
-    const unitPrice = Number(productRow.price);
+    let variantRow: any | null = null;
+    if (variant_id) {
+      const vRes = await pool.query(
+        `SELECT id, color, size, variant_name, price, stock_quantity, is_active
+         FROM product_variants
+         WHERE id = $1 AND product_id = $2 AND client_id = $3 AND is_active = true
+         LIMIT 1`,
+        [Number(variant_id), product_id, productClientId]
+      );
+      if (vRes.rows.length === 0) {
+        return res.status(400).json({ error: 'Invalid variant' });
+      }
+      variantRow = vRes.rows[0];
+      const vStock = Number(variantRow.stock_quantity ?? 0);
+      if (!Number.isFinite(vStock) || vStock < quantity) {
+        return res.status(400).json({ error: 'Insufficient stock' });
+      }
+    }
+
+    const unitPrice = variantRow && variantRow.price != null ? Number(variantRow.price) : Number(productRow.price);
     if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
       return res.status(400).json({ error: 'Invalid product price' });
     }
 
-    const availableStock = Number(productRow.stock_quantity ?? 0);
-    if (!Number.isFinite(availableStock) || availableStock < quantity) {
-      return res.status(400).json({ error: 'Insufficient stock' });
+    if (!variantRow) {
+      const availableStock = Number(productRow.stock_quantity ?? 0);
+      if (!Number.isFinite(availableStock) || availableStock < quantity) {
+        return res.status(400).json({ error: 'Insufficient stock' });
+      }
     }
 
     const { deliveryFee, deliveryType } = await resolveDeliveryFee({
@@ -187,10 +213,11 @@ export const createOrder: RequestHandler = async (req, res) => {
     const result = await client.query(
       `INSERT INTO store_orders (
         product_id, client_id, quantity, total_price, delivery_fee, delivery_type,
+        variant_id, variant_color, variant_size, variant_name, unit_price,
         customer_name, customer_email, customer_phone, shipping_address,
         shipping_wilaya_id, shipping_commune_id, shipping_hai,
         status, payment_status, created_at
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,TIMEZONE('UTC', NOW())) 
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,TIMEZONE('UTC', NOW())) 
       RETURNING *`,
       [
         product_id || null,
@@ -199,6 +226,11 @@ export const createOrder: RequestHandler = async (req, res) => {
         expectedTotalPrice,
         deliveryFee,
         deliveryType,
+        variantRow ? Number(variantRow.id) : null,
+        variantRow ? (variantRow.color || null) : null,
+        variantRow ? (variantRow.size || null) : null,
+        variantRow ? (variantRow.variant_name || null) : null,
+        unitPrice,
         customer_name,
         customer_email || null,
         normalizedPhone || null,
@@ -211,14 +243,30 @@ export const createOrder: RequestHandler = async (req, res) => {
       ]
     );
 
-    const stockUpdate = await client.query(
-      'UPDATE client_store_products SET stock_quantity = stock_quantity - $1 WHERE id = $2 AND client_id = $3 AND stock_quantity >= $1 RETURNING stock_quantity',
-      [quantity, product_id, resolvedClientId]
-    );
-    if (stockUpdate.rows.length === 0) {
-      await client.query('ROLLBACK');
-      inTransaction = false;
-      return res.status(400).json({ error: 'Insufficient stock' });
+    if (variantRow) {
+      const vUpdate = await client.query(
+        'UPDATE product_variants SET stock_quantity = stock_quantity - $1 WHERE id = $2 AND product_id = $3 AND client_id = $4 AND stock_quantity >= $1 RETURNING stock_quantity',
+        [quantity, Number(variantRow.id), product_id, resolvedClientId]
+      );
+      const pUpdate = await client.query(
+        'UPDATE client_store_products SET stock_quantity = stock_quantity - $1 WHERE id = $2 AND client_id = $3 AND stock_quantity >= $1 RETURNING stock_quantity',
+        [quantity, product_id, resolvedClientId]
+      );
+      if (vUpdate.rows.length === 0 || pUpdate.rows.length === 0) {
+        await client.query('ROLLBACK');
+        inTransaction = false;
+        return res.status(400).json({ error: 'Insufficient stock' });
+      }
+    } else {
+      const stockUpdate = await client.query(
+        'UPDATE client_store_products SET stock_quantity = stock_quantity - $1 WHERE id = $2 AND client_id = $3 AND stock_quantity >= $1 RETURNING stock_quantity',
+        [quantity, product_id, resolvedClientId]
+      );
+      if (stockUpdate.rows.length === 0) {
+        await client.query('ROLLBACK');
+        inTransaction = false;
+        return res.status(400).json({ error: 'Insufficient stock' });
+      }
     }
 
     await client.query('COMMIT');
@@ -480,6 +528,11 @@ export const getClientOrders: RequestHandler = async (req, res) => {
           o.quantity,
           o.total_price,
           o.status,
+          o.variant_id,
+          o.variant_color,
+          o.variant_size,
+          o.variant_name,
+          o.unit_price,
           o.customer_name,
           o.customer_email,
           o.customer_phone,

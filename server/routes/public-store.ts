@@ -15,6 +15,11 @@ const StoreSlugSchema = z
 const ProductSlugSchema = z.string().trim().min(1).max(200);
 const ProductIdSchema = z.preprocess((v) => Number(v), z.number().int().positive());
 
+const VariantIdSchema = z.preprocess(
+  (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
+  z.number().int().positive()
+);
+
 // Get all products for a storefront
 export const getStorefrontProducts: RequestHandler = async (req, res) => {
   const isProduction = process.env.NODE_ENV === 'production';
@@ -352,6 +357,20 @@ export const getPublicProduct: RequestHandler = async (req, res) => {
 
     const product = productResult.rows[0];
 
+    let variants: any[] = [];
+    try {
+      const vRes = await pool.query(
+        `SELECT id, color, size, variant_name, price, stock_quantity, images, sort_order
+         FROM product_variants
+         WHERE product_id = $1 AND client_id = $2 AND is_active = true
+         ORDER BY sort_order ASC, id ASC`,
+        [product.id, product.client_id]
+      );
+      variants = vRes.rows || [];
+    } catch {
+      variants = [];
+    }
+
     // Increment view count
     if (shouldTrackView) {
       await pool.query(
@@ -362,6 +381,7 @@ export const getPublicProduct: RequestHandler = async (req, res) => {
 
     res.json({
       ...product,
+      variants,
       views: (product.views || 0) + (shouldTrackView ? 1 : 0),
     });
   } catch (error) {
@@ -411,7 +431,22 @@ export const getStorefrontProductById: RequestHandler = async (req, res) => {
     }
 
     const product = productResult.rows[0];
-    res.json(product);
+
+    let variants: any[] = [];
+    try {
+      const vRes = await pool.query(
+        `SELECT id, color, size, variant_name, price, stock_quantity, images, sort_order
+         FROM product_variants
+         WHERE product_id = $1 AND client_id = $2 AND is_active = true
+         ORDER BY sort_order ASC, id ASC`,
+        [product.id, product.client_id]
+      );
+      variants = vRes.rows || [];
+    } catch {
+      variants = [];
+    }
+
+    res.json({ ...product, variants });
   } catch (error) {
     console.error('Get storefront product by ID error:', isProduction ? (error as any)?.message : error);
     res.status(500).json({ error: 'Failed to fetch product' });
@@ -442,6 +477,7 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
 
     const CreatePublicStoreOrderSchema = z.object({
       product_id: z.preprocess((v) => Number(v), z.number().int().positive()),
+      variant_id: VariantIdSchema.optional(),
       quantity: z.preprocess((v) => Number(v), z.number().int().positive()),
       // Client-provided total_price is accepted for backward-compatibility but ignored.
       // Total is computed server-side from the current product price.
@@ -475,6 +511,7 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
 
     const {
       product_id,
+      variant_id,
       quantity,
       total_price: _ignoredTotalPrice,
       delivery_type,
@@ -546,7 +583,27 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
     }
 
     const productRow = productRes.rows[0];
-    const unitPrice = Number(productRow.price);
+
+    let variantRow: any | null = null;
+    if (variant_id) {
+      const vRes = await pool.query(
+        `SELECT id, color, size, variant_name, price, stock_quantity, is_active
+         FROM product_variants
+         WHERE id = $1 AND product_id = $2 AND client_id = $3 AND is_active = true
+         LIMIT 1`,
+        [Number(variant_id), product_id, clientId]
+      );
+      if (vRes.rows.length === 0) {
+        return res.status(400).json({ error: 'Invalid variant' });
+      }
+      variantRow = vRes.rows[0];
+      const vStock = Number(variantRow.stock_quantity ?? 0);
+      if (!Number.isFinite(vStock) || vStock < Number(quantity)) {
+        return res.status(400).json({ error: 'Insufficient stock.' });
+      }
+    }
+
+    const unitPrice = variantRow && variantRow.price != null ? Number(variantRow.price) : Number(productRow.price);
     // Total includes product price * quantity + delivery fee (computed server-side)
     let deliveryAmount = 0;
     if (shipping_wilaya_id) {
@@ -582,10 +639,11 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
     const result = await client.query(
       `INSERT INTO store_orders (
         product_id, client_id, quantity, total_price, delivery_fee, delivery_type,
+        variant_id, variant_color, variant_size, variant_name, unit_price,
         customer_name, customer_email, customer_phone, shipping_address,
         shipping_wilaya_id, shipping_commune_id, shipping_hai,
         status, payment_status, created_at
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,TIMEZONE('UTC', NOW())) RETURNING *`,
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,TIMEZONE('UTC', NOW())) RETURNING *`,
       [
         product_id,
         clientId, // Store owner's client_id so orders appear in their dashboard
@@ -593,6 +651,11 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
         expectedTotalPrice,
         deliveryAmount,
         delivery_type || 'home',
+        variantRow ? Number(variantRow.id) : null,
+        variantRow ? (variantRow.color || null) : null,
+        variantRow ? (variantRow.size || null) : null,
+        variantRow ? (variantRow.variant_name || null) : null,
+        unitPrice,
         customer_name,
         customer_email || null,
         normalizedPhone || null,
@@ -617,14 +680,30 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
     }).catch(() => ({ startToken: '', startUrl: null } as any));
 
     // Decrease stock after successful order creation (scoped + guarded)
-    const stockUpdate = await client.query(
-      'UPDATE client_store_products SET stock_quantity = stock_quantity - $1 WHERE id = $2 AND client_id = $3 AND stock_quantity >= $1 RETURNING stock_quantity',
-      [quantity, product_id, clientId]
-    );
-    if (stockUpdate.rows.length === 0) {
-      await client.query('ROLLBACK');
-      inTransaction = false;
-      return res.status(400).json({ error: 'Insufficient stock.' });
+    if (variantRow) {
+      const vUpdate = await client.query(
+        'UPDATE product_variants SET stock_quantity = stock_quantity - $1 WHERE id = $2 AND product_id = $3 AND client_id = $4 AND stock_quantity >= $1 RETURNING stock_quantity',
+        [quantity, Number(variantRow.id), product_id, clientId]
+      );
+      const pUpdate = await client.query(
+        'UPDATE client_store_products SET stock_quantity = stock_quantity - $1 WHERE id = $2 AND client_id = $3 AND stock_quantity >= $1 RETURNING stock_quantity',
+        [quantity, product_id, clientId]
+      );
+      if (vUpdate.rows.length === 0 || pUpdate.rows.length === 0) {
+        await client.query('ROLLBACK');
+        inTransaction = false;
+        return res.status(400).json({ error: 'Insufficient stock.' });
+      }
+    } else {
+      const stockUpdate = await client.query(
+        'UPDATE client_store_products SET stock_quantity = stock_quantity - $1 WHERE id = $2 AND client_id = $3 AND stock_quantity >= $1 RETURNING stock_quantity',
+        [quantity, product_id, clientId]
+      );
+      if (stockUpdate.rows.length === 0) {
+        await client.query('ROLLBACK');
+        inTransaction = false;
+        return res.status(400).json({ error: 'Insufficient stock.' });
+      }
     }
     if (!isProduction) {
       console.log(`[createPublicStoreOrder] Stock decreased by ${quantity} for product ${product_id}`);
@@ -960,8 +1039,23 @@ export const getProductWithStoreInfo: RequestHandler = async (req, res) => {
     if (result.rows.length > 0) {
       const p = result.rows[0];
       // Ensure product has a slug (generate fallback if missing)
+      let variants: any[] = [];
+      try {
+        const vRes = await pool.query(
+          `SELECT id, color, size, variant_name, price, stock_quantity, images, sort_order
+           FROM product_variants
+           WHERE product_id = $1 AND client_id = $2 AND is_active = true
+           ORDER BY sort_order ASC, id ASC`,
+          [p.id, p.client_id]
+        );
+        variants = vRes.rows || [];
+      } catch {
+        variants = [];
+      }
+
       return res.json({
         ...p,
+        variants,
         slug: p.slug || `${String(p.title || 'product').toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${p.id}`
       });
     }
