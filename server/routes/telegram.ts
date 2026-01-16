@@ -141,7 +141,7 @@ export const getTelegramBotLink: RequestHandler = async (req, res) => {
     try {
       const botToken = String(botRes.rows[0].telegram_bot_token || '').trim();
       if (botToken) {
-        const secretToken = await upsertTelegramWebhookSecret(clientId);
+        const secretToken = await upsertTelegramWebhookSecret(clientId, botToken);
         const baseUrl = getPublicBaseUrl(req);
         const hook = await registerTelegramWebhook({ botToken, baseUrl, secretToken });
         if (!hook.ok) {
@@ -250,30 +250,26 @@ export const checkTelegramConnection: RequestHandler = async (req, res) => {
 export const telegramWebhook: RequestHandler = async (req, res) => {
   // Telegram expects fast response.
   try {
-    const secret = (req.headers['x-telegram-bot-api-secret-token'] as string | undefined)?.trim();
-    if (!secret) return res.status(401).json({ ok: false });
-
     const pool = await ensureConnection();
-
-    const botRes = await pool.query(
-      `SELECT client_id, telegram_bot_token, template_greeting
-       FROM bot_settings
-       WHERE telegram_webhook_secret = $1 AND enabled = true AND provider = 'telegram'
-       LIMIT 1`,
-      [secret]
-    );
-
-    if (!botRes.rows.length) {
-      return res.status(401).json({ ok: false });
-    }
-
-    const clientId = Number(botRes.rows[0].client_id);
-    const botToken = botRes.rows[0].telegram_bot_token as string | undefined;
-    const greetingTemplate = botRes.rows[0].template_greeting as string | undefined;
-
-    if (!botToken) return res.status(200).json({ ok: true });
-
     const update = req.body as any;
+
+    const secret = (req.headers['x-telegram-bot-api-secret-token'] as string | undefined)?.trim();
+
+    // Try to get bot token from the webhook secret (preferred).
+    let botToken: string | undefined;
+    if (secret) {
+      const botRes = await pool.query(
+        `SELECT telegram_bot_token
+         FROM bot_settings
+         WHERE telegram_webhook_secret = $1
+           AND enabled = true
+           AND provider = 'telegram'
+           AND telegram_bot_token IS NOT NULL
+         LIMIT 1`,
+        [secret]
+      );
+      botToken = botRes.rows[0]?.telegram_bot_token as string | undefined;
+    }
 
     // Inline button callbacks
     const cb = update?.callback_query;
@@ -286,10 +282,24 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
       const simpleCallback = parseSimpleCallback(data);
       if (simpleCallback && callbackId && chatId) {
         const { action, orderId, clientId: cbClientId } = simpleCallback;
-        
-        // Verify this callback is for the correct store
-        if (cbClientId !== clientId) {
-          await answerCallbackQuery({ botToken, callbackQueryId: callbackId, text: 'Invalid request' });
+
+        // If the secret header is missing/incorrect, fall back to resolving the bot token from the client.
+        if (!botToken) {
+          const tokenRes = await pool.query(
+            `SELECT telegram_bot_token
+             FROM bot_settings
+             WHERE client_id = $1
+               AND enabled = true
+               AND provider = 'telegram'
+               AND telegram_bot_token IS NOT NULL
+             LIMIT 1`,
+            [cbClientId]
+          );
+          botToken = tokenRes.rows[0]?.telegram_bot_token as string | undefined;
+        }
+
+        if (!botToken) {
+          await answerCallbackQuery({ botToken: '', callbackQueryId: callbackId, text: 'Bot not configured' });
           return res.status(200).json({ ok: true });
         }
 
@@ -298,14 +308,14 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
             `UPDATE store_orders SET status = 'confirmed', updated_at = NOW()
              WHERE id = $1 AND client_id = $2 AND status IN ('pending')
              RETURNING *`,
-            [orderId, clientId]
+            [orderId, cbClientId]
           );
           if (upd.rows.length) {
             await pool.query(
               `INSERT INTO order_confirmations (order_id, client_id, response_type, confirmed_via, confirmed_at)
                VALUES ($1, $2, 'approved', 'telegram', NOW())
                ON CONFLICT DO NOTHING`,
-              [orderId, clientId]
+              [orderId, cbClientId]
             );
             if ((global as any).broadcastOrderUpdate) {
               (global as any).broadcastOrderUpdate(upd.rows[0]);
@@ -322,14 +332,14 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
             `UPDATE store_orders SET status = 'cancelled', updated_at = NOW()
              WHERE id = $1 AND client_id = $2 AND status IN ('pending')
              RETURNING *`,
-            [orderId, clientId]
+            [orderId, cbClientId]
           );
           if (upd.rows.length) {
             await pool.query(
               `INSERT INTO order_confirmations (order_id, client_id, response_type, confirmed_via, confirmed_at)
                VALUES ($1, $2, 'declined', 'telegram', NOW())
                ON CONFLICT DO NOTHING`,
-              [orderId, clientId]
+              [orderId, cbClientId]
             );
             if ((global as any).broadcastOrderUpdate) {
               (global as any).broadcastOrderUpdate(upd.rows[0]);
@@ -347,7 +357,7 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
       // Fall back to old callback format (approve:token or decline:token)
       const parsed = parseCallback(data);
       if (!callbackId || !chatId || !parsed) {
-        if (callbackId) await answerCallbackQuery({ botToken, callbackQueryId: callbackId, text: 'Invalid action' });
+        if (callbackId && botToken) await answerCallbackQuery({ botToken, callbackQueryId: callbackId, text: 'Invalid action' });
         return res.status(200).json({ ok: true });
       }
 
@@ -355,17 +365,34 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
       const linkRes = await pool.query(
         `SELECT order_id, client_id
          FROM order_telegram_links
-         WHERE start_token = $1 AND client_id = $2
+         WHERE start_token = $1
          LIMIT 1`,
-        [parsed.token, clientId]
+        [parsed.token]
       );
 
       if (!linkRes.rows.length) {
-        await answerCallbackQuery({ botToken, callbackQueryId: callbackId, text: 'Link expired' });
+        if (botToken) await answerCallbackQuery({ botToken, callbackQueryId: callbackId, text: 'Link expired' });
         return res.status(200).json({ ok: true });
       }
 
       const orderId = Number(linkRes.rows[0].order_id);
+      const clientId = Number(linkRes.rows[0].client_id);
+
+      if (!botToken && clientId) {
+        const tokenRes = await pool.query(
+          `SELECT telegram_bot_token
+           FROM bot_settings
+           WHERE client_id = $1
+             AND enabled = true
+             AND provider = 'telegram'
+             AND telegram_bot_token IS NOT NULL
+           LIMIT 1`,
+          [clientId]
+        );
+        botToken = tokenRes.rows[0]?.telegram_bot_token as string | undefined;
+      }
+
+      if (!botToken) return res.status(200).json({ ok: true });
 
       // Bind chat to order if not already (safety)
       await pool.query(
@@ -432,22 +459,73 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
     if (!chatId) return res.status(200).json({ ok: true });
 
     const startToken = parseStartPayload(text);
-    if (!startToken) {
+    if (!String(text || '').trim().startsWith('/start')) {
       // Ignore non-/start messages for now.
+      return res.status(200).json({ ok: true });
+    }
+
+    // If the user presses "Start" without a payload, Telegram sends plain `/start`.
+    // In a shared-bot platform, we can't infer the store without a token, but we should still respond.
+    if (!startToken) {
+      // If we don't know which bot token to use (missing secret header), try the most recent enabled token.
+      if (!botToken) {
+        const anyTokenRes = await pool.query(
+          `SELECT telegram_bot_token
+           FROM bot_settings
+           WHERE enabled = true
+             AND provider = 'telegram'
+             AND telegram_bot_token IS NOT NULL
+           ORDER BY updated_at DESC NULLS LAST
+           LIMIT 1`
+        );
+        botToken = anyTokenRes.rows[0]?.telegram_bot_token as string | undefined;
+      }
+
+      if (botToken) {
+        await sendTelegramMessage(
+          botToken,
+          chatId,
+          "Welcome! ✅\n\nTo connect your orders, please go back to the store checkout and click the Telegram connect button so we can link your chat to your phone/order."
+        );
+      }
       return res.status(200).json({ ok: true });
     }
 
     // First try: Check if this is a preconnect token (customer connecting BEFORE placing order)
     const preconnectRes = await pool.query(
-      `SELECT customer_phone FROM customer_preconnect_tokens
-       WHERE token = $1 AND client_id = $2 AND expires_at > NOW()
+      `SELECT client_id, customer_phone
+       FROM customer_preconnect_tokens
+       WHERE token = $1 AND expires_at > NOW()
        LIMIT 1`,
-      [startToken, clientId]
+      [startToken]
     );
 
     if (preconnectRes.rows.length) {
+      const resolvedClientId = Number(preconnectRes.rows[0]?.client_id);
+      const customerPhone = String(preconnectRes.rows[0]?.customer_phone || '');
+      if (!resolvedClientId || !customerPhone) {
+        if (botToken) await sendTelegramMessage(botToken, chatId, 'Invalid or expired link. Please go back to the store and try again.');
+        return res.status(200).json({ ok: true });
+      }
+
+      if (!botToken) {
+        const tokenRes = await pool.query(
+          `SELECT telegram_bot_token
+           FROM bot_settings
+           WHERE client_id = $1
+             AND enabled = true
+             AND provider = 'telegram'
+             AND telegram_bot_token IS NOT NULL
+           LIMIT 1`,
+          [resolvedClientId]
+        );
+        botToken = tokenRes.rows[0]?.telegram_bot_token as string | undefined;
+      }
+
+      if (!botToken) return res.status(200).json({ ok: true });
+
       // This is a preconnect - customer is connecting before placing order
-      const customerPhone = String(preconnectRes.rows[0].customer_phone);
+      
       
       // Save the phone->chat mapping
       await pool.query(
@@ -455,7 +533,7 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
          VALUES ($1,$2,$3,NOW(),NOW())
          ON CONFLICT (client_id, customer_phone)
          DO UPDATE SET telegram_chat_id = EXCLUDED.telegram_chat_id, updated_at = NOW()`,
-        [clientId, customerPhone, chatId]
+        [resolvedClientId, customerPhone, chatId]
       );
       
       // Mark token as used
@@ -467,9 +545,18 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
       // Get store name
       const storeRes = await pool.query(
         `SELECT store_name FROM client_store_settings WHERE client_id = $1 LIMIT 1`,
-        [clientId]
+        [resolvedClientId]
       );
       const storeName = String(storeRes.rows[0]?.store_name || 'Store');
+
+      const tmplRes = await pool.query(
+        `SELECT template_greeting
+         FROM bot_settings
+         WHERE client_id = $1 AND enabled = true AND provider = 'telegram'
+         LIMIT 1`,
+        [resolvedClientId]
+      );
+      const greetingTemplate = tmplRes.rows[0]?.template_greeting as string | undefined;
       
       // Send "bot connected" message (configurable via template_greeting)
       const defaultConnect = `Welcome to {storeName}! 🎉
@@ -495,21 +582,44 @@ We will send you order confirmation directly here! 📦`;
 
     // Second try: Check if this is an order-specific token (after order placed)
     const linkRes = await pool.query(
-      `SELECT order_id, customer_phone, customer_name
+      `SELECT order_id, client_id, customer_phone, customer_name
        FROM order_telegram_links
-       WHERE start_token = $1 AND client_id = $2
+       WHERE start_token = $1
        LIMIT 1`,
-      [startToken, clientId]
+      [startToken]
     );
 
     if (!linkRes.rows.length) {
-      await sendTelegramMessage(botToken, chatId, 'The link is invalid or expired. Please go back to the order page and click the Telegram button again.');
+      if (botToken) {
+        await sendTelegramMessage(botToken, chatId, 'The link is invalid or expired. Please go back to the order page and click the Telegram button again.');
+      }
       return res.status(200).json({ ok: true });
     }
 
     const orderId = Number(linkRes.rows[0].order_id);
+    const clientId = Number(linkRes.rows[0].client_id);
     const customerPhone = String(linkRes.rows[0].customer_phone || '');
     const customerName = String(linkRes.rows[0].customer_name || '');
+    if (!clientId) {
+      if (botToken) await sendTelegramMessage(botToken, chatId, 'The link is invalid or expired. Please go back to the order page and try again.');
+      return res.status(200).json({ ok: true });
+    }
+
+    if (!botToken) {
+      const tokenRes = await pool.query(
+        `SELECT telegram_bot_token
+         FROM bot_settings
+         WHERE client_id = $1
+           AND enabled = true
+           AND provider = 'telegram'
+           AND telegram_bot_token IS NOT NULL
+         LIMIT 1`,
+        [clientId]
+      );
+      botToken = tokenRes.rows[0]?.telegram_bot_token as string | undefined;
+    }
+
+    if (!botToken) return res.status(200).json({ ok: true });
 
     // Bind this Telegram chat to this order (order-scoped).
     await pool.query(
@@ -538,6 +648,15 @@ We will send you order confirmation directly here! 📦`;
       [clientId]
     );
     const storeName = String(storeRes.rows[0]?.store_name || 'EcoPro Store');
+
+    const tmplRes = await pool.query(
+      `SELECT template_greeting
+       FROM bot_settings
+       WHERE client_id = $1 AND enabled = true AND provider = 'telegram'
+       LIMIT 1`,
+      [clientId]
+    );
+    const greetingTemplate = tmplRes.rows[0]?.template_greeting as string | undefined;
 
     const greeting = replaceTemplateVariables(
       greetingTemplate || 'Thank you for ordering from {storeName}, {customerName}!\n\n✅ Enable notifications on Telegram to receive order confirmation and tracking updates.',

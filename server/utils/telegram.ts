@@ -7,8 +7,42 @@ export function generateTelegramStartToken(): string {
   return crypto.randomBytes(16).toString('hex');
 }
 
-export async function upsertTelegramWebhookSecret(clientId: number | string): Promise<string> {
+export async function upsertTelegramWebhookSecret(
+  clientId: number | string,
+  botToken?: string
+): Promise<string> {
   const pool = await ensureConnection();
+
+  // IMPORTANT: Telegram webhook secret is scoped to the BOT (token), not the store.
+  // When multiple stores share the same platform bot token, they must share one secret
+  // or the most recent store to setWebhook will break delivery for the others.
+  const token = String(botToken || '').trim();
+  if (token) {
+    const existingForToken = await pool.query(
+      `SELECT telegram_webhook_secret
+       FROM bot_settings
+       WHERE telegram_bot_token = $1
+         AND telegram_webhook_secret IS NOT NULL
+         AND length(telegram_webhook_secret) >= 16
+       ORDER BY updated_at DESC NULLS LAST
+       LIMIT 1`,
+      [token]
+    );
+
+    const existing = existingForToken.rows[0]?.telegram_webhook_secret as string | undefined;
+    const secret = existing || crypto.randomBytes(24).toString('hex');
+
+    await pool.query(
+      `UPDATE bot_settings
+       SET telegram_webhook_secret = $2, updated_at = NOW()
+       WHERE telegram_bot_token = $1
+         AND telegram_webhook_secret IS DISTINCT FROM $2`,
+      [token, secret]
+    );
+
+    return secret;
+  }
+
   const current = await pool.query(
     `SELECT telegram_webhook_secret FROM bot_settings WHERE client_id = $1`,
     [clientId]

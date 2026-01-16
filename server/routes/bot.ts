@@ -303,7 +303,7 @@ export const updateBotSettings: RequestHandler = async (req, res) => {
 
     // Auto-register Telegram webhook when Telegram is enabled/configured.
     if (effectiveEnabled && effectiveProvider === 'telegram' && telegramBotToken && telegramBotUsername) {
-      const secret = await upsertTelegramWebhookSecret(clientId);
+      const secret = await upsertTelegramWebhookSecret(clientId, telegramBotToken);
       const baseUrl = getPublicBaseUrl(req);
       const hook = await registerTelegramWebhook({
         botToken: telegramBotToken,
