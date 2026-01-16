@@ -82,10 +82,13 @@ export function validateProductionEnv(): void {
   const missing = required.filter(
     (v) => !v.canGenerate && !(process.env[v.name] && process.env[v.name]!.trim())
   );
+
+  const dbUrl = (process.env.DATABASE_URL || '').trim();
+  const dbUrlInvalid = Boolean(dbUrl) && !/^postgres(ql)?:\/\//i.test(dbUrl);
   const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').trim();
   const originInvalid = allowedOrigins === '*' || allowedOrigins.includes('://*');
 
-  if (missing.length === 0 && !originInvalid) return;
+  if (missing.length === 0 && !originInvalid && !dbUrlInvalid) return;
 
   const lines: string[] = [];
   lines.push('❌ Production configuration error');
@@ -103,6 +106,12 @@ export function validateProductionEnv(): void {
   if (originInvalid) {
     lines.push('Invalid:');
     lines.push('- ALLOWED_ORIGINS must not be a wildcard when using credentialed cookies');
+    lines.push('');
+  }
+
+  if (dbUrlInvalid) {
+    lines.push('Invalid:');
+    lines.push('- DATABASE_URL must start with postgres:// or postgresql:// (Render: use Internal Database URL / Add-from-database)');
     lines.push('');
   }
 

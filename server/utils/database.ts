@@ -77,10 +77,28 @@ export async function ensureConnection(retries = getDbDefaults().retries): Promi
     if (!connectionString) {
       throw new Error('DATABASE_URL is not set (Render Postgres required; local DB disabled)');
     }
-    const hasQuery = connectionString.includes('?');
-    const hasSslMode = /[?&]sslmode=\w+/i.test(connectionString);
-    if (connectionString && !hasSslMode) {
-      connectionString = connectionString + (hasQuery ? '&' : '?') + 'sslmode=require';
+
+    const hasScheme = /^postgres(ql)?:\/\//i.test(connectionString);
+    if (!hasScheme) {
+      // Common mispaste: missing scheme but otherwise looks like user:pass@host/db
+      const looksLikeConn = /@[^\s]+\//.test(connectionString);
+      if (looksLikeConn) {
+        connectionString = `postgresql://${connectionString}`;
+      } else {
+        throw new Error(
+          'DATABASE_URL is set but does not look like a PostgreSQL URL. It must start with postgres:// or postgresql:// (Render: use Internal Database URL / Add-from-database).'
+        );
+      }
+    }
+
+    // Rely on Pool `ssl` option. Strip sslmode to avoid certificate verification issues
+    // (Render Postgres commonly presents a self-signed cert).
+    try {
+      const u = new URL(connectionString);
+      u.searchParams.delete('sslmode');
+      connectionString = u.toString();
+    } catch {
+      // keep original string if URL parsing fails
     }
 
     const defaults = getDbDefaults();

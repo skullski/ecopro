@@ -5,25 +5,53 @@ import pg from 'pg';
 
 const { Pool } = pg;
 
-// Prefer environment variables (Render). Only load local files if DATABASE_URL isn't set.
-if (!process.env.DATABASE_URL) {
+const isProduction = String(process.env.NODE_ENV || '').toLowerCase() === 'production';
+
+// Prefer real environment variables (Render). Only load local files in non-production.
+// Render does NOT have your local .env files, and we intentionally don't commit them.
+if (!isProduction && !process.env.DATABASE_URL) {
   // Local/dev convenience: allow secrets in .env.local (gitignored)
-  dotenv.config({ path: path.resolve(process.cwd(), '.env.local'), override: true });
-  dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+  dotenv.config({ path: path.resolve(process.cwd(), '.env.local'), override: true, quiet: true });
+  dotenv.config({ path: path.resolve(process.cwd(), '.env'), quiet: true });
   if (!process.env.DATABASE_URL) {
-    dotenv.config({ path: path.resolve(process.cwd(), '.env.production') });
+    dotenv.config({ path: path.resolve(process.cwd(), '.env.production'), quiet: true });
   }
 }
 
 function getConnectionString() {
   let connectionString = process.env.DATABASE_URL || '';
   if (!connectionString) {
-    throw new Error('DATABASE_URL is not set');
+    throw new Error(
+      'DATABASE_URL is not set. In production (Render), it must be provided as a service environment variable or wired via the Render blueprint (render.yaml).'
+    );
   }
-  const hasQuery = connectionString.includes('?');
-  const hasSslMode = /[?&]sslmode=\w+/i.test(connectionString);
-  if (!hasSslMode) {
-    connectionString = connectionString + (hasQuery ? '&' : '?') + 'sslmode=require';
+
+  connectionString = String(connectionString).trim();
+
+  // Validate / normalize connection string format.
+  // Render typically provides a URL starting with postgres://
+  const hasScheme = /^postgres(ql)?:\/\//i.test(connectionString);
+  if (!hasScheme) {
+    // Common mispaste: missing scheme but otherwise looks like user:pass@host/db
+    const looksLikeConn = /@[^\s]+\//.test(connectionString);
+    if (looksLikeConn) {
+      connectionString = `postgresql://${connectionString}`;
+    } else {
+      throw new Error(
+        'DATABASE_URL is set but does not look like a PostgreSQL URL. It must start with postgres:// or postgresql:// (use the Render database Internal Database URL / Add-from-database).'
+      );
+    }
+  }
+
+  // Important: we rely on the Pool's `ssl` option (rejectUnauthorized: false) on Render.
+  // Some environments/URLs include sslmode settings that can trigger certificate verification.
+  // Strip sslmode to avoid "self-signed certificate" failures.
+  try {
+    const u = new URL(connectionString);
+    u.searchParams.delete('sslmode');
+    connectionString = u.toString();
+  } catch {
+    // If URL parsing fails, keep original string.
   }
   return connectionString;
 }
