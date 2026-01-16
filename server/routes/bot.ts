@@ -1,6 +1,7 @@
 import { RequestHandler } from "express";
 import { pool } from "../utils/database";
 import { registerTelegramWebhook, upsertTelegramWebhookSecret } from "../utils/telegram";
+import { getPublicBaseUrl } from '../utils/public-url';
 
 const PLATFORM_FB_PAGE_ID = String(process.env.PLATFORM_FB_PAGE_ID || '').trim();
 const PLATFORM_FB_PAGE_ACCESS_TOKEN = String(process.env.PLATFORM_FB_PAGE_ACCESS_TOKEN || '').trim();
@@ -303,7 +304,7 @@ export const updateBotSettings: RequestHandler = async (req, res) => {
     // Auto-register Telegram webhook when Telegram is enabled/configured.
     if (effectiveEnabled && effectiveProvider === 'telegram' && telegramBotToken && telegramBotUsername) {
       const secret = await upsertTelegramWebhookSecret(clientId);
-      const baseUrl = process.env.BASE_URL || 'https://ecopro-1lbl.onrender.com';
+      const baseUrl = getPublicBaseUrl(req);
       const hook = await registerTelegramWebhook({
         botToken: telegramBotToken,
         baseUrl,

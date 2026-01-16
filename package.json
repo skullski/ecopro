@@ -21,7 +21,7 @@
     "render:build": "npm run build",
     "test": "vitest --run",
     "format.fix": "prettier --write .",
-    "typecheck": "tsc",
+    "typecheck": "tsc --pretty false",
     "migrate:rehash-passwords": "tsx server/scripts/rehash-passwords.ts",
     "extract:template-settings": "tsx scripts/extract-template-settings.ts",
     "e2e:smoke": "node scripts/e2e-smoke.js"

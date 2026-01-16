@@ -1,6 +1,8 @@
 import type { RequestHandler } from 'express';
 import { ensureConnection } from '../utils/database';
 import { replaceTemplateVariables, sendTelegramMessage } from '../utils/bot-messaging';
+import { registerTelegramWebhook, upsertTelegramWebhookSecret } from '../utils/telegram';
+import { getPublicBaseUrl } from '../utils/public-url';
 import crypto from 'crypto';
 
 // Temporary endpoint to set webhook secret for testing
@@ -132,6 +134,23 @@ export const getTelegramBotLink: RequestHandler = async (req, res) => {
     }
     
     const botUsername = botRes.rows[0].telegram_bot_username.replace(/^@/, '');
+
+    // Ensure webhook is registered and points at the current public URL.
+    // This fixes the common case where Telegram is configured but webhook is missing/outdated,
+    // causing the bot to not reply to /start.
+    try {
+      const botToken = String(botRes.rows[0].telegram_bot_token || '').trim();
+      if (botToken) {
+        const secretToken = await upsertTelegramWebhookSecret(clientId);
+        const baseUrl = getPublicBaseUrl(req);
+        const hook = await registerTelegramWebhook({ botToken, baseUrl, secretToken });
+        if (!hook.ok) {
+          console.warn('[Telegram] webhook auto-register failed:', hook.error);
+        }
+      }
+    } catch (e) {
+      console.warn('[Telegram] webhook auto-register error:', (e as any)?.message || e);
+    }
     
     // Generate a pre-connect token based on phone (if provided)
     let startToken = '';
