@@ -9,7 +9,7 @@ BEGIN
 
   EXECUTE 'ALTER TABLE message_campaigns DROP CONSTRAINT IF EXISTS message_campaigns_channel_check';
 
-  EXECUTE $$
+  EXECUTE $stmt$
     ALTER TABLE message_campaigns
       ADD CONSTRAINT message_campaigns_channel_check
       CHECK (
@@ -23,5 +23,5 @@ BEGIN
           ]::text[]
         )
       )
-  $$;
+  $stmt$;
 END $$;
