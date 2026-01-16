@@ -1292,6 +1292,21 @@ export function createServer(options?: { skipDbInit?: boolean }) {
           return;
         }
 
+        // For any unexpected asset error, avoid JSON responses (which break strict MIME checks).
+        if (status >= 500) {
+          console.error('[assets] static serve failed:', {
+            path: req.path,
+            url: (req as any).originalUrl || req.url,
+            message: err?.message,
+            code: err?.code,
+            status,
+          });
+          res.status(500);
+          res.setHeader('Cache-Control', 'no-store');
+          res.type('text/plain').send('Internal server error');
+          return;
+        }
+
         next(err);
       });
     });
@@ -1338,39 +1353,6 @@ export function createServer(options?: { skipDbInit?: boolean }) {
       }
     });
   }
-
-  // Lightweight health endpoint
-  app.get('/api/health', (_req, res) => {
-    const getSpaAssets = async () => {
-      if (process.env.NODE_ENV !== 'production') return null;
-      try {
-        const spaBuildPath = path.join(__dirname, '../spa');
-        const indexPath = path.join(spaBuildPath, 'index.html');
-        const html = await fs.readFile(indexPath, 'utf8');
-
-        const styles = Array.from(
-          html.matchAll(/<link[^>]*rel=["']stylesheet["'][^>]*href=["']([^"']+)["'][^>]*>/gi)
-        ).map((m) => m[1]);
-        const scripts = Array.from(
-          html.matchAll(/<script[^>]*type=["']module["'][^>]*src=["']([^"']+)["'][^>]*>/gi)
-        ).map((m) => m[1]);
-
-        return { styles, scripts };
-      } catch {
-        return null;
-      }
-    };
-
-    void getSpaAssets().then((spa_assets) => {
-      res.json({
-        status: 'ok',
-        uptime_seconds: process.uptime(),
-        timestamp: new Date().toISOString(),
-        commit: process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || null,
-        spa_assets,
-      });
-    });
-  });
 
   // Debug schema route (guarded by admin auth)
   app.get('/api/debug/schema', authenticate, requireAdmin, async (_req, res) => {
