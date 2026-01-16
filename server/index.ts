@@ -1,9 +1,14 @@
 import telemetryRouter from './routes/telemetry';
 import dotenv from 'dotenv';
-// Load env files for local/dev. Render should provide env vars directly.
-// Order matters: .env then .env.local override.
-dotenv.config({ path: '.env' });
-dotenv.config({ path: '.env.local', override: true });
+// Load env files for local/dev.
+// Important: never let dotenv override real environment variables (e.g. when we export DATABASE_URL).
+// We still want .env.local to override .env for *unset* vars.
+const preDotenvEnv = { ...process.env };
+dotenv.config({ path: '.env', quiet: true });
+dotenv.config({ path: '.env.local', override: true, quiet: true });
+for (const [key, value] of Object.entries(preDotenvEnv)) {
+  if (typeof value === 'string') process.env[key] = value;
+}
 import express from "express";
 import compression from "compression";
 import cors from "cors";
