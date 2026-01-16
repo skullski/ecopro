@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS chats (
   id BIGSERIAL PRIMARY KEY,
   client_id BIGINT NOT NULL UNIQUE REFERENCES clients(id) ON DELETE CASCADE,
   seller_id BIGINT NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
-  store_id BIGINT REFERENCES client_store(id) ON DELETE CASCADE,
+  store_id BIGINT REFERENCES client_store_settings(id) ON DELETE CASCADE,
   status VARCHAR(50) DEFAULT 'active', -- active, archived, closed
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
