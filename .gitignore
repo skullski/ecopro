@@ -49,6 +49,9 @@ uploads/
 # One-off generated reports
 tmp/template-editability-report.ts
 
+# TypeScript incremental build artifacts
+*.tsbuildinfo
+
 # Local backups
 *.dump
 backup-*.dump
