@@ -33,6 +33,33 @@ export function getOrGenerateSecret(name: string): string {
 export function validateProductionEnv(): void {
   if (process.env.NODE_ENV !== 'production') return;
 
+  // If ALLOWED_ORIGINS isn't explicitly set, infer a safe default from known deployment URLs.
+  // This prevents boot failures on Render when the service env vars weren't fully configured,
+  // while still avoiding wildcard origins with credentials.
+  const rawAllowedOrigins = (process.env.ALLOWED_ORIGINS || '').trim();
+  if (!rawAllowedOrigins) {
+    const candidates: string[] = [];
+    const baseUrl = (process.env.BASE_URL || '').trim();
+    const renderExternalUrl = (process.env.RENDER_EXTERNAL_URL || '').trim();
+    const renderExternalHostname = (process.env.RENDER_EXTERNAL_HOSTNAME || '').trim();
+
+    const normalize = (u: string) => {
+      const trimmed = u.trim();
+      if (!trimmed) return '';
+      const noSlash = trimmed.replace(/\/$/, '');
+      return noSlash.replace(/^http:\/\//i, 'https://');
+    };
+
+    if (baseUrl) candidates.push(normalize(baseUrl));
+    if (renderExternalUrl) candidates.push(normalize(renderExternalUrl));
+    if (renderExternalHostname) candidates.push(normalize(`https://${renderExternalHostname}`));
+
+    const inferred = Array.from(new Set(candidates.filter(Boolean)));
+    if (inferred.length > 0) {
+      process.env.ALLOWED_ORIGINS = inferred.join(',');
+    }
+  }
+
   const required: RequiredEnvVar[] = [
     {
       name: 'DATABASE_URL',
