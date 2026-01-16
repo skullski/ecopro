@@ -10,7 +10,9 @@ services:
       - key: PORT
         value: 10000
       - key: DATABASE_URL
-        sync: false  # Set manually in Render Dashboard
+        fromDatabase:
+          name: ecopro-postgres
+          property: connectionString
       - key: JWT_SECRET
         sync: false  # Set manually in Render Dashboard
       - key: ENCRYPTION_KEY
@@ -44,3 +46,9 @@ services:
       - key: FB_MESSENGER_VERIFY_TOKEN
         sync: false
     healthCheckPath: /api/ping
+
+databases:
+  - name: ecopro-postgres
+    databaseName: ecopro
+    user: ecopro_user
+    plan: starter
