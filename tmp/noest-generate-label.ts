@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import './dotenv';
 import { DeliveryService } from '../server/services/delivery';
 import { ensureConnection } from '../server/utils/database';
 

@@ -1266,13 +1266,42 @@ export function createServer(options?: { skipDbInit?: boolean }) {
   if (process.env.NODE_ENV === "production") {
     // In production, __dirname is dist/server/, so we need to go up one level to dist/, then into spa/
     const spaBuildPath = path.join(__dirname, "../spa");
-    app.use(express.static(spaBuildPath));
+
+    // Serve hashed assets directly and never fall through to the SPA HTML handler.
+    // If an asset is missing, return 404 instead of serving index.html (which causes MIME-type errors).
+    app.use(
+      '/assets',
+      express.static(path.join(spaBuildPath, 'assets'), {
+        fallthrough: false,
+        immutable: true,
+        maxAge: '365d',
+      })
+    );
+
+    // Serve other static files (icons, manifest, etc). Do NOT serve index.html here;
+    // we want all HTML to go through the nonce-injection handler below.
+    app.use(
+      express.static(spaBuildPath, {
+        index: false,
+      })
+    );
 
     // Handle React routing - send all non-API requests to index.html
     // Note: Using a middleware function instead of app.get("*") for Express 5 compatibility
     app.use((req, res, next) => {
-      // Only serve index.html for GET requests that don't start with /api
-      if (req.method === "GET" && !req.path.startsWith("/api")) {
+      // Only serve index.html for real SPA navigations.
+      // Avoid catching requests for static files (e.g. /assets/*.js) which must not return HTML.
+      const accepts = String(req.headers['accept'] || '');
+      const wantsHtml = accepts.includes('text/html') || accepts.includes('*/*') || accepts === '';
+      const looksLikeFile = /\.[a-z0-9]+$/i.test(req.path);
+
+      if (
+        req.method === 'GET' &&
+        wantsHtml &&
+        !req.path.startsWith('/api') &&
+        !req.path.startsWith('/assets') &&
+        !looksLikeFile
+      ) {
         const nonce = (res.locals as any).cspNonce;
         const indexPath = path.join(spaBuildPath, 'index.html');
         fs.readFile(indexPath, 'utf8')

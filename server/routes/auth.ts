@@ -22,6 +22,7 @@ import { encryptData, decryptData, hashData } from '../utils/encryption';
 import { buildOtpAuthUrl, generateTotpSecretBase32, verifyTotp } from '../utils/totp';
 import { clearAuthCookies, getCookieOptions, cookieNames } from '../utils/auth-cookies';
 import { createTrialSubscription } from './billing';
+import { ensureBotSettingsRow, ensureSystemOrderStatuses } from '../utils/client-provisioning';
 
 // JWT authentication middleware
 export const requireAuth: RequestHandler = (req, res, next) => {
@@ -48,6 +49,15 @@ const ACCESS_COOKIE = cookieNames.ACCESS_COOKIE;
 const REFRESH_COOKIE = cookieNames.REFRESH_COOKIE;
 const CSRF_COOKIE = cookieNames.CSRF_COOKIE;
 const STAFF_ACCESS_COOKIE = cookieNames.STAFF_ACCESS_COOKIE;
+
+function normalizeEmail(raw: unknown): string {
+  return String(raw ?? '').toLowerCase().trim();
+}
+
+function isAllowedSignupEmail(email: string): boolean {
+  // For now: only allow gmail.com signups.
+  return email.endsWith('@gmail.com');
+}
 
 function inferLockType(dbLockType: unknown, lockedReason: unknown): 'payment' | 'critical' {
   if (dbLockType === 'payment' || dbLockType === 'critical') return dbLockType;
@@ -101,9 +111,14 @@ function setAuthCookies(res: any, accessToken: string, refreshToken: string) {
 export const register: RequestHandler = async (req, res) => {
   try {
     const { email, password, name, role } = req.body;
+    const normalizedEmail = normalizeEmail(email);
+
+    if (!isAllowedSignupEmail(normalizedEmail)) {
+      return jsonError(res, 400, 'Only @gmail.com email addresses are allowed for signup');
+    }
 
     // Strong password policy + breach check
-    const policy = checkPasswordPolicy(password, email);
+    const policy = checkPasswordPolicy(password, normalizedEmail);
     if (policy.ok === false) {
       return jsonError(res, 400, policy.reason);
     }
@@ -113,7 +128,7 @@ export const register: RequestHandler = async (req, res) => {
     }
 
     // Check if user already exists
-    const existingUser = await findUserByEmail(email);
+    const existingUser = await findUserByEmail(normalizedEmail);
     if (existingUser) {
       return jsonError(res, 400, "Email already registered");
     }
@@ -139,13 +154,17 @@ export const register: RequestHandler = async (req, res) => {
 
     // Create user
     // Map role to valid values: 'admin' stays admin, everything else becomes 'client'
-    const normalizedRole = role === 'admin' ? 'admin' : 'client';
+    // Public signup should never create admins.
+    if (role && role !== 'client') {
+      return jsonError(res, 403, 'Invalid role');
+    }
+    const normalizedRole = 'client';
     const user = await createUser({
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
       name,
       role: normalizedRole,
-      user_type: normalizedRole === 'admin' ? 'admin' : 'client',
+      user_type: 'client',
     });
 
     // Fingerprint + security log (do not log secrets)
@@ -197,6 +216,14 @@ export const register: RequestHandler = async (req, res) => {
       
       // Create 30-day trial subscription for new store owners
       await createTrialSubscription(Number(user.id));
+
+      // Provision defaults so bots + statuses work immediately for new users.
+      try {
+        await ensureBotSettingsRow(Number(user.id), { enabled: true });
+        await ensureSystemOrderStatuses(Number(user.id));
+      } catch (e) {
+        console.warn('[REGISTER] Provisioning defaults failed (non-fatal):', (e as any)?.message || e);
+      }
     }
 
     // Generate token
@@ -223,6 +250,8 @@ export const register: RequestHandler = async (req, res) => {
         id: user.id,
         email: user.email,
         name: user.name,
+        role: user.role || 'client',
+        user_type: user.user_type || 'client',
       },
     });
   } catch (error) {
@@ -751,68 +780,20 @@ import { sendVerificationCode, generateVerificationCode } from '../services/emai
  */
 export const sendVerificationCodeHandler: RequestHandler = async (req, res) => {
   try {
-    const { email, name, password } = req.body;
-
-    if (!email || !password) {
-      return jsonError(res, 400, 'Email and password are required');
+    // Email verification via code is disabled for now.
+    // Keep endpoint for backwards compatibility with older clients.
+    const normalizedEmail = normalizeEmail(req.body?.email);
+    if (!normalizedEmail) {
+      return jsonError(res, 400, 'Email is required');
+    }
+    if (!isAllowedSignupEmail(normalizedEmail)) {
+      return jsonError(res, 400, 'Only @gmail.com email addresses are allowed for signup');
     }
 
-    // Check if user already exists
-    const existingUser = await findUserByEmail(email);
-    if (existingUser) {
-      return jsonError(res, 400, 'Email already registered');
-    }
-
-    // Strong password policy check
-    const policy = checkPasswordPolicy(password, email);
-    if (policy.ok === false) {
-      return jsonError(res, 400, policy.reason);
-    }
-
-    // Check for breached password
-    const pwned = await checkPwnedPassword(password);
-    if (pwned.ok && pwned.pwned) {
-      return jsonError(res, 400, 'Password has appeared in a data breach; choose a different password');
-    }
-
-    const pool = await ensureConnection();
-
-    // Check rate limit - max 3 codes per email per hour
-    const recentCodes = await pool.query(
-      `SELECT COUNT(*) as count FROM email_verifications 
-       WHERE email = $1 AND created_at > NOW() - INTERVAL '1 hour'`,
-      [email]
-    );
-    
-    if (parseInt(recentCodes.rows[0].count) >= 3) {
-      return jsonError(res, 429, 'Too many verification requests. Please wait before trying again.');
-    }
-
-    // Generate 6-digit code
-    const code = generateVerificationCode();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-    // Store verification record (delete old ones for this email first)
-    await pool.query('DELETE FROM email_verifications WHERE email = $1', [email]);
-    await pool.query(
-      `INSERT INTO email_verifications (email, code, expires_at) VALUES ($1, $2, $3)`,
-      [email, code, expiresAt]
-    );
-
-    // Send email
-    const emailResult = await sendVerificationCode(email, code);
-    
-    if (!emailResult.success) {
-      console.error('[AUTH] Failed to send verification email:', emailResult.error);
-      // Return error so user knows email wasn't sent
-      return jsonError(res, 500, `Failed to send verification email: ${emailResult.error || 'Unknown error'}. Please try again later.`);
-    }
-
-    res.json({ 
-      success: true, 
-      message: 'Verification code sent to your email',
-      // Only include code in development for testing
-      ...(process.env.NODE_ENV !== 'production' ? { code } : {})
+    return res.json({
+      success: true,
+      message: 'Signup verification is currently disabled. Continue to create your account.',
+      verificationDisabled: true,
     });
   } catch (error) {
     console.error('[AUTH] Send verification error:', error);
@@ -826,60 +807,31 @@ export const sendVerificationCodeHandler: RequestHandler = async (req, res) => {
  */
 export const verifyAndRegister: RequestHandler = async (req, res) => {
   try {
-    const { email, password, name, code } = req.body;
+    // Verification-code registration is disabled; treat this as a normal signup.
+    const { email, password, name } = req.body;
+    const normalizedEmail = normalizeEmail(email);
 
-    if (!email || !password || !code) {
-      return jsonError(res, 400, 'Email, password, and verification code are required');
+    if (!normalizedEmail || !password) {
+      return jsonError(res, 400, 'Email and password are required');
+    }
+    if (!isAllowedSignupEmail(normalizedEmail)) {
+      return jsonError(res, 400, 'Only @gmail.com email addresses are allowed for signup');
     }
 
     const pool = await ensureConnection();
 
-    // Find valid verification record
-    const verifyResult = await pool.query(
-      `SELECT * FROM email_verifications 
-       WHERE email = $1 AND code = $2 AND expires_at > NOW() AND verified = false
-       LIMIT 1`,
-      [email, code]
-    );
-
-    if (verifyResult.rows.length === 0) {
-      // Check if code exists but expired or wrong
-      const anyCode = await pool.query(
-        `SELECT * FROM email_verifications WHERE email = $1 ORDER BY created_at DESC LIMIT 1`,
-        [email]
-      );
-      
-      if (anyCode.rows.length > 0) {
-        const record = anyCode.rows[0];
-        if (record.code !== code) {
-          // Update attempts
-          await pool.query(
-            `UPDATE email_verifications SET attempts = attempts + 1 WHERE id = $1`,
-            [record.id]
-          );
-          return jsonError(res, 400, 'Invalid verification code');
-        }
-        if (new Date(record.expires_at) < new Date()) {
-          return jsonError(res, 400, 'Verification code has expired. Please request a new one.');
-        }
-        if (record.verified) {
-          return jsonError(res, 400, 'This code has already been used');
-        }
-      }
-      
-      return jsonError(res, 400, 'Invalid or expired verification code');
+    // Strong password policy + breach check
+    const policy = checkPasswordPolicy(password, normalizedEmail);
+    if (policy.ok === false) {
+      return jsonError(res, 400, policy.reason);
     }
-
-    // Mark as verified
-    await pool.query(
-      `UPDATE email_verifications SET verified = true WHERE id = $1`,
-      [verifyResult.rows[0].id]
-    );
-
-    // Now proceed with actual registration (same as original register function)
+    const pwned = await checkPwnedPassword(password);
+    if (pwned.ok && pwned.pwned) {
+      return jsonError(res, 400, 'Password has appeared in a data breach; choose a different password');
+    }
     
     // Check if user already exists (double-check)
-    const existingUser = await findUserByEmail(email);
+    const existingUser = await findUserByEmail(normalizedEmail);
     if (existingUser) {
       return jsonError(res, 400, 'Email already registered');
     }
@@ -902,9 +854,9 @@ export const verifyAndRegister: RequestHandler = async (req, res) => {
     // Hash password and create user
     const hashedPassword = await hashPassword(password);
     const user = await createUser({
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
-      name: name || email.split('@')[0],
+      name: name || normalizedEmail.split('@')[0],
       role: 'client',
       user_type: 'client',
     });
@@ -923,6 +875,14 @@ export const verifyAndRegister: RequestHandler = async (req, res) => {
 
     // Create 30-day trial subscription for new store owners
     await createTrialSubscription(Number(user.id));
+
+    // Provision defaults so bots + statuses work immediately for new users.
+    try {
+      await ensureBotSettingsRow(Number(user.id), { enabled: true });
+      await ensureSystemOrderStatuses(Number(user.id));
+    } catch (e) {
+      console.warn('[REGISTER] Provisioning defaults failed (non-fatal):', (e as any)?.message || e);
+    }
 
     // Log security event
     try {
@@ -974,11 +934,8 @@ export const verifyAndRegister: RequestHandler = async (req, res) => {
 
     setAuthCookies(res as any, token, refreshToken);
 
-    // Cleanup old verification codes for this email
-    await pool.query('DELETE FROM email_verifications WHERE email = $1', [email]);
-
     res.status(201).json({
-      message: 'Email verified and account created successfully',
+      message: 'Account created successfully',
       token,
       user: {
         id: user.id,

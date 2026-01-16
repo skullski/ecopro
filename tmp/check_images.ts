@@ -1,7 +1,7 @@
 import pg from 'pg';
 const { Pool } = pg;
 const pool = new Pool({ 
-  connectionString: 'postgresql://ecopro_user:mLlDVFGWN7WYWY1eKGDjWqXcPkELfCkZ@dpg-ctoma3ij1k6c73b1s1ng-a.oregon-postgres.render.com/ecopro',
+  connectionString: (process.env.DATABASE_URL || ''),
   ssl: { rejectUnauthorized: false }
 });
 

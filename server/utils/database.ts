@@ -8,6 +8,33 @@ let pool: Pool | null = null;
 let lastPingAt = 0;
 let pingInFlight: Promise<void> | null = null;
 
+type PasswordColumn = 'password' | 'password_hash';
+const passwordColumnCache: Partial<Record<'admins' | 'clients', PasswordColumn>> = {};
+
+async function getPasswordColumn(table: 'admins' | 'clients'): Promise<PasswordColumn> {
+  const cached = passwordColumnCache[table];
+  if (cached) return cached;
+
+  const db = await ensureConnection();
+  const res = await db.query(
+    `SELECT column_name
+     FROM information_schema.columns
+     WHERE table_schema = 'public'
+       AND table_name = $1
+       AND column_name IN ('password', 'password_hash')`,
+    [table]
+  );
+  const cols = new Set(res.rows.map((r: any) => String(r.column_name)));
+  const chosen: PasswordColumn = cols.has('password') ? 'password' : (cols.has('password_hash') ? 'password_hash' : 'password');
+
+  if (!cols.has('password') && !cols.has('password_hash')) {
+    throw new Error(`Neither password nor password_hash column exists on ${table}`);
+  }
+
+  passwordColumnCache[table] = chosen;
+  return chosen;
+}
+
 function readBoolEnv(name: string, fallback: boolean): boolean {
   const raw = String(process.env[name] ?? '').trim().toLowerCase();
   if (!raw) return fallback;
@@ -287,29 +314,31 @@ export async function runPendingMigrations(): Promise<void> {
  */
 export async function findUserByEmail(email: string): Promise<User | null> {
   const db = await ensureConnection();
+  const adminPasswordCol = await getPasswordColumn('admins');
+  const clientPasswordCol = await getPasswordColumn('clients');
   // First try admins table
   let result;
   try {
     result = await db.query(
-      "SELECT id, email, password, full_name as name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, lock_type, totp_enabled, totp_secret_encrypted, totp_pending_secret_encrypted, totp_backup_codes_hashes, totp_enrolled_at, created_at, updated_at FROM admins WHERE email = $1",
+      `SELECT id, email, ${adminPasswordCol} as password, full_name as name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, lock_type, totp_enabled, totp_secret_encrypted, totp_pending_secret_encrypted, totp_backup_codes_hashes, totp_enrolled_at, created_at, updated_at FROM admins WHERE email = $1`,
       [email]
     );
   } catch (err: any) {
     // Backward compatible if lock_type column doesn't exist yet
     try {
       result = await db.query(
-        "SELECT id, email, password, full_name as name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, lock_type, created_at, updated_at FROM admins WHERE email = $1",
+        `SELECT id, email, ${adminPasswordCol} as password, full_name as name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, lock_type, created_at, updated_at FROM admins WHERE email = $1`,
         [email]
       );
     } catch (_err2: any) {
       try {
         result = await db.query(
-          "SELECT id, email, password, full_name as name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, created_at, updated_at FROM admins WHERE email = $1",
+          `SELECT id, email, ${adminPasswordCol} as password, full_name as name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, created_at, updated_at FROM admins WHERE email = $1`,
           [email]
         );
       } catch (_err3: any) {
         result = await db.query(
-          "SELECT id, email, password, full_name as name, role, user_type, is_verified, is_locked, locked_reason, created_at, updated_at FROM admins WHERE email = $1",
+          `SELECT id, email, ${adminPasswordCol} as password, full_name as name, role, user_type, is_verified, is_locked, locked_reason, created_at, updated_at FROM admins WHERE email = $1`,
           [email]
         );
       }
@@ -323,18 +352,18 @@ export async function findUserByEmail(email: string): Promise<User | null> {
   // Then try clients table
   try {
     result = await db.query(
-      "SELECT id, email, password, name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, lock_type, created_at, updated_at FROM clients WHERE email = $1",
+      `SELECT id, email, ${clientPasswordCol} as password, name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, lock_type, created_at, updated_at FROM clients WHERE email = $1`,
       [email]
     );
   } catch (err: any) {
     try {
       result = await db.query(
-        "SELECT id, email, password, name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, created_at, updated_at FROM clients WHERE email = $1",
+        `SELECT id, email, ${clientPasswordCol} as password, name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, created_at, updated_at FROM clients WHERE email = $1`,
         [email]
       );
     } catch (_err2: any) {
       result = await db.query(
-        "SELECT id, email, password, name, role, user_type, is_verified, is_locked, locked_reason, created_at, updated_at FROM clients WHERE email = $1",
+        `SELECT id, email, ${clientPasswordCol} as password, name, role, user_type, is_verified, is_locked, locked_reason, created_at, updated_at FROM clients WHERE email = $1`,
         [email]
       );
     }
@@ -348,28 +377,30 @@ export async function findUserByEmail(email: string): Promise<User | null> {
  */
 export async function findUserById(id: string): Promise<User | null> {
   const db = await ensureConnection();
+  const adminPasswordCol = await getPasswordColumn('admins');
+  const clientPasswordCol = await getPasswordColumn('clients');
   // First try admins table
   let result;
   try {
     result = await db.query(
-      "SELECT id, email, password, full_name as name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, lock_type, totp_enabled, totp_secret_encrypted, totp_pending_secret_encrypted, totp_backup_codes_hashes, totp_enrolled_at, created_at, updated_at FROM admins WHERE id = $1",
+      `SELECT id, email, ${adminPasswordCol} as password, full_name as name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, lock_type, totp_enabled, totp_secret_encrypted, totp_pending_secret_encrypted, totp_backup_codes_hashes, totp_enrolled_at, created_at, updated_at FROM admins WHERE id = $1`,
       [id]
     );
   } catch (err: any) {
     try {
       result = await db.query(
-        "SELECT id, email, password, full_name as name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, lock_type, created_at, updated_at FROM admins WHERE id = $1",
+        `SELECT id, email, ${adminPasswordCol} as password, full_name as name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, lock_type, created_at, updated_at FROM admins WHERE id = $1`,
         [id]
       );
     } catch (_err2: any) {
       try {
         result = await db.query(
-          "SELECT id, email, password, full_name as name, role, user_type, is_verified, is_blocked, blocked_reason, created_at, updated_at FROM admins WHERE id = $1",
+          `SELECT id, email, ${adminPasswordCol} as password, full_name as name, role, user_type, is_verified, is_blocked, blocked_reason, created_at, updated_at FROM admins WHERE id = $1`,
           [id]
         );
       } catch (_err3: any) {
         result = await db.query(
-          "SELECT id, email, password, full_name as name, role, user_type, is_verified, created_at, updated_at FROM admins WHERE id = $1",
+          `SELECT id, email, ${adminPasswordCol} as password, full_name as name, role, user_type, is_verified, created_at, updated_at FROM admins WHERE id = $1`,
           [id]
         );
       }
@@ -382,19 +413,19 @@ export async function findUserById(id: string): Promise<User | null> {
   
   // Then try clients table
   try {
-    result = await pool.query(
-      "SELECT id, email, password, name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, lock_type, created_at, updated_at FROM clients WHERE id = $1",
+    result = await db.query(
+      `SELECT id, email, ${clientPasswordCol} as password, name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, lock_type, created_at, updated_at FROM clients WHERE id = $1`,
       [id]
     );
   } catch (err: any) {
     try {
-      result = await pool.query(
-        "SELECT id, email, password, name, role, user_type, is_verified, is_blocked, blocked_reason, created_at, updated_at FROM clients WHERE id = $1",
+      result = await db.query(
+        `SELECT id, email, ${clientPasswordCol} as password, name, role, user_type, is_verified, is_blocked, blocked_reason, created_at, updated_at FROM clients WHERE id = $1`,
         [id]
       );
     } catch (_err2: any) {
-      result = await pool.query(
-        "SELECT id, email, password, name, role, user_type, is_verified, created_at, updated_at FROM clients WHERE id = $1",
+      result = await db.query(
+        `SELECT id, email, ${clientPasswordCol} as password, name, role, user_type, is_verified, created_at, updated_at FROM clients WHERE id = $1`,
         [id]
       );
     }
@@ -413,11 +444,12 @@ export async function createUser(user: {
   role?: string;
   user_type?: string;
 }): Promise<User> {
-  // New users always go to clients table, not staff
-  const result = await pool.query(
-    `INSERT INTO clients (email, password, name, role, user_type, is_verified, created_at, updated_at) 
-     VALUES ($1, $2, $3, $4, $5, false, NOW(), NOW()) 
-     RETURNING id, email, password, name, role, user_type, is_verified, created_at, updated_at`,
+  const db = await ensureConnection();
+  const passwordCol = await getPasswordColumn('clients');
+  const result = await db.query(
+    `INSERT INTO clients (email, ${passwordCol}, name, role, user_type, is_verified, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5, false, NOW(), NOW())
+     RETURNING id, email, ${passwordCol} as password, name, role, user_type, is_verified, created_at, updated_at`,
     [user.email, user.password, user.name, user.role || 'client', user.user_type || 'client']
   );
   return result.rows[0];
@@ -431,13 +463,21 @@ export async function updateUser(
   updates: Partial<User>
 ): Promise<User | null> {
   const db = await ensureConnection();
+  const adminPasswordCol = await getPasswordColumn('admins');
+  const clientPasswordCol = await getPasswordColumn('clients');
+  const adminResult = await db.query('SELECT id FROM admins WHERE id = $1', [id]);
+  const isAdmin = adminResult.rows.length > 0;
+  const passwordCol = isAdmin ? adminPasswordCol : clientPasswordCol;
   const fields: string[] = [];
   const values: any[] = [];
   let paramCount = 1;
 
   Object.entries(updates).forEach(([key, value]) => {
     if (key !== "id" && key !== "created_at") {
-      fields.push(`${key} = $${paramCount}`);
+      const mappedKey = key === 'password'
+        ? passwordCol
+        : (isAdmin && key === 'name' ? 'full_name' : key);
+      fields.push(`${mappedKey} = $${paramCount}`);
       values.push(value);
       paramCount++;
     }
@@ -450,17 +490,16 @@ export async function updateUser(
   values.push(id);
   
   // First check if this is an admin
-  const adminResult = await db.query('SELECT id FROM admins WHERE id = $1', [id]);
-  if (adminResult.rows.length > 0) {
+  if (isAdmin) {
     const result = await db.query(
-      `UPDATE admins SET ${fields.join(", ")} WHERE id = $${paramCount} RETURNING id, email, password, full_name as name, role, user_type, is_verified, created_at, updated_at`,
+      `UPDATE admins SET ${fields.join(", ")} WHERE id = $${paramCount} RETURNING id, email, ${adminPasswordCol} as password, full_name as name, role, user_type, is_verified, created_at, updated_at`,
       values
     );
     return result.rows[0] || null;
   } else {
     // Update client
     const result = await db.query(
-      `UPDATE clients SET ${fields.join(", ")} WHERE id = $${paramCount} RETURNING id, email, password, name, role, user_type, is_verified, created_at, updated_at`,
+      `UPDATE clients SET ${fields.join(", ")} WHERE id = $${paramCount} RETURNING id, email, ${clientPasswordCol} as password, name, role, user_type, is_verified, created_at, updated_at`,
       values
     );
     return result.rows[0] || null;
@@ -500,8 +539,9 @@ export async function createDefaultAdmin(
   const existingAdmin = await findUserByEmail(email);
   if (!existingAdmin) {
     const db = await ensureConnection();
+    const passwordCol = await getPasswordColumn('admins');
     await db.query(
-      `INSERT INTO admins (email, password, full_name, role, user_type, is_verified, created_at, updated_at)
+      `INSERT INTO admins (email, ${passwordCol}, full_name, role, user_type, is_verified, created_at, updated_at)
        VALUES ($1, $2, 'Admin User', 'admin', 'admin', true, NOW(), NOW())`,
       [email, hashedPassword]
     );

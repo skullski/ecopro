@@ -3,6 +3,7 @@ import { ensureConnection } from "../utils/database";
 import { sendBotMessagesForOrder } from "./order-confirmation";
 import { createOrderTelegramLink } from "../utils/telegram";
 import { createConfirmationLink, sendTelegramMessage, replaceTemplateVariables } from "../utils/bot-messaging";
+import { ensureBotSettingsRow } from "../utils/client-provisioning";
 import { z, ZodError } from "zod";
 
 const StoreSlugSchema = z
@@ -722,6 +723,13 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
 
     // Fire-and-forget bot confirmation with confirmation link tied to this order
     if (normalizedPhone) {
+      // Ensure bot_settings exists for this client; many bot codepaths assume it.
+      try {
+        await ensureBotSettingsRow(Number(clientId), { enabled: true });
+      } catch (e) {
+        console.warn('[createPublicStoreOrder] Failed to ensure bot_settings row:', (e as any)?.message || e);
+      }
+
       const orderTotalPrice = Number(result.rows?.[0]?.total_price ?? expectedTotalPrice);
       const productTitle = (await pool.query('SELECT title FROM client_store_products WHERE id = $1', [product_id])).rows?.[0]?.title || 'Product';
 

@@ -3,7 +3,7 @@ import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/i18n";
 import { FloatingShapes } from "@/components/ui/floating-shapes";
-import { UserPlus, Mail, Lock, Sparkles, User, Loader2, ArrowLeft, CheckCircle2, Eye, EyeOff } from "lucide-react";
+import { UserPlus, Mail, Lock, Sparkles, User, Loader2, CheckCircle2, Eye, EyeOff } from "lucide-react";
 
 // Google Icon Component
 function GoogleIcon({ className }: { className?: string }) {
@@ -29,24 +29,19 @@ function GoogleIcon({ className }: { className?: string }) {
   );
 }
 
-type SignupStep = 'form' | 'verify';
-
 export default function Signup() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [step, setStep] = useState<SignupStep>('form');
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [verificationCode, setVerificationCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [googleLoading, setGoogleLoading] = useState(false);
   const [googleEnabled, setGoogleEnabled] = useState(false);
-  const [resendCooldown, setResendCooldown] = useState(0);
 
   // Check for OAuth errors
   useEffect(() => {
@@ -64,13 +59,9 @@ export default function Signup() {
       .catch(() => setGoogleEnabled(false));
   }, []);
 
-  // Resend cooldown timer
-  useEffect(() => {
-    if (resendCooldown > 0) {
-      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [resendCooldown]);
+  function isGmailSignup(value: string) {
+    return value.trim().toLowerCase().endsWith('@gmail.com');
+  }
 
   async function handleGoogleSignup() {
     setGoogleLoading(true);
@@ -89,96 +80,50 @@ export default function Signup() {
     }
   }
 
-  // Step 1: Send verification code
-  async function handleSendCode(e: React.FormEvent) {
+  async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setSuccess("");
     setLoading(true);
 
     try {
-      const res = await fetch('/api/auth/send-verification', {
+      if (!isGmailSignup(email)) {
+        throw new Error('Only @gmail.com email addresses are allowed');
+      }
+
+      const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ email, password, name })
+        body: JSON.stringify({ email, password, name, role: 'client' })
       });
       
       const data = await res.json();
       
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to send verification code');
+        throw new Error(data.error || 'Signup failed');
       }
-      
-      setStep('verify');
-      setSuccess('Verification code sent to your email!');
-      setResendCooldown(60); // 60 seconds cooldown
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to send verification code");
-    } finally {
-      setLoading(false);
-    }
-  }
 
-  // Step 2: Verify code and complete registration
-  async function handleVerifyAndRegister(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
-    setLoading(true);
-
-    try {
-      const res = await fetch('/api/auth/verify-and-register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email, password, name, code: verificationCode })
-      });
-      
-      const data = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(data.error || 'Verification failed');
-      }
-      
       if (data.token) {
         localStorage.setItem('token', data.token);
       }
-      
+
+      if (data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+        if (data.user.role === 'admin' || data.user.user_type === 'admin') {
+          localStorage.setItem('isAdmin', 'true');
+        } else {
+          localStorage.removeItem('isAdmin');
+        }
+      } else {
+        // Safety: ensure we don't keep a stale admin flag
+        localStorage.removeItem('isAdmin');
+      }
+
+      setSuccess('Account created successfully');
       navigate("/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Verification failed");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // Resend verification code
-  async function handleResendCode() {
-    if (resendCooldown > 0) return;
-    
-    setError("");
-    setSuccess("");
-    setLoading(true);
-
-    try {
-      const res = await fetch('/api/auth/send-verification', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email, password, name })
-      });
-      
-      const data = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to resend code');
-      }
-      
-      setSuccess('New verification code sent!');
-      setResendCooldown(60);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to resend code");
+      setError(err instanceof Error ? err.message : "Signup failed");
     } finally {
       setLoading(false);
     }
@@ -217,8 +162,7 @@ export default function Signup() {
           )}
 
           {/* Step 1: Registration Form */}
-          {step === 'form' && (
-            <form onSubmit={handleSendCode} className="space-y-2">
+          <form onSubmit={handleSignup} className="space-y-2">
               {/* Google Sign-Up Button */}
               {googleEnabled && (
                 <>
@@ -278,6 +222,9 @@ export default function Signup() {
                   required
                   disabled={loading}
                 />
+                <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">
+                  Only <span className="font-medium">@gmail.com</span> addresses can sign up right now.
+                </p>
               </div>
               <div>
                 <label className="block text-xs sm:text-sm font-medium mb-1.5 flex items-center gap-1.5">
@@ -319,91 +266,17 @@ export default function Signup() {
                   {loading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Sending code...
+                      Creating account...
                     </>
                   ) : (
                     <>
                       <Mail className="w-4 h-4 mr-2" />
-                      {t("auth.sendCode") || "Send Verification Code"}
+                      {t("signup") || "Sign up"}
                     </>
                   )}
                 </Button>
               </div>
-            </form>
-          )}
-
-          {/* Step 2: Verification Code */}
-          {step === 'verify' && (
-            <form onSubmit={handleVerifyAndRegister} className="space-y-3">
-              <button
-                type="button"
-                onClick={() => { setStep('form'); setError(''); setSuccess(''); }}
-                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Back
-              </button>
-
-              <div className="text-center py-2">
-                <p className="text-sm text-muted-foreground">
-                  Enter the 6-digit code sent to
-                </p>
-                <p className="font-medium text-accent">{email}</p>
-              </div>
-
-              <div>
-                <label className="block text-xs sm:text-sm font-medium mb-1.5 flex items-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5 text-accent" />
-                  Verification Code
-                </label>
-                <input 
-                  value={verificationCode} 
-                  onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))} 
-                  className="w-full rounded-lg border-2 border-accent/20 bg-background px-3 py-2 text-center text-2xl font-mono tracking-widest focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all" 
-                  placeholder="000000"
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={6}
-                  required
-                  disabled={loading}
-                  autoFocus
-                />
-              </div>
-
-              <div className="flex items-center justify-between pt-1">
-                <Button 
-                  type="submit" 
-                  className="w-full bg-gradient-to-r from-accent to-orange-500 hover:from-accent/90 hover:to-orange-500/90 shadow-lg hover:shadow-xl transition-all py-3 sm:py-4 text-sm sm:text-base"
-                  disabled={loading || verificationCode.length !== 6}
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Verifying...
-                    </>
-                  ) : (
-                    <>
-                      <UserPlus className="w-4 h-4 mr-2" />
-                      {t("auth.verifyAndSignup") || "Verify & Create Account"}
-                    </>
-                  )}
-                </Button>
-              </div>
-
-              <div className="text-center">
-                <button
-                  type="button"
-                  onClick={handleResendCode}
-                  disabled={resendCooldown > 0 || loading}
-                  className={`text-sm ${resendCooldown > 0 ? 'text-muted-foreground' : 'text-accent hover:underline'}`}
-                >
-                  {resendCooldown > 0 
-                    ? `Resend code in ${resendCooldown}s` 
-                    : "Didn't receive the code? Resend"}
-                </button>
-              </div>
-            </form>
-          )}
+          </form>
           
           <div className="mt-3 text-center">
             <p className="text-xs sm:text-sm text-muted-foreground">

@@ -1,5 +1,6 @@
 import { randomBytes } from 'crypto';
 import { ensureConnection } from "./database";
+import { ensureBotSettingsRow } from './client-provisioning';
 
 const PLATFORM_FB_PAGE_ACCESS_TOKEN = String(process.env.PLATFORM_FB_PAGE_ACCESS_TOKEN || '').trim();
 
@@ -300,6 +301,14 @@ export async function sendOrderConfirmationMessages(
 ): Promise<void> {
   try {
     const pool = await ensureConnection();
+
+    // Historical issue: some clients never get a bot_settings row unless they open Bot Settings.
+    // Many bot codepaths expect a row to exist, so ensure one here.
+    try {
+      await ensureBotSettingsRow(Number(clientId), { enabled: true });
+    } catch (e) {
+      console.warn('[Bot] Failed to ensure bot_settings row:', (e as any)?.message || e);
+    }
 
     // Stop bot completely if subscription ended or account is payment-locked.
     try {

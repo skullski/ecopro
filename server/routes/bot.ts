@@ -2,6 +2,7 @@ import { RequestHandler } from "express";
 import { pool } from "../utils/database";
 import { registerTelegramWebhook, upsertTelegramWebhookSecret } from "../utils/telegram";
 import { getPublicBaseUrl } from '../utils/public-url';
+import { ensureBotSettingsRow } from '../utils/client-provisioning';
 
 const PLATFORM_FB_PAGE_ID = String(process.env.PLATFORM_FB_PAGE_ID || '').trim();
 const PLATFORM_FB_PAGE_ACCESS_TOKEN = String(process.env.PLATFORM_FB_PAGE_ACCESS_TOKEN || '').trim();
@@ -71,42 +72,56 @@ export const getBotSettings: RequestHandler = async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      // Return default settings with Arabic templates
+      // Older behavior returned in-memory defaults but did not create a DB row.
+      // That breaks scheduling/sending which JOINs bot_settings. Ensure row exists.
       const access = await getClientAccessState(clientId);
-      return res.json({
-        enabled: access.allowBot,
-        provider: 'telegram',
-        whatsappPhoneId: '',
-        // Never expose tokens/secrets to store owners.
-        whatsappToken: '',
-        whatsappTokenConfigured: false,
-        telegramBotToken: '',
-        telegramTokenConfigured: PLATFORM_TELEGRAM_AVAILABLE,
-        telegramBotUsername: '',
-        telegramDelayMinutes: 5,
-        autoExpireHours: 24,
-        viberAuthToken: '',
-        viberSenderName: '',
-        messengerEnabled: false,
-        fbPageId: '',
-        fbPageAccessToken: '',
-        fbPageAccessTokenConfigured: false,
-        messengerDelayMinutes: 5,
-        platformMessengerAvailable: PLATFORM_MESSENGER_AVAILABLE,
-        platformTelegramAvailable: PLATFORM_TELEGRAM_AVAILABLE,
-        usePlatformMessenger: PLATFORM_MESSENGER_AVAILABLE,
-        messengerUsingPlatform: PLATFORM_MESSENGER_AVAILABLE,
-        usePlatformTelegram: PLATFORM_TELEGRAM_AVAILABLE,
-        telegramUsingPlatform: PLATFORM_TELEGRAM_AVAILABLE,
-        // Do not expose platform Page ID to store owners.
-        platformMessengerPageId: '',
-        templateGreeting: `شكراً لطلبك من {storeName}، {customerName}! 🎉\n\n✅ فعّل الإشعارات لتلقي تأكيد الطلب وتحديثات التتبع.`,
-        templateInstantOrder: `🎉 شكراً لك {customerName}!\n\nتم استلام طلبك بنجاح ✅\n\n━━━━━━━━━━━━━━━━\n📦 تفاصيل الطلب\n━━━━━━━━━━━━━━━━\n🔢 رقم الطلب: #{orderId}\n📱 المنتج: {productName}\n💰 السعر: {totalPrice} دج\n📍 الكمية: {quantity}\n\n━━━━━━━━━━━━━━━━\n👤 معلومات التوصيل\n━━━━━━━━━━━━━━━━\n📛 الاسم: {customerName}\n📞 الهاتف: {customerPhone}\n🏠 العنوان: {address}\n\n━━━━━━━━━━━━━━━━\n🚚 حالة الطلب: قيد المعالجة\n━━━━━━━━━━━━━━━━\n\nسنتصل بك قريباً للتأكيد 📞\n\n⭐ من {storeName}`,
-        templatePinInstructions: `📌 نصيحة مهمة:\n\nاضغط مطولاً على الرسالة السابقة واختر "تثبيت" لتتبع طلبك بسهولة!\n\n🔔 تأكد من:\n• تفعيل الإشعارات\n• عدم كتم المحادثة\n• ستتلقى تحديثات حالة الطلب هنا مباشرة`,
-        templateOrderConfirmation: `مرحباً {customerName}! 🌟\n\nشكراً لطلبك من {companyName}!\n\n📦 تفاصيل الطلب:\n• المنتج: {productName}\n• السعر: {totalPrice} دج\n• العنوان: {address}\n\nهل تؤكد الطلب؟ اضغط ✅ للتأكيد أو ❌ للإلغاء.`,
-        templatePayment: `تم تأكيد طلبك #{orderId}. المبلغ المطلوب: {totalPrice} دج.`,
-        templateShipping: `تم شحن طلبك #{orderId}. رقم التتبع: {trackingNumber}.`
-      });
+      try {
+        await ensureBotSettingsRow(Number(clientId), { enabled: access.allowBot });
+      } catch (e) {
+        console.warn('[getBotSettings] Failed to ensure bot_settings row:', (e as any)?.message || e);
+      }
+
+      const refetch = await pool.query(`SELECT * FROM bot_settings WHERE client_id = $1`, [clientId]);
+      if (refetch.rows.length === 0) {
+        // Fallback: preserve old behavior if the DB insert failed for any reason.
+        return res.json({
+          enabled: access.allowBot,
+          provider: 'telegram',
+          whatsappPhoneId: '',
+          // Never expose tokens/secrets to store owners.
+          whatsappToken: '',
+          whatsappTokenConfigured: false,
+          telegramBotToken: '',
+          telegramTokenConfigured: PLATFORM_TELEGRAM_AVAILABLE,
+          telegramBotUsername: '',
+          telegramDelayMinutes: 5,
+          autoExpireHours: 24,
+          viberAuthToken: '',
+          viberSenderName: '',
+          messengerEnabled: false,
+          fbPageId: '',
+          fbPageAccessToken: '',
+          fbPageAccessTokenConfigured: false,
+          messengerDelayMinutes: 5,
+          platformMessengerAvailable: PLATFORM_MESSENGER_AVAILABLE,
+          platformTelegramAvailable: PLATFORM_TELEGRAM_AVAILABLE,
+          usePlatformMessenger: PLATFORM_MESSENGER_AVAILABLE,
+          messengerUsingPlatform: PLATFORM_MESSENGER_AVAILABLE,
+          usePlatformTelegram: PLATFORM_TELEGRAM_AVAILABLE,
+          telegramUsingPlatform: PLATFORM_TELEGRAM_AVAILABLE,
+          // Do not expose platform Page ID to store owners.
+          platformMessengerPageId: '',
+          templateGreeting: `شكراً لطلبك من {storeName}، {customerName}! 🎉\n\n✅ فعّل الإشعارات لتلقي تأكيد الطلب وتحديثات التتبع.`,
+          templateInstantOrder: `🎉 شكراً لك {customerName}!\n\nتم استلام طلبك بنجاح ✅\n\n━━━━━━━━━━━━━━━━\n📦 تفاصيل الطلب\n━━━━━━━━━━━━━━━━\n🔢 رقم الطلب: #{orderId}\n📱 المنتج: {productName}\n💰 السعر: {totalPrice} دج\n📍 الكمية: {quantity}\n\n━━━━━━━━━━━━━━━━\n👤 معلومات التوصيل\n━━━━━━━━━━━━━━━━\n📛 الاسم: {customerName}\n📞 الهاتف: {customerPhone}\n🏠 العنوان: {address}\n\n━━━━━━━━━━━━━━━━\n🚚 حالة الطلب: قيد المعالجة\n━━━━━━━━━━━━━━━━\n\nسنتصل بك قريباً للتأكيد 📞\n\n⭐ من {storeName}`,
+          templatePinInstructions: `📌 نصيحة مهمة:\n\nاضغط مطولاً على الرسالة السابقة واختر "تثبيت" لتتبع طلبك بسهولة!\n\n🔔 تأكد من:\n• تفعيل الإشعارات\n• عدم كتم المحادثة\n• ستتلقى تحديثات حالة الطلب هنا مباشرة`,
+          templateOrderConfirmation: `مرحباً {customerName}! 🌟\n\nشكراً لطلبك من {companyName}!\n\n📦 تفاصيل الطلب:\n• المنتج: {productName}\n• السعر: {totalPrice} دج\n• العنوان: {address}\n\nهل تؤكد الطلب؟ اضغط ✅ للتأكيد أو ❌ للإلغاء.`,
+          templatePayment: `تم تأكيد طلبك #{orderId}. المبلغ المطلوب: {totalPrice} دج.`,
+          templateShipping: `تم شحن طلبك #{orderId}. رقم التتبع: {trackingNumber}.`,
+        });
+      }
+
+      // Continue as normal with a real DB row.
+      (result as any).rows = refetch.rows;
     }
 
     const settings = result.rows[0];

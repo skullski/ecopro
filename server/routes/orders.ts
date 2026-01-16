@@ -6,6 +6,7 @@ import { createOrderTelegramLink } from "../utils/telegram";
 import { replaceTemplateVariables, sendTelegramMessage } from "../utils/bot-messaging";
 import { assessOrderRisk, getHighRiskOrders } from "../utils/fraud-detection";
 import { z } from 'zod';
+import { ensureSystemOrderStatuses } from '../utils/client-provisioning';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -768,7 +769,7 @@ export const getOrderStatuses: RequestHandler = async (req, res) => {
       return;
     }
 
-    const result = await pool.query(
+    let result = await pool.query(
       `SELECT id, name, key, color, icon, sort_order, is_default, is_system, counts_as_revenue 
        FROM order_statuses 
        WHERE client_id = $1 
@@ -776,17 +777,21 @@ export const getOrderStatuses: RequestHandler = async (req, res) => {
       [clientId]
     );
 
-    // If no custom statuses exist, return default statuses
+    // If no statuses exist for this client, create system defaults so the rest of the platform
+    // (dashboards, revenue calculations, status UI) can rely on DB rows.
     if (result.rows.length === 0) {
-      const defaultStatuses = [
-        { id: 'pending', name: 'Pending', key: 'pending', color: '#eab308', icon: '●', sort_order: 0, is_default: true, is_system: true, counts_as_revenue: false },
-        { id: 'confirmed', name: 'Confirmed', key: 'confirmed', color: '#22c55e', icon: '✓', sort_order: 1, is_default: true, is_system: true, counts_as_revenue: false },
-        { id: 'completed', name: 'Completed', key: 'completed', color: '#10b981', icon: '✓', sort_order: 2, is_default: true, is_system: true, counts_as_revenue: true },
-        { id: 'cancelled', name: 'Cancelled', key: 'cancelled', color: '#ef4444', icon: '✕', sort_order: 3, is_default: true, is_system: true, counts_as_revenue: false },
-        { id: 'at_delivery', name: 'At Delivery', key: 'at_delivery', color: '#8b5cf6', icon: '🚚', sort_order: 4, is_default: true, is_system: true, counts_as_revenue: false },
-      ];
-      res.json(defaultStatuses);
-      return;
+      try {
+        await ensureSystemOrderStatuses(Number(clientId));
+        result = await pool.query(
+          `SELECT id, name, key, color, icon, sort_order, is_default, is_system, counts_as_revenue 
+           FROM order_statuses 
+           WHERE client_id = $1 
+           ORDER BY sort_order ASC, id ASC`,
+          [clientId]
+        );
+      } catch (e) {
+        console.warn('[getOrderStatuses] Failed to seed defaults:', (e as any)?.message || e);
+      }
     }
 
     res.json(result.rows);
