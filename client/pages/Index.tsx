@@ -11,60 +11,15 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "@/lib/i18n";
-import { useState, useEffect } from "react";
-
-type PublicPlatformMetrics = {
-  total_orders: number;
-  orders_today: number;
-  orders_last_hour: number;
-  sales_today: number;
-  recent_orders: Array<{ id: number; created_at: string; total_price: number }>;
-  generated_at: string;
-};
-
-function timeAgo(iso: string): string {
-  const dt = new Date(iso).getTime();
-  if (!Number.isFinite(dt)) return '';
-  const diffSec = Math.max(0, Math.floor((Date.now() - dt) / 1000));
-  if (diffSec < 60) return `${diffSec}s ago`;
-  const diffMin = Math.floor(diffSec / 60);
-  if (diffMin < 60) return `${diffMin}m ago`;
-  const diffH = Math.floor(diffMin / 60);
-  if (diffH < 24) return `${diffH}h ago`;
-  const diffD = Math.floor(diffH / 24);
-  return `${diffD}d ago`;
-}
-
-function formatMoney(value: number): string {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return '0';
-  return Math.round(n).toLocaleString();
-}
 
 export default function Index() {
   const { t } = useTranslation();
-  const [metrics, setMetrics] = useState<PublicPlatformMetrics | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const res = await fetch('/api/public/metrics');
-        if (!res.ok) return;
-        const data = (await res.json()) as PublicPlatformMetrics;
-        if (!cancelled) setMetrics(data);
-      } catch {
-        // ignore
-      }
-    };
-
-    load();
-    const id = window.setInterval(load, 30_000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(id);
-    };
-  }, []);
+  // Homepage is public marketing: keep it demo-only (no real platform metrics).
+  const stats = {
+    totalOrders: 1000,
+    salesToday: 500,
+    newOrders: 24,
+  };
   
   return (
     <div className="min-h-screen">
@@ -138,8 +93,8 @@ export default function Index() {
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">{t("home.salesToday")}</p>
-                      <p className="text-2xl font-bold">{formatMoney(metrics?.sales_today ?? 0)}</p>
-                      <p className="text-xs text-gray-400">{metrics ? `${metrics.orders_today.toLocaleString()} orders today` : 'Loading…'}</p>
+                      <p className="text-2xl font-bold">{stats.salesToday}</p>
+                      <p className="text-xs text-gray-400">Demo preview</p>
                     </div>
                   </div>
                   <div className="h-20 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg"></div>
@@ -148,21 +103,22 @@ export default function Index() {
                 {/* Card 2 */}
                 <div className="absolute top-32 left-0 w-72 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 animate-float" style={{animationDelay: '0.5s'}}>
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold">New Orders</h3>
-                    <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 rounded-full text-xs font-medium">+{(metrics?.orders_last_hour ?? 0).toLocaleString()}</span>
+                    <h3 className="font-bold">{t("home.newProducts")}</h3>
+                    <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 rounded-full text-xs font-medium">+{stats.newOrders}</span>
                   </div>
                   <div className="space-y-3">
-                    {(metrics?.recent_orders?.length ? metrics.recent_orders : [null, null, null]).map((o: any, i: number) => (
-                      <div key={o?.id ?? i} className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-100 to-cyan-100 dark:from-indigo-900 dark:to-cyan-900 flex items-center justify-center">
-                          <span className="text-xs font-bold text-indigo-600 dark:text-indigo-300">#{o?.id ?? '—'}</span>
+                    {[
+                      { name: 'Modern', img: '/template-previews/modern.png' },
+                      { name: 'Fashion', img: '/template-previews/fashion.png' },
+                      { name: 'Electronics', img: '/template-previews/electronics.png' },
+                    ].map((p) => (
+                      <div key={p.name} className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600">
+                          <img src={p.img} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
                         </div>
                         <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <div className="text-sm font-medium">{o ? `Order #${o.id}` : 'Loading…'}</div>
-                            <div className="text-xs text-gray-500">{o ? timeAgo(o.created_at) : ''}</div>
-                          </div>
-                          <div className="text-xs text-gray-500">{o ? `${formatMoney(o.total_price)} DA` : ''}</div>
+                          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
+                          <div className="h-2 bg-gray-100 dark:bg-gray-600 rounded w-1/2"></div>
                         </div>
                       </div>
                     ))}
@@ -175,7 +131,7 @@ export default function Index() {
                     <Users className="w-5 h-5 text-purple-600" />
                     <p className="text-sm font-medium">Total Orders</p>
                   </div>
-                  <p className="text-2xl md:text-xl md:text-2xl font-black bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">{(metrics?.total_orders ?? 0).toLocaleString()}</p>
+                  <p className="text-2xl md:text-xl md:text-2xl font-black bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">{stats.totalOrders.toLocaleString()}</p>
                   <p className="text-xs text-gray-500 mt-2">Real-time</p>
                 </div>
               </div>

@@ -22,7 +22,6 @@ import fs from 'fs/promises';
 import { handleDemo } from "./routes/demo";
 import * as authRoutes from "./routes/auth";
 import * as stockRoutes from "./routes/stock";
-import * as publicMetricsRoutes from "./routes/public-metrics";
 import * as clientStoreRoutes from "./routes/client-store";
 import * as productVariantsRoutes from "./routes/product-variants";
 import * as publicStoreRoutes from "./routes/public-store";
@@ -1130,9 +1129,6 @@ export function createServer(options?: { skipDbInit?: boolean }) {
     requireClient,
     stockRoutes.deleteStock
   );
-
-  // Public platform metrics (safe aggregates for marketing/homepage)
-  app.get("/api/public/metrics", apiLimiter, publicMetricsRoutes.getPublicPlatformMetrics);
 
   // Client Store routes (private store for clients)
   app.get(
