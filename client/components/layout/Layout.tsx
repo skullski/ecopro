@@ -8,27 +8,14 @@ export default function Layout({ children }: PropsWithChildren) {
   const isStorefrontPage = location.pathname.startsWith('/store/');
   const isDashboardPage = location.pathname.startsWith('/dashboard');
   const isStaffPage = location.pathname.startsWith('/staff/');
+  const isPlatformAdmin = location.pathname.startsWith('/platform-admin');
   const isAdminChat = location.pathname === '/platform-admin/chats' || location.pathname === '/platform-admin/chat';
   const isChatPage = location.pathname === '/chat';
   const isFullScreenChat = isAdminChat || isChatPage;
 
-  // Storefront pages have their own layout completely
-  if (isStorefrontPage) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <main className="flex-1">{children}</main>
-      </div>
-    );
-  }
-
-  // Dashboard and staff pages: keep header but NO footer (they have their own layout)
-  if (isDashboardPage || isStaffPage) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <main className="flex-1">{children}</main>
-      </div>
-    );
+  // Dashboard, staff, and storefront pages have their own complete layout - just render children
+  if (isStorefrontPage || isDashboardPage || isStaffPage || isPlatformAdmin) {
+    return <>{children}</>;
   }
 
   return (

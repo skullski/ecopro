@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useStaffPermissions } from "@/contexts/StaffPermissionContext";
 import { PermissionGate } from "@/components/PermissionGate";
+import Header from "@/components/layout/Header";
 
 export default function AdminLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -46,21 +47,26 @@ export default function AdminLayout() {
 
   return (
     <div className={cn(
-      "flex min-h-screen",
+      "flex flex-col min-h-screen",
       isDark ? "bg-black" : "bg-gradient-to-br from-slate-100 via-blue-50 to-cyan-50"
     )}>
-      <EnhancedSidebar onCollapseChange={setSidebarCollapsed} />
-      {/* Adjust margin based on sidebar state and language direction - only on lg screens */}
-      <main 
-        className={cn(
-          "flex-1 overflow-auto transition-all duration-300",
-          isDark ? "bg-black" : "bg-gradient-to-br from-slate-100 via-blue-50 to-cyan-50",
-          // Add left/right margin on large screens to account for fixed sidebar
-          isRTL 
-            ? (sidebarCollapsed ? 'lg:mr-20' : 'lg:mr-64')
-            : (sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64')
-        )}
-      >
+      {/* Platform Header */}
+      <Header />
+      
+      {/* Main content area with sidebar */}
+      <div className="flex flex-1">
+        <EnhancedSidebar onCollapseChange={setSidebarCollapsed} />
+        {/* Adjust margin based on sidebar state and language direction - only on lg screens */}
+        <main 
+          className={cn(
+            "flex-1 overflow-auto transition-all duration-300",
+            isDark ? "bg-black" : "bg-gradient-to-br from-slate-100 via-blue-50 to-cyan-50",
+            // Add left/right margin on large screens to account for fixed sidebar
+            isRTL 
+              ? (sidebarCollapsed ? 'lg:mr-20' : 'lg:mr-64')
+              : (sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64')
+          )}
+        >
         {/* Staff indicator banner */}
         {isStaff && staffUser && (
           <div className="bg-blue-600 text-white px-4 py-2 flex items-center justify-between">
@@ -87,7 +93,8 @@ export default function AdminLayout() {
             <Outlet />
           </PermissionGate>
         </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }
