@@ -3,7 +3,7 @@ import { useTranslation } from "@/lib/i18n";
 export default function Footer() {
   const { t } = useTranslation();
   const year = new Date().getFullYear();
-  const text = (t("footer.copyright") as string).replace("{year}", String(year));
+  const text = t("footer.copyright", { year });
 
   return (
     <footer className="border-t bg-background/80 backdrop-blur-sm">

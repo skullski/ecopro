@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "@/lib/i18n";
+import { safeJsonParse } from "@/utils/safeJson";
 
 export default function CallsAdmin(){
   const { t } = useTranslation();
@@ -8,13 +9,13 @@ export default function CallsAdmin(){
   const [product, setProduct] = useState('');
 
   useEffect(()=>{
-    setCalls(JSON.parse(localStorage.getItem('call_queue')||'[]'));
+    setCalls(safeJsonParse<any[]>(localStorage.getItem('call_queue'), []));
   },[]);
 
   function queueCall(){
     const id = Date.now().toString();
     const entry = { id, customer, product, status: 'scheduled', createdAt: Date.now() };
-    const all = JSON.parse(localStorage.getItem('call_queue')||'[]');
+    const all = safeJsonParse<any[]>(localStorage.getItem('call_queue'), []);
     all.push(entry);
     localStorage.setItem('call_queue', JSON.stringify(all));
     setCalls(all);
@@ -24,14 +25,14 @@ export default function CallsAdmin(){
   function simulateCall(id:string){
     const outcome = prompt('Enter outcome: confirmed / cancelled / followup', 'confirmed');
     if (!outcome) return;
-    const all = JSON.parse(localStorage.getItem('call_queue')||'[]');
+    const all = safeJsonParse<any[]>(localStorage.getItem('call_queue'), []);
     const next = all.map((c:any)=> c.id===id ? {...c, status: outcome, answeredAt: Date.now()} : c);
     localStorage.setItem('call_queue', JSON.stringify(next));
     setCalls(next);
   }
 
   function remove(id:string){
-    const all = JSON.parse(localStorage.getItem('call_queue')||'[]');
+    const all = safeJsonParse<any[]>(localStorage.getItem('call_queue'), []);
     const next = all.filter((c:any)=>c.id!==id);
     localStorage.setItem('call_queue', JSON.stringify(next));
     setCalls(next);

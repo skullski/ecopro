@@ -85,6 +85,7 @@ import { PermissionProvider } from "@/context/PermissionContext";
 import { StaffPermissionProvider } from "@/contexts/StaffPermissionContext";
 import { initSecurityProbes } from "@/lib/securityProbes";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { safeJsonParse } from "@/utils/safeJson";
 
 import { NotificationProvider } from "./contexts/NotificationContext";
 
@@ -308,13 +309,10 @@ function GuardPlatformAuthPages({ children }: { children: JSX.Element }) {
 function RequireAdmin({ children }: { children: JSX.Element }) {
   const userStr = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
   if (!userStr) return <Navigate to="/platform-admin/login" replace />;
-  try {
-    const user = JSON.parse(userStr);
-    if (user?.role === 'admin') return children;
-    return <NotFound />;
-  } catch {
-    return <Navigate to="/platform-admin/login" replace />;
-  }
+  const user = safeJsonParse<any>(userStr, null);
+  if (user?.role === 'admin') return children;
+  if (user == null) return <Navigate to="/platform-admin/login" replace />;
+  return <NotFound />;
 }
 
 // Loading spinner for lazy-loaded pages

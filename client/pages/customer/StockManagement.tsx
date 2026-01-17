@@ -44,15 +44,15 @@ import { useTranslation } from '@/lib/i18n';
 interface StockItem {
   id: number;
   name: string;
-  sku?: string;
   description?: string;
   category?: string;
+  sizes?: string[];
+  colors?: string[];
+  shipping_mode?: 'delivery_pricing' | 'flat' | 'free';
+  shipping_flat_fee?: number | null;
   quantity: number;
   unit_price?: number;
   reorder_level: number;
-  location?: string;
-  supplier_name?: string;
-  supplier_contact?: string;
   status: 'active' | 'discontinued' | 'out_of_stock';
   notes?: string;
   is_low_stock?: boolean;
@@ -91,7 +91,6 @@ export default function StockManagement() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showLowStock, setShowLowStock] = useState(false);
   
   // Modals
@@ -109,6 +108,9 @@ export default function StockManagement() {
   // Form state
   const [formData, setFormData] = useState<Partial<StockItem>>({});
   const [uploading, setUploading] = useState(false);
+  const [activeFormSection, setActiveFormSection] = useState<'product' | 'sizes' | 'colors' | 'price' | 'shipping' | 'images' | 'notes'>('product');
+  const [sizeDraft, setSizeDraft] = useState('');
+  const [colorDraft, setColorDraft] = useState('');
   const [adjustData, setAdjustData] = useState({
     adjustment: 0,
     reason: 'adjustment',
@@ -132,7 +134,7 @@ export default function StockManagement() {
 
   useEffect(() => {
     filterStock();
-  }, [stock, searchQuery, categoryFilter, statusFilter, showLowStock]);
+  }, [stock, searchQuery, categoryFilter, showLowStock]);
 
   useEffect(() => {
     // Calculate stats
@@ -242,7 +244,6 @@ export default function StockManagement() {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(item =>
         item.name.toLowerCase().includes(query) ||
-        item.sku?.toLowerCase().includes(query) ||
         item.description?.toLowerCase().includes(query)
       );
     }
@@ -250,11 +251,6 @@ export default function StockManagement() {
     // Category filter
     if (categoryFilter !== 'all') {
       filtered = filtered.filter(item => item.category === categoryFilter);
-    }
-
-    // Status filter
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(item => item.status === statusFilter);
     }
 
     // Low stock filter
@@ -265,98 +261,99 @@ export default function StockManagement() {
     setFilteredStock(filtered);
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const uploadSingleImage = async (file: File): Promise<string> => {
     // Validate file size (2MB max)
     if (file.size > 2 * 1024 * 1024) {
-      alert('Image must be less than 2MB');
+      throw new Error('Image must be less than 2MB');
+    }
+    if (!file.type.startsWith('image/')) {
+      throw new Error('Please select an image file');
+    }
+
+    const uploadFormData = new FormData();
+    uploadFormData.append('image', file);
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      body: uploadFormData,
+    });
+    const responseText = await res.text();
+    if (!res.ok) {
+      try {
+        const error = JSON.parse(responseText);
+        throw new Error(error.error || 'Upload failed');
+      } catch {
+        throw new Error(`Upload failed: ${res.statusText}`);
+      }
+    }
+    if (!responseText) throw new Error('Upload succeeded but server returned empty response');
+    const data = JSON.parse(responseText);
+    return data.url;
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const existing = Array.isArray(formData.images) ? formData.images : [];
+    const remaining = Math.max(0, 10 - existing.length);
+    if (remaining <= 0) {
+      alert('You can upload up to 10 images');
       e.target.value = '';
       return;
     }
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
-      e.target.value = '';
-      return;
-    }
+    const toUpload = files.slice(0, remaining);
 
     setUploading(true);
     try {
-      const uploadFormData = new FormData();
-      uploadFormData.append('image', file);
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: uploadFormData
-      });
-
-      // Get response text first
-      const responseText = await res.text();
-
-      if (!res.ok) {
-        try {
-          const error = JSON.parse(responseText);
-          alert(`Upload failed: ${error.error || 'Unknown error'}`);
-        } catch {
-          alert(`Upload failed: ${res.statusText} - ${responseText}`);
-        }
-        e.target.value = '';
-        return;
+      const uploadedUrls: string[] = [];
+      for (const file of toUpload) {
+        const url = await uploadSingleImage(file);
+        uploadedUrls.push(url);
       }
 
-      // Parse JSON only if we have content
-      if (responseText) {
+      const nextImages = [...existing, ...uploadedUrls].slice(0, 10);
+      setFormData(prev => ({ ...prev, images: nextImages }));
+
+      if (selectedItem?.id) {
         try {
-          const data = JSON.parse(responseText);
-          // Just use the relative URL - don't add origin
-          const imageUrl = data.url;
-          setFormData(prev => { 
-            const updated = { ...prev, images: [imageUrl] };
-            return updated;
+          const updateRes = await fetch(`/api/client/stock/${selectedItem.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ images: nextImages }),
           });
-          
-          // If editing an existing item, auto-save the image immediately
-          if (selectedItem?.id) {
-            try {
-              const updateRes = await fetch(`/api/client/stock/${selectedItem.id}`, {
-                method: 'PUT',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  images: [imageUrl]
-                })
-              });
-
-              if (updateRes.ok) {
-                await loadStock();
-              } else {
-                console.warn('[handleImageUpload] Failed to auto-save image');
-              }
-            } catch (autoSaveErr) {
-              console.warn('[handleImageUpload] Auto-save error:', autoSaveErr);
-            }
-          }
-          
-          e.target.value = '';
-          alert('Image uploaded successfully!');
-        } catch (parseErr) {
-          console.error('Failed to parse response:', parseErr);
-          alert('Upload succeeded but failed to parse response');
-          e.target.value = '';
+          if (updateRes.ok) await loadStock();
+        } catch (autoSaveErr) {
+          console.warn('[handleImageUpload] Auto-save error:', autoSaveErr);
         }
-      } else {
-        alert('Upload succeeded but server returned empty response');
-        e.target.value = '';
       }
+
+      alert(uploadedUrls.length > 1 ? 'Images uploaded successfully!' : 'Image uploaded successfully!');
     } catch (error) {
       console.error('Upload error:', error);
       alert(`Upload error: ${error instanceof Error ? error.message : 'Failed to upload image'}`);
-      e.target.value = '';
     } finally {
       setUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const removeImageAt = async (idx: number) => {
+    const existing = Array.isArray(formData.images) ? formData.images : [];
+    const nextImages = existing.filter((_, i) => i !== idx);
+    setFormData(prev => ({ ...prev, images: nextImages }));
+
+    if (selectedItem?.id) {
+      try {
+        const updateRes = await fetch(`/api/client/stock/${selectedItem.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ images: nextImages }),
+        });
+        if (updateRes.ok) await loadStock();
+      } catch (autoSaveErr) {
+        console.warn('[removeImageAt] Auto-save error:', autoSaveErr);
+      }
     }
   };
 
@@ -490,7 +487,17 @@ export default function StockManagement() {
 
   const openEditModal = (item: StockItem) => {
     setSelectedItem(item);
-    setFormData(item);
+    setFormData({
+      ...item,
+      sizes: Array.isArray((item as any).sizes) ? (item as any).sizes : [],
+      colors: Array.isArray((item as any).colors) ? (item as any).colors : [],
+      images: Array.isArray((item as any).images) ? (item as any).images : [],
+      shipping_mode: ((item as any).shipping_mode as any) || 'delivery_pricing',
+      shipping_flat_fee: (item as any).shipping_flat_fee ?? null,
+    });
+    setActiveFormSection('product');
+    setSizeDraft('');
+    setColorDraft('');
     setShowEditModal(true);
   };
 
@@ -512,15 +519,12 @@ export default function StockManagement() {
   };
 
   const exportToCSV = () => {
-    const headers = ['Name', 'SKU', 'Category', 'Quantity', 'Unit Price', 'Location', 'Status'];
+    const headers = ['Name', 'Category', 'Quantity', 'Unit Price'];
     const rows = filteredStock.map(item => [
       item.name,
-      item.sku || '',
       item.category || '',
       item.quantity,
       item.unit_price || 0,
-      item.location || '',
-      item.status
     ]);
 
     const csvContent = [
@@ -574,7 +578,23 @@ export default function StockManagement() {
             </Button>
             <Button 
               onClick={() => {
-                setFormData({});
+                setFormData({
+                  name: '',
+                  description: '',
+                  category: '',
+                  sizes: [],
+                  colors: [],
+                  quantity: 0,
+                  unit_price: undefined,
+                  reorder_level: 10,
+                  shipping_mode: 'delivery_pricing',
+                  shipping_flat_fee: null,
+                  images: [],
+                  notes: '',
+                });
+                setActiveFormSection('product');
+                setSizeDraft('');
+                setColorDraft('');
                 setShowAddModal(true);
               }}
               className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all gap-1 text-base font-bold py-2 px-4 h-10"
@@ -665,18 +685,6 @@ export default function StockManagement() {
               </SelectContent>
             </Select>
 
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full md:w-[140px] border-primary/30 focus:border-primary/60 h-9 text-base font-semibold">
-                <SelectValue placeholder={t('stock.status')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('stock.allStatuses')}</SelectItem>
-                <SelectItem value="active">{t('stock.active')}</SelectItem>
-                <SelectItem value="out_of_stock">{t('stock.outStock')}</SelectItem>
-                <SelectItem value="discontinued">{t('stock.discontinued')}</SelectItem>
-              </SelectContent>
-            </Select>
-
             <Button
               variant={showLowStock ? 'default' : 'outline'}
               onClick={() => setShowLowStock(!showLowStock)}
@@ -705,22 +713,19 @@ export default function StockManagement() {
               <thead className="bg-gradient-to-r from-primary/15 to-purple-600/15 dark:from-primary/10 dark:to-purple-600/10 border-b border-primary/20">
                 <tr>
                   <th className="text-left p-2 font-bold text-primary dark:text-primary/90 text-sm whitespace-nowrap w-[180px]">{t('stock.product')}</th>
-                  <th className="text-center p-2 font-bold text-primary dark:text-primary/90 text-sm whitespace-nowrap w-[60px]">{t('stock.sku')}</th>
                   <th className="text-center p-2 font-bold text-primary dark:text-primary/90 text-sm whitespace-nowrap w-[80px]">{t('stock.category')}</th>
                   <th className="text-center p-2 font-bold text-primary dark:text-primary/90 text-sm whitespace-nowrap w-[70px]">{t('stock.qty')}</th>
                   <th className="text-right p-2 font-bold text-primary dark:text-primary/90 text-sm whitespace-nowrap w-[70px]">{t('stock.price')}</th>
-                  <th className="text-center p-2 font-bold text-primary dark:text-primary/90 text-sm whitespace-nowrap w-[70px]">{t('stock.location')}</th>
-                  <th className="text-center p-2 font-bold text-primary dark:text-primary/90 text-sm whitespace-nowrap w-[50px]">{t('stock.status')}</th>
                   <th className="text-right p-2 font-bold text-primary dark:text-primary/90 text-sm whitespace-nowrap w-[140px]">{t('stock.actions')}</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredStock.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="text-center py-4 md:py-6 text-muted-foreground">
+                    <td colSpan={5} className="text-center py-4 md:py-6 text-muted-foreground">
                       <Package className="w-6 h-6 mx-auto opacity-50 mb-2" />
                       <p className="text-base font-semibold">
-                        {searchQuery || categoryFilter !== 'all' || statusFilter !== 'all'
+                        {searchQuery || categoryFilter !== 'all'
                           ? t('stock.noProductsMatch')
                           : t('stock.noStockItems')}
                       </p>
@@ -755,7 +760,6 @@ export default function StockManagement() {
                           </div>
                         </div>
                       </td>
-                      <td className="p-2 text-center text-muted-foreground text-xs font-mono">{item.sku || '-'}</td>
                       <td className="p-2 text-center">
                         {item.category && (
                           <Badge variant="outline" className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30 text-[10px] py-0 px-1">{item.category}</Badge>
@@ -769,12 +773,6 @@ export default function StockManagement() {
                       </td>
                       <td className="p-2 text-right font-medium text-sm">
                         {item.unit_price ? Math.round(Number(item.unit_price)) : '-'}
-                      </td>
-                      <td className="p-2 text-center text-muted-foreground text-xs">{item.location || '-'}</td>
-                      <td className="p-2 text-center">
-                        <span className="text-sm">
-                          {item.status === 'active' ? '✅' : item.status === 'out_of_stock' ? '❌' : '⏸️'}
-                        </span>
                       </td>
                       <td className="p-2 md:p-3 sticky right-0 bg-background dark:bg-slate-900">
                         <div className="flex justify-end gap-1">
@@ -832,6 +830,9 @@ export default function StockManagement() {
           setShowEditModal(false);
           setFormData({});
           setSelectedItem(null);
+          setActiveFormSection('product');
+          setSizeDraft('');
+          setColorDraft('');
         }
       }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-background via-background to-primary/5 dark:from-slate-950 dark:to-slate-900/30 p-3 md:p-4">
@@ -845,40 +846,49 @@ export default function StockManagement() {
           </DialogHeader>
 
           <div className="grid gap-2 md:gap-3 py-2 md:py-3">
-            <div className="space-y-2 bg-primary/5 dark:bg-slate-800/30 p-2 md:p-3 rounded border border-primary/20">
-              <h3 className="text-lg font-bold text-primary flex items-center gap-2">
-                {t('stock.basicInfo')}
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
-                <div className="space-y-1">
-                  <Label htmlFor="name" className="text-base font-bold">{t('stock.productName')}</Label>
-                  <Input
-                    id="name"
-                    value={formData.name || ''}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder={t('stock.productName')}
-                    className="border-primary/30 focus:border-primary/60 transition-colors h-9 text-base"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <Label htmlFor="sku" className="text-base font-bold">{t('stock.sku')}</Label>
-                  <Input
-                    id="sku"
-                    value={formData.sku || ''}
-                    onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                    placeholder={t('stock.sku')}
-                    className="border-primary/30 focus:border-primary/60 transition-colors h-9 text-base"
-                  />
-                </div>
-              </div>
+            <div className="flex flex-wrap gap-2">
+              {(
+                [
+                  { key: 'product', label: 'Product' },
+                  { key: 'sizes', label: 'Sizes' },
+                  { key: 'colors', label: 'Colors' },
+                  { key: 'price', label: 'Price' },
+                  { key: 'shipping', label: 'Shipping' },
+                  { key: 'images', label: 'Images' },
+                  { key: 'notes', label: 'Notes' },
+                ] as const
+              ).map((sec) => (
+                <Button
+                  key={sec.key}
+                  type="button"
+                  variant={activeFormSection === sec.key ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setActiveFormSection(sec.key)}
+                  className={activeFormSection === sec.key ? 'bg-gradient-to-r from-primary to-purple-600 text-white' : 'border-primary/30 hover:bg-primary/10'}
+                >
+                  {sec.label}
+                </Button>
+              ))}
             </div>
 
-            <div className="space-y-2 bg-blue-500/5 dark:bg-blue-900/10 p-2 md:p-3 rounded border border-blue-500/20">
-              <h3 className="text-lg font-bold text-blue-600 dark:text-blue-400 flex items-center gap-2">
-                {t('stock.descriptionDetails')}
-              </h3>
-              <div className="space-y-2">
+            {activeFormSection === 'product' && (
+              <div className="space-y-2 bg-primary/5 dark:bg-slate-800/30 p-2 md:p-3 rounded border border-primary/20">
+                <h3 className="text-lg font-bold text-primary flex items-center gap-2">
+                  {t('stock.basicInfo')}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
+                  <div className="space-y-1 md:col-span-2">
+                    <Label htmlFor="name" className="text-base font-bold">{t('stock.productName')}</Label>
+                    <Input
+                      id="name"
+                      value={formData.name || ''}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder={t('stock.productName')}
+                      className="border-primary/30 focus:border-primary/60 transition-colors h-9 text-base"
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-1">
                   <Label htmlFor="description" className="text-base font-bold">{t('stock.description')}</Label>
                   <Textarea
@@ -887,285 +897,385 @@ export default function StockManagement() {
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     placeholder={t('stock.description')}
                     rows={3}
-                    className="border-blue-500/30 focus:border-blue-500/60 transition-colors resize-none text-base"
+                    className="border-primary/30 focus:border-primary/60 transition-colors resize-none text-base"
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
-                  <div className="space-y-1">
-                    <Label htmlFor="category" className="text-base font-bold flex items-center gap-2">
-                      <Tag className="w-4 h-4" /> {t('stock.category')}
-                    </Label>
-                    <Popover open={categoryPopoverOpen} onOpenChange={setCategoryPopoverOpen}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          className="w-full justify-between border-blue-500/30 hover:border-blue-500/60 h-9 text-base font-normal"
-                        >
-                          {formData.category || t('stock.selectCategory')}
-                          <Tag className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[280px] p-0" align="start">
-                        <div className="p-2 border-b">
-                          <div className="flex gap-2">
-                            <Input
-                              placeholder={t('stock.newCategoryName')}
-                              value={newCategoryName}
-                              onChange={(e) => setNewCategoryName(e.target.value)}
-                              className="h-8 text-sm"
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault();
-                                  createCategory();
-                                }
-                              }}
-                            />
-                            <Button 
-                              size="sm" 
-                              onClick={createCategory}
-                              disabled={!newCategoryName.trim() || creatingCategory}
-                              className="h-8 px-2"
-                            >
-                              <Plus className="w-4 h-4" />
-                            </Button>
-                          </div>
+                <div className="space-y-1">
+                  <Label htmlFor="category" className="text-base font-bold flex items-center gap-2">
+                    <Tag className="w-4 h-4" /> {t('stock.category')}
+                  </Label>
+                  <Popover open={categoryPopoverOpen} onOpenChange={setCategoryPopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className="w-full justify-between border-primary/30 hover:border-primary/60 h-9 text-base font-normal"
+                      >
+                        {formData.category || t('stock.selectCategory')}
+                        <Tag className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[280px] p-0" align="start">
+                      <div className="p-2 border-b">
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder={t('stock.newCategoryName')}
+                            value={newCategoryName}
+                            onChange={(e) => setNewCategoryName(e.target.value)}
+                            className="h-8 text-sm"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                createCategory();
+                              }
+                            }}
+                          />
+                          <Button
+                            size="sm"
+                            onClick={createCategory}
+                            disabled={!newCategoryName.trim() || creatingCategory}
+                            className="h-8 px-2"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </Button>
                         </div>
-                        <div className="max-h-[200px] overflow-y-auto p-1">
-                          {allCategories.length === 0 && categories.length === 0 ? (
-                            <p className="text-sm text-muted-foreground p-2 text-center">
-                              {t('stock.noCategories')}
-                            </p>
-                          ) : (
-                            <>
-                              {/* Show from allCategories first if available */}
-                              {allCategories.map((cat) => (
+                      </div>
+                      <div className="max-h-[200px] overflow-y-auto p-1">
+                        {allCategories.length === 0 && categories.length === 0 ? (
+                          <p className="text-sm text-muted-foreground p-2 text-center">
+                            {t('stock.noCategories')}
+                          </p>
+                        ) : (
+                          <>
+                            {allCategories.map((cat) => (
+                              <div
+                                key={cat.id}
+                                className={`flex items-center justify-between p-2 rounded cursor-pointer hover:bg-primary/10 ${
+                                  formData.category === cat.name ? 'bg-primary/20' : ''
+                                }`}
+                                onClick={() => {
+                                  setFormData({ ...formData, category: cat.name });
+                                  setCategoryPopoverOpen(false);
+                                }}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <span>{cat.icon}</span>
+                                  <span className="text-sm font-medium">{cat.name}</span>
+                                  <Badge variant="secondary" className="text-xs">
+                                    {cat.product_count}
+                                  </Badge>
+                                </div>
+                                {formData.category === cat.name && (
+                                  <Check className="w-4 h-4 text-primary" />
+                                )}
+                              </div>
+                            ))}
+                            {categories
+                              .filter(c => !allCategories.some(ac => ac.name === c))
+                              .map((cat) => (
                                 <div
-                                  key={cat.id}
+                                  key={cat}
                                   className={`flex items-center justify-between p-2 rounded cursor-pointer hover:bg-primary/10 ${
-                                    formData.category === cat.name ? 'bg-primary/20' : ''
+                                    formData.category === cat ? 'bg-primary/20' : ''
                                   }`}
                                   onClick={() => {
-                                    setFormData({ ...formData, category: cat.name });
+                                    setFormData({ ...formData, category: cat });
                                     setCategoryPopoverOpen(false);
                                   }}
                                 >
                                   <div className="flex items-center gap-2">
-                                    <span>{cat.icon}</span>
-                                    <span className="text-sm font-medium">{cat.name}</span>
-                                    <Badge variant="secondary" className="text-xs">
-                                      {cat.product_count}
-                                    </Badge>
+                                    <span>📦</span>
+                                    <span className="text-sm font-medium">{cat}</span>
                                   </div>
-                                  {formData.category === cat.name && (
+                                  {formData.category === cat && (
                                     <Check className="w-4 h-4 text-primary" />
                                   )}
                                 </div>
                               ))}
-                              {/* Show categories from products not in allCategories */}
-                              {categories
-                                .filter(c => !allCategories.some(ac => ac.name === c))
-                                .map((cat) => (
-                                  <div
-                                    key={cat}
-                                    className={`flex items-center justify-between p-2 rounded cursor-pointer hover:bg-primary/10 ${
-                                      formData.category === cat ? 'bg-primary/20' : ''
-                                    }`}
-                                    onClick={() => {
-                                      setFormData({ ...formData, category: cat });
-                                      setCategoryPopoverOpen(false);
-                                    }}
-                                  >
-                                    <div className="flex items-center gap-2">
-                                      <span>📦</span>
-                                      <span className="text-sm font-medium">{cat}</span>
-                                    </div>
-                                    {formData.category === cat && (
-                                      <Check className="w-4 h-4 text-primary" />
-                                    )}
-                                  </div>
-                                ))}
-                            </>
-                          )}
-                        </div>
-                        {formData.category && (
-                          <div className="border-t p-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="w-full text-muted-foreground"
-                              onClick={() => {
-                                setFormData({ ...formData, category: '' });
-                                setCategoryPopoverOpen(false);
-                              }}
-                            >
-                              <X className="w-4 h-4 mr-2" /> {t('stock.clearCategory')}
-                            </Button>
-                          </div>
+                          </>
                         )}
-                      </PopoverContent>
-                    </Popover>
+                      </div>
+                      {formData.category && (
+                        <div className="border-t p-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full text-muted-foreground"
+                            onClick={() => {
+                              setFormData({ ...formData, category: '' });
+                              setCategoryPopoverOpen(false);
+                            }}
+                          >
+                            <X className="w-4 h-4 mr-2" /> {t('stock.clearCategory')}
+                          </Button>
+                        </div>
+                      )}
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+            )}
+
+            {activeFormSection === 'sizes' && (
+              <div className="space-y-2 bg-blue-500/5 dark:bg-blue-900/10 p-2 md:p-3 rounded border border-blue-500/20">
+                <h3 className="text-lg font-bold text-blue-600 dark:text-blue-400">Sizes</h3>
+                <div className="flex gap-2">
+                  <Input
+                    value={sizeDraft}
+                    onChange={(e) => setSizeDraft(e.target.value)}
+                    placeholder="e.g. S, M, L"
+                    className="h-9"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const next = sizeDraft.trim();
+                        if (!next) return;
+                        const existing = Array.isArray(formData.sizes) ? formData.sizes : [];
+                        if (existing.includes(next)) return;
+                        setFormData({ ...formData, sizes: [...existing, next] });
+                        setSizeDraft('');
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      const next = sizeDraft.trim();
+                      if (!next) return;
+                      const existing = Array.isArray(formData.sizes) ? formData.sizes : [];
+                      if (existing.includes(next)) return;
+                      setFormData({ ...formData, sizes: [...existing, next] });
+                      setSizeDraft('');
+                    }}
+                    className="h-9"
+                  >
+                    Add
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {(Array.isArray(formData.sizes) ? formData.sizes : []).map((s) => (
+                    <Badge key={s} variant="secondary" className="gap-1">
+                      {s}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const existing = Array.isArray(formData.sizes) ? formData.sizes : [];
+                          setFormData({ ...formData, sizes: existing.filter(v => v !== s) });
+                        }}
+                        className="ml-1"
+                        aria-label="Remove size"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                  {(Array.isArray(formData.sizes) ? formData.sizes : []).length === 0 && (
+                    <p className="text-sm text-muted-foreground">No sizes added.</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {activeFormSection === 'colors' && (
+              <div className="space-y-2 bg-emerald-500/5 dark:bg-emerald-900/10 p-2 md:p-3 rounded border border-emerald-500/20">
+                <h3 className="text-lg font-bold text-emerald-600 dark:text-emerald-400">Colors</h3>
+                <div className="flex gap-2">
+                  <Input
+                    value={colorDraft}
+                    onChange={(e) => setColorDraft(e.target.value)}
+                    placeholder="e.g. Red, Blue"
+                    className="h-9"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const next = colorDraft.trim();
+                        if (!next) return;
+                        const existing = Array.isArray(formData.colors) ? formData.colors : [];
+                        if (existing.includes(next)) return;
+                        setFormData({ ...formData, colors: [...existing, next] });
+                        setColorDraft('');
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      const next = colorDraft.trim();
+                      if (!next) return;
+                      const existing = Array.isArray(formData.colors) ? formData.colors : [];
+                      if (existing.includes(next)) return;
+                      setFormData({ ...formData, colors: [...existing, next] });
+                      setColorDraft('');
+                    }}
+                    className="h-9"
+                  >
+                    Add
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {(Array.isArray(formData.colors) ? formData.colors : []).map((c) => (
+                    <Badge key={c} variant="secondary" className="gap-1">
+                      {c}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const existing = Array.isArray(formData.colors) ? formData.colors : [];
+                          setFormData({ ...formData, colors: existing.filter(v => v !== c) });
+                        }}
+                        className="ml-1"
+                        aria-label="Remove color"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                  {(Array.isArray(formData.colors) ? formData.colors : []).length === 0 && (
+                    <p className="text-sm text-muted-foreground">No colors added.</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {activeFormSection === 'price' && (
+              <div className="space-y-2 bg-amber-500/5 dark:bg-amber-900/10 p-2 md:p-3 rounded border border-amber-500/20">
+                <h3 className="text-lg font-bold text-amber-600 dark:text-amber-400">Price & Inventory</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="quantity" className="text-base font-bold">{t('stock.quantity')}</Label>
+                    <Input
+                      id="quantity"
+                      type="number"
+                      value={formData.quantity || 0}
+                      onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 0 })}
+                      min="0"
+                      className="border-amber-500/30 focus:border-amber-500/60 transition-colors h-9 text-base"
+                    />
                   </div>
 
                   <div className="space-y-1">
-                    <Label htmlFor="location" className="text-base font-bold">📍 {t('stock.location')}</Label>
+                    <Label htmlFor="unit_price" className="text-base font-bold">{t('stock.unitPrice')}</Label>
                     <Input
-                      id="location"
-                      value={formData.location || ''}
-                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                      placeholder={t('stock.location')}
-                      className="border-blue-500/30 focus:border-blue-500/60 transition-colors h-9 text-base"
+                      id="unit_price"
+                      type="number"
+                      step="0.01"
+                      value={formData.unit_price || ''}
+                      onChange={(e) => setFormData({ ...formData, unit_price: parseFloat(e.target.value) || undefined })}
+                      min="0"
+                      className="border-amber-500/30 focus:border-amber-500/60 transition-colors h-9 text-base"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="reorder_level" className="text-base font-bold">{t('stock.reorderLevel')}</Label>
+                    <Input
+                      id="reorder_level"
+                      type="number"
+                      value={formData.reorder_level || 10}
+                      onChange={(e) => setFormData({ ...formData, reorder_level: parseInt(e.target.value) || 10 })}
+                      min="0"
+                      className="border-amber-500/30 focus:border-amber-500/60 transition-colors h-9 text-base"
                     />
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
-            <div className="space-y-2 bg-emerald-500/5 dark:bg-emerald-900/10 p-2 md:p-3 rounded border border-emerald-500/20">
-              <h3 className="text-lg font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
-                {t('stock.inventoryPricing')}
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-3">
-                <div className="space-y-1">
-                  <Label htmlFor="quantity" className="text-base font-bold">{t('stock.quantity')}</Label>
-                  <Input
-                    id="quantity"
-                    type="number"
-                    value={formData.quantity || 0}
-                    onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 0 })}
-                    min="0"
-                    className="border-emerald-500/30 focus:border-emerald-500/60 transition-colors h-9 text-base"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <Label htmlFor="unit_price" className="text-base font-bold">{t('stock.unitPrice')}</Label>
-                  <Input
-                    id="unit_price"
-                    type="number"
-                    step="0.01"
-                    value={formData.unit_price || ''}
-                    onChange={(e) => setFormData({ ...formData, unit_price: parseFloat(e.target.value) || undefined })}
-                    min="0"
-                    className="border-emerald-500/30 focus:border-emerald-500/60 transition-colors h-9 text-base"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <Label htmlFor="reorder_level" className="text-base font-bold">{t('stock.reorderLevel')}</Label>
-                  <Input
-                    id="reorder_level"
-                    type="number"
-                    value={formData.reorder_level || 10}
-                    onChange={(e) => setFormData({ ...formData, reorder_level: parseInt(e.target.value) || 10 })}
-                    min="0"
-                    className="border-emerald-500/30 focus:border-emerald-500/60 transition-colors h-9 text-base"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2 bg-amber-500/5 dark:bg-amber-900/10 p-2 md:p-3 rounded border border-amber-500/20">
-              <h3 className="text-lg font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">
-                {t('stock.supplierInfo')}
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
-                <div className="space-y-1">
-                  <Label htmlFor="supplier_name" className="text-base font-bold">{t('stock.supplierName')}</Label>
-                  <Input
-                    id="supplier_name"
-                    value={formData.supplier_name || ''}
-                    onChange={(e) => setFormData({ ...formData, supplier_name: e.target.value })}
-                    placeholder={t('stock.supplierName')}
-                    className="border-amber-500/30 focus:border-amber-500/60 transition-colors h-9 text-base"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <Label htmlFor="supplier_contact" className="text-base font-bold">{t('stock.supplierContact')}</Label>
-                  <Input
-                    id="supplier_contact"
-                    value={formData.supplier_contact || ''}
-                    onChange={(e) => setFormData({ ...formData, supplier_contact: e.target.value })}
-                    placeholder={t('stock.supplierContact')}
-                    className="border-amber-500/30 focus:border-amber-500/60 transition-colors h-9 text-base"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2 bg-indigo-500/5 dark:bg-indigo-900/10 p-2 md:p-3 rounded border border-indigo-500/20">
-              <Label htmlFor="images" className="text-lg font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
-                {t('stock.productImage')}
-              </Label>
-              <div className="space-y-3">
-                {formData.images?.[0] && (
-                  <div className="relative w-full h-48 border rounded-lg overflow-hidden">
-                    <img
-                      src={formData.images[0]}
-                      alt="Product preview"
-                      className="w-full h-full object-cover"
-                    />
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      className="absolute top-2 right-2"
-                      onClick={() => setFormData({ ...formData, images: [] })}
+            {activeFormSection === 'shipping' && (
+              <div className="space-y-2 bg-indigo-500/5 dark:bg-indigo-900/10 p-2 md:p-3 rounded border border-indigo-500/20">
+                <h3 className="text-lg font-bold text-indigo-600 dark:text-indigo-400">Shipping</h3>
+                <div className="space-y-2">
+                  <div className="space-y-1">
+                    <Label className="text-base font-bold">Shipping mode</Label>
+                    <Select
+                      value={(formData.shipping_mode as any) || 'delivery_pricing'}
+                      onValueChange={(value: any) => {
+                        setFormData({
+                          ...formData,
+                          shipping_mode: value,
+                          shipping_flat_fee: value === 'flat' ? (formData.shipping_flat_fee ?? 0) : null,
+                        });
+                      }}
                     >
-                      {t('stock.removeImage')}
-                    </Button>
+                      <SelectTrigger className="border-indigo-500/30 focus:border-indigo-500/60 h-9 text-base font-semibold">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="delivery_pricing">Normal delivery prices (wilaya-based)</SelectItem>
+                        <SelectItem value="flat">Same shipping price for all wilayas</SelectItem>
+                        <SelectItem value="free">Free shipping</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                )}
+
+                  {((formData.shipping_mode as any) || 'delivery_pricing') === 'flat' && (
+                    <div className="space-y-1">
+                      <Label className="text-base font-bold">Flat fee (DA)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={formData.shipping_flat_fee ?? 0}
+                        onChange={(e) => setFormData({ ...formData, shipping_flat_fee: parseFloat(e.target.value) || 0 })}
+                        className="border-indigo-500/30 focus:border-indigo-500/60 h-9 text-base"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {activeFormSection === 'images' && (
+              <div className="space-y-2 bg-purple-500/5 dark:bg-purple-900/10 p-2 md:p-3 rounded border border-purple-500/20">
+                <h3 className="text-lg font-bold text-purple-600 dark:text-purple-400">Images (max 10)</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {(Array.isArray(formData.images) ? formData.images : []).map((url, idx) => (
+                    <div key={`${url}-${idx}`} className="relative w-full h-28 border rounded-lg overflow-hidden">
+                      <img src={url} alt="" className="w-full h-full object-cover" />
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="destructive"
+                        className="absolute top-1 right-1 h-7 w-7"
+                        onClick={() => removeImageAt(idx)}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
                 <div className="flex flex-col gap-2">
                   <Input
                     type="file"
                     accept="image/*"
+                    multiple
                     onChange={handleImageUpload}
-                    disabled={uploading}
+                    disabled={uploading || ((formData.images?.length || 0) >= 10)}
                     className="cursor-pointer"
                   />
                   <p className="text-xs text-muted-foreground">
-                    {t('stock.uploadImage')}
+                    Upload up to 10 images. Each image must be &lt; 2MB.
                   </p>
                 </div>
               </div>
-            </div>
+            )}
 
-            <div className="space-y-2 bg-purple-500/5 dark:bg-purple-900/10 p-2 md:p-3 rounded border border-purple-500/20">
-              <h3 className="text-lg font-bold text-purple-600 dark:text-purple-400 flex items-center gap-2">
-                ⚙️ {t('stock.status')} & {t('stock.notes')}
-              </h3>
-              <div className="space-y-2">
+            {activeFormSection === 'notes' && (
+              <div className="space-y-2 bg-slate-500/5 dark:bg-slate-900/10 p-2 md:p-3 rounded border border-slate-500/20">
+                <h3 className="text-lg font-bold text-slate-700 dark:text-slate-300">Notes</h3>
                 <div className="space-y-1">
-                  <Label htmlFor="status" className="text-base font-bold">{t('stock.status')}</Label>
-                  <Select
-                    value={formData.status || 'active'}
-                    onValueChange={(value: any) => setFormData({ ...formData, status: value })}
-                  >
-                    <SelectTrigger className="border-purple-500/30 focus:border-purple-500/60 h-9 text-base font-semibold">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">✅ {t('stock.active')}</SelectItem>
-                      <SelectItem value="discontinued">❌ {t('stock.discontinued')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-1">
-                  <Label htmlFor="notes" className="text-base font-bold">📌 {t('stock.additionalNotes')}</Label>
+                  <Label htmlFor="notes" className="text-base font-bold">{t('stock.additionalNotes')}</Label>
                   <Textarea
                     id="notes"
                     value={formData.notes || ''}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                     placeholder={t('stock.additionalNotes')}
-                    rows={3}
-                    className="border-purple-500/30 focus:border-purple-500/60 transition-colors resize-none text-base"
+                    rows={4}
+                    className="border-slate-500/30 focus:border-slate-500/60 transition-colors resize-none text-base"
                   />
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           <DialogFooter className="border-t border-border/50 pt-2 md:pt-3 mt-2 gap-2 flex flex-row-reverse">
@@ -1181,6 +1291,9 @@ export default function StockManagement() {
                 setShowAddModal(false);
                 setShowEditModal(false);
                 setFormData({});
+                setActiveFormSection('product');
+                setSizeDraft('');
+                setColorDraft('');
               }}
               className="border-muted-foreground/30 hover:bg-muted/50 text-base font-bold h-10"
             >

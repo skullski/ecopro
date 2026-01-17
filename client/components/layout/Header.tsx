@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { authApi } from "@/lib/auth";
 import { notifyNewMessage } from "@/utils/browserNotifications";
 import { storeNameToSlug } from "@/utils/storeUrl";
+import { safeJsonParse } from "@/utils/safeJson";
 
 // Key for storing last seen timestamp
 const CHAT_LAST_SEEN_KEY = 'chat_last_seen_at';
@@ -22,7 +23,7 @@ export default function Header() {
   const [storeSlug, setStoreSlug] = useState<string | null>(null);
   const prevUnreadCount = useRef(0);
 
-  const user = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user") || "null") : null;
+  const user = typeof window !== "undefined" ? safeJsonParse(localStorage.getItem("user"), null as any) : null;
   const isAdmin = user?.role === "admin";
   const isSeller = user?.role === "seller";
   const isClient = !isAdmin && !isSeller;

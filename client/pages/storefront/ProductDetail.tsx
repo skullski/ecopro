@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Heart, Share2, ChevronLeft, Plus, Minus } from 'lucide-react';
 import PixelScripts, { trackAllPixels, PixelEvents } from '@/components/storefront/PixelScripts';
+import { safeJsonParse } from '@/utils/safeJson';
 
 interface Product {
   id: number;
@@ -125,7 +126,7 @@ export default function ProductDetail() {
 
   // Get template and settings from session/props
   const template = localStorage.getItem('template') || 'fashion';
-  const settings: StoreSettings = JSON.parse(localStorage.getItem('storeSettings') || '{}');
+  const settings: StoreSettings = safeJsonParse<StoreSettings>(localStorage.getItem('storeSettings'), {} as StoreSettings);
   const style = TEMPLATE_STYLES[template] || TEMPLATE_STYLES.fashion;
   const accentColor = settings.template_accent_color || style.accent;
 
@@ -152,7 +153,8 @@ export default function ProductDetail() {
       // Fallback to localStorage (for backward compatibility)
       const cachedProduct = localStorage.getItem(`product_${id || slug}`);
       if (cachedProduct) {
-        return JSON.parse(cachedProduct);
+        const parsed = safeJsonParse<any>(cachedProduct, null);
+        if (parsed) return parsed;
       }
       
       // Final fallback to API

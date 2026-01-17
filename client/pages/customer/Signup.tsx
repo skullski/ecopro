@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { safeJsonParse } from "@/utils/safeJson";
 
 export default function CustomerSignup(){
   const { id } = useParams();
@@ -10,7 +11,7 @@ export default function CustomerSignup(){
 
   function handleSignup(e:any){
     e.preventDefault();
-    const customers = JSON.parse(localStorage.getItem('customers')||'[]');
+    const customers = safeJsonParse<any[]>(localStorage.getItem('customers'), []);
     const exists = customers.find((c:any)=> c.email===email && c.storeId===id);
     if(exists){ alert('Account exists'); return; }
     const c = { id: Date.now().toString(), email, name, storeId: id };

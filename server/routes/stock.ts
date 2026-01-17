@@ -9,6 +9,7 @@ function zStringTrim(max: number) {
 }
 
 const stockStatusSchema = z.enum(['active', 'discontinued', 'out_of_stock']);
+const stockShippingModeSchema = z.enum(['delivery_pricing', 'flat', 'free']);
 
 const zIntFromAny = (opts: { min?: number; max?: number } = {}) =>
   z.preprocess(
@@ -52,6 +53,8 @@ const createStockBodySchema = z
     sku: z.string().trim().max(100).optional(),
     description: z.string().trim().max(10000).optional(),
     category: z.string().trim().max(100).optional(),
+    sizes: z.array(z.string().trim().min(1).max(50)).max(50).optional(),
+    colors: z.array(z.string().trim().min(1).max(50)).max(50).optional(),
     quantity: zIntFromAny({ min: 0 }).optional(),
     unit_price: zNumberFromAny({ min: 0 }).optional(),
     reorder_level: zIntFromAny({ min: 0 }).optional(),
@@ -59,8 +62,10 @@ const createStockBodySchema = z
     supplier_name: z.string().trim().max(255).optional(),
     supplier_contact: z.string().trim().max(255).optional(),
     status: stockStatusSchema.optional(),
+    shipping_mode: stockShippingModeSchema.optional(),
+    shipping_flat_fee: zNumberFromAny({ min: 0 }).optional(),
     notes: z.string().trim().max(10000).optional(),
-    images: z.array(z.string().trim().max(2048)).max(20).optional(),
+    images: z.array(z.string().trim().max(2048)).max(10).optional(),
   })
   .strict();
 
@@ -70,14 +75,18 @@ const updateStockBodySchema = z
     sku: z.string().trim().max(100).optional(),
     description: z.string().trim().max(10000).optional(),
     category: z.string().trim().max(100).optional(),
+    sizes: z.array(z.string().trim().min(1).max(50)).max(50).optional(),
+    colors: z.array(z.string().trim().min(1).max(50)).max(50).optional(),
     unit_price: zNumberFromAny({ min: 0 }).optional(),
     reorder_level: zIntFromAny({ min: 0 }).optional(),
     location: z.string().trim().max(255).optional(),
     supplier_name: z.string().trim().max(255).optional(),
     supplier_contact: z.string().trim().max(255).optional(),
     status: stockStatusSchema.optional(),
+    shipping_mode: stockShippingModeSchema.optional(),
+    shipping_flat_fee: zNumberFromAny({ min: 0 }).optional(),
     notes: z.string().trim().max(10000).optional(),
-    images: z.array(z.string().trim().max(2048)).max(20).optional(),
+    images: z.array(z.string().trim().max(2048)).max(10).optional(),
   })
   .strict();
 
@@ -126,8 +135,10 @@ export const getClientStock: RequestHandler = async (req, res) => {
     let query = `
       SELECT 
         id, client_id, name, sku, description, category,
+        sizes, colors,
         quantity, unit_price, reorder_level, location,
         supplier_name, supplier_contact, status, notes, images,
+        shipping_mode, shipping_flat_fee,
         created_at, updated_at,
         CASE WHEN quantity <= reorder_level THEN true ELSE false END as is_low_stock
       FROM client_stock_products
@@ -224,6 +235,8 @@ export const createStock: RequestHandler = async (req, res) => {
       sku,
       description,
       category,
+      sizes,
+      colors,
       quantity,
       unit_price,
       reorder_level,
@@ -231,6 +244,8 @@ export const createStock: RequestHandler = async (req, res) => {
       supplier_name,
       supplier_contact,
       status,
+      shipping_mode,
+      shipping_flat_fee,
       notes,
       images,
     } = parsedBody.data;
@@ -246,9 +261,12 @@ export const createStock: RequestHandler = async (req, res) => {
     const result = await pool.query(
       `INSERT INTO client_stock_products (
         client_id, name, sku, description, category,
+        sizes, colors,
         quantity, unit_price, reorder_level, location,
-        supplier_name, supplier_contact, status, notes, images
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        supplier_name, supplier_contact, status,
+        shipping_mode, shipping_flat_fee,
+        notes, images
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
       RETURNING *`,
       [
         clientId,
@@ -256,6 +274,8 @@ export const createStock: RequestHandler = async (req, res) => {
         sku || null,
         description || null,
         category || null,
+        Array.isArray(sizes) ? sizes : [],
+        Array.isArray(colors) ? colors : [],
         parsedQuantity,
         parsedUnitPrice,
         parsedReorder,
@@ -263,6 +283,8 @@ export const createStock: RequestHandler = async (req, res) => {
         supplier_name || null,
         supplier_contact || null,
         status || 'active',
+        shipping_mode || 'delivery_pricing',
+        shipping_flat_fee == null ? null : shipping_flat_fee,
         notes || null,
         Array.isArray(images) ? images : [],
       ]
@@ -341,12 +363,16 @@ export const updateStock: RequestHandler = async (req, res) => {
       sku,
       description,
       category,
+      sizes,
+      colors,
       unit_price,
       reorder_level,
       location,
       supplier_name,
       supplier_contact,
       status,
+      shipping_mode,
+      shipping_flat_fee,
       notes,
       images,
     } = parsedBody.data;
@@ -357,31 +383,36 @@ export const updateStock: RequestHandler = async (req, res) => {
         sku = COALESCE($2, sku),
         description = COALESCE($3, description),
         category = COALESCE($4, category),
-        unit_price = COALESCE($5, unit_price),
-        reorder_level = COALESCE($6, reorder_level),
-        location = COALESCE($7, location),
-        supplier_name = COALESCE($8, supplier_name),
-        supplier_contact = COALESCE($9, supplier_contact),
-        status = COALESCE($10, status),
-        notes = COALESCE($11, notes),
-        images = CASE 
-          WHEN $14::text[] IS NOT NULL AND array_length($14::text[], 1) > 0 THEN $14::text[]
-          ELSE images 
-        END,
+        sizes = CASE WHEN $5::text[] IS NOT NULL THEN $5::text[] ELSE sizes END,
+        colors = CASE WHEN $6::text[] IS NOT NULL THEN $6::text[] ELSE colors END,
+        unit_price = COALESCE($7, unit_price),
+        reorder_level = COALESCE($8, reorder_level),
+        location = COALESCE($9, location),
+        supplier_name = COALESCE($10, supplier_name),
+        supplier_contact = COALESCE($11, supplier_contact),
+        status = COALESCE($12, status),
+        shipping_mode = COALESCE($13, shipping_mode),
+        shipping_flat_fee = COALESCE($14, shipping_flat_fee),
+        notes = COALESCE($15, notes),
+        images = CASE WHEN $18::text[] IS NOT NULL THEN $18::text[] ELSE images END,
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $12 AND client_id = $13
+      WHERE id = $16 AND client_id = $17
       RETURNING *`,
       [
         name ?? null,
         sku ?? null,
         description ?? null,
         category ?? null,
+        Array.isArray(sizes) ? sizes : null,
+        Array.isArray(colors) ? colors : null,
         unit_price ?? null,
         reorder_level ?? null,
         location ?? null,
         supplier_name ?? null,
         supplier_contact ?? null,
         status ?? null,
+        shipping_mode ?? null,
+        shipping_flat_fee ?? null,
         notes ?? null,
         id,
         clientId,

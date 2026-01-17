@@ -1035,8 +1035,8 @@ export const getProductWithStoreInfo: RequestHandler = async (req, res) => {
     // Try client store product first - search by ID or slug
     const result = await pool.query(
       `SELECT 
-        p.id, p.title, p.description, p.price, p.original_price,
-        p.images, p.category, p.stock_quantity, p.slug, p.status,
+        p.id, p.client_id, p.title, p.description, p.price, p.original_price,
+        p.images, p.category, p.stock_quantity, p.slug, p.status, p.metadata,
         s.store_name, s.store_slug, s.primary_color, s.template_accent_color
       FROM client_store_products p
       INNER JOIN client_store_settings s ON p.client_id = s.client_id
@@ -1064,6 +1064,7 @@ export const getProductWithStoreInfo: RequestHandler = async (req, res) => {
       return res.json({
         ...p,
         variants,
+        metadata: p.metadata && typeof p.metadata === 'object' ? p.metadata : {},
         slug: p.slug || `${String(p.title || 'product').toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${p.id}`
       });
     }

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { safeJsonParse } from "@/utils/safeJson";
 
 export default function CustomerLogin(){
   const { id } = useParams();
@@ -10,7 +11,7 @@ export default function CustomerLogin(){
   function handleLogin(e:any){
     e.preventDefault();
     // simple customer session: store in localStorage
-    const customers = JSON.parse(localStorage.getItem('customers')||'[]');
+    const customers = safeJsonParse<any[]>(localStorage.getItem('customers'), []);
     let cust = customers.find((c:any)=> c.email === email && c.storeId === id);
     if(!cust){
       alert('User not found, you can register first');

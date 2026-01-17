@@ -6,9 +6,25 @@ async function getSpaAssets(): Promise<null | { styles: string[]; scripts: strin
   try {
     const fs = await import('fs/promises');
     const path = await import('path');
-    const spaBuildPath = path.join(__dirname, '../../spa');
-    const indexPath = path.join(spaBuildPath, 'index.html');
-    const html = await fs.readFile(indexPath, 'utf8');
+
+    const candidates = [
+      path.join(__dirname, '../../spa/index.html'),
+      path.join(__dirname, '../spa/index.html'),
+      path.join(process.cwd(), 'dist/spa/index.html'),
+      path.join(process.cwd(), 'spa/index.html'),
+    ];
+
+    let html: string | null = null;
+    for (const p of candidates) {
+      try {
+        html = await fs.readFile(p, 'utf8');
+        break;
+      } catch {
+        // try next
+      }
+    }
+
+    if (!html) return null;
 
     const styles = Array.from(
       html.matchAll(/<link[^>]*rel=["']stylesheet["'][^>]*href=["']([^"']+)["'][^>]*>/gi)

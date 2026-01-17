@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import PixelScripts, { trackAllPixels, PixelEvents } from '@/components/storefront/PixelScripts';
+import { safeJsonParse } from '@/utils/safeJson';
 
 interface Product {
   id: number;
@@ -116,7 +117,7 @@ export default function ProductCheckout() {
 
   // Get template and settings
   const template = localStorage.getItem('template') || 'fashion';
-  const settings: StoreSettings = JSON.parse(localStorage.getItem('storeSettings') || '{}');
+  const settings: StoreSettings = safeJsonParse<StoreSettings>(localStorage.getItem('storeSettings'), {} as StoreSettings);
   const accentColor = settings.template_accent_color || '#3b82f6';
 
   const dzWilayas = getAlgeriaWilayas();
@@ -608,6 +609,25 @@ export default function ProductCheckout() {
   // Fetch delivery price when wilaya changes
   useEffect(() => {
     const fetchDeliveryPrice = async () => {
+      const shippingMeta: any = (product as any)?.metadata?.shipping || null;
+      const shippingMode = shippingMeta?.mode || shippingMeta?.shipping_mode || null;
+      if (shippingMode === 'free') {
+        setDeliveryPrice(0);
+        setLoadingDeliveryPrice(false);
+        return;
+      }
+      if (shippingMode === 'flat') {
+        const fee = Number(
+          shippingMeta?.flat_fee ??
+          shippingMeta?.flatFee ??
+          shippingMeta?.shipping_flat_fee ??
+          0
+        );
+        setDeliveryPrice(Number.isFinite(fee) && fee >= 0 ? fee : 0);
+        setLoadingDeliveryPrice(false);
+        return;
+      }
+
       const slug = storeSlug || product?.store_slug || localStorage.getItem('currentStoreSlug');
       if (!slug || !formData.wilayaId) {
         setDeliveryPrice(null);

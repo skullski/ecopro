@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { safeJsonParse } from '@/utils/safeJson';
 import { ChevronLeft, Plus, Minus, Trash2, Lock, Truck } from 'lucide-react';
 import { useTranslation } from '@/lib/i18n';
 import {
@@ -206,7 +207,7 @@ export default function Checkout() {
 
   // Get template and settings
   const template = localStorage.getItem('template') || 'fashion';
-  const settings: StoreSettings = JSON.parse(localStorage.getItem('storeSettings') || '{}');
+  const settings: StoreSettings = safeJsonParse<StoreSettings>(localStorage.getItem('storeSettings'), {} as StoreSettings);
   const style = TEMPLATE_STYLES[template] || TEMPLATE_STYLES.fashion;
   const accentColor = settings.template_accent_color || style.accent;
 
@@ -425,41 +426,6 @@ export default function Checkout() {
     };
   }, [haiSuggestionsSupported, settings?.store_slug, formData.communeId]);
 
-  // Fetch delivery price when wilaya changes
-  useEffect(() => {
-    const fetchDeliveryPrice = async () => {
-      if (!settings?.store_slug || !formData.wilayaId) {
-        setDeliveryPrice(null);
-        return;
-      }
-      
-      setLoadingDeliveryPrice(true);
-      try {
-        const res = await fetch(
-          `/api/storefront/${encodeURIComponent(settings.store_slug)}/delivery-prices?wilaya_id=${formData.wilayaId}`
-        );
-        if (res.ok) {
-          const data = await res.json();
-          if (data.price) {
-            setDeliveryPrice(data.price.home_delivery_price);
-          } else if (data.default_price) {
-            setDeliveryPrice(data.default_price);
-          } else {
-            setDeliveryPrice(null);
-          }
-        } else {
-          setDeliveryPrice(null);
-        }
-      } catch {
-        setDeliveryPrice(null);
-      } finally {
-        setLoadingDeliveryPrice(false);
-      }
-    };
-    
-    fetchDeliveryPrice();
-  }, [settings?.store_slug, formData.wilayaId]);
-
   // Fetch product on mount - try checkout session first, then localStorage, then API
   const { data: product } = useQuery({
     queryKey: ['product', productId],
@@ -500,6 +466,60 @@ export default function Checkout() {
     },
     enabled: !!productId,
   });
+
+  // Fetch delivery price when wilaya changes
+  useEffect(() => {
+    const fetchDeliveryPrice = async () => {
+      const shippingMeta: any = (product as any)?.metadata?.shipping || null;
+      const shippingMode = shippingMeta?.mode || shippingMeta?.shipping_mode || null;
+      if (shippingMode === 'free') {
+        setDeliveryPrice(0);
+        setLoadingDeliveryPrice(false);
+        return;
+      }
+      if (shippingMode === 'flat') {
+        const fee = Number(
+          shippingMeta?.flat_fee ??
+          shippingMeta?.flatFee ??
+          shippingMeta?.shipping_flat_fee ??
+          0
+        );
+        setDeliveryPrice(Number.isFinite(fee) && fee >= 0 ? fee : 0);
+        setLoadingDeliveryPrice(false);
+        return;
+      }
+
+      if (!settings?.store_slug || !formData.wilayaId) {
+        setDeliveryPrice(null);
+        return;
+      }
+
+      setLoadingDeliveryPrice(true);
+      try {
+        const res = await fetch(
+          `/api/storefront/${encodeURIComponent(settings.store_slug)}/delivery-prices?wilaya_id=${formData.wilayaId}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          if (data.price) {
+            setDeliveryPrice(data.price.home_delivery_price);
+          } else if (data.default_price) {
+            setDeliveryPrice(data.default_price);
+          } else {
+            setDeliveryPrice(null);
+          }
+        } else {
+          setDeliveryPrice(null);
+        }
+      } catch {
+        setDeliveryPrice(null);
+      } finally {
+        setLoadingDeliveryPrice(false);
+      }
+    };
+
+    fetchDeliveryPrice();
+  }, [settings?.store_slug, formData.wilayaId, product]);
 
   React.useEffect(() => {
     if (product) {

@@ -173,6 +173,7 @@ export const createStoreProduct: RequestHandler = async (req, res) => {
       stock_quantity,
       status,
       is_featured,
+      metadata,
     } = req.body;
 
     if (!title || !price) {
@@ -193,8 +194,8 @@ export const createStoreProduct: RequestHandler = async (req, res) => {
     const result = await client.query(
       `INSERT INTO client_store_products 
        (client_id, title, description, price, original_price, images, 
-        category, stock_quantity, status, is_featured)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        category, stock_quantity, status, is_featured, metadata)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING *`,
       [
         clientId,
@@ -207,6 +208,7 @@ export const createStoreProduct: RequestHandler = async (req, res) => {
         stock_quantity || 0,
         status || "active",
         is_featured || false,
+        metadata && typeof metadata === 'object' ? metadata : {},
       ]
     );
 

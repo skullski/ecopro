@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Check, AlertTriangle, Cpu, HardDrive, Monitor, Box, Zap, Save, ShoppingCart, Trash2, Download, Upload } from 'lucide-react';
+import { safeJsonParse } from '@/utils/safeJson';
 
 // Types
 interface ProductMeta {
@@ -269,7 +270,7 @@ export default function BuildPage() {
     }
     
     // Add each component to cart
-    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const cart = safeJsonParse<any[]>(localStorage.getItem('cart'), []);
     Object.values(config).forEach(product => {
       if (product) {
         cart.push({

@@ -12,6 +12,7 @@ import { useTranslation } from "@/lib/i18n";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useStaffPermissions } from "@/contexts/StaffPermissionContext";
 import { prefetchRouteData } from "@/lib/prefetch";
+import { safeJsonParse } from "@/utils/safeJson";
 
 interface MenuItem {
   titleKey: string;
@@ -100,12 +101,13 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
   // Load theme state from localStorage
   const [themeCustomizationEnabled, setThemeCustomizationEnabled] = useState(() => {
     const saved = localStorage.getItem('sidebarThemeCustomizationEnabled');
-    return saved ? JSON.parse(saved) : true;
+    return safeJsonParse(saved, true);
   });
   
   const [sidebarTheme, setSidebarTheme] = useState<keyof typeof SIDEBAR_THEMES>(() => {
     const saved = localStorage.getItem('sidebarTheme');
-    return saved ? JSON.parse(saved) : 'slate';
+    const parsed = safeJsonParse(saved, 'slate');
+    return (parsed in SIDEBAR_THEMES ? (parsed as keyof typeof SIDEBAR_THEMES) : 'slate');
   });
   
   const location = useLocation();

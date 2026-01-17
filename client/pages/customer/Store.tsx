@@ -1329,6 +1329,12 @@ export default function Store() {
                       original_price: inv.original_price,
                       images: inv.images,
                       category: inv.category,
+                      metadata: {
+                        shipping: {
+                          mode: inv.shipping_mode || 'delivery_pricing',
+                          flat_fee: inv.shipping_flat_fee ?? null,
+                        },
+                      },
                       stock_quantity: inventoryStockQuantity,
                       status: 'active',
                       is_featured: false
