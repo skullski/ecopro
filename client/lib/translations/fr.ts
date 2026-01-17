@@ -153,7 +153,7 @@ export const fr = {
   "user.role.seller": "Vendeur",
 
   // Navigation & Brand
-  "brand": "SAHLA4ECO",
+  "brand": "Sahla4Eco",
   "dashboard.title": "Tableau de Bord",
   "dashboard.subtitle": "Résumé des performances de votre boutique",
   "dashboard.welcome": "Bienvenue",
@@ -602,7 +602,7 @@ export const fr = {
 
   // Admin Panel - Billing
   "admin.billing.title": "Facturation et Abonnement",
-  "admin.billing.subtitle": "Gérez votre abonnement SAHLA4ECO et l'historique des paiements",
+  "admin.billing.subtitle": "Gérez votre abonnement Sahla4Eco et l'historique des paiements",
   "admin.billing.currentSubscription": "Abonnement Actuel",
   "admin.billing.subscriptionDesc": "Statut de votre abonnement et informations de facturation",
   "admin.billing.expiredAlert": "Votre abonnement a expiré",
@@ -895,7 +895,7 @@ export const fr = {
   "tiers.platinum": "Platine",
 
   // Footer
-  "footer.copyright": "© {year} SAHLA4ECO. Tous droits réservés",
+  "footer.copyright": "© {year} Sahla4Eco. Tous droits réservés",
 
   // Sidebar Navigation
   "sidebar.home": "Accueil",
@@ -909,7 +909,7 @@ export const fr = {
   "sidebar.pixels": "Statistiques Pixel",
   "sidebar.wasselni": "Bot",
   "sidebar.staff": "Personnel",
-  "sidebar.brand": "SAHLA4ECO",
+  "sidebar.brand": "Sahla4Eco",
   "sidebar.controlPanel": "Panneau de contrôle",
   "sidebar.selectTheme": "Choisir le thème",
   "sidebar.expandMenu": "Développer le menu",

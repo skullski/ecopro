@@ -264,7 +264,7 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
         <div className="flex items-center gap-2">
           <img
             src="/brand/sahla4eco-mark.svg"
-            alt="SAHLA4ECO"
+            alt="Sahla4Eco"
             className="rounded-md"
             style={{ width: collapsed ? '22px' : '26px', height: collapsed ? '22px' : '26px' }}
           />

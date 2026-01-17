@@ -104,7 +104,7 @@ async function getCanvasFingerprint(): Promise<string | null> {
     ctx.fillStyle = '#f60';
     ctx.fillRect(125, 1, 62, 20);
     ctx.fillStyle = '#069';
-    ctx.fillText('SAHLA4ECO FP 🔒', 2, 15);
+    ctx.fillText('Sahla4Eco FP 🔒', 2, 15);
     ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
     ctx.fillText('Security Probe', 4, 35);
     

@@ -167,7 +167,7 @@ export const ar = {
   "user.role.seller": "بائع",
 
   // Navigation & Brand
-  "brand": "SAHLA4ECO",
+  "brand": "Sahla4Eco",
   "dashboard.title": "لوحة التحكم",
   
   // Onboarding Guide
@@ -819,7 +819,7 @@ export const ar = {
 
   // Admin Panel - Billing
   "admin.billing.title": "الفواتير والاشتراك",
-  "admin.billing.subtitle": "إدارة اشتراك SAHLA4ECO وسجل المدفوعات",
+  "admin.billing.subtitle": "إدارة اشتراك Sahla4Eco وسجل المدفوعات",
   "admin.billing.currentSubscription": "الاشتراك الحالي",
   "admin.billing.subscriptionDesc": "حالة اشتراكك ومعلومات الفواتير",
   "admin.billing.expiredAlert": "انتهى اشتراكك",
@@ -1164,7 +1164,7 @@ export const ar = {
   "tiers.platinum": "بلاتيني",
 
   // Footer
-  "footer.copyright": "© {year} SAHLA4ECO. جميع الحقوق محفوظة",
+  "footer.copyright": "© {year} Sahla4Eco. جميع الحقوق محفوظة",
 
   // Sidebar Navigation
   "sidebar.home": "الرئيسية",
@@ -1180,7 +1180,7 @@ export const ar = {
   "sidebar.pixels": "إحصائيات البكسل",
   "sidebar.wasselni": "Bot",
   "sidebar.staff": "الموظفون",
-  "sidebar.brand": "SAHLA4ECO",
+  "sidebar.brand": "Sahla4Eco",
   "sidebar.controlPanel": "لوحة التحكم",
   "sidebar.selectTheme": "اختر المظهر",
   "sidebar.expandMenu": "توسيع القائمة",

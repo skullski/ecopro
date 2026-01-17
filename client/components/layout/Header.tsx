@@ -114,7 +114,7 @@ export default function Header() {
                 >
                   <img
                     src="/brand/sahla4eco-mark.svg"
-                    alt="SAHLA4ECO"
+                    alt="Sahla4Eco"
                     className="drop-shadow"
                     style={{ width: 'clamp(1.25rem, 2.6vh, 1.5rem)', height: 'clamp(1.25rem, 2.6vh, 1.5rem)' }}
                   />

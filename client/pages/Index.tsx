@@ -11,14 +11,88 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "@/lib/i18n";
+import { useEffect, useMemo, useState } from "react";
 
 export default function Index() {
   const { t } = useTranslation();
   // Homepage is public marketing: keep it demo-only (no real platform metrics).
-  const stats = {
+  const previewItems = useMemo(
+    () => [
+      { name: "Modern", img: "/template-previews/modern.png" },
+      { name: "Fashion", img: "/template-previews/fashion.png" },
+      { name: "Electronics", img: "/template-previews/electronics.png" },
+      { name: "Beauty", img: "/template-previews/beauty.png" },
+      { name: "Furniture", img: "/template-previews/furniture.png" },
+      { name: "Food", img: "/template-previews/food.png" },
+      { name: "Jewelry", img: "/template-previews/jewelry.png" },
+      { name: "Perfume", img: "/template-previews/perfume.png" },
+    ],
+    []
+  );
+
+  const [targets, setTargets] = useState(() => ({
     totalOrders: 1000,
     salesToday: 500,
     newOrders: 24,
+  }));
+
+  const [display, setDisplay] = useState(() => ({
+    totalOrders: 970,
+    salesToday: 430,
+    newOrders: 18,
+  }));
+
+  const [previewStart, setPreviewStart] = useState(0);
+  const [spark, setSpark] = useState<number[]>(() => Array.from({ length: 10 }, () => 20 + Math.floor(Math.random() * 60)));
+
+  // Slowly evolve demo stats so the UI feels alive.
+  useEffect(() => {
+    const randInt = (min: number, max: number) => Math.floor(min + Math.random() * (max - min + 1));
+    const id = window.setInterval(() => {
+      setTargets((prev) => ({
+        totalOrders: prev.totalOrders + randInt(0, 3),
+        salesToday: prev.salesToday + randInt(0, 12),
+        newOrders: prev.newOrders + randInt(0, 1),
+      }));
+      setSpark(Array.from({ length: 10 }, () => 18 + Math.floor(Math.random() * 70)));
+    }, 4500);
+    return () => window.clearInterval(id);
+  }, []);
+
+  // Smoothly animate displayed numbers toward targets.
+  useEffect(() => {
+    let raf = 0;
+    const step = () => {
+      setDisplay((cur) => {
+        const ease = (from: number, to: number) => {
+          const diff = to - from;
+          if (Math.abs(diff) < 1) return to;
+          return from + diff * 0.12;
+        };
+        return {
+          totalOrders: ease(cur.totalOrders, targets.totalOrders),
+          salesToday: ease(cur.salesToday, targets.salesToday),
+          newOrders: ease(cur.newOrders, targets.newOrders),
+        };
+      });
+      raf = window.requestAnimationFrame(step);
+    };
+    raf = window.requestAnimationFrame(step);
+    return () => window.cancelAnimationFrame(raf);
+  }, [targets]);
+
+  // Rotate preview thumbnails in the floating "New Products" card.
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setPreviewStart((i) => (i + 1) % previewItems.length);
+    }, 2800);
+    return () => window.clearInterval(id);
+  }, [previewItems.length]);
+
+  const stats = {
+    totalOrders: Math.round(display.totalOrders),
+    salesToday: Math.round(display.salesToday),
+    newOrders: Math.round(display.newOrders),
   };
   
   return (
@@ -97,31 +171,46 @@ export default function Index() {
                       <p className="text-xs text-gray-400">Demo preview</p>
                     </div>
                   </div>
-                  <div className="h-20 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg"></div>
+                  <div className="h-20 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg flex items-end gap-1 p-3">
+                    {spark.map((h, idx) => (
+                      <div
+                        key={idx}
+                        className="flex-1 rounded-sm bg-gradient-to-t from-emerald-500/70 to-green-400/40 dark:from-emerald-400/40 dark:to-green-300/20 transition-all duration-700"
+                        style={{ height: `${h}%` }}
+                      />
+                    ))}
+                  </div>
                 </div>
 
                 {/* Card 2 */}
                 <div className="absolute top-32 left-0 w-72 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 animate-float" style={{animationDelay: '0.5s'}}>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-bold">{t("home.newProducts")}</h3>
-                    <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 rounded-full text-xs font-medium">+{stats.newOrders}</span>
+                    <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 rounded-full text-xs font-medium animate-pulse">+{stats.newOrders}</span>
                   </div>
                   <div className="space-y-3">
-                    {[
-                      { name: 'Modern', img: '/template-previews/modern.png' },
-                      { name: 'Fashion', img: '/template-previews/fashion.png' },
-                      { name: 'Electronics', img: '/template-previews/electronics.png' },
-                    ].map((p) => (
-                      <div key={p.name} className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600">
-                          <img src={p.img} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
+                    {[0, 1, 2].map((offset) => {
+                      const p = previewItems[(previewStart + offset) % previewItems.length];
+                      return (
+                        <div key={`${p.name}-${offset}`} className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600">
+                            <img
+                              src={p.img}
+                              alt={p.name}
+                              className="w-full h-full object-cover transition-opacity duration-500"
+                              loading="lazy"
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm font-semibold">{p.name} template</p>
+                              <span className="text-[10px] text-gray-500">just added</span>
+                            </div>
+                            <div className="h-2 bg-gray-100 dark:bg-gray-600 rounded w-2/3 mt-2"></div>
+                          </div>
                         </div>
-                        <div className="flex-1">
-                          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
-                          <div className="h-2 bg-gray-100 dark:bg-gray-600 rounded w-1/2"></div>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
 
