@@ -208,6 +208,7 @@ export default function Store() {
   const [variantsLoaded, setVariantsLoaded] = useState(false);
   const [variantsDirty, setVariantsDirty] = useState(false);
   const [loadingVariants, setLoadingVariants] = useState(false);
+  const [inventoryImageErrors, setInventoryImageErrors] = useState<Record<string, boolean>>({});
 
   const loadProductVariants = async (productId: number) => {
     setLoadingVariants(true);
@@ -1200,6 +1201,9 @@ export default function Store() {
                     const price = product.unit_price ?? product.price ?? 0;
                     const name = product.name || product.title || 'Unnamed Product';
                     
+                    const imageKey = `inventory:${product.id}`;
+                    const imageErrored = !!inventoryImageErrors[imageKey];
+
                     return (
                       <div
                         key={product.id}
@@ -1211,16 +1215,18 @@ export default function Store() {
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          {imageUrl ? (
+                          {imageUrl && !imageErrored ? (
                             <div className="w-12 h-12 rounded-md overflow-hidden flex-shrink-0 bg-muted">
                               <img
                                 src={imageUrl}
                                 alt={name}
                                 className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).style.display = 'none';
-                                  (e.target as HTMLImageElement).parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center text-lg">📦</div>';
-                                }}
+                                onError={() =>
+                                  setInventoryImageErrors((prev) => ({
+                                    ...prev,
+                                    [imageKey]: true,
+                                  }))
+                                }
                               />
                             </div>
                           ) : (

@@ -35,6 +35,7 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
 
   const [activeCategory, setActiveCategory] = useState<string>('All');
 
@@ -89,6 +90,8 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
     if (!raw) return 'pro';
     return raw;
   };
+
+  const getImageKey = (templateId: string, variant: 'carousel' | 'grid') => `${templateId}:${variant}`;
 
   const openTemplateSwitch = (templateId: string) => {
     const nextId = normalizeTemplateId(templateId);
@@ -435,23 +438,23 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
               }`}
             >
               <div className="relative h-48 bg-slate-800 overflow-hidden">
-                <img 
-                  src={template.image} 
-                  alt={template.name}
-                  className="w-full h-full object-cover object-top"
-                  onError={(e) => {
-                    const img = e.target as HTMLImageElement;
-                    img.style.display = 'none';
-                    const parent = img.parentElement;
-                    if (parent) {
-                      parent.innerHTML = `
-                        <div class="flex items-center justify-center h-full w-full flex-col gap-2 bg-slate-700">
-                          <div class="text-3xl">${template.icon}</div>
-                        </div>
-                      `;
+                {!brokenImages[getImageKey(template.id, 'carousel')] ? (
+                  <img
+                    src={template.image}
+                    alt={template.name}
+                    className="w-full h-full object-cover object-top"
+                    onError={() =>
+                      setBrokenImages((prev) => ({
+                        ...prev,
+                        [getImageKey(template.id, 'carousel')]: true,
+                      }))
                     }
-                  }}
-                />
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full w-full flex-col gap-2 bg-slate-700">
+                    <div className="text-3xl">{template.icon}</div>
+                  </div>
+                )}
                 {/* Selected indicator */}
                 {normalizeTemplateId(storeSettings.template) === normalizeTemplateId(template.id) && (
                   <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow-lg">
@@ -480,23 +483,23 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
             }`}
           >
             <div className="relative aspect-[3/4] bg-gray-100 dark:bg-gray-800 overflow-hidden flex items-center justify-center">
-              <img 
-                src={template.image} 
-                alt={template.name}
-                className="w-full h-full object-cover object-top"
-                onError={(e) => {
-                  const img = e.target as HTMLImageElement;
-                  img.style.display = 'none';
-                  const parent = img.parentElement;
-                  if (parent) {
-                    parent.innerHTML = `
-                      <div class="flex items-center justify-center h-full w-full flex-col gap-1 bg-slate-100 dark:bg-slate-700">
-                        <div class="text-xl">${template.icon}</div>
-                      </div>
-                    `;
+              {!brokenImages[getImageKey(template.id, 'grid')] ? (
+                <img
+                  src={template.image}
+                  alt={template.name}
+                  className="w-full h-full object-cover object-top"
+                  onError={() =>
+                    setBrokenImages((prev) => ({
+                      ...prev,
+                      [getImageKey(template.id, 'grid')]: true,
+                    }))
                   }
-                }}
-              />
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full w-full flex-col gap-1 bg-slate-100 dark:bg-slate-700">
+                  <div className="text-xl">{template.icon}</div>
+                </div>
+              )}
               {normalizeTemplateId(storeSettings.template) === normalizeTemplateId(template.id) && (
                 <div className="absolute top-1 right-1 bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold shadow">
                   ✓
