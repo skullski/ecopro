@@ -292,6 +292,14 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
   try {
     const pool = await ensureConnection();
     const update = req.body as any;
+    
+    // Log all incoming webhooks for debugging
+    console.log('[TelegramWebhook] Received update:', JSON.stringify({
+      update_id: update?.update_id,
+      message_text: update?.message?.text,
+      callback_data: update?.callback_query?.data,
+      chat_id: update?.message?.chat?.id || update?.callback_query?.message?.chat?.id,
+    }));
 
     const secret = (req.headers['x-telegram-bot-api-secret-token'] as string | undefined)?.trim();
 
