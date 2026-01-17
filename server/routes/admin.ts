@@ -11,6 +11,7 @@ import { clearAuthCookies, getCookieOptions, cookieNames } from '../utils/auth-c
 import { checkLoginAllowed, recordFailedLogin, recordSuccessfulLogin } from '../utils/brute-force';
 import { decryptData, hashData } from '../utils/encryption';
 import { verifyTotp } from '../utils/totp';
+import { hashKernelPassword } from '../utils/security';
 import os from 'os';
 import fs from 'fs';
 import { performance } from 'perf_hooks';
@@ -1466,6 +1467,38 @@ export const clearCache: RequestHandler = async (_req, res) => {
   } catch (err) {
     console.error('Failed to clear cache:', err);
     return jsonError(res, 500, 'Failed to clear cache');
+  }
+};
+
+// Reset Kernel Portal credentials (admin only)
+// Generates a new password and upserts kernel_users.
+export const resetKernelCredentials: RequestHandler = async (req, res) => {
+  try {
+    const adminUser = (req as any).user;
+    if (!adminUser || adminUser.role !== 'admin') {
+      return jsonError(res, 403, 'Admin access required');
+    }
+
+    const username = String((req.body as any)?.username || 'root').trim() || 'root';
+    const password =
+      'K-' + crypto.randomBytes(12).toString('hex') + '-' + crypto.randomBytes(4).toString('hex');
+
+    const passwordHash = hashKernelPassword(password);
+
+    await pool.query(
+      `INSERT INTO kernel_users (username, password_hash, is_active)
+       VALUES ($1, $2, true)
+       ON CONFLICT (username)
+       DO UPDATE SET password_hash = EXCLUDED.password_hash,
+                    is_active = true,
+                    updated_at = NOW()`,
+      [username, passwordHash]
+    );
+
+    return res.json({ ok: true, username, password });
+  } catch (err) {
+    console.error('Failed to reset kernel credentials:', err);
+    return jsonError(res, 500, 'Failed to reset kernel credentials');
   }
 };
 

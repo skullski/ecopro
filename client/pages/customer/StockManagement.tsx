@@ -117,6 +117,57 @@ export default function StockManagement() {
     notes: '',
   });
 
+  const buildCreatePayload = () => {
+    const sizes = Array.isArray(formData.sizes) ? formData.sizes : [];
+    const colors = Array.isArray(formData.colors) ? formData.colors : [];
+    const images = Array.isArray(formData.images) ? formData.images : [];
+
+    return {
+      name: (formData.name || '').toString(),
+      sku: (formData as any).sku ? String((formData as any).sku) : undefined,
+      description: formData.description ? String(formData.description) : undefined,
+      category: formData.category ? String(formData.category) : undefined,
+      sizes,
+      colors,
+      quantity: formData.quantity ?? 0,
+      unit_price: formData.unit_price == null ? undefined : Number(formData.unit_price),
+      reorder_level: formData.reorder_level == null ? undefined : Number(formData.reorder_level),
+      location: (formData as any).location ? String((formData as any).location) : undefined,
+      supplier_name: (formData as any).supplier_name ? String((formData as any).supplier_name) : undefined,
+      supplier_contact: (formData as any).supplier_contact ? String((formData as any).supplier_contact) : undefined,
+      status: formData.status,
+      shipping_mode: formData.shipping_mode,
+      shipping_flat_fee: formData.shipping_flat_fee == null ? undefined : Number(formData.shipping_flat_fee),
+      notes: formData.notes ? String(formData.notes) : undefined,
+      images,
+    };
+  };
+
+  const buildUpdatePayload = () => {
+    const sizes = Array.isArray(formData.sizes) ? formData.sizes : [];
+    const colors = Array.isArray(formData.colors) ? formData.colors : [];
+    const images = Array.isArray(formData.images) ? formData.images : [];
+
+    return {
+      name: formData.name ? String(formData.name) : undefined,
+      sku: (formData as any).sku ? String((formData as any).sku) : undefined,
+      description: formData.description ? String(formData.description) : undefined,
+      category: formData.category ? String(formData.category) : undefined,
+      sizes,
+      colors,
+      unit_price: formData.unit_price == null ? undefined : Number(formData.unit_price),
+      reorder_level: formData.reorder_level == null ? undefined : Number(formData.reorder_level),
+      location: (formData as any).location ? String((formData as any).location) : undefined,
+      supplier_name: (formData as any).supplier_name ? String((formData as any).supplier_name) : undefined,
+      supplier_contact: (formData as any).supplier_contact ? String((formData as any).supplier_contact) : undefined,
+      status: formData.status,
+      shipping_mode: formData.shipping_mode,
+      shipping_flat_fee: formData.shipping_flat_fee == null ? undefined : Number(formData.shipping_flat_fee),
+      notes: formData.notes ? String(formData.notes) : undefined,
+      images,
+    };
+  };
+
   // Category form state
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryColor, setNewCategoryColor] = useState('#3b82f6');
@@ -359,7 +410,9 @@ export default function StockManagement() {
 
   const handleCreateStock = async () => {
     try {
+      const payload = buildCreatePayload();
       console.log('[handleCreateStock] Submitting form data:', formData);
+      console.log('[handleCreateStock] Payload:', payload);
       console.log('[handleCreateStock] Images in formData:', formData.images);
       console.log('[handleCreateStock] Images count:', formData.images?.length);
       
@@ -368,7 +421,7 @@ export default function StockManagement() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
 
       console.log('[handleCreateStock] Response status:', res.status);
@@ -401,12 +454,13 @@ export default function StockManagement() {
     if (!selectedItem) return;
 
     try {
+      const payload = buildUpdatePayload();
       const res = await fetch(`/api/client/stock/${selectedItem.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
 
       if (res.ok) {
@@ -1160,7 +1214,11 @@ export default function StockManagement() {
                       type="number"
                       step="0.01"
                       value={formData.unit_price || ''}
-                      onChange={(e) => setFormData({ ...formData, unit_price: parseFloat(e.target.value) || undefined })}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        const n = Number(v);
+                        setFormData({ ...formData, unit_price: v === '' || Number.isNaN(n) ? undefined : n });
+                      }}
                       min="0"
                       className="border-amber-500/30 focus:border-amber-500/60 transition-colors h-9 text-base"
                     />
@@ -1172,7 +1230,11 @@ export default function StockManagement() {
                       id="reorder_level"
                       type="number"
                       value={formData.reorder_level || 10}
-                      onChange={(e) => setFormData({ ...formData, reorder_level: parseInt(e.target.value) || 10 })}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        const n = Number.parseInt(v, 10);
+                        setFormData({ ...formData, reorder_level: v === '' || Number.isNaN(n) ? 10 : n });
+                      }}
                       min="0"
                       className="border-amber-500/30 focus:border-amber-500/60 transition-colors h-9 text-base"
                     />

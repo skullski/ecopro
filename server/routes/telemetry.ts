@@ -51,6 +51,15 @@ const clientError: RequestHandler = async (req, res) => {
       componentStack: body.componentStack ? safeString(body.componentStack, 8000) : null,
       route: body.route ? safeString(body.route, 500) : null,
       build: body.build ? safeString(body.build, 80) : null,
+      context: (() => {
+        try {
+          if (body.context == null) return null;
+          if (typeof body.context === 'string') return safeString(body.context, 8000);
+          return safeString(JSON.stringify(body.context), 8000);
+        } catch {
+          return null;
+        }
+      })(),
     };
 
     await logPlatformErrorEvent({

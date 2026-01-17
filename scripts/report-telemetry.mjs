@@ -11,6 +11,7 @@
 // - URL (optional)
 // - ROUTE (optional)
 // - BUILD (optional)
+// - CONTEXT (optional) JSON or string
 
 const TELEMETRY_URL = process.env.TELEMETRY_URL || 'https://www.sahla4eco.com/api/telemetry/client-error';
 
@@ -30,9 +31,20 @@ async function main() {
     message,
     name: process.env.NAME ? safeStr(process.env.NAME, 200) : 'GitHubActions',
     stack: process.env.STACK ? safeStr(process.env.STACK, 12000) : undefined,
+    componentStack: process.env.CONTEXT ? safeStr(process.env.CONTEXT, 8000) : undefined,
     url: process.env.URL ? safeStr(process.env.URL, 2000) : undefined,
     route: process.env.ROUTE ? safeStr(process.env.ROUTE, 500) : undefined,
     build: process.env.BUILD ? safeStr(process.env.BUILD, 80) : undefined,
+    context: (() => {
+      const c = process.env.CONTEXT;
+      if (!c) return undefined;
+      // If it's already JSON, keep it; otherwise wrap as string.
+      try {
+        return JSON.parse(c);
+      } catch {
+        return safeStr(c, 8000);
+      }
+    })(),
   };
 
   // Best-effort: never fail the workflow because telemetry failed.

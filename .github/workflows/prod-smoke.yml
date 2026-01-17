@@ -20,9 +20,13 @@ jobs:
           node-version: 20
 
       - name: Run production smoke checks
+        id: smoke
         env:
           PROD_BASE_URL: https://www.sahla4eco.com
-        run: node scripts/prod-smoke.mjs
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/prod-smoke.mjs 2>&1 | tee -a prod-smoke.log
 
       - name: Report prod-smoke failure to EcoPro telemetry
         if: failure()
@@ -34,9 +38,18 @@ jobs:
             repo=${{ github.repository }} workflow=${{ github.workflow }} job=${{ github.job }}
             sha=${{ github.sha }} ref=${{ github.ref_name }}
             run=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          ROUTE: prod-smoke
+          CONTEXT: |
+            {"base":"https://www.sahla4eco.com","outcome":"${{ steps.smoke.outcome }}"}
           STACK: |
-            Prod smoke failure. Check GitHub Actions logs:
-            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            Prod smoke failure. Tail of prod-smoke.log:
           URL: https://www.sahla4eco.com
           BUILD: ${{ github.sha }}
-        run: node scripts/report-telemetry.mjs
+        shell: bash
+        run: |
+          if [ -f prod-smoke.log ]; then
+            export STACK="$STACK$(tail -n 220 prod-smoke.log | sed 's/\r$//')"
+          else
+            export STACK="$STACK(no prod-smoke.log present)"
+          fi
+          node scripts/report-telemetry.mjs

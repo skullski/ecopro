@@ -41,6 +41,7 @@ import * as staffRoutes from "./routes/staff";
 import * as billingRoutes from "./routes/billing";
 import kernelRouter, { initKernel } from "./routes/kernel";
 import trapsRouter from "./routes/traps";
+import { startSubscriptionEnforcement } from './utils/subscription-enforcement';
 import intelRouter from "./routes/intel";
 import { usersRouter } from "./routes/users";
 import { deliveryRouter } from "./routes/delivery";
@@ -475,6 +476,9 @@ export function createServer(options?: { skipDbInit?: boolean }) {
     void purgeOldSecurityEvents(90).catch(() => null);
   }, 6 * 60 * 60 * 1000);
 
+  // Subscription enforcement (auto-lock expired trials/subscriptions)
+  startSubscriptionEnforcement();
+
   // NOTE: Removed duplicate express.json()/urlencoded registrations to avoid
   // early PayloadTooLargeError from default 100kb parser.
 
@@ -865,6 +869,14 @@ export function createServer(options?: { skipDbInit?: boolean }) {
     authenticate,
     requireAdmin,
     adminRoutes.exportDbSnapshot
+  );
+
+  // Kernel Portal credentials (admin only)
+  app.post(
+    "/api/admin/kernel/reset-creds",
+    authenticate,
+    requireAdmin,
+    adminRoutes.resetKernelCredentials
   );
 
   app.get(

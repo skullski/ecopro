@@ -6,12 +6,88 @@ import { createCheckoutSession, handlePaymentCompleted, handlePaymentFailed, ver
 
 const isProduction = process.env.NODE_ENV === 'production';
 
+async function getTrialDaysFromSettings(): Promise<number> {
+  try {
+    const r = await pool.query(
+      `SELECT setting_value, data_type
+       FROM platform_settings
+       WHERE setting_key = 'trial_days'
+       LIMIT 1`
+    );
+    if (!r.rows.length) return 30;
+    const raw = r.rows[0]?.setting_value;
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return 30;
+    // keep within sane bounds
+    return Math.max(1, Math.min(365, Math.floor(n)));
+  } catch {
+    return 30;
+  }
+}
+
+async function setPaymentLock(userId: number, reason: string): Promise<void> {
+  // Best-effort: DB schema can be in transition (lock_type column may not exist)
+  try {
+    await pool.query(
+      `UPDATE clients
+       SET is_locked = true,
+           locked_reason = $2,
+           locked_at = NOW(),
+           lock_type = 'payment'
+       WHERE id = $1 AND (is_locked IS DISTINCT FROM true)`
+      ,
+      [userId, reason]
+    );
+  } catch {
+    await pool.query(
+      `UPDATE clients
+       SET is_locked = true,
+           locked_reason = $2,
+           locked_at = NOW()
+       WHERE id = $1 AND (is_locked IS DISTINCT FROM true)`
+      ,
+      [userId, reason]
+    ).catch(() => null);
+  }
+
+  // Bots should be off for subscription-locked clients
+  await pool.query(
+    `UPDATE bot_settings SET enabled = false, updated_at = NOW() WHERE client_id = $1`,
+    [userId]
+  ).catch(() => null);
+}
+
+async function clearPaymentLockIfAny(userId: number, unlockReason: string): Promise<void> {
+  try {
+    // Only clear payment locks; do not touch critical/admin locks.
+    const r = await pool.query(
+      `UPDATE clients
+       SET is_locked = false,
+           locked_reason = NULL,
+           locked_at = NULL,
+           unlock_reason = $2,
+           unlocked_at = NOW()
+       WHERE id = $1 AND is_locked = true AND lock_type = 'payment'`,
+      [userId, unlockReason]
+    );
+    if ((r.rowCount ?? 0) > 0) {
+      await pool.query(
+        `UPDATE bot_settings SET enabled = true, updated_at = NOW() WHERE client_id = $1`,
+        [userId]
+      ).catch(() => null);
+    }
+  } catch {
+    // If lock_type column doesn't exist, do not auto-unlock.
+  }
+}
+
 /**
  * Create a 30-day trial subscription for a new user
  * Called during registration to ensure all new users get their trial
  */
 export async function createTrialSubscription(userId: number): Promise<void> {
   try {
+    const trialDays = await getTrialDaysFromSettings();
     // Check if subscription already exists
     const existing = await pool.query(
       `SELECT id FROM subscriptions WHERE user_id = $1`,
@@ -21,11 +97,11 @@ export async function createTrialSubscription(userId: number): Promise<void> {
     if (existing.rows.length === 0) {
       await pool.query(
         `INSERT INTO subscriptions (user_id, status, trial_started_at, trial_ends_at)
-         VALUES ($1, 'trial', NOW(), NOW() + INTERVAL '30 days')`,
-        [userId]
+         VALUES ($1, 'trial', NOW(), NOW() + ($2::text || ' days')::interval)`,
+        [userId, trialDays]
       );
       if (!isProduction) {
-        console.log(`[Billing] Created 30-day trial subscription for user ${userId}`);
+        console.log(`[Billing] Created ${trialDays}-day trial subscription for user ${userId}`);
       }
     }
   } catch (error) {
@@ -50,11 +126,12 @@ export const getSubscription: RequestHandler = async (req, res) => {
 
     if (result.rows.length === 0) {
       // Create new subscription with 30-day trial
+      const trialDays = await getTrialDaysFromSettings();
       const newSub = await pool.query(
         `INSERT INTO subscriptions (user_id, status, trial_started_at, trial_ends_at)
-         VALUES ($1, 'trial', NOW(), NOW() + INTERVAL '30 days')
+         VALUES ($1, 'trial', NOW(), NOW() + ($2::text || ' days')::interval)
          RETURNING *`,
-        [userId]
+        [userId, trialDays]
       );
       return res.json(newSub.rows[0]);
     }
@@ -76,41 +153,79 @@ export const checkAccess: RequestHandler = async (req, res) => {
     if (!userId) return jsonError(res, 401, "Not authenticated");
 
     const result = await pool.query(
-      `SELECT * FROM subscriptions WHERE user_id = $1`,
+      `SELECT s.*, c.subscription_extended_until, c.is_locked, c.locked_reason, c.lock_type
+       FROM subscriptions s
+       LEFT JOIN clients c ON c.id = s.user_id
+       WHERE s.user_id = $1`,
       [userId]
     );
 
     if (result.rows.length === 0) {
       // New user - create subscription with 30-day trial
+      const trialDays = await getTrialDaysFromSettings();
       await pool.query(
         `INSERT INTO subscriptions (user_id, status, trial_started_at, trial_ends_at)
-         VALUES ($1, 'trial', NOW(), NOW() + INTERVAL '30 days')`,
-        [userId]
+         VALUES ($1, 'trial', NOW(), NOW() + ($2::text || ' days')::interval)`,
+        [userId, trialDays]
       );
       return res.json({ hasAccess: true, status: "trial", message: "Free trial active" });
     }
 
     const subscription = result.rows[0];
     const now = new Date();
-    const trialEnds = new Date(subscription.trial_ends_at);
+
+    const extensionEndsRaw = subscription.subscription_extended_until as any;
+    const extensionEnds = extensionEndsRaw ? new Date(extensionEndsRaw) : null;
+    const trialEnds = subscription.trial_ends_at ? new Date(subscription.trial_ends_at) : null;
+    const activeEnds = subscription.current_period_end ? new Date(subscription.current_period_end) : null;
+
+    const extensionOk = !!(extensionEnds && Number.isFinite(extensionEnds.getTime()) && now < extensionEnds);
+    const trialOk = subscription.status === 'trial' && !!(trialEnds && Number.isFinite(trialEnds.getTime()) && now < trialEnds);
+    const activeOk = subscription.status === 'active' && (!activeEnds || (Number.isFinite(activeEnds.getTime()) && now < activeEnds));
+
+    const hasAccess = extensionOk || trialOk || activeOk;
+
+    // If access is restored (e.g., paid/extended) and the account is payment-locked, auto-unlock.
+    if (hasAccess) {
+      await clearPaymentLockIfAny(Number(userId), 'Auto unlock: subscription active');
+    }
 
     // Trial still active
-    if (subscription.status === "trial" && now < trialEnds) {
+    if (trialOk) {
       return res.json({ 
         hasAccess: true, 
         status: "trial", 
         tier: subscription.tier,
-        daysLeft: Math.ceil((trialEnds.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
+        daysLeft: trialEnds ? Math.ceil((trialEnds.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null,
         message: "Free trial active" 
       });
     }
 
     // Trial expired - check if paid
-    if (subscription.status === "active") {
-      return res.json({ hasAccess: true, status: "active", tier: subscription.tier, message: "Subscription active" });
+    if (extensionOk) {
+      return res.json({
+        hasAccess: true,
+        status: "extended",
+        tier: subscription.tier,
+        daysLeft: extensionEnds ? Math.ceil((extensionEnds.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null,
+        message: "Subscription extended"
+      });
+    }
+
+    if (activeOk) {
+      return res.json({
+        hasAccess: true,
+        status: "active",
+        tier: subscription.tier,
+        daysLeft: activeEnds ? Math.ceil((activeEnds.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null,
+        message: "Subscription active"
+      });
     }
 
     // Expired/suspended
+    // Enforce account lock for subscription expiration so the platform can reliably gate access.
+    // This makes free-trial auto-lock work even if UI doesn't manually lock.
+    await setPaymentLock(Number(userId), 'Subscription expired (auto-lock)');
     return res.json({ 
       hasAccess: false, 
       status: subscription.status,

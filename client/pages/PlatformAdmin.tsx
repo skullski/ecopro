@@ -303,6 +303,7 @@ function LockedAccountsManager() {
   const { t } = useTranslation();
   const [allAccounts, setAllAccounts] = useState<LockedAccount[]>([]);
   const [loading, setLoading] = useState(true);
+  const [nowMs, setNowMs] = useState(() => Date.now());
   const [selectedAccounts, setSelectedAccounts] = useState<number[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState<'unlock' | 'lock'>('unlock');
@@ -316,6 +317,12 @@ function LockedAccountsManager() {
 
   useEffect(() => {
     fetchAllAccounts();
+  }, []);
+
+  // Re-render periodically so countdown labels (e.g. "30d left") update.
+  useEffect(() => {
+    const id = window.setInterval(() => setNowMs(Date.now()), 60 * 1000);
+    return () => window.clearInterval(id);
   }, []);
 
   async function fetchAllAccounts() {
@@ -336,7 +343,9 @@ function LockedAccountsManager() {
   const getDaysLeft = (account: LockedAccount) => {
     const endDate = account.subscription_extended_until || account.subscription_ends_at;
     if (!endDate) return null;
-    const days = Math.ceil((new Date(endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    const endMs = new Date(endDate).getTime();
+    if (!Number.isFinite(endMs)) return null;
+    const days = Math.ceil((endMs - nowMs) / (1000 * 60 * 60 * 24));
     return days;
   };
 
@@ -4498,6 +4507,33 @@ export default function PlatformAdmin() {
         {/* Tools Tab - Manage locked accounts */}
         {activeTab === 'tools' && (
           <div className="space-y-6">
+            <div className="bg-slate-800/50 backdrop-blur-md rounded-xl border border-slate-700/50 shadow-lg p-5">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div>
+                  <h3 className="text-white font-bold">Kernel Portal Credentials</h3>
+                  <p className="text-slate-400 text-sm">Generates new root login for the hidden Kernel security page.</p>
+                </div>
+                <Button
+                  className="bg-cyan-600 hover:bg-cyan-700 text-white"
+                  onClick={async () => {
+                    try {
+                      const res = await fetch('/api/admin/kernel/reset-creds', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username: 'root' }),
+                      });
+                      const data = await res.json().catch(() => ({} as any));
+                      if (!res.ok) throw new Error(data?.error || data?.message || 'Failed to reset kernel creds');
+                      alert(`Kernel creds generated\n\nUsername: ${data.username}\nPassword: ${data.password}\n\nOpen: /kernel-portal-k7r2n9x5p3`);
+                    } catch (e: any) {
+                      alert(e?.message || 'Failed to reset kernel creds');
+                    }
+                  }}
+                >
+                  Generate Kernel Creds
+                </Button>
+              </div>
+            </div>
             <LockedAccountsManager />
           </div>
         )}

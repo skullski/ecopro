@@ -25,20 +25,33 @@ jobs:
           version: 10
 
       - name: Install
+        id: install
         run: pnpm install --frozen-lockfile
 
       - name: Typecheck
+        id: typecheck
         env:
           NODE_OPTIONS: --max_old_space_size=4096
-        run: pnpm -s typecheck
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm -s typecheck 2>&1 | tee -a ci.log
 
       - name: Test
-        run: pnpm -s test
+        id: test
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm -s test 2>&1 | tee -a ci.log
 
       - name: Build
+        id: build
         env:
           NODE_OPTIONS: --max_old_space_size=4096
-        run: pnpm -s build
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm -s build 2>&1 | tee -a ci.log
 
       - name: Report CI failure to EcoPro telemetry
         if: failure()
@@ -49,9 +62,18 @@ jobs:
             CI failed: repo=${{ github.repository }} workflow=${{ github.workflow }} job=${{ github.job }}
             sha=${{ github.sha }} ref=${{ github.ref_name }}
             run=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          ROUTE: ci
+          CONTEXT: |
+            {"outcomes":{"install":"${{ steps.install.outcome }}","typecheck":"${{ steps.typecheck.outcome }}","test":"${{ steps.test.outcome }}","build":"${{ steps.build.outcome }}"}}
           STACK: |
-            CI failure. Check GitHub Actions logs:
-            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            CI failure. Tail of ci.log:
           URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           BUILD: ${{ github.sha }}
-        run: node scripts/report-telemetry.mjs
+        shell: bash
+        run: |
+          if [ -f ci.log ]; then
+            export STACK="$STACK$(tail -n 220 ci.log | sed 's/\r$//')"
+          else
+            export STACK="$STACK(no ci.log present)"
+          fi
+          node scripts/report-telemetry.mjs
