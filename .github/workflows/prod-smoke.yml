@@ -1,0 +1,25 @@
+name: Production Smoke
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '*/30 * * * *' # every 30 minutes
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run production smoke checks
+        env:
+          PROD_BASE_URL: https://www.sahla4eco.com
+        run: node scripts/prod-smoke.mjs
