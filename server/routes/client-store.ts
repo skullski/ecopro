@@ -621,6 +621,14 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
     }
     const existingRow = existingRes.rows[0];
 
+    // Detect available columns to avoid updating fields that don't exist
+    const colsRes = await withRetry((db) => db.query(
+      `SELECT column_name
+       FROM information_schema.columns
+       WHERE table_schema = 'public' AND table_name = 'client_store_settings'`
+    ));
+    const existingCols = new Set<string>(colsRes.rows.map((r: any) => String(r.column_name)));
+
     // Reserved control payload for template switching.
     const templateSwitch = (updates as any).__templateSwitch;
     if ((updates as any).__templateSwitch !== undefined) delete (updates as any).__templateSwitch;
@@ -713,7 +721,7 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
       'template_add_to_cart_label',
       // allow older/client payloads to include seller fields without failing
       'seller_name', 'seller_email'
-    ]);
+    ].filter((col) => existingCols.has(col)));
 
     // Columns we treat as template-scoped for per-template snapshots.
     const templateScopedCols = new Set([
@@ -725,7 +733,7 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
       'hero_tile1_url',
       'hero_tile2_url',
       'store_images',
-    ]);
+    ].filter((col) => existingCols.has(col)));
 
     const normalizeTemplateIdForAvailability = (id: any): string => {
       const normalized = String(id || '')
@@ -920,12 +928,12 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
     });
 
     // Persist JSON settings columns
-    if (nextTemplateSettings != null) {
+    if (nextTemplateSettings != null && existingCols.has('template_settings')) {
       fields.push(`template_settings = $${paramCount}`);
       values.push(nextTemplateSettings);
       paramCount++;
     }
-    if (nextTemplateByTemplate != null) {
+    if (nextTemplateByTemplate != null && existingCols.has('template_settings_by_template')) {
       fields.push(`template_settings_by_template = $${paramCount}`);
       values.push(nextTemplateByTemplate);
       paramCount++;
