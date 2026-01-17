@@ -298,11 +298,27 @@ export function createServer(options?: { skipDbInit?: boolean }) {
   // Add common Render patterns
   const renderPattern = /^https:\/\/ecopro[a-z0-9-]*\.onrender\.com$/;
 
+  // Known production domains (custom domain + www). These should always be allowed
+  // when running in production, even if ALLOWED_ORIGINS is not explicitly set.
+  const knownProductionOrigins = [
+    'https://sahla4eco.com',
+    'https://www.sahla4eco.com',
+  ];
+
+  if (isProduction) {
+    for (const o of knownProductionOrigins) {
+      if (!allowedOrigins.includes(o)) allowedOrigins.push(o);
+    }
+  }
+
   if (isProduction && allowedOrigins.length === 0) {
     console.warn('⚠️  ALLOWED_ORIGINS not set - will use Render pattern matching');
   }
 
+  // Apply CORS only to API routes. Static assets (e.g. /assets/*) must never be blocked by CORS,
+  // and browsers may include an Origin header even for same-site module/script/style requests.
   app.use(
+    '/api',
     cors((req, callback) => {
       const origin = req.header('Origin');
 
