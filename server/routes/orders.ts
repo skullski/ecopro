@@ -1,6 +1,6 @@
 import { Router, RequestHandler } from "express";
 import { randomBytes } from "crypto";
-import { pool } from "../utils/database";
+import { pool, ensureMigrationsReady } from "../utils/database";
 import { sendBotMessagesForOrder } from "./order-confirmation";
 import { createOrderTelegramLink } from "../utils/telegram";
 import { replaceTemplateVariables, sendTelegramMessage } from "../utils/bot-messaging";
@@ -9,6 +9,11 @@ import { z } from 'zod';
 import { ensureSystemOrderStatuses } from '../utils/client-provisioning';
 
 const isProduction = process.env.NODE_ENV === 'production';
+
+const isMissingSchemaError = (err: any): boolean => {
+  const msg = String(err?.message || '').toLowerCase();
+  return msg.includes('does not exist') && (msg.includes('relation') || msg.includes('column'));
+};
 
 export const ordersRouter = Router();
 
@@ -471,6 +476,15 @@ Press one of the buttons to confirm or cancel:`;
       }
     }
   } catch (error) {
+    if (isMissingSchemaError(error) && !(req as any).__migrationsRetried) {
+      (req as any).__migrationsRetried = true;
+      try {
+        await ensureMigrationsReady('createOrder missing schema');
+        return createOrder(req, res);
+      } catch (e) {
+        console.error('[Orders] Migration retry failed:', (e as any)?.message || e);
+      }
+    }
     if (inTransaction && client) {
       try {
         await client.query('ROLLBACK');

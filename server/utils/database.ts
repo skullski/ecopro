@@ -309,6 +309,23 @@ export async function runPendingMigrations(): Promise<void> {
   }
 }
 
+let migrationsInFlight: Promise<void> | null = null;
+
+export async function ensureMigrationsReady(reason?: string): Promise<void> {
+  if (migrationsInFlight) return migrationsInFlight;
+  migrationsInFlight = (async () => {
+    try {
+      if (reason) {
+        console.warn(`[DB] Running migrations due to: ${reason}`);
+      }
+      await runPendingMigrations();
+    } finally {
+      migrationsInFlight = null;
+    }
+  })();
+  return migrationsInFlight;
+}
+
 /**
  * Find user by email - checks admins and clients tables
  */

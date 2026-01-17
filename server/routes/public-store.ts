@@ -1,5 +1,5 @@
 import { RequestHandler } from "express";
-import { ensureConnection } from "../utils/database";
+import { ensureConnection, ensureMigrationsReady } from "../utils/database";
 import { sendBotMessagesForOrder } from "./order-confirmation";
 import { createOrderTelegramLink } from "../utils/telegram";
 import { createConfirmationLink, sendTelegramMessage, replaceTemplateVariables } from "../utils/bot-messaging";
@@ -937,6 +937,19 @@ Press one of the buttons to confirm or cancel:`;
     const { client_id, ...safeOrder } = result.rows[0];
     res.status(201).json({ success: true, order: safeOrder, telegramStartUrl: telegram?.startUrl || null, confirmationUrl });
   } catch (error) {
+    const isMissingSchemaError = (err: any): boolean => {
+      const msg = String(err?.message || '').toLowerCase();
+      return msg.includes('does not exist') && (msg.includes('relation') || msg.includes('column'));
+    };
+    if (isMissingSchemaError(error) && !(req as any).__migrationsRetried) {
+      (req as any).__migrationsRetried = true;
+      try {
+        await ensureMigrationsReady('createPublicStoreOrder missing schema');
+        return createPublicStoreOrder(req, res);
+      } catch (e) {
+        console.error('[createPublicStoreOrder] Migration retry failed:', (e as any)?.message || e);
+      }
+    }
     if (inTransaction && client) {
       try {
         await client.query('ROLLBACK');

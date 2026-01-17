@@ -1,5 +1,5 @@
 import type { RequestHandler } from 'express';
-import { ensureConnection } from '../utils/database';
+import { ensureConnection, ensureMigrationsReady } from '../utils/database';
 import { replaceTemplateVariables, sendTelegramMessage } from '../utils/bot-messaging';
 import { registerTelegramWebhook, upsertTelegramWebhookSecret } from '../utils/telegram';
 import { getPublicBaseUrl } from '../utils/public-url';
@@ -204,6 +204,19 @@ export const getTelegramBotLink: RequestHandler = async (req, res) => {
       }
     });
   } catch (error) {
+    const isMissingSchemaError = (err: any): boolean => {
+      const msg = String(err?.message || '').toLowerCase();
+      return msg.includes('does not exist') && (msg.includes('relation') || msg.includes('column'));
+    };
+    if (isMissingSchemaError(error) && !(req as any).__migrationsRetried) {
+      (req as any).__migrationsRetried = true;
+      try {
+        await ensureMigrationsReady('getTelegramBotLink missing schema');
+        return getTelegramBotLink(req, res);
+      } catch (e) {
+        console.error('[getTelegramBotLink] Migration retry failed:', (e as any)?.message || e);
+      }
+    }
     console.error('[getTelegramBotLink] error:', error);
     res.status(500).json({ error: 'Failed to get bot link' });
   }
@@ -256,6 +269,19 @@ export const checkTelegramConnection: RequestHandler = async (req, res) => {
       chatId: chatRes.rows[0]?.telegram_chat_id || null
     });
   } catch (error) {
+    const isMissingSchemaError = (err: any): boolean => {
+      const msg = String(err?.message || '').toLowerCase();
+      return msg.includes('does not exist') && (msg.includes('relation') || msg.includes('column'));
+    };
+    if (isMissingSchemaError(error) && !(req as any).__migrationsRetried) {
+      (req as any).__migrationsRetried = true;
+      try {
+        await ensureMigrationsReady('checkTelegramConnection missing schema');
+        return checkTelegramConnection(req, res);
+      } catch (e) {
+        console.error('[checkTelegramConnection] Migration retry failed:', (e as any)?.message || e);
+      }
+    }
     console.error('[checkTelegramConnection] error:', error);
     res.json({ connected: false });
   }
