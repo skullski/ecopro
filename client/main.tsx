@@ -3,6 +3,19 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import { reportClientError } from "./utils/telemetry";
 
+function getBuildIdFromImportMetaUrl(): string | null {
+  try {
+    // In production we append ?v=<git-sha> to the asset URL.
+    // If multiple different builds get loaded on the same page, reusing a
+    // React root across builds can cause invalid hook calls.
+    const u = new URL(import.meta.url);
+    const v = u.searchParams.get('v');
+    return v ? String(v).slice(0, 80) : null;
+  } catch {
+    return null;
+  }
+}
+
 function getCookie(name: string): string | null {
   if (typeof document === 'undefined') return null;
   const raw = document.cookie
@@ -68,6 +81,8 @@ if (typeof window !== 'undefined' && typeof window.fetch === 'function') {
 
 const container = document.getElementById("root");
 if (container) {
+  const buildId = getBuildIdFromImportMetaUrl();
+
   // Global error telemetry (production only)
   if (import.meta.env.PROD) {
     window.addEventListener('error', (event) => {
@@ -122,14 +137,43 @@ if (container) {
         stack: new Error('Double-mount detected').stack,
         url: window.location.href,
         route: window.location.pathname,
-        build: buildMatch ? String(buildMatch).slice(0, 80) : undefined,
+        build: buildId || (buildMatch ? String(buildMatch).slice(0, 80) : undefined),
       });
     } catch {
       // ignore
     }
   }
+
+  // If a different build already mounted a React root, do NOT reuse it.
+  // Reusing a root across different React module graphs can trigger invalid hook calls.
+  const priorBuildId: string | null | undefined = w.__ECOPRO_BUILD_ID__;
+  if (w.__ECOPRO_REACT_ROOT__ && import.meta.env.PROD && priorBuildId && buildId && priorBuildId !== buildId) {
+    try {
+      reportClientError({
+        message: `React root build mismatch: prior=${priorBuildId} current=${buildId}. Unmounting prior root to avoid hook mismatch.`,
+        name: 'EcoproMountGuardBuildMismatch',
+        stack: new Error('React root build mismatch').stack,
+        url: window.location.href,
+        route: window.location.pathname,
+        build: buildId,
+      });
+    } catch {
+      // ignore
+    }
+
+    try {
+      w.__ECOPRO_REACT_ROOT__.unmount?.();
+    } catch {
+      // ignore
+    }
+    w.__ECOPRO_REACT_ROOT__ = undefined;
+    w.__ECOPRO_BUILD_ID__ = undefined;
+  }
+
   if (!w.__ECOPRO_REACT_ROOT__) {
     w.__ECOPRO_REACT_ROOT__ = createRoot(container);
+    w.__ECOPRO_BUILD_ID__ = buildId;
   }
+
   w.__ECOPRO_REACT_ROOT__.render(<App />);
 }
