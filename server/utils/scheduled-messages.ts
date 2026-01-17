@@ -7,6 +7,10 @@
 import { ensureConnection } from './database';
 import { sendTelegramMessage } from './bot-messaging';
 
+const PLATFORM_TELEGRAM_BOT_TOKEN = String(process.env.PLATFORM_TELEGRAM_BOT_TOKEN || '').trim();
+const PLATFORM_TELEGRAM_BOT_USERNAME = String(process.env.PLATFORM_TELEGRAM_BOT_USERNAME || '').trim();
+const PLATFORM_TELEGRAM_AVAILABLE = !!PLATFORM_TELEGRAM_BOT_TOKEN && !!PLATFORM_TELEGRAM_BOT_USERNAME;
+
 let workerInterval: NodeJS.Timeout | null = null;
 
 /**
@@ -18,13 +22,15 @@ export async function processScheduledMessages(): Promise<void> {
     
     // Get all pending messages that are past their scheduled time
     const result = await pool.query(
-      `SELECT sm.*, bs.telegram_bot_token
+      `SELECT sm.*, COALESCE(bs.telegram_bot_token, $1) AS telegram_bot_token
        FROM scheduled_messages sm
-       JOIN bot_settings bs ON sm.client_id = bs.client_id AND bs.enabled = true AND bs.telegram_bot_token IS NOT NULL
-       WHERE sm.status = 'pending' 
+       JOIN bot_settings bs ON sm.client_id = bs.client_id AND bs.enabled = true
+       WHERE sm.status = 'pending'
          AND sm.scheduled_at <= NOW()
+         AND (bs.telegram_bot_token IS NOT NULL OR $1 <> '')
        ORDER BY sm.scheduled_at ASC
-       LIMIT 50`
+       LIMIT 50`,
+      [PLATFORM_TELEGRAM_AVAILABLE ? PLATFORM_TELEGRAM_BOT_TOKEN : '']
     );
     
     if (result.rows.length === 0) {

@@ -2077,7 +2077,10 @@ source .env && psql "$DATABASE_URL"
 ### Key Environment Variables
 - `DATABASE_URL` - PostgreSQL connection string (Render)
 - `JWT_SECRET` - JWT signing secret
-- `TELEGRAM_BOT_TOKEN` - Platform Telegram bot (optional)
+- `PLATFORM_TELEGRAM_BOT_TOKEN` - Platform Telegram bot token (optional; server env only)
+- `PLATFORM_TELEGRAM_BOT_USERNAME` - Platform Telegram bot username (optional)
+- `PLATFORM_FB_PAGE_ID` - Platform Messenger Page ID (optional)
+- `PLATFORM_FB_PAGE_ACCESS_TOKEN` - Platform Messenger Page Access Token (optional; server env only)
 
 ### Important File Locations
 | Purpose | Location |

@@ -12,6 +12,10 @@ const PLATFORM_TELEGRAM_BOT_TOKEN = String(process.env.PLATFORM_TELEGRAM_BOT_TOK
 const PLATFORM_TELEGRAM_BOT_USERNAME = String(process.env.PLATFORM_TELEGRAM_BOT_USERNAME || '').trim();
 const PLATFORM_TELEGRAM_AVAILABLE = !!PLATFORM_TELEGRAM_BOT_TOKEN && !!PLATFORM_TELEGRAM_BOT_USERNAME;
 
+function normalizeTelegramUsername(username: string): string {
+  return String(username || '').trim().replace(/^@/, '');
+}
+
 async function getClientAccessState(clientId: string | number): Promise<{ allowBot: boolean; reason?: string }>
 {
   // Check if user is locked - is_locked means subscription issue, bot should be disabled
@@ -136,10 +140,32 @@ export const getBotSettings: RequestHandler = async (req, res) => {
       );
     }
 
-    const storedTelegramToken = String(settings.telegram_bot_token || '').trim();
-    const storedTelegramUsername = String(settings.telegram_bot_username || '').trim();
+    let storedTelegramToken = String(settings.telegram_bot_token || '').trim();
+    let storedTelegramUsername = String(settings.telegram_bot_username || '').trim();
     const telegramTokenConfigured = !!storedTelegramToken;
     const telegramUsingPlatform = PLATFORM_TELEGRAM_AVAILABLE && (!storedTelegramToken || storedTelegramToken === PLATFORM_TELEGRAM_BOT_TOKEN);
+
+    // If platform bot is configured and this client has no stored Telegram token,
+    // backfill the platform token/username into bot_settings.
+    // This keeps downstream SQL JOINs working without ever exposing the secret to store owners.
+    if (PLATFORM_TELEGRAM_AVAILABLE && !storedTelegramToken) {
+      const normalizedPlatformUsername = normalizeTelegramUsername(PLATFORM_TELEGRAM_BOT_USERNAME);
+      try {
+        await pool.query(
+          `UPDATE bot_settings
+           SET telegram_bot_token = $2,
+               telegram_bot_username = COALESCE(NULLIF(BTRIM(telegram_bot_username), ''), $3),
+               updated_at = NOW()
+           WHERE client_id = $1
+             AND (telegram_bot_token IS NULL OR BTRIM(telegram_bot_token) = '')`,
+          [clientId, PLATFORM_TELEGRAM_BOT_TOKEN, normalizedPlatformUsername]
+        );
+        storedTelegramToken = PLATFORM_TELEGRAM_BOT_TOKEN;
+        storedTelegramUsername = storedTelegramUsername || normalizedPlatformUsername;
+      } catch (e) {
+        console.warn('[getBotSettings] Failed to backfill platform Telegram token:', (e as any)?.message || e);
+      }
+    }
 
     const storedFbPageId = String(settings.fb_page_id || '').trim();
     const storedFbPageAccessToken = String(settings.fb_page_access_token || '').trim();
@@ -160,7 +186,7 @@ export const getBotSettings: RequestHandler = async (req, res) => {
       telegramBotToken: '',
       telegramTokenConfigured: telegramTokenConfigured || telegramUsingPlatform,
       // Username isn't secret, but hide it when platform bot is used.
-      telegramBotUsername: telegramUsingPlatform ? '' : storedTelegramUsername,
+      telegramBotUsername: telegramUsingPlatform ? '' : normalizeTelegramUsername(storedTelegramUsername),
       telegramDelayMinutes: settings.telegram_delay_minutes || 5,
       autoExpireHours: settings.auto_expire_hours || 24,
       viberAuthToken: settings.viber_auth_token,
@@ -268,7 +294,7 @@ export const updateBotSettings: RequestHandler = async (req, res) => {
         return res.status(400).json({ error: 'Platform Telegram bot is not configured on the server.' });
       }
       finalTelegramBotToken = PLATFORM_TELEGRAM_BOT_TOKEN;
-      finalTelegramBotUsername = PLATFORM_TELEGRAM_BOT_USERNAME;
+      finalTelegramBotUsername = normalizeTelegramUsername(PLATFORM_TELEGRAM_BOT_USERNAME);
     } else {
       const switchingFromPlatform = existingTelegramIsPlatform;
       if (switchingFromPlatform && !normalizedTelegramBotToken) {
@@ -278,7 +304,7 @@ export const updateBotSettings: RequestHandler = async (req, res) => {
         finalTelegramBotToken = normalizedTelegramBotToken;
       }
       if (normalizedTelegramBotUsername) {
-        finalTelegramBotUsername = normalizedTelegramBotUsername;
+        finalTelegramBotUsername = normalizeTelegramUsername(normalizedTelegramBotUsername);
       }
     }
 

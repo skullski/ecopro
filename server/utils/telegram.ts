@@ -1,6 +1,14 @@
 import crypto from 'crypto';
 import { ensureConnection } from './database';
 
+const PLATFORM_TELEGRAM_BOT_USERNAME = String(process.env.PLATFORM_TELEGRAM_BOT_USERNAME || '').trim();
+const PLATFORM_TELEGRAM_BOT_TOKEN = String(process.env.PLATFORM_TELEGRAM_BOT_TOKEN || '').trim();
+const PLATFORM_TELEGRAM_AVAILABLE = !!PLATFORM_TELEGRAM_BOT_TOKEN && !!PLATFORM_TELEGRAM_BOT_USERNAME;
+
+function normalizeTelegramUsername(username: string): string {
+  return String(username || '').trim().replace(/^@/, '');
+}
+
 export function generateTelegramStartToken(): string {
   // Telegram deep-link payload limit is 64 chars. Keep it simple and URL-safe.
   // 32 chars hex is safe: [0-9a-f].
@@ -103,7 +111,7 @@ export async function createOrderTelegramLink(opts: {
 
   // Only generate usable URLs when Telegram is configured for this store owner.
   const botUsernameRaw = settings?.telegram_bot_username as string | undefined;
-  const botUsername = botUsernameRaw?.replace(/^@/, '').trim();
+  const botUsername = normalizeTelegramUsername(botUsernameRaw || (PLATFORM_TELEGRAM_AVAILABLE ? PLATFORM_TELEGRAM_BOT_USERNAME : ''));
 
   const startToken = generateTelegramStartToken();
 

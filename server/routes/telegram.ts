@@ -6,6 +6,14 @@ import { getPublicBaseUrl } from '../utils/public-url';
 import { logSecurityEvent, getClientIp, computeFingerprint } from '../utils/security';
 import crypto from 'crypto';
 
+const PLATFORM_TELEGRAM_BOT_TOKEN = String(process.env.PLATFORM_TELEGRAM_BOT_TOKEN || '').trim();
+const PLATFORM_TELEGRAM_BOT_USERNAME = String(process.env.PLATFORM_TELEGRAM_BOT_USERNAME || '').trim();
+const PLATFORM_TELEGRAM_AVAILABLE = !!PLATFORM_TELEGRAM_BOT_TOKEN && !!PLATFORM_TELEGRAM_BOT_USERNAME;
+
+function normalizeTelegramUsername(username: string): string {
+  return String(username || '').trim().replace(/^@/, '');
+}
+
 // Temporary endpoint to set webhook secret for testing
 export const setWebhookSecret: RequestHandler = async (req, res) => {
   try {
@@ -122,25 +130,30 @@ export const getTelegramBotLink: RequestHandler = async (req, res) => {
        WHERE client_id = $1
          AND enabled = true
          AND telegram_bot_username IS NOT NULL
-         AND telegram_bot_token IS NOT NULL
        LIMIT 1`,
       [clientId]
     );
     
-    if (!botRes.rows.length || !botRes.rows[0].telegram_bot_username) {
+    const dbBotUsername = botRes.rows[0]?.telegram_bot_username as string | undefined;
+    const dbBotToken = botRes.rows[0]?.telegram_bot_token as string | undefined;
+
+    const effectiveBotUsername = normalizeTelegramUsername(dbBotUsername || (PLATFORM_TELEGRAM_AVAILABLE ? PLATFORM_TELEGRAM_BOT_USERNAME : ''));
+    const effectiveBotToken = String(dbBotToken || '').trim() || (PLATFORM_TELEGRAM_AVAILABLE ? PLATFORM_TELEGRAM_BOT_TOKEN : '');
+
+    if (!botRes.rows.length || !effectiveBotUsername) {
       return res.json({ 
         enabled: false, 
         message: 'Telegram not configured for this store' 
       });
     }
-    
-    const botUsername = botRes.rows[0].telegram_bot_username.replace(/^@/, '');
+
+    const botUsername = effectiveBotUsername;
 
     // Ensure webhook is registered and points at the current public URL.
     // This fixes the common case where Telegram is configured but webhook is missing/outdated,
     // causing the bot to not reply to /start.
     try {
-      const botToken = String(botRes.rows[0].telegram_bot_token || '').trim();
+      const botToken = effectiveBotToken;
       if (botToken) {
         const secretToken = await upsertTelegramWebhookSecret(clientId, botToken);
         const baseUrl = getPublicBaseUrl(req);
@@ -264,11 +277,14 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
          FROM bot_settings
          WHERE telegram_webhook_secret = $1
            AND enabled = true
-           AND telegram_bot_token IS NOT NULL
          LIMIT 1`,
         [secret]
       );
-      botToken = botRes.rows[0]?.telegram_bot_token as string | undefined;
+      botToken = String(botRes.rows[0]?.telegram_bot_token || '').trim() || undefined;
+    }
+
+    if (!botToken && PLATFORM_TELEGRAM_AVAILABLE) {
+      botToken = PLATFORM_TELEGRAM_BOT_TOKEN;
     }
 
     // Inline button callbacks
@@ -290,11 +306,10 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
              FROM bot_settings
              WHERE client_id = $1
                AND enabled = true
-               AND telegram_bot_token IS NOT NULL
              LIMIT 1`,
             [cbClientId]
           );
-          botToken = tokenRes.rows[0]?.telegram_bot_token as string | undefined;
+          botToken = String(tokenRes.rows[0]?.telegram_bot_token || '').trim() || (PLATFORM_TELEGRAM_AVAILABLE ? PLATFORM_TELEGRAM_BOT_TOKEN : undefined);
         }
 
         if (!botToken) {
@@ -383,11 +398,10 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
            FROM bot_settings
            WHERE client_id = $1
              AND enabled = true
-             AND telegram_bot_token IS NOT NULL
            LIMIT 1`,
           [clientId]
         );
-        botToken = tokenRes.rows[0]?.telegram_bot_token as string | undefined;
+        botToken = String(tokenRes.rows[0]?.telegram_bot_token || '').trim() || (PLATFORM_TELEGRAM_AVAILABLE ? PLATFORM_TELEGRAM_BOT_TOKEN : undefined);
       }
 
       if (!botToken) return res.status(200).json({ ok: true });
@@ -493,11 +507,10 @@ export const telegramWebhook: RequestHandler = async (req, res) => {
           `SELECT telegram_bot_token
            FROM bot_settings
            WHERE enabled = true
-             AND telegram_bot_token IS NOT NULL
            ORDER BY updated_at DESC NULLS LAST
            LIMIT 1`
         );
-        botToken = anyTokenRes.rows[0]?.telegram_bot_token as string | undefined;
+        botToken = String(anyTokenRes.rows[0]?.telegram_bot_token || '').trim() || (PLATFORM_TELEGRAM_AVAILABLE ? PLATFORM_TELEGRAM_BOT_TOKEN : undefined);
       }
 
       if (botToken) {

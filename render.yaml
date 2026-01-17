@@ -35,6 +35,12 @@ services:
         value: https://ecopro-1lbl.onrender.com
       - key: BASE_URL
         value: https://ecopro-1lbl.onrender.com
+      # Telegram (platform shared Bot)
+      # Username is not secret; token must be set in Render Dashboard.
+      - key: PLATFORM_TELEGRAM_BOT_USERNAME
+        value: "SahlaOrdersBot"
+      - key: PLATFORM_TELEGRAM_BOT_TOKEN
+        sync: false
       # Messenger (platform shared Page)
       # Page ID is not secret; token must be set in Render Dashboard.
       - key: PLATFORM_FB_PAGE_ID

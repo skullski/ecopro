@@ -4,6 +4,10 @@ import { ensureBotSettingsRow } from './client-provisioning';
 
 const PLATFORM_FB_PAGE_ACCESS_TOKEN = String(process.env.PLATFORM_FB_PAGE_ACCESS_TOKEN || '').trim();
 
+const PLATFORM_TELEGRAM_BOT_TOKEN = String(process.env.PLATFORM_TELEGRAM_BOT_TOKEN || '').trim();
+const PLATFORM_TELEGRAM_BOT_USERNAME = String(process.env.PLATFORM_TELEGRAM_BOT_USERNAME || '').trim();
+const PLATFORM_TELEGRAM_AVAILABLE = !!PLATFORM_TELEGRAM_BOT_TOKEN && !!PLATFORM_TELEGRAM_BOT_USERNAME;
+
 type SendResult = { success: boolean; messageId?: string; error?: string };
 
 /**
@@ -380,7 +384,8 @@ export async function sendOrderConfirmationMessages(
 
     // Telegram-only: schedule Telegram message (chat_id will be resolved by order_id at send time).
     const provider = settings.provider || 'telegram';
-    if (!options?.skipTelegram && provider === 'telegram' && settings.telegram_bot_token) {
+    const effectiveTelegramToken = String(settings.telegram_bot_token || '').trim() || (PLATFORM_TELEGRAM_AVAILABLE ? PLATFORM_TELEGRAM_BOT_TOKEN : '');
+    if (!options?.skipTelegram && provider === 'telegram' && effectiveTelegramToken) {
       const telegramMessage = replaceTemplateVariables(
         settings.template_order_confirmation || defaultWhatsAppTemplate(),
         templateVariables
@@ -511,7 +516,7 @@ export async function processPendingMessages(): Promise<void> {
             `SELECT telegram_bot_token FROM bot_settings WHERE client_id = $1`,
             [message.client_id]
           );
-          const token = settingsResult.rows[0]?.telegram_bot_token;
+          const token = String(settingsResult.rows[0]?.telegram_bot_token || '').trim() || (PLATFORM_TELEGRAM_AVAILABLE ? PLATFORM_TELEGRAM_BOT_TOKEN : '');
           const chatRes = await pool.query(
             `SELECT telegram_chat_id FROM order_telegram_chats WHERE order_id = $1 AND client_id = $2 LIMIT 1`,
             [message.order_id, message.client_id]
