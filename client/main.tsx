@@ -144,18 +144,22 @@ if (container) {
     }
   }
 
-  // If a different build already mounted a React root, do NOT reuse it.
+  // If a different bundle already mounted a React root, do NOT reuse it.
   // Reusing a root across different React module graphs can trigger invalid hook calls.
   const priorBuildId: string | null | undefined = w.__ECOPRO_BUILD_ID__;
-  if (w.__ECOPRO_REACT_ROOT__ && import.meta.env.PROD && priorBuildId && buildId && priorBuildId !== buildId) {
+  const priorReactRef: unknown = w.__ECOPRO_REACT_REF__;
+  const reactRefMismatch = !!priorReactRef && priorReactRef !== React;
+  const buildIdMismatch = !!priorBuildId && !!buildId && priorBuildId !== buildId;
+
+  if (w.__ECOPRO_REACT_ROOT__ && import.meta.env.PROD && (reactRefMismatch || buildIdMismatch)) {
     try {
       reportClientError({
-        message: `React root build mismatch: prior=${priorBuildId} current=${buildId}. Unmounting prior root to avoid hook mismatch.`,
-        name: 'EcoproMountGuardBuildMismatch',
-        stack: new Error('React root build mismatch').stack,
+        message: `React root mismatch: priorBuild=${priorBuildId ?? 'null'} currentBuild=${buildId ?? 'null'} reactRefMismatch=${reactRefMismatch}. Unmounting prior root to avoid hook mismatch.`,
+        name: 'EcoproMountGuardMismatch',
+        stack: new Error('React root mismatch').stack,
         url: window.location.href,
         route: window.location.pathname,
-        build: buildId,
+        build: buildId || priorBuildId || undefined,
       });
     } catch {
       // ignore
@@ -168,11 +172,13 @@ if (container) {
     }
     w.__ECOPRO_REACT_ROOT__ = undefined;
     w.__ECOPRO_BUILD_ID__ = undefined;
+    w.__ECOPRO_REACT_REF__ = undefined;
   }
 
   if (!w.__ECOPRO_REACT_ROOT__) {
     w.__ECOPRO_REACT_ROOT__ = createRoot(container);
     w.__ECOPRO_BUILD_ID__ = buildId;
+    w.__ECOPRO_REACT_REF__ = React;
   }
 
   w.__ECOPRO_REACT_ROOT__.render(<App />);
