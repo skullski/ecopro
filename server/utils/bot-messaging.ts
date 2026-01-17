@@ -382,10 +382,11 @@ export async function sendOrderConfirmationMessages(
       confirmationLink
     };
 
-    // Telegram-only: schedule Telegram message (chat_id will be resolved by order_id at send time).
+    // Telegram: schedule message if we have a token (either from bot_settings or platform-level)
+    // Note: We no longer require provider === 'telegram' since stores may have both channels configured
     const provider = settings.provider || 'telegram';
     const effectiveTelegramToken = String(settings.telegram_bot_token || '').trim() || (PLATFORM_TELEGRAM_AVAILABLE ? PLATFORM_TELEGRAM_BOT_TOKEN : '');
-    if (!options?.skipTelegram && provider === 'telegram' && effectiveTelegramToken) {
+    if (!options?.skipTelegram && effectiveTelegramToken) {
       const telegramMessage = replaceTemplateVariables(
         settings.template_order_confirmation || defaultWhatsAppTemplate(),
         templateVariables

@@ -752,6 +752,7 @@ export const updateOrderStatus: RequestHandler = async (req, res) => {
     }
 
     // Telegram tracking updates (fire-and-forget)
+    // Send if we have a telegram_bot_token, regardless of provider setting
     try {
       const settingsRes = await pool.query(
         `SELECT enabled, provider, telegram_bot_token, template_shipping
@@ -759,7 +760,7 @@ export const updateOrderStatus: RequestHandler = async (req, res) => {
         [req.user.id]
       );
       const settings = settingsRes.rows[0];
-      if (settings?.enabled && settings?.provider === 'telegram' && settings?.telegram_bot_token) {
+      if (settings?.enabled && settings?.telegram_bot_token) {
         const orderRow = result.rows[0];
         const shouldNotify = ['processing', 'shipped', 'delivered', 'cancelled'].includes(String(status));
         if (shouldNotify) {

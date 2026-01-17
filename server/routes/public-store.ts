@@ -768,12 +768,13 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
           console.log('[createPublicStoreOrder] Customer is pre-connected, chat_id:', chatId);
         }
         
-        // Get bot settings
+        // Get bot settings - check for telegram_bot_token presence, not just provider
+        // This allows sending Telegram when they have a token even if provider is facebook/messenger
         const botRes = await pool.query(
           `SELECT telegram_bot_token, template_instant_order, template_pin_instructions, 
                   telegram_delay_minutes, template_order_confirmation
            FROM bot_settings 
-           WHERE client_id = $1 AND enabled = true AND provider = 'telegram'
+           WHERE client_id = $1 AND enabled = true AND telegram_bot_token IS NOT NULL
            LIMIT 1`,
           [clientId]
         );
