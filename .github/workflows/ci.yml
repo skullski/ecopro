@@ -39,3 +39,19 @@ jobs:
         env:
           NODE_OPTIONS: --max_old_space_size=4096
         run: pnpm -s build
+
+      - name: Report CI failure to EcoPro telemetry
+        if: failure()
+        env:
+          TELEMETRY_URL: https://www.sahla4eco.com/api/telemetry/client-error
+          NAME: GitHubActionsCI
+          MESSAGE: |
+            CI failed: repo=${{ github.repository }} workflow=${{ github.workflow }} job=${{ github.job }}
+            sha=${{ github.sha }} ref=${{ github.ref_name }}
+            run=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          STACK: |
+            CI failure. Check GitHub Actions logs:
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          BUILD: ${{ github.sha }}
+        run: node scripts/report-telemetry.mjs

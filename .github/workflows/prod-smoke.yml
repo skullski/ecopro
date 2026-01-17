@@ -23,3 +23,20 @@ jobs:
         env:
           PROD_BASE_URL: https://www.sahla4eco.com
         run: node scripts/prod-smoke.mjs
+
+      - name: Report prod-smoke failure to EcoPro telemetry
+        if: failure()
+        env:
+          TELEMETRY_URL: https://www.sahla4eco.com/api/telemetry/client-error
+          NAME: GitHubActionsProdSmoke
+          MESSAGE: |
+            PROD SMOKE failed: base=https://www.sahla4eco.com
+            repo=${{ github.repository }} workflow=${{ github.workflow }} job=${{ github.job }}
+            sha=${{ github.sha }} ref=${{ github.ref_name }}
+            run=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          STACK: |
+            Prod smoke failure. Check GitHub Actions logs:
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          URL: https://www.sahla4eco.com
+          BUILD: ${{ github.sha }}
+        run: node scripts/report-telemetry.mjs
