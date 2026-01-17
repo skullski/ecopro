@@ -871,6 +871,9 @@ export default function PlatformAdmin() {
   const [platformErrorsLoading, setPlatformErrorsLoading] = useState(false);
   const [platformErrorsError, setPlatformErrorsError] = useState<string | null>(null);
   const [platformErrors, setPlatformErrors] = useState<any[]>([]);
+  const [platformErrorView, setPlatformErrorView] = useState<'active' | 'all'>('active');
+  const [platformErrorActiveMinutes, setPlatformErrorActiveMinutes] = useState(60);
+  const [platformErrorGroup, setPlatformErrorGroup] = useState(true);
   const [serverHealth, setServerHealth] = useState<ServerHealth | null>(null);
   const [healthLoading, setHealthLoading] = useState(false);
   const [healthError, setHealthError] = useState<string | null>(null);
@@ -940,6 +943,77 @@ export default function PlatformAdmin() {
       setPlatformErrorsLoading(false);
     }
   }, [platformErrorDays, platformErrorSource]);
+
+  const displayPlatformErrors = useMemo(() => {
+    const now = Date.now();
+    const cutoff = now - Math.max(1, platformErrorActiveMinutes) * 60 * 1000;
+
+    const toMs = (v: any): number => {
+      const t = new Date(v as any).getTime();
+      return Number.isFinite(t) ? t : 0;
+    };
+
+    const toWhere = (ev: any): string =>
+      ev?.path ? `${ev?.method || ''} ${ev?.path}`.trim() : String(ev?.url || '');
+
+    const isActive = (ev: any): boolean => {
+      if (platformErrorView !== 'active') return true;
+      const ms = toMs(ev?.created_at);
+      return ms >= cutoff;
+    };
+
+    if (!platformErrorGroup) {
+      return (platformErrors || []).filter(isActive).map((ev) => ({ kind: 'event' as const, ev }));
+    }
+
+    type Group = {
+      kind: 'group';
+      key: string;
+      count: number;
+      firstSeenMs: number;
+      lastSeenMs: number;
+      sample: any;
+    };
+
+    const map = new Map<string, Group>();
+    for (const ev of platformErrors || []) {
+      const createdMs = toMs(ev?.created_at);
+      const stackFirst = ev?.stack ? String(ev.stack).split('\n')[0].slice(0, 240) : '';
+      const key = [
+        String(ev?.source || ''),
+        String(ev?.status_code ?? ''),
+        String(ev?.message || '').slice(0, 800),
+        toWhere(ev).slice(0, 800),
+        stackFirst,
+      ].join('|');
+
+      const existing = map.get(key);
+      if (!existing) {
+        map.set(key, {
+          kind: 'group',
+          key,
+          count: 1,
+          firstSeenMs: createdMs,
+          lastSeenMs: createdMs,
+          sample: ev,
+        });
+      } else {
+        existing.count += 1;
+        if (createdMs < existing.firstSeenMs) existing.firstSeenMs = createdMs;
+        if (createdMs > existing.lastSeenMs) {
+          existing.lastSeenMs = createdMs;
+          existing.sample = ev;
+        }
+      }
+    }
+
+    const groups = Array.from(map.values());
+    const filtered = platformErrorView === 'active'
+      ? groups.filter((g) => g.lastSeenMs >= cutoff)
+      : groups;
+    filtered.sort((a, b) => b.lastSeenMs - a.lastSeenMs);
+    return filtered;
+  }, [platformErrors, platformErrorView, platformErrorActiveMinutes, platformErrorGroup]);
 
   useEffect(() => {
     if (activeTab !== 'errors') return;
@@ -1873,6 +1947,38 @@ export default function PlatformAdmin() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
+                  <label className="text-xs text-slate-400">View</label>
+                  <select
+                    className="bg-slate-900 border border-slate-700 text-slate-200 rounded-md px-2 py-1 text-sm"
+                    value={platformErrorView}
+                    onChange={(e) => setPlatformErrorView(e.target.value as any)}
+                  >
+                    <option value="active">Active</option>
+                    <option value="all">All</option>
+                  </select>
+
+                  <label className="text-xs text-slate-400">Active (min)</label>
+                  <select
+                    className="bg-slate-900 border border-slate-700 text-slate-200 rounded-md px-2 py-1 text-sm"
+                    value={platformErrorActiveMinutes}
+                    onChange={(e) => setPlatformErrorActiveMinutes(Number(e.target.value) || 60)}
+                    disabled={platformErrorView !== 'active'}
+                  >
+                    <option value={15}>15</option>
+                    <option value={30}>30</option>
+                    <option value={60}>60</option>
+                    <option value={180}>180</option>
+                    <option value={1440}>1440</option>
+                  </select>
+
+                  <label className="text-xs text-slate-400">Group</label>
+                  <input
+                    type="checkbox"
+                    className="accent-cyan-500"
+                    checked={platformErrorGroup}
+                    onChange={(e) => setPlatformErrorGroup(e.target.checked)}
+                  />
+
                   <label className="text-xs text-slate-400">Days</label>
                   <select
                     className="bg-slate-900 border border-slate-700 text-slate-200 rounded-md px-2 py-1 text-sm"
@@ -1924,42 +2030,47 @@ export default function PlatformAdmin() {
                       <th className="text-left px-3 py-2">Message</th>
                       <th className="text-left px-3 py-2">Where</th>
                       <th className="text-left px-3 py-2">User</th>
+                      <th className="text-left px-3 py-2">Count</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800">
                     {platformErrorsLoading ? (
                       <tr>
-                        <td className="px-3 py-4 text-slate-400" colSpan={5}>
+                        <td className="px-3 py-4 text-slate-400" colSpan={6}>
                           Loading…
                         </td>
                       </tr>
-                    ) : platformErrors.length === 0 ? (
+                    ) : displayPlatformErrors.length === 0 ? (
                       <tr>
-                        <td className="px-3 py-4 text-slate-400" colSpan={5}>
+                        <td className="px-3 py-4 text-slate-400" colSpan={6}>
                           No errors in the selected range.
                         </td>
                       </tr>
                     ) : (
-                      platformErrors.map((ev: any) => {
-                        const when = ev.created_at ? new Date(ev.created_at).toLocaleString() : '';
-                        const src = String(ev.source || '').toUpperCase();
-                        const msg = String(ev.message || '').slice(0, 220);
-                        const where = ev.path ? `${ev.method || ''} ${ev.path}`.trim() : (ev.url || '');
-                        const user = ev.user_id ? `${ev.user_type || ''}:${ev.user_id}` : (ev.client_id ? `client:${ev.client_id}` : '—');
+                      (displayPlatformErrors as any[]).map((row: any, idx: number) => {
+                        const ev = row?.kind === 'group' ? row.sample : row.ev;
+                        const whenMs = row?.kind === 'group' ? row.lastSeenMs : (ev?.created_at ? new Date(ev.created_at).getTime() : 0);
+                        const when = whenMs ? new Date(whenMs).toLocaleString() : '';
+                        const src = String(ev?.source || '').toUpperCase();
+                        const msg = String(ev?.message || '').slice(0, 220);
+                        const where = ev?.path ? `${ev?.method || ''} ${ev?.path}`.trim() : (ev?.url || '');
+                        const user = ev?.user_id ? `${ev?.user_type || ''}:${ev?.user_id}` : (ev?.client_id ? `client:${ev?.client_id}` : '—');
+                        const count = row?.kind === 'group' ? Number(row.count || 1) : 1;
+                        const key = row?.kind === 'group' ? row.key : String(ev?.id ?? idx);
                         return (
-                          <tr key={ev.id} className="hover:bg-slate-900/50">
+                          <tr key={key} className="hover:bg-slate-900/50">
                             <td className="px-3 py-2 text-slate-400 whitespace-nowrap">{when}</td>
                             <td className="px-3 py-2">
-                              <span className={`px-2 py-0.5 rounded-full text-xs border ${ev.source === 'server' ? 'border-red-500/40 text-red-200 bg-red-500/10' : 'border-amber-500/40 text-amber-200 bg-amber-500/10'}`}>
+                              <span className={`px-2 py-0.5 rounded-full text-xs border ${ev?.source === 'server' ? 'border-red-500/40 text-red-200 bg-red-500/10' : 'border-amber-500/40 text-amber-200 bg-amber-500/10'}`}>
                                 {src}
                               </span>
-                              {ev.status_code ? (
+                              {ev?.status_code ? (
                                 <span className="ml-2 text-xs text-slate-400">{ev.status_code}</span>
                               ) : null}
                             </td>
                             <td className="px-3 py-2 text-slate-200">
                               <div className="font-medium">{msg}</div>
-                              {ev.stack ? (
+                              {ev?.stack ? (
                                 <div className="text-xs text-slate-500 mt-1 line-clamp-2">
                                   {String(ev.stack).split('\n').slice(0, 2).join(' — ')}
                                 </div>
@@ -1967,6 +2078,7 @@ export default function PlatformAdmin() {
                             </td>
                             <td className="px-3 py-2 text-slate-300 max-w-[420px] truncate">{where}</td>
                             <td className="px-3 py-2 text-slate-400 whitespace-nowrap">{user}</td>
+                            <td className="px-3 py-2 text-slate-300 whitespace-nowrap">{count}</td>
                           </tr>
                         );
                       })
