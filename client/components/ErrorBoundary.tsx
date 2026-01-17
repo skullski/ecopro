@@ -20,27 +20,10 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 
   static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
-    const msg = String((error as any)?.message || '').toLowerCase();
-    const name = String((error as any)?.name || '').toLowerCase();
-    // Ignore known non-actionable DOM mutation errors that can occur in production
-    if (name.includes('notfounderror') && msg.includes('removechild')) {
-      return {};
-    }
-    if (msg.includes('minified react error #321')) {
-      return {};
-    }
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
-    const msg = String((error as any)?.message || '').toLowerCase();
-    const name = String((error as any)?.name || '').toLowerCase();
-    if (name.includes('notfounderror') && msg.includes('removechild')) {
-      return;
-    }
-    if (msg.includes('minified react error #321')) {
-      return;
-    }
     this.setState({ errorInfo });
     
     // Log error to console in development

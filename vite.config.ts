@@ -31,6 +31,8 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [react()],
   resolve: {
+    // Prevent multiple React copies in the bundle (can cause minified React error #321)
+    dedupe: ["react", "react-dom"],
     alias: {
       "@": path.resolve(__dirname, "./client"),
       "@shared": path.resolve(__dirname, "./shared"),
