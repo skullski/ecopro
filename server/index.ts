@@ -303,33 +303,74 @@ export function createServer(options?: { skipDbInit?: boolean }) {
   }
 
   app.use(
-    cors({
-      origin: (origin, callback) => {
-        // Allow requests with no origin (mobile apps, curl, etc.)
-        if (!origin) return callback(null, true);
+    cors((req, callback) => {
+      const origin = req.header('Origin');
 
-        // Allow any localhost port for dev convenience
-        const isLocalhost = /^http:\/\/localhost:\d+$/.test(origin);
-        if (!isProduction && (isLocalhost || allowedOrigins.includes(origin))) {
-          return callback(null, true);
+      // Always allow requests with no origin (mobile apps, curl, etc.)
+      if (!origin) {
+        return callback(null, {
+          origin: true,
+          credentials: true,
+          methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+          allowedHeaders: ["Content-Type", "X-CSRF-Token", "X-Login-Context"],
+        });
+      }
+
+      // Allow same-host origins automatically (Chromium-based browsers may include Origin on module/script/style).
+      try {
+        const originUrl = new URL(origin);
+        const hostHeader = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
+        if (hostHeader && originUrl.host === hostHeader) {
+          return callback(null, {
+            origin: true,
+            credentials: true,
+            methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            allowedHeaders: ["Content-Type", "X-CSRF-Token", "X-Login-Context"],
+          });
         }
+      } catch {
+        // ignore malformed Origin
+      }
 
-        // In production, allow explicitly configured origins
-        if (isProduction && allowedOrigins.length > 0 && allowedOrigins.includes(origin)) {
-          return callback(null, true);
-        }
+      // Allow any localhost port for dev convenience
+      const isLocalhost = /^http:\/\/localhost:\d+$/.test(origin);
+      if (!isProduction && (isLocalhost || allowedOrigins.includes(origin))) {
+        return callback(null, {
+          origin: true,
+          credentials: true,
+          methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+          allowedHeaders: ["Content-Type", "X-CSRF-Token", "X-Login-Context"],
+        });
+      }
 
-        // In production, allow Render URLs matching the pattern
-        if (isProduction && renderPattern.test(origin)) {
-          return callback(null, true);
-        }
+      // In production, allow explicitly configured origins
+      if (isProduction && allowedOrigins.length > 0 && allowedOrigins.includes(origin)) {
+        return callback(null, {
+          origin: true,
+          credentials: true,
+          methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+          allowedHeaders: ["Content-Type", "X-CSRF-Token", "X-Login-Context"],
+        });
+      }
 
-        console.warn('CORS blocked origin:', origin);
-        callback(new Error("Not allowed by CORS"));
-      },
-      credentials: true,
-      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-      allowedHeaders: ["Content-Type", "X-CSRF-Token", "X-Login-Context"],
+      // In production, allow Render URLs matching the pattern
+      if (isProduction && renderPattern.test(origin)) {
+        return callback(null, {
+          origin: true,
+          credentials: true,
+          methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+          allowedHeaders: ["Content-Type", "X-CSRF-Token", "X-Login-Context"],
+        });
+      }
+
+      console.warn('CORS blocked origin:', origin);
+      // Do NOT throw (would turn same-origin asset loads into 500s). Simply omit CORS headers.
+      return callback(null, {
+        origin: false,
+        credentials: true,
+        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "X-CSRF-Token", "X-Login-Context"],
+      });
     })
   );
 
@@ -1336,12 +1377,16 @@ export function createServer(options?: { skipDbInit?: boolean }) {
         !looksLikeFile
       ) {
         const nonce = (res.locals as any).cspNonce;
+        const buildId = String(process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || '').slice(0, 12);
         const indexPath = path.join(spaBuildPath, 'index.html');
         fs.readFile(indexPath, 'utf8')
           .then((html) => {
-            const injected = nonce
-              ? html.replace(/<script\s+type="module"\s+/g, `<script type="module" nonce="${nonce}" `)
+            const withBuild = buildId
+              ? html.replace(/(href|src)=(['"])(\/assets\/[^'"?]+)\2/g, `$1=$2$3?v=${buildId}$2`)
               : html;
+            const injected = nonce
+              ? withBuild.replace(/<script\s+type="module"\s+/g, `<script type="module" nonce="${nonce}" `)
+              : withBuild;
             res.setHeader('Cache-Control', 'no-store');
             res.type('html').send(injected);
           })
