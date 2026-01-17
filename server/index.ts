@@ -425,6 +425,11 @@ export function createServer(options?: { skipDbInit?: boolean }) {
     const p = req.path;
     if (p === '/api/auth/login' || p === '/api/auth/register' || p === '/api/admin/login') return next();
 
+    // Telemetry is write-only, rate-limited, and safe to accept without CSRF.
+    // Important: sendBeacon cannot attach custom headers, so CSRF would block reports
+    // whenever a user has an auth cookie.
+    if (p === '/api/telemetry/client-error') return next();
+
     const hasAuthCookie = Boolean(
       req.cookies?.[ACCESS_COOKIE] ||
         req.cookies?.[REFRESH_COOKIE] ||

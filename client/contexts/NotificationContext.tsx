@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   requestNotificationPermission, 
   notifyNewOrder, 
@@ -28,6 +28,7 @@ const PERMISSION_ASKED_KEY = 'notification_permission_asked';
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const { locale } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | 'unsupported'>('default');
   const [newOrdersCount, setNewOrdersCount] = useState(0);
@@ -110,6 +111,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   // Poll for updates
   useEffect(() => {
+    // Only poll on the client dashboard. Avoid hitting client-only endpoints on admin/staff/public pages.
+    const shouldPoll = location.pathname.startsWith('/dashboard');
+    if (!shouldPoll) return;
+
     // Initial fetch
     fetchNewOrdersCount();
     fetchUnreadCount();
@@ -121,7 +126,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }, 30000);
     
     return () => clearInterval(interval);
-  }, [fetchNewOrdersCount, fetchUnreadCount]);
+  }, [fetchNewOrdersCount, fetchUnreadCount, location.pathname]);
 
   return (
     <NotificationContext.Provider value={{
