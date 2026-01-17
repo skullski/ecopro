@@ -12,10 +12,20 @@ export default function Layout({ children }: PropsWithChildren) {
   const isChatPage = location.pathname === '/chat';
   const isFullScreenChat = isAdminChat || isChatPage;
 
-  // Pages that have their own layout (no platform header/footer)
-  if (isStorefrontPage || isDashboardPage || isStaffPage) {
+  // Storefront pages have their own layout completely
+  if (isStorefrontPage) {
     return (
       <div className="min-h-screen flex flex-col">
+        <main className="flex-1">{children}</main>
+      </div>
+    );
+  }
+
+  // Dashboard and staff pages: keep header but NO footer (they have their own layout)
+  if (isDashboardPage || isStaffPage) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
         <main className="flex-1">{children}</main>
       </div>
     );
