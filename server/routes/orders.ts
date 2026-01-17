@@ -15,6 +15,15 @@ const isMissingSchemaError = (err: any): boolean => {
   return msg.includes('does not exist') && (msg.includes('relation') || msg.includes('column'));
 };
 
+async function getStoreOrdersColumns(): Promise<Set<string>> {
+  const res = await pool.query(
+    `SELECT column_name
+     FROM information_schema.columns
+     WHERE table_schema = 'public' AND table_name = 'store_orders'`
+  );
+  return new Set<string>(res.rows.map((r: any) => String(r.column_name)));
+}
+
 export const ordersRouter = Router();
 
 const createOrderBodySchema = z
@@ -216,37 +225,44 @@ export const createOrder: RequestHandler = async (req, res) => {
     client = await pool.connect();
     await client.query('BEGIN');
     inTransaction = true;
+
+    const storeOrderColumns = await getStoreOrdersColumns();
+    const insertCols: string[] = [];
+    const insertVals: any[] = [];
+    const addCol = (col: string, val: any) => {
+      if (!storeOrderColumns.has(col)) return;
+      insertCols.push(col);
+      insertVals.push(val);
+    };
+
+    addCol('product_id', product_id || null);
+    addCol('client_id', resolvedClientId);
+    addCol('quantity', quantity);
+    addCol('total_price', expectedTotalPrice);
+    addCol('delivery_fee', deliveryFee);
+    addCol('delivery_type', deliveryType);
+    addCol('variant_id', variantRow ? Number(variantRow.id) : null);
+    addCol('variant_color', variantRow ? (variantRow.color || null) : null);
+    addCol('variant_size', variantRow ? (variantRow.size || null) : null);
+    addCol('variant_name', variantRow ? (variantRow.variant_name || null) : null);
+    addCol('unit_price', unitPrice);
+    addCol('customer_name', customer_name);
+    addCol('customer_email', customer_email || null);
+    addCol('customer_phone', normalizedPhone || null);
+    addCol('shipping_address', customer_address || null);
+    addCol('shipping_wilaya_id', shipping_wilaya_id || null);
+    addCol('shipping_commune_id', shipping_commune_id || null);
+    addCol('shipping_hai', shipping_hai || null);
+    addCol('status', 'pending');
+    addCol('payment_status', 'unpaid');
+    addCol('created_at', new Date());
+
+    const placeholders = insertVals.map((_, i) => `$${i + 1}`).join(',');
     const result = await client.query(
-      `INSERT INTO store_orders (
-        product_id, client_id, quantity, total_price, delivery_fee, delivery_type,
-        variant_id, variant_color, variant_size, variant_name, unit_price,
-        customer_name, customer_email, customer_phone, shipping_address,
-        shipping_wilaya_id, shipping_commune_id, shipping_hai,
-        status, payment_status, created_at
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,TIMEZONE('UTC', NOW())) 
-      RETURNING *`,
-      [
-        product_id || null,
-        resolvedClientId,
-        quantity,
-        expectedTotalPrice,
-        deliveryFee,
-        deliveryType,
-        variantRow ? Number(variantRow.id) : null,
-        variantRow ? (variantRow.color || null) : null,
-        variantRow ? (variantRow.size || null) : null,
-        variantRow ? (variantRow.variant_name || null) : null,
-        unitPrice,
-        customer_name,
-        customer_email || null,
-        normalizedPhone || null,
-        customer_address || null,
-        shipping_wilaya_id || null,
-        shipping_commune_id || null,
-        shipping_hai || null,
-        'pending',
-        'unpaid'
-      ]
+      `INSERT INTO store_orders (${insertCols.join(', ')})
+       VALUES (${placeholders})
+       RETURNING *`,
+      insertVals
     );
 
     if (variantRow) {

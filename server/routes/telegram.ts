@@ -218,7 +218,7 @@ export const getTelegramBotLink: RequestHandler = async (req, res) => {
       }
     }
     console.error('[getTelegramBotLink] error:', error);
-    res.status(500).json({ error: 'Failed to get bot link' });
+    res.status(200).json({ enabled: false, message: 'Telegram not available' });
   }
 };
 
