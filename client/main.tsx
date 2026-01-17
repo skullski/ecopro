@@ -97,5 +97,39 @@ if (container) {
     });
   }
 
-  createRoot(container).render(<App />);
+  // Guard against accidental double-mount (e.g. duplicate script execution / cached HTML)
+  // which can cause duplicated UI and React runtime errors.
+  const w = window as any;
+  if (w.__ECOPRO_REACT_ROOT__ && import.meta.env.PROD) {
+    try {
+      const scripts = Array.from(document.querySelectorAll('script[type="module"][src]'))
+        .map((s) => (s as HTMLScriptElement).src)
+        .filter(Boolean)
+        .slice(0, 20);
+      const assets = scripts.filter((s) => s.includes('/assets/'));
+      const buildMatch = assets.map((s) => {
+        try {
+          const u = new URL(s);
+          return u.searchParams.get('v');
+        } catch {
+          return null;
+        }
+      }).find((v) => v && v.length > 0);
+
+      reportClientError({
+        message: `Double-mount detected: existing React root reused. scripts=${scripts.length} assets=${assets.length}`,
+        name: 'EcoproMountGuard',
+        stack: new Error('Double-mount detected').stack,
+        url: window.location.href,
+        route: window.location.pathname,
+        build: buildMatch ? String(buildMatch).slice(0, 80) : undefined,
+      });
+    } catch {
+      // ignore
+    }
+  }
+  if (!w.__ECOPRO_REACT_ROOT__) {
+    w.__ECOPRO_REACT_ROOT__ = createRoot(container);
+  }
+  w.__ECOPRO_REACT_ROOT__.render(<App />);
 }

@@ -1,4 +1,53 @@
 import { ensureConnection } from './database';
+import fs from 'fs';
+import path from 'path';
+
+const LOGS_DIR = path.resolve(process.cwd(), 'logs');
+const PLATFORM_ERRORS_LOG = path.join(LOGS_DIR, 'platform-errors.ndjson');
+
+async function ensureLogsFile(): Promise<void> {
+  try {
+    await fs.promises.mkdir(LOGS_DIR, { recursive: true });
+    await fs.promises.open(PLATFORM_ERRORS_LOG, 'a').then((fh) => fh.close());
+  } catch {
+    // ignore
+  }
+}
+
+async function rotateIfTooLarge(maxBytes: number): Promise<void> {
+  try {
+    const stat = await fs.promises.stat(PLATFORM_ERRORS_LOG);
+    if (stat.size <= maxBytes) return;
+
+    const rotated = PLATFORM_ERRORS_LOG.replace(/\.ndjson$/i, '.1.ndjson');
+    try {
+      await fs.promises.rm(rotated, { force: true });
+    } catch {
+      // ignore
+    }
+    await fs.promises.rename(PLATFORM_ERRORS_LOG, rotated);
+    await fs.promises.writeFile(PLATFORM_ERRORS_LOG, '', 'utf-8');
+  } catch {
+    // ignore
+  }
+}
+
+function safeJsonValue(value: any, maxLen: number): any {
+  if (value == null) return null;
+  if (typeof value === 'string') return value.length > maxLen ? value.slice(0, maxLen) : value;
+  if (typeof value === 'number' || typeof value === 'boolean') return value;
+  if (Array.isArray(value)) return value.slice(0, 50).map((v) => safeJsonValue(v, maxLen));
+  if (typeof value === 'object') {
+    const out: Record<string, any> = {};
+    let count = 0;
+    for (const [k, v] of Object.entries(value)) {
+      if (++count > 50) break;
+      out[String(k).slice(0, 100)] = safeJsonValue(v, maxLen);
+    }
+    return out;
+  }
+  return String(value).slice(0, maxLen);
+}
 
 function safeText(value: any, maxLen: number): string | null {
   if (value === null || value === undefined) return null;
@@ -63,6 +112,35 @@ export async function logPlatformErrorEvent(params: {
     let metadata: any = params.metadata ?? null;
     if (metadata && typeof metadata !== 'object') metadata = { value: metadata };
 
+    // Best-effort file logging for quick inspection (does not replace DB).
+    try {
+      await ensureLogsFile();
+      // Rotate at ~10MB to avoid unbounded growth.
+      await rotateIfTooLarge(10 * 1024 * 1024);
+
+      const line = JSON.stringify({
+        ts: new Date().toISOString(),
+        source: params.source,
+        message,
+        stack,
+        url,
+        method,
+        path,
+        status_code: statusCode,
+        request_id: requestId,
+        ip,
+        user_agent: userAgent,
+        user_id: userId,
+        user_type: userType,
+        role,
+        client_id: clientId,
+        metadata: metadata ? safeJsonValue(metadata, 2000) : null,
+      });
+      await fs.promises.appendFile(PLATFORM_ERRORS_LOG, line + '\n', 'utf-8');
+    } catch {
+      // ignore
+    }
+
     await pool.query(
       `INSERT INTO platform_error_events (
         source, message, stack, url, method, path, status_code,
@@ -93,3 +171,5 @@ export async function logPlatformErrorEvent(params: {
     // never fail the request because telemetry failed
   }
 }
+
+export const PLATFORM_ERRORS_LOG_PATH = PLATFORM_ERRORS_LOG;

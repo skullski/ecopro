@@ -3,7 +3,8 @@ import rateLimit from 'express-rate-limit';
 import { authenticate } from '../middleware/auth';
 import { requireAdmin } from '../middleware/auth';
 import { pool } from '../utils/database';
-import { logPlatformErrorEvent } from '../utils/error-telemetry';
+import { logPlatformErrorEvent, PLATFORM_ERRORS_LOG_PATH } from '../utils/error-telemetry';
+import fs from 'fs';
 
 const router = Router();
 
@@ -108,5 +109,40 @@ const listPlatformErrors: RequestHandler = async (req, res) => {
 
 router.post('/client-error', telemetryLimiter, clientError);
 router.get('/platform-errors', authenticate, requireAdmin, listPlatformErrors);
+
+/**
+ * Admin: tail the on-disk platform error log (NDJSON)
+ * GET /api/telemetry/platform-errors-file?limit=200
+ */
+const tailPlatformErrorsFile: RequestHandler = async (req, res) => {
+  const limit = Math.max(1, Math.min(500, Number(req.query.limit || 200)));
+
+  try {
+    const stat = await fs.promises.stat(PLATFORM_ERRORS_LOG_PATH);
+    const maxBytes = Math.min(stat.size, 2 * 1024 * 1024); // read up to last 2MB
+    const start = Math.max(0, stat.size - maxBytes);
+
+    const fh = await fs.promises.open(PLATFORM_ERRORS_LOG_PATH, 'r');
+    try {
+      const buf = Buffer.alloc(maxBytes);
+      const { bytesRead } = await fh.read(buf, 0, maxBytes, start);
+      const text = buf.subarray(0, bytesRead).toString('utf-8');
+      const lines = text
+        .split('\n')
+        .filter((l) => l.trim().length > 0);
+
+      // If we started in the middle of a line, drop the first partial line.
+      const normalized = start > 0 ? lines.slice(1) : lines;
+      const tail = normalized.slice(-limit);
+      return res.json({ ok: true, limit, file: 'platform-errors.ndjson', lines: tail });
+    } finally {
+      await fh.close();
+    }
+  } catch {
+    return res.json({ ok: true, limit, file: 'platform-errors.ndjson', lines: [] });
+  }
+};
+
+router.get('/platform-errors-file', authenticate, requireAdmin, tailPlatformErrorsFile);
 
 export default router;

@@ -30,7 +30,8 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
     console.error('ErrorBoundary caught an error:', error, errorInfo);
     
     // In production, report to server telemetry for the admin dashboard.
-    if (process.env.NODE_ENV === 'production') {
+    // Use Vite env flags (process.env is not guaranteed in the browser).
+    if (import.meta.env.PROD) {
       reportClientError({
         message: error?.message || String(error),
         name: (error as any)?.name,
@@ -54,7 +55,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
         return this.props.fallback;
       }
 
-      const isDev = process.env.NODE_ENV === 'development';
+      const isDev = import.meta.env.DEV;
 
       return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-red-50 to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-4">
