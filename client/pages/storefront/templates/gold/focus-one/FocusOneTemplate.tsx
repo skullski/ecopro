@@ -1,5 +1,6 @@
 import React from 'react';
 import type { TemplateProps, StoreProduct } from '../../types';
+import EmbeddedCheckout from '../shared/EmbeddedCheckout';
 
 /**
  * FOCUS ONE - High-conversion single product landing.
@@ -61,13 +62,33 @@ export default function FocusOneTemplate(props: TemplateProps) {
 
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 12) || [];
   const mainProduct = products[0];
+  const [selectedProduct, setSelectedProduct] = React.useState<StoreProduct | undefined>(mainProduct);
+  React.useEffect(() => {
+    setSelectedProduct(mainProduct);
+  }, [mainProduct ? (mainProduct as any).id : undefined]);
+
+  const storeSlug = asString((settings as any).store_slug);
+  const checkoutTheme = {
+    bg,
+    text,
+    muted,
+    accent,
+    cardBg,
+    border: 'rgba(148,163,184,0.18)',
+  };
+
+  const scrollTo = (id: string) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
   const sectionSpacing = resolveInt(settings.template_section_spacing, 56, 24, 96);
   const cardRadius = resolveInt(settings.template_card_border_radius, 16, 0, 32);
   const buttonRadius = resolveInt((settings as any).template_button_border_radius, 14, 0, 50);
 
-  const stickyPrice = mainProduct ? formatPrice(Number((mainProduct as any).price) || 0) : '';
+  const stickyPrice = selectedProduct ? formatPrice(Number((selectedProduct as any).price) || 0) : '';
 
   return (
     <div
@@ -95,7 +116,7 @@ export default function FocusOneTemplate(props: TemplateProps) {
           </div>
 
           <button
-            onClick={() => navigate(mainProduct?.slug || '/products')}
+            onClick={() => scrollTo('checkout')}
             style={{ background: accent, border: 0, borderRadius: buttonRadius, padding: '10px 14px', fontWeight: 800, cursor: 'pointer', color: '#04110a', fontSize: 13 }}
           >
             {cta}
@@ -126,9 +147,9 @@ export default function FocusOneTemplate(props: TemplateProps) {
               ))}
             </div>
 
-            {mainProduct && (
+            {selectedProduct && (
               <div style={{ marginTop: 22, display: 'flex', alignItems: 'baseline', gap: 12 }}>
-                <div style={{ fontSize: isMobile ? 28 : 34, fontWeight: 900 }}>{formatPrice(Number((mainProduct as any).price) || 0)}</div>
+                <div style={{ fontSize: isMobile ? 28 : 34, fontWeight: 900 }}>{formatPrice(Number((selectedProduct as any).price) || 0)}</div>
                 <div style={{ color: muted, fontSize: 13 }}>Free shipping in select areas</div>
               </div>
             )}
@@ -136,7 +157,7 @@ export default function FocusOneTemplate(props: TemplateProps) {
             <div style={{ marginTop: 18, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <button
                 data-edit-path="layout.hero.cta"
-                onClick={() => navigate(mainProduct?.slug || '/products')}
+                onClick={() => scrollTo('checkout')}
                 style={{ background: accent, border: 0, borderRadius: buttonRadius, padding: '14px 18px', fontWeight: 900, cursor: 'pointer', color: '#04110a' }}
               >
                 {cta}
@@ -154,13 +175,13 @@ export default function FocusOneTemplate(props: TemplateProps) {
             <div style={{ position: 'relative', aspectRatio: isMobile ? '4/3' : '1/1', background: '#0a0f1b' }}>
               <img src={productImage(mainProduct)} alt={mainProduct ? productTitle(mainProduct) : ''} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.96 }} />
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0) 35%, rgba(0,0,0,0.65) 100%)' }} />
-              {mainProduct && (
+              {selectedProduct && (
                 <div style={{ position: 'absolute', left: 14, right: 14, bottom: 14 }}>
-                  <div style={{ fontSize: 14, fontWeight: 900, lineHeight: 1.2 }}>{productTitle(mainProduct)}</div>
+                  <div style={{ fontSize: 14, fontWeight: 900, lineHeight: 1.2 }}>{productTitle(selectedProduct)}</div>
                   <div style={{ marginTop: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
                     <div style={{ color: muted, fontSize: 12 }}>In stock • COD</div>
                     <button
-                      onClick={() => navigate(mainProduct.slug || '/products')}
+                      onClick={() => scrollTo('checkout')}
                       style={{ background: accent, border: 0, borderRadius: 999, padding: '10px 12px', fontWeight: 900, cursor: 'pointer', color: '#04110a', fontSize: 12 }}
                     >
                       {cta}
@@ -170,6 +191,20 @@ export default function FocusOneTemplate(props: TemplateProps) {
               )}
             </div>
           </div>
+        </div>
+      </section>
+
+      <section id="checkout" style={{ padding: `0 ${baseSpacing}px ${sectionSpacing}px` }}>
+        <div style={{ maxWidth: 760, margin: '0 auto' }}>
+          <EmbeddedCheckout
+            storeSlug={storeSlug}
+            product={selectedProduct as any}
+            formatPrice={formatPrice}
+            theme={checkoutTheme}
+            disabled={canManage}
+            heading={cta}
+            subheading={canManage ? 'Disabled in editor preview' : 'Cash on delivery • Fast delivery'}
+          />
         </div>
       </section>
 
@@ -198,7 +233,10 @@ export default function FocusOneTemplate(props: TemplateProps) {
               {products.slice(1, 9).map((p) => (
                 <button
                   key={(p as any).id}
-                  onClick={() => navigate((p as any).slug || '/products')}
+                  onClick={() => {
+                    setSelectedProduct(p);
+                    scrollTo('checkout');
+                  }}
                   style={{ textAlign: 'left', background: cardBg, border: '1px solid rgba(148,163,184,0.16)', borderRadius: cardRadius, overflow: 'hidden', cursor: 'pointer', padding: 0 }}
                 >
                   <div style={{ aspectRatio: '4/3', background: '#0a0f1b' }}>
@@ -215,7 +253,7 @@ export default function FocusOneTemplate(props: TemplateProps) {
         </section>
       )}
 
-      {!isMobile && mainProduct && (
+      {!isMobile && selectedProduct && (
         <div style={{ position: 'fixed', left: 18, right: 18, bottom: 18, zIndex: 30, pointerEvents: 'none' }}>
           <div
             style={{
@@ -234,11 +272,11 @@ export default function FocusOneTemplate(props: TemplateProps) {
             }}
           >
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontWeight: 900, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{productTitle(mainProduct)}</div>
+              <div style={{ fontWeight: 900, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{productTitle(selectedProduct)}</div>
               <div style={{ color: muted, fontSize: 12 }}>{stickyPrice} • Cash on delivery</div>
             </div>
             <button
-              onClick={() => navigate(mainProduct.slug || '/products')}
+              onClick={() => scrollTo('checkout')}
               style={{ background: accent, border: 0, borderRadius: 999, padding: '10px 14px', fontWeight: 900, cursor: 'pointer', color: '#04110a' }}
             >
               {cta}

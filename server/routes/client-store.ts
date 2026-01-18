@@ -176,6 +176,8 @@ export const createStoreProduct: RequestHandler = async (req, res) => {
       metadata,
       sizes,
       colors,
+      source_stock_id,
+      stock_variant_ids,
     } = req.body;
 
     if (!title || !price) {
@@ -193,6 +195,14 @@ export const createStoreProduct: RequestHandler = async (req, res) => {
     const imagesArray = Array.isArray(images) ? images : (images ? [images] : []);
     console.log('[createStoreProduct] Images to save:', imagesArray);
 
+    const importStockId = source_stock_id == null ? null : Number(source_stock_id);
+    const rawVariantIds = Array.isArray(stock_variant_ids) ? stock_variant_ids : [];
+    const importVariantIds = rawVariantIds
+      .map((v: any) => Number(v))
+      .filter((n: any) => Number.isInteger(n) && n > 0);
+    const uniqueImportVariantIds = Array.from(new Set(importVariantIds));
+    const importFromStockVariants = Number.isInteger(importStockId) && importStockId! > 0 && uniqueImportVariantIds.length > 0;
+
     const result = await client.query(
       `INSERT INTO client_store_products 
        (client_id, title, description, price, original_price, images, 
@@ -207,7 +217,7 @@ export const createStoreProduct: RequestHandler = async (req, res) => {
         original_price || null,
         imagesArray,
         category || null,
-        stock_quantity || 0,
+        importFromStockVariants ? 0 : (stock_quantity || 0),
         status || "active",
         is_featured || false,
         metadata && typeof metadata === 'object' ? metadata : {},
@@ -222,6 +232,88 @@ export const createStoreProduct: RequestHandler = async (req, res) => {
       `UPDATE client_store_products SET slug = $1 WHERE id = $2 AND client_id = $3`,
       [slug, product.id, clientId]
     );
+
+    const computeVariantName = (v: { color?: string | null; size?: string | null; variant_name?: string | null }) => {
+      const explicit = String(v.variant_name || '').trim();
+      if (explicit) return explicit;
+      const parts = [String(v.color || '').trim(), String(v.size || '').trim()].filter(Boolean);
+      return parts.join(' / ') || null;
+    };
+
+    // If importing from stock variants, copy the selected variants exactly.
+    if (importFromStockVariants) {
+      const ownsStock = await client.query(
+        'SELECT 1 FROM client_stock_products WHERE id = $1 AND client_id = $2 LIMIT 1',
+        [importStockId, clientId]
+      );
+      if (!ownsStock.rowCount) {
+        await client.query('ROLLBACK');
+        inTransaction = false;
+        return res.status(404).json({ error: 'Stock item not found' });
+      }
+
+      let stockVariants: any[] = [];
+      try {
+        const variantsRes = await client.query(
+          `SELECT id, color, size, variant_name, price, stock_quantity, images, is_active, sort_order
+           FROM client_stock_variants
+           WHERE client_id = $1 AND stock_id = $2 AND id = ANY($3::bigint[])
+           ORDER BY sort_order ASC, id ASC`,
+          [clientId, importStockId, uniqueImportVariantIds]
+        );
+        stockVariants = Array.isArray(variantsRes.rows) ? variantsRes.rows : [];
+      } catch (err: any) {
+        if (err?.code === '42P01') {
+          await client.query('ROLLBACK');
+          inTransaction = false;
+          return res.status(400).json({ error: 'Stock variants are not available yet (migration pending)' });
+        }
+        throw err;
+      }
+
+      const foundIds = new Set<number>(stockVariants.map((v: any) => Number(v.id)));
+      const missing = uniqueImportVariantIds.filter((id) => !foundIds.has(id));
+      if (missing.length) {
+        await client.query('ROLLBACK');
+        inTransaction = false;
+        return res.status(400).json({ error: 'Some selected variants were not found' });
+      }
+
+      const seenKey = new Set<string>();
+      for (const sv of stockVariants) {
+        const color = sv.color != null && String(sv.color).trim() ? String(sv.color).trim() : null;
+        const size = sv.size != null && String(sv.size).trim() ? String(sv.size).trim() : null;
+        const key = `${String(color || '').toLowerCase()}::${String(size || '').toLowerCase()}`;
+        if (seenKey.has(key)) continue;
+        seenKey.add(key);
+
+        const variantName = computeVariantName({ color, size, variant_name: sv.variant_name });
+        const vPrice = sv.price == null ? null : Number(sv.price);
+        const vStock = Number(sv.stock_quantity ?? 0);
+        const vImages = Array.isArray(sv.images) ? sv.images : null;
+        const isActive = sv.is_active == null ? true : Boolean(sv.is_active);
+        const sortOrder = sv.sort_order == null ? 0 : Number(sv.sort_order);
+
+        await client.query(
+          `INSERT INTO product_variants
+           (client_id, product_id, color, size, variant_name, price, stock_quantity, images, is_active, sort_order)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+          [clientId, product.id, color, size, variantName, vPrice, vStock, vImages, isActive, sortOrder]
+        );
+      }
+
+      const sumRes = await client.query(
+        `SELECT COALESCE(SUM(stock_quantity), 0)::int AS total
+         FROM product_variants
+         WHERE client_id = $1 AND product_id = $2 AND is_active = true`,
+        [clientId, product.id]
+      );
+      const total = Number(sumRes.rows?.[0]?.total || 0);
+      await client.query(
+        'UPDATE client_store_products SET stock_quantity = $1, updated_at = NOW() WHERE id = $2 AND client_id = $3',
+        [total, product.id, clientId]
+      );
+    }
 
     // If this product is created from Stock (sizes/colors arrays), auto-generate variants.
     // This bridges StockManagement (client_stock_products.sizes/colors) to storefront checkout (product_variants).
@@ -242,7 +334,7 @@ export const createStoreProduct: RequestHandler = async (req, res) => {
     const normalizedSizes = normalizeOptionList(sizes);
     const normalizedColors = normalizeOptionList(colors);
 
-    if (normalizedSizes.length || normalizedColors.length) {
+    if (!importFromStockVariants && (normalizedSizes.length || normalizedColors.length)) {
       const hasSize = normalizedSizes.length > 0;
       const hasColor = normalizedColors.length > 0;
 

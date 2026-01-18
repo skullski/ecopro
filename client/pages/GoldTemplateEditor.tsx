@@ -1284,7 +1284,7 @@ export default function GoldTemplateEditor() {
                         </Button>
                       </div>
                     </CardHeader>
-                    <CardContent className="flex-1 min-h-0 flex flex-col gap-3 overflow-hidden">
+                    <CardContent className="flex-1 min-h-0 flex flex-col gap-3 overflow-y-auto pr-1">
                       <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg border border-primary/20">
                         <div className="flex items-center gap-2 min-w-0">
                           <Check className="w-4 h-4 text-primary" />
@@ -1341,7 +1341,15 @@ export default function GoldTemplateEditor() {
                         Showing {filteredTemplates.length} of {TEMPLATE_PREVIEWS.length}
                       </p>
 
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 flex-1 min-h-0 overflow-y-auto pr-1">
+                      <div
+                        className={`grid gap-3 pb-1 ${
+                          previewDevice === 'mobile'
+                            ? 'grid-cols-5'
+                            : previewDevice === 'tablet'
+                              ? 'grid-cols-4'
+                              : 'grid-cols-3'
+                        }`}
+                      >
                         {filteredTemplates.map((template) => {
                           const isSelected = String(settings.template || 'shiro-hana') === template.id;
                           return (

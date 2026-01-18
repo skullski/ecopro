@@ -1,5 +1,6 @@
 import React from 'react';
 import type { TemplateProps, StoreProduct } from '../../types';
+import EmbeddedCheckout from '../shared/EmbeddedCheckout';
 
 /**
  * CLEAN SINGLE - Ultra-minimal single product focus template.
@@ -84,6 +85,26 @@ const descColor = asString(settings.template_description_color) || muted;
   const cardRadius = resolveInt(settings.template_card_border_radius, 16, 0, 32);
 
   const mainProduct = products[0];
+  const [selectedProduct, setSelectedProduct] = React.useState<StoreProduct | undefined>(mainProduct);
+  React.useEffect(() => {
+    setSelectedProduct(mainProduct);
+  }, [mainProduct ? (mainProduct as any).id : undefined]);
+
+  const scrollTo = (id: string) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const storeSlug = asString((settings as any).store_slug);
+  const checkoutTheme = {
+    bg: '#ffffff',
+    text,
+    muted,
+    accent,
+    cardBg: '#fafafa',
+    border: '#e5e5e5',
+  };
 
   return (
     <div
@@ -140,10 +161,10 @@ const descColor = asString(settings.template_description_color) || muted;
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 32 : 60, alignItems: 'center' }}>
           {/* Product Images */}
           <div>
-            {mainProduct && (
+            {selectedProduct && (
               <>
                 <div style={{ background: '#fafafa', borderRadius: 20, overflow: 'hidden', aspectRatio: '1' }}>
-                  <img src={productImage(mainProduct)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={productImage(selectedProduct)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
                 {products.length > 1 && (
                   <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
@@ -155,8 +176,14 @@ const descColor = asString(settings.template_description_color) || muted;
                           aspectRatio: '1', 
                           borderRadius: 12, 
                           overflow: 'hidden', 
-                          border: idx === 0 ? `2px solid ${accent}` : '2px solid transparent',
+                          border: (selectedProduct as any)?.id === (p as any)?.id ? `2px solid ${accent}` : '2px solid transparent',
                           background: '#fafafa',
+                          cursor: canManage ? 'default' : 'pointer',
+                        }}
+                        onClick={() => {
+                          if (canManage) return;
+                          setSelectedProduct(p);
+                          scrollTo('checkout');
                         }}
                       >
                         <img src={productImage(p)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -178,9 +205,9 @@ const descColor = asString(settings.template_description_color) || muted;
               {heroSubtitle}
             </p>
 
-            {mainProduct && (
+            {selectedProduct && (
               <div style={{ marginTop: 28, fontSize: 32, fontWeight: 700, color: accent }}>
-                {formatPrice(Number(mainProduct.price) || 0)}
+                {formatPrice(Number((selectedProduct as any).price) || 0)}
               </div>
             )}
 
@@ -191,30 +218,17 @@ const descColor = asString(settings.template_description_color) || muted;
               ))}
             </div>
 
-            {/* Order Form */}
-            <div style={{ marginTop: 32, padding: 24, background: '#fafafa', borderRadius: 16 }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <input placeholder="Your Name" style={{ padding: '16px', background: '#fff', border: '1px solid #e5e5e5', borderRadius: 10, fontSize: 14 }} />
-                <input placeholder="Phone Number" style={{ padding: '16px', background: '#fff', border: '1px solid #e5e5e5', borderRadius: 10, fontSize: 14 }} />
-                <input placeholder="Delivery Address" style={{ padding: '16px', background: '#fff', border: '1px solid #e5e5e5', borderRadius: 10, fontSize: 14 }} />
-                <button
-                  style={{
-                    background: accent,
-                    border: 0,
-                    borderRadius: 10,
-                    padding: '18px',
-                    color: '#fff',
-                    fontWeight: 700,
-                    fontSize: 16,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {cta}
-                </button>
-              </div>
-              <p style={{ marginTop: 16, textAlign: 'center', color: muted, fontSize: 13 }}>
-                💳 Pay on delivery • 🚚 Fast shipping
-              </p>
+            {/* Inline Checkout */}
+            <div id="checkout" style={{ marginTop: 32 }}>
+              <EmbeddedCheckout
+                storeSlug={storeSlug}
+                product={selectedProduct as any}
+                formatPrice={formatPrice}
+                theme={checkoutTheme}
+                disabled={canManage}
+                heading={cta}
+                subheading={canManage ? 'Disabled in editor preview' : 'Cash on delivery • Fast shipping'}
+              />
             </div>
           </div>
         </div>
@@ -256,7 +270,8 @@ const descColor = asString(settings.template_description_color) || muted;
                 data-edit-path={`layout.grid.items.${p.id}`}
                 onClick={(e) => {
                   if (canManage) { e.stopPropagation(); onSelect(`layout.grid.items.${p.id}`); return; }
-                  if ((p as any).slug) navigate((p as any).slug);
+                  setSelectedProduct(p);
+                  scrollTo('checkout');
                 }}
                 style={{
                   background: '#fafafa',

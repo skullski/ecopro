@@ -46,8 +46,6 @@ interface StockItem {
   name: string;
   description?: string;
   category?: string;
-  sizes?: string[];
-  colors?: string[];
   shipping_mode?: 'delivery_pricing' | 'flat' | 'free';
   shipping_flat_fee?: number | null;
   quantity: number;
@@ -82,6 +80,17 @@ interface StockCategory {
   sample_image?: string | null;
 }
 
+type StockVariantDraft = {
+  id?: number;
+  color?: string;
+  size?: string;
+  variant_name?: string;
+  price?: number;
+  stock_quantity: number;
+  is_active?: boolean;
+  sort_order?: number;
+};
+
 export default function StockManagement() {
   const { t } = useTranslation();
   const [stock, setStock] = useState<StockItem[]>([]);
@@ -108,18 +117,19 @@ export default function StockManagement() {
   // Form state
   const [formData, setFormData] = useState<Partial<StockItem>>({});
   const [uploading, setUploading] = useState(false);
-  const [activeFormSection, setActiveFormSection] = useState<'product' | 'sizes' | 'colors' | 'price' | 'shipping' | 'images' | 'notes'>('product');
-  const [sizeDraft, setSizeDraft] = useState('');
-  const [colorDraft, setColorDraft] = useState('');
+  const [activeFormSection, setActiveFormSection] = useState<'product' | 'variants' | 'price' | 'shipping' | 'images' | 'notes'>('product');
   const [adjustData, setAdjustData] = useState({
     adjustment: 0,
     reason: 'adjustment',
     notes: '',
   });
 
+  const [variantsDraft, setVariantsDraft] = useState<StockVariantDraft[]>([]);
+  const [variantsLoaded, setVariantsLoaded] = useState(false);
+  const [variantsDirty, setVariantsDirty] = useState(false);
+  const [loadingVariants, setLoadingVariants] = useState(false);
+
   const buildCreatePayload = () => {
-    const sizes = Array.isArray(formData.sizes) ? formData.sizes : [];
-    const colors = Array.isArray(formData.colors) ? formData.colors : [];
     const images = Array.isArray(formData.images) ? formData.images : [];
 
     return {
@@ -127,8 +137,6 @@ export default function StockManagement() {
       sku: (formData as any).sku ? String((formData as any).sku) : undefined,
       description: formData.description ? String(formData.description) : undefined,
       category: formData.category ? String(formData.category) : undefined,
-      sizes,
-      colors,
       quantity: formData.quantity ?? 0,
       unit_price: formData.unit_price == null ? undefined : Number(formData.unit_price),
       reorder_level: formData.reorder_level == null ? undefined : Number(formData.reorder_level),
@@ -144,8 +152,6 @@ export default function StockManagement() {
   };
 
   const buildUpdatePayload = () => {
-    const sizes = Array.isArray(formData.sizes) ? formData.sizes : [];
-    const colors = Array.isArray(formData.colors) ? formData.colors : [];
     const images = Array.isArray(formData.images) ? formData.images : [];
 
     return {
@@ -153,8 +159,6 @@ export default function StockManagement() {
       sku: (formData as any).sku ? String((formData as any).sku) : undefined,
       description: formData.description ? String(formData.description) : undefined,
       category: formData.category ? String(formData.category) : undefined,
-      sizes,
-      colors,
       unit_price: formData.unit_price == null ? undefined : Number(formData.unit_price),
       reorder_level: formData.reorder_level == null ? undefined : Number(formData.reorder_level),
       location: (formData as any).location ? String((formData as any).location) : undefined,
@@ -177,6 +181,60 @@ export default function StockManagement() {
 
   const [lowStockCount, setLowStockCount] = useState(0);
   const [totalValue, setTotalValue] = useState(0);
+
+  const loadStockVariants = async (stockId: number) => {
+    setLoadingVariants(true);
+    try {
+      const res = await fetch(`/api/client/stock/${stockId}/variants`);
+      if (!res.ok) throw new Error('Failed to load variants');
+      const data = await res.json();
+      const variants = Array.isArray(data?.variants) ? data.variants : [];
+      setVariantsDraft(
+        variants.map((v: any, idx: number) => ({
+          id: v.id,
+          color: v.color ?? '',
+          size: v.size ?? '',
+          variant_name: v.variant_name ?? '',
+          price: v.price == null ? undefined : Number(v.price),
+          stock_quantity: Number(v.stock_quantity ?? 0),
+          is_active: v.is_active == null ? true : Boolean(v.is_active),
+          sort_order: v.sort_order == null ? idx : Number(v.sort_order),
+        }))
+      );
+      setVariantsLoaded(true);
+      setVariantsDirty(false);
+    } catch (e) {
+      console.error('Failed to load stock variants', e);
+      setVariantsDraft([]);
+      setVariantsLoaded(true);
+      setVariantsDirty(false);
+    } finally {
+      setLoadingVariants(false);
+    }
+  };
+
+  const saveStockVariants = async (stockId: number) => {
+    const res = await fetch(`/api/client/stock/${stockId}/variants`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        variants: variantsDraft.map((v, idx) => ({
+          ...(v.id ? { id: v.id } : {}),
+          color: (v.color || '').trim() || undefined,
+          size: (v.size || '').trim() || undefined,
+          variant_name: (v.variant_name || '').trim() || undefined,
+          price: v.price === undefined || v.price === null || Number.isNaN(Number(v.price)) ? undefined : Number(v.price),
+          stock_quantity: Number(v.stock_quantity ?? 0),
+          is_active: v.is_active ?? true,
+          sort_order: v.sort_order == null ? idx : Number(v.sort_order),
+        })),
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err?.error || 'Failed to save variants');
+    }
+  };
 
   useEffect(() => {
     loadStock();
@@ -430,9 +488,21 @@ export default function StockManagement() {
         const createdItem = await res.json();
         console.log('[handleCreateStock] Created item:', createdItem);
         console.log('[handleCreateStock] Created item images:', createdItem.images);
+
+        const createdId = Number(createdItem?.id);
+        if (createdId && variantsDraft.length > 0) {
+          try {
+            await saveStockVariants(createdId);
+          } catch (e) {
+            console.error('Failed to save stock variants after create', e);
+          }
+        }
         await loadStock();
         setShowAddModal(false);
         setFormData({});
+        setVariantsDraft([]);
+        setVariantsLoaded(false);
+        setVariantsDirty(false);
         alert('Stock item created successfully!');
       } else {
         try {
@@ -464,10 +534,22 @@ export default function StockManagement() {
       });
 
       if (res.ok) {
+        if (variantsDirty) {
+          try {
+            await saveStockVariants(selectedItem.id);
+            setVariantsDirty(false);
+          } catch (e) {
+            console.error('Failed to save stock variants', e);
+            alert((e as any)?.message || 'Failed to save variants');
+          }
+        }
         await loadStock();
         setShowEditModal(false);
         setSelectedItem(null);
         setFormData({});
+        setVariantsDraft([]);
+        setVariantsLoaded(false);
+        setVariantsDirty(false);
       } else {
         const error = await res.json();
         alert(error.error || 'Failed to update stock item');
@@ -543,16 +625,18 @@ export default function StockManagement() {
     setSelectedItem(item);
     setFormData({
       ...item,
-      sizes: Array.isArray((item as any).sizes) ? (item as any).sizes : [],
-      colors: Array.isArray((item as any).colors) ? (item as any).colors : [],
       images: Array.isArray((item as any).images) ? (item as any).images : [],
       shipping_mode: ((item as any).shipping_mode as any) || 'delivery_pricing',
       shipping_flat_fee: (item as any).shipping_flat_fee ?? null,
     });
     setActiveFormSection('product');
-    setSizeDraft('');
-    setColorDraft('');
+    setVariantsDraft([]);
+    setVariantsLoaded(false);
+    setVariantsDirty(false);
     setShowEditModal(true);
+
+    // Load variants in background
+    loadStockVariants(item.id);
   };
 
   const openAdjustModal = (item: StockItem) => {
@@ -636,8 +720,6 @@ export default function StockManagement() {
                   name: '',
                   description: '',
                   category: '',
-                  sizes: [],
-                  colors: [],
                   quantity: 0,
                   unit_price: undefined,
                   reorder_level: 10,
@@ -647,8 +729,9 @@ export default function StockManagement() {
                   notes: '',
                 });
                 setActiveFormSection('product');
-                setSizeDraft('');
-                setColorDraft('');
+                setVariantsDraft([]);
+                setVariantsLoaded(false);
+                setVariantsDirty(false);
                 setShowAddModal(true);
               }}
               className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all gap-1 text-base font-bold py-2 px-4 h-10"
@@ -885,8 +968,9 @@ export default function StockManagement() {
           setFormData({});
           setSelectedItem(null);
           setActiveFormSection('product');
-          setSizeDraft('');
-          setColorDraft('');
+          setVariantsDraft([]);
+          setVariantsLoaded(false);
+          setVariantsDirty(false);
         }
       }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-background via-background to-primary/5 dark:from-slate-950 dark:to-slate-900/30 p-3 md:p-4">
@@ -904,8 +988,7 @@ export default function StockManagement() {
               {(
                 [
                   { key: 'product', label: 'Product' },
-                  { key: 'sizes', label: 'Sizes' },
-                  { key: 'colors', label: 'Colors' },
+                  { key: 'variants', label: 'Variants' },
                   { key: 'price', label: 'Price' },
                   { key: 'shipping', label: 'Shipping' },
                   { key: 'images', label: 'Images' },
@@ -1071,123 +1154,131 @@ export default function StockManagement() {
               </div>
             )}
 
-            {activeFormSection === 'sizes' && (
-              <div className="space-y-2 bg-blue-500/5 dark:bg-blue-900/10 p-2 md:p-3 rounded border border-blue-500/20">
-                <h3 className="text-lg font-bold text-blue-600 dark:text-blue-400">Sizes</h3>
-                <div className="flex gap-2">
-                  <Input
-                    value={sizeDraft}
-                    onChange={(e) => setSizeDraft(e.target.value)}
-                    placeholder="e.g. S, M, L"
-                    className="h-9"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        const next = sizeDraft.trim();
-                        if (!next) return;
-                        const existing = Array.isArray(formData.sizes) ? formData.sizes : [];
-                        if (existing.includes(next)) return;
-                        setFormData({ ...formData, sizes: [...existing, next] });
-                        setSizeDraft('');
-                      }
-                    }}
-                  />
+            {activeFormSection === 'variants' && (
+              <div className="space-y-2 bg-indigo-500/5 dark:bg-indigo-900/10 p-2 md:p-3 rounded border border-indigo-500/20">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <h3 className="text-lg font-bold text-indigo-600 dark:text-indigo-400">Variants (Size / Color)</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Optional. If you add variants, total stock quantity is automatically the sum of active variant stock.
+                    </p>
+                  </div>
                   <Button
                     type="button"
+                    size="sm"
+                    variant="outline"
                     onClick={() => {
-                      const next = sizeDraft.trim();
-                      if (!next) return;
-                      const existing = Array.isArray(formData.sizes) ? formData.sizes : [];
-                      if (existing.includes(next)) return;
-                      setFormData({ ...formData, sizes: [...existing, next] });
-                      setSizeDraft('');
+                      setVariantsDraft((prev) => [
+                        ...prev,
+                        {
+                          color: '',
+                          size: '',
+                          variant_name: '',
+                          price: undefined,
+                          stock_quantity: 0,
+                          is_active: true,
+                          sort_order: prev.length,
+                        },
+                      ]);
+                      setVariantsLoaded(true);
+                      setVariantsDirty(true);
                     }}
-                    className="h-9"
                   >
-                    Add
+                    Add Variant
                   </Button>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {(Array.isArray(formData.sizes) ? formData.sizes : []).map((s) => (
-                    <Badge key={s} variant="secondary" className="gap-1">
-                      {s}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const existing = Array.isArray(formData.sizes) ? formData.sizes : [];
-                          setFormData({ ...formData, sizes: existing.filter(v => v !== s) });
-                        }}
-                        className="ml-1"
-                        aria-label="Remove size"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                  {(Array.isArray(formData.sizes) ? formData.sizes : []).length === 0 && (
-                    <p className="text-sm text-muted-foreground">No sizes added.</p>
-                  )}
-                </div>
-              </div>
-            )}
 
-            {activeFormSection === 'colors' && (
-              <div className="space-y-2 bg-emerald-500/5 dark:bg-emerald-900/10 p-2 md:p-3 rounded border border-emerald-500/20">
-                <h3 className="text-lg font-bold text-emerald-600 dark:text-emerald-400">Colors</h3>
-                <div className="flex gap-2">
-                  <Input
-                    value={colorDraft}
-                    onChange={(e) => setColorDraft(e.target.value)}
-                    placeholder="e.g. Red, Blue"
-                    className="h-9"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        const next = colorDraft.trim();
-                        if (!next) return;
-                        const existing = Array.isArray(formData.colors) ? formData.colors : [];
-                        if (existing.includes(next)) return;
-                        setFormData({ ...formData, colors: [...existing, next] });
-                        setColorDraft('');
-                      }
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      const next = colorDraft.trim();
-                      if (!next) return;
-                      const existing = Array.isArray(formData.colors) ? formData.colors : [];
-                      if (existing.includes(next)) return;
-                      setFormData({ ...formData, colors: [...existing, next] });
-                      setColorDraft('');
-                    }}
-                    className="h-9"
-                  >
-                    Add
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {(Array.isArray(formData.colors) ? formData.colors : []).map((c) => (
-                    <Badge key={c} variant="secondary" className="gap-1">
-                      {c}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const existing = Array.isArray(formData.colors) ? formData.colors : [];
-                          setFormData({ ...formData, colors: existing.filter(v => v !== c) });
-                        }}
-                        className="ml-1"
-                        aria-label="Remove color"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                  {(Array.isArray(formData.colors) ? formData.colors : []).length === 0 && (
-                    <p className="text-sm text-muted-foreground">No colors added.</p>
-                  )}
-                </div>
+                {loadingVariants && <div className="text-sm text-muted-foreground">Loading variants…</div>}
+
+                {!loadingVariants && variantsLoaded && variantsDraft.length === 0 && (
+                  <div className="text-sm text-muted-foreground">No variants added.</div>
+                )}
+
+                {variantsDraft.length > 0 && (
+                  <div className="space-y-2">
+                    {variantsDraft
+                      .slice()
+                      .sort((a, b) => Number(a.sort_order ?? 0) - Number(b.sort_order ?? 0))
+                      .map((v, idx) => (
+                        <div key={v.id ?? `new-${idx}`} className="grid grid-cols-12 gap-2 items-end border rounded p-2 bg-background/50">
+                          <div className="col-span-4">
+                            <Label className="text-xs">Color</Label>
+                            <Input
+                              value={v.color || ''}
+                              onChange={(e) => {
+                                const next = e.target.value;
+                                setVariantsDraft((prev) =>
+                                  prev.map((x) => (x === v ? { ...x, color: next } : x))
+                                );
+                                setVariantsDirty(true);
+                              }}
+                              className="h-9"
+                              placeholder="e.g. Red"
+                            />
+                          </div>
+                          <div className="col-span-4">
+                            <Label className="text-xs">Size</Label>
+                            <Input
+                              value={v.size || ''}
+                              onChange={(e) => {
+                                const next = e.target.value;
+                                setVariantsDraft((prev) =>
+                                  prev.map((x) => (x === v ? { ...x, size: next } : x))
+                                );
+                                setVariantsDirty(true);
+                              }}
+                              className="h-9"
+                              placeholder="e.g. M"
+                            />
+                          </div>
+                          <div className="col-span-2">
+                            <Label className="text-xs">Stock</Label>
+                            <Input
+                              type="number"
+                              min={0}
+                              value={Number(v.stock_quantity ?? 0)}
+                              onChange={(e) => {
+                                const next = Math.max(0, parseInt(e.target.value) || 0);
+                                setVariantsDraft((prev) =>
+                                  prev.map((x) => (x === v ? { ...x, stock_quantity: next } : x))
+                                );
+                                setVariantsDirty(true);
+                              }}
+                              className="h-9"
+                            />
+                          </div>
+                          <div className="col-span-2 flex gap-2 justify-end">
+                            <Button
+                              type="button"
+                              variant={v.is_active === false ? 'outline' : 'default'}
+                              size="sm"
+                              className="h-9"
+                              onClick={() => {
+                                setVariantsDraft((prev) =>
+                                  prev.map((x) => (x === v ? { ...x, is_active: !(x.is_active ?? true) } : x))
+                                );
+                                setVariantsDirty(true);
+                              }}
+                            >
+                              {v.is_active === false ? 'Off' : 'On'}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="h-9"
+                              onClick={() => {
+                                setVariantsDraft((prev) => prev.filter((x) => x !== v));
+                                setVariantsDirty(true);
+                              }}
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -1354,8 +1445,9 @@ export default function StockManagement() {
                 setShowEditModal(false);
                 setFormData({});
                 setActiveFormSection('product');
-                setSizeDraft('');
-                setColorDraft('');
+                setVariantsDraft([]);
+                setVariantsLoaded(false);
+                setVariantsDirty(false);
               }}
               className="border-muted-foreground/30 hover:bg-muted/50 text-base font-bold h-10"
             >

@@ -106,6 +106,41 @@ const createCategoryBodySchema = z
   })
   .strict();
 
+const StockIdSchema = z.preprocess((v) => Number(v), z.number().int().positive());
+
+const StockVariantSchema = z
+  .object({
+    id: z
+      .preprocess((v) => (v === null || v === undefined || v === '' ? undefined : Number(v)), z.number().int().positive())
+      .optional(),
+    color: z.preprocess((v) => (typeof v === 'string' ? v.trim() : v), z.string().max(80)).optional(),
+    size: z.preprocess((v) => (typeof v === 'string' ? v.trim() : v), z.string().max(80)).optional(),
+    variant_name: z.preprocess((v) => (typeof v === 'string' ? v.trim() : v), z.string().max(160)).optional(),
+    price: z
+      .preprocess((v) => (v === '' || v === null || v === undefined ? undefined : Number(v)), z.number().positive())
+      .optional(),
+    stock_quantity: z.preprocess((v) => Number(v), z.number().int().nonnegative()),
+    images: z.array(z.string().min(1).max(2000)).optional(),
+    is_active: z.preprocess((v) => (v === undefined ? undefined : Boolean(v)), z.boolean()).optional(),
+    sort_order: z
+      .preprocess((v) => (v === '' || v === null || v === undefined ? undefined : Number(v)), z.number().int())
+      .optional(),
+  })
+  .strict();
+
+const PutStockVariantsSchema = z
+  .object({
+    variants: z.array(StockVariantSchema),
+  })
+  .strict();
+
+function computeVariantName(v: { color?: string; size?: string; variant_name?: string }) {
+  const explicit = String(v.variant_name || '').trim();
+  if (explicit) return explicit;
+  const parts = [String(v.color || '').trim(), String(v.size || '').trim()].filter(Boolean);
+  return parts.join(' / ') || null;
+}
+
 /**
  * Get all stock products for authenticated client
  * GET /api/client/stock
@@ -557,6 +592,203 @@ export const getStockHistory: RequestHandler = async (req, res) => {
   } catch (error) {
     console.error('[getStockHistory] error:', error);
     res.status(500).json({ error: 'Failed to fetch stock history' });
+  }
+};
+
+/**
+ * Get stock variants for a stock item
+ * GET /api/client/stock/:id/variants
+ */
+export const getClientStockVariants: RequestHandler = async (req, res) => {
+  try {
+    const pool = await ensureConnection();
+    const clientId = Number((req as any).user?.id);
+    if (!clientId) return res.status(401).json({ error: 'Not authenticated' });
+
+    const stockId = StockIdSchema.parse((req.params as any).id);
+
+    const owns = await pool.query(
+      'SELECT 1 FROM client_stock_products WHERE id = $1 AND client_id = $2 LIMIT 1',
+      [stockId, clientId]
+    );
+    if (!owns.rowCount) return res.status(404).json({ error: 'Stock item not found' });
+
+    try {
+      const result = await pool.query(
+        `SELECT id, color, size, variant_name, price, stock_quantity, images, is_active, sort_order
+         FROM client_stock_variants
+         WHERE stock_id = $1 AND client_id = $2
+         ORDER BY sort_order ASC, id ASC`,
+        [stockId, clientId]
+      );
+      return res.json({ variants: result.rows });
+    } catch (err: any) {
+      // If migration not applied yet, behave safely.
+      if (err?.code === '42P01') {
+        return res.json({ variants: [] });
+      }
+      throw err;
+    }
+  } catch (error: any) {
+    const msg = error?.message || 'Failed to fetch variants';
+    res.status(400).json({ error: msg });
+  }
+};
+
+/**
+ * Upsert stock variants for a stock item
+ * PUT /api/client/stock/:id/variants
+ */
+export const putClientStockVariants: RequestHandler = async (req, res) => {
+  let client: any;
+  let inTransaction = false;
+  try {
+    const pool = await ensureConnection();
+    const clientId = Number((req as any).user?.id);
+    if (!clientId) return res.status(401).json({ error: 'Not authenticated' });
+
+    const stockId = StockIdSchema.parse((req.params as any).id);
+    const data = PutStockVariantsSchema.parse(req.body);
+
+    client = await pool.connect();
+
+    const owns = await client.query(
+      'SELECT id, quantity FROM client_stock_products WHERE id = $1 AND client_id = $2 LIMIT 1',
+      [stockId, clientId]
+    );
+    if (!owns.rowCount) return res.status(404).json({ error: 'Stock item not found' });
+
+    await client.query('BEGIN');
+    inTransaction = true;
+
+    // Ensure table exists (migration may not yet be applied in dev)
+    try {
+      await client.query('SELECT 1 FROM client_stock_variants LIMIT 1');
+    } catch (err: any) {
+      if (err?.code === '42P01') {
+        await client.query('ROLLBACK');
+        inTransaction = false;
+        return res.status(400).json({ error: 'Stock variants are not available yet (migration pending)' });
+      }
+      throw err;
+    }
+
+    const existing = await client.query(
+      'SELECT id FROM client_stock_variants WHERE stock_id = $1 AND client_id = $2',
+      [stockId, clientId]
+    );
+    const existingIds = new Set<number>(existing.rows.map((r: any) => Number(r.id)));
+    const keepIds = new Set<number>();
+
+    // Deduplicate incoming variants by (color,size) case-insensitive to avoid unique index violations.
+    const seenKey = new Set<string>();
+
+    for (const v of data.variants) {
+      const color = v.color != null && String(v.color).trim() ? String(v.color).trim() : null;
+      const size = v.size != null && String(v.size).trim() ? String(v.size).trim() : null;
+      const key = `${String(color || '').toLowerCase()}::${String(size || '').toLowerCase()}`;
+      if (seenKey.has(key)) continue;
+      seenKey.add(key);
+
+      const variantName = computeVariantName({ color: color || undefined, size: size || undefined, variant_name: v.variant_name });
+      const price = v.price === undefined ? null : Number(v.price);
+      const stockQty = Number(v.stock_quantity);
+      const images = Array.isArray(v.images) ? v.images : null;
+      const isActive = v.is_active === undefined ? true : Boolean(v.is_active);
+      const sortOrder = v.sort_order === undefined ? 0 : Number(v.sort_order);
+
+      if (v.id && existingIds.has(Number(v.id))) {
+        keepIds.add(Number(v.id));
+        await client.query(
+          `UPDATE client_stock_variants
+           SET color = $1,
+               size = $2,
+               variant_name = $3,
+               price = $4,
+               stock_quantity = $5,
+               images = $6,
+               is_active = $7,
+               sort_order = $8,
+               updated_at = NOW()
+           WHERE id = $9 AND stock_id = $10 AND client_id = $11`,
+          [color, size, variantName, price, stockQty, images, isActive, sortOrder, v.id, stockId, clientId]
+        );
+      } else {
+        const inserted = await client.query(
+          `INSERT INTO client_stock_variants
+           (client_id, stock_id, color, size, variant_name, price, stock_quantity, images, is_active, sort_order)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+           RETURNING id`,
+          [clientId, stockId, color, size, variantName, price, stockQty, images, isActive, sortOrder]
+        );
+        keepIds.add(Number(inserted.rows[0].id));
+      }
+    }
+
+    const idsToDelete = [...existingIds].filter((id) => !keepIds.has(id));
+    if (idsToDelete.length) {
+      await client.query(
+        'DELETE FROM client_stock_variants WHERE client_id = $1 AND stock_id = $2 AND id = ANY($3::bigint[])',
+        [clientId, stockId, idsToDelete]
+      );
+    }
+
+    // Keep stock product quantity in sync with active variants (sum)
+    const sumRes = await client.query(
+      `SELECT COALESCE(SUM(stock_quantity), 0)::int AS total
+       FROM client_stock_variants
+       WHERE client_id = $1 AND stock_id = $2 AND is_active = true`,
+      [clientId, stockId]
+    );
+    const total = Number(sumRes.rows?.[0]?.total || 0);
+
+    // Backward compatibility: also store distinct sizes/colors arrays on stock product.
+    const optRes = await client.query(
+      `SELECT
+        ARRAY_REMOVE(ARRAY_AGG(DISTINCT size), NULL) AS sizes,
+        ARRAY_REMOVE(ARRAY_AGG(DISTINCT color), NULL) AS colors
+       FROM client_stock_variants
+       WHERE client_id = $1 AND stock_id = $2 AND is_active = true`,
+      [clientId, stockId]
+    );
+    const sizes = Array.isArray(optRes.rows?.[0]?.sizes) ? optRes.rows[0].sizes : [];
+    const colors = Array.isArray(optRes.rows?.[0]?.colors) ? optRes.rows[0].colors : [];
+
+    await client.query(
+      `UPDATE client_stock_products
+       SET quantity = $1,
+           sizes = $2::text[],
+           colors = $3::text[],
+           status = CASE WHEN $1 = 0 THEN 'out_of_stock' ELSE status END,
+           updated_at = NOW()
+       WHERE id = $4 AND client_id = $5`,
+      [total, sizes, colors, stockId, clientId]
+    );
+
+    await client.query('COMMIT');
+    inTransaction = false;
+
+    const out = await pool.query(
+      `SELECT id, color, size, variant_name, price, stock_quantity, images, is_active, sort_order
+       FROM client_stock_variants
+       WHERE stock_id = $1 AND client_id = $2
+       ORDER BY sort_order ASC, id ASC`,
+      [stockId, clientId]
+    );
+
+    res.json({ success: true, variants: out.rows, quantity: total, sizes, colors });
+  } catch (error: any) {
+    if (inTransaction && client) {
+      try {
+        await client.query('ROLLBACK');
+      } catch {}
+    }
+    const msg = error?.message || 'Failed to update variants';
+    res.status(400).json({ error: msg });
+  } finally {
+    try {
+      if (client) client.release();
+    } catch {}
   }
 };
 

@@ -1114,12 +1114,25 @@ export function createServer(options?: { skipDbInit?: boolean }) {
     requireClient,
     stockRoutes.getStockHistory
   );
+  app.get(
+    "/api/client/stock/:id/variants",
+    authenticate,
+    requireClient,
+    stockRoutes.getClientStockVariants
+  );
   app.post(
     "/api/client/stock",
     authenticate,
     requireClient,
     apiLimiter,
     stockRoutes.createStock
+  );
+  app.put(
+    "/api/client/stock/:id/variants",
+    authenticate,
+    requireClient,
+    apiLimiter,
+    stockRoutes.putClientStockVariants
   );
   app.put(
     "/api/client/stock/:id",

@@ -462,6 +462,43 @@ export default function Store() {
   const [inventoryProducts, setInventoryProducts] = useState<StoreProduct[]>([]);
   const [selectedInventoryProduct, setSelectedInventoryProduct] = useState<StoreProduct | null>(null);
   const [inventoryStockQuantity, setInventoryStockQuantity] = useState<number>(1);
+
+  type StockVariant = {
+    id: number;
+    color?: string;
+    size?: string;
+    variant_name?: string;
+    price?: number;
+    stock_quantity: number;
+    is_active?: boolean;
+    sort_order?: number;
+  };
+
+  const [inventoryVariants, setInventoryVariants] = useState<StockVariant[]>([]);
+  const [inventoryVariantsLoading, setInventoryVariantsLoading] = useState(false);
+  const [selectedInventoryVariantIds, setSelectedInventoryVariantIds] = useState<number[]>([]);
+
+  const loadInventoryVariants = async (stockId: number) => {
+    setInventoryVariantsLoading(true);
+    try {
+      const res = await fetch(`/api/client/stock/${stockId}/variants`);
+      if (!res.ok) throw new Error('Failed to load stock variants');
+      const data = await res.json();
+      const variants = Array.isArray(data?.variants) ? data.variants : [];
+      setInventoryVariants(variants);
+      const activeIds = variants
+        .filter((v: any) => v && (v.is_active == null ? true : Boolean(v.is_active)))
+        .map((v: any) => Number(v.id))
+        .filter((n: any) => Number.isInteger(n) && n > 0);
+      setSelectedInventoryVariantIds(activeIds);
+    } catch (e) {
+      console.error('Failed to load inventory variants', e);
+      setInventoryVariants([]);
+      setSelectedInventoryVariantIds([]);
+    } finally {
+      setInventoryVariantsLoading(false);
+    }
+  };
   // Modal and tab states
   const [showStoreSettingsModal, setShowStoreSettingsModal] = useState(false);
   const [selectedTab, setSelectedTab] = useState(0);
@@ -1171,6 +1208,8 @@ export default function Store() {
           setShowSelectInventory(false);
           setSelectedInventoryProduct(null);
           setInventoryStockQuantity(1);
+          setInventoryVariants([]);
+          setSelectedInventoryVariantIds([]);
         }
       }}>
         <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
@@ -1207,7 +1246,13 @@ export default function Store() {
                     return (
                       <div
                         key={product.id}
-                        onClick={() => setSelectedInventoryProduct(product)}
+                        onClick={async () => {
+                          setSelectedInventoryProduct(product);
+                          setInventoryStockQuantity(1);
+                          setInventoryVariants([]);
+                          setSelectedInventoryVariantIds([]);
+                          await loadInventoryVariants(Number(product.id));
+                        }}
                         className={`p-2.5 rounded-lg border cursor-pointer transition-all hover:shadow-sm ${
                           selectedInventoryProduct?.id === product.id
                             ? 'border-primary bg-primary/10 shadow'
@@ -1273,41 +1318,90 @@ export default function Store() {
                         <p className="text-xs text-muted-foreground">Selected</p>
                       </div>
                     </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">Quantity to Add</Label>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          className="h-8 w-8"
-                          onClick={() => setInventoryStockQuantity(Math.max(1, inventoryStockQuantity - 1))}
-                        >
-                          -
-                        </Button>
-                        <Input
-                          type="number"
-                          min="1"
-                          max={(selectedInventoryProduct as any).quantity ?? (selectedInventoryProduct as any).stock_quantity ?? 999}
-                          value={inventoryStockQuantity}
-                          onChange={(e) => setInventoryStockQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                          className="w-16 h-8 text-center text-sm font-semibold"
-                        />
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          className="h-8 w-8"
-                          onClick={() => {
-                            const maxQty = (selectedInventoryProduct as any).quantity ?? (selectedInventoryProduct as any).stock_quantity ?? 999;
-                            setInventoryStockQuantity(Math.min(maxQty, inventoryStockQuantity + 1));
-                          }}
-                        >
-                          +
-                        </Button>
-                        <span className="text-xs text-muted-foreground">
-                          / {(selectedInventoryProduct as any).quantity ?? (selectedInventoryProduct as any).stock_quantity ?? 0}
-                        </span>
+                    {inventoryVariantsLoading ? (
+                      <div className="text-xs text-muted-foreground">Loading variants…</div>
+                    ) : inventoryVariants.length > 0 ? (
+                      <div className="space-y-2">
+                        <Label className="text-xs">Choose Variants to Include</Label>
+                        <div className="max-h-40 overflow-y-auto rounded border bg-background/60">
+                          {inventoryVariants
+                            .slice()
+                            .sort((a: any, b: any) => Number(a.sort_order ?? 0) - Number(b.sort_order ?? 0))
+                            .map((v: any) => {
+                              const id = Number(v.id);
+                              const label = String(v.variant_name || '').trim() || [v.color, v.size].filter(Boolean).join(' / ') || 'Variant';
+                              const checked = selectedInventoryVariantIds.includes(id);
+                              return (
+                                <label key={id} className="flex items-center justify-between gap-2 px-2 py-1.5 border-b last:border-b-0 cursor-pointer">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <input
+                                      type="checkbox"
+                                      checked={checked}
+                                      onChange={(e) => {
+                                        const next = e.target.checked;
+                                        setSelectedInventoryVariantIds((prev) => {
+                                          if (next) return Array.from(new Set([...prev, id]));
+                                          return prev.filter((x) => x !== id);
+                                        });
+                                      }}
+                                    />
+                                    <span className="text-sm truncate">{label}</span>
+                                    {(v.is_active === false) && (
+                                      <Badge variant="outline" className="text-[10px]">Off</Badge>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2 flex-shrink-0">
+                                    <Badge variant="secondary" className="text-[10px]">
+                                      {Number(v.stock_quantity ?? 0)}
+                                    </Badge>
+                                  </div>
+                                </label>
+                              );
+                            })}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Selected stock: {inventoryVariants
+                            .filter((v: any) => selectedInventoryVariantIds.includes(Number(v.id)))
+                            .reduce((sum: number, v: any) => sum + Number(v.stock_quantity ?? 0), 0)}
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Quantity to Add</Label>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="h-8 w-8"
+                            onClick={() => setInventoryStockQuantity(Math.max(1, inventoryStockQuantity - 1))}
+                          >
+                            -
+                          </Button>
+                          <Input
+                            type="number"
+                            min="1"
+                            max={(selectedInventoryProduct as any).quantity ?? (selectedInventoryProduct as any).stock_quantity ?? 999}
+                            value={inventoryStockQuantity}
+                            onChange={(e) => setInventoryStockQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                            className="w-16 h-8 text-center text-sm font-semibold"
+                          />
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="h-8 w-8"
+                            onClick={() => {
+                              const maxQty = (selectedInventoryProduct as any).quantity ?? (selectedInventoryProduct as any).stock_quantity ?? 999;
+                              setInventoryStockQuantity(Math.min(maxQty, inventoryStockQuantity + 1));
+                            }}
+                          >
+                            +
+                          </Button>
+                          <span className="text-xs text-muted-foreground">
+                            / {(selectedInventoryProduct as any).quantity ?? (selectedInventoryProduct as any).stock_quantity ?? 0}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </>
@@ -1323,6 +1417,7 @@ export default function Store() {
                 if (!selectedInventoryProduct) return;
                 const inv = selectedInventoryProduct as any;
                 try {
+                  const shouldImportVariants = inventoryVariants.length > 0 && selectedInventoryVariantIds.length > 0;
                   const res = await fetch('/api/client/store/products', {
                     method: 'POST',
                     headers: {
@@ -1335,16 +1430,19 @@ export default function Store() {
                       original_price: inv.original_price,
                       images: inv.images,
                       category: inv.category,
-                      // Bridge Stock sizes/colors -> Store product variants
-                      sizes: Array.isArray(inv.sizes) ? inv.sizes : [],
-                      colors: Array.isArray(inv.colors) ? inv.colors : [],
+                      ...(shouldImportVariants
+                        ? {
+                            source_stock_id: inv.id,
+                            stock_variant_ids: selectedInventoryVariantIds,
+                          }
+                        : {}),
                       metadata: {
                         shipping: {
                           mode: inv.shipping_mode || 'delivery_pricing',
                           flat_fee: inv.shipping_flat_fee ?? null,
                         },
                       },
-                      stock_quantity: inventoryStockQuantity,
+                      stock_quantity: shouldImportVariants ? 0 : inventoryStockQuantity,
                       status: 'active',
                       is_featured: false
                     })
@@ -1353,6 +1451,8 @@ export default function Store() {
                     setShowSelectInventory(false);
                     setSelectedInventoryProduct(null);
                     setInventoryStockQuantity(1);
+                    setInventoryVariants([]);
+                    setSelectedInventoryVariantIds([]);
                     // Reload products
                     const productsRes = await fetch('/api/client/store/products', {
                     });
@@ -1370,7 +1470,7 @@ export default function Store() {
                   alert('Failed to add product');
                 }
               }}
-              disabled={!selectedInventoryProduct}
+              disabled={!selectedInventoryProduct || (inventoryVariants.length > 0 && selectedInventoryVariantIds.length === 0)}
             >
               Add Product
             </Button>

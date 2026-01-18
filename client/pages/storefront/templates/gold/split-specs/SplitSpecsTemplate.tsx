@@ -1,5 +1,6 @@
 import React from 'react';
 import type { TemplateProps, StoreProduct } from '../../types';
+import EmbeddedCheckout from '../shared/EmbeddedCheckout';
 
 /**
  * SPLIT SPECS - Single product template with spec/FAQ emphasis.
@@ -60,6 +61,26 @@ export default function SplitSpecsTemplate(props: TemplateProps) {
 
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 12) || [];
   const mainProduct = products[0];
+  const [selectedProduct, setSelectedProduct] = React.useState<StoreProduct | undefined>(mainProduct);
+  React.useEffect(() => {
+    setSelectedProduct(mainProduct);
+  }, [mainProduct ? (mainProduct as any).id : undefined]);
+
+  const storeSlug = asString((settings as any).store_slug);
+  const checkoutTheme = {
+    bg: '#ffffff',
+    text,
+    muted,
+    accent,
+    cardBg: '#ffffff',
+    border: '#e2e8f0',
+  };
+
+  const scrollTo = (id: string) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
   const sectionSpacing = resolveInt(settings.template_section_spacing, 56, 24, 96);
@@ -103,7 +124,7 @@ export default function SplitSpecsTemplate(props: TemplateProps) {
             </div>
           </div>
           <button
-            onClick={() => navigate(mainProduct?.slug || '/products')}
+            onClick={() => scrollTo('checkout')}
             style={{ background: accent, border: 0, borderRadius: 999, padding: '10px 14px', color: '#fff', fontWeight: 900, cursor: 'pointer', fontSize: 13 }}
           >
             {cta}
@@ -125,9 +146,9 @@ export default function SplitSpecsTemplate(props: TemplateProps) {
               {heroSubtitle}
             </p>
 
-            {mainProduct && (
+            {selectedProduct && (
               <div style={{ marginTop: 18, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
-                <div style={{ fontSize: 28, fontWeight: 950 }}>{formatPrice(Number((mainProduct as any).price) || 0)}</div>
+                <div style={{ fontSize: 28, fontWeight: 950 }}>{formatPrice(Number((selectedProduct as any).price) || 0)}</div>
                 <div style={{ fontSize: 12, color: '#64748b' }}>COD • Fast delivery</div>
               </div>
             )}
@@ -144,7 +165,7 @@ export default function SplitSpecsTemplate(props: TemplateProps) {
             <div style={{ marginTop: 18, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <button
                 data-edit-path="layout.hero.cta"
-                onClick={() => navigate(mainProduct?.slug || '/products')}
+                onClick={() => scrollTo('checkout')}
                 style={{ background: accent, border: 0, borderRadius: 999, padding: '12px 16px', color: '#fff', fontWeight: 950, cursor: 'pointer' }}
               >
                 {cta}
@@ -160,15 +181,29 @@ export default function SplitSpecsTemplate(props: TemplateProps) {
 
           <div style={{ borderRadius: cardRadius, overflow: 'hidden', border: '1px solid #e2e8f0', background: '#f8fafc' }}>
             <div style={{ aspectRatio: isMobile ? '4/3' : '1/1' }}>
-              <img src={productImage(mainProduct)} alt={mainProduct ? productTitle(mainProduct) : ''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img src={productImage(selectedProduct)} alt={selectedProduct ? productTitle(selectedProduct) : ''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
-            {mainProduct && (
+            {selectedProduct && (
               <div style={{ padding: 14, background: '#fff' }}>
-                <div style={{ fontWeight: 950 }}>{productTitle(mainProduct)}</div>
+                <div style={{ fontWeight: 950 }}>{productTitle(selectedProduct)}</div>
                 <div style={{ marginTop: 6, color: '#64748b', fontSize: 13 }}>High-quality • COD • Support</div>
               </div>
             )}
           </div>
+        </div>
+      </section>
+
+      <section id="checkout" style={{ padding: `0 ${baseSpacing}px ${sectionSpacing}px` }}>
+        <div style={{ maxWidth: 760, margin: '0 auto' }}>
+          <EmbeddedCheckout
+            storeSlug={storeSlug}
+            product={selectedProduct as any}
+            formatPrice={formatPrice}
+            theme={checkoutTheme}
+            disabled={canManage}
+            heading={cta}
+            subheading={canManage ? 'Disabled in editor preview' : 'Cash on delivery • Fast delivery'}
+          />
         </div>
       </section>
 
@@ -193,7 +228,10 @@ export default function SplitSpecsTemplate(props: TemplateProps) {
               {products.slice(1, 9).map((p) => (
                 <button
                   key={(p as any).id}
-                  onClick={() => navigate((p as any).slug || '/products')}
+                  onClick={() => {
+                    setSelectedProduct(p);
+                    scrollTo('checkout');
+                  }}
                   style={{ textAlign: 'left', background: '#fff', border: '1px solid #e2e8f0', borderRadius: cardRadius, overflow: 'hidden', cursor: 'pointer', padding: 0 }}
                 >
                   <div style={{ aspectRatio: '4/3', background: '#f1f5f9' }}>

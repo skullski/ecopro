@@ -13,7 +13,7 @@
   "scripts": {
     "dev": "concurrently \"pnpm:dev:*\"",
     "dev:client": "vite --port 5173",
-    "dev:server": "nodemon --watch server --ignore logs/** --ignore server/logs/** --ignore **/*.log --exec tsx server/dev.ts",
+    "dev:server": "node run-migrations.js && nodemon --watch server --ignore logs/** --ignore server/logs/** --ignore **/*.log --exec tsx server/dev.ts",
     "build": "npm run build:client && npm run build:server",
     "build:client": "vite build",
     "build:server": "vite build --config vite.config.server.ts",

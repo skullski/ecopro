@@ -1,5 +1,6 @@
 import React from 'react';
 import type { TemplateProps, StoreProduct } from '../../types';
+import EmbeddedCheckout from '../shared/EmbeddedCheckout';
 
 /**
  * PURE PRODUCT - Minimal product-centric template.
@@ -84,6 +85,26 @@ const descColor = asString(settings.template_description_color) || muted;
   const cardRadius = resolveInt(settings.template_card_border_radius, 16, 0, 32);
 
   const mainProduct = products[0];
+  const [selectedProduct, setSelectedProduct] = React.useState<StoreProduct | undefined>(mainProduct);
+  React.useEffect(() => {
+    setSelectedProduct(mainProduct);
+  }, [mainProduct ? (mainProduct as any).id : undefined]);
+
+  const storeSlug = asString((settings as any).store_slug);
+  const checkoutTheme = {
+    bg,
+    text,
+    muted,
+    accent,
+    cardBg: '#ffffff',
+    border: '#eee',
+  };
+
+  const scrollTo = (id: string) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   return (
     <div
@@ -146,7 +167,7 @@ const descColor = asString(settings.template_description_color) || muted;
           textAlign: 'center',
         }}
       >
-        {mainProduct && (
+        {selectedProduct && (
           <div style={{ marginBottom: sectionSpacing }}>
             <div 
               style={{ 
@@ -158,7 +179,7 @@ const descColor = asString(settings.template_description_color) || muted;
                 background: '#f5f5f5',
               }}
             >
-              <img src={productImage(mainProduct)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img src={productImage(selectedProduct)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
           </div>
         )}
@@ -170,11 +191,11 @@ const descColor = asString(settings.template_description_color) || muted;
           {heroSubtitle}
         </p>
 
-        {mainProduct && (
+        {selectedProduct && (
           <div style={{ marginTop: 32 }}>
-            <span style={{ fontSize: 36, fontWeight: 700 }}>{formatPrice(Number(mainProduct.price) || 0)}</span>
+            <span style={{ fontSize: 36, fontWeight: 700 }}>{formatPrice(Number((selectedProduct as any).price) || 0)}</span>
             <button
-              onClick={() => navigate(mainProduct.slug || '/products')}
+              onClick={() => scrollTo('checkout')}
               style={{
                 display: 'block',
                 width: '100%',
@@ -194,6 +215,19 @@ const descColor = asString(settings.template_description_color) || muted;
             </button>
           </div>
         )}
+      </section>
+
+      {/* Inline Checkout */}
+      <section id="checkout" style={{ maxWidth: 700, margin: '0 auto', padding: `0 ${baseSpacing}px ${sectionSpacing}px` }}>
+        <EmbeddedCheckout
+          storeSlug={storeSlug}
+          product={selectedProduct as any}
+          formatPrice={formatPrice}
+          theme={checkoutTheme}
+          disabled={canManage}
+          heading={cta}
+          subheading={canManage ? 'Disabled in editor preview' : 'Cash on delivery • Fast delivery'}
+        />
       </section>
 
       {/* Features */}
@@ -266,7 +300,8 @@ const descColor = asString(settings.template_description_color) || muted;
                 data-edit-path={`layout.grid.items.${p.id}`}
                 onClick={(e) => {
                   if (canManage) { e.stopPropagation(); onSelect(`layout.grid.items.${p.id}`); return; }
-                  if ((p as any).slug) navigate((p as any).slug);
+                  setSelectedProduct(p);
+                  scrollTo('checkout');
                 }}
                 style={{
                   cursor: 'pointer',
@@ -301,11 +336,11 @@ const descColor = asString(settings.template_description_color) || muted;
       </footer>
 
       {/* Sticky bottom CTA on mobile */}
-      {isMobile && mainProduct && (
+      {isMobile && selectedProduct && (
         <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: bg, padding: '16px 24px', borderTop: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontWeight: 700, fontSize: 18 }}>{formatPrice(Number(mainProduct.price) || 0)}</span>
+          <span style={{ fontWeight: 700, fontSize: 18 }}>{formatPrice(Number((selectedProduct as any).price) || 0)}</span>
           <button
-            onClick={() => navigate(mainProduct.slug || '/products')}
+            onClick={() => scrollTo('checkout')}
             style={{
               background: accent,
               border: 0,

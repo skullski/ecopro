@@ -1,5 +1,6 @@
 import React from 'react';
 import type { TemplateProps, StoreProduct } from '../../types';
+import EmbeddedCheckout from '../shared/EmbeddedCheckout';
 
 /**
  * PRO LANDING - Professional single-product landing page.
@@ -141,6 +142,15 @@ export default function ProLandingTemplate(props: TemplateProps) {
 
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 12) || [];
   const mainProduct = products[0];
+  const storeSlug = asString((settings as any).store_slug);
+  const checkoutTheme = {
+    bg,
+    text,
+    muted,
+    accent,
+    cardBg,
+    border,
+  };
 
   const mainSlug = (mainProduct as any)?.slug || '/products';
   const priceValue = mainProduct ? safePrice((mainProduct as any).price) : 0;
@@ -328,7 +338,7 @@ export default function ProLandingTemplate(props: TemplateProps) {
             data-edit-path="layout.hero.cta"
             onClick={(e) => {
               stopIfManage(e);
-              navigate(mainSlug);
+              scrollTo('checkout');
             }}
             style={{
               background: accent,
@@ -363,8 +373,9 @@ export default function ProLandingTemplate(props: TemplateProps) {
             alignItems: 'center',
           }}
         >
-          {/* Order card */}
+          {/* Order card / Inline Checkout */}
           <div
+            id="checkout"
             style={{
               background: cardBg,
               border: `1px solid ${border}`,
@@ -374,200 +385,23 @@ export default function ProLandingTemplate(props: TemplateProps) {
               top: 86,
             }}
           >
-            <div data-edit-path="layout.hero.title" style={{ fontWeight: 950 as any, fontSize: 16, lineHeight: 1.35 }}>
-              {mainProduct ? productTitle(mainProduct) : heroTitle}
-            </div>
-            <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-              <div style={{ fontSize: 12, color: muted }}>
-                <span style={{ color: '#f59e0b', letterSpacing: '0.06em' }}>{ratingText}</span> • {proofText}
-              </div>
-              <span style={{ fontSize: 12, color: muted }}>{isRtl ? 'متوفر' : 'In stock'}</span>
-            </div>
+            <EmbeddedCheckout
+              storeSlug={storeSlug}
+              product={mainProduct as any}
+              formatPrice={formatPrice}
+              theme={checkoutTheme}
+              disabled={canManage}
+              heading={cta}
+              subheading={canManage ? (isRtl ? 'مُعطّل في وضع التحرير' : 'Disabled in editor preview') : isRtl ? 'الدفع عند الاستلام • توصيل سريع' : 'Cash on delivery • Fast delivery'}
+              dir={dir}
+            />
 
-            {mainProduct ? (
-              <div style={{ marginTop: 10, display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
-                <div style={{ fontSize: 26, fontWeight: 950 as any, color: accent }}>{displayPrice}</div>
-                {displayOriginal ? (
-                  <div style={{ fontSize: 13, color: muted, textDecoration: 'line-through' }}>{displayOriginal}</div>
-                ) : null}
-              </div>
-            ) : (
-              <div style={{ marginTop: 10, fontSize: 13, color: muted }}>{isRtl ? 'أضف منتج لعرض السعر.' : 'Add a product to show pricing.'}</div>
-            )}
-
-            <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <label style={{ display: 'grid', gap: 6 }}>
-                  <span style={{ fontSize: 12, color: muted }}>{isRtl ? 'الاسم' : 'Name'}</span>
-                  <input
-                    disabled
-                    style={{
-                      width: '100%',
-                      border: `1px solid ${border}`,
-                      borderRadius: 12,
-                      padding: '10px 12px',
-                      background: soft,
-                      color: text,
-                      outline: 'none',
-                    }}
-                    placeholder={isRtl ? 'الاسم الكامل' : 'Full name'}
-                  />
-                </label>
-                <label style={{ display: 'grid', gap: 6 }}>
-                  <span style={{ fontSize: 12, color: muted }}>{isRtl ? 'الهاتف' : 'Phone'}</span>
-                  <input
-                    disabled
-                    style={{
-                      width: '100%',
-                      border: `1px solid ${border}`,
-                      borderRadius: 12,
-                      padding: '10px 12px',
-                      background: soft,
-                      color: text,
-                      outline: 'none',
-                    }}
-                    placeholder={isRtl ? 'مثال: 07xxxxxxxx' : 'e.g. 07xxxxxxxx'}
-                  />
-                </label>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <label style={{ display: 'grid', gap: 6 }}>
-                  <span style={{ fontSize: 12, color: muted }}>{isRtl ? 'الولاية' : 'State'}</span>
-                  <select
-                    disabled
-                    style={{
-                      width: '100%',
-                      border: `1px solid ${border}`,
-                      borderRadius: 12,
-                      padding: '10px 12px',
-                      background: soft,
-                      color: text,
-                      outline: 'none',
-                      appearance: 'none',
-                    }}
-                  >
-                    <option>{isRtl ? 'اختر الولاية' : 'Select state'}</option>
-                  </select>
-                </label>
-                <label style={{ display: 'grid', gap: 6 }}>
-                  <span style={{ fontSize: 12, color: muted }}>{isRtl ? 'البلدية' : 'City'}</span>
-                  <select
-                    disabled
-                    style={{
-                      width: '100%',
-                      border: `1px solid ${border}`,
-                      borderRadius: 12,
-                      padding: '10px 12px',
-                      background: soft,
-                      color: text,
-                      outline: 'none',
-                      appearance: 'none',
-                    }}
-                  >
-                    <option>{isRtl ? 'اختر البلدية' : 'Select city'}</option>
-                  </select>
-                </label>
-              </div>
-
-              {variants.length > 0 && (
-                <div>
-                  <div style={{ fontSize: 12, color: muted, marginBottom: 8 }}>{isRtl ? 'اختر العرض' : 'Choose option'}</div>
-                  <div style={{ display: 'grid', gap: 10 }}>
-                    {variants.map((v) => {
-                      const active = v.id === selectedVariantId;
-                      const vPrice = typeof v.price === 'number' && v.price > 0 ? formatPrice(v.price) : '';
-                      const vOrig =
-                        typeof v.original_price === 'number' && typeof v.price === 'number' && v.original_price > v.price
-                          ? formatPrice(v.original_price)
-                          : '';
-                      return (
-                        <button
-                          key={v.id}
-                          onClick={(e) => {
-                            stopIfManage(e);
-                            setSelectedVariantId(v.id);
-                          }}
-                          style={{
-                            textAlign: 'start',
-                            border: `1px solid ${active ? accent : border}`,
-                            background: active ? 'rgba(180,83,9,0.08)' : '#fff',
-                            borderRadius: 14,
-                            padding: 12,
-                            cursor: 'pointer',
-                            color: text,
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-                            <div>
-                              <div style={{ fontWeight: 950 as any, fontSize: 13 }}>{v.label}</div>
-                              {v.note ? <div style={{ marginTop: 4, fontSize: 12, color: muted }}>{v.note}</div> : null}
-                            </div>
-                            <div style={{ textAlign: 'end' as any }}>
-                              {vPrice ? <div style={{ fontWeight: 950 as any, color: accent, fontSize: 13 }}>{vPrice}</div> : null}
-                              {vOrig ? <div style={{ fontSize: 12, color: muted, textDecoration: 'line-through' }}>{vOrig}</div> : null}
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, border: `1px solid ${border}`, borderRadius: 14, padding: 12, background: soft }}>
-                <div style={{ fontSize: 12, color: muted }}>{isRtl ? 'الكمية' : 'Quantity'}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <button
-                    onClick={(e) => {
-                      stopIfManage(e);
-                      decQty();
-                    }}
-                    style={{ width: 34, height: 34, borderRadius: 10, border: `1px solid ${border}`, background: '#fff', cursor: 'pointer', fontWeight: 950 as any }}
-                  >
-                    −
-                  </button>
-                  <div style={{ fontWeight: 950 as any, minWidth: 18, textAlign: 'center' }}>{qty}</div>
-                  <button
-                    onClick={(e) => {
-                      stopIfManage(e);
-                      incQty();
-                    }}
-                    style={{ width: 34, height: 34, borderRadius: 10, border: `1px solid ${border}`, background: '#fff', cursor: 'pointer', fontWeight: 950 as any }}
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-
-              <button
-                data-edit-path="layout.hero.cta"
-                onClick={(e) => {
-                  stopIfManage(e);
-                  navigate(mainSlug);
-                }}
-                style={{
-                  width: '100%',
-                  background: accent,
-                  border: 0,
-                  borderRadius: buttonRadius,
-                  padding: '13px 16px',
-                  fontWeight: 950 as any,
-                  cursor: 'pointer',
-                  color: '#fff',
-                  fontSize: 14,
-                }}
-              >
-                {cta}
-              </button>
-
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 2 }}>
-                {[badge1, badge2, badge3].filter(Boolean).map((b) => (
-                  <span key={b} style={{ fontSize: 12, color: muted, border: `1px solid ${border}`, borderRadius: 999, padding: '6px 10px', background: '#fff' }}>
-                    {b}
-                  </span>
-                ))}
-              </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+              {[badge1, badge2, badge3].filter(Boolean).map((b) => (
+                <span key={b} style={{ fontSize: 12, color: muted, border: `1px solid ${border}`, borderRadius: 999, padding: '6px 10px', background: '#fff' }}>
+                  {b}
+                </span>
+              ))}
             </div>
           </div>
 
