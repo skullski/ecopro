@@ -46,11 +46,16 @@ export async function ensureBotSettingsRow(
   const existing = await pool.query('SELECT id FROM bot_settings WHERE client_id = $1 LIMIT 1', [clientId]);
   if (existing.rowCount) return;
 
-  const enabled = opts?.enabled ?? (PLATFORM_TELEGRAM_AVAILABLE || PLATFORM_MESSENGER_AVAILABLE);
+  // Auto-enable bots when platform credentials are configured
+  const platformAvailable = PLATFORM_TELEGRAM_AVAILABLE || PLATFORM_MESSENGER_AVAILABLE;
+  const enabled = opts?.enabled ?? platformAvailable;
 
   // Store Page ID but do NOT store platform Page Access Token (env-only).
   const fbPageId = PLATFORM_MESSENGER_AVAILABLE ? PLATFORM_FB_PAGE_ID : null;
   const fbPageAccessToken = null;
+
+  // Auto-enable Messenger when platform Messenger is configured
+  const messengerEnabled = PLATFORM_MESSENGER_AVAILABLE;
 
   await pool.query(
     `INSERT INTO bot_settings (
@@ -91,7 +96,7 @@ export async function ensureBotSettingsRow(
       DEFAULT_TEMPLATES.orderConfirmation,
       DEFAULT_TEMPLATES.payment,
       DEFAULT_TEMPLATES.shipping,
-      PLATFORM_MESSENGER_AVAILABLE,
+      messengerEnabled,
       fbPageId,
       fbPageAccessToken,
       5,
