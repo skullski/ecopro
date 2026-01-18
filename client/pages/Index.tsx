@@ -164,6 +164,25 @@ export default function Index() {
                 <div className="absolute inset-0 -z-10">
                   <div className="absolute -inset-8 bg-gradient-to-br from-indigo-600/10 via-transparent to-cyan-600/10 blur-3xl"></div>
                 </div>
+
+                {/* Main preview panel (makes the landing feel upgraded) */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-full max-w-[560px] rounded-3xl bg-white/70 dark:bg-gray-900/40 border border-gray-200/60 dark:border-gray-700/40 shadow-2xl backdrop-blur-md overflow-hidden">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/10 via-transparent to-cyan-600/10"></div>
+                      <img
+                        src="/template-previews/pro-landing.svg"
+                        alt="Sahla4Eco preview"
+                        className="w-full h-auto block"
+                        loading="lazy"
+                      />
+                      <div className="absolute top-3 left-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 dark:bg-gray-900/70 border border-gray-200/60 dark:border-gray-700/50 text-[11px] font-semibold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        {t('home.preview.live') || 'Live preview'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 {/* Card 1 */}
                 <div className="absolute top-0 right-0 w-[min(18rem,92vw)] sm:w-72 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-5 sm:p-6 animate-float">
                   <div className="flex items-center gap-3 mb-4">
@@ -190,7 +209,7 @@ export default function Index() {
                 {/* Card 2 */}
                 <div className="absolute top-24 sm:top-32 left-0 w-[min(20rem,92vw)] sm:w-80 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-5 sm:p-6 animate-float" style={{animationDelay: '0.5s'}}>
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold">{t("home.newProducts")}</h3>
+                    <h3 className="font-bold">{t("home.newTemplates") || 'New Templates'}</h3>
                     <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 rounded-full text-xs font-medium animate-pulse">+{stats.newOrders}</span>
                   </div>
                   <div className="space-y-3">
@@ -209,7 +228,7 @@ export default function Index() {
                           <div className="flex-1">
                             <div className="flex items-center justify-between">
                               <p className="text-sm font-semibold">{p.name} template</p>
-                              <span className="text-[10px] text-gray-500">just added</span>
+                              <span className="text-[10px] text-gray-500">preview</span>
                             </div>
                             <div className="h-2 bg-gray-100 dark:bg-gray-600 rounded w-2/3 mt-2"></div>
                           </div>
