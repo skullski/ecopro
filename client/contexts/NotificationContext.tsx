@@ -8,6 +8,8 @@ import {
 } from '@/utils/browserNotifications';
 import { useTranslation } from '@/lib/i18n';
 import { Bell, X } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+import { safeJsonParse } from '@/utils/safeJson';
 
 interface NotificationContextType {
   notificationPermission: NotificationPermission | 'unsupported';
@@ -29,6 +31,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const { locale } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const user = typeof window !== 'undefined' ? safeJsonParse(localStorage.getItem('user'), null as any) : null;
+  const isAdmin = user?.role === 'admin' || user?.user_type === 'admin';
+  const isClient = !!user && !isAdmin;
   
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | 'unsupported'>('default');
   const [newOrdersCount, setNewOrdersCount] = useState(0);
@@ -67,6 +73,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   // Fetch new orders count
   const fetchNewOrdersCount = useCallback(async () => {
+    if (!isClient) return;
     try {
       const lastSeen = localStorage.getItem(ORDERS_LAST_SEEN_KEY);
       const params = lastSeen ? `?since=${encodeURIComponent(lastSeen)}` : '';
@@ -78,6 +85,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         // Show browser notification if there are new orders
         if (newCount > prevOrdersCount.current && newCount > 0) {
           notifyNewOrder(newCount, () => navigate('/dashboard/orders'));
+          toast({
+            title: newCount === 1 ? 'New order' : `${newCount} new orders`,
+            description: 'Open Orders to review them.',
+          });
         }
         
         prevOrdersCount.current = newCount;
@@ -86,7 +97,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     } catch (err) {
       console.error('Failed to fetch new orders count:', err);
     }
-  }, [navigate]);
+  }, [isClient, navigate]);
 
   // Fetch unread messages count
   const fetchUnreadCount = useCallback(async () => {
@@ -94,11 +105,16 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       const res = await fetch('/api/chat/unread-count');
       if (res.ok) {
         const data = await res.json();
-        const newCount = data.unreadCount || 0;
+        const newCount = data.unread_count || 0;
+        const chatPath = isAdmin ? '/platform-admin/chat' : '/chat';
         
         // Show browser notification if there are new messages
         if (newCount > prevMessagesCount.current && newCount > 0) {
-          notifyNewMessage(newCount, () => navigate('/dashboard/support'));
+          notifyNewMessage(newCount, () => navigate(chatPath));
+          toast({
+            title: newCount === 1 ? 'New message' : `${newCount} unread messages`,
+            description: 'Open Support to reply.',
+          });
         }
         
         prevMessagesCount.current = newCount;
@@ -107,13 +123,51 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     } catch (err) {
       console.error('Failed to fetch unread count:', err);
     }
-  }, [navigate]);
+  }, [isAdmin, navigate]);
+
+  // Allow non-route-based chat experiences (floating messenger overlay) to clear badges immediately
+  useEffect(() => {
+    if (!user) return;
+
+    const onChatSeen = () => {
+      localStorage.setItem(CHAT_LAST_SEEN_KEY, new Date().toISOString());
+      setUnreadMessagesCount(0);
+      // Prevent re-firing notifications during the immediate re-sync.
+      prevMessagesCount.current = Number.MAX_SAFE_INTEGER;
+      // Re-sync from server quickly
+      void fetchUnreadCount();
+    };
+
+    window.addEventListener('ecopro:chat-seen', onChatSeen as EventListener);
+    return () => window.removeEventListener('ecopro:chat-seen', onChatSeen as EventListener);
+  }, [fetchUnreadCount, user]);
+
+  // Mark orders/chat as seen when visiting related pages
+  useEffect(() => {
+    if (location.pathname.startsWith('/dashboard/orders')) {
+      localStorage.setItem(ORDERS_LAST_SEEN_KEY, new Date().toISOString());
+      setNewOrdersCount(0);
+      prevOrdersCount.current = 0;
+    }
+
+    if (
+      location.pathname === '/chat' ||
+      location.pathname.startsWith('/chat/') ||
+      location.pathname === '/platform-admin/chat' ||
+      location.pathname.startsWith('/platform-admin/chat/')
+    ) {
+      localStorage.setItem(CHAT_LAST_SEEN_KEY, new Date().toISOString());
+      setUnreadMessagesCount(0);
+      prevMessagesCount.current = 0;
+    }
+  }, [location.pathname]);
 
   // Poll for updates
   useEffect(() => {
-    // Only poll on the client dashboard. Avoid hitting client-only endpoints on admin/staff/public pages.
-    const shouldPoll = location.pathname.startsWith('/dashboard');
+    // Poll on any logged-in non-storefront page.
+    const shouldPoll = !location.pathname.startsWith('/store/');
     if (!shouldPoll) return;
+    if (!user) return;
 
     // Initial fetch
     fetchNewOrdersCount();
@@ -126,7 +180,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }, 30000);
     
     return () => clearInterval(interval);
-  }, [fetchNewOrdersCount, fetchUnreadCount, location.pathname]);
+  }, [fetchNewOrdersCount, fetchUnreadCount, location.pathname, user]);
 
   return (
     <NotificationContext.Provider value={{

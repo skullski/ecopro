@@ -75,6 +75,10 @@ export default function ProductCheckout() {
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [orderId, setOrderId] = useState<number | null>(null);
   const [telegramUrls, setTelegramUrls] = useState<string[]>([]);
+
+  // If the public product payload doesn't include variants (or is stale),
+  // try to load variants via the authenticated client endpoint (store owner only).
+  const [variantOverride, setVariantOverride] = useState<any[] | null>(null);
   
   // Delivery pricing states
   const [deliveryPrice, setDeliveryPrice] = useState<number | null>(null);
@@ -244,20 +248,56 @@ export default function ProductCheckout() {
 
   // Initialize default variant selection (when variants exist)
   useEffect(() => {
-    const variants = Array.isArray((product as any)?.variants) ? ((product as any).variants as any[]) : [];
+    const variants =
+      Array.isArray(variantOverride) && variantOverride.length > 0
+        ? variantOverride
+        : (Array.isArray((product as any)?.variants) ? ((product as any).variants as any[]) : []);
     if (!variants.length) return;
     if (selectedVariantId != null) return;
 
-    const first = variants.find((v) => Number(v?.stock_quantity ?? 0) > 0) || variants[0];
+    // If there are multiple variants, force the customer to explicitly choose.
+    // Auto-select only when there's exactly one variant.
+    if (variants.length !== 1) return;
+
+    const first = variants[0];
     if (!first) return;
     setSelectedVariantId(Number(first.id));
     setSelectedColor(String(first.color || ''));
     setSelectedSize(String(first.size || ''));
-  }, [product, selectedVariantId]);
+  }, [product, selectedVariantId, variantOverride]);
+
+  useEffect(() => {
+    let stopped = false;
+    const run = async () => {
+      if (variantOverride) return;
+      const baseVariants = Array.isArray((product as any)?.variants) ? ((product as any).variants as any[]) : [];
+      if (baseVariants.length > 0) return;
+      const productId = Number((product as any)?.id);
+      if (!Number.isFinite(productId) || productId <= 0) return;
+      try {
+        const r = await fetch(`/api/client/store/products/${productId}/variants`);
+        if (!r.ok) return;
+        const data = await r.json().catch(() => null);
+        const variants = Array.isArray(data?.variants) ? data.variants : [];
+        if (!stopped && variants.length > 0) {
+          setVariantOverride(variants);
+        }
+      } catch {
+        // ignore
+      }
+    };
+    run();
+    return () => {
+      stopped = true;
+    };
+  }, [product?.id, variantOverride]);
 
   // Clamp quantity when variant changes
   useEffect(() => {
-    const variants = Array.isArray((product as any)?.variants) ? ((product as any).variants as any[]) : [];
+    const variants =
+      Array.isArray(variantOverride) && variantOverride.length > 0
+        ? variantOverride
+        : (Array.isArray((product as any)?.variants) ? ((product as any).variants as any[]) : []);
     if (!variants.length) return;
 
     const selected = variants.find((v) => Number(v.id) === Number(selectedVariantId));
@@ -267,7 +307,7 @@ export default function ProductCheckout() {
       return;
     }
     setQuantity((q) => Math.min(q, stock));
-  }, [product, selectedVariantId]);
+  }, [product, selectedVariantId, variantOverride]);
 
   // Auto-scroll to checkout when opened & track InitiateCheckout
   useEffect(() => {
@@ -658,7 +698,10 @@ export default function ProductCheckout() {
   }, [storeSlug, product?.store_slug, formData.wilayaId]);
 
   const handleSubmitOrder = async () => {
-    const variants = Array.isArray((product as any)?.variants) ? ((product as any).variants as any[]) : [];
+    const variants =
+      Array.isArray(variantOverride) && variantOverride.length > 0
+        ? variantOverride
+        : (Array.isArray((product as any)?.variants) ? ((product as any).variants as any[]) : []);
     const hasVariants = variants.length > 0;
     const selectedVariant = hasVariants
       ? (variants.find((v) => Number(v.id) === Number(selectedVariantId)) || null)
@@ -807,25 +850,31 @@ export default function ProductCheckout() {
 
   const productImage = product.images?.[0] || 'https://via.placeholder.com/500';
   const productImages = product.images || [productImage];
-  const variants = Array.isArray((product as any)?.variants) ? ((product as any).variants as any[]) : [];
+  const variantsRaw =
+    Array.isArray(variantOverride) && variantOverride.length > 0
+      ? variantOverride
+      : (Array.isArray((product as any)?.variants) ? ((product as any).variants as any[]) : []);
+  const variants = variantsRaw;
+  const activeVariants = variantsRaw.filter((v) => v?.is_active !== false);
   const hasVariants = variants.length > 0;
+  const hasActiveVariants = activeVariants.length > 0;
   const colors = Array.from(
     new Set(
-      variants
+      activeVariants
         .map((v) => String(v?.color || '').trim())
         .filter((v) => v.length > 0)
     )
   );
   const sizes = Array.from(
     new Set(
-      variants
+      activeVariants
         .map((v) => String(v?.size || '').trim())
         .filter((v) => v.length > 0)
     )
   );
   const filteredByColor = selectedColor
-    ? variants.filter((v) => String(v?.color || '').trim() === selectedColor)
-    : variants;
+    ? activeVariants.filter((v) => String(v?.color || '').trim() === selectedColor)
+    : activeVariants;
   const sizesForSelectedColor = Array.from(
     new Set(
       filteredByColor
@@ -835,8 +884,8 @@ export default function ProductCheckout() {
   );
 
   const resolvedVariant = hasVariants
-    ? (variants.find((v) => Number(v.id) === Number(selectedVariantId)) ||
-        variants.find((v) => {
+    ? (activeVariants.find((v) => Number(v.id) === Number(selectedVariantId)) ||
+        activeVariants.find((v) => {
           const c = String(v?.color || '').trim();
           const s = String(v?.size || '').trim();
           if (selectedColor && c !== selectedColor) return false;

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "@/lib/i18n";
 import { OrderFulfillment } from "@/components/delivery/OrderFulfillment";
 import { RiskAlert } from "@/components/orders/RiskAlert";
+import { getAlgeriaCommunesByWilayaId, getAlgeriaWilayas } from "@/lib/algeriaGeo";
 
 interface DeliveryCompany {
   id: number;
@@ -56,6 +57,28 @@ export default function OrdersAdmin() {
   const [generateLabels, setGenerateLabels] = useState(true);
   const [bulkUploading, setBulkUploading] = useState(false);
   const [bulkUploadResult, setBulkUploadResult] = useState<{ successCount: number; failCount: number; results: any[] } | null>(null);
+
+  // Order editing (store owner)
+  const [showEditOrder, setShowEditOrder] = useState(false);
+  const [editOrder, setEditOrder] = useState<any | null>(null);
+  const [editVariants, setEditVariants] = useState<any[]>([]);
+  const [loadingEditVariants, setLoadingEditVariants] = useState(false);
+  const [savingEditOrder, setSavingEditOrder] = useState(false);
+  const [editForm, setEditForm] = useState({
+    customer_name: '',
+    customer_phone: '',
+    customer_email: '',
+    shipping_address: '',
+    shipping_wilaya_id: '',
+    shipping_commune_id: '',
+    shipping_hai: '',
+    delivery_type: 'home' as 'home' | 'desk',
+    quantity: 1,
+    variant_id: '' as string,
+  });
+
+  const dzWilayas = getAlgeriaWilayas();
+  const dzCommunesForEdit = getAlgeriaCommunesByWilayaId(editForm.shipping_wilaya_id);
 
   const selectedDeliveryCompanyData = deliveryCompanies.find(c => c.id === selectedDeliveryCompany) || null;
   const isNoestSelected = String(selectedDeliveryCompanyData?.name || '').trim().toLowerCase() === 'noest';
@@ -428,6 +451,7 @@ export default function OrdersAdmin() {
         
         return {
           id: `ORD-${String(order.id).padStart(3, '0')}`,
+          product_id: order.product_id,
           customer: order.customer_name,
           total: order.total_price,
           unit_price: Number(order.unit_price ?? order.product_price ?? 0),
@@ -440,6 +464,16 @@ export default function OrdersAdmin() {
           phone: order.customer_phone,
           email: order.customer_email,
           address: order.shipping_address,
+          shipping_wilaya_id: order.shipping_wilaya_id ?? null,
+          shipping_commune_id: order.shipping_commune_id ?? null,
+          shipping_hai: order.shipping_hai ?? null,
+          delivery_type: order.delivery_type ?? 'home',
+          delivery_fee: order.delivery_fee ?? null,
+          cod_amount: order.cod_amount ?? null,
+          variant_id: order.variant_id ?? null,
+          variant_color: order.variant_color ?? null,
+          variant_size: order.variant_size ?? null,
+          variant_name: order.variant_name ?? null,
           raw_id: order.id,
           // Delivery fields
           delivery_company_id: order.delivery_company_id,
@@ -456,6 +490,101 @@ export default function OrdersAdmin() {
     } finally {
       setIsRefreshing(false);
       setIsLoading(false);
+    }
+  };
+
+  const openEditModal = async (orderRow: any) => {
+    const isStaff = localStorage.getItem('isStaff') === 'true';
+    if (isStaff) return;
+
+    setEditOrder(orderRow);
+    setEditForm({
+      customer_name: String(orderRow.customer || ''),
+      customer_phone: String(orderRow.phone || ''),
+      customer_email: String(orderRow.email || ''),
+      shipping_address: String(orderRow.address || ''),
+      shipping_wilaya_id: orderRow.shipping_wilaya_id != null ? String(orderRow.shipping_wilaya_id) : '',
+      shipping_commune_id: orderRow.shipping_commune_id != null ? String(orderRow.shipping_commune_id) : '',
+      shipping_hai: String(orderRow.shipping_hai || ''),
+      delivery_type: (orderRow.delivery_type === 'desk' ? 'desk' : 'home') as any,
+      quantity: Number(orderRow.quantity || 1),
+      variant_id: orderRow.variant_id != null ? String(orderRow.variant_id) : '',
+    });
+    setShowEditOrder(true);
+
+    // Load variants for this product (optional)
+    setLoadingEditVariants(true);
+    try {
+      const productId = Number(orderRow.product_id);
+      if (Number.isFinite(productId) && productId > 0) {
+        const r = await fetch(`/api/client/store/products/${productId}/variants`);
+        if (r.ok) {
+          const data = await r.json();
+          const variants = Array.isArray(data) ? data : (data.variants || []);
+          setEditVariants(variants);
+
+          // If the order has no variant set but the product has exactly 1 active variant,
+          // default to it to prevent accidental invalid saves.
+          const active = (variants || []).filter((v: any) => v?.is_active !== false);
+          if (active.length === 1) {
+            setEditForm(prev => (prev.variant_id ? prev : { ...prev, variant_id: String(active[0].id) }));
+          }
+        } else {
+          setEditVariants([]);
+        }
+      } else {
+        setEditVariants([]);
+      }
+    } catch {
+      setEditVariants([]);
+    } finally {
+      setLoadingEditVariants(false);
+    }
+  };
+
+  const saveOrderEdits = async () => {
+    if (!editOrder?.raw_id) return;
+
+    setSavingEditOrder(true);
+    try {
+      const wilayaId = editForm.shipping_wilaya_id ? Number(editForm.shipping_wilaya_id) : null;
+      const communeId = editForm.shipping_commune_id ? Number(editForm.shipping_commune_id) : null;
+      const variantId = editForm.variant_id ? Number(editForm.variant_id) : null;
+
+      const payload: any = {
+        customer_name: editForm.customer_name,
+        customer_phone: editForm.customer_phone,
+        customer_email: editForm.customer_email || null,
+        shipping_address: editForm.shipping_address || null,
+        shipping_wilaya_id: wilayaId && Number.isFinite(wilayaId) ? wilayaId : null,
+        shipping_commune_id: communeId && Number.isFinite(communeId) ? communeId : null,
+        shipping_hai: editForm.shipping_hai || null,
+        delivery_type: editForm.delivery_type,
+        quantity: Number(editForm.quantity),
+        variant_id: variantId && Number.isFinite(variantId) ? variantId : null,
+      };
+
+      const res = await fetch(`/api/client/orders/${editOrder.raw_id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        alert(err?.error || 'Failed to update order');
+        return;
+      }
+
+      await loadOrders(true);
+      setShowEditOrder(false);
+      setEditOrder(null);
+      setEditVariants([]);
+    } catch (e) {
+      console.error('Save order edits failed:', e);
+      alert('Failed to update order');
+    } finally {
+      setSavingEditOrder(false);
     }
   };
 
@@ -895,7 +1024,37 @@ export default function OrdersAdmin() {
                                 <div className="font-bold text-sm">{o.product_title || t('orders.notAvailable')}</div>
                               </div>
                             </div>
+
+                            <div className="bg-background rounded p-2 border border-border/50">
+                              <div className="text-sm font-semibold text-muted-foreground mb-0.5">Variant</div>
+                              <div className="font-bold text-sm">
+                                {o.variant_name || [o.variant_color, o.variant_size].filter(Boolean).join(' / ') || '—'}
+                              </div>
+                            </div>
+                            <div className="bg-background rounded p-2 border border-border/50">
+                              <div className="text-sm font-semibold text-muted-foreground mb-0.5">Quantity</div>
+                              <div className="font-bold text-sm">{Number(o.quantity || 0)}</div>
+                            </div>
+                            <div className="bg-background rounded p-2 border border-border/50">
+                              <div className="text-sm font-semibold text-muted-foreground mb-0.5">Unit Price</div>
+                              <div className="font-bold text-sm">{Math.round(Number(o.unit_price || 0))} DZD</div>
+                            </div>
                           </div>
+
+                          {/* Edit action */}
+                          {localStorage.getItem('isStaff') !== 'true' && (
+                            <div className="flex items-center justify-end">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openEditModal(o);
+                                }}
+                                className="inline-flex items-center rounded bg-primary/10 px-3 py-2 text-sm font-bold hover:bg-primary/20 transition-colors"
+                              >
+                                ✎ Edit Order
+                              </button>
+                            </div>
+                          )}
 
                           {/* Actions - Custom Statuses */}
                           <div className="flex flex-wrap gap-2">
@@ -978,6 +1137,207 @@ export default function OrdersAdmin() {
           </div>
         </div>
       </div>
+
+      {/* Edit Order Modal (store owner) */}
+      {showEditOrder && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2">
+          <div className="bg-card rounded-lg border border-primary/20 shadow-xl max-w-lg w-full p-4 space-y-3 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold">✎ Edit Order</h2>
+                {editOrder?.id && <div className="text-xs text-muted-foreground">{editOrder.id}</div>}
+              </div>
+              <button
+                onClick={() => {
+                  setShowEditOrder(false);
+                  setEditOrder(null);
+                  setEditVariants([]);
+                }}
+                className="p-1 rounded hover:bg-muted"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="sm:col-span-2">
+                <label className="text-sm font-bold">Customer Name *</label>
+                <input
+                  type="text"
+                  value={editForm.customer_name}
+                  onChange={(e) => setEditForm({ ...editForm, customer_name: e.target.value })}
+                  className="w-full mt-0.5 px-3 py-2 rounded border border-border/50 bg-background focus:outline-none focus:ring-1 focus:ring-primary text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-bold">Phone</label>
+                <input
+                  type="tel"
+                  value={editForm.customer_phone}
+                  onChange={(e) => setEditForm({ ...editForm, customer_phone: e.target.value })}
+                  className="w-full mt-0.5 px-3 py-2 rounded border border-border/50 bg-background focus:outline-none focus:ring-1 focus:ring-primary text-sm"
+                  placeholder="+213..."
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-bold">Email</label>
+                <input
+                  type="email"
+                  value={editForm.customer_email}
+                  onChange={(e) => setEditForm({ ...editForm, customer_email: e.target.value })}
+                  className="w-full mt-0.5 px-3 py-2 rounded border border-border/50 bg-background focus:outline-none focus:ring-1 focus:ring-primary text-sm"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="text-sm font-bold">Shipping Address</label>
+                <input
+                  type="text"
+                  value={editForm.shipping_address}
+                  onChange={(e) => setEditForm({ ...editForm, shipping_address: e.target.value })}
+                  className="w-full mt-0.5 px-3 py-2 rounded border border-border/50 bg-background focus:outline-none focus:ring-1 focus:ring-primary text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-bold">Wilaya</label>
+                <select
+                  value={editForm.shipping_wilaya_id}
+                  onChange={(e) =>
+                    setEditForm({
+                      ...editForm,
+                      shipping_wilaya_id: e.target.value,
+                      shipping_commune_id: '',
+                    })
+                  }
+                  className="w-full mt-0.5 px-3 py-2 rounded border border-border/50 bg-background text-sm"
+                >
+                  <option value="">Select wilaya</option>
+                  {dzWilayas.map((w) => (
+                    <option key={String(w.id)} value={String(w.id)}>
+                      {String(w.code).padStart(2, '0')} - {w.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-sm font-bold">Commune</label>
+                <select
+                  value={editForm.shipping_commune_id}
+                  onChange={(e) => setEditForm({ ...editForm, shipping_commune_id: e.target.value })}
+                  className="w-full mt-0.5 px-3 py-2 rounded border border-border/50 bg-background text-sm"
+                  disabled={!editForm.shipping_wilaya_id}
+                >
+                  <option value="">Select commune</option>
+                  {dzCommunesForEdit.map((c) => (
+                    <option key={String(c.id)} value={String(c.id)}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-sm font-bold">Hai (optional)</label>
+                <input
+                  type="text"
+                  value={editForm.shipping_hai}
+                  onChange={(e) => setEditForm({ ...editForm, shipping_hai: e.target.value })}
+                  className="w-full mt-0.5 px-3 py-2 rounded border border-border/50 bg-background focus:outline-none focus:ring-1 focus:ring-primary text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-bold">Delivery Type</label>
+                <select
+                  value={editForm.delivery_type}
+                  onChange={(e) => setEditForm({ ...editForm, delivery_type: e.target.value as any })}
+                  className="w-full mt-0.5 px-3 py-2 rounded border border-border/50 bg-background text-sm"
+                >
+                  <option value="home">Home</option>
+                  <option value="desk">Desk</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-sm font-bold">Quantity</label>
+                <input
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={editForm.quantity}
+                  onChange={(e) => setEditForm({ ...editForm, quantity: Number(e.target.value) })}
+                  className="w-full mt-0.5 px-3 py-2 rounded border border-border/50 bg-background focus:outline-none focus:ring-1 focus:ring-primary text-sm"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="text-sm font-bold">Variant</label>
+                <div className="text-xs text-muted-foreground mb-1">
+                  {loadingEditVariants ? 'Loading variants…' : editVariants.length ? 'Select the exact color/size for this order.' : 'No variants for this product.'}
+                </div>
+                <select
+                  value={editForm.variant_id}
+                  onChange={(e) => setEditForm({ ...editForm, variant_id: e.target.value })}
+                  className="w-full px-3 py-2 rounded border border-border/50 bg-background text-sm"
+                  disabled={loadingEditVariants || editVariants.length === 0}
+                >
+                  <option value="">{editVariants.length ? 'Select variant' : 'No variants'}</option>
+                  {editVariants
+                    .filter((v: any) => v?.is_active !== false)
+                    .map((v: any) => {
+                      const labelParts = [String(v.variant_name || '').trim(), String(v.color || '').trim(), String(v.size || '').trim()].filter(Boolean);
+                      const label = labelParts.join(' / ') || `Variant #${v.id}`;
+                      const stock = v.stock_quantity != null ? Number(v.stock_quantity) : null;
+                      return (
+                        <option key={String(v.id)} value={String(v.id)}>
+                          {label}{stock != null ? ` (stock: ${stock})` : ''}
+                        </option>
+                      );
+                    })}
+                </select>
+              </div>
+            </div>
+
+            {(() => {
+              const hasVariants = editVariants.length > 0;
+              const requiresVariant = hasVariants;
+              const canSave =
+                Boolean(editForm.customer_name.trim()) &&
+                Number.isFinite(Number(editForm.quantity)) &&
+                Number(editForm.quantity) >= 1 &&
+                (!requiresVariant || Boolean(editForm.variant_id));
+
+              return (
+                <div className="flex gap-2 pt-2">
+                  <button
+                    onClick={() => {
+                      setShowEditOrder(false);
+                      setEditOrder(null);
+                      setEditVariants([]);
+                    }}
+                    className="flex-1 px-3 py-2 rounded border border-primary/30 hover:bg-primary/10 transition-colors text-sm font-bold"
+                    disabled={savingEditOrder}
+                  >
+                    {t('cancel')}
+                  </button>
+                  <button
+                    onClick={saveOrderEdits}
+                    className="flex-1 px-3 py-2 rounded bg-gradient-to-r from-primary to-accent text-white text-sm font-bold hover:from-primary/90 hover:to-accent/90 transition-colors shadow disabled:opacity-50"
+                    disabled={savingEditOrder || !canSave}
+                  >
+                    {savingEditOrder ? 'Saving…' : 'Save Changes'}
+                  </button>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
 
       {/* Add Order Modal */}
       {showAddOrder && (

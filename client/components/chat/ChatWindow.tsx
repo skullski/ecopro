@@ -22,7 +22,7 @@ interface Chat {
   client_id: number;
   seller_id?: number;
   store_id?: number;
-  status: 'active' | 'archived' | 'closed';
+  status: 'active' | 'open' | 'archived' | 'closed' | string;
   created_at: string;
 }
 
@@ -127,14 +127,30 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
 
   const loadChat = async () => {
     try {
-      const response = await fetch(`/api/chat/list`);
+      const endpoint = userRole === 'admin' ? '/api/chat/admin/all-chats' : '/api/chat/list';
+      const response = await fetch(endpoint);
       const data = await response.json();
       const currentChat = data.chats?.find((c: Chat) => c.id === chatId);
       if (currentChat) {
         setChat(currentChat);
+      } else {
+        // Some chat types (e.g. admin support chats) may not appear in list endpoints.
+        // Still render the window so messages can load + send.
+        setChat({
+          id: chatId,
+          client_id: Number(userId) || 0,
+          status: 'open',
+          created_at: new Date().toISOString(),
+        });
       }
     } catch (err: any) {
       console.error('Failed to load chat:', err);
+      setChat({
+        id: chatId,
+        client_id: Number(userId) || 0,
+        status: 'open',
+        created_at: new Date().toISOString(),
+      });
     }
   };
 
@@ -163,7 +179,7 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
 
       if (unreadIds.length === 0) return;
 
-      await fetch(`/api/chat/${chatId}/mark-read`, {
+      const res = await fetch(`/api/chat/${chatId}/mark-read`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -173,6 +189,11 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
           message_ids: unreadIds 
         })
       });
+
+      if (res.ok) {
+        // Let global notification state refresh immediately
+        window.dispatchEvent(new CustomEvent('ecopro:chat-seen'));
+      }
     } catch (err) {
       console.error('Failed to mark messages as read:', err);
     }
@@ -180,7 +201,7 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!messageInput.trim() || sending || !chat) return;
+    if (!messageInput.trim() || sending) return;
 
     const messageContent = messageInput.trim();
     setSending(true);
@@ -260,18 +281,15 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
     );
   }
 
-  if (!chat) {
-    return (
-      <div className="flex flex-col h-full bg-gradient-to-br from-slate-50 to-slate-100">
-        <div className="flex items-center justify-center h-full">
-          <div className="text-center">
-            <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600 font-medium">Chat not found</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // If chat metadata couldn't be loaded, we still allow rendering (messages endpoint is authoritative)
+  const effectiveChat: Chat =
+    chat ??
+    ({
+      id: chatId,
+      client_id: Number(userId) || 0,
+      status: 'open',
+      created_at: new Date().toISOString(),
+    } as Chat);
 
   return (
     <div className="flex flex-col h-full bg-gray-950 dark:bg-slate-900">
@@ -293,10 +311,10 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
                 {userRole === 'admin' ? 'Support Chat' : userRole === 'seller' ? 'Customer Chat' : 'Support Agent'}
               </h2>
               <p 
-                className={`font-medium truncate ${chat.status === 'active' ? 'text-green-100' : 'text-yellow-100'}`}
+                className={`font-medium truncate ${effectiveChat.status === 'active' || effectiveChat.status === 'open' ? 'text-green-100' : 'text-yellow-100'}`}
                 style={{ fontSize: 'clamp(0.5rem, 1.2vh, 0.875rem)' }}
               >
-                {chat.status === 'active' ? '🟢 open' : '🟡 ' + chat.status}
+                {effectiveChat.status === 'active' || effectiveChat.status === 'open' ? '🟢 open' : '🟡 ' + (effectiveChat.status ?? 'unknown')}
               </p>
             </div>
           </div>

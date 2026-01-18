@@ -4,7 +4,7 @@ import {
   Truck, Megaphone, Star, Percent, Globe, BarChart3, 
   Users, Shield, Ban, Puzzle, CreditCard, Settings,
   ChevronDown, ChevronRight, Menu, X, Package, Bot,
-  Divide, Palette, User, Lock, Image
+  Divide, Palette, User, Lock, Image, MessageCircle
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useStaffPermissions } from "@/contexts/StaffPermissionContext";
 import { prefetchRouteData } from "@/lib/prefetch";
 import { safeJsonParse } from "@/utils/safeJson";
+import { useNotifications } from "@/contexts/NotificationContext";
 
 interface MenuItem {
   titleKey: string;
@@ -87,6 +88,7 @@ const menuItems: MenuItem[] = [
     permission: "manage_bot_settings"
   },
   { titleKey: "sidebar.staff", path: "/dashboard/staff", icon: <Users className="w-[18px] h-[18px]" />, permission: "view_staff" },
+  { titleKey: "header.support", path: "/chat", icon: <MessageCircle className="w-[18px] h-[18px]" /> },
 ];
 
 export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {}) {
@@ -111,6 +113,7 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
   });
   
   const location = useLocation();
+  const { newOrdersCount, unreadMessagesCount } = useNotifications();
   
   // Save theme state to localStorage whenever it changes
   useEffect(() => {
@@ -167,6 +170,11 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
     const categoryColor = CATEGORY_COLORS[categoryKey] || CATEGORY_COLORS.home;
     const theme = SIDEBAR_THEMES[activeTheme];
 
+    const badgeCount =
+      item.titleKey === 'sidebar.orders' ? newOrdersCount :
+      item.titleKey === 'header.support' ? unreadMessagesCount :
+      0;
+
     return (
       <div key={item.path}>
         <Link
@@ -213,6 +221,15 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
           {!collapsed && (
             <>
               <span className="flex-1 font-semibold text-[15px] leading-none">{t(item.titleKey)}</span>
+
+              {badgeCount > 0 && (
+                <span
+                  className="ml-2 inline-flex items-center justify-center rounded-full bg-red-500 text-white text-xs font-bold px-2 py-0.5"
+                  title={badgeCount === 1 ? '1 new item' : `${badgeCount} new items`}
+                >
+                  {badgeCount > 99 ? '99+' : badgeCount}
+                </span>
+              )}
               
               {!hasAccess && (
                 <Lock className="w-3 h-3 text-gray-400" />

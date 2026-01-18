@@ -6,6 +6,24 @@ import { createCheckoutSession, handlePaymentCompleted, handlePaymentFailed, ver
 
 const isProduction = process.env.NODE_ENV === 'production';
 
+async function getNumberSetting(settingKey: string, fallback: number): Promise<number> {
+  try {
+    const r = await pool.query(
+      `SELECT setting_value
+       FROM platform_settings
+       WHERE setting_key = $1
+       LIMIT 1`,
+      [settingKey]
+    );
+    if (!r.rows.length) return fallback;
+    const raw = r.rows[0]?.setting_value;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 async function getTrialDaysFromSettings(): Promise<number> {
   try {
     const r = await pool.query(
@@ -24,6 +42,23 @@ async function getTrialDaysFromSettings(): Promise<number> {
     return 30;
   }
 }
+
+/**
+ * Public (no auth): exposes pricing-related settings.
+ * GET /api/billing/public
+ */
+export const getPublicBillingInfo: RequestHandler = async (_req, res) => {
+  const trialDaysRaw = await getNumberSetting('trial_days', 30);
+  const subscriptionPriceRaw = await getNumberSetting('subscription_price', 7);
+
+  const trialDays = Math.max(1, Math.min(365, Math.floor(trialDaysRaw)));
+  const subscriptionPriceUsd = Math.max(0, Math.min(999999, subscriptionPriceRaw));
+
+  return res.json({
+    trialDays,
+    subscriptionPriceUsd,
+  });
+};
 
 async function setPaymentLock(userId: number, reason: string): Promise<void> {
   // Best-effort: DB schema can be in transition (lock_type column may not exist)

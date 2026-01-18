@@ -5,12 +5,9 @@ import { useTranslation } from "@/lib/i18n";
 import { Sparkles, Menu, X, LogOut, LayoutDashboard, ShoppingBag, Crown, PlusCircle, ChevronDown, MessageCircle } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { authApi } from "@/lib/auth";
-import { notifyNewMessage } from "@/utils/browserNotifications";
 import { storeNameToSlug } from "@/utils/storeUrl";
 import { safeJsonParse } from "@/utils/safeJson";
-
-// Key for storing last seen timestamp
-const CHAT_LAST_SEEN_KEY = 'chat_last_seen_at';
+import { useNotifications } from "@/contexts/NotificationContext";
 
 export default function Header() {
   const { toggle, theme } = useTheme();
@@ -19,9 +16,8 @@ export default function Header() {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [langMenuOpen, setLangMenuOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const { unreadMessagesCount } = useNotifications();
   const [storeSlug, setStoreSlug] = useState<string | null>(null);
-  const prevUnreadCount = useRef(0);
 
   const user = typeof window !== "undefined" ? safeJsonParse(localStorage.getItem("user"), null as any) : null;
   const isAdmin = user?.role === "admin";
@@ -42,48 +38,7 @@ export default function Header() {
     }
   }, [user, isClient]);
 
-  // Fetch unread messages count for clients
-  const fetchUnreadCount = useCallback(async () => {
-    if (!user || isAdmin) return;
-    
-    try {
-      const res = await fetch('/api/chat/unread-count');
-      if (res.ok) {
-        const data = await res.json();
-        const newCount = data.unread_count || 0;
-        
-        // Show browser notification if there are new messages (more than before)
-        if (newCount > prevUnreadCount.current && newCount > 0) {
-          notifyNewMessage(newCount, () => {
-            navigate('/chat');
-          });
-        }
-        
-        prevUnreadCount.current = newCount;
-        setUnreadCount(newCount);
-      }
-    } catch (error) {
-      console.error('Error fetching unread count:', error);
-    }
-  }, [user, isAdmin, navigate]);
-
-  // Mark chat as seen when visiting chat page
-  useEffect(() => {
-    if (location.pathname === '/chat' || location.pathname.startsWith('/chat/')) {
-      localStorage.setItem(CHAT_LAST_SEEN_KEY, new Date().toISOString());
-      setUnreadCount(0);
-      prevUnreadCount.current = 0;
-    }
-  }, [location.pathname]);
-
-  // Fetch unread count on mount and periodically
-  useEffect(() => {
-    if (user && !isAdmin) {
-      fetchUnreadCount();
-      const interval = setInterval(fetchUnreadCount, 30000); // Every 30 seconds
-      return () => clearInterval(interval);
-    }
-  }, [fetchUnreadCount, user, isAdmin]);
+  const unreadCount = unreadMessagesCount;
 
   function handleLogout() {
     try {
@@ -277,7 +232,21 @@ export default function Header() {
                           className="border-blue-400/30 text-blue-600 font-semibold hover:bg-blue-400/10"
                           style={{ padding: 'clamp(0.375rem, 1vh, 0.5rem) clamp(0.625rem, 1.2vh, 0.75rem)', fontSize: 'clamp(0.8rem, 1.5vh, 0.875rem)', height: 'auto' }}
                         >
-                          <MessageCircle style={{ width: 'clamp(0.85rem, 1.6vh, 0.95rem)', height: 'clamp(0.85rem, 1.6vh, 0.95rem)', marginRight: 'clamp(0.2rem, 0.4vh, 0.25rem)' }} />
+                          <span className="relative inline-flex items-center">
+                            <MessageCircle style={{ width: 'clamp(0.85rem, 1.6vh, 0.95rem)', height: 'clamp(0.85rem, 1.6vh, 0.95rem)', marginRight: 'clamp(0.2rem, 0.4vh, 0.25rem)' }} />
+                            {unreadCount > 0 && (
+                              <span className="absolute -top-2 -right-2 flex items-center justify-center rounded-full bg-red-500 text-white font-bold animate-pulse"
+                                style={{
+                                  minWidth: 'clamp(1rem, 2vh, 1.1rem)',
+                                  height: 'clamp(1rem, 2vh, 1.1rem)',
+                                  fontSize: 'clamp(0.5rem, 1vh, 0.6rem)',
+                                  padding: '0 clamp(0.125rem, 0.3vh, 0.25rem)',
+                                }}
+                              >
+                                {unreadCount > 99 ? '99+' : unreadCount}
+                              </span>
+                            )}
+                          </span>
                           {tr("header.chat", "Chat")}
                         </Button>
                       </Link>
@@ -387,7 +356,14 @@ export default function Header() {
                     <>
                       <Link to="/platform-admin/chat" onClick={() => setMobileMenuOpen(false)}>
                         <Button variant="outline" className="justify-start border-2 border-blue-400/30 text-blue-600 hover:bg-gradient-to-r hover:from-blue-400/15 hover:to-blue-400/10 hover:border-blue-400/45 font-bold w-full shadow-sm hover:shadow-md">
-                          <MessageCircle className="w-5 h-5 ml-2 drop-shadow" />
+                          <span className="relative inline-flex">
+                            <MessageCircle className="w-5 h-5 ml-2 drop-shadow" />
+                            {unreadCount > 0 && (
+                              <span className="absolute -top-2 -right-2 flex items-center justify-center rounded-full bg-red-500 text-white font-bold text-[10px] min-w-[1rem] h-4 px-1 animate-pulse">
+                                {unreadCount > 99 ? '99+' : unreadCount}
+                              </span>
+                            )}
+                          </span>
                           {tr("header.chat", "Chat")}
                         </Button>
                       </Link>

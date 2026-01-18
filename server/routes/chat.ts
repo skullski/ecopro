@@ -376,18 +376,32 @@ router.post('/:chatId/status', async (req: Request, res: Response) => {
 
 /**
  * GET /api/chat/unread-count
- * Get unread message count (client)
+ * Get unread message count (client/seller/admin)
  */
 router.get('/unread-count', async (req: Request, res: Response) => {
   const { userId, role } = getUserRole(req);
 
-  if (role !== 'client') {
-    return res.status(403).json({ error: 'Only clients have unread counts' });
-  }
-
   try {
-    const count = await chatService.getUnreadCount(userId);
-    res.json({ unread_count: count });
+    if (!userId || !role) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    if (role === 'client') {
+      const count = await chatService.getUnreadCount(userId);
+      return res.json({ unread_count: count });
+    }
+
+    if (role === 'seller') {
+      const count = await chatService.getSellerUnreadCount(userId);
+      return res.json({ unread_count: count });
+    }
+
+    if (role === 'admin') {
+      const count = await chatService.getAdminUnreadCount();
+      return res.json({ unread_count: count });
+    }
+
+    return res.json({ unread_count: 0 });
   } catch (error: any) {
     return serverError(res, error);
   }

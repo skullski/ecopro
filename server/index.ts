@@ -948,6 +948,11 @@ export function createServer(options?: { skipDbInit?: boolean }) {
 
   // Billing routes (both user and admin)
   app.get(
+    "/api/billing/public",
+    billingRoutes.getPublicBillingInfo
+  );
+
+  app.get(
     "/api/billing/subscription",
     authenticate,
     billingRoutes.getSubscription
@@ -1294,6 +1299,7 @@ export function createServer(options?: { skipDbInit?: boolean }) {
   app.post("/api/storefront/:storeSlug/order/:orderId/confirm", orderConfirmationRoutes.confirmOrder);
   app.patch("/api/storefront/:storeSlug/order/:orderId/update", orderConfirmationRoutes.updateOrderDetails);
   app.patch("/api/client/orders/:id/status", authenticate, requireClient, orderRoutes.updateOrderStatus);
+  app.patch("/api/client/orders/:id", authenticate, requireClient, orderRoutes.updateClientOrder);
 
   // Delivery routes (authenticated)
   app.use('/api/delivery', authenticate, deliveryRouter);

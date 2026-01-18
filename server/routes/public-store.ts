@@ -371,11 +371,11 @@ export const getPublicProduct: RequestHandler = async (req, res) => {
     let variants: any[] = [];
     try {
       const vRes = await pool.query(
-        `SELECT id, color, size, variant_name, price, stock_quantity, images, sort_order
+        `SELECT id, color, size, variant_name, price, stock_quantity, images, is_active, sort_order
          FROM product_variants
-         WHERE product_id = $1 AND client_id = $2 AND is_active = true
+         WHERE product_id = $1
          ORDER BY sort_order ASC, id ASC`,
-        [product.id, product.client_id]
+        [product.id]
       );
       variants = vRes.rows || [];
     } catch {
@@ -446,11 +446,11 @@ export const getStorefrontProductById: RequestHandler = async (req, res) => {
     let variants: any[] = [];
     try {
       const vRes = await pool.query(
-        `SELECT id, color, size, variant_name, price, stock_quantity, images, sort_order
+        `SELECT id, color, size, variant_name, price, stock_quantity, images, is_active, sort_order
          FROM product_variants
-         WHERE product_id = $1 AND client_id = $2 AND is_active = true
+         WHERE product_id = $1
          ORDER BY sort_order ASC, id ASC`,
-        [product.id, product.client_id]
+        [product.id]
       );
       variants = vRes.rows || [];
     } catch {
@@ -600,9 +600,9 @@ export const createPublicStoreOrder: RequestHandler = async (req, res) => {
       const vRes = await pool.query(
         `SELECT id, color, size, variant_name, price, stock_quantity, is_active
          FROM product_variants
-         WHERE id = $1 AND product_id = $2 AND client_id = $3 AND is_active = true
+         WHERE id = $1 AND product_id = $2 AND COALESCE(is_active, true) = true
          LIMIT 1`,
-        [Number(variant_id), product_id, clientId]
+        [Number(variant_id), product_id]
       );
       if (vRes.rows.length === 0) {
         return res.status(400).json({ error: 'Invalid variant' });

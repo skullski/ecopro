@@ -386,7 +386,7 @@ export class ChatService {
     try {
       const result = await pool.query(
         `SELECT COUNT(*) as count FROM chat_messages
-         WHERE sender_type = 'seller' AND is_read = false
+         WHERE sender_type IN ('seller','admin') AND is_read = false
          AND chat_id IN (SELECT id FROM chats WHERE client_id = $1)`,
         [clientId]
       );
@@ -394,6 +394,44 @@ export class ChatService {
       return parseInt(result.rows[0].count) || 0;
     } catch (error: any) {
       throw new Error(`Failed to get unread count: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get unread chat count for a seller
+   */
+  async getSellerUnreadCount(sellerId: number): Promise<number> {
+    try {
+      const result = await pool.query(
+        `SELECT COUNT(*) as count
+         FROM chat_messages cm
+         WHERE cm.is_read = false
+           AND cm.sender_type = 'client'
+           AND cm.chat_id IN (SELECT id FROM chats WHERE seller_id = $1)`,
+        [sellerId]
+      );
+      return parseInt(result.rows[0].count) || 0;
+    } catch (error: any) {
+      throw new Error(`Failed to get seller unread count: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get unread chat count for admin (support chats)
+   */
+  async getAdminUnreadCount(): Promise<number> {
+    try {
+      const result = await pool.query(
+        `SELECT COUNT(*) as count
+         FROM chat_messages cm
+         JOIN chats c ON c.id = cm.chat_id
+         WHERE cm.is_read = false
+           AND cm.sender_type = 'client'
+           AND c.seller_id IS NULL`,
+      );
+      return parseInt(result.rows[0].count) || 0;
+    } catch (error: any) {
+      throw new Error(`Failed to get admin unread count: ${error.message}`);
     }
   }
 

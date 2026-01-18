@@ -62,9 +62,10 @@ export class DeliveryService {
 
     try {
       const orderResult = await pool.query(
-        `SELECT so.*, dc.name as company_name 
+        `SELECT so.*, dc.name as company_name, cp.title as product_title
          FROM store_orders so
          LEFT JOIN delivery_companies dc ON so.delivery_company_id = dc.id
+         LEFT JOIN client_store_products cp ON cp.id = so.product_id
          WHERE so.id = $1 AND so.client_id = $2`,
         [orderId, clientId]
       );
@@ -74,6 +75,23 @@ export class DeliveryService {
       }
 
       const order = orderResult.rows[0];
+
+      const productTitle = String((order as any)?.product_title || '').trim();
+      const variantLabel =
+        String(order.variant_name || '').trim() ||
+        [order.variant_color, order.variant_size].filter((v: any) => v != null && String(v).trim().length > 0).join(' / ');
+      const productDescription = (() => {
+        const base = productTitle || 'Products';
+        const withVariant = variantLabel ? `${base} (${variantLabel})` : base;
+        const full = `Order #${orderId} - ${withVariant}`;
+        // Keep it reasonably short for courier APIs
+        return full.length > 140 ? full.slice(0, 137) + '...' : full;
+      })();
+      const notes = (() => {
+        const parts = [variantLabel ? `Variant: ${variantLabel}` : null].filter(Boolean);
+        const s = parts.join(' | ');
+        return s.length ? s : undefined;
+      })();
 
       const integrationResult = await pool.query(
         `SELECT id, api_key_encrypted, api_secret_encrypted
@@ -116,10 +134,11 @@ export class DeliveryService {
           // Some courier APIs (e.g. Noest) need numeric IDs; keep these as extra fields.
           ...(order.shipping_wilaya_id ? { wilaya_id: Number(order.shipping_wilaya_id) } : {}),
           ...(order.shipping_commune_id ? { commune_id: Number(order.shipping_commune_id) } : {}),
-          product_description: `Order #${orderId}`,
+          product_description: productDescription,
           quantity: order.quantity,
           cod_amount: order.cod_amount,
           reference_id: `ORDER-${orderId}`,
+          ...(notes ? { notes } : {}),
         },
         apiKey,
         secondaryCredential

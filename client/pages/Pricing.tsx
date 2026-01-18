@@ -10,7 +10,7 @@ const FEATURES = [
   'Unlimited products & orders',
   'Staff accounts & permissions',
   'Stock & inventory management',
-  '85 premium templates',
+  '100+ premium templates',
   'Public storefront + checkout (Cash on Delivery)',
   'WhatsApp, Telegram, Viber & Messenger bots',
   'Facebook & TikTok Pixel tracking',
@@ -20,12 +20,18 @@ const FEATURES = [
   'No commissions',
 ];
 
+type PublicBillingInfo = {
+  trialDays: number;
+  subscriptionPriceUsd: number;
+};
+
 export default function Pricing() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [publicBilling, setPublicBilling] = useState<PublicBillingInfo | null>(null);
 
   useEffect(() => {
     const check = async () => {
@@ -37,6 +43,22 @@ export default function Pricing() {
       }
     };
     check();
+  }, []);
+
+  useEffect(() => {
+    const loadPublicBilling = async () => {
+      try {
+        const res = await fetch('/api/billing/public');
+        if (!res.ok) return;
+        const data = (await res.json()) as PublicBillingInfo;
+        if (data && typeof data.trialDays === 'number' && typeof data.subscriptionPriceUsd === 'number') {
+          setPublicBilling(data);
+        }
+      } catch {
+        // ignore
+      }
+    };
+    loadPublicBilling();
   }, []);
 
   const handleRequestCode = async () => {
@@ -51,8 +73,28 @@ export default function Pricing() {
         method: 'POST',
         body: JSON.stringify({ tier: 'unlimited' })
       });
-      if (response.chat) {
-        navigate('/chat', { state: { chatId: response.chat.id, adminChat: true } });
+      if (response.chat?.id) {
+        const chatId = Number(response.chat.id);
+        try {
+          await apiFetch<any>(`/api/chat/${chatId}/message`, {
+            method: 'POST',
+            body: JSON.stringify({
+              chat_id: chatId,
+              message_type: 'text',
+              message_content:
+                'Hi admin, I want to pay/activate the Unlimited plan. Please send me the payment link or guide me to complete payment.',
+              metadata: {
+                intent: 'payment_request',
+                tier: 'unlimited',
+                source: 'pricing_page',
+              },
+            }),
+          });
+        } catch {
+          // If message send fails, still route user to chat.
+        }
+
+        navigate('/chat', { state: { chatId, adminChat: true } });
       } else {
         setError('Failed to create chat. Please try again.');
       }
@@ -85,7 +127,9 @@ export default function Pricing() {
               <span className="text-4xl font-black">2000</span>
               <span className="text-lg opacity-90">DZD/mo</span>
             </div>
-            <p className="text-sm opacity-80 mt-1">~$8/mo</p>
+            <p className="text-sm opacity-80 mt-1">
+              ~${publicBilling?.subscriptionPriceUsd ?? 7}/mo
+            </p>
           </div>
 
           {/* Content */}
@@ -93,7 +137,9 @@ export default function Pricing() {
             {/* Trial badge */}
             <div className="flex items-center justify-center gap-2 mb-4 py-2 px-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
               <Gift className="w-4 h-4 text-green-600" />
-              <span className="text-sm font-medium text-green-700 dark:text-green-400">30 days free trial</span>
+              <span className="text-sm font-medium text-green-700 dark:text-green-400">
+                {publicBilling?.trialDays ?? 30} days free trial
+              </span>
             </div>
 
             {/* Features */}
@@ -120,6 +166,10 @@ export default function Pricing() {
                 <><Rocket className="w-4 h-4 mr-2" />Start Free Trial</>
               )}
             </Button>
+
+            <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-3">
+              Activation is handled via admin chat (code-based). Payments via checkout are available from the Billing dashboard.
+            </p>
 
             {/* Trust */}
             <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-3 flex items-center justify-center gap-1">

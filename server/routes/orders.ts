@@ -568,6 +568,12 @@ export const getClientOrders: RequestHandler = async (req, res) => {
           o.customer_email,
           o.customer_phone,
           o.shipping_address,
+          o.shipping_wilaya_id,
+          o.shipping_commune_id,
+          o.shipping_hai,
+          o.delivery_type,
+          o.delivery_fee,
+          o.cod_amount,
           o.created_at,
           o.updated_at,
           o.delivery_company_id,
@@ -785,6 +791,317 @@ export const updateOrderStatus: RequestHandler = async (req, res) => {
   } catch (error) {
     console.error("Update order status error:", error);
     res.status(500).json({ error: "Failed to update order" });
+  }
+};
+
+const updateClientOrderSchema = z
+  .object({
+    customer_name: z
+      .preprocess((v) => (typeof v === 'string' ? v.trim() : v), z.string().min(1).max(255))
+      .optional(),
+    customer_email: z
+      .preprocess((v) => {
+        if (v === '' || v === null || v === undefined) return undefined;
+        if (typeof v === 'string') return v.trim();
+        return v;
+      }, z.string().email().max(255))
+      .optional()
+      .nullable(),
+    customer_phone: z
+      .preprocess((v) => (typeof v === 'string' ? v.trim() : v), z.string().min(7).max(50))
+      .optional(),
+    shipping_address: z
+      .preprocess((v) => {
+        if (v === '' || v === null || v === undefined) return undefined;
+        if (typeof v === 'string') return v.trim();
+        return v;
+      }, z.string().max(1000))
+      .optional()
+      .nullable(),
+    shipping_wilaya_id: z
+      .preprocess((v) => (v === '' || v === null || v === undefined ? undefined : typeof v === 'string' ? Number(v) : v), z.number().int().positive())
+      .optional()
+      .nullable(),
+    shipping_commune_id: z
+      .preprocess((v) => (v === '' || v === null || v === undefined ? undefined : typeof v === 'string' ? Number(v) : v), z.number().int().positive())
+      .optional()
+      .nullable(),
+    shipping_hai: z
+      .preprocess((v) => {
+        if (v === '' || v === null || v === undefined) return undefined;
+        if (typeof v === 'string') return v.trim();
+        return v;
+      }, z.string().max(120))
+      .optional()
+      .nullable(),
+    delivery_type: z.enum(['home', 'desk']).optional(),
+    quantity: z
+      .preprocess((v) => (v === '' || v === null || v === undefined ? undefined : typeof v === 'string' ? Number(v) : v), z.number().int().positive().max(9999))
+      .optional(),
+    variant_id: z
+      .preprocess((v) => {
+        if (v === '' || v === undefined) return undefined;
+        if (v === null) return null;
+        if (typeof v === 'string') return Number(v);
+        return v;
+      }, z.union([z.number().int().positive(), z.null()]))
+      .optional(),
+  })
+  .strict();
+
+/**
+ * Update order details (store owner)
+ * PATCH /api/client/orders/:id
+ */
+export const updateClientOrder: RequestHandler = async (req, res) => {
+  let client: any;
+  let inTransaction = false;
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: 'Not authenticated' });
+      return;
+    }
+
+    const orderId = Number(req.params.id);
+    if (!Number.isFinite(orderId) || orderId <= 0) {
+      res.status(400).json({ error: 'Invalid order id' });
+      return;
+    }
+
+    const parsed = updateClientOrderSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Invalid request', details: parsed.error.flatten() });
+      return;
+    }
+
+    const clientId = Number(req.user.id);
+
+    client = await pool.connect();
+    await client.query('BEGIN');
+    inTransaction = true;
+
+    const orderRes = await client.query(
+      `SELECT id, client_id, product_id, quantity,
+              variant_id, unit_price,
+              customer_name, customer_email, customer_phone,
+              shipping_address, shipping_wilaya_id, shipping_commune_id, shipping_hai,
+              delivery_type
+       FROM store_orders
+       WHERE id = $1 AND client_id = $2
+       FOR UPDATE`,
+      [orderId, clientId]
+    );
+
+    if (orderRes.rows.length === 0) {
+      await client.query('ROLLBACK');
+      inTransaction = false;
+      res.status(404).json({ error: 'Order not found' });
+      return;
+    }
+
+    const existing = orderRes.rows[0];
+    const productId = Number(existing.product_id);
+    const oldQuantity = Number(existing.quantity ?? 1);
+    const oldVariantId = existing.variant_id == null ? null : Number(existing.variant_id);
+
+    const body = parsed.data;
+
+    const newQuantity = body.quantity != null ? Number(body.quantity) : oldQuantity;
+    const newVariantId = body.variant_id !== undefined ? body.variant_id : oldVariantId;
+    const newDeliveryType = body.delivery_type || (existing.delivery_type as any) || 'home';
+
+    const newWilayaId = body.shipping_wilaya_id !== undefined ? body.shipping_wilaya_id : existing.shipping_wilaya_id;
+    const newCommuneId = body.shipping_commune_id !== undefined ? body.shipping_commune_id : existing.shipping_commune_id;
+    const newHai = body.shipping_hai !== undefined ? body.shipping_hai : existing.shipping_hai;
+
+    const newCustomerName = body.customer_name !== undefined ? body.customer_name : existing.customer_name;
+    const newCustomerEmail = body.customer_email !== undefined ? body.customer_email : existing.customer_email;
+    const newCustomerPhone = body.customer_phone !== undefined ? body.customer_phone : existing.customer_phone;
+    const newShippingAddress = body.shipping_address !== undefined ? body.shipping_address : existing.shipping_address;
+
+    if (!newCustomerName || !String(newCustomerName).trim()) {
+      await client.query('ROLLBACK');
+      inTransaction = false;
+      res.status(400).json({ error: 'customer_name is required' });
+      return;
+    }
+
+    if (newCustomerPhone) {
+      const normalizedPhone = String(newCustomerPhone).replace(/\s/g, '');
+      if (!/^\+?[0-9]{7,}$/.test(normalizedPhone)) {
+        await client.query('ROLLBACK');
+        inTransaction = false;
+        res.status(400).json({ error: 'Invalid phone number' });
+        return;
+      }
+    }
+
+    // Load product pricing + validate
+    const productRes = await client.query(
+      'SELECT id, client_id, price, stock_quantity, status FROM client_store_products WHERE id = $1 AND client_id = $2 LIMIT 1',
+      [productId, clientId]
+    );
+    if (productRes.rows.length === 0) {
+      await client.query('ROLLBACK');
+      inTransaction = false;
+      res.status(404).json({ error: 'Product not found' });
+      return;
+    }
+    const productRow = productRes.rows[0];
+    if (String(productRow.status || 'active') !== 'active') {
+      await client.query('ROLLBACK');
+      inTransaction = false;
+      res.status(400).json({ error: 'Product is not available' });
+      return;
+    }
+
+    let variantRow: any | null = null;
+    if (newVariantId != null) {
+      const vRes = await client.query(
+        `SELECT id, color, size, variant_name, price, stock_quantity, is_active
+         FROM product_variants
+         WHERE id = $1 AND product_id = $2 AND client_id = $3 AND is_active = true
+         LIMIT 1`,
+        [Number(newVariantId), productId, clientId]
+      );
+      if (vRes.rows.length === 0) {
+        await client.query('ROLLBACK');
+        inTransaction = false;
+        res.status(400).json({ error: 'Invalid variant' });
+        return;
+      }
+      variantRow = vRes.rows[0];
+    }
+
+    const unitPrice = variantRow && variantRow.price != null ? Number(variantRow.price) : Number(productRow.price);
+    if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
+      await client.query('ROLLBACK');
+      inTransaction = false;
+      res.status(400).json({ error: 'Invalid product price' });
+      return;
+    }
+
+    // Recompute delivery fee from current shipping_wilaya_id
+    const { deliveryFee, deliveryType } = await resolveDeliveryFee({
+      clientId,
+      wilayaId: newWilayaId ?? null,
+      deliveryType: newDeliveryType,
+    });
+
+    const expectedTotalPrice = (unitPrice * Number(newQuantity)) + deliveryFee;
+
+    const variantChanged = (oldVariantId ?? null) !== (newVariantId ?? null);
+    const quantityChanged = Number(oldQuantity) !== Number(newQuantity);
+    if (variantChanged || quantityChanged) {
+      // Restore previous stock
+      if (oldVariantId != null) {
+        await client.query(
+          'UPDATE product_variants SET stock_quantity = stock_quantity + $1 WHERE id = $2 AND product_id = $3 AND client_id = $4',
+          [oldQuantity, oldVariantId, productId, clientId]
+        );
+      }
+
+      await client.query(
+        'UPDATE client_store_products SET stock_quantity = stock_quantity + $1 WHERE id = $2 AND client_id = $3',
+        [oldQuantity, productId, clientId]
+      );
+
+      // Decrement new stock (with guards)
+      if (newVariantId != null) {
+        const vUpdate = await client.query(
+          'UPDATE product_variants SET stock_quantity = stock_quantity - $1 WHERE id = $2 AND product_id = $3 AND client_id = $4 AND stock_quantity >= $1 RETURNING stock_quantity',
+          [newQuantity, Number(newVariantId), productId, clientId]
+        );
+        const pUpdate = await client.query(
+          'UPDATE client_store_products SET stock_quantity = stock_quantity - $1 WHERE id = $2 AND client_id = $3 AND stock_quantity >= $1 RETURNING stock_quantity',
+          [newQuantity, productId, clientId]
+        );
+        if (vUpdate.rows.length === 0 || pUpdate.rows.length === 0) {
+          await client.query('ROLLBACK');
+          inTransaction = false;
+          res.status(400).json({ error: 'Insufficient stock' });
+          return;
+        }
+      } else {
+        const pUpdate = await client.query(
+          'UPDATE client_store_products SET stock_quantity = stock_quantity - $1 WHERE id = $2 AND client_id = $3 AND stock_quantity >= $1 RETURNING stock_quantity',
+          [newQuantity, productId, clientId]
+        );
+        if (pUpdate.rows.length === 0) {
+          await client.query('ROLLBACK');
+          inTransaction = false;
+          res.status(400).json({ error: 'Insufficient stock' });
+          return;
+        }
+      }
+    }
+
+    const updateRes = await client.query(
+      `UPDATE store_orders
+       SET customer_name = $1,
+           customer_email = $2,
+           customer_phone = $3,
+           shipping_address = $4,
+           shipping_wilaya_id = $5,
+           shipping_commune_id = $6,
+           shipping_hai = $7,
+           delivery_type = $8,
+           delivery_fee = $9,
+           variant_id = $10,
+           variant_color = $11,
+           variant_size = $12,
+           variant_name = $13,
+           unit_price = $14,
+           quantity = $15,
+           total_price = $16,
+           cod_amount = $16,
+           updated_at = NOW()
+       WHERE id = $17 AND client_id = $18
+       RETURNING *`,
+      [
+        String(newCustomerName),
+        newCustomerEmail || null,
+        newCustomerPhone ? String(newCustomerPhone).replace(/\s/g, '') : null,
+        newShippingAddress || null,
+        newWilayaId ?? null,
+        newCommuneId ?? null,
+        newHai ?? null,
+        deliveryType,
+        deliveryFee,
+        newVariantId == null ? null : Number(newVariantId),
+        variantRow ? (variantRow.color || null) : null,
+        variantRow ? (variantRow.size || null) : null,
+        variantRow ? (variantRow.variant_name || null) : null,
+        unitPrice,
+        newQuantity,
+        expectedTotalPrice,
+        orderId,
+        clientId,
+      ]
+    );
+
+    await client.query('COMMIT');
+    inTransaction = false;
+
+    clearOrdersCache(clientId);
+
+    const updated = updateRes.rows[0];
+    res.json(updated);
+    if (global.broadcastOrderUpdate) {
+      global.broadcastOrderUpdate(updated);
+    }
+  } catch (error) {
+    if (inTransaction && client) {
+      try {
+        await client.query('ROLLBACK');
+      } catch {}
+    }
+    console.error('Update order error:', error);
+    res.status(500).json({ error: 'Failed to update order' });
+  } finally {
+    try {
+      if (client) client.release();
+    } catch {}
   }
 };
 
