@@ -1335,6 +1335,9 @@ export default function Store() {
                       original_price: inv.original_price,
                       images: inv.images,
                       category: inv.category,
+                      // Bridge Stock sizes/colors -> Store product variants
+                      sizes: Array.isArray(inv.sizes) ? inv.sizes : [],
+                      colors: Array.isArray(inv.colors) ? inv.colors : [],
                       metadata: {
                         shipping: {
                           mode: inv.shipping_mode || 'delivery_pricing',

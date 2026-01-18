@@ -174,6 +174,8 @@ export const createStoreProduct: RequestHandler = async (req, res) => {
       status,
       is_featured,
       metadata,
+      sizes,
+      colors,
     } = req.body;
 
     if (!title || !price) {
@@ -220,6 +222,75 @@ export const createStoreProduct: RequestHandler = async (req, res) => {
       `UPDATE client_store_products SET slug = $1 WHERE id = $2 AND client_id = $3`,
       [slug, product.id, clientId]
     );
+
+    // If this product is created from Stock (sizes/colors arrays), auto-generate variants.
+    // This bridges StockManagement (client_stock_products.sizes/colors) to storefront checkout (product_variants).
+    const normalizeOptionList = (v: any): string[] => {
+      if (!Array.isArray(v)) return [];
+      const out: string[] = [];
+      for (const raw of v) {
+        const s = typeof raw === 'string' ? raw.trim() : String(raw || '').trim();
+        if (!s) continue;
+        if (s.length > 80) continue;
+        const key = s.toLowerCase();
+        if (!out.some((x) => x.toLowerCase() === key)) out.push(s);
+        if (out.length >= 50) break;
+      }
+      return out;
+    };
+
+    const normalizedSizes = normalizeOptionList(sizes);
+    const normalizedColors = normalizeOptionList(colors);
+
+    if (normalizedSizes.length || normalizedColors.length) {
+      const hasSize = normalizedSizes.length > 0;
+      const hasColor = normalizedColors.length > 0;
+
+      const combos: Array<{ color: string | null; size: string | null }> = [];
+      if (hasColor && hasSize) {
+        for (const c of normalizedColors) {
+          for (const s of normalizedSizes) {
+            combos.push({ color: c, size: s });
+          }
+        }
+      } else if (hasColor) {
+        for (const c of normalizedColors) combos.push({ color: c, size: null });
+      } else if (hasSize) {
+        for (const s of normalizedSizes) combos.push({ color: null, size: s });
+      }
+
+      const total = Math.max(0, Number(stock_quantity || 0));
+      const count = combos.length || 1;
+      const base = Math.floor(total / count);
+      let remainder = total - base * count;
+
+      for (let i = 0; i < combos.length; i++) {
+        const combo = combos[i];
+        const qty = base + (remainder > 0 ? 1 : 0);
+        if (remainder > 0) remainder--;
+        const nameParts = [combo.color || '', combo.size || ''].map((x) => String(x).trim()).filter(Boolean);
+        const variantName = nameParts.length ? nameParts.join(' / ') : null;
+
+        // Best-effort insert; unique index prevents duplicates.
+        await client.query(
+          `INSERT INTO product_variants (client_id, product_id, color, size, variant_name, price, stock_quantity, images, is_active, sort_order)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+           ON CONFLICT DO NOTHING`,
+          [
+            clientId,
+            product.id,
+            combo.color,
+            combo.size,
+            variantName,
+            null,
+            qty,
+            null,
+            true,
+            i,
+          ]
+        );
+      }
+    }
 
     await client.query('COMMIT');
     inTransaction = false;
