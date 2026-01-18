@@ -963,7 +963,7 @@ Press one of the buttons to confirm or cancel:`;
       (req as any).__migrationsRetried = true;
       try {
         await ensureMigrationsReady('createPublicStoreOrder missing schema');
-        return createPublicStoreOrder(req, res);
+        return createPublicStoreOrder(req, res, () => undefined);
       } catch (e) {
         console.error('[createPublicStoreOrder] Migration retry failed:', (e as any)?.message || e);
       }

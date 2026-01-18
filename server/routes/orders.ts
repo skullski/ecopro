@@ -496,7 +496,7 @@ Press one of the buttons to confirm or cancel:`;
       (req as any).__migrationsRetried = true;
       try {
         await ensureMigrationsReady('createOrder missing schema');
-        return createOrder(req, res);
+        return createOrder(req, res, () => undefined);
       } catch (e) {
         console.error('[Orders] Migration retry failed:', (e as any)?.message || e);
       }

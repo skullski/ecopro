@@ -212,7 +212,7 @@ export const getTelegramBotLink: RequestHandler = async (req, res) => {
       (req as any).__migrationsRetried = true;
       try {
         await ensureMigrationsReady('getTelegramBotLink missing schema');
-        return getTelegramBotLink(req, res);
+        return getTelegramBotLink(req, res, () => undefined);
       } catch (e) {
         console.error('[getTelegramBotLink] Migration retry failed:', (e as any)?.message || e);
       }
@@ -277,7 +277,7 @@ export const checkTelegramConnection: RequestHandler = async (req, res) => {
       (req as any).__migrationsRetried = true;
       try {
         await ensureMigrationsReady('checkTelegramConnection missing schema');
-        return checkTelegramConnection(req, res);
+        return checkTelegramConnection(req, res, () => undefined);
       } catch (e) {
         console.error('[checkTelegramConnection] Migration retry failed:', (e as any)?.message || e);
       }

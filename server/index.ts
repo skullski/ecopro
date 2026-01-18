@@ -323,7 +323,8 @@ export function createServer(options?: { skipDbInit?: boolean }) {
   app.use(
     '/api',
     cors((req, callback) => {
-      const origin = req.header('Origin');
+      const originHeader = (req as any)?.headers?.origin;
+      const origin = typeof originHeader === 'string' ? originHeader : Array.isArray(originHeader) ? originHeader[0] : undefined;
 
       // Always allow requests with no origin (mobile apps, curl, etc.)
       if (!origin) {

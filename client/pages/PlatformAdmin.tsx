@@ -46,6 +46,7 @@ import { Badge } from '@/components/ui/badge';
 import { GradientCard } from '@/components/ui/GradientCard';
 import { Button } from '@/components/ui/button';
 import GlobalAnnouncementsManager from '@/components/platform-admin/GlobalAnnouncementsManager';
+import SpeedometerGauge from '@/components/platform-admin/SpeedometerGauge';
 interface PlatformStats {
   totalUsers: number;
   totalClients: number;
@@ -891,6 +892,8 @@ export default function PlatformAdmin() {
   const [capacityLoading, setCapacityLoading] = useState(false);
   const [activeUsers, setActiveUsers] = useState<any>(null);
   const [activeUsersLoading, setActiveUsersLoading] = useState(false);
+  const [browserStorage, setBrowserStorage] = useState<{ usage: number | null; quota: number | null } | null>(null);
+  const [browserDownlinkMbps, setBrowserDownlinkMbps] = useState<number | null>(null);
   const [billingMetrics, setBillingMetrics] = useState<any>(null);
   const [billingLoading, setBillingLoading] = useState(false);
   const [platformSettings, setPlatformSettings] = useState<any>(null);
@@ -1074,6 +1077,51 @@ export default function PlatformAdmin() {
     return () => window.clearInterval(id);
   }, [activeTab]);
 
+  // Client-side metrics for the health gauges (storage estimate + network downlink)
+  useEffect(() => {
+    if (activeTab !== 'health') return;
+
+    let cancelled = false;
+
+    const loadBrowserStorage = async () => {
+      try {
+        const storageAny = (navigator as any).storage;
+        if (!storageAny || typeof storageAny.estimate !== 'function') {
+          if (!cancelled) setBrowserStorage(null);
+          return;
+        }
+        const estimate = await storageAny.estimate();
+        const usage = typeof estimate?.usage === 'number' ? estimate.usage : null;
+        const quota = typeof estimate?.quota === 'number' ? estimate.quota : null;
+        if (!cancelled) setBrowserStorage({ usage, quota });
+      } catch {
+        if (!cancelled) setBrowserStorage(null);
+      }
+    };
+
+    const loadBrowserConnection = () => {
+      try {
+        const conn = (navigator as any).connection;
+        const downlink = conn && typeof conn.downlink === 'number' ? conn.downlink : null;
+        if (!cancelled) setBrowserDownlinkMbps(downlink);
+      } catch {
+        if (!cancelled) setBrowserDownlinkMbps(null);
+      }
+    };
+
+    void loadBrowserStorage();
+    loadBrowserConnection();
+
+    const connId = window.setInterval(loadBrowserConnection, 5000);
+    const storageId = window.setInterval(() => void loadBrowserStorage(), 30000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(connId);
+      window.clearInterval(storageId);
+    };
+  }, [activeTab]);
+
   useEffect(() => {
     if (!platformSettings) return;
     setSettingsForm({
@@ -1214,26 +1262,6 @@ export default function PlatformAdmin() {
     const kib = abs / 1024;
     if (kib >= 1) return `${kib.toFixed(0)}K`;
     return `${abs.toFixed(0)}B`;
-  };
-
-  const renderHtopBar = (pct: number | null | undefined, color: 'red' | 'cyan' = 'cyan') => {
-    const p = pct == null || !Number.isFinite(pct) ? 0 : Math.max(0, Math.min(100, pct));
-    const barColor = color === 'red' ? '#f87171' : '#22d3ee'; // red-400 / cyan-400
-    return (
-      <span 
-        className="flex-1 font-mono"
-        style={{ 
-          background: `linear-gradient(to right, ${barColor} ${p}%, #1e293b ${p}%)`,
-          WebkitBackgroundClip: 'text',
-          backgroundClip: 'text',
-          color: 'transparent',
-          animation: p > 0 ? 'htop-pulse 2s ease-in-out infinite' : 'none',
-          letterSpacing: '-0.05em',
-        }}
-      >
-        [{'|'.repeat(100)}]
-      </span>
-    );
   };
 
   const loadServerHealth = async () => {
@@ -2998,44 +3026,170 @@ export default function PlatformAdmin() {
 
               {serverHealth && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.625rem, 1.25vh, 0.875rem)', marginTop: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
-                  {serverHealth.htop && (
-                    <div className="bg-slate-950/60 rounded-lg border border-slate-700/50 p-3 font-mono">
-                      <div className="text-slate-400 text-xs mb-2">$ htop (live)</div>
-                      <div className="space-y-1.5 text-xs">
-                        {Array.isArray(serverHealth.htop.cpu?.perCorePct) && serverHealth.htop.cpu!.perCorePct!.length > 0 ? (
-                          serverHealth.htop.cpu!.perCorePct!.slice(0, 32).map((pct, idx) => (
-                            <div key={idx} className="flex items-center gap-1">
-                              <span className="text-slate-500 w-4 shrink-0">{idx}</span>
-                              {renderHtopBar(pct, 'red')}
-                              <span className="text-fuchsia-300 tabular-nums shrink-0 w-14 text-right">{formatPercent(pct)}</span>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="text-slate-500">CPU: -</div>
-                        )}
+                  <div className="bg-slate-950/60 rounded-lg border border-slate-700/50" style={{ padding: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
+                    <div className="text-slate-400 text-xs mb-3">Speedometers (live)</div>
+                    {(() => {
+                      const cpuPct = serverHealth.htop?.cpu?.totalPct ?? null;
+                      const memPct = serverHealth.htop?.memory?.pctUsed ?? null;
+                      const eluPct = serverHealth.eventLoop?.utilization != null ? serverHealth.eventLoop.utilization * 100 : null;
 
-                        {serverHealth.htop.memory && (
-                          <div className="flex items-center gap-1 pt-1">
-                            <span className="text-slate-500 w-6 shrink-0">Mem</span>
-                            {renderHtopBar(serverHealth.htop.memory.pctUsed, 'cyan')}
-                            <span className="text-fuchsia-300 tabular-nums shrink-0 text-right" style={{ minWidth: '5.5rem' }}>
-                              {formatBytesShort(serverHealth.htop.memory.usedBytes)}/{formatBytesShort(serverHealth.htop.memory.totalBytes)}
-                            </span>
-                          </div>
-                        )}
+                      const dbMs = serverHealth.db.latencyMs ?? null;
+                      const dbSlowMs = serverHealth.thresholds?.dbSlowMs ?? 150;
 
-                        {serverHealth.htop.swap && (
-                          <div className="flex items-center gap-1">
-                            <span className="text-slate-500 w-6 shrink-0">Swp</span>
-                            {renderHtopBar(serverHealth.htop.swap.pctUsed, 'cyan')}
-                            <span className="text-fuchsia-300 tabular-nums shrink-0 text-right" style={{ minWidth: '5.5rem' }}>
-                              {formatBytesShort(serverHealth.htop.swap.usedBytes)}/{formatBytesShort(serverHealth.htop.swap.totalBytes)}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
+                      const uploadsTotal = serverHealth.disk?.uploads?.total ?? null;
+                      const uploadsAvail = serverHealth.disk?.uploads?.available ?? null;
+                      const uploadsUsedPct =
+                        uploadsTotal != null && uploadsAvail != null && uploadsTotal > 0
+                          ? (1 - uploadsAvail / uploadsTotal) * 100
+                          : null;
+
+                      const rxBps = serverHealth.network?.totals?.rxBps ?? null;
+                      const txBps = serverHealth.network?.totals?.txBps ?? null;
+                      const totalMbps =
+                        rxBps != null && txBps != null
+                          ? ((rxBps + txBps) * 8) / 1_000_000
+                          : null;
+
+                      const activeNow = activeUsers?.active?.total ?? null;
+                      const capacityMax = systemCapacity?.capacity?.estimated ?? null;
+
+                      const browserStoragePct =
+                        browserStorage?.usage != null && browserStorage?.quota != null && browserStorage.quota > 0
+                          ? (browserStorage.usage / browserStorage.quota) * 100
+                          : null;
+
+                      return (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6" style={{ gap: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
+                          <SpeedometerGauge
+                            title="Server Load"
+                            subtitle="CPU usage"
+                            value={cpuPct}
+                            min={0}
+                            max={100}
+                            unit="%"
+                            decimals={1}
+                            goodThreshold={50}
+                            warnThreshold={80}
+                            trend="higher-is-worse"
+                            tone="cyan"
+                          />
+                          <SpeedometerGauge
+                            title="RAM Load"
+                            subtitle={serverHealth.htop?.memory ? `${formatBytesShort(serverHealth.htop.memory.usedBytes)}/${formatBytesShort(serverHealth.htop.memory.totalBytes)}` : 'Memory usage'}
+                            value={memPct}
+                            min={0}
+                            max={100}
+                            unit="%"
+                            decimals={1}
+                            goodThreshold={60}
+                            warnThreshold={85}
+                            trend="higher-is-worse"
+                            tone="violet"
+                          />
+                          <SpeedometerGauge
+                            title="Runtime"
+                            subtitle="Event loop utilization"
+                            value={eluPct}
+                            min={0}
+                            max={100}
+                            unit="%"
+                            decimals={1}
+                            goodThreshold={((serverHealth.thresholds?.eventLoopHighUtil ?? 0.7) * 100) * 0.6}
+                            warnThreshold={(serverHealth.thresholds?.eventLoopHighUtil ?? 0.7) * 100}
+                            trend="higher-is-worse"
+                            tone="emerald"
+                          />
+                          <SpeedometerGauge
+                            title="Database"
+                            subtitle="Ping latency"
+                            value={dbMs}
+                            min={0}
+                            max={Math.max(300, dbSlowMs * 3)}
+                            unit="ms"
+                            decimals={0}
+                            goodThreshold={dbSlowMs}
+                            warnThreshold={dbSlowMs * 2}
+                            trend="higher-is-worse"
+                            tone="amber"
+                          />
+                          <SpeedometerGauge
+                            title="DB Load"
+                            subtitle="Pool waiting"
+                            value={serverHealth.db.pool?.waitingCount ?? null}
+                            min={0}
+                            max={20}
+                            decimals={0}
+                            compactValue
+                            goodThreshold={0}
+                            warnThreshold={2}
+                            trend="higher-is-worse"
+                            tone="red"
+                          />
+                          <SpeedometerGauge
+                            title="Storage"
+                            subtitle="Uploads disk used"
+                            value={uploadsUsedPct}
+                            min={0}
+                            max={100}
+                            unit="%"
+                            decimals={1}
+                            goodThreshold={70}
+                            warnThreshold={85}
+                            trend="higher-is-worse"
+                            tone="cyan"
+                          />
+                          <SpeedometerGauge
+                            title="Network"
+                            subtitle="Server RX+TX"
+                            value={totalMbps}
+                            min={0}
+                            max={200}
+                            unit="Mbps"
+                            decimals={1}
+                            trend="neutral"
+                            tone="violet"
+                          />
+                          <SpeedometerGauge
+                            title="Internet"
+                            subtitle="Browser downlink"
+                            value={browserDownlinkMbps}
+                            min={0}
+                            max={200}
+                            unit="Mbps"
+                            decimals={1}
+                            goodThreshold={10}
+                            warnThreshold={40}
+                            trend="higher-is-better"
+                            tone="emerald"
+                          />
+                          <SpeedometerGauge
+                            title="Browser Storage"
+                            subtitle={browserStorage?.usage != null && browserStorage?.quota != null ? `${formatBytesShort(browserStorage.usage)}/${formatBytesShort(browserStorage.quota)}` : 'Local storage usage'}
+                            value={browserStoragePct}
+                            min={0}
+                            max={100}
+                            unit="%"
+                            decimals={1}
+                            goodThreshold={50}
+                            warnThreshold={80}
+                            trend="higher-is-worse"
+                            tone="amber"
+                          />
+                          <SpeedometerGauge
+                            title="Active Users"
+                            subtitle={capacityMax != null ? `Capacity ~${Math.round(capacityMax)}` : 'Current sessions'}
+                            value={activeNow}
+                            min={0}
+                            max={capacityMax != null && Number.isFinite(capacityMax) && capacityMax > 0 ? capacityMax : 200}
+                            decimals={0}
+                            compactValue
+                            trend="neutral"
+                            tone="cyan"
+                          />
+                        </div>
+                      );
+                    })()}
+                  </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-4" style={{ gap: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
                   <div className="bg-slate-900/30 rounded-lg border border-slate-600/30 p-3">

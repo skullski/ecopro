@@ -382,7 +382,22 @@ export function securityMiddleware(options: {
     // We only apply it to sensitive areas that should never be hit anonymously.
     const isSensitiveGeoBlockPath = path.startsWith('/api/admin') || path.startsWith('/api/kernel');
 
-    if (dzOnlyUnauth && isUnauth && isSensitiveGeoBlockPath && !isHealth && !isWebhook && !isPrivacyPolicy) {
+    // Never geo-block the credential entry points; otherwise legitimate admins/root
+    // outside DZ (or with unknown geo) get locked out and may even get auto-blocked.
+    const isSensitiveLoginPath =
+      path === '/api/admin/login' ||
+      path === '/api/kernel/login' ||
+      path === '/api/kernel/logout';
+
+    if (
+      dzOnlyUnauth &&
+      isUnauth &&
+      isSensitiveGeoBlockPath &&
+      !isSensitiveLoginPath &&
+      !isHealth &&
+      !isWebhook &&
+      !isPrivacyPolicy
+    ) {
       const cc = geo.country_code;
       const isDz = cc === 'DZ';
       const unknown = !cc;
@@ -446,7 +461,11 @@ export function securityMiddleware(options: {
       // Auto-block repeated anonymous probing of admin/kernel endpoints.
       // This is effective against VPN/bot scanners and does not affect normal storefront traffic.
       const isSensitive = path.startsWith('/api/admin') || path.startsWith('/api/kernel');
-      const isAnonSensitiveProbe = isSensitive && (status === 401 || status === 403) && !u;
+      const isAnonSensitiveProbe =
+        isSensitive &&
+        !isSensitiveLoginPath &&
+        (status === 401 || status === 403) &&
+        !u;
       if (isAnonSensitiveProbe && ip && !isPrivateIp(ip)) {
         const windowMs = 10 * 60 * 1000;
         cleanupCounters(adminProbeCounters, now, windowMs);
