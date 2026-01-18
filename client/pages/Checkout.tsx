@@ -20,7 +20,23 @@ import {
 } from "@/components/ui/select";
 
 type Product = {
-  description: ReactNode; id: string; title: string; price: number; imageUrl?: string; stock_quantity?: number
+  description: ReactNode;
+  id: string;
+  title: string;
+  price: number;
+  imageUrl?: string;
+  stock_quantity?: number;
+  store_slug?: string;
+  variants?: Array<{
+    id: number;
+    color?: string | null;
+    size?: string | null;
+    variant_name?: string | null;
+    price?: number | null;
+    stock_quantity: number;
+    images?: string[] | null;
+    sort_order?: number | null;
+  }>;
 };
 
 
@@ -30,6 +46,10 @@ export default function Checkout() {
   const { productId, storeSlug, productSlug } = useParams();
   const nav = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
+  const [quantity, setQuantity] = useState(1);
+  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
+  const [selectedColor, setSelectedColor] = useState<string>('');
+  const [selectedSize, setSelectedSize] = useState<string>('');
   const [settings, setSettings] = useState<any>({});
   const [telegramBotInfo, setTelegramBotInfo] = useState<
     | {
@@ -311,7 +331,8 @@ export default function Checkout() {
           const p = JSON.parse(cachedProduct);
           // Only trust cached products if stock_quantity exists; otherwise we might allow out-of-stock checkout.
           const cachedStock = typeof p.stock_quantity === 'number' ? Number(p.stock_quantity) : undefined;
-          if (cachedStock === undefined) {
+          const cachedVariantsOk = Array.isArray(p.variants);
+          if (cachedStock === undefined || !cachedVariantsOk) {
             // fall through to API
           } else {
           setProduct({ 
@@ -321,6 +342,8 @@ export default function Checkout() {
             imageUrl: p.images?.[0] || p.image, 
             description: p.description ?? "",
             stock_quantity: cachedStock,
+            store_slug: p.store_slug,
+            variants: Array.isArray(p.variants) ? p.variants : undefined,
           });
           return;
           }
@@ -336,7 +359,16 @@ export default function Checkout() {
           }
           if (res.ok) {
             const p = await res.json();
-            setProduct({ id: String(p.id), title: p.title || p.name, price: Number(p.price), imageUrl: p.images?.[0], description: p.description ?? "" });
+            setProduct({
+              id: String(p.id),
+              title: p.title || p.name,
+              price: Number(p.price),
+              imageUrl: p.images?.[0],
+              description: p.description ?? "",
+              stock_quantity: typeof p.stock_quantity === 'number' ? Number(p.stock_quantity) : undefined,
+              store_slug: p.store_slug,
+              variants: Array.isArray(p.variants) ? p.variants : undefined,
+            });
           }
         } else if (productId) {
           const p = await apiFetch<Product>(`/api/products/${productId}`);
@@ -349,13 +381,48 @@ export default function Checkout() {
     load();
   }, [productId, storeSlug, productSlug]);
 
+  // Initialize default variant selection (when variants exist)
+  useEffect(() => {
+    const variants = Array.isArray(product?.variants) ? product!.variants! : [];
+    if (!variants.length) return;
+    if (selectedVariantId != null) return;
+
+    const first = variants.find((v) => Number(v?.stock_quantity ?? 0) > 0) || variants[0];
+    if (!first) return;
+    setSelectedVariantId(Number(first.id));
+    setSelectedColor(String(first.color || ''));
+    setSelectedSize(String(first.size || ''));
+  }, [product, selectedVariantId]);
+
+  // Clamp quantity when variant changes
+  useEffect(() => {
+    const variants = Array.isArray(product?.variants) ? product!.variants! : [];
+    if (!variants.length) return;
+
+    const selected = variants.find((v) => Number(v.id) === Number(selectedVariantId));
+    const stock = Number(selected?.stock_quantity ?? 0);
+    if (!Number.isFinite(stock) || stock <= 0) {
+      setQuantity(1);
+      return;
+    }
+    setQuantity((q) => Math.min(q, stock));
+  }, [product, selectedVariantId]);
+
   async function placeOrder() {
     setErrorMsg(null);
     setSubmitting(true);
     try {
-      const currentStock = typeof product?.stock_quantity === 'number' ? Number(product.stock_quantity) : null;
+      const variants = Array.isArray(product?.variants) ? product!.variants! : [];
+      const selectedVariant = variants.find((v) => Number(v.id) === Number(selectedVariantId)) || null;
+      const currentStock = selectedVariant
+        ? Number(selectedVariant.stock_quantity ?? 0)
+        : (typeof product?.stock_quantity === 'number' ? Number(product.stock_quantity) : null);
       if (currentStock !== null && Number.isFinite(currentStock) && currentStock <= 0) {
         setErrorMsg('❌ Out of stock');
+        return;
+      }
+      if (currentStock !== null && Number.isFinite(currentStock) && currentStock < quantity) {
+        setErrorMsg('❌ Insufficient stock');
         return;
       }
       if (!addr.name || !addr.line1 || !addr.city || !addr.postalCode || !addr.country) {
@@ -367,11 +434,13 @@ export default function Checkout() {
         .filter(Boolean)
         .join(', ');
 
+      const unitPrice = selectedVariant && selectedVariant.price != null ? Number(selectedVariant.price) : Number(product?.price ?? 0);
       const payload = {
         product_id: Number(product?.id) || Number(productId),
+        variant_id: selectedVariant ? Number(selectedVariant.id) : null,
         client_id: null,
-        quantity: 1,
-        total_price: Number(product?.price ?? 0),
+        quantity: Number(quantity) || 1,
+        total_price: unitPrice * (Number(quantity) || 1),
         customer_name: addr.name || '',
         ...(addr.email?.trim() ? { customer_email: addr.email.trim() } : {}),
         customer_phone: addr?.phone || '',
@@ -430,13 +499,143 @@ export default function Checkout() {
         <div className="w-full max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10">
           {/* Left: Order Summary */}
           <div className="flex flex-col gap-3 md:gap-4">
+            {Array.isArray(product.variants) && product.variants.length > 0 && (
+              <div className="bg-[#13162a] rounded-2xl shadow-lg border border-[#23264a] p-6">
+                <h3 className="text-lg font-semibold text-white mb-3">Choose Variant</h3>
+                {(() => {
+                  const variants = product.variants || [];
+                  const colors = Array.from(new Set(variants.map((v) => String(v.color || '').trim()).filter(Boolean)));
+                  const sizes = Array.from(new Set(variants.map((v) => String(v.size || '').trim()).filter(Boolean)));
+                  const selected = variants.find((v) => Number(v.id) === Number(selectedVariantId)) || null;
+                  const selectedName = selected?.variant_name || [selected?.color, selected?.size].filter(Boolean).join(' / ');
+                  const selectedStock = selected ? Number(selected.stock_quantity ?? 0) : null;
+
+                  return (
+                    <div className="space-y-3">
+                      {(colors.length > 0 || sizes.length > 0) && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {colors.length > 0 && (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Color</label>
+                              <Select
+                                value={selectedColor}
+                                onValueChange={(c) => {
+                                  setSelectedColor(c);
+                                  const match = variants.find((v) => {
+                                    const vColor = String(v.color || '');
+                                    const vSize = String(v.size || '');
+                                    const okColor = c ? vColor === c : true;
+                                    const okSize = selectedSize ? vSize === selectedSize : true;
+                                    return okColor && okSize;
+                                  });
+                                  if (match) {
+                                    setSelectedVariantId(Number(match.id));
+                                    setSelectedSize(String(match.size || ''));
+                                  }
+                                }}
+                              >
+                                <SelectTrigger className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all h-auto">
+                                  <SelectValue placeholder="Select Color" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {colors.map((c) => (
+                                    <SelectItem key={c} value={c}>
+                                      {c}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
+
+                          {sizes.length > 0 && (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Size</label>
+                              <Select
+                                value={selectedSize}
+                                onValueChange={(s) => {
+                                  setSelectedSize(s);
+                                  const match = variants.find((v) => {
+                                    const vColor = String(v.color || '');
+                                    const vSize = String(v.size || '');
+                                    const okColor = selectedColor ? vColor === selectedColor : true;
+                                    const okSize = s ? vSize === s : true;
+                                    return okColor && okSize;
+                                  });
+                                  if (match) {
+                                    setSelectedVariantId(Number(match.id));
+                                    setSelectedColor(String(match.color || ''));
+                                  }
+                                }}
+                              >
+                                <SelectTrigger className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all h-auto">
+                                  <SelectValue placeholder="Select Size" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {sizes.map((s) => (
+                                    <SelectItem key={s} value={s}>
+                                      {s}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {selectedName && (
+                        <div className="text-sm text-gray-300">
+                          Selected: <span className="font-semibold text-white">{selectedName}</span>
+                          {selectedStock != null && (
+                            <span className="ml-2 text-xs text-gray-400">(Stock: {selectedStock})</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
+            <div className="bg-[#13162a] rounded-2xl shadow-lg border border-[#23264a] p-6">
+              <h3 className="text-lg font-semibold text-white mb-3">Quantity</h3>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  className="px-3 py-2 rounded-lg bg-[#181b2a] border border-[#23264a] text-white disabled:opacity-50"
+                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                  disabled={quantity <= 1}
+                >
+                  −
+                </button>
+                <div className="min-w-[56px] text-center text-white font-semibold">{quantity}</div>
+                <button
+                  type="button"
+                  className="px-3 py-2 rounded-lg bg-[#181b2a] border border-[#23264a] text-white"
+                  onClick={() => setQuantity((q) => q + 1)}
+                >
+                  +
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">If a variant is selected, quantity is limited by variant stock.</p>
+            </div>
+
             <div className="bg-[#13162a] rounded-2xl shadow-lg border border-[#23264a] p-6">
               <h2 className="text-xl font-bold text-white mb-4">Order Summary</h2>
               <div className="flex items-center gap-4">
                 <img src={product.imageUrl} alt={product.title} className="w-20 h-20 object-cover rounded-xl border border-[#23264a]" />
                 <div>
                   <div className="font-semibold text-white text-lg mb-1">{product.title}</div>
-                  <div className="text-cyan-400 text-xl md:text-2xl font-extrabold">{Math.round(product.price / 100)}</div>
+                  <div className="text-cyan-400 text-xl md:text-2xl font-extrabold">
+                    {Math.round(
+                      (
+                        (Array.isArray(product.variants)
+                          ? (product.variants.find((v) => Number(v.id) === Number(selectedVariantId))?.price ?? product.price)
+                          : product.price) as number
+                      ) / 100
+                    )}
+                  </div>
                   <div className="text-gray-400 text-sm mt-1">{product.description}</div>
                 </div>
               </div>
@@ -446,7 +645,15 @@ export default function Checkout() {
               <div className="flex flex-col gap-2 text-base">
                 <div className="flex justify-between text-gray-300">
                   <span>Subtotal</span>
-                  <span className="font-medium text-white">{Math.round(product.price / 100)}</span>
+                  <span className="font-medium text-white">
+                    {Math.round(
+                      (
+                        (Array.isArray(product.variants)
+                          ? (product.variants.find((v) => Number(v.id) === Number(selectedVariantId))?.price ?? product.price)
+                          : product.price) as number
+                      ) * quantity / 100
+                    )}
+                  </span>
                 </div>
                 <div className="flex justify-between text-gray-300">
                   <span>Shipping</span>
@@ -455,7 +662,15 @@ export default function Checkout() {
                 <div className="border-t border-[#23264a] my-2"></div>
                 <div className="flex justify-between text-lg">
                   <span className="font-bold text-white">Total</span>
-                  <span className="font-extrabold text-cyan-400">{Math.round(product.price / 100)}</span>
+                  <span className="font-extrabold text-cyan-400">
+                    {Math.round(
+                      (
+                        (Array.isArray(product.variants)
+                          ? (product.variants.find((v) => Number(v.id) === Number(selectedVariantId))?.price ?? product.price)
+                          : product.price) as number
+                      ) * quantity / 100
+                    )}
+                  </span>
                 </div>
               </div>
             </div>

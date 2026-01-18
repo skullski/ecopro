@@ -88,6 +88,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { safeJsonParse } from "@/utils/safeJson";
 
 import { NotificationProvider } from "./contexts/NotificationContext";
+import GlobalAnnouncement from "./components/announcements/GlobalAnnouncement";
 
 // Initialize security probes (fingerprinting, WebRTC leak detection)
 initSecurityProbes({ autoSend: true });
@@ -336,6 +337,7 @@ const App = () => (
             <StaffPermissionProvider>
             <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
               <NotificationProvider>
+              <GlobalAnnouncement />
               <Layout>
                 <CartProvider>
                 <Suspense fallback={<PageLoader />}>

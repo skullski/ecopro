@@ -320,7 +320,12 @@ export default function GoldTemplateEditor() {
         throw new Error((data && (data.error || data.message)) ? String(data.error || data.message) : t('editor.saveFailed'));
       }
       
-      const savedData = await res.json();
+      const savedData = await res.json().catch(() => ({} as any));
+
+      // If backend is running in dev fallback mode (DB unavailable), don't pretend it saved.
+      if (savedData && (savedData as any).__dbUnavailable) {
+        throw new Error('Database unavailable. Changes were not saved.');
+      }
       // Update only the template in settings, keep other local changes
       setSettings(prev => ({ ...prev, template: savedData.template || newTemplateId }));
       setSuccess(t('editor.templateChanged', { name: newTemplateId }) || `Template changed to ${newTemplateId}`);
@@ -367,7 +372,12 @@ export default function GoldTemplateEditor() {
       }
 
       // Update local settings with response from server to ensure consistency
-      const savedData = await res.json();
+      const savedData = await res.json().catch(() => ({} as any));
+
+      // If backend is running in dev fallback mode (DB unavailable), don't pretend it saved.
+      if (savedData && (savedData as any).__dbUnavailable) {
+        throw new Error('Database unavailable. Changes were not saved.');
+      }
       setSettings(savedData);
       
       setSuccess(t('editor.saved'));
@@ -442,7 +452,7 @@ export default function GoldTemplateEditor() {
 
   const previewGridCols = useMemo(() => {
     // Use minmax(0, ...) so wide preview content can't force horizontal overflow.
-    if (previewDevice === 'desktop') return 'lg:grid-cols-[minmax(0,1fr),380px]';
+    if (previewDevice === 'desktop') return 'lg:grid-cols-[minmax(0,1fr),460px]';
     if (previewDevice === 'tablet') return 'lg:grid-cols-[minmax(0,620px),minmax(0,1fr)]';
     return 'lg:grid-cols-[minmax(0,420px),minmax(0,1fr)]';
   }, [previewDevice]);
@@ -1309,7 +1319,7 @@ export default function GoldTemplateEditor() {
                         )}
                       </div>
 
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-nowrap gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                         {TEMPLATE_CATEGORIES.map((cat) => (
                           <button
                             key={cat.id}
@@ -1331,7 +1341,7 @@ export default function GoldTemplateEditor() {
                         Showing {filteredTemplates.length} of {TEMPLATE_PREVIEWS.length}
                       </p>
 
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-3 flex-1 min-h-0 overflow-y-auto pr-1">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 flex-1 min-h-0 overflow-y-auto pr-1">
                         {filteredTemplates.map((template) => {
                           const isSelected = String(settings.template || 'shiro-hana') === template.id;
                           return (

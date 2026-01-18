@@ -39,6 +39,8 @@ import * as telegramRoutes from "./routes/telegram";
 import { trafficMiddleware } from './utils/traffic';
 import * as staffRoutes from "./routes/staff";
 import * as billingRoutes from "./routes/billing";
+import { announcementsRouter } from './routes/announcements';
+import { adminAnnouncementsRouter } from './routes/admin-announcements';
 import kernelRouter, { initKernel } from "./routes/kernel";
 import trapsRouter from "./routes/traps";
 import { startSubscriptionEnforcement } from './utils/subscription-enforcement';
@@ -478,6 +480,10 @@ export function createServer(options?: { skipDbInit?: boolean }) {
 
   // Subscription enforcement (auto-lock expired trials/subscriptions)
   startSubscriptionEnforcement();
+
+  // Global announcements
+  app.use('/api/announcements', announcementsRouter);
+  app.use('/api/admin/announcements', authenticate, requireAdmin, adminAnnouncementsRouter);
 
   // NOTE: Removed duplicate express.json()/urlencoded registrations to avoid
   // early PayloadTooLargeError from default 100kb parser.

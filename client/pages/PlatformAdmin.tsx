@@ -45,6 +45,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, 
 import { Badge } from '@/components/ui/badge';
 import { GradientCard } from '@/components/ui/GradientCard';
 import { Button } from '@/components/ui/button';
+import GlobalAnnouncementsManager from '@/components/platform-admin/GlobalAnnouncementsManager';
 interface PlatformStats {
   totalUsers: number;
   totalClients: number;
@@ -4507,6 +4508,7 @@ export default function PlatformAdmin() {
         {/* Tools Tab - Manage locked accounts */}
         {activeTab === 'tools' && (
           <div className="space-y-6">
+            <GlobalAnnouncementsManager />
             <div className="bg-slate-800/50 backdrop-blur-md rounded-xl border border-slate-700/50 shadow-lg p-5">
               <div className="flex items-center justify-between flex-wrap gap-3">
                 <div>

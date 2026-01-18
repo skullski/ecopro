@@ -60,6 +60,60 @@ const PublicProduct: React.FC = () => {
   if (error) return <div className="p-8 text-center text-red-600">{error}</div>;
   if (!product) return <div className="p-8 text-center">No product found.</div>;
 
+  const pruneProductForCache = (p: any) => {
+    if (!p || typeof p !== 'object') return p;
+    return {
+      id: p.id,
+      slug: p.slug,
+      title: p.title,
+      name: p.name,
+      price: p.price,
+      original_price: p.original_price,
+      images: Array.isArray(p.images) ? p.images.slice(0, 6) : undefined,
+      description: p.description,
+      category: p.category,
+      stock_quantity: p.stock_quantity,
+      store_slug: storeSlug,
+      variants: Array.isArray(p.variants) ? p.variants : undefined,
+    };
+  };
+
+  const safeSetProductCache = (key: string, value: any) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch (e) {
+      console.warn('Failed to write product cache:', e);
+    }
+  };
+
+  const cacheProduct = (identifier: string, p: any) => {
+    if (!identifier || !p) return;
+    const pruned = pruneProductForCache(p);
+    safeSetProductCache(`product_${identifier}`, pruned);
+    if (p?.id != null) safeSetProductCache(`product_${String(p.id)}`, pruned);
+    if (p?.slug) safeSetProductCache(`product_${String(p.slug)}`, pruned);
+  };
+
+  const warmCacheInBackground = () => {
+    if (!storeSlug || !product?.id) return;
+    const productId = Number(product.id);
+    if (!Number.isFinite(productId) || productId <= 0) return;
+
+    // Prefer the store-scoped endpoint that includes variants.
+    void (async () => {
+      try {
+        const r = await fetch(
+          `/api/storefront/${encodeURIComponent(storeSlug)}/products/${encodeURIComponent(String(productId))}`
+        );
+        if (!r.ok) return;
+        const fresh = await r.json();
+        cacheProduct(String(productSlug || productId), fresh);
+      } catch {
+        // ignore
+      }
+    })();
+  };
+
   // Calculate discount
   const hasDiscount = product.original_price && Number(product.original_price) > Number(product.price);
   const discountPercent = hasDiscount
@@ -171,7 +225,13 @@ const PublicProduct: React.FC = () => {
               <Button
                 className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg text-lg flex items-center justify-center gap-2 shadow-md dark:bg-green-700 dark:hover:bg-green-800"
                 size="lg"
-                onClick={() => navigate(`/store/${storeSlug}/checkout/${productSlug}`)}
+                onClick={() => {
+                  if (productSlug && product) {
+                    cacheProduct(String(productSlug), product);
+                    warmCacheInBackground();
+                  }
+                  navigate(`/store/${storeSlug}/checkout/${productSlug}`);
+                }}
               >
                 <ShoppingCart className="w-5 h-5" /> Buy Now
               </Button>

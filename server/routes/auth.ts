@@ -14,6 +14,7 @@ import {
   ensureConnection,
 } from "../utils/database";
 import { sendPasswordResetEmail } from "../utils/email";
+import { getPublicBaseUrl } from '../utils/public-url';
 import { logSecurityEvent, getClientIp, getGeo, computeFingerprint, parseCookie } from "../utils/security";
 import { checkLoginAllowed, recordFailedLogin, recordSuccessfulLogin } from "../utils/brute-force";
 import { checkPasswordPolicy } from '../utils/password-policy';
@@ -960,7 +961,9 @@ export const forgotPassword: RequestHandler = async (req, res) => {
       return jsonError(res, 400, 'Email is required');
     }
 
-    const user = await findUserByEmail(email.toLowerCase().trim());
+    const normalizedEmail = normalizeEmail(email);
+
+    const user = await findUserByEmail(normalizedEmail);
     
     // Always return success to prevent email enumeration
     if (!user) {
@@ -978,14 +981,18 @@ export const forgotPassword: RequestHandler = async (req, res) => {
       INSERT INTO password_resets (email, token_hash, expires_at)
       VALUES ($1, $2, $3)
       ON CONFLICT (email) DO UPDATE SET token_hash = $2, expires_at = $3, created_at = NOW()
-    `, [email.toLowerCase().trim(), resetTokenHash, expiresAt]);
+    `, [normalizedEmail, resetTokenHash, expiresAt]);
 
     // Build reset URL
-    const baseUrl = process.env.BASE_URL || 'http://localhost:5173';
-    const resetUrl = `${baseUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
+    const baseUrl = getPublicBaseUrl(req);
+    const resetUrl = `${baseUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(normalizedEmail)}`;
 
     // Send email
-    await sendPasswordResetEmail(email, resetToken, resetUrl);
+    const sent = await sendPasswordResetEmail(normalizedEmail, resetToken, resetUrl);
+    if (!sent) {
+      // Still return success to the client to avoid account enumeration.
+      console.error('[AUTH] Password reset email not sent (email not configured or provider error).');
+    }
 
     res.json({ message: 'If an account exists, a reset link has been sent.' });
   } catch (error) {
@@ -1012,12 +1019,13 @@ export const resetPassword: RequestHandler = async (req, res) => {
 
     const pool = await ensureConnection();
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    const normalizedEmail = normalizeEmail(email);
 
     // Find valid reset token
     const result = await pool.query(`
       SELECT * FROM password_resets 
       WHERE email = $1 AND token_hash = $2 AND expires_at > NOW()
-    `, [email.toLowerCase().trim(), tokenHash]);
+    `, [normalizedEmail, tokenHash]);
 
     if (result.rows.length === 0) {
       return jsonError(res, 400, 'Invalid or expired reset token');
@@ -1026,13 +1034,19 @@ export const resetPassword: RequestHandler = async (req, res) => {
     // Hash new password
     const hashedPassword = await hashPassword(newPassword);
 
-    // Update password in clients table
-    await pool.query(`
-      UPDATE clients SET password = $1, updated_at = NOW() WHERE email = $2
-    `, [hashedPassword, email.toLowerCase().trim()]);
+    // Update password in the correct table/column (clients or admins; password or password_hash)
+    const user = await findUserByEmail(normalizedEmail);
+    if (!user) {
+      return jsonError(res, 400, 'Invalid reset request');
+    }
+
+    await updateUser(String((user as any).id), {
+      password: hashedPassword,
+      updated_at: new Date() as any,
+    } as any);
 
     // Delete used reset token
-    await pool.query('DELETE FROM password_resets WHERE email = $1', [email.toLowerCase().trim()]);
+    await pool.query('DELETE FROM password_resets WHERE email = $1', [normalizedEmail]);
 
     // Log security event
     try {

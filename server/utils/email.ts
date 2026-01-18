@@ -1,12 +1,18 @@
 import nodemailer from 'nodemailer';
 
+function isProduction(): boolean {
+  return String(process.env.NODE_ENV || '').toLowerCase() === 'production';
+}
+
 // Email configuration using Gmail SMTP
 const createTransporter = () => {
   const user = process.env.GMAIL_USER;
   const pass = process.env.GMAIL_APP_PASSWORD;
   
   if (!user || !pass) {
-    console.warn('Email not configured: GMAIL_USER or GMAIL_APP_PASSWORD missing');
+    const msg = 'Email not configured: GMAIL_USER or GMAIL_APP_PASSWORD missing';
+    if (isProduction()) console.error(msg);
+    else console.warn(msg);
     return null;
   }
   
@@ -20,18 +26,18 @@ export async function sendPasswordResetEmail(email: string, resetToken: string, 
   const transporter = createTransporter();
   if (!transporter) {
     console.log(`[EMAIL] Would send password reset to ${email} with URL: ${resetUrl}`);
-    return true; // Return true in dev mode to not block the flow
+    return !isProduction();
   }
   
   try {
     await transporter.sendMail({
-      from: `"EcoPro" <${process.env.GMAIL_USER}>`,
+      from: `"Sahla4Eco" <${process.env.GMAIL_USER}>`,
       to: email,
-      subject: 'Reset Your Password - EcoPro',
+      subject: 'Reset Your Password - Sahla4Eco',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
-            <h1 style="color: white; margin: 0; font-size: 24px;">🔒 Password Reset</h1>
+            <h1 style="color: white; margin: 0; font-size: 24px;">Password Reset</h1>
           </div>
           <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; border-top: none;">
             <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">
@@ -47,7 +53,7 @@ export async function sendPasswordResetEmail(email: string, resetToken: string, 
             </p>
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
             <p style="font-size: 12px; color: #9ca3af; text-align: center;">
-              © ${new Date().getFullYear()} EcoPro. All rights reserved.
+              © ${new Date().getFullYear()} Sahla4Eco. All rights reserved.
             </p>
           </div>
         </div>
@@ -65,25 +71,25 @@ export async function sendWelcomeEmail(email: string, name: string): Promise<boo
   const transporter = createTransporter();
   if (!transporter) {
     console.log(`[EMAIL] Would send welcome email to ${email}`);
-    return true;
+    return !isProduction();
   }
   
   try {
     await transporter.sendMail({
-      from: `"EcoPro" <${process.env.GMAIL_USER}>`,
+      from: `"Sahla4Eco" <${process.env.GMAIL_USER}>`,
       to: email,
-      subject: 'Welcome to EcoPro! 🎉',
+      subject: 'Welcome to Sahla4Eco!',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
-            <h1 style="color: white; margin: 0; font-size: 24px;">🎉 Welcome to EcoPro!</h1>
+            <h1 style="color: white; margin: 0; font-size: 24px;">Welcome to Sahla4Eco!</h1>
           </div>
           <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; border-top: none;">
             <p style="font-size: 16px; color: #374151;">
               Hi ${name || 'there'},
             </p>
             <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">
-              Your EcoPro account has been created successfully. You can now create your online store and start selling!
+              Your Sahla4Eco account has been created successfully. You can now create your online store and start selling!
             </p>
             <div style="text-align: center; margin: 30px 0;">
               <a href="${process.env.BASE_URL || 'https://ecopro.com'}/dashboard" style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">
@@ -92,7 +98,7 @@ export async function sendWelcomeEmail(email: string, name: string): Promise<boo
             </div>
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
             <p style="font-size: 12px; color: #9ca3af; text-align: center;">
-              © ${new Date().getFullYear()} EcoPro. All rights reserved.
+              © ${new Date().getFullYear()} Sahla4Eco. All rights reserved.
             </p>
           </div>
         </div>

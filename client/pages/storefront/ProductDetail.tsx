@@ -11,9 +11,12 @@ interface Product {
   title?: string;
   name?: string;
   price: number;
+  stock_quantity: number;
   images?: string[];
   description?: string;
   category?: string;
+  store_slug?: string;
+  variants?: any[];
   [key: string]: any;
 }
 
@@ -130,6 +133,69 @@ export default function ProductDetail() {
   const style = TEMPLATE_STYLES[template] || TEMPLATE_STYLES.fashion;
   const accentColor = settings.template_accent_color || style.accent;
 
+  const storeSlug = settings.store_slug || '';
+
+  const pruneProductForCache = (p: any) => {
+    if (!p || typeof p !== 'object') return p;
+    const images = Array.isArray(p.images) ? p.images.slice(0, 6) : undefined;
+    const variants = Array.isArray(p.variants) ? p.variants : undefined;
+    return {
+      id: p.id,
+      slug: p.slug,
+      title: p.title,
+      name: p.name,
+      price: p.price,
+      original_price: p.original_price,
+      images,
+      description: p.description,
+      category: p.category,
+      material: p.material,
+      realm: p.realm,
+      stock_quantity: p.stock_quantity,
+      store_slug: p.store_slug || storeSlug,
+      variants,
+    };
+  };
+
+  const safeSetProductCache = (key: string, value: any) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch (e) {
+      // localStorage quota can be exceeded if images are base64; avoid breaking navigation.
+      console.warn('Failed to write product cache:', e);
+    }
+  };
+
+  const cacheProduct = (identifier: string, p: any) => {
+    if (!identifier) return;
+    const pruned = pruneProductForCache(p);
+    safeSetProductCache(`product_${identifier}`, pruned);
+    if (p?.id != null) safeSetProductCache(`product_${String(p.id)}`, pruned);
+    if (p?.slug) safeSetProductCache(`product_${String(p.slug)}`, pruned);
+  };
+
+  const fetchFreshProduct = async (identifier: string, shouldTrackView: boolean) => {
+    const isNumericId = identifier && /^\d+$/.test(identifier);
+    const track = shouldTrackView ? 1 : 0;
+
+    if (storeSlug) {
+      // Prefer store-scoped endpoints that include variants.
+      if (isNumericId) {
+        const r = await fetch(`/api/storefront/${encodeURIComponent(storeSlug)}/products/${encodeURIComponent(identifier)}`);
+        if (r.ok) return r.json();
+      }
+      const r = await fetch(`/api/store/${encodeURIComponent(storeSlug)}/${encodeURIComponent(identifier)}?track_view=${track}`);
+      if (r.ok) {
+        const data = await r.json();
+        return data?.product || data;
+      }
+    }
+
+    const r = await fetch(`/api/product/${encodeURIComponent(identifier)}`);
+    if (!r.ok) throw new Error('Failed to fetch product');
+    return r.json();
+  };
+
   // Fetch product - first check database checkout session, then localStorage, then API
   const { data: product, isLoading, error } = useQuery({
     queryKey: ['product', id || slug],
@@ -151,21 +217,35 @@ export default function ProductDetail() {
       }
       
       // Fallback to localStorage (for backward compatibility)
-      const cachedProduct = localStorage.getItem(`product_${id || slug}`);
+      const identifier = String(id || slug || '');
+      const cachedProduct = identifier ? localStorage.getItem(`product_${identifier}`) : null;
       if (cachedProduct) {
         const parsed = safeJsonParse<any>(cachedProduct, null);
-        if (parsed) return parsed;
+        if (parsed) {
+          // UI-first: show cached immediately, refresh in background.
+          if (identifier) {
+            void (async () => {
+              try {
+                const fresh = await fetchFreshProduct(identifier, true);
+                cacheProduct(identifier, fresh);
+              } catch {
+                // ignore
+              }
+            })();
+          }
+          return parsed;
+        }
       }
       
       // Final fallback to API
-      const response = await fetch(`/api/product/${id || slug}`);
-      if (!response.ok) throw new Error('Failed to fetch product');
-      return response.json();
+      if (!identifier) throw new Error('Missing product identifier');
+      const fresh = await fetchFreshProduct(identifier, true);
+      cacheProduct(identifier, fresh);
+      return fresh;
     },
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
   });
-
-  // Get store slug from settings
-  const storeSlug = settings.store_slug || '';
 
   // Track ViewContent event when product loads
   useEffect(() => {
@@ -343,7 +423,22 @@ export default function ProductDetail() {
             {/* Action Buttons */}
             <div className="space-y-3 pt-4">
               <button
-                onClick={() => navigate(`/checkout/${id || slug}?quantity=${quantity}`)}
+                onClick={() => {
+                  const identifier = String(id || slug || '');
+                  if (identifier && product) {
+                    cacheProduct(identifier, product);
+                    // Background refresh so checkout can pick up variants/stock if cache was partial.
+                    void (async () => {
+                      try {
+                        const fresh = await fetchFreshProduct(identifier, false);
+                        cacheProduct(identifier, fresh);
+                      } catch {
+                        // ignore
+                      }
+                    })();
+                  }
+                  navigate(`/checkout/${id || slug}?quantity=${quantity}`);
+                }}
                 disabled={!product || product.stock_quantity === 0}
                 className={`w-full py-4 rounded-lg font-bold text-lg ${
                   product && product.stock_quantity > 0
