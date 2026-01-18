@@ -1,7 +1,8 @@
 -- Client Private Store Products Table
+-- NOTE: This table references clients(id) - clients are stored in the clients table
 CREATE TABLE IF NOT EXISTS client_store_products (
   id SERIAL PRIMARY KEY,
-  client_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  client_id INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
   title VARCHAR(255) NOT NULL,
   description TEXT,
   price DECIMAL(10, 2) NOT NULL,
@@ -21,7 +22,7 @@ CREATE TABLE IF NOT EXISTS client_store_products (
 -- Client Store Settings Table
 CREATE TABLE IF NOT EXISTS client_store_settings (
   id SERIAL PRIMARY KEY,
-  client_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+  client_id INTEGER NOT NULL UNIQUE REFERENCES clients(id) ON DELETE CASCADE,
   store_name VARCHAR(255),
   store_description TEXT,
   store_logo TEXT,
