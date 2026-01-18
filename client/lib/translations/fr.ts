@@ -409,7 +409,7 @@ export const fr = {
   "platformAdmin.tabs.subscriptions": "Abonnements",
   "platformAdmin.tabs.codes": "Codes",
   "platformAdmin.tabs.products": "Produits",
-  "platformAdmin.tabs.activity": "Activité",
+  "platformAdmin.tabs.activity": "Annonces",
   "platformAdmin.tabs.staff": "Personnel",
   "platformAdmin.tabs.audit": "Journal d'Audit",
   "platformAdmin.tabs.health": "Santé",

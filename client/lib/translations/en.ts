@@ -616,7 +616,7 @@ export const en = {
   "platformAdmin.tabs.subscriptions": "Subscriptions",
   "platformAdmin.tabs.codes": "Codes",
   "platformAdmin.tabs.products": "Products",
-  "platformAdmin.tabs.activity": "Activity",
+  "platformAdmin.tabs.activity": "Announcement",
   "platformAdmin.tabs.staff": "Staff",
   "platformAdmin.tabs.audit": "Audit Log",
   "platformAdmin.tabs.health": "Health",

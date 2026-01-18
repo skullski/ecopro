@@ -1032,10 +1032,6 @@ export default function PlatformAdmin() {
 
   useEffect(() => {
     loadPlatformData();
-    const interval = setInterval(() => {
-      if (activeTab === 'activity') loadActivityLogs();
-    }, 30000);
-    return () => clearInterval(interval);
   }, [activeTab]);
 
   useEffect(() => {
@@ -1858,11 +1854,7 @@ export default function PlatformAdmin() {
           </Button>
           <Button
             variant={activeTab === 'activity' ? 'default' : 'ghost'}
-            onClick={() => { 
-              setActiveTab('activity');
-              setLogMode('staff');
-              loadActivityLogs();
-            }}
+            onClick={() => setActiveTab('activity')}
             className="whitespace-nowrap text-slate-200"
             style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.375rem, 0.8vh, 0.5rem) clamp(0.75rem, 1.5vh, 1rem)', height: 'clamp(2rem, 4vh, 2.5rem)' }}
           >
@@ -2968,92 +2960,10 @@ export default function PlatformAdmin() {
           </div>
         )}
 
-        {/* Activity Logs Tab */}
+        {/* Announcement Tab (formerly Activity) */}
         {activeTab === 'activity' && (
-          <div className="bg-black/40 backdrop-blur-md rounded-2xl border border-slate-700/50 shadow-lg overflow-hidden font-mono">
-            <div className="p-6 border-b border-slate-700/50 bg-slate-900/80">
-              <h3 className="text-lg font-bold text-cyan-400 flex items-center gap-2">
-                <Activity className="w-5 h-5" />
-                {logMode === 'admin' ? '$ audit_logs --stream' : '$ activity_logs --stream'}
-              </h3>
-              <p className="text-xs text-slate-500 mt-2">Live system activity - Press Ctrl+C to exit</p>
-            </div>
-            <div className="p-6 max-h-[600px] overflow-auto bg-black/60">
-              {logMode === 'admin' ? (
-                adminAuditLogs.length === 0 ? (
-                  <div className="text-slate-500 text-sm">
-                    <div>$ audit_logs --stream</div>
-                    <div className="text-slate-600 mt-2">waiting for events...</div>
-                  </div>
-                ) : (
-                  <div className="space-y-1">
-                    <div className="text-slate-500 text-sm mb-4">$ tail -f /var/log/ecopro/audit.log</div>
-                    {adminAuditLogs.map((log) => {
-                      const timestamp = new Date(log.created_at).toLocaleTimeString();
-                      const date = new Date(log.created_at).toLocaleDateString();
-                      const actor = `admin_${log.actor_id}`;
-                      const label = log.target_type || 'system';
-                      const target = log.target_id ? `${label}#${log.target_id}` : label;
-                      const color = log.action.includes('create')
-                        ? 'text-green-400'
-                        : log.action.includes('delete')
-                          ? 'text-red-400'
-                          : log.action.includes('update')
-                            ? 'text-yellow-400'
-                            : 'text-cyan-400';
-
-                      return (
-                        <div key={log.id} className={`text-xs ${color} hover:bg-slate-800/50 p-2 rounded transition-colors`}>
-                          <span className="text-slate-500">[{date} {timestamp}]</span>
-                          {' '}
-                          <span className="text-slate-400">{actor}</span>
-                          {' '}
-                          <span className="text-slate-300">→</span>
-                          {' '}
-                          <span className="font-semibold">{log.action}</span>
-                          {' '}
-                          <span className="text-slate-500">({target})</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )
-              ) : activityLogs.length === 0 ? (
-                <div className="text-slate-500 text-sm">
-                  <div>$ activity_logs --stream</div>
-                  <div className="text-slate-600 mt-2">waiting for events...</div>
-                </div>
-              ) : (
-                <div className="space-y-1">
-                  <div className="text-slate-500 text-sm mb-4">
-                    $ tail -f /var/log/ecopro/activity.log
-                  </div>
-                  {activityLogs.map((log, idx) => {
-                    const timestamp = new Date(log.timestamp).toLocaleTimeString();
-                    const date = new Date(log.timestamp).toLocaleDateString();
-                    const actor = log.staff_id ? `staff_${log.staff_id}` : 'owner';
-                    const color = log.action.includes('create') ? 'text-green-400' : 
-                                 log.action.includes('delete') ? 'text-red-400' :
-                                 log.action.includes('update') ? 'text-yellow-400' : 
-                                 'text-cyan-400';
-                    
-                    return (
-                      <div key={log.id} className={`text-xs ${color} hover:bg-slate-800/50 p-2 rounded transition-colors`}>
-                        <span className="text-slate-500">[{date} {timestamp}]</span>
-                        {' '}
-                        <span className="text-slate-400">{actor}</span>
-                        {' '}
-                        <span className="text-slate-300">→</span>
-                        {' '}
-                        <span className="font-semibold">{log.action}</span>
-                        {' '}
-                        <span className="text-slate-500">({log.resource_type})</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+          <div className="space-y-6">
+            <GlobalAnnouncementsManager />
           </div>
         )}
 
@@ -4508,7 +4418,6 @@ export default function PlatformAdmin() {
         {/* Tools Tab - Manage locked accounts */}
         {activeTab === 'tools' && (
           <div className="space-y-6">
-            <GlobalAnnouncementsManager />
             <div className="bg-slate-800/50 backdrop-blur-md rounded-xl border border-slate-700/50 shadow-lg p-5">
               <div className="flex items-center justify-between flex-wrap gap-3">
                 <div>

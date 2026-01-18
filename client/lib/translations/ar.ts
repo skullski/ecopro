@@ -626,7 +626,7 @@ export const ar = {
   "platformAdmin.tabs.subscriptions": "الاشتراكات",
   "platformAdmin.tabs.codes": "الأكواد",
   "platformAdmin.tabs.products": "المنتجات",
-  "platformAdmin.tabs.activity": "النشاط",
+  "platformAdmin.tabs.activity": "الإعلانات",
   "platformAdmin.tabs.staff": "الموظفون",
   "platformAdmin.tabs.audit": "سجل التدقيق",
   "platformAdmin.tabs.health": "الصحة",
