@@ -110,6 +110,27 @@ import HarborLedgerTemplate from './gold/harbor-ledger/HarborLedgerTemplate';
 import FocusOneTemplate from './gold/focus-one/FocusOneTemplate';
 import SplitSpecsTemplate from './gold/split-specs/SplitSpecsTemplate';
 import ProLandingTemplate from './gold/pro-landing/ProLandingTemplate';
+// Landing Page Templates (unique designs with embedded checkout)
+import TrustPulseTemplate from './gold/trust-pulse/TrustPulseTemplate';
+import SocialProofTemplate from './gold/social-proof/SocialProofTemplate';
+import AuthorityProTemplate from './gold/authority-pro/AuthorityProTemplate';
+import GuaranteeFocusTemplate from './gold/guarantee-focus/GuaranteeFocusTemplate';
+import VideoSalesTemplate from './gold/video-sales/VideoSalesTemplate';
+import LifestyleStoryTemplate from './gold/lifestyle-story/LifestyleStoryTemplate';
+import BeforeAfterTemplate from './gold/before-after/BeforeAfterTemplate';
+import CinematicHeroTemplate from './gold/cinematic-hero/CinematicHeroTemplate';
+import MagazineStyleTemplate from './gold/magazine-style/MagazineStyleTemplate';
+import PolaroidMemoryTemplate from './gold/polaroid-memory/PolaroidMemoryTemplate';
+import UrgencyMaxTemplate from './gold/urgency-max/UrgencyMaxTemplate';
+import BundleBuilderTemplate from './gold/bundle-builder/BundleBuilderTemplate';
+import QuizFunnelTemplate from './gold/quiz-funnel/QuizFunnelTemplate';
+import ComparisonTableTemplate from './gold/comparison-table/ComparisonTableTemplate';
+import FlashDealTemplate from './gold/flash-deal/FlashDealTemplate';
+import NeonPulseTemplate from './gold/neon-pulse/NeonPulseTemplate';
+import GlassmorphismTemplate from './gold/glassmorphism/GlassmorphismTemplate';
+import BrutalistRawTemplate from './gold/brutalist-raw/BrutalistRawTemplate';
+import RetrowaveTemplate from './gold/retrowave/RetrowaveTemplate';
+import PapercraftTemplate from './gold/papercraft/PapercraftTemplate';
 
 /**
  * Available template IDs.
@@ -219,7 +240,28 @@ export type TemplateId =
   | 'harbor-ledger'
   | 'focus-one'
   | 'split-specs'
-  | 'pro-landing';
+  | 'pro-landing'
+  // Landing Page Templates (unique designs with embedded checkout)
+  | 'trust-pulse'
+  | 'social-proof'
+  | 'authority-pro'
+  | 'guarantee-focus'
+  | 'video-sales'
+  | 'lifestyle-story'
+  | 'before-after'
+  | 'cinematic-hero'
+  | 'magazine-style'
+  | 'polaroid-memory'
+  | 'urgency-max'
+  | 'bundle-builder'
+  | 'quiz-funnel'
+  | 'comparison-table'
+  | 'flash-deal'
+  | 'neon-pulse'
+  | 'glassmorphism'
+  | 'brutalist-raw'
+  | 'retrowave'
+  | 'papercraft';
 
 /**
  * Normalize template ID.
@@ -342,6 +384,27 @@ export function normalizeTemplateId(t: string): TemplateId {
   if (raw === 'focus-one' || raw === 'focusone' || raw === 'focus_one') return 'focus-one';
   if (raw === 'split-specs' || raw === 'splitspecs' || raw === 'split_specs') return 'split-specs';
   if (raw === 'pro-landing' || raw === 'prolanding' || raw === 'landing-pro' || raw === 'landing-pro-one') return 'pro-landing';
+  // Landing Page Templates (unique designs with embedded checkout)
+  if (raw === 'trust-pulse' || raw === 'trustpulse') return 'trust-pulse';
+  if (raw === 'social-proof' || raw === 'socialproof') return 'social-proof';
+  if (raw === 'authority-pro' || raw === 'authoritypro') return 'authority-pro';
+  if (raw === 'guarantee-focus' || raw === 'guaranteefocus') return 'guarantee-focus';
+  if (raw === 'video-sales' || raw === 'videosales') return 'video-sales';
+  if (raw === 'lifestyle-story' || raw === 'lifestylestory') return 'lifestyle-story';
+  if (raw === 'before-after' || raw === 'beforeafter') return 'before-after';
+  if (raw === 'cinematic-hero' || raw === 'cinematichero') return 'cinematic-hero';
+  if (raw === 'magazine-style' || raw === 'magazinestyle') return 'magazine-style';
+  if (raw === 'polaroid-memory' || raw === 'polaroidmemory') return 'polaroid-memory';
+  if (raw === 'urgency-max' || raw === 'urgencymax') return 'urgency-max';
+  if (raw === 'bundle-builder' || raw === 'bundlebuilder') return 'bundle-builder';
+  if (raw === 'quiz-funnel' || raw === 'quizfunnel') return 'quiz-funnel';
+  if (raw === 'comparison-table' || raw === 'comparisontable') return 'comparison-table';
+  if (raw === 'flash-deal' || raw === 'flashdeal') return 'flash-deal';
+  if (raw === 'neon-pulse' || raw === 'neonpulse') return 'neon-pulse';
+  if (raw === 'glassmorphism' || raw === 'glass') return 'glassmorphism';
+  if (raw === 'brutalist-raw' || raw === 'brutalist') return 'brutalist-raw';
+  if (raw === 'retrowave' || raw === 'synthwave') return 'retrowave';
+  if (raw === 'papercraft' || raw === 'paper-craft') return 'papercraft';
   return 'pro';
 }
 
@@ -607,6 +670,27 @@ export function RenderStorefront(t: TemplateId | string, props: TemplateProps) {
   if (id === 'focus-one') return wrap(<FocusOneTemplate {...sanitizedProps} />);
   if (id === 'split-specs') return wrap(<SplitSpecsTemplate {...sanitizedProps} />);
   if (id === 'pro-landing') return wrap(<ProLandingTemplate {...sanitizedProps} />);
+  // Landing Page Templates (unique designs with embedded checkout)
+  if (id === 'trust-pulse') return wrap(<TrustPulseTemplate {...sanitizedProps} />);
+  if (id === 'social-proof') return wrap(<SocialProofTemplate {...sanitizedProps} />);
+  if (id === 'authority-pro') return wrap(<AuthorityProTemplate {...sanitizedProps} />);
+  if (id === 'guarantee-focus') return wrap(<GuaranteeFocusTemplate {...sanitizedProps} />);
+  if (id === 'video-sales') return wrap(<VideoSalesTemplate {...sanitizedProps} />);
+  if (id === 'lifestyle-story') return wrap(<LifestyleStoryTemplate {...sanitizedProps} />);
+  if (id === 'before-after') return wrap(<BeforeAfterTemplate {...sanitizedProps} />);
+  if (id === 'cinematic-hero') return wrap(<CinematicHeroTemplate {...sanitizedProps} />);
+  if (id === 'magazine-style') return wrap(<MagazineStyleTemplate {...sanitizedProps} />);
+  if (id === 'polaroid-memory') return wrap(<PolaroidMemoryTemplate {...sanitizedProps} />);
+  if (id === 'urgency-max') return wrap(<UrgencyMaxTemplate {...sanitizedProps} />);
+  if (id === 'bundle-builder') return wrap(<BundleBuilderTemplate {...sanitizedProps} />);
+  if (id === 'quiz-funnel') return wrap(<QuizFunnelTemplate {...sanitizedProps} />);
+  if (id === 'comparison-table') return wrap(<ComparisonTableTemplate {...sanitizedProps} />);
+  if (id === 'flash-deal') return wrap(<FlashDealTemplate {...sanitizedProps} />);
+  if (id === 'neon-pulse') return wrap(<NeonPulseTemplate {...sanitizedProps} />);
+  if (id === 'glassmorphism') return wrap(<GlassmorphismTemplate {...sanitizedProps} />);
+  if (id === 'brutalist-raw') return wrap(<BrutalistRawTemplate {...sanitizedProps} />);
+  if (id === 'retrowave') return wrap(<RetrowaveTemplate {...sanitizedProps} />);
+  if (id === 'papercraft') return wrap(<PapercraftTemplate {...sanitizedProps} />);
   return wrap(<ProTemplate {...sanitizedProps} />);
 }
 
@@ -716,3 +800,24 @@ export { CitrusBloomTemplate };
 export { HarborLedgerTemplate };
 export { FocusOneTemplate };
 export { SplitSpecsTemplate };
+// Landing Page Templates (unique designs with embedded checkout)
+export { TrustPulseTemplate };
+export { SocialProofTemplate };
+export { AuthorityProTemplate };
+export { GuaranteeFocusTemplate };
+export { VideoSalesTemplate };
+export { LifestyleStoryTemplate };
+export { BeforeAfterTemplate };
+export { CinematicHeroTemplate };
+export { MagazineStyleTemplate };
+export { PolaroidMemoryTemplate };
+export { UrgencyMaxTemplate };
+export { BundleBuilderTemplate };
+export { QuizFunnelTemplate };
+export { ComparisonTableTemplate };
+export { FlashDealTemplate };
+export { NeonPulseTemplate };
+export { GlassmorphismTemplate };
+export { BrutalistRawTemplate };
+export { RetrowaveTemplate };
+export { PapercraftTemplate };

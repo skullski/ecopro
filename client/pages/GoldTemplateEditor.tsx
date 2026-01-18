@@ -128,6 +128,28 @@ const TEMPLATE_PREVIEWS = [
   { id: 'mono-press', name: 'Mono Press', image: '/template-previews/mono-press.svg', categories: ['minimal'] },
   { id: 'citrus-bloom', name: 'Citrus Bloom', image: '/template-previews/citrus-bloom.svg', categories: ['colorful'] },
   { id: 'harbor-ledger', name: 'Harbor Ledger', image: '/template-previews/harbor-ledger.svg', categories: ['minimal'] },
+
+  // Landing Page Templates (unique designs with embedded checkout)
+  { id: 'trust-pulse', name: 'Trust Pulse', image: '/template-previews/trust-pulse.svg', categories: ['landing', 'popular', 'colorful'] },
+  { id: 'social-proof', name: 'Social Proof', image: '/template-previews/social-proof.svg', categories: ['landing', 'colorful'] },
+  { id: 'authority-pro', name: 'Authority Pro', image: '/template-previews/authority-pro.svg', categories: ['landing', 'dark', 'elegant'] },
+  { id: 'guarantee-focus', name: 'Guarantee Focus', image: '/template-previews/guarantee-focus.svg', categories: ['landing', 'colorful'] },
+  { id: 'video-sales', name: 'Video Sales', image: '/template-previews/video-sales.svg', categories: ['landing', 'dark'] },
+  { id: 'lifestyle-story', name: 'Lifestyle Story', image: '/template-previews/lifestyle-story.svg', categories: ['landing', 'elegant', 'colorful'] },
+  { id: 'before-after', name: 'Before & After', image: '/template-previews/before-after.svg', categories: ['landing', 'colorful'] },
+  { id: 'cinematic-hero', name: 'Cinematic Hero', image: '/template-previews/cinematic-hero.svg', categories: ['landing', 'dark', 'elegant'] },
+  { id: 'magazine-style', name: 'Magazine Style', image: '/template-previews/magazine-style.svg', categories: ['landing', 'elegant', 'minimal'] },
+  { id: 'polaroid-memory', name: 'Polaroid Memory', image: '/template-previews/polaroid-memory.svg', categories: ['landing', 'colorful'] },
+  { id: 'urgency-max', name: 'Urgency Max', image: '/template-previews/urgency-max.svg', categories: ['landing', 'colorful', 'popular'] },
+  { id: 'bundle-builder', name: 'Bundle Builder', image: '/template-previews/bundle-builder.svg', categories: ['landing', 'colorful'] },
+  { id: 'quiz-funnel', name: 'Quiz Funnel', image: '/template-previews/quiz-funnel.svg', categories: ['landing', 'colorful'] },
+  { id: 'comparison-table', name: 'Comparison Table', image: '/template-previews/comparison-table.svg', categories: ['landing', 'minimal'] },
+  { id: 'flash-deal', name: 'Flash Deal', image: '/template-previews/flash-deal.svg', categories: ['landing', 'colorful', 'popular'] },
+  { id: 'neon-pulse', name: 'Neon Pulse', image: '/template-previews/neon-pulse.svg', categories: ['landing', 'dark', 'colorful'] },
+  { id: 'glassmorphism', name: 'Glassmorphism', image: '/template-previews/glassmorphism.svg', categories: ['landing', 'colorful', 'elegant'] },
+  { id: 'brutalist-raw', name: 'Brutalist Raw', image: '/template-previews/brutalist-raw.svg', categories: ['landing', 'dark', 'minimal'] },
+  { id: 'retrowave', name: 'Retrowave', image: '/template-previews/retrowave.svg', categories: ['landing', 'dark', 'colorful'] },
+  { id: 'papercraft', name: 'Papercraft', image: '/template-previews/papercraft.svg', categories: ['landing', 'colorful', 'elegant'] },
 ];
 
 const TEMPLATE_CATEGORIES = [
