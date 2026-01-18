@@ -29,6 +29,15 @@ function formatCompact(value: number) {
   return `${Math.round(value)}`;
 }
 
+type Zone = 'good' | 'warn' | 'bad' | 'neutral' | 'unknown';
+
+const ZONE_COLOR: Record<Exclude<Zone, 'unknown'>, string> = {
+  good: '#22c55e',
+  warn: '#eab308',
+  bad: '#ef4444',
+  neutral: '#94a3b8',
+};
+
 export type SpeedometerGaugeProps = {
   title: string;
   value: number | null | undefined;
@@ -42,6 +51,7 @@ export type SpeedometerGaugeProps = {
   goodThreshold?: number;
   warnThreshold?: number;
   tone?: GaugeTone;
+  showZones?: boolean;
 };
 
 export default function SpeedometerGauge({
@@ -57,13 +67,16 @@ export default function SpeedometerGauge({
   goodThreshold,
   warnThreshold,
   tone = 'cyan',
+  showZones = true,
 }: SpeedometerGaugeProps) {
   const normalizedValue = isFiniteNumber(value) ? value : null;
   const safeMin = Number.isFinite(min) ? min : 0;
   const safeMax = Number.isFinite(max) && max > safeMin ? max : safeMin + 1;
   const ratio = normalizedValue == null ? 0 : clamp((normalizedValue - safeMin) / (safeMax - safeMin), 0, 1);
 
-  const angleDeg = -90 + ratio * 180;
+  // IMPORTANT: The arc path is a bottom semicircle from left -> right.
+  // Keep needle and ticks aligned with that arc: 0% => 180° (left), 100% => 0° (right).
+  const angleDeg = 180 - ratio * 180;
   const angleRad = (angleDeg * Math.PI) / 180;
 
   const size = 120;
@@ -85,15 +98,11 @@ export default function SpeedometerGauge({
 
   const chooseTone = (): GaugeTone => {
     if (normalizedValue == null) return 'slate';
-
     if (trend === 'neutral') return tone;
 
     const good = goodThreshold;
     const warn = warnThreshold;
-
-    if (!isFiniteNumber(good) || !isFiniteNumber(warn)) {
-      return tone;
-    }
+    if (!isFiniteNumber(good) || !isFiniteNumber(warn)) return tone;
 
     if (trend === 'higher-is-worse') {
       if (normalizedValue <= good) return 'emerald';
@@ -109,6 +118,66 @@ export default function SpeedometerGauge({
 
   const resolvedTone = chooseTone();
   const palette = TONE[resolvedTone];
+
+  const zone: Zone = (() => {
+    if (normalizedValue == null) return 'unknown';
+    if (trend === 'neutral') return 'neutral';
+    const good = goodThreshold;
+    const warn = warnThreshold;
+    if (!isFiniteNumber(good) || !isFiniteNumber(warn)) return 'neutral';
+    if (trend === 'higher-is-worse') {
+      if (normalizedValue <= good) return 'good';
+      if (normalizedValue <= warn) return 'warn';
+      return 'bad';
+    }
+    if (normalizedValue >= warn) return 'good';
+    if (normalizedValue >= good) return 'warn';
+    return 'bad';
+  })();
+
+  const zoneLabel =
+    zone === 'good'
+      ? 'Good'
+      : zone === 'warn'
+        ? 'Warning'
+        : zone === 'bad'
+          ? 'Critical'
+          : zone === 'unknown'
+            ? 'No data'
+            : 'Neutral';
+
+  const zoneReason = (() => {
+    if (zone === 'unknown') return 'No value received yet.';
+    if (trend === 'neutral') return 'Neutral metric (no thresholds applied).';
+    if (!isFiniteNumber(goodThreshold) || !isFiniteNumber(warnThreshold)) return 'Thresholds not configured.';
+    if (trend === 'higher-is-worse') {
+      return `Green ≤ ${goodThreshold}${unit ? unit : ''}, Yellow ≤ ${warnThreshold}${unit ? unit : ''}, Red > ${warnThreshold}${unit ? unit : ''}`;
+    }
+    return `Red < ${goodThreshold}${unit ? unit : ''}, Yellow < ${warnThreshold}${unit ? unit : ''}, Green ≥ ${warnThreshold}${unit ? unit : ''}`;
+  })();
+
+  const zoneColor = zone === 'unknown' ? ZONE_COLOR.neutral : ZONE_COLOR[zone === 'bad' ? 'bad' : zone === 'warn' ? 'warn' : zone === 'good' ? 'good' : 'neutral'];
+
+  const seg = (start: number, end: number, color: string) => {
+    const a = clamp(start, 0, 1);
+    const b = clamp(end, 0, 1);
+    if (b <= a) return null;
+    const segLen = circumference * (b - a);
+    // Draw just the segment by shifting the dash pattern along the full arc path.
+    return (
+      <path
+        key={`${color}-${a}-${b}`}
+        d={arcPath}
+        fill="none"
+        stroke={color}
+        strokeWidth="10"
+        strokeLinecap="round"
+        strokeDasharray={`${segLen} ${circumference - segLen}`}
+        strokeDashoffset={-circumference * a}
+        opacity={0.45}
+      />
+    );
+  };
 
   const renderValue = () => {
     if (normalizedValue == null) return '—';
@@ -145,6 +214,31 @@ export default function SpeedometerGauge({
           {/* Base arc */}
           <path d={arcPath} fill="none" stroke="#334155" strokeWidth="10" strokeLinecap="round" />
 
+          {/* Zone arc (green/yellow/red) */}
+          {showZones && trend !== 'neutral' && isFiniteNumber(goodThreshold) && isFiniteNumber(warnThreshold) ? (
+            trend === 'higher-is-worse' ? (
+              <>
+                {seg(0, clamp((goodThreshold - safeMin) / (safeMax - safeMin), 0, 1), ZONE_COLOR.good)}
+                {seg(
+                  clamp((goodThreshold - safeMin) / (safeMax - safeMin), 0, 1),
+                  clamp((warnThreshold - safeMin) / (safeMax - safeMin), 0, 1),
+                  ZONE_COLOR.warn
+                )}
+                {seg(clamp((warnThreshold - safeMin) / (safeMax - safeMin), 0, 1), 1, ZONE_COLOR.bad)}
+              </>
+            ) : (
+              <>
+                {seg(0, clamp((goodThreshold - safeMin) / (safeMax - safeMin), 0, 1), ZONE_COLOR.bad)}
+                {seg(
+                  clamp((goodThreshold - safeMin) / (safeMax - safeMin), 0, 1),
+                  clamp((warnThreshold - safeMin) / (safeMax - safeMin), 0, 1),
+                  ZONE_COLOR.warn
+                )}
+                {seg(clamp((warnThreshold - safeMin) / (safeMax - safeMin), 0, 1), 1, ZONE_COLOR.good)}
+              </>
+            )
+          ) : null}
+
           {/* Active arc */}
           <path
             d={arcPath}
@@ -159,7 +253,7 @@ export default function SpeedometerGauge({
           {/* Ticks */}
           {Array.from({ length: 6 }).map((_, i) => {
             const t = i / 5;
-            const a = (-90 + t * 180) * (Math.PI / 180);
+            const a = (180 - t * 180) * (Math.PI / 180);
             const r1 = r + 8;
             const r2 = r + 14;
             const x1 = cx + Math.cos(a) * r1;
@@ -170,8 +264,8 @@ export default function SpeedometerGauge({
           })}
 
           {/* Needle */}
-          <line x1={cx} y1={cy} x2={nx} y2={ny} stroke="#e2e8f0" strokeWidth="3" strokeLinecap="round" />
-          <circle cx={cx} cy={cy} r="4.5" fill="#e2e8f0" />
+          <line x1={cx} y1={cy} x2={nx} y2={ny} stroke={palette.stroke} strokeWidth="3" strokeLinecap="round" />
+          <circle cx={cx} cy={cy} r="4.5" fill={palette.stroke} />
 
           {/* Min/Max labels */}
           <text x={cx - r - 6} y={cy + 18} fill="#64748b" fontSize="10" textAnchor="start">
@@ -181,6 +275,15 @@ export default function SpeedometerGauge({
             {safeMax}
           </text>
         </svg>
+      </div>
+
+      <div className="mt-1 flex items-center justify-between gap-2">
+        <div className="text-xs text-slate-400 truncate" title={zoneReason}>
+          {zoneReason}
+        </div>
+        <div className="shrink-0 text-xs font-semibold" style={{ color: zoneColor }} title={zoneLabel}>
+          {zoneLabel}
+        </div>
       </div>
     </div>
   );

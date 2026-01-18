@@ -98,16 +98,18 @@ export default function Index() {
   return (
     <div className="min-h-screen">
       {/* Modern Hero Section */}
-      <section className="relative min-h-[75vh] flex items-center overflow-hidden py-6 sm:py-8">
+      <section className="relative min-h-[75vh] flex items-center overflow-hidden py-6 sm:py-10">
         {/* Animated Background */}
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-white to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM4ODg4ODgiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItaDJ2LTJoLTJ6bTAgNGgtMnYyaDJ2LTJ6bS0yIDJoLTJ2Mmgydi0yek0zMiAzOGgtMnYyaDJ2LTJ6bS0yLTJoLTJ2Mmgydi0yek0yOCAzNGgtMnYyaDJ2LTJ6bS02IDB2LTJoLTJ2Mmgyem0tMiAydi0ySDR2Mmgyem0tMiAydi0ySDR2MmgyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-40"></div>
+          <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-indigo-500/15 blur-3xl"></div>
+          <div className="absolute -bottom-28 -right-28 h-80 w-80 rounded-full bg-cyan-500/15 blur-3xl"></div>
         </div>
 
         <div className="container relative z-10 mx-auto px-3 sm:px-4">
-          <div className="grid lg:grid-cols-2 gap-3 sm:gap-4 items-center">
+          <div className="grid lg:grid-cols-2 gap-6 lg:gap-10 items-center">
             {/* Left Content */}
-            <div className="space-y-3 sm:space-y-4">
+            <div className="space-y-4 sm:space-y-5">
               <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border shadow-md text-xs">
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -116,7 +118,7 @@ export default function Index() {
                 <span className="font-medium">{t("home.liveGrowing")}</span>
               </div>
 
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-black leading-tight">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-black leading-[1.08]">
                 {t("home.heroYour")}
                 <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-600">
                   {t("brand")}
@@ -124,19 +126,19 @@ export default function Index() {
                 {t("home.heroTitle")}
               </h1>
 
-              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 max-w-lg">
+              <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300 max-w-xl leading-relaxed">
                 {t("home.heroDescription")}
               </p>
 
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <Link to="/signup">
-                  <Button size="default" className="group bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-700 hover:to-cyan-700 text-white shadow-lg hover:shadow-xl px-4 h-10 text-sm">
+                  <Button size="default" className="group bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-700 hover:to-cyan-700 text-white shadow-lg hover:shadow-xl px-5 h-11 text-sm">
                     {t("home.getStarted")}
                     <ArrowRight className="ml-1.5 w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </Link>
                 <Link to="/about">
-                  <Button size="default" variant="outline" className="h-10 px-4 text-sm border hover:border-indigo-600 hover:text-indigo-600">
+                  <Button size="default" variant="outline" className="h-11 px-5 text-sm border hover:border-indigo-600 hover:text-indigo-600">
                     {t("menu.about")}
                   </Button>
                 </Link>
@@ -158,9 +160,12 @@ export default function Index() {
             {/* Right Visual */}
             <div className="relative">
               {/* Floating Cards */}
-              <div className="relative h-[500px]">
+              <div className="relative h-[420px] sm:h-[520px]">
+                <div className="absolute inset-0 -z-10">
+                  <div className="absolute -inset-8 bg-gradient-to-br from-indigo-600/10 via-transparent to-cyan-600/10 blur-3xl"></div>
+                </div>
                 {/* Card 1 */}
-                <div className="absolute top-0 right-0 w-64 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 animate-float">
+                <div className="absolute top-0 right-0 w-[min(18rem,92vw)] sm:w-72 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-5 sm:p-6 animate-float">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center text-white font-bold">
                       <TrendingUp />
@@ -183,7 +188,7 @@ export default function Index() {
                 </div>
 
                 {/* Card 2 */}
-                <div className="absolute top-32 left-0 w-72 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 animate-float" style={{animationDelay: '0.5s'}}>
+                <div className="absolute top-24 sm:top-32 left-0 w-[min(20rem,92vw)] sm:w-80 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-5 sm:p-6 animate-float" style={{animationDelay: '0.5s'}}>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-bold">{t("home.newProducts")}</h3>
                     <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 rounded-full text-xs font-medium animate-pulse">+{stats.newOrders}</span>
@@ -215,7 +220,7 @@ export default function Index() {
                 </div>
 
                 {/* Card 3 */}
-                <div className="absolute bottom-0 right-8 w-56 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 animate-float" style={{animationDelay: '1s'}}>
+                <div className="absolute bottom-0 right-0 sm:right-8 w-[min(16rem,92vw)] sm:w-60 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-5 sm:p-6 animate-float" style={{animationDelay: '1s'}}>
                   <div className="flex items-center gap-2 mb-4">
                     <Users className="w-5 h-5 text-purple-600" />
                     <p className="text-sm font-medium">Total Orders</p>
@@ -229,17 +234,97 @@ export default function Index() {
         </div>
       </section>
 
+      {/* How It Works */}
+      <section className="py-14 sm:py-20 bg-white dark:bg-gray-900">
+        <div className="container mx-auto px-4">
+          <div className="max-w-3xl mx-auto text-center mb-10 sm:mb-14">
+            <h2 className="text-3xl sm:text-4xl font-black">
+              {t('home.howItWorks.title') || 'All‑in‑one'}
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-600">
+                {t('home.howItWorks.subtitle') || 'Smart Ecommerce Automation'}
+              </span>
+            </h2>
+            <p className="mt-3 text-base sm:text-lg text-gray-600 dark:text-gray-300">
+              {t('home.howItWorks.desc') || 'Launch a storefront, add products, and manage orders — fast, clean, and reliable.'}
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-4 md:gap-6 max-w-6xl mx-auto">
+            {[{
+              icon: <Store className="w-5 h-5" />,
+              title: t('home.howItWorks.step1.title') || 'Create your store',
+              desc: t('home.howItWorks.step1.desc') || 'Brand, logo, template — ready in minutes.',
+              accent: 'from-indigo-600 to-cyan-600',
+            }, {
+              icon: <Rocket className="w-5 h-5" />,
+              title: t('home.howItWorks.step2.title') || 'Add products',
+              desc: t('home.howItWorks.step2.desc') || 'Upload photos, price, variants, and stock.',
+              accent: 'from-cyan-600 to-indigo-600',
+            }, {
+              icon: <Shield className="w-5 h-5" />,
+              title: t('home.howItWorks.step3.title') || 'Manage orders',
+              desc: t('home.howItWorks.step3.desc') || 'Track orders and fulfillment with built‑in tools.',
+              accent: 'from-indigo-600 to-purple-600',
+            }].map((s, i) => (
+              <div key={i} className="bg-gray-50 dark:bg-gray-800/60 rounded-2xl border border-gray-100 dark:border-gray-700/60 p-5 sm:p-6 shadow-sm">
+                <div className={`inline-flex items-center justify-center w-11 h-11 rounded-xl text-white bg-gradient-to-br ${s.accent} shadow-lg`}>
+                  {s.icon}
+                </div>
+                <div className="mt-4 font-bold text-lg">{s.title}</div>
+                <div className="mt-2 text-gray-600 dark:text-gray-300 text-sm leading-relaxed">{s.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Templates strip */}
+      <section className="py-12 sm:py-16 bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-950">
+        <div className="container mx-auto px-4">
+          <div className="flex items-end justify-between gap-4 flex-wrap mb-6">
+            <div>
+              <h3 className="text-xl sm:text-2xl font-black">
+                {t('home.templates.title') || 'Beautiful templates'}
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                {t('home.templates.desc') || 'Pick a style and start selling.'}
+              </p>
+            </div>
+            <Link to="/pricing">
+              <Button variant="outline" className="border-indigo-200 hover:border-indigo-400">
+                {t('home.templates.cta') || 'See pricing'}
+                <ArrowRight className="ml-2 w-4 h-4" />
+              </Button>
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            {previewItems.slice(0, 6).map((p) => (
+              <div key={p.name} className="group rounded-xl overflow-hidden border border-gray-200/70 dark:border-gray-800 bg-white/60 dark:bg-gray-900/40 backdrop-blur-sm shadow-sm">
+                <div className="aspect-[4/3] bg-gray-100 dark:bg-gray-800 overflow-hidden">
+                  <img src={p.img} alt={p.name} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300" loading="lazy" />
+                </div>
+                <div className="px-3 py-2 text-xs font-semibold text-gray-800 dark:text-gray-200 flex items-center justify-between">
+                  <span>{p.name}</span>
+                  <span className="text-[10px] text-gray-500">Template</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Features Section */}
       <section className="py-24 bg-white dark:bg-gray-900">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-2xl md:text-xl md:text-2xl md:text-xl md:text-2xl md:text-2xl md:text-xl md:text-2xl font-black mb-4">
+            <h2 className="text-3xl sm:text-4xl font-black mb-4">
               {t("home.featuresTitle")}
               <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-600">
                 {t("home.featuresSubtitle")}
               </span>
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300">
+            <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300">
               {t("home.featuresDescription")}
             </p>
           </div>
@@ -289,8 +374,8 @@ export default function Index() {
       <section className="py-24 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-2xl md:text-xl md:text-2xl font-black mb-4">{t("home.testimonials.title")}</h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300">{t("home.testimonials.subtitle")}</p>
+            <h2 className="text-3xl sm:text-4xl font-black mb-4">{t("home.testimonials.title")}</h2>
+            <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300">{t("home.testimonials.subtitle")}</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-4 md:gap-3 md:gap-4 max-w-6xl mx-auto">
@@ -328,10 +413,10 @@ export default function Index() {
 
         <div className="container relative z-10 mx-auto px-4 text-center">
           <div className="max-w-3xl mx-auto">
-            <h2 className="text-2xl md:text-xl md:text-2xl md:text-6xl font-black text-white mb-6">
+            <h2 className="text-3xl sm:text-4xl md:text-6xl font-black text-white mb-6">
               {t("home.cta.title")}
             </h2>
-            <p className="text-xl text-white/90 mb-10">
+            <p className="text-base sm:text-lg text-white/90 mb-10">
               {t("home.cta.description")}
             </p>
 
@@ -344,7 +429,7 @@ export default function Index() {
               </Link>
               <Link to="/about">
                 <Button size="lg" variant="outline" className="border-2 border-white text-white hover:bg-white/10 h-14 px-4 md:px-6 text-lg">
-                  Learn More
+                  {t("menu.about")}
                 </Button>
               </Link>
             </div>
