@@ -3,8 +3,9 @@ import type { TemplateProps, StoreProduct } from '../../types';
 import EmbeddedCheckout from '../shared/EmbeddedCheckout';
 
 /**
- * RETROWAVE - 80s synthwave/retro aesthetic landing page.
- * Design: Neon pinks/purples, sunset gradients, grid patterns, VHS vibes, retro-futuristic.
+ * RETROWAVE - Synthwave/80s aesthetic landing page.
+ * Design: Synthwave sunset, retro grid floor, Press Start 2P font, neon colors.
+ * ALL TEXT IS EDITABLE via settings keys.
  */
 
 function asString(v: unknown): string {
@@ -17,14 +18,20 @@ function resolveInt(value: unknown, fallback: number, min: number, max: number):
   return Math.max(min, Math.min(max, safe));
 }
 
-function productImage(p: StoreProduct | undefined): string {
-  if (!p) return '/placeholder.png';
-  const img = Array.isArray((p as any).images) ? (p as any).images.find(Boolean) : undefined;
-  return typeof img === 'string' && img ? img : '/placeholder.png';
+function productImages(p: StoreProduct | undefined): string[] {
+  if (!p) return ['/placeholder.png'];
+  const imgs = Array.isArray((p as any).images) ? (p as any).images.filter((v: any) => typeof v === 'string' && v.trim()) : [];
+  return imgs.length ? imgs : ['/placeholder.png'];
+}
+
+function safePrice(value: unknown): number {
+  const n = typeof value === 'number' ? value : Number(String(value ?? '').trim());
+  return Number.isFinite(n) ? n : 0;
 }
 
 export default function RetrowaveTemplate(props: TemplateProps) {
   const { settings, formatPrice } = props;
+  const s = settings as any;
   const canManage = Boolean(props.canManage);
   const onSelect = (path: string) => {
     if (canManage && typeof (props as any).onSelect === 'function') {
@@ -36,40 +43,58 @@ export default function RetrowaveTemplate(props: TemplateProps) {
   React.useEffect(() => {
     const bp = (props as any).forcedBreakpoint;
     if (bp) { setIsMobile(bp === 'mobile'); return; }
-    const check = () => setIsMobile(window.innerWidth < 900);
+    const check = () => setIsMobile(window.innerWidth < 768);
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, [(props as any).forcedBreakpoint]);
 
-  // Theme - Synthwave
-  const bg = asString(settings.template_bg_color) || '#0d0221';
-  const text = asString(settings.template_text_color) || '#ffffff';
-  const muted = asString(settings.template_muted_color) || '#ff71ce';
-  const accent = asString(settings.template_accent_color) || '#01cdfe';
-  const cardBg = asString((settings as any).template_card_bg) || '#1a0533';
-  const border = 'rgba(255,113,206,0.3)';
-  const hotPink = '#ff71ce';
-  const cyan = '#01cdfe';
-  const yellow = '#ffff00';
+  // Theme colors - Synthwave
+  const bg = asString(s.template_bg_color) || '#1a0a2e';
+  const text = asString(s.template_text_color) || '#ffffff';
+  const muted = asString(s.template_muted_color) || '#c084fc';
+  const accent = asString(s.template_accent_color) || '#f472b6';
+  const cardBg = asString(s.template_card_bg) || 'rgba(26,10,46,0.9)';
+  const border = 'rgba(244,114,182,0.3)';
+  const neonCyan = '#22d3ee';
+  const neonPink = '#f472b6';
+  const neonPurple = '#a855f7';
 
-  // Content
-  const storeName = asString(settings.store_name) || 'RETROWAVE';
-  const heroTitle = asString(settings.template_hero_heading) || 'RIDE THE WAVE';
-  const heroSubtitle = asString(settings.template_hero_subtitle) || 'Take a journey back to the future. Neon dreams and endless possibilities await.';
-  const ctaText = asString(settings.template_button_text) || 'LAUNCH';
+  // EDITABLE Content from settings
+  const storeName = asString(s.store_name) || 'RETROWAVE';
+  const heroTitle = asString(s.template_hero_heading) || 'RIDE THE NEON WAVE';
+  const heroSubtitle = asString(s.template_hero_subtitle) || 'Experience the ultimate 80s nostalgia with our retro-futuristic collection.';
+  const ctaText = asString(s.template_button_text) || 'START YOUR JOURNEY';
+  const heroKicker = asString(s.template_hero_kicker) || 'WELCOME TO THE FUTURE';
+
+  // Features (editable)
+  const feature1 = asString(s.template_feature1_title) || '★ PREMIUM QUALITY';
+  const feature2 = asString(s.template_feature2_title) || '★ FAST SHIPPING';
+  const feature3 = asString(s.template_feature3_title) || '★ 24/7 SUPPORT';
+
+  // Stats (editable)
+  const stat1Value = asString(s.template_stat1_value) || '1985';
+  const stat1Label = asString(s.template_stat1_label) || 'INSPIRED';
+  const stat2Value = asString(s.template_stat2_value) || '∞';
+  const stat2Label = asString(s.template_stat2_label) || 'VIBES';
+  const stat3Value = asString(s.template_stat3_value) || '100%';
+  const stat3Label = asString(s.template_stat3_label) || 'RADICAL';
 
   // Spacing
-  const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
-  const sectionSpacing = resolveInt(settings.template_section_spacing, 60, 24, 96);
-  const cardRadius = resolveInt(settings.template_card_border_radius, 0, 0, 32);
+  const baseSpacing = resolveInt(s.template_spacing, 16, 8, 32);
+  const sectionSpacing = resolveInt(s.template_section_spacing, 56, 24, 96);
+  const cardRadius = resolveInt(s.template_card_border_radius, 8, 0, 32);
+  const buttonRadius = resolveInt(s.template_button_border_radius, 4, 0, 50);
 
   // Products
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 12) || [];
   const mainProduct = products[0];
-  const storeSlug = asString((settings as any).store_slug);
+  const images = productImages(mainProduct);
+  const [activeImage, setActiveImage] = React.useState(0);
 
-  const checkoutTheme = { bg, text, muted, accent, cardBg, border };
+  const storeSlug = asString(s.store_slug);
+
+  const checkoutTheme = { bg: cardBg, text, muted, accent, cardBg, border };
 
   const stopIfManage = (e: React.MouseEvent) => {
     if (!canManage) return;
@@ -77,112 +102,130 @@ export default function RetrowaveTemplate(props: TemplateProps) {
     e.stopPropagation();
   };
 
+  const stats = [
+    { value: stat1Value, label: stat1Label },
+    { value: stat2Value, label: stat2Label },
+    { value: stat3Value, label: stat3Label },
+  ];
+
+  const features = [feature1, feature2, feature3].filter(Boolean);
+
   return (
     <div
       data-edit-path="__root"
       onClick={() => canManage && onSelect('__root')}
       className="ecopro-storefront"
-      style={{
-        minHeight: '100vh',
-        background: `linear-gradient(180deg, ${bg} 0%, #2d1b4e 50%, #ff71ce 100%)`,
-        color: text,
-        fontFamily: '"Press Start 2P", "VT323", monospace, system-ui',
+      style={{ 
+        minHeight: '100vh', 
+        background: bg, 
+        color: text, 
+        fontFamily: '"Inter", system-ui, sans-serif',
         position: 'relative',
         overflow: 'hidden',
       }}
     >
-      {/* Retro Grid */}
-      <div style={{
-        position: 'fixed',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: '50%',
-        background: `linear-gradient(180deg, transparent 0%, ${hotPink}20 100%)`,
-        backgroundImage: `
-          linear-gradient(${cyan}30 1px, transparent 1px),
-          linear-gradient(90deg, ${cyan}30 1px, transparent 1px)
-        `,
-        backgroundSize: '40px 40px',
-        transform: 'perspective(500px) rotateX(60deg)',
-        transformOrigin: 'bottom',
-        pointerEvents: 'none',
-      }} />
+      {/* Load Press Start 2P font */}
+      <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
 
-      {/* Sun */}
-      <div style={{
-        position: 'fixed',
-        bottom: '20%',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        width: 300,
-        height: 150,
-        borderRadius: '150px 150px 0 0',
-        background: `linear-gradient(180deg, ${yellow} 0%, #ff6b35 50%, ${hotPink} 100%)`,
-        boxShadow: `0 0 60px ${yellow}50`,
-        pointerEvents: 'none',
-      }}>
-        {/* Sun lines */}
-        {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} style={{
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            height: 4,
-            background: bg,
-            top: 30 + i * 20,
-          }} />
-        ))}
+      {/* Synthwave Background */}
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+        {/* Sunset gradient */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '60%',
+          background: `linear-gradient(180deg, 
+            #1a0a2e 0%, 
+            #2d1b4e 20%, 
+            #4a1f6e 40%, 
+            #7c2d8e 55%, 
+            #c026d3 70%, 
+            #f472b6 85%, 
+            #fb923c 100%
+          )`,
+        }} />
+
+        {/* Sun */}
+        <div style={{
+          position: 'absolute',
+          top: '35%',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: isMobile ? 150 : 250,
+          height: isMobile ? 75 : 125,
+          background: 'linear-gradient(180deg, #fbbf24, #f97316, #ef4444)',
+          borderRadius: '200px 200px 0 0',
+          boxShadow: `0 0 60px ${neonPink}60, 0 0 120px ${neonPink}30`,
+        }}>
+          {/* Sun lines */}
+          {[...Array(6)].map((_, i) => (
+            <div key={i} style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              height: 4,
+              background: '#1a0a2e',
+              top: 20 + i * 12,
+            }} />
+          ))}
+        </div>
+
+        {/* Grid floor */}
+        <div style={{
+          position: 'absolute',
+          bottom: 0,
+          left: '-50%',
+          right: '-50%',
+          height: '45%',
+          background: `
+            linear-gradient(transparent 0%, ${neonPink}40 2%, transparent 3%),
+            linear-gradient(90deg, transparent 0%, ${neonCyan}40 1%, transparent 2%)
+          `,
+          backgroundSize: '100% 30px, 60px 100%',
+          transform: 'perspective(200px) rotateX(60deg)',
+          transformOrigin: 'top center',
+        }} />
       </div>
 
       {/* Header */}
       <header
         data-edit-path="layout.header"
         onClick={(e) => { stopIfManage(e); onSelect('layout.header'); }}
-        style={{
-          position: 'relative',
-          zIndex: 20,
-          padding: '20px 24px',
-          background: `${bg}cc`,
-          borderBottom: `2px solid ${hotPink}`,
+        style={{ 
+          position: 'sticky', 
+          top: 0, 
+          zIndex: 30, 
+          background: 'rgba(26,10,46,0.85)', 
+          backdropFilter: 'blur(12px)',
+          borderBottom: `2px solid ${neonPink}60`, 
+          padding: isMobile ? '10px 12px' : '12px 20px' 
         }}
       >
         <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            {asString(settings.store_logo) ? (
-              <img src={asString(settings.store_logo)} alt={storeName} style={{ width: 48, height: 48, objectFit: 'cover', border: `2px solid ${cyan}`, boxShadow: `0 0 10px ${cyan}` }} />
-            ) : (
-              <div style={{
-                width: 48,
-                height: 48,
-                background: `linear-gradient(135deg, ${hotPink}, ${cyan})`,
-                display: 'grid',
-                placeItems: 'center',
-                fontWeight: 400,
-                fontSize: 20,
-                boxShadow: `0 0 20px ${hotPink}`,
-              }}>
-                R
-              </div>
-            )}
-            <span style={{ fontSize: 14, color: cyan, textShadow: `0 0 10px ${cyan}`, letterSpacing: 4 }}>
-              {storeName}
-            </span>
-          </div>
+          <span style={{ 
+            fontFamily: '"Press Start 2P", cursive', 
+            fontSize: isMobile ? 10 : 14, 
+            background: `linear-gradient(90deg, ${neonCyan}, ${neonPink}, ${neonPurple})`,
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}>
+            {storeName}
+          </span>
           <button
             data-edit-path="layout.hero.cta"
             onClick={(e) => { stopIfManage(e); onSelect('layout.hero.cta'); }}
-            style={{
-              background: `linear-gradient(90deg, ${hotPink}, ${cyan})`,
-              color: '#fff',
-              border: 'none',
-              padding: '12px 24px',
-              fontWeight: 400,
-              cursor: 'pointer',
-              fontSize: 10,
-              letterSpacing: 2,
-              boxShadow: `0 0 20px ${hotPink}50`,
-              fontFamily: 'inherit',
+            style={{ 
+              background: `linear-gradient(135deg, ${neonPink}, ${neonPurple})`, 
+              color: '#fff', 
+              border: 'none', 
+              borderRadius: buttonRadius, 
+              padding: isMobile ? '8px 16px' : '10px 24px', 
+              fontWeight: 700, 
+              cursor: 'pointer', 
+              fontSize: isMobile ? 10 : 12,
+              boxShadow: `0 0 20px ${neonPink}60`,
             }}
           >
             {ctaText}
@@ -190,45 +233,44 @@ export default function RetrowaveTemplate(props: TemplateProps) {
         </div>
       </header>
 
-      {/* Hero */}
+      {/* Hero Section */}
       <section
         data-edit-path="layout.hero"
         onClick={(e) => { stopIfManage(e); onSelect('layout.hero'); }}
-        style={{ padding: `${sectionSpacing * 1.5}px ${baseSpacing}px`, position: 'relative', zIndex: 10 }}
+        style={{ position: 'relative', zIndex: 10, padding: isMobile ? `${sectionSpacing * 0.6}px ${baseSpacing}px` : `${sectionSpacing}px ${baseSpacing}px` }}
       >
-        <div style={{ maxWidth: 1000, margin: '0 auto', textAlign: 'center' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          {/* Kicker */}
           <div
-            data-edit-path="layout.hero.badge"
-            onClick={(e) => { stopIfManage(e); onSelect('layout.hero.badge'); }}
-            style={{
-              display: 'inline-block',
-              background: `${bg}cc`,
-              border: `2px solid ${cyan}`,
-              padding: '10px 20px',
-              fontSize: 10,
-              marginBottom: 30,
-              color: cyan,
-              boxShadow: `0 0 15px ${cyan}50`,
+            data-edit-path="layout.hero.kicker"
+            onClick={(e) => { stopIfManage(e); onSelect('layout.hero.kicker'); }}
+            style={{ 
+              textAlign: 'center',
+              marginBottom: isMobile ? 12 : 20,
+              fontFamily: '"Press Start 2P", cursive',
+              fontSize: isMobile ? 8 : 10,
+              color: neonCyan,
               letterSpacing: 2,
+              textShadow: `0 0 10px ${neonCyan}`,
             }}
           >
-            ★ NEW RELEASE 1985 ★
+            {heroKicker}
           </div>
 
+          {/* Title */}
           <h1
             data-edit-path="layout.hero.title"
             onClick={(e) => { stopIfManage(e); onSelect('layout.hero.title'); }}
-            style={{
-              fontSize: isMobile ? 32 : 64,
-              lineHeight: 1.2,
-              marginBottom: 30,
-              textShadow: `
-                0 0 10px ${hotPink},
-                0 0 20px ${hotPink},
-                0 0 40px ${hotPink},
-                0 0 80px ${hotPink}
-              `,
-              letterSpacing: 4,
+            style={{ 
+              textAlign: 'center',
+              fontFamily: '"Press Start 2P", cursive',
+              fontSize: isMobile ? 20 : 40, 
+              lineHeight: 1.4,
+              marginBottom: isMobile ? 16 : 24,
+              background: `linear-gradient(180deg, ${neonCyan} 0%, ${neonPink} 50%, ${neonPurple} 100%)`,
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              textShadow: `0 0 30px ${neonPink}40`,
             }}
           >
             {heroTitle}
@@ -237,190 +279,173 @@ export default function RetrowaveTemplate(props: TemplateProps) {
           <p
             data-edit-path="layout.hero.subtitle"
             onClick={(e) => { stopIfManage(e); onSelect('layout.hero.subtitle'); }}
-            style={{
-              fontSize: 12,
-              color: cyan,
-              lineHeight: 2,
-              maxWidth: 500,
-              margin: '0 auto 40px',
-              fontFamily: 'system-ui, sans-serif',
+            style={{ 
+              textAlign: 'center',
+              fontSize: isMobile ? 12 : 16, 
+              color: muted, 
+              maxWidth: 500, 
+              margin: '0 auto',
+              marginBottom: isMobile ? 24 : 36,
+              lineHeight: 1.7,
             }}
           >
             {heroSubtitle}
           </p>
 
-          {/* Product Showcase */}
+          {/* Stats */}
           <div
-            data-edit-path="layout.hero.image"
-            onClick={(e) => { stopIfManage(e); onSelect('layout.hero.image'); }}
-            style={{
-              maxWidth: 400,
-              margin: '0 auto',
-              border: `3px solid ${hotPink}`,
-              boxShadow: `0 0 30px ${hotPink}50, inset 0 0 30px ${hotPink}20`,
-              position: 'relative',
+            data-edit-path="layout.hero.badge"
+            onClick={(e) => { stopIfManage(e); onSelect('layout.hero.badge'); }}
+            style={{ 
+              display: 'flex', 
+              justifyContent: 'center',
+              gap: isMobile ? 20 : 40, 
+              marginBottom: isMobile ? 28 : 40,
             }}
           >
-            <img
-              src={productImage(mainProduct)}
-              alt="Product"
-              style={{ width: '100%', display: 'block' }}
-            />
-            <div style={{
-              position: 'absolute',
-              top: 8,
-              right: 8,
-              background: yellow,
-              color: bg,
-              padding: '4px 10px',
-              fontSize: 8,
-              fontWeight: 400,
-            }}>
-              HOT!
-            </div>
-          </div>
-
-          {/* Price */}
-          <div style={{ marginTop: 30 }}>
-            <div style={{ fontSize: 10, color: muted, marginBottom: 8 }}>PRICE:</div>
-            <div style={{
-              fontSize: 32,
-              color: cyan,
-              textShadow: `0 0 20px ${cyan}`,
-            }}>
-              {mainProduct ? formatPrice(mainProduct.price) : '$99.00'}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Stats Bar */}
-      <section style={{
-        padding: '24px 20px',
-        background: `${bg}ee`,
-        borderTop: `2px solid ${cyan}`,
-        borderBottom: `2px solid ${cyan}`,
-        position: 'relative',
-        zIndex: 10,
-      }}>
-        <div style={{ maxWidth: 800, margin: '0 auto', display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', gap: 20 }}>
-          {[
-            { val: '1985', label: 'ESTABLISHED' },
-            { val: '∞', label: 'POSSIBILITIES' },
-            { val: '24/7', label: 'VIBES' },
-          ].map((stat) => (
-            <div key={stat.label} style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 24, color: hotPink, textShadow: `0 0 10px ${hotPink}` }}>{stat.val}</div>
-              <div style={{ fontSize: 8, color: cyan, letterSpacing: 2, marginTop: 4 }}>{stat.label}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Features */}
-      <section
-        data-edit-path="layout.featured"
-        onClick={(e) => { stopIfManage(e); onSelect('layout.featured'); }}
-        style={{ padding: `${sectionSpacing}px ${baseSpacing}px`, position: 'relative', zIndex: 10 }}
-      >
-        <div style={{ maxWidth: 900, margin: '0 auto' }}>
-          <h2
-            data-edit-path="layout.featured.title"
-            onClick={(e) => { stopIfManage(e); onSelect('layout.featured.title'); }}
-            style={{
-              fontSize: 20,
-              textAlign: 'center',
-              marginBottom: 50,
-              color: cyan,
-              textShadow: `0 0 10px ${cyan}`,
-              letterSpacing: 4,
-            }}
-          >
-            FEATURES
-          </h2>
-
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: 24 }}>
-            {[
-              { icon: '◆', title: 'TURBO QUALITY', desc: 'Maximum power. Maximum style.' },
-              { icon: '◇', title: 'HYPER SPEED', desc: 'Lightning fast delivery.' },
-              { icon: '★', title: 'MEGA SUPPORT', desc: 'We\'ve got your back.' },
-            ].map((feat, i) => (
-              <div
-                key={feat.title}
-                style={{
-                  background: `${cardBg}cc`,
-                  border: `2px solid ${[hotPink, cyan, yellow][i]}`,
-                  padding: 24,
-                  textAlign: 'center',
-                  boxShadow: `0 0 20px ${[hotPink, cyan, yellow][i]}30`,
-                }}
-              >
-                <div style={{ fontSize: 32, color: [hotPink, cyan, yellow][i], marginBottom: 16, textShadow: `0 0 10px ${[hotPink, cyan, yellow][i]}` }}>
-                  {feat.icon}
+            {stats.map((stat) => (
+              <div key={stat.label} style={{ textAlign: 'center' }}>
+                <div style={{ 
+                  fontFamily: '"Press Start 2P", cursive',
+                  fontSize: isMobile ? 16 : 24, 
+                  color: neonCyan,
+                  textShadow: `0 0 10px ${neonCyan}`,
+                  marginBottom: 4,
+                }}>
+                  {stat.value}
                 </div>
-                <h3 style={{ fontSize: 12, marginBottom: 12, color: [hotPink, cyan, yellow][i], letterSpacing: 2 }}>{feat.title}</h3>
-                <p style={{ fontSize: 10, color: muted, lineHeight: 1.8, fontFamily: 'system-ui, sans-serif' }}>{feat.desc}</p>
+                <div style={{ fontSize: isMobile ? 8 : 10, color: muted, letterSpacing: 1 }}>{stat.label}</div>
               </div>
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* Products */}
-      <section style={{ padding: `${sectionSpacing * 0.5}px ${baseSpacing}px`, position: 'relative', zIndex: 10 }}>
-        <div style={{ maxWidth: 900, margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: 20 }}>
-            {products.slice(0, 4).map((product, i) => (
+          {/* Main Layout */}
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 380px', gap: isMobile ? 24 : 40, alignItems: 'start' }}>
+            
+            {/* Left: Product */}
+            <div>
+              {/* Product Image */}
               <div
-                key={product.id}
-                style={{
-                  background: `${cardBg}cc`,
-                  border: `2px solid ${[hotPink, cyan, yellow, hotPink][i]}`,
-                  overflow: 'hidden',
+                data-edit-path="layout.hero.image"
+                onClick={(e) => { stopIfManage(e); onSelect('layout.hero.image'); }}
+                style={{ 
+                  position: 'relative', 
+                  borderRadius: cardRadius, 
+                  overflow: 'hidden', 
+                  border: `3px solid ${neonPink}`,
+                  boxShadow: `0 0 30px ${neonPink}40, inset 0 0 30px ${neonPurple}20`,
+                  marginBottom: 16,
+                  background: cardBg,
                 }}
               >
-                <img src={productImage(product)} alt={product.name} style={{ width: '100%', aspectRatio: '1', objectFit: 'cover' }} />
-                <div style={{ padding: 12 }}>
-                  <div style={{ fontSize: 8, marginBottom: 6, letterSpacing: 1 }}>{product.name}</div>
-                  <div style={{ fontSize: 12, color: cyan }}>{formatPrice(product.price)}</div>
+                <img src={images[activeImage] || images[0]} alt="" style={{ width: '100%', aspectRatio: isMobile ? '4/3' : '16/10', objectFit: 'cover' }} />
+                
+                {/* Scan line overlay */}
+                <div style={{ 
+                  position: 'absolute', 
+                  inset: 0, 
+                  background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.1) 2px, rgba(0,0,0,0.1) 4px)',
+                  pointerEvents: 'none',
+                }} />
+
+                {/* Corner badge */}
+                <div style={{ 
+                  position: 'absolute', 
+                  top: 12, 
+                  right: 12, 
+                  background: neonPink,
+                  color: '#fff',
+                  padding: '6px 12px',
+                  fontFamily: '"Press Start 2P", cursive',
+                  fontSize: 8,
+                  boxShadow: `0 0 10px ${neonPink}`,
+                }}>
+                  NEW!
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* Checkout Section */}
-      <section style={{ padding: `${sectionSpacing}px ${baseSpacing}px`, position: 'relative', zIndex: 10 }}>
-        <div style={{
-          maxWidth: 500,
-          margin: '0 auto',
-          background: `${cardBg}ee`,
-          border: `3px solid ${hotPink}`,
-          padding: 30,
-          boxShadow: `0 0 40px ${hotPink}30`,
-        }}>
-          <div style={{ textAlign: 'center', marginBottom: 24 }}>
-            <div style={{ fontSize: 8, color: cyan, letterSpacing: 3, marginBottom: 8 }}>★ CHECKOUT ★</div>
-            <h2 style={{
-              fontSize: 18,
-              color: hotPink,
-              textShadow: `0 0 10px ${hotPink}`,
-              letterSpacing: 2,
-            }}>
-              GET YOURS NOW
-            </h2>
+              {/* Thumbnails */}
+              {images.length > 1 && (
+                <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+                  {images.slice(0, 10).map((img, idx) => (
+                    <button
+                      key={idx}
+                      onClick={(e) => { stopIfManage(e); setActiveImage(idx); }}
+                      style={{
+                        width: isMobile ? 48 : 60,
+                        height: isMobile ? 48 : 60,
+                        borderRadius: 4,
+                        border: idx === activeImage ? `2px solid ${neonCyan}` : `2px solid ${border}`,
+                        padding: 0,
+                        background: cardBg,
+                        cursor: 'pointer',
+                        overflow: 'hidden',
+                        boxShadow: idx === activeImage ? `0 0 10px ${neonCyan}` : 'none',
+                      }}
+                    >
+                      <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Features */}
+              <div
+                data-edit-path="layout.categories"
+                onClick={(e) => { stopIfManage(e); onSelect('layout.categories'); }}
+                style={{ display: 'flex', flexWrap: 'wrap', gap: isMobile ? 10 : 16 }}
+              >
+                {features.map((f) => (
+                  <span key={f} style={{ 
+                    fontSize: isMobile ? 10 : 12, 
+                    color: neonCyan,
+                    background: 'rgba(34,211,238,0.1)',
+                    border: `1px solid ${neonCyan}40`,
+                    padding: '6px 12px',
+                    borderRadius: 4,
+                    textShadow: `0 0 5px ${neonCyan}`,
+                  }}>
+                    {f}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Right: Checkout */}
+            <div style={{ position: isMobile ? 'relative' : 'sticky', top: isMobile ? 0 : 90 }}>
+              <div style={{ 
+                background: cardBg, 
+                border: `2px solid ${neonPink}60`, 
+                borderRadius: cardRadius,
+                boxShadow: `0 0 30px ${neonPink}20`,
+                overflow: 'hidden',
+              }}>
+                <div style={{ 
+                  borderBottom: `1px solid ${border}`, 
+                  padding: isMobile ? '12px 16px' : '16px 20px',
+                  background: `linear-gradient(90deg, ${neonPink}20, ${neonPurple}20)`,
+                }}>
+                  <span style={{ 
+                    fontFamily: '"Press Start 2P", cursive',
+                    fontSize: isMobile ? 8 : 10, 
+                    color: neonCyan,
+                  }}>
+                    {asString(s.template_checkout_title) || 'CHECKOUT'}
+                  </span>
+                </div>
+                
+                <EmbeddedCheckout
+                  storeSlug={storeSlug}
+                  product={mainProduct as any}
+                  formatPrice={formatPrice}
+                  theme={checkoutTheme}
+                  disabled={canManage}
+                  heading={ctaText}
+                  subheading={canManage ? 'Disabled in editor' : (asString(s.template_checkout_subheading) || '★ FREE SHIPPING ★')}
+                />
+              </div>
+            </div>
           </div>
-          
-          <EmbeddedCheckout
-            storeSlug={storeSlug}
-            product={mainProduct as any}
-            formatPrice={formatPrice}
-            theme={checkoutTheme}
-            disabled={canManage}
-            heading={ctaText}
-            subheading={canManage ? 'Disabled in editor' : '★ RADICAL SHIPPING ★'}
-          />
         </div>
       </section>
 
@@ -428,24 +453,18 @@ export default function RetrowaveTemplate(props: TemplateProps) {
       <footer
         data-edit-path="layout.footer"
         onClick={(e) => { stopIfManage(e); onSelect('layout.footer'); }}
-        style={{
-          position: 'relative',
-          zIndex: 10,
-          borderTop: `2px solid ${hotPink}`,
-          padding: `${baseSpacing * 2}px ${baseSpacing}px`,
-          textAlign: 'center',
-          background: `${bg}ee`,
-        }}
+        style={{ position: 'relative', zIndex: 10, borderTop: `2px solid ${neonPink}40`, padding: `${baseSpacing * 1.5}px ${baseSpacing}px`, textAlign: 'center' }}
       >
-        <div style={{ fontSize: 14, color: cyan, marginBottom: 16, textShadow: `0 0 10px ${cyan}`, letterSpacing: 4 }}>
-          {storeName}
-        </div>
         <p
           data-edit-path="layout.footer.copyright"
           onClick={(e) => { stopIfManage(e); onSelect('layout.footer.copyright'); }}
-          style={{ fontSize: 8, color: muted }}
+          style={{ 
+            fontFamily: '"Press Start 2P", cursive',
+            fontSize: isMobile ? 7 : 9, 
+            color: muted,
+          }}
         >
-          {asString((settings as any).template_copyright) || `© ${new Date().getFullYear()} ${storeName}. ALL RIGHTS RESERVED.`}
+          {asString(s.template_copyright) || `© ${new Date().getFullYear()} ${storeName} ★ RADICAL VIBES ONLY`}
         </p>
       </footer>
     </div>

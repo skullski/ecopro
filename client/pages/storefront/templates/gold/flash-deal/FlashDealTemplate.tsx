@@ -3,8 +3,9 @@ import type { TemplateProps, StoreProduct } from '../../types';
 import EmbeddedCheckout from '../shared/EmbeddedCheckout';
 
 /**
- * FLASH DEAL - Limited time flash sale landing page with extreme urgency.
- * Design: Flashing elements, bold countdown, stock depletion, deal of the day vibes.
+ * FLASH DEAL - Limited time flash sale landing page.
+ * Design: Flashing gradient bars, hot pink/magenta theme, claimed counter, urgency elements.
+ * ALL TEXT IS EDITABLE via settings keys.
  */
 
 function asString(v: unknown): string {
@@ -17,14 +18,20 @@ function resolveInt(value: unknown, fallback: number, min: number, max: number):
   return Math.max(min, Math.min(max, safe));
 }
 
-function productImage(p: StoreProduct | undefined): string {
-  if (!p) return '/placeholder.png';
-  const img = Array.isArray((p as any).images) ? (p as any).images.find(Boolean) : undefined;
-  return typeof img === 'string' && img ? img : '/placeholder.png';
+function productImages(p: StoreProduct | undefined): string[] {
+  if (!p) return ['/placeholder.png'];
+  const imgs = Array.isArray((p as any).images) ? (p as any).images.filter((v: any) => typeof v === 'string' && v.trim()) : [];
+  return imgs.length ? imgs : ['/placeholder.png'];
+}
+
+function safePrice(value: unknown): number {
+  const n = typeof value === 'number' ? value : Number(String(value ?? '').trim());
+  return Number.isFinite(n) ? n : 0;
 }
 
 export default function FlashDealTemplate(props: TemplateProps) {
   const { settings, formatPrice } = props;
+  const s = settings as any;
   const canManage = Boolean(props.canManage);
   const onSelect = (path: string) => {
     if (canManage && typeof (props as any).onSelect === 'function') {
@@ -36,45 +43,18 @@ export default function FlashDealTemplate(props: TemplateProps) {
   React.useEffect(() => {
     const bp = (props as any).forcedBreakpoint;
     if (bp) { setIsMobile(bp === 'mobile'); return; }
-    const check = () => setIsMobile(window.innerWidth < 900);
+    const check = () => setIsMobile(window.innerWidth < 768);
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, [(props as any).forcedBreakpoint]);
 
-  // Theme - Hot pink/magenta with dark
-  const bg = asString(settings.template_bg_color) || '#0f0f0f';
-  const text = asString(settings.template_text_color) || '#ffffff';
-  const muted = asString(settings.template_muted_color) || '#9ca3af';
-  const accent = asString(settings.template_accent_color) || '#ec4899';
-  const cardBg = asString((settings as any).template_card_bg) || '#1a1a1a';
-  const border = 'rgba(255,255,255,0.1)';
-  const flashYellow = '#fde047';
-
-  // Content
-  const storeName = asString(settings.store_name) || 'Flash Deals';
-  const heroTitle = asString(settings.template_hero_heading) || 'FLASH DEAL OF THE DAY';
-  const heroSubtitle = asString(settings.template_hero_subtitle) || 'Once it\'s gone, it\'s gone! This incredible deal won\'t last long.';
-  const ctaText = asString(settings.template_button_text) || 'GRAB THIS DEAL';
-
-  // Spacing
-  const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
-  const sectionSpacing = resolveInt(settings.template_section_spacing, 60, 24, 96);
-  const cardRadius = resolveInt(settings.template_card_border_radius, 16, 0, 32);
-
-  // Products
-  const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 12) || [];
-  const mainProduct = products[0];
-  const storeSlug = asString((settings as any).store_slug);
-
-  const checkoutTheme = { bg, text, muted, accent, cardBg, border };
-
-  // Countdown (end of day)
-  const [timeLeft, setTimeLeft] = React.useState({ hours: 5, minutes: 59, seconds: 59 });
+  // Countdown timer
+  const [timeLeft, setTimeLeft] = React.useState({ hours: 1, minutes: 23, seconds: 45 });
   React.useEffect(() => {
     if (canManage) return;
-    const interval = setInterval(() => {
-      setTimeLeft(prev => {
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
         let { hours, minutes, seconds } = prev;
         seconds--;
         if (seconds < 0) { seconds = 59; minutes--; }
@@ -83,18 +63,64 @@ export default function FlashDealTemplate(props: TemplateProps) {
         return { hours, minutes, seconds };
       });
     }, 1000);
-    return () => clearInterval(interval);
+    return () => clearInterval(timer);
   }, [canManage]);
 
   // Claimed counter
-  const [claimed, setClaimed] = React.useState(847);
+  const [claimed, setClaimed] = React.useState(247);
   React.useEffect(() => {
     if (canManage) return;
-    const interval = setInterval(() => {
-      setClaimed(c => c + Math.floor(Math.random() * 3));
-    }, 5000);
-    return () => clearInterval(interval);
+    const timer = setInterval(() => {
+      setClaimed((prev) => prev + Math.floor(Math.random() * 3));
+    }, 8000);
+    return () => clearInterval(timer);
   }, [canManage]);
+
+  // Theme colors - Hot pink/magenta
+  const bg = asString(s.template_bg_color) || '#fdf2f8';
+  const text = asString(s.template_text_color) || '#1f2937';
+  const muted = asString(s.template_muted_color) || '#6b7280';
+  const accent = asString(s.template_accent_color) || '#ec4899';
+  const cardBg = asString(s.template_card_bg) || '#ffffff';
+  const border = 'rgba(0,0,0,0.06)';
+
+  // EDITABLE Content from settings
+  const storeName = asString(s.store_name) || 'Flash Deal';
+  const heroTitle = asString(s.template_hero_heading) || '⚡ FLASH SALE ⚡';
+  const heroSubtitle = asString(s.template_hero_subtitle) || 'Unbelievable prices for a limited time only. Once they\'re gone, they\'re gone!';
+  const ctaText = asString(s.template_button_text) || 'GRAB THIS DEAL';
+  const heroKicker = asString(s.template_hero_kicker) || 'LIMITED TIME OFFER';
+
+  // Deal details (editable)
+  const discountPercent = asString(s.template_discount_percent) || '60%';
+  const originalPrice = asString(s.template_original_price) || '$149.99';
+  const salePrice = asString(s.template_sale_price) || '$59.99';
+  const dealLimit = asString(s.template_deal_limit) || '500';
+
+  // Features (editable)
+  const feature1 = asString(s.template_feature1_title) || '✓ Free Express Shipping';
+  const feature2 = asString(s.template_feature2_title) || '✓ 30-Day Returns';
+  const feature3 = asString(s.template_feature3_title) || '✓ Premium Quality';
+
+  // Urgency text (editable)
+  const urgencyText1 = asString(s.template_urgency1) || '🔥 Selling fast!';
+  const urgencyText2 = asString(s.template_urgency2) || '⏰ Deal ends when timer hits zero';
+
+  // Spacing
+  const baseSpacing = resolveInt(s.template_spacing, 16, 8, 32);
+  const sectionSpacing = resolveInt(s.template_section_spacing, 48, 24, 96);
+  const cardRadius = resolveInt(s.template_card_border_radius, 12, 0, 32);
+  const buttonRadius = resolveInt(s.template_button_border_radius, 8, 0, 50);
+
+  // Products
+  const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 12) || [];
+  const mainProduct = products[0];
+  const images = productImages(mainProduct);
+  const [activeImage, setActiveImage] = React.useState(0);
+
+  const storeSlug = asString(s.store_slug);
+
+  const checkoutTheme = { bg: cardBg, text, muted, accent, cardBg, border };
 
   const stopIfManage = (e: React.MouseEvent) => {
     if (!canManage) return;
@@ -102,284 +128,250 @@ export default function FlashDealTemplate(props: TemplateProps) {
     e.stopPropagation();
   };
 
-  const pad = (n: number) => String(n).padStart(2, '0');
+  const features = [feature1, feature2, feature3].filter(Boolean);
+  const pad = (n: number) => n.toString().padStart(2, '0');
+
+  const progressPercent = Math.min((claimed / parseInt(dealLimit)) * 100, 95);
 
   return (
     <div
       data-edit-path="__root"
       onClick={() => canManage && onSelect('__root')}
       className="ecopro-storefront"
-      style={{ minHeight: '100vh', background: bg, color: text, fontFamily: 'system-ui, sans-serif' }}
+      style={{ minHeight: '100vh', background: bg, color: text, fontFamily: 'Inter, system-ui, sans-serif' }}
     >
-      {/* Flashing Top Bar */}
-      <div style={{
-        background: `linear-gradient(90deg, ${accent}, ${flashYellow}, ${accent})`,
-        backgroundSize: '200% 100%',
-        animation: 'flash-gradient 1s ease infinite',
-        padding: '12px 20px',
-        textAlign: 'center',
-      }}>
-        <span style={{ fontWeight: 900, fontSize: 14, color: '#000' }}>
-          ⚡ FLASH DEAL ⚡ {pad(timeLeft.hours)}:{pad(timeLeft.minutes)}:{pad(timeLeft.seconds)} LEFT ⚡
-        </span>
+      {/* Animated Flash Bar */}
+      <div
+        data-edit-path="layout.hero.badge"
+        onClick={(e) => { stopIfManage(e); onSelect('layout.hero.badge'); }}
+        style={{
+          background: `linear-gradient(90deg, ${accent}, #f472b6, ${accent}, #f472b6, ${accent})`,
+          backgroundSize: '200% 100%',
+          animation: 'gradientShift 2s linear infinite',
+          color: '#fff',
+          padding: isMobile ? '10px 12px' : '12px 20px',
+          textAlign: 'center',
+          fontWeight: 800,
+          fontSize: isMobile ? 12 : 14,
+        }}
+      >
+        ⚡ {heroKicker} - {discountPercent} OFF ⚡
       </div>
 
       {/* Header */}
       <header
         data-edit-path="layout.header"
         onClick={(e) => { stopIfManage(e); onSelect('layout.header'); }}
-        style={{ padding: '14px 20px', background: cardBg }}
+        style={{ background: cardBg, borderBottom: `1px solid ${border}`, padding: isMobile ? '10px 12px' : '12px 20px' }}
       >
         <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {asString(settings.store_logo) ? (
-              <img src={asString(settings.store_logo)} alt={storeName} style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover' }} />
+            {asString(s.store_logo) ? (
+              <img src={asString(s.store_logo)} alt={storeName} style={{ width: isMobile ? 32 : 38, height: isMobile ? 32 : 38, borderRadius: 8, objectFit: 'cover' }} />
             ) : (
-              <div style={{ width: 36, height: 36, borderRadius: 8, background: accent, color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 900 }}>
-                ⚡
-              </div>
+              <span style={{ fontWeight: 900, fontSize: isMobile ? 14 : 18, color: accent }}>{storeName}</span>
             )}
-            <span style={{ fontWeight: 900, fontSize: 16 }}>{storeName}</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ fontSize: 12, color: flashYellow }}>🔥 {claimed} claimed today</span>
-            <button
-              data-edit-path="layout.hero.cta"
-              onClick={(e) => { stopIfManage(e); onSelect('layout.hero.cta'); }}
-              style={{
-                background: accent,
-                color: '#fff',
-                border: 'none',
-                borderRadius: 8,
-                padding: '10px 20px',
-                fontWeight: 800,
-                cursor: 'pointer',
-                fontSize: 13,
-              }}
-            >
-              {ctaText}
-            </button>
+          {/* Timer in header */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#fce7f3', padding: '6px 12px', borderRadius: 6 }}>
+            <span style={{ fontSize: isMobile ? 10 : 12, color: accent }}>⏱️</span>
+            <span style={{ fontWeight: 800, fontSize: isMobile ? 13 : 15, color: accent }}>
+              {pad(timeLeft.hours)}:{pad(timeLeft.minutes)}:{pad(timeLeft.seconds)}
+            </span>
           </div>
         </div>
       </header>
 
-      {/* Main Deal Section */}
+      {/* Hero Section */}
       <section
         data-edit-path="layout.hero"
         onClick={(e) => { stopIfManage(e); onSelect('layout.hero'); }}
-        style={{ padding: `${sectionSpacing}px ${baseSpacing}px` }}
+        style={{ padding: isMobile ? `${sectionSpacing * 0.6}px ${baseSpacing}px` : `${sectionSpacing}px ${baseSpacing}px` }}
       >
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          {/* Deal Badge */}
-          <div style={{ textAlign: 'center', marginBottom: 30 }}>
-            <div
-              data-edit-path="layout.hero.badge"
-              onClick={(e) => { stopIfManage(e); onSelect('layout.hero.badge'); }}
-              style={{
-                display: 'inline-block',
-                background: accent,
-                padding: '12px 30px',
-                borderRadius: 999,
-                fontSize: 14,
-                fontWeight: 900,
-                animation: 'pulse 1s infinite',
+          {/* Title */}
+          <div style={{ textAlign: 'center', marginBottom: isMobile ? 20 : 28 }}>
+            <h1
+              data-edit-path="layout.hero.title"
+              onClick={(e) => { stopIfManage(e); onSelect('layout.hero.title'); }}
+              style={{ 
+                fontSize: isMobile ? 32 : 56, 
+                fontWeight: 900, 
+                lineHeight: 1.1, 
+                marginBottom: 12,
+                color: accent,
               }}
             >
-              ⚡ TODAY ONLY - 70% OFF ⚡
-            </div>
+              {heroTitle}
+            </h1>
+
+            <p
+              data-edit-path="layout.hero.subtitle"
+              onClick={(e) => { stopIfManage(e); onSelect('layout.hero.subtitle'); }}
+              style={{ fontSize: isMobile ? 14 : 18, color: muted, maxWidth: 500, margin: '0 auto' }}
+            >
+              {heroSubtitle}
+            </p>
           </div>
 
-          {/* Product Showcase */}
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 50, alignItems: 'center' }}>
-            {/* Product Image */}
-            <div
-              data-edit-path="layout.hero.image"
-              onClick={(e) => { stopIfManage(e); onSelect('layout.hero.image'); }}
-              style={{ position: 'relative' }}
-            >
-              <div style={{
-                position: 'absolute',
-                top: -10,
-                right: -10,
-                background: flashYellow,
-                color: '#000',
-                width: 80,
-                height: 80,
-                borderRadius: '50%',
-                display: 'grid',
-                placeItems: 'center',
-                fontWeight: 900,
-                fontSize: 20,
-                zIndex: 10,
-                animation: 'bounce 1s infinite',
-              }}>
-                -70%
+          {/* Countdown Timer */}
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            gap: isMobile ? 8 : 12, 
+            marginBottom: isMobile ? 24 : 32 
+          }}>
+            {[
+              { value: timeLeft.hours, label: 'HRS' },
+              { value: timeLeft.minutes, label: 'MIN' },
+              { value: timeLeft.seconds, label: 'SEC' },
+            ].map((item) => (
+              <div key={item.label} style={{ textAlign: 'center' }}>
+                <div style={{ 
+                  background: `linear-gradient(135deg, ${accent}, #f472b6)`, 
+                  borderRadius: cardRadius, 
+                  padding: isMobile ? '10px 14px' : '14px 20px',
+                  minWidth: isMobile ? 50 : 70,
+                }}>
+                  <div style={{ fontSize: isMobile ? 24 : 36, fontWeight: 900, color: '#fff' }}>{pad(item.value)}</div>
+                </div>
+                <div style={{ fontSize: isMobile ? 9 : 11, color: muted, marginTop: 4, fontWeight: 700 }}>{item.label}</div>
               </div>
-              <img
-                src={productImage(mainProduct)}
-                alt="Deal"
-                style={{
-                  width: '100%',
-                  borderRadius: cardRadius,
-                  boxShadow: `0 0 60px ${accent}30`,
-                }}
-              />
-            </div>
+            ))}
+          </div>
 
-            {/* Deal Info */}
+          {/* Main Layout */}
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 400px', gap: isMobile ? 24 : 36, alignItems: 'start' }}>
+            
+            {/* Left: Product */}
             <div>
-              <h1
-                data-edit-path="layout.hero.title"
-                onClick={(e) => { stopIfManage(e); onSelect('layout.hero.title'); }}
-                style={{ fontSize: isMobile ? 28 : 40, fontWeight: 900, lineHeight: 1.1, marginBottom: 16 }}
+              {/* Product Image */}
+              <div
+                data-edit-path="layout.hero.image"
+                onClick={(e) => { stopIfManage(e); onSelect('layout.hero.image'); }}
+                style={{ 
+                  position: 'relative', 
+                  borderRadius: cardRadius, 
+                  overflow: 'hidden', 
+                  border: `3px solid ${accent}`,
+                  marginBottom: 16,
+                }}
               >
-                {heroTitle}
-              </h1>
+                <img src={images[activeImage] || images[0]} alt="" style={{ width: '100%', aspectRatio: isMobile ? '4/3' : '16/10', objectFit: 'cover' }} />
+                
+                {/* Discount badge */}
+                <div style={{ 
+                  position: 'absolute', 
+                  top: 0, 
+                  right: 0, 
+                  background: `linear-gradient(135deg, ${accent}, #f472b6)`, 
+                  color: '#fff', 
+                  padding: isMobile ? '12px 16px' : '16px 20px', 
+                  fontWeight: 900, 
+                  fontSize: isMobile ? 20 : 28,
+                  borderBottomLeftRadius: cardRadius,
+                }}>
+                  -{discountPercent}
+                </div>
+              </div>
 
-              <p
-                data-edit-path="layout.hero.subtitle"
-                onClick={(e) => { stopIfManage(e); onSelect('layout.hero.subtitle'); }}
-                style={{ fontSize: 16, color: muted, lineHeight: 1.6, marginBottom: 24 }}
-              >
-                {heroSubtitle}
-              </p>
-
-              {/* Timer Display */}
-              <div style={{ background: cardBg, borderRadius: cardRadius, padding: 20, marginBottom: 24, border: `2px solid ${accent}` }}>
-                <div style={{ fontSize: 12, color: accent, marginBottom: 12, fontWeight: 700 }}>⏰ DEAL ENDS IN:</div>
-                <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
-                  {[
-                    { val: timeLeft.hours, label: 'Hours' },
-                    { val: timeLeft.minutes, label: 'Mins' },
-                    { val: timeLeft.seconds, label: 'Secs' },
-                  ].map((item) => (
-                    <div key={item.label} style={{ textAlign: 'center' }}>
-                      <div style={{
-                        background: '#000',
+              {/* Thumbnails */}
+              {images.length > 1 && (
+                <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                  {images.slice(0, 10).map((img, idx) => (
+                    <button
+                      key={idx}
+                      onClick={(e) => { stopIfManage(e); setActiveImage(idx); }}
+                      style={{
+                        width: isMobile ? 48 : 60,
+                        height: isMobile ? 48 : 60,
                         borderRadius: 8,
-                        padding: '12px 20px',
-                        fontSize: 32,
-                        fontWeight: 900,
-                        color: flashYellow,
-                        fontFamily: 'monospace',
-                      }}>
-                        {pad(item.val)}
-                      </div>
-                      <div style={{ fontSize: 11, color: muted, marginTop: 6 }}>{item.label}</div>
-                    </div>
+                        border: idx === activeImage ? `2px solid ${accent}` : `1px solid ${border}`,
+                        padding: 0,
+                        background: 'transparent',
+                        cursor: 'pointer',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </button>
                   ))}
                 </div>
+              )}
+
+              {/* Urgency messages */}
+              <div
+                data-edit-path="layout.categories"
+                onClick={(e) => { stopIfManage(e); onSelect('layout.categories'); }}
+                style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}
+              >
+                <span style={{ fontSize: isMobile ? 12 : 14, color: accent, fontWeight: 700 }}>{urgencyText1}</span>
+                <span style={{ fontSize: isMobile ? 12 : 14, color: muted }}>{urgencyText2}</span>
               </div>
 
-              {/* Price */}
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, marginBottom: 20 }}>
-                <div>
-                  <div style={{ fontSize: 14, color: muted, textDecoration: 'line-through', marginBottom: 4 }}>Was $299.99</div>
-                  <div style={{ fontSize: 48, fontWeight: 900, color: flashYellow }}>
-                    {mainProduct ? formatPrice(mainProduct.price) : '$89.99'}
-                  </div>
-                </div>
-                <div style={{ background: '#16a34a', padding: '6px 12px', borderRadius: 6, fontSize: 14, fontWeight: 800, marginBottom: 8 }}>
-                  SAVE $210
-                </div>
+              {/* Features */}
+              <div
+                data-edit-path="layout.grid"
+                onClick={(e) => { stopIfManage(e); onSelect('layout.grid'); }}
+                style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}
+              >
+                {features.map((f) => (
+                  <span key={f} style={{ fontSize: isMobile ? 12 : 14, color: '#059669', fontWeight: 600 }}>{f}</span>
+                ))}
               </div>
+            </div>
 
+            {/* Right: Checkout */}
+            <div style={{ position: isMobile ? 'relative' : 'sticky', top: isMobile ? 0 : 90 }}>
               {/* Claimed Progress */}
-              <div style={{ marginBottom: 24 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 8 }}>
-                  <span style={{ color: accent }}>🔥 {claimed} claimed</span>
-                  <span style={{ color: muted }}>Limited stock</span>
+              <div style={{ 
+                background: cardBg, 
+                border: `1px solid ${border}`, 
+                borderRadius: cardRadius, 
+                padding: isMobile ? 14 : 18, 
+                marginBottom: 16,
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span style={{ fontSize: isMobile ? 12 : 14, fontWeight: 700 }}>🔥 {claimed} claimed</span>
+                  <span style={{ fontSize: isMobile ? 12 : 14, color: muted }}>{dealLimit} available</span>
                 </div>
-                <div style={{ height: 10, background: '#333', borderRadius: 5, overflow: 'hidden' }}>
-                  <div style={{
-                    width: `${Math.min((claimed / 1000) * 100, 90)}%`,
-                    height: '100%',
-                    background: `linear-gradient(90deg, ${accent}, ${flashYellow})`,
-                    borderRadius: 5,
-                    transition: 'width 0.5s',
+                <div style={{ background: '#fce7f3', borderRadius: 10, height: 10, overflow: 'hidden' }}>
+                  <div style={{ 
+                    background: `linear-gradient(90deg, ${accent}, #f472b6)`, 
+                    height: '100%', 
+                    width: `${progressPercent}%`,
+                    transition: 'width 0.5s ease',
                   }} />
                 </div>
               </div>
 
-              {/* Features */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
-                {['✓ Free Shipping', '✓ 30-Day Returns', '✓ 1-Year Warranty', '✓ 24/7 Support'].map((feat) => (
-                  <div key={feat} style={{ fontSize: 13, color: '#9ca3af' }}>{feat}</div>
-                ))}
+              {/* Price */}
+              <div style={{ 
+                background: cardBg, 
+                border: `2px solid ${accent}`, 
+                borderRadius: cardRadius, 
+                padding: isMobile ? 16 : 20, 
+                marginBottom: 16,
+                textAlign: 'center',
+              }}>
+                <div style={{ fontSize: isMobile ? 14 : 16, color: muted, textDecoration: 'line-through' }}>{originalPrice}</div>
+                <div style={{ fontSize: isMobile ? 36 : 48, fontWeight: 900, color: accent }}>{salePrice}</div>
+                <div style={{ fontSize: isMobile ? 12 : 14, color: '#059669', fontWeight: 700 }}>
+                  You save {discountPercent}!
+                </div>
               </div>
+
+              <EmbeddedCheckout
+                storeSlug={storeSlug}
+                product={mainProduct as any}
+                formatPrice={formatPrice}
+                theme={checkoutTheme}
+                disabled={canManage}
+                heading={ctaText}
+                subheading={canManage ? 'Disabled in editor' : (asString(s.template_checkout_subheading) || '⚡ Limited time price')}
+              />
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* Why This Deal */}
-      <section
-        data-edit-path="layout.featured"
-        onClick={(e) => { stopIfManage(e); onSelect('layout.featured'); }}
-        style={{ padding: `${sectionSpacing * 0.7}px ${baseSpacing}px`, background: cardBg }}
-      >
-        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-          <h2
-            data-edit-path="layout.featured.title"
-            onClick={(e) => { stopIfManage(e); onSelect('layout.featured.title'); }}
-            style={{ fontSize: 24, fontWeight: 900, textAlign: 'center', marginBottom: 30 }}
-          >
-            Why This Deal is INSANE
-          </h2>
-
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(4, 1fr)', gap: 20 }}>
-            {[
-              { icon: '💰', title: '70% Off', desc: 'Lowest price ever' },
-              { icon: '🚚', title: 'Free Ship', desc: 'No hidden fees' },
-              { icon: '⭐', title: '4.9 Stars', desc: '10K+ reviews' },
-              { icon: '🛡️', title: 'Guaranteed', desc: 'Risk-free buy' },
-            ].map((item) => (
-              <div key={item.title} style={{ textAlign: 'center', padding: 20 }}>
-                <div style={{ fontSize: 36, marginBottom: 12 }}>{item.icon}</div>
-                <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 4 }}>{item.title}</div>
-                <div style={{ fontSize: 13, color: muted }}>{item.desc}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Checkout Section */}
-      <section style={{ padding: `${sectionSpacing}px ${baseSpacing}px` }}>
-        <div style={{ maxWidth: 500, margin: '0 auto', background: cardBg, borderRadius: cardRadius, padding: 30, border: `2px solid ${accent}`, position: 'relative' }}>
-          <div style={{
-            position: 'absolute',
-            top: -15,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            background: flashYellow,
-            color: '#000',
-            padding: '8px 20px',
-            borderRadius: 999,
-            fontSize: 12,
-            fontWeight: 900,
-          }}>
-            ⚡ DEAL EXPIRES SOON
-          </div>
-
-          <div style={{ textAlign: 'center', marginTop: 10, marginBottom: 24 }}>
-            <h2 style={{ fontSize: 24, fontWeight: 900, marginBottom: 8 }}>
-              Claim Your Deal Now!
-            </h2>
-            <p style={{ color: muted, fontSize: 14 }}>
-              Only {pad(timeLeft.hours)}:{pad(timeLeft.minutes)}:{pad(timeLeft.seconds)} left at this price
-            </p>
-          </div>
-          
-          <EmbeddedCheckout
-            storeSlug={storeSlug}
-            product={mainProduct as any}
-            formatPrice={formatPrice}
-            theme={checkoutTheme}
-            disabled={canManage}
-            heading={ctaText}
-            subheading={canManage ? 'Disabled in editor' : '⚡ Instant digital delivery'}
-          />
         </div>
       </section>
 
@@ -392,24 +384,17 @@ export default function FlashDealTemplate(props: TemplateProps) {
         <p
           data-edit-path="layout.footer.copyright"
           onClick={(e) => { stopIfManage(e); onSelect('layout.footer.copyright'); }}
-          style={{ fontSize: 12, color: muted }}
+          style={{ fontSize: isMobile ? 11 : 13, color: muted }}
         >
-          {asString((settings as any).template_copyright) || `© ${new Date().getFullYear()} ${storeName}. All rights reserved.`}
+          {asString(s.template_copyright) || `© ${new Date().getFullYear()} ${storeName}. All rights reserved.`}
         </p>
       </footer>
 
+      {/* CSS Animations */}
       <style>{`
-        @keyframes flash-gradient {
-          0%, 100% { background-position: 0% 0%; }
-          50% { background-position: 100% 0%; }
-        }
-        @keyframes pulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.05); }
-        }
-        @keyframes bounce {
-          0%, 100% { transform: translateY(0) rotate(10deg); }
-          50% { transform: translateY(-8px) rotate(10deg); }
+        @keyframes gradientShift {
+          0% { background-position: 0% 50%; }
+          100% { background-position: 200% 50%; }
         }
       `}</style>
     </div>

@@ -3,8 +3,9 @@ import type { TemplateProps, StoreProduct } from '../../types';
 import EmbeddedCheckout from '../shared/EmbeddedCheckout';
 
 /**
- * QUIZ FUNNEL - Interactive quiz-based landing page that guides users to products.
- * Design: Step-by-step quiz, progress bar, personalized results, gamified experience.
+ * QUIZ FUNNEL - Interactive quiz-based funnel landing page.
+ * Design: Step progress bar, quiz questions, personalized results.
+ * ALL TEXT IS EDITABLE via settings keys.
  */
 
 function asString(v: unknown): string {
@@ -17,14 +18,20 @@ function resolveInt(value: unknown, fallback: number, min: number, max: number):
   return Math.max(min, Math.min(max, safe));
 }
 
-function productImage(p: StoreProduct | undefined): string {
-  if (!p) return '/placeholder.png';
-  const img = Array.isArray((p as any).images) ? (p as any).images.find(Boolean) : undefined;
-  return typeof img === 'string' && img ? img : '/placeholder.png';
+function productImages(p: StoreProduct | undefined): string[] {
+  if (!p) return ['/placeholder.png'];
+  const imgs = Array.isArray((p as any).images) ? (p as any).images.filter((v: any) => typeof v === 'string' && v.trim()) : [];
+  return imgs.length ? imgs : ['/placeholder.png'];
+}
+
+function safePrice(value: unknown): number {
+  const n = typeof value === 'number' ? value : Number(String(value ?? '').trim());
+  return Number.isFinite(n) ? n : 0;
 }
 
 export default function QuizFunnelTemplate(props: TemplateProps) {
   const { settings, formatPrice } = props;
+  const s = settings as any;
   const canManage = Boolean(props.canManage);
   const onSelect = (path: string) => {
     if (canManage && typeof (props as any).onSelect === 'function') {
@@ -33,59 +40,72 @@ export default function QuizFunnelTemplate(props: TemplateProps) {
   };
 
   const [isMobile, setIsMobile] = React.useState((props as any).forcedBreakpoint === 'mobile');
+  const [currentStep, setCurrentStep] = React.useState(0); // 0 = intro, 1-3 = questions, 4 = results
+  const [answers, setAnswers] = React.useState<number[]>([]);
+
   React.useEffect(() => {
     const bp = (props as any).forcedBreakpoint;
     if (bp) { setIsMobile(bp === 'mobile'); return; }
-    const check = () => setIsMobile(window.innerWidth < 900);
+    const check = () => setIsMobile(window.innerWidth < 768);
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, [(props as any).forcedBreakpoint]);
 
-  // Theme - Friendly teal/green
-  const bg = asString(settings.template_bg_color) || '#f0fdf4';
-  const text = asString(settings.template_text_color) || '#0f172a';
-  const muted = asString(settings.template_muted_color) || '#64748b';
-  const accent = asString(settings.template_accent_color) || '#059669';
-  const cardBg = asString((settings as any).template_card_bg) || '#ffffff';
+  // Theme colors
+  const bg = asString(s.template_bg_color) || '#faf5ff';
+  const text = asString(s.template_text_color) || '#1e1b4b';
+  const muted = asString(s.template_muted_color) || '#6b7280';
+  const accent = asString(s.template_accent_color) || '#8b5cf6';
+  const cardBg = asString(s.template_card_bg) || '#ffffff';
   const border = 'rgba(0,0,0,0.06)';
 
-  // Content
-  const storeName = asString(settings.store_name) || 'Find Your Match';
-  const heroTitle = asString(settings.template_hero_heading) || 'Discover Your Perfect Product';
-  const heroSubtitle = asString(settings.template_hero_subtitle) || 'Take our quick 30-second quiz to find the product that\'s made just for you!';
-  const ctaText = asString(settings.template_button_text) || 'Start Quiz';
+  // EDITABLE Content from settings
+  const storeName = asString(s.store_name) || 'Quiz Funnel';
+  const heroTitle = asString(s.template_hero_heading) || 'Find Your Perfect Match';
+  const heroSubtitle = asString(s.template_hero_subtitle) || 'Answer 3 quick questions and we\'ll recommend the perfect product for you.';
+  const ctaText = asString(s.template_button_text) || 'Start Quiz';
+  const heroKicker = asString(s.template_hero_kicker) || '30-SECOND QUIZ';
+
+  // Quiz Questions (editable)
+  const q1Title = asString(s.template_q1_title) || 'What\'s your primary goal?';
+  const q1Opt1 = asString(s.template_q1_opt1) || 'Save time';
+  const q1Opt2 = asString(s.template_q1_opt2) || 'Save money';
+  const q1Opt3 = asString(s.template_q1_opt3) || 'Better quality';
+  const q1Opt4 = asString(s.template_q1_opt4) || 'All of the above';
+
+  const q2Title = asString(s.template_q2_title) || 'How often would you use this?';
+  const q2Opt1 = asString(s.template_q2_opt1) || 'Daily';
+  const q2Opt2 = asString(s.template_q2_opt2) || 'Weekly';
+  const q2Opt3 = asString(s.template_q2_opt3) || 'Monthly';
+  const q2Opt4 = asString(s.template_q2_opt4) || 'Occasionally';
+
+  const q3Title = asString(s.template_q3_title) || 'What\'s most important to you?';
+  const q3Opt1 = asString(s.template_q3_opt1) || 'Ease of use';
+  const q3Opt2 = asString(s.template_q3_opt2) || 'Durability';
+  const q3Opt3 = asString(s.template_q3_opt3) || 'Design';
+  const q3Opt4 = asString(s.template_q3_opt4) || 'Price';
+
+  // Results (editable)
+  const resultTitle = asString(s.template_result_title) || '🎉 Perfect Match Found!';
+  const resultSubtitle = asString(s.template_result_subtitle) || 'Based on your answers, we found the perfect product for you.';
+  const resultCTA = asString(s.template_result_cta) || 'Claim Your Match';
 
   // Spacing
-  const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
-  const sectionSpacing = resolveInt(settings.template_section_spacing, 60, 24, 96);
-  const cardRadius = resolveInt(settings.template_card_border_radius, 20, 0, 32);
+  const baseSpacing = resolveInt(s.template_spacing, 16, 8, 32);
+  const sectionSpacing = resolveInt(s.template_section_spacing, 56, 24, 96);
+  const cardRadius = resolveInt(s.template_card_border_radius, 16, 0, 32);
+  const buttonRadius = resolveInt(s.template_button_border_radius, 12, 0, 50);
 
   // Products
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 12) || [];
   const mainProduct = products[0];
-  const storeSlug = asString((settings as any).store_slug);
+  const images = productImages(mainProduct);
+  const [activeImage, setActiveImage] = React.useState(0);
 
-  const checkoutTheme = { bg, text, muted, accent, cardBg, border };
+  const storeSlug = asString(s.store_slug);
 
-  // Quiz state
-  const [quizStep, setQuizStep] = React.useState(0); // 0 = intro, 1-3 = questions, 4 = result
-  const [answers, setAnswers] = React.useState<number[]>([]);
-
-  const questions = [
-    {
-      q: 'What matters most to you?',
-      options: ['Quality & Durability', 'Value for Money', 'Style & Design', 'Fast Delivery'],
-    },
-    {
-      q: 'How often will you use this?',
-      options: ['Daily', 'Weekly', 'Occasionally', 'For special occasions'],
-    },
-    {
-      q: 'What\'s your budget?',
-      options: ['Under $50', '$50 - $100', '$100 - $200', 'No limit'],
-    },
-  ];
+  const checkoutTheme = { bg: cardBg, text, muted, accent, cardBg, border };
 
   const stopIfManage = (e: React.MouseEvent) => {
     if (!canManage) return;
@@ -93,14 +113,23 @@ export default function QuizFunnelTemplate(props: TemplateProps) {
     e.stopPropagation();
   };
 
-  const handleAnswer = (answerIndex: number) => {
-    if (canManage) return;
-    setAnswers([...answers, answerIndex]);
-    setQuizStep(quizStep + 1);
+  const questions = [
+    { title: q1Title, options: [q1Opt1, q1Opt2, q1Opt3, q1Opt4] },
+    { title: q2Title, options: [q2Opt1, q2Opt2, q2Opt3, q2Opt4] },
+    { title: q3Title, options: [q3Opt1, q3Opt2, q3Opt3, q3Opt4] },
+  ];
+
+  const handleAnswer = (answerIdx: number) => {
+    const newAnswers = [...answers, answerIdx];
+    setAnswers(newAnswers);
+    setCurrentStep(currentStep + 1);
   };
 
+  const totalSteps = questions.length + 1; // +1 for results
+  const progress = currentStep === 0 ? 0 : (currentStep / totalSteps) * 100;
+
   const resetQuiz = () => {
-    setQuizStep(0);
+    setCurrentStep(0);
     setAnswers([]);
   };
 
@@ -109,74 +138,79 @@ export default function QuizFunnelTemplate(props: TemplateProps) {
       data-edit-path="__root"
       onClick={() => canManage && onSelect('__root')}
       className="ecopro-storefront"
-      style={{ minHeight: '100vh', background: bg, color: text, fontFamily: 'system-ui, sans-serif' }}
+      style={{ minHeight: '100vh', background: bg, color: text, fontFamily: 'Inter, system-ui, sans-serif' }}
     >
       {/* Header */}
       <header
         data-edit-path="layout.header"
         onClick={(e) => { stopIfManage(e); onSelect('layout.header'); }}
-        style={{ padding: '16px 20px', background: cardBg, borderBottom: `1px solid ${border}` }}
+        style={{ position: 'sticky', top: 0, zIndex: 30, background: bg, borderBottom: `1px solid ${border}`, padding: isMobile ? '10px 12px' : '14px 20px' }}
       >
         <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {asString(settings.store_logo) ? (
-              <img src={asString(settings.store_logo)} alt={storeName} style={{ width: 40, height: 40, borderRadius: 12, objectFit: 'cover' }} />
+            {asString(s.store_logo) ? (
+              <img src={asString(s.store_logo)} alt={storeName} style={{ width: isMobile ? 32 : 38, height: isMobile ? 32 : 38, borderRadius: 10, objectFit: 'cover' }} />
             ) : (
-              <div style={{ width: 40, height: 40, borderRadius: 12, background: accent, color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 900, fontSize: 20 }}>
-                ?
+              <div style={{ width: isMobile ? 32 : 38, height: isMobile ? 32 : 38, borderRadius: 10, background: accent, color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 900, fontSize: isMobile ? 14 : 16 }}>
+                {storeName.slice(0, 1).toUpperCase()}
               </div>
             )}
-            <span style={{ fontWeight: 800, fontSize: 16 }}>{storeName}</span>
+            <span style={{ fontWeight: 800, fontSize: isMobile ? 13 : 15 }}>{storeName}</span>
           </div>
-          <span style={{ fontSize: 13, color: muted }}>🎯 Takes only 30 seconds</span>
+          {currentStep > 0 && currentStep <= questions.length && (
+            <div style={{ fontSize: isMobile ? 11 : 13, color: muted }}>
+              Question {currentStep} of {questions.length}
+            </div>
+          )}
         </div>
       </header>
 
       {/* Progress Bar */}
-      {quizStep > 0 && quizStep < 4 && (
-        <div style={{ background: cardBg, padding: '16px 20px', borderBottom: `1px solid ${border}` }}>
-          <div style={{ maxWidth: 600, margin: '0 auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 12, color: muted }}>
-              <span>Question {quizStep} of 3</span>
-              <span>{Math.round((quizStep / 3) * 100)}% Complete</span>
-            </div>
-            <div style={{ height: 6, background: '#e5e7eb', borderRadius: 3, overflow: 'hidden' }}>
-              <div
-                style={{
-                  width: `${(quizStep / 3) * 100}%`,
-                  height: '100%',
-                  background: accent,
-                  borderRadius: 3,
-                  transition: 'width 0.3s ease',
-                }}
-              />
-            </div>
-          </div>
+      {currentStep > 0 && (
+        <div style={{ background: 'rgba(0,0,0,0.05)', height: 4 }}>
+          <div style={{ 
+            background: accent, 
+            height: '100%', 
+            width: `${progress}%`, 
+            transition: 'width 0.3s ease' 
+          }} />
         </div>
       )}
 
-      {/* Quiz Content */}
+      {/* Main Content */}
       <section
         data-edit-path="layout.hero"
         onClick={(e) => { stopIfManage(e); onSelect('layout.hero'); }}
-        style={{ padding: `${sectionSpacing}px ${baseSpacing}px`, minHeight: 'calc(100vh - 200px)', display: 'flex', alignItems: 'center' }}
+        style={{ padding: isMobile ? `${sectionSpacing * 0.6}px ${baseSpacing}px` : `${sectionSpacing}px ${baseSpacing}px` }}
       >
-        <div style={{ maxWidth: 700, margin: '0 auto', width: '100%' }}>
-          {/* Intro */}
-          {quizStep === 0 && (
+        <div style={{ maxWidth: 600, margin: '0 auto' }}>
+          
+          {/* Step 0: Intro */}
+          {currentStep === 0 && (
             <div style={{ textAlign: 'center' }}>
               <div
-                data-edit-path="layout.hero.badge"
-                onClick={(e) => { stopIfManage(e); onSelect('layout.hero.badge'); }}
-                style={{ display: 'inline-block', background: `${accent}15`, color: accent, padding: '10px 20px', borderRadius: 999, fontSize: 14, fontWeight: 700, marginBottom: 24 }}
+                data-edit-path="layout.hero.kicker"
+                onClick={(e) => { stopIfManage(e); onSelect('layout.hero.kicker'); }}
+                style={{ 
+                  display: 'inline-flex', 
+                  alignItems: 'center', 
+                  gap: 8, 
+                  background: `${accent}15`, 
+                  padding: '8px 16px', 
+                  borderRadius: 20, 
+                  marginBottom: 20,
+                  fontSize: isMobile ? 11 : 13,
+                  fontWeight: 700,
+                  color: accent,
+                }}
               >
-                🎯 Personalized Product Match
+                ⏱️ {heroKicker}
               </div>
 
               <h1
                 data-edit-path="layout.hero.title"
                 onClick={(e) => { stopIfManage(e); onSelect('layout.hero.title'); }}
-                style={{ fontSize: isMobile ? 32 : 48, fontWeight: 900, lineHeight: 1.1, marginBottom: 16 }}
+                style={{ fontSize: isMobile ? 28 : 44, fontWeight: 900, lineHeight: 1.15, marginBottom: 16 }}
               >
                 {heroTitle}
               </h1>
@@ -184,7 +218,7 @@ export default function QuizFunnelTemplate(props: TemplateProps) {
               <p
                 data-edit-path="layout.hero.subtitle"
                 onClick={(e) => { stopIfManage(e); onSelect('layout.hero.subtitle'); }}
-                style={{ fontSize: 17, color: muted, lineHeight: 1.6, marginBottom: 40 }}
+                style={{ fontSize: isMobile ? 14 : 18, color: muted, marginBottom: 32, lineHeight: 1.6 }}
               >
                 {heroSubtitle}
               </p>
@@ -192,96 +226,84 @@ export default function QuizFunnelTemplate(props: TemplateProps) {
               <div
                 data-edit-path="layout.hero.image"
                 onClick={(e) => { stopIfManage(e); onSelect('layout.hero.image'); }}
-                style={{ display: 'flex', justifyContent: 'center', gap: -20, marginBottom: 40 }}
+                style={{ borderRadius: cardRadius, overflow: 'hidden', marginBottom: 32, border: `1px solid ${border}` }}
               >
-                {products.slice(0, 3).map((p, i) => (
-                  <div
-                    key={p.id}
-                    style={{
-                      width: 80,
-                      height: 80,
-                      borderRadius: '50%',
-                      overflow: 'hidden',
-                      border: '4px solid #fff',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      marginLeft: i > 0 ? -20 : 0,
-                      zIndex: 3 - i,
-                    }}
-                  >
-                    <img src={productImage(p)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </div>
-                ))}
+                <img src={images[0]} alt="" style={{ width: '100%', aspectRatio: '16/10', objectFit: 'cover' }} />
               </div>
 
               <button
                 data-edit-path="layout.hero.cta"
-                onClick={(e) => {
-                  stopIfManage(e);
-                  if (!canManage) setQuizStep(1);
-                  onSelect('layout.hero.cta');
-                }}
-                style={{
-                  background: accent,
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 999,
-                  padding: '18px 48px',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  fontSize: 16,
-                  boxShadow: `0 4px 20px ${accent}40`,
+                onClick={(e) => { stopIfManage(e); if (!canManage) setCurrentStep(1); }}
+                style={{ 
+                  background: accent, 
+                  color: '#fff', 
+                  border: 'none', 
+                  borderRadius: buttonRadius, 
+                  padding: isMobile ? '14px 32px' : '16px 48px', 
+                  fontWeight: 700, 
+                  cursor: 'pointer', 
+                  fontSize: isMobile ? 14 : 16,
+                  width: '100%',
+                  maxWidth: 300,
                 }}
               >
                 {ctaText} →
               </button>
-
-              <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center', gap: 24, fontSize: 13, color: muted }}>
-                <span>⏱ 30 seconds</span>
-                <span>📊 98% match rate</span>
-                <span>🎁 Free results</span>
-              </div>
             </div>
           )}
 
-          {/* Questions */}
-          {quizStep > 0 && quizStep < 4 && (
-            <div style={{ background: cardBg, borderRadius: cardRadius, padding: isMobile ? 24 : 40, boxShadow: '0 10px 40px rgba(0,0,0,0.08)' }}>
-              <h2 style={{ fontSize: 24, fontWeight: 900, textAlign: 'center', marginBottom: 32 }}>
-                {questions[quizStep - 1].q}
+          {/* Steps 1-3: Questions */}
+          {currentStep >= 1 && currentStep <= questions.length && (
+            <div
+              data-edit-path="layout.categories"
+              onClick={(e) => { stopIfManage(e); onSelect('layout.categories'); }}
+            >
+              <h2 style={{ fontSize: isMobile ? 22 : 32, fontWeight: 800, marginBottom: 24, textAlign: 'center' }}>
+                {questions[currentStep - 1].title}
               </h2>
 
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 16 }}>
-                {questions[quizStep - 1].options.map((option, i) => (
+              <div style={{ display: 'grid', gap: isMobile ? 10 : 14 }}>
+                {questions[currentStep - 1].options.map((option, idx) => (
                   <button
-                    key={option}
-                    onClick={() => handleAnswer(i)}
+                    key={idx}
+                    onClick={(e) => { stopIfManage(e); if (!canManage) handleAnswer(idx); }}
                     style={{
-                      background: 'transparent',
+                      background: cardBg,
                       border: `2px solid ${border}`,
-                      borderRadius: cardRadius - 8,
-                      padding: 20,
+                      borderRadius: cardRadius,
+                      padding: isMobile ? '16px 20px' : '20px 24px',
                       cursor: 'pointer',
                       textAlign: 'left',
-                      transition: 'all 0.2s',
+                      fontSize: isMobile ? 14 : 16,
+                      fontWeight: 600,
+                      transition: 'all 0.2s ease',
                     }}
-                    onMouseEnter={(e) => !canManage && (e.currentTarget.style.borderColor = accent)}
-                    onMouseLeave={(e) => !canManage && (e.currentTarget.style.borderColor = String(border))}
+                    onMouseEnter={(e) => {
+                      if (!canManage) {
+                        (e.target as HTMLElement).style.borderColor = accent;
+                        (e.target as HTMLElement).style.background = `${accent}08`;
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.target as HTMLElement).style.borderColor = border;
+                      (e.target as HTMLElement).style.background = cardBg;
+                    }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: '50%',
-                        border: `2px solid ${muted}`,
-                        display: 'grid',
+                      <div style={{ 
+                        width: 24, 
+                        height: 24, 
+                        borderRadius: '50%', 
+                        border: `2px solid ${accent}`, 
+                        display: 'grid', 
                         placeItems: 'center',
                         fontSize: 12,
                         fontWeight: 700,
-                        color: muted,
+                        color: accent,
                       }}>
-                        {String.fromCharCode(65 + i)}
+                        {String.fromCharCode(65 + idx)}
                       </div>
-                      <span style={{ fontSize: 15, fontWeight: 600 }}>{option}</span>
+                      {option}
                     </div>
                   </button>
                 ))}
@@ -289,30 +311,78 @@ export default function QuizFunnelTemplate(props: TemplateProps) {
             </div>
           )}
 
-          {/* Results */}
-          {quizStep === 4 && (
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 60, marginBottom: 16 }}>🎉</div>
-              <h2 style={{ fontSize: 28, fontWeight: 900, marginBottom: 8 }}>
-                We Found Your Perfect Match!
-              </h2>
-              <p style={{ color: muted, marginBottom: 32 }}>
-                Based on your answers, we've found the ideal product for you
-              </p>
+          {/* Step 4: Results */}
+          {currentStep > questions.length && (
+            <div
+              data-edit-path="layout.featured"
+              onClick={(e) => { stopIfManage(e); onSelect('layout.featured'); }}
+            >
+              <div style={{ textAlign: 'center', marginBottom: 32 }}>
+                <h2
+                  data-edit-path="layout.featured.title"
+                  onClick={(e) => { stopIfManage(e); onSelect('layout.featured.title'); }}
+                  style={{ fontSize: isMobile ? 24 : 36, fontWeight: 900, marginBottom: 12 }}
+                >
+                  {resultTitle}
+                </h2>
+                <p style={{ fontSize: isMobile ? 14 : 16, color: muted }}>{resultSubtitle}</p>
+              </div>
 
-              <div style={{ background: cardBg, borderRadius: cardRadius, padding: 24, marginBottom: 24, boxShadow: '0 10px 40px rgba(0,0,0,0.08)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexDirection: isMobile ? 'column' : 'row', textAlign: isMobile ? 'center' : 'left' }}>
-                  <img src={productImage(mainProduct)} alt="" style={{ width: 120, height: 120, borderRadius: cardRadius - 4, objectFit: 'cover' }} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'inline-block', background: `${accent}15`, color: accent, padding: '4px 12px', borderRadius: 999, fontSize: 12, fontWeight: 700, marginBottom: 8 }}>
-                      98% Match
+              {/* Product */}
+              <div style={{ 
+                background: cardBg, 
+                borderRadius: cardRadius, 
+                overflow: 'hidden', 
+                border: `1px solid ${border}`,
+                marginBottom: 24,
+              }}>
+                <div
+                  data-edit-path="layout.hero.image"
+                  onClick={(e) => { stopIfManage(e); onSelect('layout.hero.image'); }}
+                >
+                  <img src={images[activeImage] || images[0]} alt="" style={{ width: '100%', aspectRatio: '16/10', objectFit: 'cover' }} />
+                  {images.length > 1 && (
+                    <div style={{ padding: 10, display: 'flex', gap: 8, overflowX: 'auto', background: 'rgba(0,0,0,0.02)' }}>
+                      {images.slice(0, 10).map((img, idx) => (
+                        <button
+                          key={idx}
+                          onClick={(e) => { stopIfManage(e); setActiveImage(idx); }}
+                          style={{
+                            flex: '0 0 auto',
+                            width: isMobile ? 44 : 54,
+                            height: isMobile ? 44 : 54,
+                            borderRadius: 8,
+                            border: idx === activeImage ? `2px solid ${accent}` : `1px solid ${border}`,
+                            padding: 0,
+                            background: 'transparent',
+                            cursor: 'pointer',
+                            overflow: 'hidden',
+                          }}
+                        >
+                          <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </button>
+                      ))}
                     </div>
-                    <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 8 }}>{mainProduct?.name || 'Perfect Product'}</h3>
-                    <div style={{ fontSize: 24, fontWeight: 900, color: accent }}>
-                      {mainProduct ? formatPrice(mainProduct.price) : '$99.00'}
-                    </div>
-                  </div>
+                  )}
                 </div>
+              </div>
+
+              {/* Match score */}
+              <div
+                data-edit-path="layout.hero.badge"
+                onClick={(e) => { stopIfManage(e); onSelect('layout.hero.badge'); }}
+                style={{ 
+                  background: `linear-gradient(135deg, ${accent}15, ${accent}05)`,
+                  border: `1px solid ${accent}30`,
+                  borderRadius: cardRadius,
+                  padding: isMobile ? 16 : 20,
+                  textAlign: 'center',
+                  marginBottom: 24,
+                }}
+              >
+                <div style={{ fontSize: isMobile ? 11 : 13, color: muted, marginBottom: 4 }}>Your Match Score</div>
+                <div style={{ fontSize: isMobile ? 32 : 44, fontWeight: 900, color: accent }}>98%</div>
+                <div style={{ fontSize: isMobile ? 12 : 14, color: text }}>Perfect for your needs!</div>
               </div>
 
               <EmbeddedCheckout
@@ -321,72 +391,42 @@ export default function QuizFunnelTemplate(props: TemplateProps) {
                 formatPrice={formatPrice}
                 theme={checkoutTheme}
                 disabled={canManage}
-                heading="Get Your Match"
-                subheading={canManage ? 'Disabled in editor' : '✨ Personalized just for you'}
+                heading={resultCTA}
+                subheading={canManage ? 'Disabled in editor' : (asString(s.template_checkout_subheading) || '✨ Personalized recommendation')}
               />
 
               <button
-                onClick={resetQuiz}
+                onClick={(e) => { stopIfManage(e); if (!canManage) resetQuiz(); }}
                 style={{
-                  marginTop: 24,
                   background: 'transparent',
                   border: 'none',
                   color: muted,
                   cursor: 'pointer',
-                  fontSize: 14,
-                  textDecoration: 'underline',
+                  fontSize: isMobile ? 12 : 14,
+                  marginTop: 16,
+                  width: '100%',
+                  textAlign: 'center',
                 }}
               >
-                Retake Quiz
+                ← Retake Quiz
               </button>
             </div>
           )}
         </div>
       </section>
 
-      {/* Social Proof (only on intro) */}
-      {quizStep === 0 && (
-        <section
-          data-edit-path="layout.featured"
-          onClick={(e) => { stopIfManage(e); onSelect('layout.featured'); }}
-          style={{ padding: `${sectionSpacing * 0.5}px ${baseSpacing}px`, background: cardBg, borderTop: `1px solid ${border}` }}
-        >
-          <div style={{ maxWidth: 900, margin: '0 auto', textAlign: 'center' }}>
-            <h2
-              data-edit-path="layout.featured.title"
-              onClick={(e) => { stopIfManage(e); onSelect('layout.featured.title'); }}
-              style={{ fontSize: 20, fontWeight: 800, marginBottom: 24 }}
-            >
-              Join 50,000+ Happy Customers
-            </h2>
-            <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 40 }}>
-              {[
-                { val: '50K+', label: 'Quiz Takers' },
-                { val: '4.9★', label: 'Rating' },
-                { val: '98%', label: 'Match Rate' },
-              ].map((stat) => (
-                <div key={stat.label}>
-                  <div style={{ fontSize: 28, fontWeight: 900, color: accent }}>{stat.val}</div>
-                  <div style={{ fontSize: 13, color: muted }}>{stat.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
       {/* Footer */}
       <footer
         data-edit-path="layout.footer"
         onClick={(e) => { stopIfManage(e); onSelect('layout.footer'); }}
-        style={{ borderTop: `1px solid ${border}`, padding: `${baseSpacing * 1.5}px ${baseSpacing}px`, textAlign: 'center', background: cardBg }}
+        style={{ borderTop: `1px solid ${border}`, padding: `${baseSpacing * 1.5}px ${baseSpacing}px`, textAlign: 'center' }}
       >
         <p
           data-edit-path="layout.footer.copyright"
           onClick={(e) => { stopIfManage(e); onSelect('layout.footer.copyright'); }}
-          style={{ fontSize: 13, color: muted }}
+          style={{ fontSize: isMobile ? 11 : 13, color: muted }}
         >
-          {asString((settings as any).template_copyright) || `© ${new Date().getFullYear()} ${storeName}. All rights reserved.`}
+          {asString(s.template_copyright) || `© ${new Date().getFullYear()} ${storeName}. All rights reserved.`}
         </p>
       </footer>
     </div>

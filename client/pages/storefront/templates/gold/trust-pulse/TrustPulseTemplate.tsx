@@ -5,6 +5,7 @@ import EmbeddedCheckout from '../shared/EmbeddedCheckout';
 /**
  * TRUST PULSE - High-conversion landing page with countdown timer, testimonials, and trust badges.
  * Design: Urgency bar at top, bold headline, social proof, testimonials carousel, embedded checkout.
+ * ALL TEXT IS EDITABLE via settings keys.
  */
 
 function asString(v: unknown): string {
@@ -17,15 +18,23 @@ function resolveInt(value: unknown, fallback: number, min: number, max: number):
   return Math.max(min, Math.min(max, safe));
 }
 
-function productImage(p: StoreProduct | undefined): string {
-  if (!p) return '/placeholder.png';
-  const img = Array.isArray((p as any).images) ? (p as any).images.find(Boolean) : undefined;
-  return typeof img === 'string' && img ? img : '/placeholder.png';
+function productImages(p: StoreProduct | undefined): string[] {
+  if (!p) return ['/placeholder.png'];
+  const imgs = Array.isArray((p as any).images) ? (p as any).images.filter((v: any) => typeof v === 'string' && v.trim()) : [];
+  return imgs.length ? imgs : ['/placeholder.png'];
 }
 
 function safePrice(value: unknown): number {
   const n = typeof value === 'number' ? value : Number(String(value ?? '').trim());
   return Number.isFinite(n) ? n : 0;
+}
+
+function parseJsonArray(value: unknown): any[] {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string' && value.trim().startsWith('[')) {
+    try { return JSON.parse(value); } catch { return []; }
+  }
+  return [];
 }
 
 // Countdown hook
@@ -53,6 +62,7 @@ function useCountdown(targetDate: Date) {
 
 export default function TrustPulseTemplate(props: TemplateProps) {
   const { settings, formatPrice, navigate } = props;
+  const s = settings as any; // For easier access to all settings
   const canManage = Boolean(props.canManage);
   const onSelect = (path: string) => {
     if (canManage && typeof (props as any).onSelect === 'function') {
@@ -64,38 +74,84 @@ export default function TrustPulseTemplate(props: TemplateProps) {
   React.useEffect(() => {
     const bp = (props as any).forcedBreakpoint;
     if (bp) { setIsMobile(bp === 'mobile'); return; }
-    const check = () => setIsMobile(window.innerWidth < 900);
+    const check = () => setIsMobile(window.innerWidth < 768);
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, [(props as any).forcedBreakpoint]);
 
   // Theme colors
-  const bg = asString(settings.template_bg_color) || '#ffffff';
-  const text = asString(settings.template_text_color) || '#1a1a2e';
-  const muted = asString(settings.template_muted_color) || '#6b7280';
-  const accent = asString(settings.template_accent_color) || '#e63946';
-  const cardBg = asString((settings as any).template_card_bg) || '#ffffff';
+  const bg = asString(s.template_bg_color) || '#ffffff';
+  const text = asString(s.template_text_color) || '#1a1a2e';
+  const muted = asString(s.template_muted_color) || '#6b7280';
+  const accent = asString(s.template_accent_color) || '#e63946';
+  const cardBg = asString(s.template_card_bg) || '#ffffff';
   const border = 'rgba(0,0,0,0.08)';
 
-  // Content from settings
-  const storeName = asString(settings.store_name) || 'Trust Pulse';
-  const heroTitle = asString(settings.template_hero_heading) || 'The #1 Product That Changed Everything';
-  const heroSubtitle = asString(settings.template_hero_subtitle) || 'Join 10,000+ happy customers who transformed their lives with our revolutionary product.';
-  const ctaText = asString(settings.template_button_text) || 'Order Now - 50% OFF';
-  const badgeText = asString((settings as any).template_hero_badge_title) || '🔥 SELLING FAST';
-  const badgeSubtitle = asString((settings as any).template_hero_badge_subtitle) || 'Only 23 left in stock!';
+  // EDITABLE Content from settings
+  const storeName = asString(s.store_name) || 'Trust Pulse';
+  const heroTitle = asString(s.template_hero_heading) || 'The #1 Product That Changed Everything';
+  const heroSubtitle = asString(s.template_hero_subtitle) || 'Join 10,000+ happy customers who transformed their lives with our revolutionary product.';
+  const ctaText = asString(s.template_button_text) || 'Order Now - 50% OFF';
+  
+  // Urgency bar text
+  const urgencyText = asString(s.template_urgency_text) || '🔥 SELLING FAST - Limited Time Offer!';
+  const stockText = asString(s.template_stock_text) || 'Only 23 left in stock!';
+  
+  // Trust badges (editable)
+  const badge1 = asString(s.template_badge_1) || '✅ Free Shipping';
+  const badge2 = asString(s.template_badge_2) || '🛡️ Money Back Guarantee';
+  const badge3 = asString(s.template_badge_3) || '⚡ 24h Delivery';
+  
+  // Stats (editable)
+  const stat1Value = asString(s.template_stat1_value) || '10K+';
+  const stat1Label = asString(s.template_stat1_label) || 'Happy Customers';
+  const stat2Value = asString(s.template_stat2_value) || '4.9★';
+  const stat2Label = asString(s.template_stat2_label) || 'Average Rating';
+  const stat3Value = asString(s.template_stat3_value) || '99%';
+  const stat3Label = asString(s.template_stat3_label) || 'Satisfaction';
+  
+  // Section titles (editable)
+  const testimonialTitle = asString(s.template_testimonial_title) || 'What Our Customers Say';
+  const trustTitle = asString(s.template_trust_title) || 'Why Choose Us';
+  
+  // Trust features (editable)
+  const feature1Icon = asString(s.template_feature1_icon) || '🚚';
+  const feature1Title = asString(s.template_feature1_title) || 'Free Shipping';
+  const feature1Desc = asString(s.template_feature1_desc) || 'On all orders';
+  const feature2Icon = asString(s.template_feature2_icon) || '🔒';
+  const feature2Title = asString(s.template_feature2_title) || 'Secure Payment';
+  const feature2Desc = asString(s.template_feature2_desc) || '100% protected';
+  const feature3Icon = asString(s.template_feature3_icon) || '💯';
+  const feature3Title = asString(s.template_feature3_title) || '30-Day Guarantee';
+  const feature3Desc = asString(s.template_feature3_desc) || 'Money back';
+  const feature4Icon = asString(s.template_feature4_icon) || '🎧';
+  const feature4Title = asString(s.template_feature4_title) || '24/7 Support';
+  const feature4Desc = asString(s.template_feature4_desc) || 'Always here';
+  
+  // Testimonials (editable via JSON or individual settings)
+  const defaultTestimonials = [
+    { name: 'Sarah M.', text: 'This product completely changed my routine. Best purchase ever!', avatar: '👩' },
+    { name: 'Ahmed K.', text: 'Exceeded all my expectations. Highly recommend to everyone!', avatar: '👨' },
+    { name: 'Lisa R.', text: 'Fast shipping, amazing quality. Will definitely buy again!', avatar: '👩‍🦰' },
+  ];
+  const testimonials = parseJsonArray(s.template_testimonials).length > 0 
+    ? parseJsonArray(s.template_testimonials) 
+    : defaultTestimonials;
   
   // Spacing
-  const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
-  const sectionSpacing = resolveInt(settings.template_section_spacing, 48, 24, 96);
-  const cardRadius = resolveInt(settings.template_card_border_radius, 16, 0, 32);
-  const buttonRadius = resolveInt((settings as any).template_button_border_radius, 12, 0, 50);
+  const baseSpacing = resolveInt(s.template_spacing, 16, 8, 32);
+  const sectionSpacing = resolveInt(s.template_section_spacing, 48, 24, 96);
+  const cardRadius = resolveInt(s.template_card_border_radius, 16, 0, 32);
+  const buttonRadius = resolveInt(s.template_button_border_radius, 12, 0, 50);
 
   // Products
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 12) || [];
   const mainProduct = products[0];
-  const storeSlug = asString((settings as any).store_slug);
+  const images = productImages(mainProduct);
+  const [activeImage, setActiveImage] = React.useState(0);
+  
+  const storeSlug = asString(s.store_slug);
   const priceValue = mainProduct ? safePrice((mainProduct as any).price) : 0;
   const originalValue = mainProduct ? safePrice((mainProduct as any).original_price) : 0;
   const mainPrice = mainProduct ? formatPrice(priceValue) : '';
@@ -107,20 +163,13 @@ export default function TrustPulseTemplate(props: TemplateProps) {
 
   const checkoutTheme = { bg, text, muted, accent, cardBg, border };
 
-  // Testimonials (can be edited via template_social_links or similar)
-  const testimonials = [
-    { name: 'Sarah M.', rating: 5, text: 'This product completely changed my routine. Best purchase ever!', avatar: '👩' },
-    { name: 'Ahmed K.', rating: 5, text: 'Exceeded all my expectations. Highly recommend to everyone!', avatar: '👨' },
-    { name: 'Lisa R.', rating: 5, text: 'Fast shipping, amazing quality. Will definitely buy again!', avatar: '👩‍🦰' },
-  ];
-
   const [currentTestimonial, setCurrentTestimonial] = React.useState(0);
   React.useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
     }, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [testimonials.length]);
 
   const stopIfManage = (e: React.MouseEvent) => {
     if (!canManage) return;
@@ -135,37 +184,37 @@ export default function TrustPulseTemplate(props: TemplateProps) {
       className="ecopro-storefront"
       style={{ minHeight: '100vh', background: bg, color: text, fontFamily: 'Inter, system-ui, sans-serif' }}
     >
-      {/* Urgency Bar */}
+      {/* Urgency Bar - Editable */}
       <div
         data-edit-path="layout.hero.badge"
         onClick={(e) => { stopIfManage(e); onSelect('layout.hero.badge'); }}
         style={{
           background: `linear-gradient(135deg, ${accent} 0%, #ff6b6b 100%)`,
           color: '#fff',
-          padding: '10px 16px',
+          padding: isMobile ? '8px 12px' : '10px 16px',
           textAlign: 'center',
-          fontSize: 13,
+          fontSize: isMobile ? 11 : 13,
           fontWeight: 700,
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          gap: 12,
+          gap: isMobile ? 6 : 12,
           flexWrap: 'wrap',
         }}
       >
-        <span>{badgeText}</span>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <span style={{ background: 'rgba(0,0,0,0.2)', padding: '4px 8px', borderRadius: 6 }}>
+        <span>{urgencyText}</span>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <span style={{ background: 'rgba(0,0,0,0.2)', padding: '4px 8px', borderRadius: 6, fontSize: isMobile ? 10 : 12 }}>
             {String(countdown.hours).padStart(2, '0')}h
           </span>
-          <span style={{ background: 'rgba(0,0,0,0.2)', padding: '4px 8px', borderRadius: 6 }}>
+          <span style={{ background: 'rgba(0,0,0,0.2)', padding: '4px 8px', borderRadius: 6, fontSize: isMobile ? 10 : 12 }}>
             {String(countdown.minutes).padStart(2, '0')}m
           </span>
-          <span style={{ background: 'rgba(0,0,0,0.2)', padding: '4px 8px', borderRadius: 6 }}>
+          <span style={{ background: 'rgba(0,0,0,0.2)', padding: '4px 8px', borderRadius: 6, fontSize: isMobile ? 10 : 12 }}>
             {String(countdown.seconds).padStart(2, '0')}s
           </span>
         </div>
-        <span>{badgeSubtitle}</span>
+        <span>{stockText}</span>
       </div>
 
       {/* Header */}
@@ -178,22 +227,22 @@ export default function TrustPulseTemplate(props: TemplateProps) {
           zIndex: 30,
           background: bg,
           borderBottom: `1px solid ${border}`,
-          padding: '12px 20px',
+          padding: isMobile ? '10px 12px' : '12px 20px',
         }}
       >
         <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {asString(settings.store_logo) ? (
-              <img src={asString(settings.store_logo)} alt={storeName} style={{ width: 36, height: 36, borderRadius: 10, objectFit: 'cover' }} />
+            {asString(s.store_logo) ? (
+              <img src={asString(s.store_logo)} alt={storeName} style={{ width: isMobile ? 32 : 36, height: isMobile ? 32 : 36, borderRadius: 10, objectFit: 'cover' }} />
             ) : (
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: accent, color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 900, fontSize: 16 }}>
+              <div style={{ width: isMobile ? 32 : 36, height: isMobile ? 32 : 36, borderRadius: 10, background: accent, color: '#fff', display: 'grid', placeItems: 'center', fontWeight: 900, fontSize: isMobile ? 14 : 16 }}>
                 {storeName.slice(0, 1).toUpperCase()}
               </div>
             )}
-            <span style={{ fontWeight: 800, fontSize: 15 }}>{storeName}</span>
+            <span style={{ fontWeight: 800, fontSize: isMobile ? 13 : 15 }}>{storeName}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 12, color: muted }}>⭐ 4.9/5 (2,847 reviews)</span>
+            <span style={{ fontSize: isMobile ? 10 : 12, color: muted }}>⭐ {asString(s.template_rating_text) || '4.9/5 (2,847 reviews)'}</span>
           </div>
         </div>
       </header>
@@ -202,16 +251,20 @@ export default function TrustPulseTemplate(props: TemplateProps) {
       <section
         data-edit-path="layout.hero"
         onClick={(e) => { stopIfManage(e); onSelect('layout.hero'); }}
-        style={{ padding: `${sectionSpacing}px ${baseSpacing}px` }}
+        style={{ padding: isMobile ? `${sectionSpacing * 0.6}px ${baseSpacing}px` : `${sectionSpacing}px ${baseSpacing}px` }}
       >
-        <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 420px', gap: 32, alignItems: 'start' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 420px', gap: isMobile ? 20 : 32, alignItems: 'start' }}>
           
           {/* Left: Content */}
           <div>
-            {/* Trust badges */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
-              {['✅ Free Shipping', '🛡️ Money Back Guarantee', '⚡ 24h Delivery'].map((badge) => (
-                <span key={badge} style={{ fontSize: 11, color: muted, background: 'rgba(0,0,0,0.04)', padding: '6px 10px', borderRadius: 20, fontWeight: 600 }}>
+            {/* Trust badges - Editable */}
+            <div
+              data-edit-path="layout.hero.kicker"
+              onClick={(e) => { stopIfManage(e); onSelect('layout.hero.kicker'); }}
+              style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}
+            >
+              {[badge1, badge2, badge3].filter(Boolean).map((badge) => (
+                <span key={badge} style={{ fontSize: isMobile ? 10 : 11, color: muted, background: 'rgba(0,0,0,0.04)', padding: '6px 10px', borderRadius: 20, fontWeight: 600 }}>
                   {badge}
                 </span>
               ))}
@@ -220,7 +273,7 @@ export default function TrustPulseTemplate(props: TemplateProps) {
             <h1
               data-edit-path="layout.hero.title"
               onClick={(e) => { stopIfManage(e); onSelect('layout.hero.title'); }}
-              style={{ fontSize: isMobile ? 28 : 42, fontWeight: 900, lineHeight: 1.15, marginBottom: 16 }}
+              style={{ fontSize: isMobile ? 24 : 42, fontWeight: 900, lineHeight: 1.15, marginBottom: 14 }}
             >
               {heroTitle}
             </h1>
@@ -228,48 +281,80 @@ export default function TrustPulseTemplate(props: TemplateProps) {
             <p
               data-edit-path="layout.hero.subtitle"
               onClick={(e) => { stopIfManage(e); onSelect('layout.hero.subtitle'); }}
-              style={{ fontSize: 16, color: muted, lineHeight: 1.6, marginBottom: 24, maxWidth: 540 }}
+              style={{ fontSize: isMobile ? 14 : 16, color: muted, lineHeight: 1.6, marginBottom: 20, maxWidth: 540 }}
             >
               {heroSubtitle}
             </p>
 
-            {/* Social Proof Stats */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
+            {/* Social Proof Stats - Editable */}
+            <div
+              data-edit-path="layout.categories"
+              onClick={(e) => { stopIfManage(e); onSelect('layout.categories'); }}
+              style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: isMobile ? 8 : 16, marginBottom: 20 }}
+            >
               {[
-                { value: '10K+', label: 'Happy Customers' },
-                { value: '4.9★', label: 'Average Rating' },
-                { value: '99%', label: 'Satisfaction' },
+                { value: stat1Value, label: stat1Label },
+                { value: stat2Value, label: stat2Label },
+                { value: stat3Value, label: stat3Label },
               ].map((stat) => (
-                <div key={stat.label} style={{ textAlign: 'center', padding: 16, background: 'rgba(0,0,0,0.02)', borderRadius: cardRadius }}>
-                  <div style={{ fontSize: 24, fontWeight: 900, color: accent }}>{stat.value}</div>
-                  <div style={{ fontSize: 11, color: muted, fontWeight: 600 }}>{stat.label}</div>
+                <div key={stat.label} style={{ textAlign: 'center', padding: isMobile ? 10 : 16, background: 'rgba(0,0,0,0.02)', borderRadius: cardRadius }}>
+                  <div style={{ fontSize: isMobile ? 18 : 24, fontWeight: 900, color: accent }}>{stat.value}</div>
+                  <div style={{ fontSize: isMobile ? 9 : 11, color: muted, fontWeight: 600 }}>{stat.label}</div>
                 </div>
               ))}
             </div>
 
-            {/* Product Image Gallery */}
+            {/* Product Image Gallery - Multiple Images Support */}
             <div
               data-edit-path="layout.hero.image"
               onClick={(e) => { stopIfManage(e); onSelect('layout.hero.image'); }}
               style={{ background: cardBg, borderRadius: cardRadius, overflow: 'hidden', border: `1px solid ${border}` }}
             >
-              <img src={productImage(mainProduct)} alt="" style={{ width: '100%', aspectRatio: '16/10', objectFit: 'cover' }} />
+              <img 
+                src={images[activeImage] || images[0]} 
+                alt="" 
+                style={{ width: '100%', aspectRatio: isMobile ? '4/3' : '16/10', objectFit: 'cover' }} 
+              />
+              {/* Thumbnail Gallery */}
+              {images.length > 1 && (
+                <div style={{ padding: 10, display: 'flex', gap: 8, overflowX: 'auto', background: 'rgba(0,0,0,0.02)' }}>
+                  {images.slice(0, 10).map((img, idx) => (
+                    <button
+                      key={idx}
+                      onClick={(e) => { stopIfManage(e); setActiveImage(idx); }}
+                      style={{
+                        flex: '0 0 auto',
+                        width: isMobile ? 50 : 60,
+                        height: isMobile ? 50 : 60,
+                        borderRadius: 8,
+                        border: idx === activeImage ? `2px solid ${accent}` : `1px solid ${border}`,
+                        padding: 0,
+                        background: 'transparent',
+                        cursor: 'pointer',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
           {/* Right: Checkout */}
-          <div style={{ position: isMobile ? 'relative' : 'sticky', top: 100 }}>
+          <div style={{ position: isMobile ? 'relative' : 'sticky', top: isMobile ? 0 : 100 }}>
             {/* Price Display */}
             <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: cardRadius, padding: 16, marginBottom: 12 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 8 }}>
-                <span style={{ fontSize: 32, fontWeight: 900, color: accent }}>{mainPrice}</span>
+                <span style={{ fontSize: isMobile ? 26 : 32, fontWeight: 900, color: accent }}>{mainPrice}</span>
                 {originalPrice && (
-                  <span style={{ fontSize: 18, color: muted, textDecoration: 'line-through' }}>{originalPrice}</span>
+                  <span style={{ fontSize: isMobile ? 16 : 18, color: muted, textDecoration: 'line-through' }}>{originalPrice}</span>
                 )}
               </div>
               {originalPrice && (
                 <div style={{ fontSize: 13, color: '#16a34a', fontWeight: 700 }}>
-                  🎉 You save {formatPrice(originalValue - priceValue)}!
+                  🎉 {asString(s.template_savings_text) || `You save ${formatPrice(originalValue - priceValue)}!`}
                 </div>
               )}
             </div>
@@ -281,13 +366,13 @@ export default function TrustPulseTemplate(props: TemplateProps) {
               theme={checkoutTheme}
               disabled={canManage}
               heading={ctaText}
-              subheading={canManage ? 'Disabled in editor' : 'Secure checkout • Free shipping'}
+              subheading={canManage ? 'Disabled in editor' : (asString(s.template_checkout_subheading) || 'Secure checkout • Free shipping')}
             />
           </div>
         </div>
       </section>
 
-      {/* Testimonials Section */}
+      {/* Testimonials Section - Editable */}
       <section
         data-edit-path="layout.featured"
         onClick={(e) => { stopIfManage(e); onSelect('layout.featured'); }}
@@ -297,27 +382,27 @@ export default function TrustPulseTemplate(props: TemplateProps) {
           <h2
             data-edit-path="layout.featured.title"
             onClick={(e) => { stopIfManage(e); onSelect('layout.featured.title'); }}
-            style={{ fontSize: 28, fontWeight: 900, marginBottom: 32 }}
+            style={{ fontSize: isMobile ? 22 : 28, fontWeight: 900, marginBottom: 24 }}
           >
-            What Our Customers Say
+            {testimonialTitle}
           </h2>
           
-          <div style={{ background: cardBg, borderRadius: cardRadius, padding: 32, border: `1px solid ${border}` }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>{testimonials[currentTestimonial].avatar}</div>
+          <div style={{ background: cardBg, borderRadius: cardRadius, padding: isMobile ? 20 : 32, border: `1px solid ${border}` }}>
+            <div style={{ fontSize: isMobile ? 36 : 48, marginBottom: 12 }}>{testimonials[currentTestimonial]?.avatar || '👤'}</div>
             <div style={{ display: 'flex', justifyContent: 'center', gap: 4, marginBottom: 12 }}>
               {[1, 2, 3, 4, 5].map((star) => (
-                <span key={star} style={{ color: '#facc15', fontSize: 20 }}>★</span>
+                <span key={star} style={{ color: '#facc15', fontSize: isMobile ? 16 : 20 }}>★</span>
               ))}
             </div>
-            <p style={{ fontSize: 18, fontStyle: 'italic', color: text, marginBottom: 16, lineHeight: 1.6 }}>
-              "{testimonials[currentTestimonial].text}"
+            <p style={{ fontSize: isMobile ? 15 : 18, fontStyle: 'italic', color: text, marginBottom: 16, lineHeight: 1.6 }}>
+              "{testimonials[currentTestimonial]?.text || 'Great product!'}"
             </p>
-            <div style={{ fontWeight: 700 }}>{testimonials[currentTestimonial].name}</div>
-            <div style={{ fontSize: 12, color: muted }}>Verified Buyer</div>
+            <div style={{ fontWeight: 700 }}>{testimonials[currentTestimonial]?.name || 'Customer'}</div>
+            <div style={{ fontSize: 12, color: muted }}>{asString(s.template_verified_text) || 'Verified Buyer'}</div>
             
             {/* Dots */}
             <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 20 }}>
-              {testimonials.map((_, i) => (
+              {testimonials.map((_: any, i: number) => (
                 <button
                   key={i}
                   onClick={(e) => { stopIfManage(e); setCurrentTestimonial(i); }}
@@ -333,20 +418,27 @@ export default function TrustPulseTemplate(props: TemplateProps) {
         </div>
       </section>
 
-      {/* Trust Section */}
-      <section style={{ padding: `${sectionSpacing}px ${baseSpacing}px` }}>
+      {/* Trust Section - Editable */}
+      <section
+        data-edit-path="layout.grid"
+        onClick={(e) => { stopIfManage(e); onSelect('layout.grid'); }}
+        style={{ padding: `${sectionSpacing}px ${baseSpacing}px` }}
+      >
         <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(4, 1fr)', gap: 24, textAlign: 'center' }}>
+          <h2 style={{ fontSize: isMobile ? 20 : 24, fontWeight: 900, marginBottom: 24, textAlign: 'center' }}>
+            {trustTitle}
+          </h2>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: isMobile ? 12 : 24, textAlign: 'center' }}>
             {[
-              { icon: '🚚', title: 'Free Shipping', desc: 'On all orders' },
-              { icon: '🔒', title: 'Secure Payment', desc: '100% protected' },
-              { icon: '💯', title: '30-Day Guarantee', desc: 'Money back' },
-              { icon: '🎧', title: '24/7 Support', desc: 'Always here' },
+              { icon: feature1Icon, title: feature1Title, desc: feature1Desc },
+              { icon: feature2Icon, title: feature2Title, desc: feature2Desc },
+              { icon: feature3Icon, title: feature3Title, desc: feature3Desc },
+              { icon: feature4Icon, title: feature4Title, desc: feature4Desc },
             ].map((item) => (
-              <div key={item.title} style={{ padding: 20 }}>
-                <div style={{ fontSize: 36, marginBottom: 12 }}>{item.icon}</div>
-                <div style={{ fontWeight: 800, marginBottom: 4 }}>{item.title}</div>
-                <div style={{ fontSize: 13, color: muted }}>{item.desc}</div>
+              <div key={item.title} style={{ padding: isMobile ? 12 : 20 }}>
+                <div style={{ fontSize: isMobile ? 28 : 36, marginBottom: 10 }}>{item.icon}</div>
+                <div style={{ fontWeight: 800, marginBottom: 4, fontSize: isMobile ? 12 : 14 }}>{item.title}</div>
+                <div style={{ fontSize: isMobile ? 11 : 13, color: muted }}>{item.desc}</div>
               </div>
             ))}
           </div>
@@ -365,7 +457,7 @@ export default function TrustPulseTemplate(props: TemplateProps) {
             onClick={(e) => { stopIfManage(e); onSelect('layout.footer.copyright'); }}
             style={{ fontSize: 13, color: muted }}
           >
-            {asString((settings as any).template_copyright) || `© ${new Date().getFullYear()} ${storeName}. All rights reserved.`}
+            {asString(s.template_copyright) || `© ${new Date().getFullYear()} ${storeName}. All rights reserved.`}
           </p>
         </div>
       </footer>

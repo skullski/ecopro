@@ -4,7 +4,8 @@ import EmbeddedCheckout from '../shared/EmbeddedCheckout';
 
 /**
  * BRUTALIST RAW - Raw brutalist design landing page.
- * Design: Bold typography, stark contrasts, raw shapes, unconventional layout, anti-design aesthetic.
+ * Design: Courier monospace, stark black borders, massive typography, raw aesthetic.
+ * ALL TEXT IS EDITABLE via settings keys.
  */
 
 function asString(v: unknown): string {
@@ -17,14 +18,20 @@ function resolveInt(value: unknown, fallback: number, min: number, max: number):
   return Math.max(min, Math.min(max, safe));
 }
 
-function productImage(p: StoreProduct | undefined): string {
-  if (!p) return '/placeholder.png';
-  const img = Array.isArray((p as any).images) ? (p as any).images.find(Boolean) : undefined;
-  return typeof img === 'string' && img ? img : '/placeholder.png';
+function productImages(p: StoreProduct | undefined): string[] {
+  if (!p) return ['/placeholder.png'];
+  const imgs = Array.isArray((p as any).images) ? (p as any).images.filter((v: any) => typeof v === 'string' && v.trim()) : [];
+  return imgs.length ? imgs : ['/placeholder.png'];
+}
+
+function safePrice(value: unknown): number {
+  const n = typeof value === 'number' ? value : Number(String(value ?? '').trim());
+  return Number.isFinite(n) ? n : 0;
 }
 
 export default function BrutalistRawTemplate(props: TemplateProps) {
   const { settings, formatPrice } = props;
+  const s = settings as any;
   const canManage = Boolean(props.canManage);
   const onSelect = (path: string) => {
     if (canManage && typeof (props as any).onSelect === 'function') {
@@ -36,36 +43,54 @@ export default function BrutalistRawTemplate(props: TemplateProps) {
   React.useEffect(() => {
     const bp = (props as any).forcedBreakpoint;
     if (bp) { setIsMobile(bp === 'mobile'); return; }
-    const check = () => setIsMobile(window.innerWidth < 900);
+    const check = () => setIsMobile(window.innerWidth < 768);
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, [(props as any).forcedBreakpoint]);
 
-  // Theme - Raw black/white with accent
-  const bg = asString(settings.template_bg_color) || '#fffef5';
-  const text = asString(settings.template_text_color) || '#000000';
-  const muted = asString(settings.template_muted_color) || '#555555';
-  const accent = asString(settings.template_accent_color) || '#ff0000';
-  const cardBg = asString((settings as any).template_card_bg) || '#ffffff';
+  // Theme colors - Stark black and white
+  const bg = asString(s.template_bg_color) || '#ffffff';
+  const text = asString(s.template_text_color) || '#000000';
+  const muted = asString(s.template_muted_color) || '#555555';
+  const accent = asString(s.template_accent_color) || '#000000';
+  const cardBg = asString(s.template_card_bg) || '#ffffff';
   const border = '#000000';
 
-  // Content
-  const storeName = asString(settings.store_name) || 'RAW';
-  const heroTitle = asString(settings.template_hero_heading) || 'NO COMPROMISE';
-  const heroSubtitle = asString(settings.template_hero_subtitle) || 'Stripped back. Authentic. Real. This is not for everyone—and that\'s the point.';
-  const ctaText = asString(settings.template_button_text) || 'BUY NOW';
+  // EDITABLE Content from settings
+  const storeName = asString(s.store_name) || 'BRUTALIST';
+  const heroTitle = asString(s.template_hero_heading) || 'NO COMPROMISE.';
+  const heroSubtitle = asString(s.template_hero_subtitle) || 'RAW. UNFILTERED. ESSENTIAL. THIS IS DESIGN STRIPPED TO ITS CORE.';
+  const ctaText = asString(s.template_button_text) || 'BUY NOW';
+  const heroKicker = asString(s.template_hero_kicker) || 'NEW DROP';
+
+  // Manifesto (editable)
+  const manifesto1 = asString(s.template_manifesto1) || 'WE REJECT THE SUPERFICIAL.';
+  const manifesto2 = asString(s.template_manifesto2) || 'WE EMBRACE THE ESSENTIAL.';
+  const manifesto3 = asString(s.template_manifesto3) || 'FORM FOLLOWS FUNCTION.';
+
+  // Features (editable)
+  const feature1 = asString(s.template_feature1_title) || '001 — QUALITY';
+  const feature1Desc = asString(s.template_feature1_desc) || 'No shortcuts. Ever.';
+  const feature2 = asString(s.template_feature2_title) || '002 — HONESTY';
+  const feature2Desc = asString(s.template_feature2_desc) || 'What you see is what you get.';
+  const feature3 = asString(s.template_feature3_title) || '003 — LONGEVITY';
+  const feature3Desc = asString(s.template_feature3_desc) || 'Built to last decades.';
 
   // Spacing
-  const baseSpacing = resolveInt(settings.template_spacing, 16, 8, 32);
-  const sectionSpacing = resolveInt(settings.template_section_spacing, 60, 24, 96);
+  const baseSpacing = resolveInt(s.template_spacing, 16, 8, 32);
+  const sectionSpacing = resolveInt(s.template_section_spacing, 48, 24, 96);
+  const borderWidth = 3;
 
   // Products
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 12) || [];
   const mainProduct = products[0];
-  const storeSlug = asString((settings as any).store_slug);
+  const images = productImages(mainProduct);
+  const [activeImage, setActiveImage] = React.useState(0);
 
-  const checkoutTheme = { bg, text, muted, accent, cardBg, border };
+  const storeSlug = asString(s.store_slug);
+
+  const checkoutTheme = { bg: cardBg, text, muted, accent, cardBg, border };
 
   const stopIfManage = (e: React.MouseEvent) => {
     if (!canManage) return;
@@ -73,284 +98,220 @@ export default function BrutalistRawTemplate(props: TemplateProps) {
     e.stopPropagation();
   };
 
+  const features = [
+    { title: feature1, desc: feature1Desc },
+    { title: feature2, desc: feature2Desc },
+    { title: feature3, desc: feature3Desc },
+  ];
+
   return (
     <div
       data-edit-path="__root"
       onClick={() => canManage && onSelect('__root')}
       className="ecopro-storefront"
-      style={{
-        minHeight: '100vh',
-        background: bg,
-        color: text,
+      style={{ 
+        minHeight: '100vh', 
+        background: bg, 
+        color: text, 
         fontFamily: '"Courier New", Courier, monospace',
       }}
     >
-      {/* Header - Raw */}
+      {/* Header */}
       <header
         data-edit-path="layout.header"
         onClick={(e) => { stopIfManage(e); onSelect('layout.header'); }}
-        style={{ padding: '20px', borderBottom: `4px solid ${border}` }}
+        style={{ 
+          borderBottom: `${borderWidth}px solid ${border}`, 
+          padding: isMobile ? '12px 16px' : '16px 24px' 
+        }}
       >
         <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            {asString(settings.store_logo) ? (
-              <img src={asString(settings.store_logo)} alt={storeName} style={{ width: 50, height: 50, objectFit: 'cover', border: `3px solid ${border}` }} />
-            ) : (
-              <div style={{
-                width: 50,
-                height: 50,
-                background: border,
-                color: bg,
-                display: 'grid',
-                placeItems: 'center',
-                fontWeight: 900,
-                fontSize: 24,
-              }}>
-                {storeName.slice(0, 1)}
-              </div>
-            )}
-            <span style={{ fontWeight: 900, fontSize: 24, textTransform: 'uppercase', letterSpacing: 4 }}>
-              {storeName}
-            </span>
-          </div>
-          <button
-            data-edit-path="layout.hero.cta"
-            onClick={(e) => { stopIfManage(e); onSelect('layout.hero.cta'); }}
-            style={{
-              background: accent,
-              color: '#fff',
-              border: `3px solid ${border}`,
-              borderRadius: 0,
-              padding: '12px 30px',
-              fontWeight: 900,
-              cursor: 'pointer',
-              fontSize: 14,
-              textTransform: 'uppercase',
-              letterSpacing: 2,
-            }}
-          >
-            {ctaText}
-          </button>
+          <span style={{ fontWeight: 700, fontSize: isMobile ? 14 : 18, textTransform: 'uppercase', letterSpacing: 2 }}>{storeName}</span>
+          <span style={{ fontSize: isMobile ? 10 : 12, fontWeight: 700 }}>EST. {new Date().getFullYear()}</span>
         </div>
       </header>
 
-      {/* Hero - Brutalist */}
+      {/* Hero Section */}
       <section
         data-edit-path="layout.hero"
         onClick={(e) => { stopIfManage(e); onSelect('layout.hero'); }}
-        style={{ padding: `${sectionSpacing}px ${baseSpacing}px`, borderBottom: `4px solid ${border}` }}
+        style={{ borderBottom: `${borderWidth}px solid ${border}` }}
       >
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          {/* Massive Title */}
-          <h1
-            data-edit-path="layout.hero.title"
-            onClick={(e) => { stopIfManage(e); onSelect('layout.hero.title'); }}
-            style={{
-              fontSize: isMobile ? 48 : 120,
-              fontWeight: 900,
-              lineHeight: 0.9,
-              marginBottom: 40,
-              textTransform: 'uppercase',
-              letterSpacing: -4,
+          {/* Kicker */}
+          <div
+            data-edit-path="layout.hero.kicker"
+            onClick={(e) => { stopIfManage(e); onSelect('layout.hero.kicker'); }}
+            style={{ 
+              borderBottom: `${borderWidth}px solid ${border}`,
+              padding: isMobile ? '10px 16px' : '12px 24px',
+              fontSize: isMobile ? 10 : 12,
+              fontWeight: 700,
+              letterSpacing: 4,
             }}
           >
-            {heroTitle}
-          </h1>
+            [ {heroKicker} ]
+          </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 40 }}>
-            {/* Product Image */}
+          {/* Title */}
+          <div style={{ padding: isMobile ? '24px 16px' : '40px 24px', borderBottom: `${borderWidth}px solid ${border}` }}>
+            <h1
+              data-edit-path="layout.hero.title"
+              onClick={(e) => { stopIfManage(e); onSelect('layout.hero.title'); }}
+              style={{ 
+                fontSize: isMobile ? 36 : 80, 
+                fontWeight: 900, 
+                lineHeight: 0.95,
+                letterSpacing: isMobile ? -1 : -4,
+                textTransform: 'uppercase',
+                marginBottom: isMobile ? 16 : 24,
+              }}
+            >
+              {heroTitle}
+            </h1>
+
+            <p
+              data-edit-path="layout.hero.subtitle"
+              onClick={(e) => { stopIfManage(e); onSelect('layout.hero.subtitle'); }}
+              style={{ 
+                fontSize: isMobile ? 12 : 14, 
+                maxWidth: 600, 
+                lineHeight: 1.6,
+                textTransform: 'uppercase',
+                letterSpacing: 1,
+              }}
+            >
+              {heroSubtitle}
+            </p>
+          </div>
+
+          {/* Main Content */}
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr' }}>
+            
+            {/* Left: Product Image */}
             <div
               data-edit-path="layout.hero.image"
               onClick={(e) => { stopIfManage(e); onSelect('layout.hero.image'); }}
-              style={{
-                border: `4px solid ${border}`,
-                position: 'relative',
+              style={{ 
+                borderRight: isMobile ? 'none' : `${borderWidth}px solid ${border}`,
+                borderBottom: isMobile ? `${borderWidth}px solid ${border}` : 'none',
               }}
             >
-              <img
-                src={productImage(mainProduct)}
-                alt="Product"
-                style={{ width: '100%', display: 'block' }}
+              <img 
+                src={images[activeImage] || images[0]} 
+                alt="" 
+                style={{ 
+                  width: '100%', 
+                  aspectRatio: '1/1', 
+                  objectFit: 'cover',
+                  display: 'block',
+                  filter: 'grayscale(20%)',
+                }} 
               />
-              <div style={{
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                background: accent,
-                color: '#fff',
-                padding: '8px 20px',
-                fontWeight: 900,
-                fontSize: 14,
-              }}>
-                NEW
-              </div>
+
+              {/* Thumbnails */}
+              {images.length > 1 && (
+                <div style={{ display: 'flex', borderTop: `${borderWidth}px solid ${border}` }}>
+                  {images.slice(0, 10).map((img, idx) => (
+                    <button
+                      key={idx}
+                      onClick={(e) => { stopIfManage(e); setActiveImage(idx); }}
+                      style={{
+                        flex: 1,
+                        aspectRatio: '1/1',
+                        maxWidth: isMobile ? 50 : 70,
+                        padding: 0,
+                        border: 'none',
+                        borderRight: idx < images.slice(0, 10).length - 1 ? `${borderWidth}px solid ${border}` : 'none',
+                        background: idx === activeImage ? '#000' : '#fff',
+                        cursor: 'pointer',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: idx === activeImage ? 0.5 : 1 }} />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* Content */}
-            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <div>
-                <div
-                  data-edit-path="layout.hero.badge"
-                  onClick={(e) => { stopIfManage(e); onSelect('layout.hero.badge'); }}
-                  style={{
-                    display: 'inline-block',
-                    border: `3px solid ${border}`,
-                    padding: '8px 16px',
-                    fontSize: 12,
-                    marginBottom: 24,
-                  }}
-                >
-                  001 / FEATURED PRODUCT
-                </div>
-
-                <p
-                  data-edit-path="layout.hero.subtitle"
-                  onClick={(e) => { stopIfManage(e); onSelect('layout.hero.subtitle'); }}
-                  style={{
-                    fontSize: 18,
-                    lineHeight: 1.6,
-                    marginBottom: 32,
-                    maxWidth: 400,
-                  }}
-                >
-                  {heroSubtitle}
-                </p>
-
-                <div style={{ fontSize: 48, fontWeight: 900, marginBottom: 24 }}>
-                  {mainProduct ? formatPrice(mainProduct.price) : '$99.00'}
-                </div>
-              </div>
-
-              <button
-                style={{
-                  background: border,
-                  color: bg,
-                  border: 'none',
-                  borderRadius: 0,
-                  padding: '20px 40px',
-                  fontWeight: 900,
-                  cursor: 'pointer',
-                  fontSize: 18,
-                  textTransform: 'uppercase',
-                  letterSpacing: 2,
-                  width: 'fit-content',
-                }}
+            {/* Right: Checkout */}
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {/* Manifesto */}
+              <div
+                data-edit-path="layout.hero.badge"
+                onClick={(e) => { stopIfManage(e); onSelect('layout.hero.badge'); }}
+                style={{ borderBottom: `${borderWidth}px solid ${border}`, padding: isMobile ? 16 : 24 }}
               >
-                ADD TO CART →
-              </button>
+                <div style={{ fontSize: isMobile ? 11 : 13, lineHeight: 2, textTransform: 'uppercase' }}>
+                  <div>{manifesto1}</div>
+                  <div>{manifesto2}</div>
+                  <div>{manifesto3}</div>
+                </div>
+              </div>
+
+              {/* CTA */}
+              <div style={{ borderBottom: `${borderWidth}px solid ${border}`, padding: isMobile ? 16 : 24 }}>
+                <button
+                  data-edit-path="layout.hero.cta"
+                  onClick={(e) => { stopIfManage(e); onSelect('layout.hero.cta'); }}
+                  style={{ 
+                    width: '100%',
+                    background: accent, 
+                    color: bg, 
+                    border: 'none', 
+                    padding: isMobile ? '16px' : '20px', 
+                    fontWeight: 900, 
+                    cursor: 'pointer', 
+                    fontSize: isMobile ? 14 : 18,
+                    textTransform: 'uppercase',
+                    letterSpacing: 4,
+                    fontFamily: '"Courier New", monospace',
+                  }}
+                >
+                  → {ctaText}
+                </button>
+              </div>
+
+              {/* Checkout */}
+              <div style={{ flex: 1, background: cardBg }}>
+                <EmbeddedCheckout
+                  storeSlug={storeSlug}
+                  product={mainProduct as any}
+                  formatPrice={formatPrice}
+                  theme={checkoutTheme}
+                  disabled={canManage}
+                  heading={ctaText}
+                  subheading={canManage ? 'Disabled in editor' : (asString(s.template_checkout_subheading) || 'NO FRILLS. JUST QUALITY.')}
+                />
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Manifesto */}
-      <section style={{ padding: `${sectionSpacing * 0.5}px ${baseSpacing}px`, background: border, color: bg }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: 20 }}>
-            {['AUTHENTIC', 'UNFILTERED', 'ORIGINAL', 'BOLD'].map((word) => (
-              <span key={word} style={{ fontSize: isMobile ? 24 : 36, fontWeight: 900, letterSpacing: 4 }}>
-                {word}
-              </span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features */}
+      {/* Features Section */}
       <section
-        data-edit-path="layout.featured"
-        onClick={(e) => { stopIfManage(e); onSelect('layout.featured'); }}
-        style={{ padding: `${sectionSpacing}px ${baseSpacing}px`, borderBottom: `4px solid ${border}` }}
+        data-edit-path="layout.categories"
+        onClick={(e) => { stopIfManage(e); onSelect('layout.categories'); }}
+        style={{ borderBottom: `${borderWidth}px solid ${border}` }}
       >
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <h2
-            data-edit-path="layout.featured.title"
-            onClick={(e) => { stopIfManage(e); onSelect('layout.featured.title'); }}
-            style={{ fontSize: 48, fontWeight: 900, marginBottom: 50, textTransform: 'uppercase' }}
-          >
-            THE FACTS
-          </h2>
-
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: 0 }}>
-            {[
-              { num: '01', title: 'QUALITY', desc: 'No shortcuts. No compromises. Built to last.' },
-              { num: '02', title: 'PRICE', desc: 'Direct to you. No middlemen. Fair pricing.' },
-              { num: '03', title: 'SUPPORT', desc: 'Real humans. Real answers. No scripts.' },
-            ].map((item, i) => (
-              <div
-                key={item.num}
-                style={{
-                  padding: 30,
-                  borderLeft: i > 0 && !isMobile ? `3px solid ${border}` : 'none',
-                  borderTop: i > 0 && isMobile ? `3px solid ${border}` : 'none',
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)' }}>
+            {features.map((f, idx) => (
+              <div 
+                key={f.title} 
+                style={{ 
+                  borderRight: !isMobile && idx < features.length - 1 ? `${borderWidth}px solid ${border}` : 'none',
+                  borderBottom: isMobile && idx < features.length - 1 ? `${borderWidth}px solid ${border}` : 'none',
+                  padding: isMobile ? 20 : 32,
                 }}
               >
-                <div style={{ fontSize: 72, fontWeight: 900, opacity: 0.1, marginBottom: -20 }}>{item.num}</div>
-                <h3 style={{ fontSize: 24, fontWeight: 900, marginBottom: 12 }}>{item.title}</h3>
-                <p style={{ fontSize: 14, lineHeight: 1.6 }}>{item.desc}</p>
+                <div style={{ fontSize: isMobile ? 14 : 16, fontWeight: 700, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 2 }}>{f.title}</div>
+                <div style={{ fontSize: isMobile ? 12 : 14, color: muted }}>{f.desc}</div>
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* Products Grid */}
-      <section style={{ padding: `${sectionSpacing}px ${baseSpacing}px` }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40 }}>
-            <h2 style={{ fontSize: 36, fontWeight: 900, textTransform: 'uppercase' }}>MORE</h2>
-            <span style={{ fontSize: 14 }}>SCROLL →</span>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: 20 }}>
-            {products.slice(0, 4).map((product, i) => (
-              <div key={product.id}>
-                <div style={{ border: `3px solid ${border}`, marginBottom: 12 }}>
-                  <img src={productImage(product)} alt={product.name} style={{ width: '100%', display: 'block' }} />
-                </div>
-                <div style={{ fontSize: 12, fontWeight: 900, marginBottom: 4 }}>00{i + 2}</div>
-                <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4, textTransform: 'uppercase' }}>{product.name}</div>
-                <div style={{ fontSize: 18, fontWeight: 900 }}>{formatPrice(product.price)}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Quote */}
-      <section style={{ padding: `${sectionSpacing * 0.7}px ${baseSpacing}px`, background: accent, color: '#fff' }}>
-        <div style={{ maxWidth: 900, margin: '0 auto', textAlign: 'center' }}>
-          <blockquote style={{ fontSize: isMobile ? 28 : 48, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 2 }}>
-            "REJECT THE ORDINARY"
-          </blockquote>
-        </div>
-      </section>
-
-      {/* Checkout Section */}
-      <section style={{ padding: `${sectionSpacing}px ${baseSpacing}px`, borderTop: `4px solid ${border}` }}>
-        <div style={{
-          maxWidth: 500,
-          margin: '0 auto',
-          border: `4px solid ${border}`,
-          padding: 30,
-          background: cardBg,
-        }}>
-          <div style={{ textAlign: 'center', marginBottom: 24 }}>
-            <div style={{ fontSize: 12, marginBottom: 8, letterSpacing: 2 }}>CHECKOUT</div>
-            <h2 style={{ fontSize: 32, fontWeight: 900, textTransform: 'uppercase' }}>
-              GET IT NOW
-            </h2>
-          </div>
-          
-          <EmbeddedCheckout
-            storeSlug={storeSlug}
-            product={mainProduct as any}
-            formatPrice={formatPrice}
-            theme={checkoutTheme}
-            disabled={canManage}
-            heading={ctaText}
-            subheading={canManage ? 'Disabled in editor' : 'Free shipping. No BS.'}
-          />
         </div>
       </section>
 
@@ -358,16 +319,20 @@ export default function BrutalistRawTemplate(props: TemplateProps) {
       <footer
         data-edit-path="layout.footer"
         onClick={(e) => { stopIfManage(e); onSelect('layout.footer'); }}
-        style={{ background: border, color: bg, padding: `${baseSpacing * 2}px ${baseSpacing}px`, textAlign: 'center' }}
+        style={{ padding: isMobile ? `20px ${baseSpacing}px` : `32px ${baseSpacing}px` }}
       >
-        <div style={{ fontSize: 48, fontWeight: 900, marginBottom: 16 }}>{storeName}</div>
-        <p
-          data-edit-path="layout.footer.copyright"
-          onClick={(e) => { stopIfManage(e); onSelect('layout.footer.copyright'); }}
-          style={{ fontSize: 12 }}
-        >
-          {asString((settings as any).template_copyright) || `© ${new Date().getFullYear()} ${storeName}. NO RIGHTS RESERVED.`}
-        </p>
+        <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', gap: 16 }}>
+          <p
+            data-edit-path="layout.footer.copyright"
+            onClick={(e) => { stopIfManage(e); onSelect('layout.footer.copyright'); }}
+            style={{ fontSize: isMobile ? 10 : 12, textTransform: 'uppercase', letterSpacing: 2 }}
+          >
+            {asString(s.template_copyright) || `© ${new Date().getFullYear()} ${storeName}`}
+          </p>
+          <div style={{ fontSize: isMobile ? 10 : 12, textTransform: 'uppercase', letterSpacing: 2 }}>
+            BRUTALISM IS NOT A STYLE. IT IS A STATE OF MIND.
+          </div>
+        </div>
       </footer>
     </div>
   );

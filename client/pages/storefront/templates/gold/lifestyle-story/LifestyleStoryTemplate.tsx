@@ -3,8 +3,9 @@ import type { TemplateProps, StoreProduct } from '../../types';
 import EmbeddedCheckout from '../shared/EmbeddedCheckout';
 
 /**
- * LIFESTYLE STORY - Editorial lifestyle landing page with storytelling focus.
- * Design: Full-bleed images, story-driven sections, lifestyle photography style.
+ * LIFESTYLE STORY - Editorial storytelling landing page with warm earthy tones.
+ * Design: Full-bleed hero, quote section, lifestyle imagery, Georgia serif typography.
+ * ALL TEXT IS EDITABLE via settings keys.
  */
 
 function asString(v: unknown): string {
@@ -17,10 +18,10 @@ function resolveInt(value: unknown, fallback: number, min: number, max: number):
   return Math.max(min, Math.min(max, safe));
 }
 
-function productImage(p: StoreProduct | undefined): string {
-  if (!p) return '/placeholder.png';
-  const img = Array.isArray((p as any).images) ? (p as any).images.find(Boolean) : undefined;
-  return typeof img === 'string' && img ? img : '/placeholder.png';
+function productImages(p: StoreProduct | undefined): string[] {
+  if (!p) return ['/placeholder.png'];
+  const imgs = Array.isArray((p as any).images) ? (p as any).images.filter((v: any) => typeof v === 'string' && v.trim()) : [];
+  return imgs.length ? imgs : ['/placeholder.png'];
 }
 
 function safePrice(value: unknown): number {
@@ -30,6 +31,7 @@ function safePrice(value: unknown): number {
 
 export default function LifestyleStoryTemplate(props: TemplateProps) {
   const { settings, formatPrice } = props;
+  const s = settings as any;
   const canManage = Boolean(props.canManage);
   const onSelect = (path: string) => {
     if (canManage && typeof (props as any).onSelect === 'function') {
@@ -41,37 +43,62 @@ export default function LifestyleStoryTemplate(props: TemplateProps) {
   React.useEffect(() => {
     const bp = (props as any).forcedBreakpoint;
     if (bp) { setIsMobile(bp === 'mobile'); return; }
-    const check = () => setIsMobile(window.innerWidth < 900);
+    const check = () => setIsMobile(window.innerWidth < 768);
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, [(props as any).forcedBreakpoint]);
 
-  // Theme - Warm, earthy tones
-  const bg = asString(settings.template_bg_color) || '#faf7f2';
-  const text = asString(settings.template_text_color) || '#2c2c2c';
-  const muted = asString(settings.template_muted_color) || '#8b8680';
-  const accent = asString(settings.template_accent_color) || '#c9a87c';
-  const cardBg = asString((settings as any).template_card_bg) || '#ffffff';
+  // Theme colors - Warm earthy tones
+  const bg = asString(s.template_bg_color) || '#faf8f5';
+  const text = asString(s.template_text_color) || '#3d3d3d';
+  const muted = asString(s.template_muted_color) || '#8b8178';
+  const accent = asString(s.template_accent_color) || '#b8860b';
+  const cardBg = asString(s.template_card_bg) || '#ffffff';
   const border = 'rgba(0,0,0,0.06)';
 
-  // Content
-  const storeName = asString(settings.store_name) || 'Lifestyle Story';
-  const heroTitle = asString(settings.template_hero_heading) || 'Crafted for Everyday Moments';
-  const heroSubtitle = asString(settings.template_hero_subtitle) || 'Every product tells a story. Discover pieces designed to elevate your daily rituals.';
-  const ctaText = asString(settings.template_button_text) || 'Shop the Collection';
+  // EDITABLE Content from settings
+  const storeName = asString(s.store_name) || 'Lifestyle Story';
+  const heroTitle = asString(s.template_hero_heading) || 'Live Your Best Life';
+  const heroSubtitle = asString(s.template_hero_subtitle) || 'Discover how thousands of people are transforming their daily routines with products designed for the modern lifestyle.';
+  const ctaText = asString(s.template_button_text) || 'Start Your Journey';
+  const heroKicker = asString(s.template_hero_kicker) || 'A Story of Transformation';
+
+  // Quote section (editable)
+  const quoteText = asString(s.template_quote_text) || '"This product completely changed how I approach my day. It\'s not just a purchase—it\'s a lifestyle upgrade."';
+  const quoteAuthor = asString(s.template_quote_author) || '— Sarah M., Verified Customer';
+
+  // Story paragraphs (editable)
+  const storyP1 = asString(s.template_story_p1) || 'Every great journey begins with a single step. Our customers often tell us that discovering this product was the turning point in their daily routine.';
+  const storyP2 = asString(s.template_story_p2) || 'We believe that the best products are the ones that fit seamlessly into your life, enhancing without complicating.';
+  const storyP3 = asString(s.template_story_p3) || 'Join thousands who have already made the switch. Your story starts here.';
+
+  // Feature highlights (editable)
+  const feature1 = asString(s.template_feature1_title) || 'Thoughtfully Designed';
+  const feature1Desc = asString(s.template_feature1_desc) || 'Every detail considered for your comfort';
+  const feature2 = asString(s.template_feature2_title) || 'Sustainably Made';
+  const feature2Desc = asString(s.template_feature2_desc) || 'Crafted with care for the environment';
+  const feature3 = asString(s.template_feature3_title) || 'Community Loved';
+  const feature3Desc = asString(s.template_feature3_desc) || 'Trusted by 50,000+ happy customers';
+
+  // Section titles (editable)
+  const storyTitle = asString(s.template_section_title) || 'Our Story';
 
   // Spacing
-  const baseSpacing = resolveInt(settings.template_spacing, 20, 8, 32);
-  const sectionSpacing = resolveInt(settings.template_section_spacing, 80, 24, 96);
-  const cardRadius = resolveInt(settings.template_card_border_radius, 4, 0, 32);
+  const baseSpacing = resolveInt(s.template_spacing, 16, 8, 32);
+  const sectionSpacing = resolveInt(s.template_section_spacing, 64, 24, 96);
+  const cardRadius = resolveInt(s.template_card_border_radius, 8, 0, 32);
+  const buttonRadius = resolveInt(s.template_button_border_radius, 6, 0, 50);
 
   // Products
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 12) || [];
   const mainProduct = products[0];
-  const storeSlug = asString((settings as any).store_slug);
+  const images = productImages(mainProduct);
+  const [activeImage, setActiveImage] = React.useState(0);
 
-  const checkoutTheme = { bg, text, muted, accent, cardBg, border };
+  const storeSlug = asString(s.store_slug);
+
+  const checkoutTheme = { bg: cardBg, text, muted, accent, cardBg, border };
 
   const stopIfManage = (e: React.MouseEvent) => {
     if (!canManage) return;
@@ -79,124 +106,183 @@ export default function LifestyleStoryTemplate(props: TemplateProps) {
     e.stopPropagation();
   };
 
+  const features = [
+    { title: feature1, desc: feature1Desc },
+    { title: feature2, desc: feature2Desc },
+    { title: feature3, desc: feature3Desc },
+  ];
+
   return (
     <div
       data-edit-path="__root"
       onClick={() => canManage && onSelect('__root')}
       className="ecopro-storefront"
-      style={{ minHeight: '100vh', background: bg, color: text, fontFamily: 'Georgia, serif' }}
+      style={{ minHeight: '100vh', background: bg, color: text, fontFamily: 'Georgia, "Times New Roman", serif' }}
     >
-      {/* Header - Minimal editorial style */}
+      {/* Header */}
       <header
         data-edit-path="layout.header"
         onClick={(e) => { stopIfManage(e); onSelect('layout.header'); }}
-        style={{ position: 'sticky', top: 0, zIndex: 30, background: bg, padding: '20px 24px' }}
+        style={{ position: 'sticky', top: 0, zIndex: 30, background: bg, borderBottom: `1px solid ${border}`, padding: isMobile ? '12px 16px' : '16px 24px' }}
       >
-        <div style={{ maxWidth: 1400, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            {asString(settings.store_logo) ? (
-              <img src={asString(settings.store_logo)} alt={storeName} style={{ width: 40, height: 40, borderRadius: 0, objectFit: 'cover' }} />
-            ) : null}
-            <span style={{ fontWeight: 400, fontSize: 22, letterSpacing: '0.05em' }}>{storeName}</span>
+            {asString(s.store_logo) ? (
+              <img src={asString(s.store_logo)} alt={storeName} style={{ width: isMobile ? 32 : 40, height: isMobile ? 32 : 40, borderRadius: 8, objectFit: 'cover' }} />
+            ) : (
+              <div style={{ fontWeight: 600, fontSize: isMobile ? 18 : 22, fontStyle: 'italic', color: text }}>
+                {storeName}
+              </div>
+            )}
           </div>
-          <span style={{ fontSize: 12, color: muted, fontFamily: 'Inter, sans-serif', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-            Est. 2024
-          </span>
+          <button
+            data-edit-path="layout.hero.cta"
+            onClick={(e) => { stopIfManage(e); onSelect('layout.hero.cta'); }}
+            style={{ background: accent, color: '#fff', border: 'none', borderRadius: buttonRadius, padding: isMobile ? '8px 16px' : '10px 24px', fontWeight: 600, cursor: 'pointer', fontSize: isMobile ? 12 : 14, fontFamily: 'Inter, system-ui, sans-serif' }}
+          >
+            {ctaText}
+          </button>
         </div>
       </header>
 
-      {/* Hero - Full bleed image */}
+      {/* Full-Bleed Hero */}
       <section
         data-edit-path="layout.hero"
         onClick={(e) => { stopIfManage(e); onSelect('layout.hero'); }}
-        style={{ position: 'relative' }}
+        style={{ position: 'relative', minHeight: isMobile ? '60vh' : '70vh' }}
       >
         <div
           data-edit-path="layout.hero.image"
           onClick={(e) => { stopIfManage(e); onSelect('layout.hero.image'); }}
-          style={{ position: 'relative', aspectRatio: isMobile ? '3/4' : '21/9', overflow: 'hidden' }}
+          style={{ position: 'absolute', inset: 0 }}
         >
-          <img src={productImage(mainProduct)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 30%, rgba(0,0,0,0.4))' }} />
-          
-          {/* Overlay content */}
-          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: isMobile ? '40px 24px' : '80px 60px' }}>
-            <p style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.8)', marginBottom: 16, fontFamily: 'Inter, sans-serif' }}>
-              New Collection
-            </p>
-            <h1
-              data-edit-path="layout.hero.title"
-              onClick={(e) => { stopIfManage(e); onSelect('layout.hero.title'); }}
-              style={{ fontSize: isMobile ? 36 : 56, fontWeight: 400, lineHeight: 1.1, color: '#fff', marginBottom: 20, maxWidth: 600 }}
-            >
-              {heroTitle}
-            </h1>
-            <p
-              data-edit-path="layout.hero.subtitle"
-              onClick={(e) => { stopIfManage(e); onSelect('layout.hero.subtitle'); }}
-              style={{ fontSize: 16, color: 'rgba(255,255,255,0.85)', lineHeight: 1.7, maxWidth: 500, fontFamily: 'Inter, sans-serif' }}
-            >
-              {heroSubtitle}
-            </p>
+          <img src={images[activeImage] || images[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.5) 100%)' }} />
+        </div>
+
+        <div style={{ position: 'relative', zIndex: 10, maxWidth: 900, margin: '0 auto', padding: isMobile ? '40px 20px' : '80px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: isMobile ? '60vh' : '70vh' }}>
+          <div
+            data-edit-path="layout.hero.kicker"
+            onClick={(e) => { stopIfManage(e); onSelect('layout.hero.kicker'); }}
+            style={{ fontSize: isMobile ? 11 : 13, letterSpacing: 3, textTransform: 'uppercase', color: '#fff', marginBottom: isMobile ? 12 : 16, opacity: 0.9 }}
+          >
+            {heroKicker}
           </div>
+
+          <h1
+            data-edit-path="layout.hero.title"
+            onClick={(e) => { stopIfManage(e); onSelect('layout.hero.title'); }}
+            style={{ fontSize: isMobile ? 32 : 56, fontWeight: 400, lineHeight: 1.2, color: '#fff', marginBottom: 16, fontStyle: 'italic' }}
+          >
+            {heroTitle}
+          </h1>
+
+          <p
+            data-edit-path="layout.hero.subtitle"
+            onClick={(e) => { stopIfManage(e); onSelect('layout.hero.subtitle'); }}
+            style={{ fontSize: isMobile ? 14 : 18, color: 'rgba(255,255,255,0.9)', lineHeight: 1.7, maxWidth: 600, margin: '0 auto', fontFamily: 'Inter, system-ui, sans-serif' }}
+          >
+            {heroSubtitle}
+          </p>
         </div>
+
+        {/* Thumbnail Gallery */}
+        {images.length > 1 && (
+          <div style={{ position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 8, padding: '8px 12px', background: 'rgba(0,0,0,0.5)', borderRadius: 8 }}>
+            {images.slice(0, 10).map((img, idx) => (
+              <button
+                key={idx}
+                onClick={(e) => { stopIfManage(e); setActiveImage(idx); }}
+                style={{
+                  width: isMobile ? 36 : 44,
+                  height: isMobile ? 36 : 44,
+                  borderRadius: 4,
+                  border: idx === activeImage ? '2px solid #fff' : '1px solid rgba(255,255,255,0.3)',
+                  padding: 0,
+                  background: 'transparent',
+                  cursor: 'pointer',
+                  overflow: 'hidden',
+                }}
+              >
+                <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </button>
+            ))}
+          </div>
+        )}
       </section>
 
-      {/* Story Section */}
-      <section style={{ padding: `${sectionSpacing}px ${baseSpacing}px` }}>
+      {/* Quote Section */}
+      <section
+        data-edit-path="layout.hero.badge"
+        onClick={(e) => { stopIfManage(e); onSelect('layout.hero.badge'); }}
+        style={{ padding: `${sectionSpacing}px ${baseSpacing}px`, background: '#f5f0eb' }}
+      >
         <div style={{ maxWidth: 800, margin: '0 auto', textAlign: 'center' }}>
-          <p style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: muted, marginBottom: 24, fontFamily: 'Inter, sans-serif' }}>
-            Our Philosophy
+          <p style={{ fontSize: isMobile ? 18 : 26, fontStyle: 'italic', lineHeight: 1.6, color: text, marginBottom: 16 }}>
+            {quoteText}
           </p>
-          <p style={{ fontSize: isMobile ? 20 : 28, lineHeight: 1.6, fontStyle: 'italic' }}>
-            "We believe in the beauty of simplicity. Each piece is thoughtfully designed to become part of your story, 
-            growing more meaningful with every use."
+          <p style={{ fontSize: isMobile ? 12 : 14, color: muted, fontFamily: 'Inter, system-ui, sans-serif' }}>
+            {quoteAuthor}
           </p>
         </div>
       </section>
 
-      {/* Product + Checkout Split */}
+      {/* Story + Checkout Section */}
       <section
         data-edit-path="layout.featured"
         onClick={(e) => { stopIfManage(e); onSelect('layout.featured'); }}
-        style={{ padding: `0 ${baseSpacing}px ${sectionSpacing}px` }}
+        style={{ padding: `${sectionSpacing}px ${baseSpacing}px` }}
       >
-        <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 40 : 60 }}>
-          {/* Left - Image */}
-          <div style={{ aspectRatio: '4/5', overflow: 'hidden' }}>
-            <img src={productImage(mainProduct)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          </div>
-
-          {/* Right - Details + Checkout */}
-          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <p style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: muted, marginBottom: 16, fontFamily: 'Inter, sans-serif' }}>
-              Featured
-            </p>
+        <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 380px', gap: isMobile ? 32 : 56, alignItems: 'start' }}>
+          
+          {/* Story Content */}
+          <div>
             <h2
               data-edit-path="layout.featured.title"
               onClick={(e) => { stopIfManage(e); onSelect('layout.featured.title'); }}
-              style={{ fontSize: 32, fontWeight: 400, marginBottom: 16 }}
+              style={{ fontSize: isMobile ? 24 : 36, fontWeight: 400, marginBottom: isMobile ? 20 : 28, fontStyle: 'italic' }}
             >
-              {mainProduct ? String((mainProduct as any).title || 'Featured Product') : 'Featured Product'}
+              {storyTitle}
             </h2>
-            <p
-              data-edit-path="layout.featured.subtitle"
-              onClick={(e) => { stopIfManage(e); onSelect('layout.featured.subtitle'); }}
-              style={{ fontSize: 15, color: muted, lineHeight: 1.8, marginBottom: 32, fontFamily: 'Inter, sans-serif' }}
-            >
-              Handcrafted with care, designed to last. This piece embodies our commitment to quality and timeless design.
-            </p>
 
-            {/* Features */}
-            <div style={{ display: 'grid', gap: 16, marginBottom: 40 }}>
-              {['Sustainably sourced materials', 'Handmade by artisans', 'Timeless design'].map((feature) => (
-                <div key={feature} style={{ display: 'flex', alignItems: 'center', gap: 12, fontFamily: 'Inter, sans-serif', fontSize: 14 }}>
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: accent }} />
-                  <span>{feature}</span>
+            <div
+              data-edit-path="layout.categories"
+              onClick={(e) => { stopIfManage(e); onSelect('layout.categories'); }}
+              style={{ fontSize: isMobile ? 14 : 17, lineHeight: 1.9, color: text }}
+            >
+              <p style={{ marginBottom: 20 }}>{storyP1}</p>
+              <p style={{ marginBottom: 20 }}>{storyP2}</p>
+              <p>{storyP3}</p>
+            </div>
+
+            {/* Feature Highlights */}
+            <div
+              data-edit-path="layout.grid"
+              onClick={(e) => { stopIfManage(e); onSelect('layout.grid'); }}
+              style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: isMobile ? 16 : 24, marginTop: isMobile ? 32 : 48 }}
+            >
+              {features.map((f) => (
+                <div key={f.title} style={{ borderTop: `2px solid ${accent}`, paddingTop: 16 }}>
+                  <div style={{ fontSize: isMobile ? 14 : 16, fontWeight: 600, marginBottom: 6, fontFamily: 'Inter, system-ui, sans-serif' }}>{f.title}</div>
+                  <div style={{ fontSize: isMobile ? 12 : 14, color: muted, fontFamily: 'Inter, system-ui, sans-serif' }}>{f.desc}</div>
                 </div>
               ))}
             </div>
 
+            {/* Product Gallery */}
+            {images.length > 1 && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: isMobile ? 8 : 12, marginTop: isMobile ? 32 : 48 }}>
+                {images.slice(0, 6).map((img, idx) => (
+                  <div key={idx} style={{ aspectRatio: '1', borderRadius: cardRadius, overflow: 'hidden' }}>
+                    <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Checkout */}
+          <div style={{ position: isMobile ? 'relative' : 'sticky', top: isMobile ? 0 : 90 }}>
             <EmbeddedCheckout
               storeSlug={storeSlug}
               product={mainProduct as any}
@@ -204,39 +290,15 @@ export default function LifestyleStoryTemplate(props: TemplateProps) {
               theme={checkoutTheme}
               disabled={canManage}
               heading={ctaText}
-              subheading={canManage ? 'Disabled in editor' : 'Free shipping on all orders'}
+              subheading={canManage ? 'Disabled in editor' : (asString(s.template_checkout_subheading) || 'Begin your transformation today')}
             />
-          </div>
-        </div>
-      </section>
 
-      {/* Editorial Grid */}
-      <section style={{ padding: `${sectionSpacing}px ${baseSpacing}px`, background: cardBg }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: 2 }}>
-            {products.slice(0, 3).map((p, i) => (
-              <div key={i} style={{ position: 'relative', aspectRatio: '1', overflow: 'hidden' }}>
-                <img src={productImage(p)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Values Section */}
-      <section style={{ padding: `${sectionSpacing}px ${baseSpacing}px` }}>
-        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: 40, textAlign: 'center' }}>
-            {[
-              { title: 'Craftsmanship', desc: 'Every piece is made with attention to detail and quality materials.' },
-              { title: 'Sustainability', desc: 'We source responsibly and minimize our environmental footprint.' },
-              { title: 'Timelessness', desc: 'Designs that transcend trends and grow more beautiful with age.' },
-            ].map((value) => (
-              <div key={value.title}>
-                <h3 style={{ fontSize: 18, fontWeight: 400, marginBottom: 12 }}>{value.title}</h3>
-                <p style={{ fontSize: 14, color: muted, lineHeight: 1.7, fontFamily: 'Inter, sans-serif' }}>{value.desc}</p>
-              </div>
-            ))}
+            {/* Trust note */}
+            <div style={{ textAlign: 'center', marginTop: 16 }}>
+              <p style={{ fontSize: isMobile ? 11 : 12, color: muted, fontFamily: 'Inter, system-ui, sans-serif' }}>
+                {asString(s.template_trust_text) || '✓ Free shipping • ✓ Easy returns • ✓ Secure checkout'}
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -250,9 +312,9 @@ export default function LifestyleStoryTemplate(props: TemplateProps) {
         <p
           data-edit-path="layout.footer.copyright"
           onClick={(e) => { stopIfManage(e); onSelect('layout.footer.copyright'); }}
-          style={{ fontSize: 12, color: muted, fontFamily: 'Inter, sans-serif' }}
+          style={{ fontSize: isMobile ? 11 : 13, color: muted, fontFamily: 'Inter, system-ui, sans-serif' }}
         >
-          {asString((settings as any).template_copyright) || `© ${new Date().getFullYear()} ${storeName}`}
+          {asString(s.template_copyright) || `© ${new Date().getFullYear()} ${storeName}. All rights reserved.`}
         </p>
       </footer>
     </div>
