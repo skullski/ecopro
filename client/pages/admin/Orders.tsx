@@ -430,12 +430,13 @@ export default function OrdersAdmin() {
           id: `ORD-${String(order.id).padStart(3, '0')}`,
           customer: order.customer_name,
           total: order.total_price,
+          unit_price: Number(order.unit_price ?? order.product_price ?? 0),
           status: order.status, // Keep the actual status from database
           created_at: order.created_at,
           time: getTimeStr(Math.floor((Date.now() - parseUTCDate(order.created_at).getTime()) / 60000)),
           product_title: order.product_title,
           product_image: product_image,
-          quantity: order.quantity,
+          quantity: Number(order.quantity ?? 0),
           phone: order.customer_phone,
           email: order.customer_email,
           address: order.shipping_address,
@@ -588,7 +589,12 @@ export default function OrdersAdmin() {
                     revenueStatuses.push('completed');
                     return revenueStatuses.includes(o.status);
                   })
-                  .reduce((sum, o) => sum + (Number(o.total) || 0), 0))} DZD
+                  .reduce((sum, o: any) => {
+                    const unit = Number(o.unit_price ?? 0);
+                    const qty = Number(o.quantity ?? 0);
+                    if (!Number.isFinite(unit) || !Number.isFinite(qty)) return sum;
+                    return sum + (unit * qty);
+                  }, 0))} DZD
               </div>
             </div>
           </div>

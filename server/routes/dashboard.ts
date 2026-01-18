@@ -1,11 +1,34 @@
 import { RequestHandler } from "express";
 import { pool } from "../utils/database";
 
+// Cache store_orders columns existence checks (schema rarely changes at runtime)
+const storeOrdersColumnCache = new Map<string, boolean>();
+
+async function storeOrdersHasColumn(columnName: string): Promise<boolean> {
+  const key = String(columnName);
+  if (storeOrdersColumnCache.has(key)) return storeOrdersColumnCache.get(key)!;
+  const res = await pool.query(
+    `SELECT 1
+     FROM information_schema.columns
+     WHERE table_schema = 'public' AND table_name = 'store_orders' AND column_name = $1
+     LIMIT 1`,
+    [key]
+  );
+  const has = res.rows.length > 0;
+  storeOrdersColumnCache.set(key, has);
+  return has;
+}
+
 // GET /api/dashboard/stats
 // Aggregated metrics for the client/vendor dashboard
 export const getDashboardStats: RequestHandler = async (req, res) => {
   try {
     const clientId = (req as any).user?.id;
+
+    const hasDeliveryFee = await storeOrdersHasColumn('delivery_fee');
+    const revenueExpr = hasDeliveryFee
+      ? '(total_price - COALESCE(delivery_fee, 0))'
+      : 'total_price';
     
     // Get custom statuses that count as revenue
     const revenueStatusesRes = await pool.query(
@@ -26,7 +49,7 @@ export const getDashboardStats: RequestHandler = async (req, res) => {
         [clientId]
       ),
       pool.query(
-        `SELECT COALESCE(SUM(total_price),0)::float AS revenue FROM store_orders WHERE client_id = $1 AND status = ANY($2)`,
+        `SELECT COALESCE(SUM(${revenueExpr}),0)::float AS revenue FROM store_orders WHERE client_id = $1 AND status = ANY($2)`,
         [clientId, revenueStatuses]
       ),
       pool.query(
@@ -93,6 +116,14 @@ export const getDashboardAnalytics: RequestHandler = async (req, res) => {
     const revenueStatuses = revenueStatusesRes.rows.map(r => r.key || r.name);
     revenueStatuses.push('completed');
 
+    const hasDeliveryFee = await storeOrdersHasColumn('delivery_fee');
+    const revenueExpr = hasDeliveryFee
+      ? '(total_price - COALESCE(delivery_fee, 0))'
+      : 'total_price';
+    const revenueExprO = hasDeliveryFee
+      ? '(o.total_price - COALESCE(o.delivery_fee, 0))'
+      : 'o.total_price';
+
     // Run ALL analytics queries in parallel for maximum speed
     const [
       customStatusesRes,
@@ -119,7 +150,7 @@ export const getDashboardAnalytics: RequestHandler = async (req, res) => {
           DATE(created_at) as date,
           COUNT(*)::int as orders,
           COALESCE(SUM(total_price), 0)::float as total_value,
-          COALESCE(SUM(CASE WHEN status = ANY($2) THEN total_price ELSE 0 END), 0)::float as revenue
+          COALESCE(SUM(CASE WHEN status = ANY($2) THEN ${revenueExpr} ELSE 0 END), 0)::float as revenue
          FROM store_orders 
          WHERE client_id = $1 AND created_at >= NOW() - INTERVAL '30 days'
          GROUP BY DATE(created_at)
@@ -130,7 +161,7 @@ export const getDashboardAnalytics: RequestHandler = async (req, res) => {
       pool.query(
         `SELECT 
           COUNT(*)::int as orders,
-          COALESCE(SUM(CASE WHEN status = ANY($2) THEN total_price ELSE 0 END), 0)::float as revenue
+          COALESCE(SUM(CASE WHEN status = ANY($2) THEN ${revenueExpr} ELSE 0 END), 0)::float as revenue
          FROM store_orders 
          WHERE client_id = $1 AND DATE(created_at) = CURRENT_DATE`,
         [clientId, revenueStatuses]
@@ -139,7 +170,7 @@ export const getDashboardAnalytics: RequestHandler = async (req, res) => {
       pool.query(
         `SELECT 
           COUNT(*)::int as orders,
-          COALESCE(SUM(CASE WHEN status = ANY($2) THEN total_price ELSE 0 END), 0)::float as revenue
+          COALESCE(SUM(CASE WHEN status = ANY($2) THEN ${revenueExpr} ELSE 0 END), 0)::float as revenue
          FROM store_orders 
          WHERE client_id = $1 AND DATE(created_at) = CURRENT_DATE - INTERVAL '1 day'`,
         [clientId, revenueStatuses]
@@ -148,7 +179,7 @@ export const getDashboardAnalytics: RequestHandler = async (req, res) => {
       pool.query(
         `SELECT 
           COUNT(*)::int as orders,
-          COALESCE(SUM(CASE WHEN status = ANY($2) THEN total_price ELSE 0 END), 0)::float as revenue
+          COALESCE(SUM(CASE WHEN status = ANY($2) THEN ${revenueExpr} ELSE 0 END), 0)::float as revenue
          FROM store_orders 
          WHERE client_id = $1 AND created_at >= DATE_TRUNC('week', CURRENT_DATE)`,
         [clientId, revenueStatuses]
@@ -157,7 +188,7 @@ export const getDashboardAnalytics: RequestHandler = async (req, res) => {
       pool.query(
         `SELECT 
           COUNT(*)::int as orders,
-          COALESCE(SUM(CASE WHEN status = ANY($2) THEN total_price ELSE 0 END), 0)::float as revenue
+          COALESCE(SUM(CASE WHEN status = ANY($2) THEN ${revenueExpr} ELSE 0 END), 0)::float as revenue
          FROM store_orders 
          WHERE client_id = $1 
            AND created_at >= DATE_TRUNC('week', CURRENT_DATE) - INTERVAL '1 week'
@@ -168,7 +199,7 @@ export const getDashboardAnalytics: RequestHandler = async (req, res) => {
       pool.query(
         `SELECT 
           COUNT(*)::int as orders,
-          COALESCE(SUM(CASE WHEN status = ANY($2) THEN total_price ELSE 0 END), 0)::float as revenue
+          COALESCE(SUM(CASE WHEN status = ANY($2) THEN ${revenueExpr} ELSE 0 END), 0)::float as revenue
          FROM store_orders 
          WHERE client_id = $1 AND created_at >= DATE_TRUNC('month', CURRENT_DATE)`,
         [clientId, revenueStatuses]
@@ -177,7 +208,7 @@ export const getDashboardAnalytics: RequestHandler = async (req, res) => {
       pool.query(
         `SELECT 
           COUNT(*)::int as orders,
-          COALESCE(SUM(CASE WHEN status = ANY($2) THEN total_price ELSE 0 END), 0)::float as revenue
+          COALESCE(SUM(CASE WHEN status = ANY($2) THEN ${revenueExpr} ELSE 0 END), 0)::float as revenue
          FROM store_orders 
          WHERE client_id = $1 
            AND created_at >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '1 month'
@@ -191,7 +222,7 @@ export const getDashboardAnalytics: RequestHandler = async (req, res) => {
           COALESCE(p.images[1], '') as image_url,
           COUNT(o.id)::int as total_orders,
           COALESCE(SUM(o.quantity), 0)::int as total_quantity,
-          COALESCE(SUM(CASE WHEN o.status = ANY($2) THEN o.total_price ELSE 0 END), 0)::float as total_revenue
+          COALESCE(SUM(CASE WHEN o.status = ANY($2) THEN ${revenueExprO} ELSE 0 END), 0)::float as total_revenue
          FROM client_store_products p
          LEFT JOIN store_orders o ON o.product_id = p.id AND o.client_id = $1
          WHERE p.client_id = $1
@@ -217,7 +248,7 @@ export const getDashboardAnalytics: RequestHandler = async (req, res) => {
         `SELECT 
           status,
           COUNT(*)::int as count,
-          COALESCE(SUM(total_price), 0)::float as revenue
+          COALESCE(SUM(${revenueExpr}), 0)::float as revenue
          FROM store_orders 
          WHERE client_id = $1
          GROUP BY status
@@ -233,7 +264,7 @@ export const getDashboardAnalytics: RequestHandler = async (req, res) => {
           END as city,
           shipping_wilaya_id,
           COUNT(*)::int as count,
-          COALESCE(SUM(total_price), 0)::float as revenue
+          COALESCE(SUM(${revenueExpr}), 0)::float as revenue
          FROM store_orders 
          WHERE client_id = $1
          GROUP BY shipping_wilaya_id
