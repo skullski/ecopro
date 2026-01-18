@@ -174,6 +174,18 @@ export function createServer(options?: { skipDbInit?: boolean }) {
   // Enforce HTTPS in production (Render terminates TLS and forwards proto)
   if (isProduction) {
     app.use((req, res, next) => {
+      // Allow Render health checks and basic diagnostics without redirect requirements.
+      // Some platforms may probe the service over plain HTTP during deploy.
+      const p = req.path || '';
+      if (
+        p === '/api/ping' ||
+        p === '/api/health' ||
+        p === '/api/db-check' ||
+        p === '/api/email-status'
+      ) {
+        return next();
+      }
+
       const forwardedProto = (req.get('x-forwarded-proto') || '').toLowerCase();
       const isHttps = req.secure || forwardedProto === 'https';
       if (isHttps) return next();

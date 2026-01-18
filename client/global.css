@@ -302,6 +302,14 @@
     word-break: break-word;
   }
 
+  /* Storefront templates manage their own typography.
+     The global "wrap anywhere" rule can cause prices like "3,000 DZD" to stack vertically
+     in narrow mobile previews (and in real storefronts). */
+  .ecopro-storefront :where(p, span, li, h1, h2, h3, h4, h5, h6, a, button, label, td, th) {
+    overflow-wrap: break-word;
+    word-break: normal;
+  }
+
   pre,
   code {
     overflow-x: auto;
