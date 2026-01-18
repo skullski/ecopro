@@ -226,6 +226,7 @@ interface User {
   role: string;
   user_type: string;
   created_at: string;
+  is_super?: boolean;
 }
 
 interface Product {
@@ -2479,17 +2480,17 @@ export default function PlatformAdmin() {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-white">{user.name}</p>
                         <p className="text-xs text-slate-400 truncate">{user.email}</p>
-                        {(user as any).is_locked && <p className="text-xs text-red-400">� Blocked</p>}
-                        {user.email === 'admin@ecopro.com' && <p className="text-xs text-blue-400">🛡️ System Admin</p>}
+                        {(user as any).is_locked && <p className="text-xs text-red-400">🚫 Blocked</p>}
+                        {user.is_super && <p className="text-xs text-blue-400">🛡️ Super Admin (Protected)</p>}
                       </div>
                       <Badge className="bg-red-500/80 text-white">Admin</Badge>
                     </div>
+                    {!user.is_super && (
                     <div className="flex gap-2">
                       <Button 
                         size="sm" 
                         variant="outline" 
                         className={`flex-1 text-xs ${(user as any).is_locked ? 'border-green-500 text-green-400 hover:bg-green-500/20' : 'border-red-500 text-red-400 hover:bg-red-500/20'}`}
-                        disabled={user.email === 'admin@ecopro.com'}
                         onClick={() => (user as any).is_locked ? handleUnblockUser(user.id, user.name) : handleBlockUser(user.id, user.name)}
                       >
                         {(user as any).is_locked ? <><UserCheck className="w-3 h-3 mr-1" /> Unblock</> : <><Ban className="w-3 h-3 mr-1" /> Block</>}
@@ -2498,12 +2499,12 @@ export default function PlatformAdmin() {
                         size="sm" 
                         variant="destructive" 
                         className="flex-1 text-xs"
-                        disabled={user.email === 'admin@ecopro.com'}
                         onClick={() => handleDeleteUser(user.id)}
                       >
                         Delete
                       </Button>
                     </div>
+                    )}
                   </div>
                 ))}
                 {users.filter(u => u.user_type === 'admin').length === 0 && (

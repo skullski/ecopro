@@ -205,7 +205,7 @@ export const listUsers: RequestHandler = async (_req, res) => {
   try {
     const { pool } = await import("../utils/database");
     
-    // Get from both admins and clients tables with is_blocked and is_locked status
+    // Get from both admins and clients tables with is_blocked, is_locked, and is_super status
     const result = await pool.query(`
       SELECT 
         id, 
@@ -217,7 +217,8 @@ export const listUsers: RequestHandler = async (_req, res) => {
         COALESCE(is_blocked, false) as is_blocked,
         blocked_reason,
         COALESCE(is_locked, false) as is_locked,
-        locked_reason
+        locked_reason,
+        COALESCE(is_super, false) as is_super
       FROM admins
       UNION ALL
       SELECT 
@@ -230,7 +231,8 @@ export const listUsers: RequestHandler = async (_req, res) => {
         COALESCE(is_blocked, false) as is_blocked,
         blocked_reason,
         COALESCE(is_locked, false) as is_locked,
-        locked_reason
+        locked_reason,
+        false as is_super
       FROM clients
       ORDER BY created_at DESC
     `);
@@ -1237,12 +1239,12 @@ export const deleteUser: RequestHandler = async (req, res) => {
       tableToDelete = 'clients';
     } else if (user_type === 'admin') {
       // If explicitly told it's an admin, look in admins table only
-      userRes = await pool.query('SELECT id, role, user_type, email FROM admins WHERE id = $1', [userId]);
+      userRes = await pool.query('SELECT id, role, user_type, email, is_super FROM admins WHERE id = $1', [userId]);
       tableToDelete = 'admins';
       isAdmin = true;
     } else {
       // Fallback: check both tables (admins first, then clients)
-      userRes = await pool.query('SELECT id, role, user_type, email FROM admins WHERE id = $1', [userId]);
+      userRes = await pool.query('SELECT id, role, user_type, email, is_super FROM admins WHERE id = $1', [userId]);
       if (userRes.rows.length === 0) {
         userRes = await pool.query('SELECT id, role, user_type, email FROM clients WHERE id = $1', [userId]);
         tableToDelete = 'clients';
@@ -1257,11 +1259,12 @@ export const deleteUser: RequestHandler = async (req, res) => {
 
     // Get the user's email for protection check
     userEmail = userRes.rows[0].email || '';
+    const isSuper = userRes.rows[0].is_super === true;
 
-    // Protect the default admin account - check by email
-    if (userEmail === 'admin@ecopro.com') {
-      console.log(`Attempt to delete protected admin account: ${userEmail}`);
-      return jsonError(res, 400, 'Cannot delete the default admin account');
+    // Protect super admin accounts - cannot be deleted
+    if (isSuper) {
+      console.log(`Attempt to delete protected super admin account: ${userEmail}`);
+      return jsonError(res, 400, 'Cannot delete a super admin account');
     }
     
     // Only check admin count if actually deleting from admins table
@@ -1747,8 +1750,8 @@ export const lockUser: RequestHandler = async (req, res) => {
       return jsonError(res, 400, "Invalid user ID");
     }
 
-    // Check if user exists and get their email
-    let userRes = await pool.query('SELECT id, email FROM admins WHERE id = $1', [userId]);
+    // Check if user exists and get their email + is_super status
+    let userRes = await pool.query('SELECT id, email, is_super FROM admins WHERE id = $1', [userId]);
     
     if (userRes.rows.length === 0) {
       userRes = await pool.query('SELECT id, email FROM clients WHERE id = $1', [userId]);
@@ -1758,10 +1761,11 @@ export const lockUser: RequestHandler = async (req, res) => {
       return jsonError(res, 404, "User not found");
     }
 
-    // Protect the default admin account
+    // Protect super admin accounts - cannot be blocked
     const userEmail = userRes.rows[0].email;
-    if (userEmail === 'admin@ecopro.com') {
-      return jsonError(res, 400, 'Cannot block the default admin account');
+    const isSuper = userRes.rows[0].is_super === true;
+    if (isSuper) {
+      return jsonError(res, 400, 'Cannot block a super admin account');
     }
 
     const adminId = (req as any).user?.id ? parseInt((req as any).user.id, 10) : null;
