@@ -4,7 +4,7 @@ import {
   Truck, Megaphone, Star, Percent, Globe, BarChart3, 
   Users, Shield, Ban, Puzzle, CreditCard, Settings,
   ChevronDown, ChevronRight, Menu, X, Package, Bot,
-  Divide, Palette, User, Lock, Image, MessageCircle
+  Divide, Palette, User, Lock, Image
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
@@ -88,7 +88,6 @@ const menuItems: MenuItem[] = [
     permission: "manage_bot_settings"
   },
   { titleKey: "sidebar.staff", path: "/dashboard/staff", icon: <Users className="w-[18px] h-[18px]" />, permission: "view_staff" },
-  { titleKey: "header.support", path: "/chat", icon: <MessageCircle className="w-[18px] h-[18px]" /> },
 ];
 
 export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {}) {
@@ -113,7 +112,7 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
   });
   
   const location = useLocation();
-  const { newOrdersCount, unreadMessagesCount } = useNotifications();
+  const { newOrdersCount } = useNotifications();
   
   // Save theme state to localStorage whenever it changes
   useEffect(() => {
@@ -172,7 +171,6 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
 
     const badgeCount =
       item.titleKey === 'sidebar.orders' ? newOrdersCount :
-      item.titleKey === 'header.support' ? unreadMessagesCount :
       0;
 
     return (
