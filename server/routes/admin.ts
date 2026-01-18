@@ -1934,9 +1934,13 @@ export const unlockAccountWithOptions: RequestHandler = async (req, res) => {
     try {
       await client.query('BEGIN');
 
-      // Get current client
+      // Get current client with subscription info
       const clientResult = await client.query(
-        'SELECT * FROM clients WHERE id = $1',
+        `SELECT c.*, 
+          COALESCE(c.subscription_extended_until, s.trial_ends_at, s.current_period_end) as current_end_date
+         FROM clients c
+         LEFT JOIN subscriptions s ON s.user_id = c.id
+         WHERE c.id = $1`,
         [clientId]
       );
 
@@ -1961,7 +1965,10 @@ export const unlockAccountWithOptions: RequestHandler = async (req, res) => {
 
       // Handle action-specific updates
       if (action === 'extend') {
-        const extendUntil = new Date();
+        // Extend from the CURRENT end date (trial_ends_at or current_period_end), not from today
+        // This way extending adds days to existing subscription, not replaces it
+        const currentEndDate = currentClient.current_end_date ? new Date(currentClient.current_end_date) : new Date();
+        const extendUntil = new Date(Math.max(currentEndDate.getTime(), Date.now()));
         extendUntil.setDate(extendUntil.getDate() + days);
         updateFields += `, subscription_extended_until = $4, is_paid_temporarily = false`;
         params.push(extendUntil);
