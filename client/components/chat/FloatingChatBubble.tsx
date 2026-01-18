@@ -197,8 +197,7 @@ export default function FloatingChatBubble() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [docked]);
 
-  if (!user) return null;
-  if (hidden || isHiddenSurface) return null;
+  const shouldRender = !!user && !(hidden || isHiddenSurface);
 
   const onPointerDown = (e: React.PointerEvent) => {
     draggingRef.current = false;
@@ -360,6 +359,8 @@ export default function FloatingChatBubble() {
     resizeStartRef.current = null;
     resizingRef.current = false;
   };
+
+  if (!shouldRender) return null;
 
   return (
     <>
