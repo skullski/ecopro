@@ -195,10 +195,10 @@ export class ChatService {
 
       // Admin can access any chat, clients/sellers can only access their own
       if (readerType !== 'admin') {
-        if (readerType === 'client' && chat.client_id !== readerId) {
+        if (readerType === 'client' && Number(chat.client_id) !== Number(readerId)) {
           throw new Error('Unauthorized');
         }
-        if (readerType === 'seller' && chat.seller_id !== readerId) {
+        if (readerType === 'seller' && Number(chat.seller_id) !== Number(readerId)) {
           throw new Error('Unauthorized');
         }
       }

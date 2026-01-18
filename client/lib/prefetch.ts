@@ -11,10 +11,10 @@ const routePrefetchMap: Record<string, string[]> = {
   '/dashboard': ['/api/dashboard/stats', '/api/dashboard/analytics'],
   '/dashboard/orders': ['/api/client/orders?limit=100', '/api/client/order-statuses'],
   '/dashboard/stock': ['/api/client/stock', '/api/client/stock/categories'],
-  '/dashboard/preview': ['/api/client/store/settings', '/api/client/products'],
+  '/dashboard/preview': ['/api/client/store/settings', '/api/client/store/products'],
   '/dashboard/profile': ['/api/auth/me'],
   '/dashboard/delivery/companies': ['/api/delivery/companies'],
-  '/dashboard/wasselni-settings': ['/api/wasselni/settings'],
+  '/dashboard/wasselni-settings': ['/api/bot/settings', '/api/client/store/settings'],
   '/dashboard/staff': ['/api/client/staff'],
   '/template-editor': ['/api/client/store/settings'],
 };

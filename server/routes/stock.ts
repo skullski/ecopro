@@ -580,9 +580,10 @@ export const getStockHistory: RequestHandler = async (req, res) => {
     const result = await pool.query(
       `SELECT 
         h.*,
-        u.name as adjusted_by_name
+        COALESCE(s.name, c.name) as adjusted_by_name
       FROM client_stock_history h
-      LEFT JOIN staff u ON h.created_by = u.id
+      LEFT JOIN staff s ON h.created_by = s.id
+      LEFT JOIN clients c ON h.created_by = c.id
       WHERE h.stock_id = $1 AND h.client_id = $2
       ORDER BY h.created_at DESC`,
       [id, clientId]
@@ -1010,7 +1011,15 @@ export const getAllStockCategories: RequestHandler = async (req, res) => {
       `SELECT 
          c.id, c.name, c.color, c.icon, c.created_at,
          COUNT(p.id) as product_count,
-         (SELECT image_url FROM client_stock_products WHERE client_id = c.client_id AND category = c.name AND image_url IS NOT NULL LIMIT 1) as sample_image
+         (
+           SELECT images[1]
+           FROM client_stock_products
+           WHERE client_id = c.client_id
+             AND category = c.name
+             AND images IS NOT NULL
+             AND array_length(images, 1) > 0
+           LIMIT 1
+         ) as sample_image
        FROM client_stock_categories c
        LEFT JOIN client_stock_products p ON p.client_id = c.client_id AND p.category = c.name
        WHERE c.client_id = $1
