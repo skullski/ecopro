@@ -74,8 +74,10 @@ export default function SpeedometerGauge({
   const safeMax = Number.isFinite(max) && max > safeMin ? max : safeMin + 1;
   const ratio = normalizedValue == null ? 0 : clamp((normalizedValue - safeMin) / (safeMax - safeMin), 0, 1);
 
-  // IMPORTANT: The arc path is a bottom semicircle from left -> right.
-  // Keep needle and ticks aligned with that arc: 0% => 180° (left), 100% => 0° (right).
+  // IMPORTANT: The arc path is a bottom semicircle (top half of circle) from left -> right.
+  // 0% => left side (180°), 100% => right side (0°)
+  // In SVG, Y increases downward, so we need to negate the sin component for the needle
+  // to point INTO the arc (which curves downward from the center).
   const angleDeg = 180 - ratio * 180;
   const angleRad = (angleDeg * Math.PI) / 180;
 
@@ -86,7 +88,8 @@ export default function SpeedometerGauge({
 
   const needleLen = 38;
   const nx = cx + Math.cos(angleRad) * needleLen;
-  const ny = cy + Math.sin(angleRad) * needleLen;
+  // Negate sin so needle points downward into the arc (SVG Y-axis is inverted)
+  const ny = cy - Math.sin(angleRad) * needleLen;
 
   const arcStart = { x: cx - r, y: cy };
   const arcEnd = { x: cx + r, y: cy };
@@ -256,10 +259,11 @@ export default function SpeedometerGauge({
             const a = (180 - t * 180) * (Math.PI / 180);
             const r1 = r + 8;
             const r2 = r + 14;
+            // Negate sin to match the arc direction (pointing into the bottom semicircle)
             const x1 = cx + Math.cos(a) * r1;
-            const y1 = cy + Math.sin(a) * r1;
+            const y1 = cy - Math.sin(a) * r1;
             const x2 = cx + Math.cos(a) * r2;
-            const y2 = cy + Math.sin(a) * r2;
+            const y2 = cy - Math.sin(a) * r2;
             return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#475569" strokeWidth="2" strokeLinecap="round" />;
           })}
 
