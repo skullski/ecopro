@@ -101,13 +101,14 @@ export const getStoreProducts: RequestHandler = async (req, res) => {
     res.json(result.rows);
   } catch (error) {
     console.error("Get store products error:", error);
+    console.error("Get store products stack:", (error as Error).stack);
 
     const isDev = process.env.NODE_ENV !== 'production' || String(process.env.SKIP_DB_INIT || '') === 'true';
     if (isDev) {
       return res.json([]);
     }
 
-    res.status(500).json({ error: "Failed to fetch store products" });
+    res.status(500).json({ error: "Failed to fetch store products", details: (error as Error).message });
   }
 };
 
