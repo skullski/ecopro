@@ -1,37 +1,36 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 function isProduction(): boolean {
   return String(process.env.NODE_ENV || '').toLowerCase() === 'production';
 }
 
-// Email configuration using Gmail SMTP
-const createTransporter = () => {
-  const user = process.env.GMAIL_USER;
-  const pass = process.env.GMAIL_APP_PASSWORD;
-  
-  if (!user || !pass) {
-    const msg = 'Email not configured: GMAIL_USER or GMAIL_APP_PASSWORD missing';
+// Get Resend client - uses RESEND_API_KEY environment variable
+const getResendClient = () => {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    const msg = 'Email not configured: RESEND_API_KEY missing';
     if (isProduction()) console.error(msg);
     else console.warn(msg);
     return null;
   }
-  
-  return nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user, pass }
-  });
+  return new Resend(apiKey);
+};
+
+// Default from address - Resend requires a verified domain or use onboarding@resend.dev for testing
+const getFromAddress = () => {
+  return process.env.EMAIL_FROM || 'Sahla4Eco <onboarding@resend.dev>';
 };
 
 export async function sendPasswordResetEmail(email: string, resetToken: string, resetUrl: string): Promise<boolean> {
-  const transporter = createTransporter();
-  if (!transporter) {
+  const resend = getResendClient();
+  if (!resend) {
     console.log(`[EMAIL] Would send password reset to ${email} with URL: ${resetUrl}`);
     return !isProduction();
   }
   
   try {
-    await transporter.sendMail({
-      from: `"Sahla4Eco" <${process.env.GMAIL_USER}>`,
+    const { data, error } = await resend.emails.send({
+      from: getFromAddress(),
       to: email,
       subject: 'Reset Your Password - Sahla4Eco',
       html: `
@@ -59,7 +58,13 @@ export async function sendPasswordResetEmail(email: string, resetToken: string, 
         </div>
       `
     });
-    console.log(`[EMAIL] Password reset email sent to ${email}`);
+
+    if (error) {
+      console.error('[EMAIL] Resend error:', error);
+      return false;
+    }
+
+    console.log(`[EMAIL] Password reset email sent to ${email}, id: ${data?.id}`);
     return true;
   } catch (error) {
     console.error('[EMAIL] Failed to send password reset:', error);
@@ -68,15 +73,15 @@ export async function sendPasswordResetEmail(email: string, resetToken: string, 
 }
 
 export async function sendWelcomeEmail(email: string, name: string): Promise<boolean> {
-  const transporter = createTransporter();
-  if (!transporter) {
+  const resend = getResendClient();
+  if (!resend) {
     console.log(`[EMAIL] Would send welcome email to ${email}`);
     return !isProduction();
   }
   
   try {
-    await transporter.sendMail({
-      from: `"Sahla4Eco" <${process.env.GMAIL_USER}>`,
+    const { data, error } = await resend.emails.send({
+      from: getFromAddress(),
       to: email,
       subject: 'Welcome to Sahla4Eco!',
       html: `
@@ -92,7 +97,7 @@ export async function sendWelcomeEmail(email: string, name: string): Promise<boo
               Your Sahla4Eco account has been created successfully. You can now create your online store and start selling!
             </p>
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.BASE_URL || 'https://ecopro.com'}/dashboard" style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">
+              <a href="${process.env.BASE_URL || 'https://sahla4eco.com'}/dashboard" style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">
                 Go to Dashboard
               </a>
             </div>
@@ -104,7 +109,13 @@ export async function sendWelcomeEmail(email: string, name: string): Promise<boo
         </div>
       `
     });
-    console.log(`[EMAIL] Welcome email sent to ${email}`);
+
+    if (error) {
+      console.error('[EMAIL] Resend error:', error);
+      return false;
+    }
+
+    console.log(`[EMAIL] Welcome email sent to ${email}, id: ${data?.id}`);
     return true;
   } catch (error) {
     console.error('[EMAIL] Failed to send welcome email:', error);
