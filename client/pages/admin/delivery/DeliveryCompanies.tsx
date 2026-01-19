@@ -56,11 +56,20 @@ export default function DeliveryCompanies() {
   const [integrationMetaByCompanyId, setIntegrationMetaByCompanyId] = useState<
     Record<number, { is_enabled: boolean; has_api_key: boolean; has_api_secret: boolean; updated_at?: string; configured_at?: string }>
   >({});
+
+  // Only allow ZR Express, Noest, Anderson, and Zimou Express to be configured
+  const isComingSoon = (company: DeliveryCompany) => {
+    const openIds = ['zr-express', 'noest', 'anderson', 'zimou-express'];
+    return !openIds.includes(company.id);
+  };
   
   // ========================================
   // REAL ALGERIAN DELIVERY COMPANIES WITH APIs
   // Based on research: Only companies with verified public APIs
   // ========================================
+  // List of company IDs that should appear first (working ones)
+  const workingCompanyOrder = ['zr-express', 'noest', 'anderson', 'zimou-express'];
+
   const [companies, setCompanies] = useState<DeliveryCompany[]>([
     // ⭐ TIER 1: Best API - Yalidine (Most documented, npm packages available)
     {
@@ -329,6 +338,12 @@ export default function DeliveryCompanies() {
     },
   ]);
 
+  // Sort companies so working ones come first
+  const sortedCompanies = [
+    ...companies.filter(c => workingCompanyOrder.includes(c.id)),
+    ...companies.filter(c => !workingCompanyOrder.includes(c.id)),
+  ];
+
   useEffect(() => {
     // Fetch DB-backed delivery company IDs so we can save integrations.
     (async () => {
@@ -385,9 +400,12 @@ export default function DeliveryCompanies() {
 
   const handleCardClick = (company: DeliveryCompany) => {
     setSelectedCompany(company);
-    // Never pre-fill saved secrets; keep fields empty for security.
     setCredentials({});
-    setShowConfigDialog(true);
+    if (!isComingSoon(company)) {
+      setShowConfigDialog(true); // Allow opening config dialog for allowed companies
+    } else {
+      setShowConfigDialog(false);
+    }
   };
 
   const handleSaveCredentials = async () => {
@@ -599,34 +617,20 @@ export default function DeliveryCompanies() {
 
       {/* Grid of delivery company cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {companies.map((company) => (
+        {sortedCompanies.map((company) => (
           <Card
             key={company.id}
-            className={`relative cursor-pointer transition-all duration-300 border-2 hover:shadow-xl overflow-hidden group ${
-              company.enabled 
-                ? 'border-emerald-500/50 bg-gradient-to-br from-emerald-50/50 to-emerald-100/30 dark:from-emerald-950/30 dark:to-emerald-900/20' 
-                : company.id === 'dolivroo' 
-                  ? 'border-purple-400/50 bg-gradient-to-br from-purple-50/50 to-indigo-50/30 dark:from-purple-950/30 dark:to-indigo-900/20 hover:border-purple-500'
-                  : 'border-border/50 bg-card hover:border-primary/60 hover:bg-primary/5 dark:hover:bg-primary/10'
+            className={`relative transition-all duration-300 border-2 overflow-hidden group ${
+              isComingSoon(company)
+                ? 'cursor-not-allowed border-border/50 bg-card opacity-70'
+                : 'cursor-pointer hover:shadow-xl hover:border-primary/60 hover:bg-primary/5 dark:hover:bg-primary/10'
             }`}
             onClick={() => handleCardClick(company)}
           >
-            {company.enabled && (
-              <div className="absolute top-2 right-2 z-10">
-                <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 drop-shadow-md" />
-              </div>
-            )}
-            {!company.enabled && !company.hasApi && (
+            {isComingSoon(company) && (
               <div className="absolute top-2 left-2 z-10">
                 <Badge variant="secondary" className="text-xs">
                   {t('delivery.comingSoon')}
-                </Badge>
-              </div>
-            )}
-            {company.id === 'dolivroo' && !company.enabled && (
-              <div className="absolute top-2 right-2 z-10">
-                <Badge variant="secondary" className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200 text-xs">
-                  Recommended
                 </Badge>
               </div>
             )}
@@ -660,12 +664,10 @@ export default function DeliveryCompanies() {
                   </div>
                 </div>
               </div>
-              
               {/* Description */}
               <p className="text-xs text-muted-foreground line-clamp-2">
                 {company.description}
               </p>
-              
               {/* Feature badges */}
               <div className="flex flex-wrap gap-1">
                 {company.features.createShipment && (
@@ -684,17 +686,14 @@ export default function DeliveryCompanies() {
                   <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-green-600 border-green-300">Webhooks</Badge>
                 )}
               </div>
-              
               {/* Status */}
-              {company.enabled ? (
-                <div className="text-xs text-emerald-700 dark:text-emerald-300 font-medium px-2 py-1 bg-emerald-100/60 dark:bg-emerald-900/40 rounded-md text-center">
-                  {t('delivery.connectedActive')}
-                </div>
-              ) : (
-                <div className="text-xs text-muted-foreground px-2 py-1 bg-muted/50 rounded-md text-center">
-                  {t('delivery.clickToConfigure')}
-                </div>
-              )}
+              <div className={`text-xs px-2 py-1 rounded-md text-center ${
+                isComingSoon(company)
+                  ? 'text-muted-foreground bg-muted/50'
+                  : 'text-primary bg-primary/10 dark:bg-primary/20 font-semibold'
+              }`}>
+                {isComingSoon(company) ? t('delivery.comingSoon') : t('delivery.clickToConfigure')}
+              </div>
             </CardContent>
           </Card>
         ))}

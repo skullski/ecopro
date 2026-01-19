@@ -474,6 +474,52 @@ export function RenderStorefront(t: TemplateId | string, props: TemplateProps) {
       ${theme.text ? `color: ${theme.text} !important;` : ''}
       ${theme.fontFamily ? `font-family: ${theme.fontFamily} !important;` : ''}
       min-height: 100vh;
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
+    /* Global mobile safety (applies on real phones AND in editor forced preview) */
+    .ecopro-themed,
+    .ecopro-themed * {
+      box-sizing: border-box;
+    }
+    .ecopro-themed img,
+    .ecopro-themed video,
+    .ecopro-themed iframe {
+      max-width: 100%;
+    }
+    .ecopro-themed [style*="width: 100vw"],
+    .ecopro-themed [style*="width:100vw"] {
+      width: 100% !important;
+    }
+    .ecopro-themed table {
+      max-width: 100%;
+    }
+
+    /* Breakpoint emulation: some templates rely on inline grids instead of real responsive CSS.
+       These rules keep phone layouts usable without touching 100+ templates individually. */
+    .ecopro-breakpoint-mobile [data-edit-path="layout.hero"] [style*="grid-template-columns"] {
+      grid-template-columns: 1fr !important;
+    }
+    .ecopro-breakpoint-mobile [data-edit-path="layout.products"] [style*="grid-template-columns"],
+    .ecopro-breakpoint-mobile [data-edit-path="layout.grid"] [style*="grid-template-columns"] {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    @media (max-width: 640px) {
+      .ecopro-themed [data-edit-path="layout.hero"] [style*="grid-template-columns"] {
+        grid-template-columns: 1fr !important;
+      }
+      .ecopro-themed [data-edit-path="layout.products"] [style*="grid-template-columns"],
+      .ecopro-themed [data-edit-path="layout.grid"] [style*="grid-template-columns"] {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      }
+
+      /* Prevent long words/URLs from forcing horizontal scroll */
+      .ecopro-themed {
+        overflow-wrap: anywhere;
+      }
     }
 
     .ecopro-themed {
@@ -556,8 +602,11 @@ export function RenderStorefront(t: TemplateId | string, props: TemplateProps) {
     ...(settingsAny.template_bg_color ? { backgroundColor: String(settingsAny.template_bg_color) } : {}),
   };
 
+  const forced = (sanitizedProps as any).forcedBreakpoint as string | undefined;
+  const breakpointClass = forced ? `ecopro-breakpoint-${forced}` : '';
+
   const wrap = (el: React.ReactElement) => (
-    <div className="ecopro-themed" style={wrapperStyle}>
+    <div className={`ecopro-themed ${breakpointClass}`.trim()} style={wrapperStyle}>
       {injectedCss.trim() ? <style dangerouslySetInnerHTML={{ __html: injectedCss }} /> : null}
       {el}
     </div>

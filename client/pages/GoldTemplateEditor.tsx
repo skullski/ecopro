@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { createRoot } from 'react-dom/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -225,6 +226,9 @@ export default function GoldTemplateEditor() {
   const { t } = useTranslation();
   const previewRootRef = React.useRef<HTMLDivElement | null>(null);
   const previewFitRef = React.useRef<HTMLDivElement | null>(null);
+  const previewIframeRef = React.useRef<HTMLIFrameElement | null>(null);
+  const previewIframeRootRef = React.useRef<ReturnType<typeof createRoot> | null>(null);
+  const [iframeReady, setIframeReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -235,6 +239,55 @@ export default function GoldTemplateEditor() {
 
   const [previewDevice, setPreviewDevice] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
   const [selectedEditPath, setSelectedEditPath] = useState<string | null>(null);
+
+  const handleSelectEditPath = useCallback((path: string) => {
+    setSelectedEditPath(path);
+  }, []);
+
+  const IFRAME_SRC_DOC = useMemo(
+    () =>
+      `<!doctype html><html><head><meta charset="utf-8" /></head><body style="margin:0"><div id="ecopro-iframe-root"></div></body></html>`,
+    []
+  );
+
+  const syncIframeHead = useCallback((doc: Document) => {
+    // Copy over styles so Tailwind/media queries work inside the iframe.
+    const head = doc.head;
+    // Remove any previous copied styles (but keep meta/charset).
+    Array.from(head.querySelectorAll('style[data-ecopro],link[data-ecopro]')).forEach((n) => n.remove());
+
+    const parentNodes = Array.from(document.head.querySelectorAll('link[rel="stylesheet"],style'));
+    parentNodes.forEach((node) => {
+      if (node.tagName === 'LINK') {
+        const link = node as HTMLLinkElement;
+        if (!link.href) return;
+        const clone = doc.createElement('link');
+        clone.rel = 'stylesheet';
+        clone.href = link.href;
+        clone.setAttribute('data-ecopro', '1');
+        head.appendChild(clone);
+        return;
+      }
+      const style = node as HTMLStyleElement;
+      if (!style.textContent) return;
+      const clone = doc.createElement('style');
+      clone.textContent = style.textContent;
+      clone.setAttribute('data-ecopro', '1');
+      head.appendChild(clone);
+    });
+
+    // Match RTL/LTR directionality.
+    doc.documentElement.lang = document.documentElement.lang || 'en';
+    doc.documentElement.dir = document.documentElement.dir || 'ltr';
+  }, []);
+
+  // Reset iframe state when switching preview mode.
+  useEffect(() => {
+    if (previewDevice === 'desktop') {
+      setIframeReady(false);
+      previewIframeRootRef.current = null;
+    }
+  }, [previewDevice]);
 
   // Template picker (header)
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
@@ -447,29 +500,35 @@ export default function GoldTemplateEditor() {
   }, [activeTab]);
 
   useEffect(() => {
-    const root = previewRootRef.current;
-    if (!root) return;
-
-    const prev = root.querySelector('[data-edit-selected="true"]') as HTMLElement | null;
-    if (prev) prev.removeAttribute('data-edit-selected');
-
-    if (!selectedEditPath) return;
-
     const escapeCss = (value: string) => {
       const cssAny = (globalThis as any).CSS;
       if (cssAny && typeof cssAny.escape === 'function') return cssAny.escape(value);
       return value.replace(/[^a-zA-Z0-9_\-]/g, (m) => `\\${m}`);
     };
 
-    const selected = root.querySelector(`[data-edit-path="${escapeCss(selectedEditPath)}"]`) as HTMLElement | null;
-    if (selected) {
-      selected.setAttribute('data-edit-selected', 'true');
-      try {
-        selected.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-      } catch {
-        // ignore
+    const clearAndSelect = (root: ParentNode | null) => {
+      if (!root) return;
+      const prev = root.querySelector('[data-edit-selected="true"]') as HTMLElement | null;
+      if (prev) prev.removeAttribute('data-edit-selected');
+      if (!selectedEditPath) return;
+      const selected = root.querySelector(`[data-edit-path="${escapeCss(selectedEditPath)}"]`) as HTMLElement | null;
+      if (selected) {
+        selected.setAttribute('data-edit-selected', 'true');
+        try {
+          selected.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        } catch {
+          // ignore
+        }
       }
+    };
+
+    if (previewDevice === 'desktop') {
+      clearAndSelect(previewRootRef.current);
+      return;
     }
+
+    const doc = previewIframeRef.current?.contentDocument;
+    clearAndSelect(doc);
   }, [selectedEditPath]);
 
   const previewGridCols = useMemo(() => {
@@ -480,7 +539,7 @@ export default function GoldTemplateEditor() {
   }, [previewDevice]);
 
   useEffect(() => {
-    const root = previewRootRef.current;
+    const root = previewDevice === 'desktop' ? previewRootRef.current : previewIframeRef.current?.contentDocument;
     if (!root) return;
 
     const handleImageError = (e: Event) => {
@@ -499,10 +558,10 @@ export default function GoldTemplateEditor() {
     };
 
     // Add error handlers to all current images
-    const images = root.querySelectorAll('img');
+    const images = (root as any).querySelectorAll('img') as NodeListOf<HTMLImageElement>;
     images.forEach((img) => img.addEventListener('error', handleImageError));
 
-    const videos = root.querySelectorAll('video');
+    const videos = (root as any).querySelectorAll('video') as NodeListOf<HTMLVideoElement>;
     videos.forEach((video) => video.addEventListener('error', handleVideoError));
 
     return () => {
@@ -545,11 +604,63 @@ export default function GoldTemplateEditor() {
       navigate: (to: string | number) => { if (typeof to === 'string') navigate(to); },
       canManage: true,
       forcedBreakpoint: previewDevice,
+      onSelect: handleSelectEditPath,
     }),
-    [settings, products, formatPrice, navigate, previewDevice, effectiveTemplateId]
+    [settings, products, formatPrice, navigate, previewDevice, effectiveTemplateId, handleSelectEditPath]
   );
 
   const selectedTemplateId = useMemo(() => normalizeTemplateId(String(effectiveTemplateId)), [effectiveTemplateId]);
+
+  // Render storefront into an iframe for mobile/tablet so CSS breakpoints match the simulated device width.
+  useEffect(() => {
+    if (previewDevice === 'desktop') return;
+    const iframe = previewIframeRef.current;
+    const doc = iframe?.contentDocument;
+    if (!iframe || !doc || !iframeReady) return;
+
+    try {
+      syncIframeHead(doc);
+    } catch {
+      // ignore
+    }
+
+    const mount = doc.getElementById('ecopro-iframe-root');
+    if (!mount) return;
+
+    if (!previewIframeRootRef.current) {
+      previewIframeRootRef.current = createRoot(mount);
+    }
+
+    previewIframeRootRef.current.render(
+      <div>
+        <style>{`[data-edit-selected="true"]{outline:2px solid hsl(var(--primary)); outline-offset:2px;}`}</style>
+        {RenderStorefront(selectedTemplateId, templateProps as any)}
+      </div>
+    );
+  }, [iframeReady, previewDevice, selectedTemplateId, templateProps, syncIframeHead]);
+
+  // Click-to-edit inside iframe (capture phase) so templates don't need special wiring.
+  useEffect(() => {
+    if (previewDevice === 'desktop') return;
+    const doc = previewIframeRef.current?.contentDocument;
+    if (!doc || !iframeReady) return;
+
+    const onClickCapture = (e: MouseEvent) => {
+      setTemplatePickerOpen(false);
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      const el = target.closest('[data-edit-path]') as HTMLElement | null;
+      if (!el) return;
+      const path = el.getAttribute('data-edit-path');
+      if (!path) return;
+      e.preventDefault();
+      e.stopPropagation();
+      handleSelectEditPath(path);
+    };
+
+    doc.addEventListener('click', onClickCapture, true);
+    return () => doc.removeEventListener('click', onClickCapture, true);
+  }, [iframeReady, previewDevice, handleSelectEditPath]);
 
   const deviceFrame = useMemo(() => {
     if (previewDevice === 'mobile') {
@@ -829,6 +940,19 @@ export default function GoldTemplateEditor() {
         <div className="space-y-4">
           {bindText('Section Subtitle', 'template_featured_subtitle' as any, 'A small edit of plush toys...')}
           {bindColor('Subtitle Color', 'template_section_subtitle_color' as any, '#78716C')}
+        </div>
+      );
+    } else if (path === 'layout.products' || path.startsWith('layout.products.')) {
+      body = (
+        <div className="space-y-4">
+          <div className="text-sm text-muted-foreground">
+            Product details are managed in your product list.
+          </div>
+          {bindColor('Product Card Background', 'template_card_bg' as any, '#FFFFFF')}
+          {bindColor('Product Tag Color', 'template_accent_color', '#F97316')}
+          {bindColor('Product Title Color', 'template_product_title_color' as any, '#1C1917')}
+          {bindColor('Product Price Color', 'template_product_price_color' as any, '#1C1917')}
+          <Button variant="outline" size="sm" onClick={() => navigate('/dashboard/store')}>Edit Products</Button>
         </div>
       );
     } else if (path.startsWith('layout.featured.items')) {
@@ -1242,14 +1366,19 @@ export default function GoldTemplateEditor() {
                             position: 'relative',
                           }}
                         >
-                          <style>{`[data-edit-selected="true"]{outline:2px solid hsl(var(--primary)); outline-offset:2px;}`}</style>
-                          <div
-                            ref={previewRootRef}
-                            onClickCapture={handlePreviewClickCapture}
-                            className="flex-1 overflow-y-auto overflow-x-hidden"
-                          >
-                            {RenderStorefront(selectedTemplateId, templateProps as any)}
-                          </div>
+                          <iframe
+                            ref={previewIframeRef}
+                            title="Storefront Preview"
+                            srcDoc={IFRAME_SRC_DOC}
+                            onLoad={() => setIframeReady(true)}
+                            style={{
+                              border: 0,
+                              width: '100%',
+                              height: '100%',
+                              display: 'block',
+                              background: '#ffffff',
+                            }}
+                          />
                         </div>
 
                         {/* Punch-hole camera overlay for Galaxy */}

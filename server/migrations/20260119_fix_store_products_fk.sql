@@ -59,10 +59,13 @@ SELECT update_fk_to_clients('client_store_products', 'client_id', 'CASCADE');
 -- Fix client_store_settings  
 SELECT update_fk_to_clients('client_store_settings', 'client_id', 'CASCADE');
 
--- Fix client_stock
-SELECT update_fk_to_clients('client_stock', 'client_id', 'CASCADE');
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'client_stock') THEN
+    PERFORM update_fk_to_clients('client_stock', 'client_id', 'CASCADE');
+  END IF;
+END $$;
 
--- Fix client_stock_movements (if exists)
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'client_stock_movements') THEN

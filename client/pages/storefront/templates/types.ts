@@ -66,6 +66,8 @@ export interface TemplateProps {
   canManage?: boolean;
   /** Force a specific breakpoint for preview mode (overrides window.innerWidth detection) */
   forcedBreakpoint?: 'mobile' | 'tablet' | 'desktop';
+  /** Optional editor hook: called when a user selects an editable element */
+  onSelect?: (editPath: string) => void;
 }
 
 /**
