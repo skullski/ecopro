@@ -23,6 +23,32 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+// Local type defs for pixel statistics
+type PixelType = 'facebook' | 'tiktok' | string;
+
+interface PixelConfig {
+  pixel_type?: string;
+  facebook_pixel_id?: string | null;
+  tiktok_pixel_id?: string | null;
+  is_facebook_enabled?: boolean;
+  is_tiktok_enabled?: boolean;
+  enabled?: boolean;
+}
+
+interface PixelSettings {
+  pixels?: PixelConfig[];
+  is_facebook_enabled?: boolean;
+  is_tiktok_enabled?: boolean;
+  facebook_pixel_id?: string | null;
+  tiktok_pixel_id?: string | null;
+}
+
+interface FunnelStep { stage: string; count: number; rate: number }
+interface FunnelData { funnel: FunnelStep[]; total_revenue?: number; avg_order_value?: number; period_days?: number }
+
+interface PixelStats { summary?: Record<string, any>; facebook?: Record<string, any>; tiktok?: Record<string, any> }
+
+interface RecentEvent { id: string | number; pixel_type: string; event_name: string; page_url?: string; revenue?: number; created_at: string }
 import {
   Card,
   CardContent,
@@ -34,100 +60,35 @@ import {
   Tabs,
   TabsContent,
   TabsList,
-  TabsTrigger,
-        {/* Settings Tab - Dynamic Pixel List */}
-        <TabsContent value="settings" className="space-y-4 md:space-y-6">
-          <div className="space-y-4">
-            {settingsForm.map((pixel, idx) => (
-              <Card key={pixel.pixel_type + idx}>
-                <CardHeader className="p-4 md:p-6">
-                  <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-                    {pixel.pixel_type === 'facebook' ? <Facebook className="h-4 w-4 md:h-5 md:w-5 text-blue-600 dark:text-blue-400" /> : pixel.pixel_type === 'tiktok' ? <TikTokIcon className="h-4 w-4 md:h-5 md:w-5 text-pink-600 dark:text-pink-400" /> : <BarChart3 className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />}
-                    {pixel.pixel_type.charAt(0).toUpperCase() + pixel.pixel_type.slice(1)} Pixel
-                  </CardTitle>
-                  <CardDescription className="text-xs md:text-sm">
-                    Configure your {pixel.pixel_type} Pixel for conversion tracking
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4 p-4 md:p-6 pt-0 md:pt-0">
-                  <div>
-                    <Label htmlFor={`pixel-id-${idx}`} className="text-sm">Pixel ID</Label>
-                    <Input
-                      id={`pixel-id-${idx}`}
-                      placeholder={`Enter your ${pixel.pixel_type} Pixel ID`}
-                      value={pixel.pixel_id}
-                      onChange={(e) => setSettingsForm(prev => prev.map((p, i) => i === idx ? { ...p, pixel_id: e.target.value } : p))}
-                      className="mt-1"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Find this in your {pixel.pixel_type === 'facebook' ? 'Facebook Events Manager' : pixel.pixel_type === 'tiktok' ? 'TikTok Ads Manager' : 'Pixel Provider'}
-                    </p>
-                  </div>
-                  <div>
-                    <Label htmlFor={`access-token-${idx}`} className="text-sm">Access Token (Optional)</Label>
-                    <Input
-                      id={`access-token-${idx}`}
-                      type="password"
-                      placeholder="For server-side tracking"
-                      value={pixel.access_token || ''}
-                      onChange={(e) => setSettingsForm(prev => prev.map((p, i) => i === idx ? { ...p, access_token: e.target.value } : p))}
-                      className="mt-1"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Required for server-side events
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-between pt-2">
-                    <Label htmlFor={`enabled-${idx}`} className="text-sm">Enable {pixel.pixel_type.charAt(0).toUpperCase() + pixel.pixel_type.slice(1)} Pixel</Label>
-                    <Switch
-                      id={`enabled-${idx}`}
-                      checked={pixel.enabled}
-                      onCheckedChange={(checked) => setSettingsForm(prev => prev.map((p, i) => i === idx ? { ...p, enabled: checked } : p))}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setSettingsForm(prev => [...prev, { pixel_type: 'custom', pixel_id: '', enabled: false }])}>Add Pixel</Button>
-              {settingsForm.length > 2 && (
-                <Button variant="destructive" onClick={() => setSettingsForm(prev => prev.slice(0, -1))}>Remove Last</Button>
-              )}
-            </div>
-          </div>
-          <div className="flex justify-end">
-            <Button 
-              onClick={() => updateSettings.mutate(settingsForm)}
-              disabled={updateSettings.isPending}
-            >
-              {updateSettings.isPending ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                'Save Settings'
-              )}
-            </Button>
-          </div>
-  id: number;
-  pixel_type: string;
-  event_name: string;
-  event_data: any;
-  page_url: string;
-  product_id: number | null;
-  order_id: number | null;
-  revenue: number | null;
-  currency: string;
-  created_at: string;
-}
-
+  TabsTrigger
+} from '@/components/ui/tabs';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableFooter,
+  TableRow,
+  TableHead,
+  TableCell,
+  TableCaption,
+} from '@/components/ui/table';
+import { useToast } from '@/components/ui/use-toast';
+import TikTokIcon from '@/components/icons/TikTokIcon';
 export default function PixelStatistics() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedDays, setSelectedDays] = useState('30');
   const [activeTab, setActiveTab] = useState('overview');
   const [settingsForm, setSettingsForm] = useState<PixelConfig[]>([]);
+  const [settingsObj, setSettingsObj] = useState<PixelSettings>({});
 
   // Fetch pixel settings
   const { data: settings, isLoading: settingsLoading } = useQuery<PixelSettings>({
@@ -180,11 +141,11 @@ export default function PixelStatistics() {
 
   // Update settings mutation
   const updateSettings = useMutation({
-    mutationFn: async (pixels: PixelConfig[]) => {
+    mutationFn: async (payload: any) => {
       const res = await fetch('/api/pixels/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pixels })
+        body: JSON.stringify(payload)
       });
       if (!res.ok) throw new Error('Failed to update settings');
       return res.json();
@@ -200,8 +161,9 @@ export default function PixelStatistics() {
 
   // Initialize form when settings load
   useEffect(() => {
-    if (settings?.pixels) {
-      setSettingsForm(settings.pixels);
+    if (settings) {
+      if (settings.pixels) setSettingsForm(settings.pixels);
+      setSettingsObj(settings);
     }
   }, [settings]);
 
@@ -631,8 +593,8 @@ export default function PixelStatistics() {
                   <Input
                     id="fb-pixel-id"
                     placeholder="Enter your Facebook Pixel ID"
-                    value={settingsForm.facebook_pixel_id || ''}
-                    onChange={(e) => setSettingsForm(prev => ({ ...prev, facebook_pixel_id: e.target.value }))}
+                    value={settingsObj.facebook_pixel_id || ''}
+                    onChange={(e) => setSettingsObj(prev => ({ ...prev, facebook_pixel_id: e.target.value }))}
                     className="mt-1"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
@@ -646,8 +608,8 @@ export default function PixelStatistics() {
                     id="fb-access-token"
                     type="password"
                     placeholder="For server-side tracking"
-                    value={settingsForm.facebook_access_token || ''}
-                    onChange={(e) => setSettingsForm(prev => ({ ...prev, facebook_access_token: e.target.value }))}
+                    value={(settingsObj as any).facebook_access_token || ''}
+                    onChange={(e) => setSettingsObj(prev => ({ ...prev, facebook_access_token: e.target.value }))}
                     className="mt-1"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
@@ -659,8 +621,8 @@ export default function PixelStatistics() {
                   <Label htmlFor="fb-enabled" className="text-sm">Enable Facebook Pixel</Label>
                   <Switch
                     id="fb-enabled"
-                    checked={settingsForm.is_facebook_enabled || false}
-                    onCheckedChange={(checked) => setSettingsForm(prev => ({ ...prev, is_facebook_enabled: checked }))}
+                    checked={settingsObj.is_facebook_enabled || false}
+                    onCheckedChange={(checked) => setSettingsObj(prev => ({ ...prev, is_facebook_enabled: checked }))}
                   />
                 </div>
               </CardContent>
@@ -683,8 +645,8 @@ export default function PixelStatistics() {
                   <Input
                     id="tt-pixel-id"
                     placeholder="Enter your TikTok Pixel ID"
-                    value={settingsForm.tiktok_pixel_id || ''}
-                    onChange={(e) => setSettingsForm(prev => ({ ...prev, tiktok_pixel_id: e.target.value }))}
+                    value={settingsObj.tiktok_pixel_id || ''}
+                    onChange={(e) => setSettingsObj(prev => ({ ...prev, tiktok_pixel_id: e.target.value }))}
                     className="mt-1"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
@@ -698,8 +660,8 @@ export default function PixelStatistics() {
                     id="tt-access-token"
                     type="password"
                     placeholder="For server-side tracking"
-                    value={settingsForm.tiktok_access_token || ''}
-                    onChange={(e) => setSettingsForm(prev => ({ ...prev, tiktok_access_token: e.target.value }))}
+                    value={(settingsObj as any).tiktok_access_token || ''}
+                    onChange={(e) => setSettingsObj(prev => ({ ...prev, tiktok_access_token: e.target.value }))}
                     className="mt-1"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
@@ -711,8 +673,8 @@ export default function PixelStatistics() {
                   <Label htmlFor="tt-enabled" className="text-sm">Enable TikTok Pixel</Label>
                   <Switch
                     id="tt-enabled"
-                    checked={settingsForm.is_tiktok_enabled || false}
-                    onCheckedChange={(checked) => setSettingsForm(prev => ({ ...prev, is_tiktok_enabled: checked }))}
+                    checked={settingsObj.is_tiktok_enabled || false}
+                    onCheckedChange={(checked) => setSettingsObj(prev => ({ ...prev, is_tiktok_enabled: checked }))}
                   />
                 </div>
               </CardContent>
@@ -721,7 +683,7 @@ export default function PixelStatistics() {
 
           <div className="flex justify-end">
             <Button 
-              onClick={() => updateSettings.mutate(settingsForm)}
+              onClick={() => updateSettings.mutate({ ...settingsObj, pixels: settingsForm })}
               disabled={updateSettings.isPending}
             >
               {updateSettings.isPending ? (
