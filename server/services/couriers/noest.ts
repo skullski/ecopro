@@ -225,7 +225,7 @@ export class NoestService implements CourierService {
       }
 
       // Validate the order so it becomes visible in the logistics portal.
-      const validateResponse = await this.postJson('/api/public/valid/order', {
+      const validateResponse = await this.postJson('/api/public/validation/order', {
         api_token: apiKey,
         user_guid: guid,
         tracking,
