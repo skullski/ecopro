@@ -65,7 +65,7 @@ export class AndersonService implements CourierService {
         notes: shipment.notes || '',
       };
 
-      const response = await fetch(`${this.apiUrl}/orders`, {
+      const response = await fetch(`${this.apiUrl}/create/order`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
