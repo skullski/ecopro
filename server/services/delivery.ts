@@ -169,15 +169,56 @@ export class DeliveryService {
         secondaryCredential
       );
 
-      if (!shipmentResponse.success) {
-        // Do NOT update status if upload failed
+      let trackingNumber = shipmentResponse.tracking_number;
+      // If Anderson, and no tracking number, poll status endpoint
+      if (
+        order.company_name.toLowerCase().includes('anderson') &&
+        (!trackingNumber || typeof trackingNumber !== 'string' || trackingNumber.trim() === '') &&
+        shipmentResponse.success && shipmentResponse.reference_id
+      ) {
+        try {
+          // Use AndersonService.getStatus to fetch tracking number
+          const andersonService = service as AndersonService;
+          const statusResp = await andersonService.getStatus(shipmentResponse.reference_id, apiKey, secondaryCredential);
+          if (statusResp && statusResp.tracking_number) {
+            trackingNumber = statusResp.tracking_number;
+          }
+        } catch (e) {
+          // Log but do not throw
+          await logDeliveryEvent(
+            orderId,
+            clientId,
+            companyId,
+            'status_poll_failed',
+            `Failed to poll Anderson status for tracking number: ${e?.message || e}`,
+            requestId
+          );
+        }
+      }
+
+      if (!shipmentResponse.success || !trackingNumber) {
+        // Do NOT update status if upload failed or tracking number missing
         await logDeliveryEvent(
           orderId,
           clientId,
           companyId,
           'upload_failed',
-          `Failed to upload to ${order.company_name}: ${shipmentResponse.error || 'Unknown error'}`,
+          `Failed to upload to ${order.company_name}: ${shipmentResponse.error || 'No tracking number returned'}`,
           requestId
+        );
+        await pool.query(
+          `UPDATE store_orders
+           SET delivery_status = $1,
+               status = 'pending',
+               courier_response = $2::jsonb,
+               updated_at = NOW()
+           WHERE id = $3 AND client_id = $4`,
+          [
+            DeliveryStatus.FAILED,
+            JSON.stringify(shipmentResponse),
+            orderId,
+            clientId,
+          ]
         );
         return {
           success: false,
@@ -185,8 +226,6 @@ export class DeliveryService {
           courier_response: shipmentResponse,
         };
       }
-
-      const trackingNumber = shipmentResponse.tracking_number;
 
       await pool.query(
         `UPDATE store_orders
@@ -309,7 +348,11 @@ export class DeliveryService {
         throw new Error(shipmentResult.error || 'Failed to create shipment');
       }
 
-      const trackingNumber = shipmentResult.tracking_number!;
+      const trackingNumber = shipmentResult.tracking_number;
+      // Only insert label if trackingNumber is present
+      if (!trackingNumber) {
+        throw new Error('No tracking number returned from courier; cannot generate label.');
+      }
 
       // Noest provides labels via a token-gated endpoint; serve it through our authenticated proxy.
       const companyRow = await pool.query('SELECT name FROM delivery_companies WHERE id = $1', [companyId]);

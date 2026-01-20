@@ -35,89 +35,81 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@/components/ui/tabs';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-
-// TikTok icon component
-const TikTokIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
-  </svg>
-);
-
-interface PixelSettings {
-  client_id: number;
-  facebook_pixel_id: string | null;
-  facebook_access_token: string | null;
-  tiktok_pixel_id: string | null;
-  tiktok_access_token: string | null;
-  is_facebook_enabled: boolean;
-  is_tiktok_enabled: boolean;
-}
-
-interface PixelStats {
-  period_days: number;
-  daily_stats: Array<{
-    stat_date: string;
-    pixel_type: string;
-    page_views: number;
-    view_content: number;
-    add_to_cart: number;
-    initiate_checkout: number;
-    purchases: number;
-    total_revenue: number;
-  }>;
-  facebook: {
-    total_page_views: number;
-    total_view_content: number;
-    total_add_to_cart: number;
-    total_initiate_checkout: number;
-    total_purchases: number;
-    total_revenue: number;
-    conversion_rate: string;
-    cart_rate: string;
-  };
-  tiktok: {
-    total_page_views: number;
-    total_view_content: number;
-    total_add_to_cart: number;
-    total_initiate_checkout: number;
-    total_purchases: number;
-    total_revenue: number;
-    conversion_rate: string;
-    cart_rate: string;
-  };
-}
-
-interface FunnelData {
-  pixel_type: string;
-  period_days: number;
-  funnel: Array<{
-    stage: string;
-    count: number;
-    rate: number | string;
-  }>;
-  total_revenue: number;
-  avg_order_value: string;
-}
-
-interface RecentEvent {
+        {/* Settings Tab - Dynamic Pixel List */}
+        <TabsContent value="settings" className="space-y-4 md:space-y-6">
+          <div className="space-y-4">
+            {settingsForm.map((pixel, idx) => (
+              <Card key={pixel.pixel_type + idx}>
+                <CardHeader className="p-4 md:p-6">
+                  <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                    {pixel.pixel_type === 'facebook' ? <Facebook className="h-4 w-4 md:h-5 md:w-5 text-blue-600 dark:text-blue-400" /> : pixel.pixel_type === 'tiktok' ? <TikTokIcon className="h-4 w-4 md:h-5 md:w-5 text-pink-600 dark:text-pink-400" /> : <BarChart3 className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground" />}
+                    {pixel.pixel_type.charAt(0).toUpperCase() + pixel.pixel_type.slice(1)} Pixel
+                  </CardTitle>
+                  <CardDescription className="text-xs md:text-sm">
+                    Configure your {pixel.pixel_type} Pixel for conversion tracking
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4 p-4 md:p-6 pt-0 md:pt-0">
+                  <div>
+                    <Label htmlFor={`pixel-id-${idx}`} className="text-sm">Pixel ID</Label>
+                    <Input
+                      id={`pixel-id-${idx}`}
+                      placeholder={`Enter your ${pixel.pixel_type} Pixel ID`}
+                      value={pixel.pixel_id}
+                      onChange={(e) => setSettingsForm(prev => prev.map((p, i) => i === idx ? { ...p, pixel_id: e.target.value } : p))}
+                      className="mt-1"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Find this in your {pixel.pixel_type === 'facebook' ? 'Facebook Events Manager' : pixel.pixel_type === 'tiktok' ? 'TikTok Ads Manager' : 'Pixel Provider'}
+                    </p>
+                  </div>
+                  <div>
+                    <Label htmlFor={`access-token-${idx}`} className="text-sm">Access Token (Optional)</Label>
+                    <Input
+                      id={`access-token-${idx}`}
+                      type="password"
+                      placeholder="For server-side tracking"
+                      value={pixel.access_token || ''}
+                      onChange={(e) => setSettingsForm(prev => prev.map((p, i) => i === idx ? { ...p, access_token: e.target.value } : p))}
+                      className="mt-1"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Required for server-side events
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between pt-2">
+                    <Label htmlFor={`enabled-${idx}`} className="text-sm">Enable {pixel.pixel_type.charAt(0).toUpperCase() + pixel.pixel_type.slice(1)} Pixel</Label>
+                    <Switch
+                      id={`enabled-${idx}`}
+                      checked={pixel.enabled}
+                      onCheckedChange={(checked) => setSettingsForm(prev => prev.map((p, i) => i === idx ? { ...p, enabled: checked } : p))}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setSettingsForm(prev => [...prev, { pixel_type: 'custom', pixel_id: '', enabled: false }])}>Add Pixel</Button>
+              {settingsForm.length > 2 && (
+                <Button variant="destructive" onClick={() => setSettingsForm(prev => prev.slice(0, -1))}>Remove Last</Button>
+              )}
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Button 
+              onClick={() => updateSettings.mutate(settingsForm)}
+              disabled={updateSettings.isPending}
+            >
+              {updateSettings.isPending ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Settings'
+              )}
+            </Button>
+          </div>
   id: number;
   pixel_type: string;
   event_name: string;
@@ -135,7 +127,7 @@ export default function PixelStatistics() {
   const queryClient = useQueryClient();
   const [selectedDays, setSelectedDays] = useState('30');
   const [activeTab, setActiveTab] = useState('overview');
-  const [settingsForm, setSettingsForm] = useState<Partial<PixelSettings>>({});
+  const [settingsForm, setSettingsForm] = useState<PixelConfig[]>([]);
 
   // Fetch pixel settings
   const { data: settings, isLoading: settingsLoading } = useQuery<PixelSettings>({
@@ -188,11 +180,11 @@ export default function PixelStatistics() {
 
   // Update settings mutation
   const updateSettings = useMutation({
-    mutationFn: async (data: Partial<PixelSettings>) => {
+    mutationFn: async (pixels: PixelConfig[]) => {
       const res = await fetch('/api/pixels/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify({ pixels })
       });
       if (!res.ok) throw new Error('Failed to update settings');
       return res.json();
@@ -208,13 +200,8 @@ export default function PixelStatistics() {
 
   // Initialize form when settings load
   useEffect(() => {
-    if (settings) {
-      setSettingsForm({
-        facebook_pixel_id: settings.facebook_pixel_id || '',
-        tiktok_pixel_id: settings.tiktok_pixel_id || '',
-        is_facebook_enabled: settings.is_facebook_enabled,
-        is_tiktok_enabled: settings.is_tiktok_enabled
-      });
+    if (settings?.pixels) {
+      setSettingsForm(settings.pixels);
     }
   }, [settings]);
 
@@ -249,9 +236,11 @@ export default function PixelStatistics() {
   };
 
   // Stats cards for a platform
-  const StatsCards = ({ platform, data }: { platform: 'facebook' | 'tiktok'; data: any }) => {
-    const Icon = platform === 'facebook' ? Facebook : TikTokIcon;
-    const color = platform === 'facebook' ? 'blue' : 'pink';
+  const StatsCards = ({ platform, data }: { platform: PixelType; data: any }) => {
+    let Icon: any = BarChart3;
+    if (platform === 'facebook') Icon = Facebook;
+    else if (platform === 'tiktok') Icon = TikTokIcon;
+    // else keep BarChart3 for custom/unknown
     
     return (
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
@@ -470,10 +459,13 @@ export default function PixelStatistics() {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4 h-auto">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto">
           <TabsTrigger value="overview" className="text-xs py-1.5">Overview</TabsTrigger>
-          <TabsTrigger value="facebook" className="text-xs py-1.5">Facebook</TabsTrigger>
-          <TabsTrigger value="tiktok" className="text-xs py-1.5">TikTok</TabsTrigger>
+          {settingsForm.map((pixel, idx) => (
+            <TabsTrigger key={pixel.pixel_type + idx} value={pixel.pixel_type} className="text-xs py-1.5">
+              {pixel.pixel_type.charAt(0).toUpperCase() + pixel.pixel_type.slice(1)}
+            </TabsTrigger>
+          ))}
           <TabsTrigger value="settings" className="text-xs py-1.5">Settings</TabsTrigger>
         </TabsList>
 
@@ -593,53 +585,31 @@ export default function PixelStatistics() {
           </Card>
         </TabsContent>
 
-        {/* Facebook Tab */}
-        <TabsContent value="facebook" className="space-y-4 md:space-y-6">
-          {settings?.is_facebook_enabled ? (
-            <>
-              <StatsCards platform="facebook" data={stats?.facebook} />
-              <FunnelChart data={facebookFunnel} platform="facebook" />
-            </>
-          ) : (
-            <Card>
-              <CardContent className="p-6 md:p-8 text-center">
-                <Facebook className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-4 text-blue-200 dark:text-blue-800" />
-                <h3 className="text-lg md:text-xl font-semibold mb-2">Facebook Pixel Not Configured</h3>
-                <p className="text-muted-foreground text-sm md:text-base mb-4">
-                  Add your Facebook Pixel ID in the Settings tab to start tracking
-                </p>
-                <Button onClick={() => setActiveTab('settings')}>
-                  <Settings className="h-4 w-4 mr-2" />
-                  Configure Pixel
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        {/* TikTok Tab */}
-        <TabsContent value="tiktok" className="space-y-4 md:space-y-6">
-          {settings?.is_tiktok_enabled ? (
-            <>
-              <StatsCards platform="tiktok" data={stats?.tiktok} />
-              <FunnelChart data={tiktokFunnel} platform="tiktok" />
-            </>
-          ) : (
-            <Card>
-              <CardContent className="p-6 md:p-8 text-center">
-                <TikTokIcon className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-4 text-pink-200 dark:text-pink-800" />
-                <h3 className="text-lg md:text-xl font-semibold mb-2">TikTok Pixel Not Configured</h3>
-                <p className="text-muted-foreground text-sm md:text-base mb-4">
-                  Add your TikTok Pixel ID in the Settings tab to start tracking
-                </p>
-                <Button onClick={() => setActiveTab('settings')}>
-                  <Settings className="h-4 w-4 mr-2" />
-                  Configure Pixel
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
+        {/* Dynamic Pixel Tabs */}
+        {settingsForm.map((pixel, idx) => (
+          <TabsContent key={pixel.pixel_type + idx} value={pixel.pixel_type} className="space-y-4 md:space-y-6">
+            {pixel.enabled ? (
+              <>
+                <StatsCards platform={pixel.pixel_type} data={stats?.summary?.[pixel.pixel_type]} />
+                {/* FunnelChart can be extended for each pixel type if API supports */}
+              </>
+            ) : (
+              <Card>
+                <CardContent className="p-6 md:p-8 text-center">
+                  <BarChart3 className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-4 text-muted-foreground" />
+                  <h3 className="text-lg md:text-xl font-semibold mb-2">{pixel.pixel_type.charAt(0).toUpperCase() + pixel.pixel_type.slice(1)} Pixel Not Configured</h3>
+                  <p className="text-muted-foreground text-sm md:text-base mb-4">
+                    Add your {pixel.pixel_type} Pixel ID in the Settings tab to start tracking
+                  </p>
+                  <Button onClick={() => setActiveTab('settings')}>
+                    <Settings className="h-4 w-4 mr-2" />
+                    Configure Pixel
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        ))}
 
         {/* Settings Tab */}
         <TabsContent value="settings" className="space-y-4 md:space-y-6">

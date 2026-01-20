@@ -225,7 +225,7 @@ export class NoestService implements CourierService {
       }
 
       // Validate the order so it becomes visible in the logistics portal.
-      const validateResponse = await this.postJson('/api/public/validation/order', {
+      const validateResponse = await this.postJson('/api/public/valid/order', {
         api_token: apiKey,
         user_guid: guid,
         tracking,
@@ -233,7 +233,7 @@ export class NoestService implements CourierService {
       const validateParsed = await this.readApiResponse(validateResponse);
       const validateJson = validateParsed.json ?? {};
 
-      if (!validateResponse.ok || validateJson?.success !== true) {
+      if (!validateResponse.ok || (validateJson?.success === false)) {
         const snippet = validateParsed.text.slice(0, 400);
         console.error('[Noest] Validate order error:', {
           url: `${this.baseUrl}/api/public/valid/order`,
@@ -252,6 +252,9 @@ export class NoestService implements CourierService {
             `Validate failed: HTTP ${validateResponse.status} (${validateParsed.contentType || 'unknown'}): ${snippet || 'empty response'}`,
         };
       }
+
+      // Accept any 2xx response as success, even if JSON is empty or missing 'success: true'.
+      // Only treat as failure if explicit error or success: false is present.
 
       return {
         success: true,

@@ -50,16 +50,18 @@ export class AndersonService implements CourierService {
     accountId?: string
   ): Promise<CourierShipmentResponse> {
     try {
+      // Anderson API expects specific field names and valid values
       const payload = {
         reference: shipment.reference_id || `ORD-${Date.now()}`,
-        recipient_name: shipment.customer_name || 'Customer',
-        recipient_phone: shipment.customer_phone || '',
-        recipient_address: shipment.delivery_address || '',
-        wilaya: shipment.wilaya || 'Alger',
-        commune: shipment.commune || 'Alger Centre',
-        product_description: shipment.product_description || 'Products',
-        cod_amount: shipment.cod_amount || 0,
-        weight: shipment.weight || 1,
+        nom_client: shipment.customer_name || 'Customer',
+        telephone: shipment.customer_phone || '',
+        adresse: shipment.delivery_address || '',
+        code_wilaya: shipment.wilaya_id || shipment.wilaya || '',
+        commune: shipment.commune || '',
+        montant: shipment.cod_amount || 0,
+        type: 1, // Anderson API expects integer for type (1 = standard)
+        description: shipment.product_description || 'Products',
+        poids: shipment.weight || 1,
         is_fragile: false,
         allow_open: true,
         notes: shipment.notes || '',

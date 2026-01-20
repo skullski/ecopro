@@ -1169,8 +1169,29 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
     }
     res.json(merged);
   } catch (error) {
+    // Log full error for debugging
     console.error("Update store settings error:", error);
     logStoreSettings('updateStoreSettings:error', { error: (error as any)?.message });
+
+    // Try to extract a clear error message
+    let errorMsg = 'Failed to update store settings';
+    let details = '';
+    if (error instanceof Error) {
+      details = error.message;
+      // Common image size/encoding errors
+      if (details.includes('payload too large') || details.includes('out of memory') || details.includes('too large')) {
+        errorMsg = 'Image is too large to save. Please use a smaller image.';
+      } else if (details.includes('invalid input syntax')) {
+        errorMsg = 'Invalid image data or URL.';
+      } else if (details.includes('connection') || details.includes('timeout')) {
+        errorMsg = 'Database connection error. Please try again later.';
+      } else {
+        errorMsg = details;
+      }
+    } else if (typeof error === 'string') {
+      details = error;
+      errorMsg = error;
+    }
 
     const isDev = process.env.NODE_ENV !== 'production' || String(process.env.SKIP_DB_INIT || '') === 'true';
     if (isDev) {
@@ -1180,10 +1201,12 @@ export const updateStoreSettings: RequestHandler = async (req, res) => {
         ...(req.body || {}),
         __dbUnavailable: true,
         __note: 'Update accepted in dev fallback (DB unavailable)',
+        error: errorMsg,
+        details,
       });
     }
 
-    res.status(500).json({ error: 'Failed to update store settings' });
+    res.status(500).json({ error: errorMsg, details });
   }
 };
 

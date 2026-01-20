@@ -1,3 +1,17 @@
+  // Delete order handler
+  const handleDeleteOrder = async (orderId: number) => {
+    if (!window.confirm('Are you sure you want to delete this order? This cannot be undone.')) return;
+    try {
+      const res = await fetch(`/api/client/orders/${orderId}`, { method: 'DELETE' });
+      if (res.ok) {
+        await loadOrders();
+      } else {
+        alert('Failed to delete order');
+      }
+    } catch (error) {
+      alert('Error deleting order');
+    }
+  };
 import React, { useEffect, useState } from "react";
 import { MoreHorizontal, Download, ShoppingBag, TrendingUp, Plus, Settings, X, Trash2, Truck, CheckSquare, Square, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -1056,7 +1070,7 @@ export default function OrdersAdmin() {
                             </div>
                           )}
 
-                          {/* Actions - Custom Statuses */}
+                          {/* Actions - Custom Statuses & Delete */}
                           <div className="flex flex-wrap gap-2">
                             {customStatuses.map(status => {
                               const translatedName = t(`orders.status.${status.key}`) || status.name;
@@ -1080,6 +1094,12 @@ export default function OrdersAdmin() {
                               className="inline-flex items-center rounded bg-gradient-to-r from-red-500 to-red-600 px-3 py-2 text-sm font-bold text-white hover:from-red-600 hover:to-red-700 transition-colors shadow h-9"
                             >
                               ✕ {t('orders.action.cancel')}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteOrder(o.raw_id)}
+                              className="inline-flex items-center rounded bg-gradient-to-r from-gray-700 to-red-700 px-3 py-2 text-sm font-bold text-white hover:from-red-800 hover:to-gray-800 transition-colors shadow h-9"
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" /> Delete
                             </button>
                           </div>
 
