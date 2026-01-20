@@ -115,6 +115,32 @@ export class DeliveryService {
         throw new Error(`No service found for ${order.company_name}`);
       }
 
+
+      // Validate required fields for Anderson and similar couriers
+      if (order.company_name.toLowerCase().includes('anderson')) {
+        const missingFields = [];
+        if (!order.customer_name || String(order.customer_name).trim().length === 0) missingFields.push('customer_name');
+        if (!order.customer_phone || String(order.customer_phone).trim().length === 0) missingFields.push('customer_phone');
+        if (!order.shipping_address || String(order.shipping_address).trim().length === 0) missingFields.push('shipping_address');
+        if (!order.shipping_wilaya_id) missingFields.push('shipping_wilaya_id');
+        if (!order.shipping_commune_id) missingFields.push('shipping_commune_id');
+        if (!order.cod_amount) missingFields.push('cod_amount');
+        if (missingFields.length > 0) {
+          await logDeliveryEvent(
+            orderId,
+            clientId,
+            companyId,
+            'upload_failed',
+            `Missing required fields for Anderson: ${missingFields.join(', ')}`,
+            requestId
+          );
+          return {
+            success: false,
+            error: `Missing required fields: ${missingFields.join(', ')}`,
+          };
+        }
+      }
+
       const shipmentResponse = await service.createShipment(
         {
           customer_name: order.customer_name,
@@ -131,7 +157,6 @@ export class DeliveryService {
             const fallback = getDefaultCommuneNameForWilayaId(order.shipping_wilaya_id);
             return fallback || undefined;
           })(),
-          // Some courier APIs (e.g. Noest) need numeric IDs; keep these as extra fields.
           ...(order.shipping_wilaya_id ? { wilaya_id: Number(order.shipping_wilaya_id) } : {}),
           ...(order.shipping_commune_id ? { commune_id: Number(order.shipping_commune_id) } : {}),
           product_description: productDescription,
@@ -145,7 +170,20 @@ export class DeliveryService {
       );
 
       if (!shipmentResponse.success) {
-        throw new Error(shipmentResponse.error || 'Failed to create shipment');
+        // Do NOT update status if upload failed
+        await logDeliveryEvent(
+          orderId,
+          clientId,
+          companyId,
+          'upload_failed',
+          `Failed to upload to ${order.company_name}: ${shipmentResponse.error || 'Unknown error'}`,
+          requestId
+        );
+        return {
+          success: false,
+          error: shipmentResponse.error || 'Failed to create shipment',
+          courier_response: shipmentResponse,
+        };
       }
 
       const trackingNumber = shipmentResponse.tracking_number;
