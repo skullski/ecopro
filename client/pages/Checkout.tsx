@@ -425,8 +425,20 @@ export default function Checkout() {
         setErrorMsg('❌ Insufficient stock');
         return;
       }
-      if (!addr.name || !addr.line1 || !addr.city || !addr.postalCode || !addr.country) {
-        setErrorMsg("Please fill in all required fields");
+      // Anderson/Ecotrack required fields validation
+      if (!addr.name || !addr.line1 || !addr.city || !addr.country || !addr.phone || !dzWilayaId || !dzCommuneId) {
+        setErrorMsg("Please fill in all required fields: Name, Phone, Address, Wilaya, Commune, Country");
+        setSubmitting(false);
+        return;
+      }
+      // Additional Anderson/Ecotrack fields
+      if (!product?.title) {
+        setErrorMsg("Product title/description is required");
+        setSubmitting(false);
+        return;
+      }
+      if (!quantity || quantity < 1) {
+        setErrorMsg("Quantity must be at least 1");
         setSubmitting(false);
         return;
       }
@@ -785,15 +797,9 @@ export default function Checkout() {
                   </Select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Postal Code <span className="text-red-500">*</span></label>
-                  <input type="text" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all" value={addr.postalCode || ''} onChange={e => setAddr({ ...addr, postalCode: e.target.value })} required />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Country <span className="text-red-500">*</span></label>
-                  <input type="text" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all" value={addr.country || ''} onChange={e => setAddr({ ...addr, country: e.target.value })} required />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Country <span className="text-red-500">*</span></label>
+                <input type="text" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all" value={addr.country || ''} onChange={e => setAddr({ ...addr, country: e.target.value })} required />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Phone Number</label>
