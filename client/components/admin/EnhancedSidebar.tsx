@@ -218,7 +218,7 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
           
           {!collapsed && (
             <>
-              <span className="flex-1 font-semibold text-[15px] leading-none">{t(item.titleKey)}</span>
+              <span className="flex-1 font-semibold text-[15px] leading-none min-w-0 truncate whitespace-nowrap">{t(item.titleKey)}</span>
 
               {badgeCount > 0 && (
                 <span
@@ -345,7 +345,7 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto p-3 space-y-1">
+      <nav className="flex-1 overflow-y-auto p-3 space-y-1 min-w-0">
         {menuItems.map(item => renderMenuItem(item))}
       </nav>
 
