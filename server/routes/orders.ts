@@ -1,37 +1,3 @@
-/**
- * Delete an order (soft delete)
- * DELETE /api/client/orders/:id
- */
-export const deleteOrder: RequestHandler = async (req, res) => {
-  try {
-    const clientId = (req as any).user?.id;
-    const orderId = parseInt(req.params.id, 10);
-    if (!clientId) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
-    }
-    if (isNaN(orderId)) {
-      res.status(400).json({ error: "Invalid order ID" });
-      return;
-    }
-    // Soft delete: set deleted_at timestamp
-    const result = await pool.query(
-      `UPDATE store_orders SET deleted_at = NOW() WHERE id = $1 AND client_id = $2 AND deleted_at IS NULL RETURNING id`,
-      [orderId, clientId]
-    );
-    if (result.rows.length === 0) {
-      res.status(404).json({ error: "Order not found or already deleted" });
-      return;
-    }
-    clearOrdersCache(clientId);
-    res.json({ success: true });
-  } catch (error) {
-    console.error("Delete order error:", error);
-    res.status(500).json({ error: "Failed to delete order" });
-  }
-};
-// Register the delete order route
-ordersRouter.delete('/api/client/orders/:id', deleteOrder);
 import { Router, RequestHandler } from "express";
 import { randomBytes } from "crypto";
 import { pool, ensureMigrationsReady } from "../utils/database";
@@ -720,6 +686,42 @@ export const getProductForCheckout: RequestHandler = async (req, res) => {
     res.status(500).json({ error: "Failed to retrieve product" });
   }
 };
+
+/**
+ * Delete an order (soft delete)
+ * DELETE /api/client/orders/:id
+ */
+export const deleteOrder: RequestHandler = async (req, res) => {
+  try {
+    const clientId = (req as any).user?.id;
+    const orderId = parseInt(req.params.id, 10);
+    if (!clientId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    if (isNaN(orderId)) {
+      res.status(400).json({ error: "Invalid order ID" });
+      return;
+    }
+    // Soft delete: set deleted_at timestamp
+    const result = await pool.query(
+      `UPDATE store_orders SET deleted_at = NOW() WHERE id = $1 AND client_id = $2 AND deleted_at IS NULL RETURNING id`,
+      [orderId, clientId]
+    );
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: "Order not found or already deleted" });
+      return;
+    }
+    clearOrdersCache(clientId);
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Delete order error:", error);
+    res.status(500).json({ error: "Failed to delete order" });
+  }
+};
+
+// Register the delete order route
+ordersRouter.delete('/api/client/orders/:id', deleteOrder);
 
 /**
  * Update order status

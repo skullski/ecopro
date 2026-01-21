@@ -1,17 +1,3 @@
-  // Delete order handler
-  const handleDeleteOrder = async (orderId: number) => {
-    if (!window.confirm('Are you sure you want to delete this order? This cannot be undone.')) return;
-    try {
-      const res = await fetch(`/api/client/orders/${orderId}`, { method: 'DELETE' });
-      if (res.ok) {
-        await loadOrders();
-      } else {
-        alert('Failed to delete order');
-      }
-    } catch (error) {
-      alert('Error deleting order');
-    }
-  };
 import React, { useEffect, useState } from "react";
 import { MoreHorizontal, Download, ShoppingBag, TrendingUp, Plus, Settings, X, Trash2, Truck, CheckSquare, Square, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -126,6 +112,21 @@ export default function OrdersAdmin() {
       'Nour Eddine', 'Zeinab Ahmed', 'Karim Hussein', 'Sara Mustafa', 'Yasser Mahmoud',
       'Rania Khaled', 'Omar Farouk', 'Mona Saeed', 'Tarek Jamal', 'Hoda Kamal'
     ]
+  };
+
+  // Delete order handler
+  const handleDeleteOrder = async (orderId: number) => {
+    if (!window.confirm('Are you sure you want to delete this order? This cannot be undone.')) return;
+    try {
+      const res = await fetch(`/api/client/orders/${orderId}`, { method: 'DELETE' });
+      if (res.ok) {
+        await loadOrders();
+      } else {
+        alert('Failed to delete order');
+      }
+    } catch (error) {
+      alert('Error deleting order');
+    }
   };
 
   // Parse database timestamp as UTC (PostgreSQL stores without timezone indicator)

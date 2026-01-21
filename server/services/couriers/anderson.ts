@@ -56,7 +56,7 @@ export class AndersonService implements CourierService {
         nom_client: shipment.customer_name || 'Customer',
         telephone: shipment.customer_phone || '',
         adresse: shipment.delivery_address || '',
-        code_wilaya: shipment.wilaya_id || shipment.wilaya || '',
+        code_wilaya: (shipment as any).wilaya || '',
         commune: shipment.commune || '',
         montant: shipment.cod_amount || 0,
         type: 1, // Anderson API expects integer for type (1 = standard)
