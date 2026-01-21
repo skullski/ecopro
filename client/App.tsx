@@ -51,6 +51,9 @@ const PublicProduct = lazy(() => import("./pages/PublicProduct"));
 const Storefront = lazy(() => import("./pages/Storefront"));
 const Checkout = lazy(() => import("./pages/Checkout"));
 const MyStore = lazy(() => import("./pages/MyStore"));
+const MyStoreIndex = lazy(() => import("./pages/my-store/Index"));
+const MyStoreTemplateEditor = lazy(() => import("./pages/my-store/TemplateEditor"));
+const MyStoreStorefront = lazy(() => import("./pages/my-store/StorefrontPreview"));
 const StoreLayout = lazy(() => import("./pages/StoreLayout"));
 const GoldTemplateEditor = lazy(() => import("./pages/GoldTemplateEditor"));
 const BuildPage = lazy(() => import("./pages/storefront/BuildPage"));
@@ -446,7 +449,11 @@ const App = () => (
                   {/* Redirect old pixel-statistics URL to dashboard */}
                   <Route path="/pixel-statistics" element={<Navigate to="/dashboard/pixel-statistics" replace />} />
                   {/* My Store - logged in client viewing their own store */}
-                  <Route path="/my-store" element={<MyStore />} />
+                  <Route path="/my-store" element={<MyStore />}> 
+                    <Route index element={<MyStoreIndex />} />
+                    <Route path="template-editor" element={<RequirePaidClient><MyStoreTemplateEditor /></RequirePaidClient>} />
+                    <Route path="storefront" element={<RequirePaidClient><MyStoreStorefront /></RequirePaidClient>} />
+                  </Route>
                   {/* Template Editor */}
                   <Route path="/template-editor" element={<RequirePaidClient><GoldTemplateEditor /></RequirePaidClient>} />
                   {/* Backwards compatibility routes (redirect to editor) */}
