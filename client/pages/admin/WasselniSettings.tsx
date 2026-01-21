@@ -47,7 +47,8 @@ interface BotSettings {
 }
 
 export default function AdminWasselniSettings() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const isRTL = locale === 'ar';
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -324,15 +325,31 @@ export default function AdminWasselniSettings() {
                 </div>
               </div>
               <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
-                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${settings.enabled ? 'bg-white/25 text-white' : 'bg-slate-300 text-slate-600 dark:bg-slate-600 dark:text-slate-300'}`}>
-                  {settings.enabled ? `● ${t('bot.active')}` : `○ ${t('bot.off')}`}
-                </span>
-                <Switch
-                  checked={settings.enabled}
-                  onCheckedChange={(checked) => {
-                    updateSetting('enabled', checked);
-                  }}
-                />
+                {isRTL ? (
+                  <>
+                    <Switch
+                      checked={settings.enabled}
+                      onCheckedChange={(checked) => {
+                        updateSetting('enabled', checked);
+                      }}
+                    />
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${settings.enabled ? 'bg-white/25 text-white' : 'bg-slate-300 text-slate-600 dark:bg-slate-600 dark:text-slate-300'}`}>
+                      {settings.enabled ? `● ${t('bot.active')}` : `○ ${t('bot.off')}`}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${settings.enabled ? 'bg-white/25 text-white' : 'bg-slate-300 text-slate-600 dark:bg-slate-600 dark:text-slate-300'}`}>
+                      {settings.enabled ? `● ${t('bot.active')}` : `○ ${t('bot.off')}`}
+                    </span>
+                    <Switch
+                      checked={settings.enabled}
+                      onCheckedChange={(checked) => {
+                        updateSetting('enabled', checked);
+                      }}
+                    />
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -363,15 +380,31 @@ export default function AdminWasselniSettings() {
                 </div>
               </div>
               <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
-                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${settings.updatesEnabled ? 'bg-white/25 text-white' : 'bg-slate-300 text-slate-600 dark:bg-slate-600 dark:text-slate-300'}`}>
-                  {settings.updatesEnabled ? `● ${t('bot.active')}` : `○ ${t('bot.off')}`}
-                </span>
-                <Switch
-                  checked={settings.updatesEnabled || false}
-                  onCheckedChange={(checked) => {
-                    updateSetting('updatesEnabled', checked);
-                  }}
-                />
+                {isRTL ? (
+                  <>
+                    <Switch
+                      checked={settings.updatesEnabled || false}
+                      onCheckedChange={(checked) => {
+                        updateSetting('updatesEnabled', checked);
+                      }}
+                    />
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${settings.updatesEnabled ? 'bg-white/25 text-white' : 'bg-slate-300 text-slate-600 dark:bg-slate-600 dark:text-slate-300'}`}>
+                      {settings.updatesEnabled ? `● ${t('bot.active')}` : `○ ${t('bot.off')}`}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${settings.updatesEnabled ? 'bg-white/25 text-white' : 'bg-slate-300 text-slate-600 dark:bg-slate-600 dark:text-slate-300'}`}>
+                      {settings.updatesEnabled ? `● ${t('bot.active')}` : `○ ${t('bot.off')}`}
+                    </span>
+                    <Switch
+                      checked={settings.updatesEnabled || false}
+                      onCheckedChange={(checked) => {
+                        updateSetting('updatesEnabled', checked);
+                      }}
+                    />
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -402,15 +435,31 @@ export default function AdminWasselniSettings() {
                 </div>
               </div>
               <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
-                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${settings.trackingEnabled ? 'bg-white/25 text-white' : 'bg-slate-300 text-slate-600 dark:bg-slate-600 dark:text-slate-300'}`}>
-                  {settings.trackingEnabled ? `● ${t('bot.active')}` : `○ ${t('bot.off')}`}
-                </span>
-                <Switch
-                  checked={settings.trackingEnabled || false}
-                  onCheckedChange={(checked) => {
-                    updateSetting('trackingEnabled', checked);
-                  }}
-                />
+                {isRTL ? (
+                  <>
+                    <Switch
+                      checked={settings.trackingEnabled || false}
+                      onCheckedChange={(checked) => {
+                        updateSetting('trackingEnabled', checked);
+                      }}
+                    />
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${settings.trackingEnabled ? 'bg-white/25 text-white' : 'bg-slate-300 text-slate-600 dark:bg-slate-600 dark:text-slate-300'}`}>
+                      {settings.trackingEnabled ? `● ${t('bot.active')}` : `○ ${t('bot.off')}`}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${settings.trackingEnabled ? 'bg-white/25 text-white' : 'bg-slate-300 text-slate-600 dark:bg-slate-600 dark:text-slate-300'}`}>
+                      {settings.trackingEnabled ? `● ${t('bot.active')}` : `○ ${t('bot.off')}`}
+                    </span>
+                    <Switch
+                      checked={settings.trackingEnabled || false}
+                      onCheckedChange={(checked) => {
+                        updateSetting('trackingEnabled', checked);
+                      }}
+                    />
+                  </>
+                )}
               </div>
             </div>
           </div>
