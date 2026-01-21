@@ -435,6 +435,17 @@ router.get('/security/linux/watchlist', requireRoot, async (req, res) => {
         }
       }
       
+      // If this actor has an associated user_id, try to fetch basic account info
+      let account: any = null;
+      if (r.user_id && /^\d+$/.test(String(r.user_id))) {
+        try {
+          const ures = await pool.query(`SELECT id, email, full_name FROM users WHERE id = $1 LIMIT 1`, [Number(r.user_id)]);
+          if (ures.rows.length > 0) account = ures.rows[0];
+        } catch (e) {
+          // ignore
+        }
+      }
+
       return {
         actor_key: r.actor_key,
         ua_class: r.ua_class,
@@ -443,6 +454,7 @@ router.get('/security/linux/watchlist', requireRoot, async (req, res) => {
         country_code: intel?.country_code || r.country_code,
         user_agent: r.user_agent,
         user_id: r.user_id,
+        user: account,
         user_type: r.user_type,
         role: r.role,
         total_events: r.total_events,
@@ -519,12 +531,40 @@ router.get('/security/actor/events', requireRoot, async (req, res) => {
     [value]
   );
 
+  // If any events include a numeric user_id, fetch basic account info
+  const userIds = new Set<number>();
+  for (const ev of events.rows || []) {
+    const uid = ev.user_id;
+    if (uid && /^\d+$/.test(String(uid))) userIds.add(Number(uid));
+  }
+
+  const accounts: any[] = [];
+  const userMap: Record<string, any> = {};
+  if (userIds.size > 0) {
+    const ids = Array.from(userIds);
+    try {
+      const ures = await pool.query(`SELECT id, email, full_name FROM users WHERE id = ANY($1::int[])`, [ids]);
+      for (const u of ures.rows || []) {
+        userMap[String(u.id)] = u;
+        accounts.push(u);
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  const mappedEvents = (events.rows || []).map((ev: any) => ({
+    ...ev,
+    user: ev.user_id && userMap[ev.user_id] ? userMap[ev.user_id] : null,
+  }));
+
   res.json({
     fingerprint: fingerprint || null,
     ip: ip || null,
     topPaths: paths.rows,
     eventTypes: types.rows,
-    events: events.rows,
+    events: mappedEvents,
+    accounts,
   });
 });
 

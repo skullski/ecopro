@@ -115,6 +115,7 @@ type LinuxActor = {
   user_id: string | null;
   user_type: string | null;
   role: string | null;
+  user?: { id: number; email: string; full_name?: string | null } | null;
   total_events: number;
   suspicious_events: number;
   trap_hits: number;
@@ -146,7 +147,7 @@ type ActorDetails = {
   ip: string | null;
   topPaths: Array<{ path: string; count: number }>;
   eventTypes: Array<{ event_type: string; count: number }>;
-  events: Array<SecurityEvent & { metadata?: any; request_id?: string | null; region?: string | null; city?: string | null; user_id?: string | null; user_type?: string | null; role?: string | null }>;
+  events: Array<SecurityEvent & { metadata?: any; request_id?: string | null; region?: string | null; city?: string | null; user_id?: string | null; user_type?: string | null; role?: string | null; user?: { id: number; email: string; full_name?: string | null } | null }>;
 };
 
 type IntelStats = {
@@ -1067,7 +1068,10 @@ export default function Kernel() {
                                 <div className="text-xs font-semibold mb-2">👤 Actor Info</div>
                                 <div className="text-[10px] text-muted-foreground break-words">UA: {a.user_agent || '(missing)'}</div>
                                 {a.fingerprint && <div className="text-[10px] text-muted-foreground break-words">fp: {a.fingerprint}</div>}
-                                {a.user_id && <div className="text-[10px] text-muted-foreground">user_id: {a.user_id}</div>}
+                                {a.user && (
+                                  <div className="text-[10px] text-muted-foreground">account: {a.user.email} {a.user.full_name ? `(${a.user.full_name})` : ''}</div>
+                                )}
+                                {!a.user && a.user_id && <div className="text-[10px] text-muted-foreground">user_id: {a.user_id}</div>}
                                 <div className="text-[10px] text-muted-foreground">first: {new Date(a.first_seen).toLocaleString()}</div>
                                 <div className="text-[10px] text-muted-foreground">last: {new Date(a.last_seen).toLocaleString()}</div>
                                 <div className="mt-2 pt-2 border-t border-border">
@@ -1133,6 +1137,9 @@ export default function Kernel() {
                                       <div className="text-foreground truncate" title={ev.path || ''}>{ev.method || ''} {ev.path || ''}</div>
                                       <div className="text-muted-foreground">
                                         status: {(ev as any).status_code ?? ''} • cc: {(ev as any).country_code ?? ''}
+                                        {ev.user && (
+                                          <span className="ml-2">• account: {ev.user.email}</span>
+                                        )}
                                         {(() => {
                                           const s = (ev as any)?.metadata?._server;
                                           if (!s) return null;
