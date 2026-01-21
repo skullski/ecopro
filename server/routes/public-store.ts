@@ -231,7 +231,7 @@ export const getStorefrontSettings: RequestHandler = async (req, res) => {
           store_name: 'Store',
           primary_color: '#3b82f6',
           secondary_color: '#8b5cf6',
-          template: 'pro',
+          template: 'books',
           currency_code: 'DZD',
           banner_url: null,
           hero_main_url: null,

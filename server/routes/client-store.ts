@@ -620,7 +620,7 @@ export const getStoreSettings: RequestHandler = async (req, res) => {
       result = await pool.query(
         `INSERT INTO client_store_settings (client_id, store_slug, template)
          VALUES ($1, $2, $3) RETURNING *`,
-        [clientId, randomSlug, 'pro']
+        [clientId, randomSlug, 'books']
       );
     }
 
@@ -638,7 +638,7 @@ export const getStoreSettings: RequestHandler = async (req, res) => {
     const templateSettings = row?.template_settings && typeof row.template_settings === 'object' ? row.template_settings : {};
     const globalSettings = row?.global_settings && typeof row.global_settings === 'object' ? row.global_settings : {};
     // IMPORTANT: Ensure row.template is NOT overridden by templateSettings/globalSettings
-    const dbTemplate = row.template || 'pro';
+    const dbTemplate = row.template || 'books';
     const merged = { ...globalSettings, ...templateSettings, ...row, template: dbTemplate };
 
     // Cache the result for faster subsequent requests
@@ -663,7 +663,7 @@ export const getStoreSettings: RequestHandler = async (req, res) => {
         store_slug: 'preview',
         store_name: 'Preview Store',
         store_description: '',
-        template: 'pro',
+        template: 'books',
         currency_code: 'DZD',
         primary_color: '#111827',
         secondary_color: '#6B7280',

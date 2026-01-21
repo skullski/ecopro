@@ -509,7 +509,7 @@ export default function Store() {
     seller_email: '',
     store_description: '',
     store_logo: '',
-    template: 'pro',
+    template: 'books',
     banner_url: '',
     // hero_main_url removed
     hero_tile1_url: '',

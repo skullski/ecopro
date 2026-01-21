@@ -49,7 +49,7 @@ export default function Storefront() {
   const [products, setProducts] = useState<StoreProduct[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<StoreProduct[]>([]);
   const [storeSettings, setStoreSettings] = useState<StoreSettings>({
-    template: 'pro',
+    template: 'books',
     primary_color: '#16a34a',
     secondary_color: '#0ea5e9',
     currency_code: 'USD',
@@ -70,7 +70,7 @@ export default function Storefront() {
   const [sortOption, setSortOption] = useState<'newest' | 'price-asc' | 'price-desc' | 'featured' | 'views-desc'>('newest');
 
   // Derived visual tokens from store settings
-  const template = storeSettings.template || 'pro';
+  const template = storeSettings.template || 'books';
   const primaryColor = storeSettings.primary_color || '#16a34a';
   const secondaryColor = storeSettings.secondary_color || '#0ea5e9';
   const bannerUrl = storeSettings.banner_url || '';
