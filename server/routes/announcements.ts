@@ -54,6 +54,21 @@ const getActiveAnnouncement: RequestHandler = async (req, res) => {
     if (!identity) return jsonError(res, 401, 'Not authenticated');
 
     const pool = await ensureConnection();
+    // If the identity is a client, ensure they are a store owner (have store settings)
+    if (identity.userType === 'client') {
+      try {
+        const storeRes = await pool.query(
+          `SELECT 1 FROM client_store_settings WHERE client_id = $1 LIMIT 1`,
+          [identity.userId]
+        );
+        if (!storeRes.rows.length) {
+          // Not a store owner — no announcement for them
+          return res.json({ announcement: null, serverTime: new Date().toISOString() });
+        }
+      } catch (e) {
+        // If the table/migration is missing, fallback to original behavior (don't block announcements)
+      }
+    }
 
     const a = await pool.query(
       `SELECT id, title, body, variant, is_enabled, starts_at, ends_at, min_view_ms, allow_dismiss, allow_never_show_again, created_at, updated_at

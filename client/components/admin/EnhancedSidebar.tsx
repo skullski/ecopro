@@ -77,7 +77,7 @@ const menuItems: MenuItem[] = [
   },
   { 
     titleKey: "sidebar.pixels", 
-    path: "/pixel-statistics", 
+    path: "/dashboard/pixel-statistics", 
     icon: <BarChart3 className="w-[18px] h-[18px]" />,
     permission: "view_settings"
   },

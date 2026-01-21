@@ -63,7 +63,6 @@ export default function EmbeddedCheckout(props: {
     address: '',
     wilayaId: '',
     communeId: '',
-    hai: '',
   });
 
   const [haiSuggestions, setHaiSuggestions] = React.useState<string[]>([]);
@@ -236,10 +235,8 @@ export default function EmbeddedCheckout(props: {
         customer_phone: normalizedPhone,
         shipping_wilaya_id: formData.wilayaId ? Number(formData.wilayaId) : null,
         shipping_commune_id: formData.communeId ? Number(formData.communeId) : null,
-        shipping_hai: (formData.hai || '').trim() || null,
         customer_address: [
           formData.address,
-          formData.hai,
           selectedCommune?.name || '',
           selectedWilaya?.name || '',
         ]
@@ -337,7 +334,7 @@ export default function EmbeddedCheckout(props: {
               disabled={disabled}
               onChange={(e) => {
                 const wilayaId = e.target.value;
-                setFormData((s) => ({ ...s, wilayaId, communeId: '', hai: '' }));
+                setFormData((s) => ({ ...s, wilayaId, communeId: '' }));
               }}
               style={selectStyle}
             >
@@ -354,7 +351,7 @@ export default function EmbeddedCheckout(props: {
             <select
               value={formData.communeId}
               disabled={disabled || !formData.wilayaId}
-              onChange={(e) => setFormData((s) => ({ ...s, communeId: e.target.value, hai: '' }))}
+              onChange={(e) => setFormData((s) => ({ ...s, communeId: e.target.value }))}
               style={selectStyle}
             >
               <option value="">{dir === 'rtl' ? 'اختر البلدية' : 'Select city'}</option>
@@ -367,24 +364,7 @@ export default function EmbeddedCheckout(props: {
           </label>
         </div>
 
-        <label style={{ display: 'grid', gap: 6 }}>
-          <span style={{ fontSize: 12, color: theme.muted }}>{dir === 'rtl' ? 'الحي (اختياري)' : 'Hai / Neighborhood (optional)'}</span>
-          <input
-            value={formData.hai}
-            disabled={disabled}
-            onChange={(e) => setFormData((s) => ({ ...s, hai: e.target.value }))}
-            style={inputStyle}
-            list={haiSuggestions.length ? 'ecopro-hai-suggestions' : undefined}
-            placeholder={dir === 'rtl' ? 'مثال: حي...' : 'e.g. Hai...'}
-          />
-          {haiSuggestions.length > 0 && (
-            <datalist id="ecopro-hai-suggestions">
-              {haiSuggestions.slice(0, 10).map((s) => (
-                <option key={s} value={s} />
-              ))}
-            </datalist>
-          )}
-        </label>
+        {/* Hai / Neighborhood removed per UI update */}
 
         <label style={{ display: 'grid', gap: 6 }}>
           <span style={{ fontSize: 12, color: theme.muted }}>{dir === 'rtl' ? 'العنوان' : 'Address'}</span>

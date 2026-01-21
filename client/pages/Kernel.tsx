@@ -575,6 +575,71 @@ export default function Kernel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, days, trafficMinutes, linuxDays]);
 
+  // Subscribe to live security events via SSE and prepend them to lists
+  React.useEffect(() => {
+    if (!token) return;
+    let es: EventSource | null = null;
+    try {
+      es = new EventSource('/api/kernel/events/stream');
+    } catch (e) {
+      return;
+    }
+
+    es.onmessage = (ev) => {
+      try {
+        const d = JSON.parse(ev.data || '{}');
+        // Minimal mapping to SecurityEvent
+        const incoming: SecurityEvent = {
+          id: d.id || 0,
+          created_at: d.created_at || new Date().toISOString(),
+          event_type: d.event_type || 'unknown',
+          severity: d.severity || 'info',
+          method: d.method || null,
+          path: d.path || null,
+          status_code: d.status_code ?? null,
+          ip: d.ip || null,
+          country_code: d.country_code || null,
+          fingerprint: d.fingerprint || null,
+          user_agent: d.user_agent || null,
+        };
+
+        setEvents((prev) => {
+          const next = [incoming, ...prev];
+          return next.slice(0, 200);
+        });
+
+        // Also add a lightweight traffic row for recent traffic panel
+        const tr: TrafficRow = {
+          ts: d.created_at ? new Date(d.created_at).getTime() : Date.now(),
+          method: d.method || 'GET',
+          path: d.path || '/',
+          status: d.status_code ?? 0,
+          ip: d.ip || null,
+          country_code: d.country_code || null,
+          user_agent: d.user_agent || null,
+          fingerprint: d.fingerprint || null,
+          user_id: d.user_id != null ? String(d.user_id) : null,
+          user_type: d.user_type || null,
+          role: d.role || null,
+          ms: 0,
+        };
+        setTraffic((prev) => [tr, ...prev].slice(0, 200));
+      } catch (e) {
+        // ignore parse errors
+      }
+    };
+
+    es.onerror = () => {
+      // keep the connection open; EventSource will reconnect automatically
+    };
+
+    return () => {
+      try {
+        es && es.close();
+      } catch {}
+    };
+  }, [token]);
+
   if (!token) {
     return (
       <div className="min-h-[calc(100vh-64px)] bg-background text-foreground flex items-center justify-center p-4">

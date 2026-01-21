@@ -586,12 +586,13 @@ export const getClientOrders: RequestHandler = async (req, res) => {
         FROM store_orders o
         LEFT JOIN client_store_products cp ON o.product_id = cp.id
         WHERE o.client_id = $1
+          AND o.deleted_at IS NULL
         ORDER BY o.created_at DESC
         LIMIT $2 OFFSET $3`,
         [req.user.id, limit, offset]
       ),
       pool.query(
-        'SELECT COUNT(*) as total FROM store_orders WHERE client_id = $1',
+        'SELECT COUNT(*) as total FROM store_orders WHERE client_id = $1 AND deleted_at IS NULL',
         [req.user.id]
       )
     ]);
@@ -1204,6 +1205,33 @@ export const createOrderStatus: RequestHandler = async (req, res) => {
       return;
     }
 
+    // Generate a safe key if none provided. Keys must be stable english identifiers
+    // and not null — a null key becomes the string "null" in translations which
+    // humanizes to "Null" in the UI. Create a snake_case key from the name.
+    const makeKeyFromName = (s: string) =>
+      String(s)
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-_]+/g, '')
+        .replace(/[\s-]+/g, '_')
+        .replace(/^_+|_+$/g, '') || `custom_status_${Date.now()}`;
+
+    let newKey = (key || '').toString().trim();
+    if (!newKey) {
+      newKey = makeKeyFromName(trimmedName);
+    }
+
+    // Ensure key uniqueness for this client by appending a numeric suffix if needed.
+    let uniqueKey = newKey;
+    let suffix = 1;
+    while (true) {
+      const exists = await pool.query(
+        'SELECT 1 FROM order_statuses WHERE client_id = $1 AND key = $2 LIMIT 1',
+        [clientId, uniqueKey]
+      );
+      if (!exists.rows.length) break;
+      uniqueKey = `${newKey}_${suffix++}`;
+    }
+
     // Get max sort_order
     const maxOrder = await pool.query(
       'SELECT COALESCE(MAX(sort_order), -1) as max_order FROM order_statuses WHERE client_id = $1',
@@ -1214,7 +1242,7 @@ export const createOrderStatus: RequestHandler = async (req, res) => {
       `INSERT INTO order_statuses (client_id, name, key, color, icon, sort_order, counts_as_revenue)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING id, name, key, color, icon, sort_order, is_default, counts_as_revenue`,
-      [clientId, trimmedName, key || null, color || '#6b7280', icon || '●', (maxOrder.rows[0].max_order || 0) + 1, counts_as_revenue || false]
+      [clientId, trimmedName, uniqueKey, color || '#6b7280', icon || '●', (maxOrder.rows[0].max_order || 0) + 1, counts_as_revenue || false]
     );
 
     res.json(result.rows[0]);

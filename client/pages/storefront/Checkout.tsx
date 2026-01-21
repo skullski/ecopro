@@ -869,40 +869,7 @@ export default function Checkout() {
                     </Select>
                   </div>
 
-                  <div className="space-y-0.5 sm:space-y-0.5 md:space-y-0.5 md:col-span-2">
-                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">Hai / Neighborhood</label>
-                    {haiSuggestions.length > 0 && (
-                      <div className="mb-1.5">
-                        <label className="block text-[10px] sm:text-[10px] md:text-[10px] lg:text-xs font-bold opacity-60">Choose Hai (optional)</label>
-                        <Select
-                          value={String(formData.hai || '')}
-                          onValueChange={(v) => setFormData({ ...formData, hai: v })}
-                        >
-                          <SelectTrigger
-                            className={`w-full px-2 sm:px-3 md:px-2 lg:px-4 py-1 sm:py-1.5 md:py-1.5 lg:py-3 rounded-lg border-2 text-xs sm:text-sm md:text-xs lg:text-sm ${style.inputBg} focus:outline-none focus:ring-2 focus:ring-offset-1 transition shadow-sm h-auto`}
-                            style={{ '--tw-ring-color': accentColor } as any}
-                          >
-                            <SelectValue placeholder="Select Hai" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {haiSuggestions.map((h) => (
-                              <SelectItem key={h} value={h}>
-                                {h}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-                    <input
-                      type="text"
-                      placeholder="Example: Hai Badr Eddine"
-                      value={formData.hai}
-                      onChange={(e) => setFormData({ ...formData, hai: e.target.value })}
-                      className={`w-full px-2 sm:px-3 md:px-2 lg:px-4 py-1 sm:py-1.5 md:py-1.5 lg:py-3 rounded-lg border-2 text-xs sm:text-sm md:text-xs lg:text-sm ${style.inputBg} focus:outline-none focus:ring-2 focus:ring-offset-1 transition shadow-sm`}
-                      style={{ '--tw-ring-color': accentColor } as any}
-                    />
-                  </div>
+                  {/* Hai / Neighborhood removed per request */}
 
                   <div className="space-y-0.5 sm:space-y-0.5 md:space-y-0.5 md:col-span-2">
                     <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">{t("checkout.address") || "Delivery Address"} *</label>
@@ -1115,10 +1082,8 @@ export default function Checkout() {
                             customer_phone: formData.phone,
                             shipping_wilaya_id: formData.wilayaId ? Number(formData.wilayaId) : null,
                             shipping_commune_id: formData.communeId ? Number(formData.communeId) : null,
-                            shipping_hai: (formData.hai || '').trim() || null,
                             customer_address: [
                               formData.address,
-                              formData.hai,
                               selectedCommune?.name || formData.city,
                               selectedWilaya?.name ? selectedWilaya.name : '',
                             ]

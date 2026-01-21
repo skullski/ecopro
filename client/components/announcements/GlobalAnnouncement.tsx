@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { getCurrentUser, syncAuthState } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 
 type Announcement = {
@@ -19,11 +20,24 @@ function getCookie(name: string): string | null {
   return m ? decodeURIComponent(m[1]) : null;
 }
 
-function isLoggedInSomehow(): boolean {
+function isAdminOrAdminPath(): boolean {
   if (typeof window === 'undefined') return false;
-  const hasUser = Boolean(localStorage.getItem('user'));
+  const userStr = localStorage.getItem('user');
+  let user: any = null;
+  try {
+    user = userStr ? JSON.parse(userStr) : null;
+  } catch {
+    user = null;
+  }
+
+  const isAdmin = user?.role === 'admin' || localStorage.getItem('isAdmin') === 'true';
   const isStaff = localStorage.getItem('isStaff') === 'true';
-  return hasUser || isStaff;
+
+  // Only show announcements for platform admins/staff or when on admin pages
+  const path = window.location?.pathname || '';
+  const onAdminPath = path.startsWith('/platform-admin') || path.startsWith('/kernel') || path.startsWith('/client');
+
+  return Boolean(isAdmin || isStaff || onAdminPath);
 }
 
 export default function GlobalAnnouncement() {
@@ -41,39 +55,47 @@ export default function GlobalAnnouncement() {
   const timerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!isLoggedInSomehow()) return;
-
     let cancelled = false;
-    setLoading(true);
-    setError(null);
 
-    fetch('/api/announcements/active')
-      .then(async (r) => {
-        const data = await r.json().catch(() => null);
-        if (!r.ok) throw new Error(data?.error || 'Failed to load announcement');
-        return data;
-      })
-      .then((data) => {
+    (async () => {
+      if (cancelled) return;
+      // Only load/sync auth state when in admin/staff contexts or admin pages.
+      if (!isAdminOrAdminPath()) return;
+
+      // Ensure localStorage has a current user (populate from cookie if needed)
+      if (!getCurrentUser()) {
+        try {
+          const ok = await syncAuthState();
+          if (!ok) return;
+        } catch (err) {
+          return;
+        }
+      }
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const res = await fetch('/api/announcements/active', { credentials: 'include' });
+        const data = await res.json().catch(() => null);
+        if (!res.ok) throw new Error(data?.error || 'Failed to load announcement');
         if (cancelled) return;
         const a = (data?.announcement || null) as Announcement | null;
         if (!a) {
           setAnnouncement(null);
           return;
         }
-
         if (hideKey && sessionStorage.getItem(hideKey) === '1') {
           setAnnouncement(null);
           return;
         }
-
         setAnnouncement(a);
-      })
-      .catch((e) => {
+      } catch (e: any) {
         if (!cancelled) setError(e?.message || 'Failed to load announcement');
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) setLoading(false);
-      });
+      }
+    })();
 
     return () => {
       cancelled = true;
@@ -146,7 +168,8 @@ export default function GlobalAnnouncement() {
     }
   }
 
-  if (!isLoggedInSomehow()) return null;
+  // Only render announcement UI in admin/staff contexts or on admin pages.
+  if (!isAdminOrAdminPath()) return null;
   if (loading) return null;
   if (!announcement) return null;
 

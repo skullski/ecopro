@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import geoip from 'geoip-lite';
 import os from 'os';
 import { ensureConnection } from './database';
+import { emitSecurityEvent } from './eventBus';
 
 export type SecurityEventType =
   | 'geo_block'
@@ -261,7 +262,7 @@ export async function logSecurityEvent(event: SecurityEvent): Promise<void> {
     };
 
     const pool = await ensureConnection();
-    await pool.query(
+    const res = await pool.query(
       `INSERT INTO security_events (
         event_type, severity, request_id, method, path, status_code,
         ip, user_agent, fingerprint,
@@ -274,7 +275,7 @@ export async function logSecurityEvent(event: SecurityEvent): Promise<void> {
         $10,$11,$12,
         $13,$14,$15,
         $16
-      )`,
+      ) RETURNING id, created_at`,
       [
         event.event_type,
         event.severity || 'info',
@@ -294,6 +295,32 @@ export async function logSecurityEvent(event: SecurityEvent): Promise<void> {
         Object.keys(metadata).length ? JSON.stringify(metadata) : null,
       ]
     );
+
+    try {
+      const inserted = (res.rows && res.rows[0]) || null;
+      emitSecurityEvent({
+        id: inserted?.id || null,
+        created_at: inserted?.created_at ? String(inserted.created_at) : null,
+        event_type: event.event_type,
+        severity: event.severity || 'info',
+        method: event.method || null,
+        path: event.path || null,
+        status_code: event.status_code ?? null,
+        ip: event.ip || null,
+        user_agent: event.user_agent || null,
+        fingerprint: event.fingerprint || null,
+        country_code: event.country_code || null,
+        region: event.region || null,
+        city: event.city || null,
+        user_id: event.user_id || null,
+        user_type: event.user_type || null,
+        role: event.role || null,
+        metadata: metadata || null,
+      });
+    } catch {
+      // ignore emit errors
+    }
+    
   } catch (e) {
     // Never block the request flow on logging failures
     console.warn('[security] Failed to log event:', (e as any)?.message || e);

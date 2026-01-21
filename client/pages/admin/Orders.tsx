@@ -351,7 +351,12 @@ export default function OrdersAdmin() {
     const status = customStatuses.find(s => s.key === statusKey);
     if (status) {
       // Use translation if available, fallback to status name
-      const translatedName = t(`orders.status.${status.key}`) || status.name;
+      let translatedName = t(`orders.status.${status.key}`) || status.name;
+      // Defensive: some bad keys (null/undefined) may humanize to the literal "Null".
+      // If translation produced a literal 'null' or 'Null', prefer the stored name.
+      if (typeof translatedName === 'string' && translatedName.trim().toLowerCase() === 'null') {
+        translatedName = status.name;
+      }
       return { name: translatedName, color: status.color, icon: status.icon };
     }
     // Fallback to built-in statuses with translations

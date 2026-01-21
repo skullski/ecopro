@@ -1312,6 +1312,9 @@ export function createServer(options?: { skipDbInit?: boolean }) {
   app.get("/api/orders/high-risk", authenticate, requireClient, orderRoutes.getHighRiskOrdersHandler);
   app.get("/api/orders/:id/risk", authenticate, requireClient, orderRoutes.getOrderRisk);
   app.post("/api/orders/check-risk", authenticate, requireClient, orderRoutes.checkPhoneRisk);
+
+  // Allow clients to delete (soft-delete) their orders
+  app.delete("/api/client/orders/:id", authenticate, requireClient, orderRoutes.deleteOrder);
   
   // Order statuses routes (authenticated - client only)
   app.get("/api/client/order-statuses", authenticate, requireClient, orderRoutes.getOrderStatuses);

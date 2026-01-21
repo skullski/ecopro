@@ -6,6 +6,7 @@ import { hashKernelPassword, verifyKernelPassword, logSecurityEvent, getClientIp
 import { randomBytes } from 'crypto';
 import os from 'os';
 import { getTrafficRecent, getTrafficSummary } from '../utils/traffic';
+import { onSecurityEvent } from '../utils/eventBus';
 
 const router = Router();
 
@@ -42,7 +43,8 @@ function clearKernelAuthCookie(res: any) {
 
 function requireRoot(req: any, res: any, next: any) {
   if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-  if (req.user.role !== 'root' || req.user.user_type !== 'root') return res.status(403).json({ error: 'Forbidden' });
+  // Allow access when either the `role` or the `user_type` is `root`.
+  if (req.user.role !== 'root' && req.user.user_type !== 'root') return res.status(403).json({ error: 'Forbidden' });
   return next();
 }
 
@@ -108,7 +110,7 @@ export const kernelLogin: RequestHandler = async (req, res) => {
 
   if (!row.rows[0] || !row.rows[0].is_active) {
     await logSecurityEvent({
-      event_type: 'auth_failed',
+      event_type: 'auth_login_failed',
       severity: 'warn',
       method: req.method,
       path: req.path,
@@ -127,7 +129,7 @@ export const kernelLogin: RequestHandler = async (req, res) => {
   const ok = verifyKernelPassword(String(password), row.rows[0].password_hash);
   if (!ok) {
     await logSecurityEvent({
-      event_type: 'auth_failed',
+      event_type: 'auth_login_failed',
       severity: 'warn',
       method: req.method,
       path: req.path,
@@ -230,7 +232,53 @@ export const listSecurityEvents: RequestHandler = async (req, res) => {
     [limit]
   );
 
-  res.json({ events: result.rows });
+  const events = result.rows || [];
+
+  // Collect fingerprints and user_ids to enrich the events
+  const fingerprintSet = new Set<string>();
+  const userIdSet = new Set<number>();
+  for (const ev of events) {
+    if (ev.fingerprint) fingerprintSet.add(String(ev.fingerprint));
+    if (ev.user_id && /^\d+$/.test(String(ev.user_id))) userIdSet.add(Number(ev.user_id));
+  }
+
+  const fingerprints = fingerprintSet.size > 0 ? Array.from(fingerprintSet) : [];
+  const userIds = userIdSet.size > 0 ? Array.from(userIdSet) : [];
+
+  const fingerprintMap: Record<string, any[]> = {};
+  if (fingerprints.length > 0) {
+    try {
+      const fpRes = await pool.query(
+        `SELECT * FROM client_fingerprints WHERE server_fingerprint = ANY($1::text[]) ORDER BY created_at DESC LIMIT 500`,
+        [fingerprints]
+      );
+      for (const r of fpRes.rows || []) {
+        const k = String(r.server_fingerprint || '');
+        fingerprintMap[k] = fingerprintMap[k] || [];
+        fingerprintMap[k].push(r);
+      }
+    } catch (e) {
+      // ignore fingerprint enrichment failures
+    }
+  }
+
+  const userMap: Record<string, any> = {};
+  if (userIds.length > 0) {
+    try {
+      const ures = await pool.query(`SELECT id, email, name FROM users WHERE id = ANY($1::int[])`, [userIds]);
+      for (const u of ures.rows || []) userMap[String(u.id)] = u;
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  const mapped = events.map((ev: any) => ({
+    ...ev,
+    user: ev.user_id && userMap[ev.user_id] ? userMap[ev.user_id] : null,
+    fingerprint_details: ev.fingerprint && fingerprintMap[ev.fingerprint] ? fingerprintMap[ev.fingerprint] : [],
+  }));
+
+  res.json({ events: mapped });
 };
 
 router.post('/login', kernelLogin);
@@ -240,6 +288,39 @@ router.post('/logout', (_req, res) => {
 });
 router.get('/security/summary', requireRoot, getSecuritySummary);
 router.get('/security/events', requireRoot, listSecurityEvents);
+
+// Server-Sent Events stream for live security events
+router.get('/events/stream', requireRoot, async (req: any, res) => {
+  // SSE headers
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders?.();
+
+  // Send an initial comment to establish the stream
+  res.write(': connected\n\n');
+
+  // Heartbeat to keep connections alive
+  const hb = setInterval(() => {
+    try { res.write(': ping\n\n'); } catch { /* ignore */ }
+  }, 15000);
+
+  // Subscribe to event bus
+  const unsubscribe = onSecurityEvent((ev) => {
+    try {
+      const payload = JSON.stringify(ev || {});
+      res.write(`data: ${payload}\n\n`);
+    } catch (e) {
+      // ignore send errors
+    }
+  });
+
+  // Cleanup when client disconnects
+  req.on('close', () => {
+    clearInterval(hb);
+    try { unsubscribe(); } catch {}
+  });
+});
 
 router.get('/security/me', requireRoot, async (req: any, res) => {
   const ip = getClientIp(req);
@@ -660,13 +741,46 @@ router.get('/traffic/summary', requireRoot, async (req, res) => {
     return false;
   });
 
+  // If in-memory traffic has no matching suspicious rows, fall back to DB events
+  let window = filteredRows;
+  if (window.length === 0) {
+    try {
+      const q = await pool.query(
+        `SELECT created_at, method, path, status_code, ip, user_agent, fingerprint, user_id, user_type, role, NULL::int as ms, country_code
+         FROM security_events
+         WHERE created_at > NOW() - $1::interval
+           AND (fingerprint = ANY($2::text[]) OR ip = ANY($3::text[]) OR event_type IN ('trap_hit','suspicious_path','ip_block'))
+         ORDER BY created_at DESC
+         LIMIT 1000`,
+        [since, Array.from(fpSet), Array.from(ipSet)]
+      );
+      window = (q.rows || []).map((r: any) => ({
+        ts: new Date(r.created_at).getTime(),
+        method: r.method || 'GET',
+        path: r.path || '/',
+        status: r.status_code || 0,
+        ip: r.ip || null,
+        user_agent: r.user_agent || null,
+        fingerprint: r.fingerprint || null,
+        user_id: r.user_id != null ? String(r.user_id) : null,
+        user_type: r.user_type || null,
+        role: r.role || null,
+        ms: 0,
+        country_code: r.country_code || null,
+      }));
+    } catch (e) {
+      // ignore DB fallback errors, keep window as empty
+      window = [];
+    }
+  }
+
   // Recompute summary from filtered rows within window.
   const sinceMs = Date.now() - minutes * 60 * 1000;
-  const window = filteredRows.filter((r) => r.ts >= sinceMs);
+  const filteredWindow = window.filter((r) => r.ts >= sinceMs);
   const byStatusMap = new Map<number, number>();
   const topPathsMap = new Map<string, number>();
   const topIpsMap = new Map<string, number>();
-  for (const r of window) {
+  for (const r of filteredWindow) {
     byStatusMap.set(r.status, (byStatusMap.get(r.status) || 0) + 1);
     topPathsMap.set(r.path, (topPathsMap.get(r.path) || 0) + 1);
     if (r.ip) topIpsMap.set(r.ip, (topIpsMap.get(r.ip) || 0) + 1);
@@ -684,7 +798,7 @@ router.get('/traffic/summary', requireRoot, async (req, res) => {
     .sort((a, b) => b.count - a.count)
     .slice(0, 15);
 
-  res.json({ minutes: raw.minutes, total: window.length, byStatus, topPaths, topIps, suspiciousOnly: true });
+  res.json({ minutes: raw.minutes, total: filteredWindow.length, byStatus, topPaths, topIps, suspiciousOnly: true });
 });
 
 router.get('/traffic/recent', requireRoot, async (req, res) => {
@@ -733,7 +847,42 @@ router.get('/traffic/recent', requireRoot, async (req, res) => {
     return false;
   });
 
-  res.json({ events: filtered.slice(0, limit), suspiciousOnly: true });
+  // DB fallback: if in-memory filtered is empty, return matching security_events
+  let outEvents = filtered;
+  if (outEvents.length === 0) {
+    try {
+      const q = await pool.query(
+        `SELECT id, created_at, event_type, method, path, status_code, ip, user_agent, fingerprint, user_id, user_type, role, country_code, metadata
+         FROM security_events
+         WHERE created_at > NOW() - $1::interval
+           AND (fingerprint = ANY($2::text[]) OR ip = ANY($3::text[]) OR event_type IN ('trap_hit','suspicious_path','ip_block'))
+         ORDER BY created_at DESC
+         LIMIT $4`,
+        [since, Array.from(fpSet), Array.from(ipSet), limit]
+      );
+      outEvents = (q.rows || []).map((r: any) => ({
+        ts: new Date(r.created_at).getTime(),
+        id: r.id,
+        event_type: r.event_type,
+        method: r.method || 'GET',
+        path: r.path || '/',
+        status: r.status_code || 0,
+        ip: r.ip || null,
+        user_agent: r.user_agent || null,
+        fingerprint: r.fingerprint || null,
+        user_id: r.user_id != null ? String(r.user_id) : null,
+        user_type: r.user_type || null,
+        role: r.role || null,
+        country_code: r.country_code || null,
+        metadata: r.metadata || {},
+      }));
+    } catch (e) {
+      // ignore fallback errors
+      outEvents = [];
+    }
+  }
+
+  res.json({ events: outEvents.slice(0, limit), suspiciousOnly: true });
 });
 
 router.get('/blocks', requireRoot, async (_req, res) => {
@@ -784,6 +933,29 @@ router.post('/blocks', requireRoot, async (req: any, res) => {
        DO UPDATE SET reason = EXCLUDED.reason, is_active = true, updated_at = NOW(), created_by = EXCLUDED.created_by`,
       [ip, reason, createdBy]
     );
+    // Log manual block action for audit + SSE
+    try {
+      await logSecurityEvent({
+        event_type: 'ip_block',
+        severity: 'warn',
+        method: req.method,
+        path: '/api/kernel/blocks',
+        status_code: 200,
+        ip,
+        user_agent: req.get('user-agent') || null,
+        fingerprint: null,
+        country_code: null,
+        region: null,
+        city: null,
+        user_id: req.user?.id ? String(req.user.id) : null,
+        user_type: req.user?.user_type || null,
+        role: req.user?.role || null,
+        metadata: { reason: reason || 'manual', action: 'manual_block', created_by: createdBy },
+      });
+    } catch {
+      // ignore logging errors
+    }
+
     res.json({ ok: true });
   } catch (e: any) {
     const msg = String(e?.message || '');
@@ -803,6 +975,29 @@ router.delete('/blocks/:ip', requireRoot, async (req, res) => {
       `UPDATE security_ip_blocks SET is_active = false, updated_at = NOW() WHERE ip = $1`,
       [ip]
     );
+    // Log manual unblock action for audit + SSE
+    try {
+      await logSecurityEvent({
+        event_type: 'ip_block',
+        severity: 'info',
+        method: req.method,
+        path: '/api/kernel/blocks',
+        status_code: 200,
+        ip,
+        user_agent: req.get('user-agent') || null,
+        fingerprint: null,
+        country_code: null,
+        region: null,
+        city: null,
+        user_id: req.user?.id ? String(req.user.id) : null,
+        user_type: req.user?.user_type || null,
+        role: req.user?.role || null,
+        metadata: { action: 'manual_unblock', updated_by: req.user?.id ? String(req.user.id) : 'kernel' },
+      });
+    } catch {
+      // ignore logging errors
+    }
+
     res.json({ ok: true });
   } catch (e: any) {
     const msg = String(e?.message || '');
@@ -872,5 +1067,32 @@ router.delete('/security/events/localhost', requireRoot, async (_req, res) => {
     res.status(500).json({ error: 'Failed to clear localhost events' });
   }
 });
+
+// DEV: Unauthenticated helper to emit a test security event and exercise SSE.
+// Only enabled in non-production to avoid accidental exposure.
+if (process.env.NODE_ENV !== 'production') {
+  router.post('/debug/emit-event', async (req: any, res) => {
+    const payload = req.body || {};
+    try {
+      await logSecurityEvent({
+        event_type: String(payload.event_type || 'dev_test'),
+        severity: String(payload.severity || 'info') as any,
+        method: 'POST',
+        path: '/api/kernel/debug/emit-event',
+        status_code: 200,
+        ip: payload.ip || '127.0.0.1',
+        user_agent: payload.user_agent || 'dev-agent',
+        fingerprint: payload.fingerprint || null,
+        country_code: null,
+        region: null,
+        city: null,
+        metadata: payload.metadata || { note: 'dev emit' },
+      });
+      res.json({ ok: true });
+    } catch (e: any) {
+      res.status(500).json({ error: String(e?.message || e) });
+    }
+  });
+}
 
 export default router;

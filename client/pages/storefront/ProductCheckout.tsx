@@ -112,7 +112,6 @@ export default function ProductCheckout() {
     city: '',
     wilayaId: '',
     communeId: '',
-    hai: '',
     address: '',
     notes: '',
   });
@@ -753,11 +752,9 @@ export default function ProductCheckout() {
         ...(formData.email?.trim() ? { customer_email: formData.email.trim() } : {}),
         shipping_wilaya_id: formData.wilayaId ? Number(formData.wilayaId) : null,
         shipping_commune_id: formData.communeId ? Number(formData.communeId) : null,
-        shipping_hai: (formData.hai || '').trim() || null,
         customer_address: [
           selectedCommune?.name || formData.city,
           selectedWilaya?.name ? selectedWilaya.name : '',
-          formData.hai,
         ]
           .filter(Boolean)
           .join(', ') + ` - ${formData.address}${formData.notes ? ` (${formData.notes})` : ''}`,
@@ -1335,30 +1332,7 @@ export default function ProductCheckout() {
                   ))}
                 </SelectContent>
               </Select>
-              {haiSuggestions.length > 0 && (
-                <Select
-                  value={formData.hai}
-                  onValueChange={(v) => setFormData(f => ({ ...f, hai: v }))}
-                >
-                  <SelectTrigger className="col-span-2 px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm focus:outline-none h-auto">
-                    <SelectValue placeholder="Choose Hai (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {haiSuggestions.map((h) => (
-                      <SelectItem key={h} value={h}>
-                        {h}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-              <input
-                type="text"
-                placeholder="Hai / Neighborhood (optional)"
-                value={formData.hai}
-                onChange={(e) => setFormData(f => ({ ...f, hai: e.target.value }))}
-                className="col-span-2 px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm placeholder:text-white/40 focus:outline-none"
-              />
+              {/* Hai / Neighborhood removed per request */}
               <input type="text" placeholder="Address *" value={formData.address} onChange={(e) => setFormData(f => ({ ...f, address: e.target.value }))} className="col-span-2 px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm placeholder:text-white/40 focus:outline-none" />
             </div>
 
