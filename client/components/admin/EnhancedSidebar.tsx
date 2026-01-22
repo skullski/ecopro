@@ -61,7 +61,17 @@ const CATEGORY_COLORS: { [key: string]: string } = {
 const menuItems: MenuItem[] = [
   { titleKey: "sidebar.home", path: "/dashboard", icon: <Home className="w-[18px] h-[18px]" />, permission: "view_dashboard" },
   { titleKey: "sidebar.profile", path: "/dashboard/profile", icon: <User className="w-[18px] h-[18px]" />, permission: "view_settings" },
-  { titleKey: "sidebar.store", path: "/dashboard/preview", icon: <Eye className="w-[18px] h-[18px]" />, permission: "view_products_list" },
+  {
+    titleKey: "sidebar.store",
+    path: "/dashboard/preview",
+    icon: <Eye className="w-[18px] h-[18px]" />,
+    permission: "view_products_list",
+    children: [
+      { titleKey: "store.management", path: "/dashboard/preview", icon: <Eye className="w-3.5 h-3.5" />, permission: "view_products_list" },
+      { titleKey: "store.templateEditor", path: "/my-store/template-editor", icon: <Palette className="w-3.5 h-3.5" />, permission: "view_products_list" },
+      { titleKey: "store.viewStorefront", path: "/my-store/storefront", icon: <Store className="w-3.5 h-3.5" />, permission: "view_products_list" },
+    ],
+  },
   { titleKey: "sidebar.stock", path: "/dashboard/stock", icon: <Package className="w-[18px] h-[18px]" />, permission: "view_inventory" },
   { titleKey: "sidebar.images", path: "/dashboard/images", icon: <Image className="w-[18px] h-[18px]" />, permission: "view_products_list" },
   { titleKey: "sidebar.orders", path: "/dashboard/orders", icon: <ShoppingCart className="w-[18px] h-[18px]" />, permission: "view_orders_list" },
@@ -410,7 +420,7 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
     <>
       {/* Desktop Sidebar */}
       <aside className={cn(
-        "hidden lg:block fixed top-0 h-screen transition-all duration-300 z-40",
+        "hidden lg:block fixed top-0 h-screen transition-all duration-300 z-40 desktop-sidebar",
         isRTL ? "right-0 border-l shadow-2xl" : "left-0 border-r shadow-2xl",
         collapsed ? "w-20" : "w-64"
       )}
