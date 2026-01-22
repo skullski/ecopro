@@ -6,7 +6,7 @@ import {
   ChevronDown, ChevronRight, Menu, X, Package, Bot,
   Divide, Palette, User, Lock, Image
 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -58,47 +58,51 @@ const CATEGORY_COLORS: { [key: string]: string } = {
   settings: '#6b7280',  // Gray
 };
 
-const menuItems: MenuItem[] = [
-  { titleKey: "sidebar.home", path: "/dashboard", icon: <Home className="w-[18px] h-[18px]" />, permission: "view_dashboard" },
-  { titleKey: "sidebar.profile", path: "/dashboard/profile", icon: <User className="w-[18px] h-[18px]" />, permission: "view_settings" },
-  {
-    titleKey: "sidebar.store",
-    path: "/dashboard/preview",
-    icon: <Eye className="w-[18px] h-[18px]" />,
-    permission: "view_products_list",
-    children: [
-      { titleKey: "store.management", path: "/dashboard/preview", icon: <Eye className="w-3.5 h-3.5" />, permission: "view_products_list" },
-      { titleKey: "store.templateEditor", path: "/my-store/template-editor", icon: <Palette className="w-3.5 h-3.5" />, permission: "view_products_list" },
-      { titleKey: "store.viewStorefront", path: "/my-store/storefront", icon: <Store className="w-3.5 h-3.5" />, permission: "view_products_list" },
-    ],
-  },
-  { titleKey: "sidebar.stock", path: "/dashboard/stock", icon: <Package className="w-[18px] h-[18px]" />, permission: "view_inventory" },
-  { titleKey: "sidebar.images", path: "/dashboard/images", icon: <Image className="w-[18px] h-[18px]" />, permission: "view_products_list" },
-  { titleKey: "sidebar.orders", path: "/dashboard/orders", icon: <ShoppingCart className="w-[18px] h-[18px]" />, permission: "view_orders_list" },
-  { 
-    titleKey: "sidebar.delivery", 
-    path: "/dashboard/delivery/companies", 
-    icon: <Truck className="w-[18px] h-[18px]" />,
-    permission: "edit_delivery_settings",
-    children: [
-      { titleKey: "sidebar.deliveryCompanies", path: "/dashboard/delivery/companies", icon: <Truck className="w-3.5 h-3.5" />, permission: "edit_delivery_settings" },
-      { titleKey: "sidebar.deliveryPricing", path: "/dashboard/delivery/pricing", icon: <Tag className="w-3.5 h-3.5" />, permission: "edit_delivery_settings" }
-    ]
-  },
-  { 
-    titleKey: "sidebar.pixels", 
-    path: "/dashboard/pixel-statistics", 
-    icon: <BarChart3 className="w-[18px] h-[18px]" />,
-    permission: "view_settings"
-  },
-  { 
-    titleKey: "sidebar.wasselni", 
-    path: "/dashboard/wasselni-settings", 
-    icon: <Bot className="w-[18px] h-[18px]" />,
-    permission: "manage_bot_settings"
-  },
-  { titleKey: "sidebar.staff", path: "/dashboard/staff", icon: <Users className="w-[18px] h-[18px]" />, permission: "view_staff" },
-];
+const buildMenuItems = (storeSlug: string | null): MenuItem[] => {
+  const storefrontPath = storeSlug ? `/store/${encodeURIComponent(storeSlug)}` : "/my-store/storefront";
+
+  return [
+    { titleKey: "sidebar.home", path: "/dashboard", icon: <Home className="w-[18px] h-[18px]" />, permission: "view_dashboard" },
+    { titleKey: "sidebar.profile", path: "/dashboard/profile", icon: <User className="w-[18px] h-[18px]" />, permission: "view_settings" },
+    {
+      titleKey: "sidebar.store",
+      path: "/dashboard/preview",
+      icon: <Eye className="w-[18px] h-[18px]" />,
+      permission: "view_products_list",
+      children: [
+        { titleKey: "store.management", path: "/dashboard/preview", icon: <Eye className="w-3.5 h-3.5" />, permission: "view_products_list" },
+        { titleKey: "store.templateEditor", path: "/template-editor", icon: <Palette className="w-3.5 h-3.5" />, permission: "view_products_list" },
+        { titleKey: "store.viewStorefront", path: storefrontPath, icon: <Store className="w-3.5 h-3.5" />, permission: "view_products_list" },
+      ],
+    },
+    { titleKey: "sidebar.stock", path: "/dashboard/stock", icon: <Package className="w-[18px] h-[18px]" />, permission: "view_inventory" },
+    { titleKey: "sidebar.images", path: "/dashboard/images", icon: <Image className="w-[18px] h-[18px]" />, permission: "view_products_list" },
+    { titleKey: "sidebar.orders", path: "/dashboard/orders", icon: <ShoppingCart className="w-[18px] h-[18px]" />, permission: "view_orders_list" },
+    {
+      titleKey: "sidebar.delivery",
+      path: "/dashboard/delivery/companies",
+      icon: <Truck className="w-[18px] h-[18px]" />,
+      permission: "edit_delivery_settings",
+      children: [
+        { titleKey: "sidebar.deliveryCompanies", path: "/dashboard/delivery/companies", icon: <Truck className="w-3.5 h-3.5" />, permission: "edit_delivery_settings" },
+        { titleKey: "sidebar.deliveryPricing", path: "/dashboard/delivery/pricing", icon: <Tag className="w-3.5 h-3.5" />, permission: "edit_delivery_settings" }
+      ]
+    },
+    {
+      titleKey: "sidebar.pixels",
+      path: "/dashboard/pixel-statistics",
+      icon: <BarChart3 className="w-[18px] h-[18px]" />,
+      permission: "view_settings"
+    },
+    {
+      titleKey: "sidebar.wasselni",
+      path: "/dashboard/wasselni-settings",
+      icon: <Bot className="w-[18px] h-[18px]" />,
+      permission: "manage_bot_settings"
+    },
+    { titleKey: "sidebar.staff", path: "/dashboard/staff", icon: <Users className="w-[18px] h-[18px]" />, permission: "view_staff" },
+  ];
+};
 
 export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {}) {
   const { t, locale } = useTranslation();
@@ -123,6 +127,27 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
   
   const location = useLocation();
   const { newOrdersCount } = useNotifications();
+
+  const [storeSlug, setStoreSlug] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const res = await fetch('/api/client/store/settings');
+        if (!res.ok) return;
+        const data = await res.json().catch(() => ({} as any));
+        const slug = data?.store_slug ? String(data.store_slug) : null;
+        if (!cancelled) setStoreSlug(slug);
+      } catch {
+        // ignore
+      }
+    };
+    void run();
+    return () => { cancelled = true; };
+  }, []);
+
+  const menuItems = useMemo(() => buildMenuItems(storeSlug), [storeSlug]);
   
   // Save theme state to localStorage whenever it changes
   useEffect(() => {
