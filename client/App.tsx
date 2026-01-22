@@ -454,6 +454,8 @@ const App = () => (
                     <Route path="template-editor" element={<RequirePaidClient><MyStoreTemplateEditor /></RequirePaidClient>} />
                     <Route path="storefront" element={<RequirePaidClient><MyStoreStorefront /></RequirePaidClient>} />
                   </Route>
+                  {/* Alias: some links refer to /mystore */}
+                  <Route path="/mystore" element={<Navigate to="/my-store" replace />} />
                   {/* Template Editor */}
                   <Route path="/template-editor" element={<RequirePaidClient><GoldTemplateEditor /></RequirePaidClient>} />
                   {/* Backwards compatibility routes (redirect to editor) */}

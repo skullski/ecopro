@@ -318,11 +318,11 @@
     flex-direction: row-reverse !important;
   }
 
-  /* Radix Switch (peer) places the thumb using translate-x; for RTL we must invert that movement */
-  html[dir="ar"] .admin-no-break .peer[data-state="checked"] > .pointer-events-none {
+  /* Switch: invert thumb movement in RTL (when element itself has dir="rtl") */
+  .admin-no-break .ecopro-switch:dir(rtl)[data-state="checked"] .ecopro-switch-thumb {
     transform: translateX(-1.25rem) !important;
   }
-  html[dir="ar"] .admin-no-break .peer[data-state="unchecked"] > .pointer-events-none {
+  .admin-no-break .ecopro-switch:dir(rtl)[data-state="unchecked"] .ecopro-switch-thumb {
     transform: translateX(0) !important;
   }
 
@@ -334,12 +334,7 @@
     order: 2;
   }
 
-  html[dir="ar"] .admin-no-break .flex.items-center.justify-between > span {
-    order: 2 !important;
-  }
-  html[dir="ar"] .admin-no-break .flex.items-center.justify-between > .peer {
-    order: 1 !important;
-  }
+  /* NOTE: component-level ordering is handled in `WasselniSettings.tsx` for bot cards */
 
   /* Storefront templates manage their own typography.
      The global "wrap anywhere" rule can cause prices like "3,000 DZD" to stack vertically
