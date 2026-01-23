@@ -34,6 +34,13 @@ export default function LimeDirectTemplate(props: TemplateProps) {
     }
   };
 
+  const clickGuard = (e: React.MouseEvent, path: string) => {
+    if (!canManage) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onSelect(path);
+  };
+
   const [isMobile, setIsMobile] = React.useState((props as any).forcedBreakpoint === 'mobile');
   React.useEffect(() => {
     const bp = (props as any).forcedBreakpoint;
@@ -62,6 +69,9 @@ const storeName = asString(settings.store_name) || 'Lime Direct';
 const heroTitle = asString(settings.template_hero_heading) || 'Premium Quality Products';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Direct from manufacturer to your doorstep';
   const cta = asString(settings.template_button_text) || 'Order Now';
+  const heroKicker = asString((settings as any).template_hero_kicker) || 'LIMITED OFFER';
+  const badgeTitle = asString((settings as any).template_hero_badge_title) || 'Best Seller';
+  const badgeSubtitle = asString((settings as any).template_hero_badge_subtitle) || '';
 
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 12) || [];
 
@@ -95,6 +105,30 @@ const descColor = asString(settings.template_description_color) || muted;
         fontFamily: '"Inter", system-ui, sans-serif',
       }}
     >
+      {canManage && (
+        <button
+          type="button"
+          data-edit-path="__settings"
+          onClick={(e) => clickGuard(e, '__settings')}
+          style={{
+            position: 'fixed',
+            right: 12,
+            bottom: 12,
+            zIndex: 1000,
+            background: 'rgba(255,255,255,0.92)',
+            border: `1px solid ${accent}33`,
+            borderRadius: 9999,
+            padding: '8px 10px',
+            fontSize: 11,
+            letterSpacing: '0.18em',
+            textTransform: 'uppercase',
+            color: accent,
+            cursor: 'pointer',
+          }}
+        >
+          Settings
+        </button>
+      )}
       {/* Top announcement */}
       <div style={{ background: accent, color: '#fff', textAlign: 'center', padding: '10px 16px', fontSize: 13, fontWeight: 600 }}>
         🎁 Special Offer: Free shipping on all orders today!
@@ -111,7 +145,11 @@ const descColor = asString(settings.template_description_color) || muted;
         }}
       >
         <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: 10 }}
+            data-edit-path="layout.header.logo"
+            onClick={(e) => clickGuard(e, 'layout.header.logo')}
+          >
             {asString(settings.store_logo) ? (
               <img src={asString(settings.store_logo)} alt="" style={{ width: 44, height: 44 }} />
             ) : (
@@ -119,14 +157,34 @@ const descColor = asString(settings.template_description_color) || muted;
                 L
               </div>
             )}
-            <span style={{ fontSize: 22, fontWeight: 800, color: accent }}>{storeName}</span>
+            <span
+              style={{ fontSize: 22, fontWeight: 800, color: accent }}
+              data-edit-path="__settings.store_name"
+              onClick={(e) => clickGuard(e, '__settings.store_name')}
+            >
+              {storeName}
+            </span>
           </div>
           
           {!isMobile && (
-            <nav style={{ display: 'flex', gap: 28, fontSize: 14, fontWeight: 500 }}>
-              <button onClick={() => navigate('/')} style={{ background: 'none', border: 0, color: text, cursor: 'pointer' }}>Home</button>
-              <button onClick={() => navigate('/products')} style={{ background: 'none', border: 0, color: text, cursor: 'pointer' }}>Products</button>
-              <button onClick={() => navigate('/products')} style={{ background: 'none', border: 0, color: text, cursor: 'pointer' }}>Contact</button>
+            <nav
+              style={{ display: 'flex', gap: 28, fontSize: 14, fontWeight: 500 }}
+              data-edit-path="layout.header.nav"
+              onClick={(e) => clickGuard(e, 'layout.header.nav')}
+            >
+              {['Home', 'Products', 'Contact'].map((label) => (
+                <button
+                  key={label}
+                  onClick={(e) => {
+                    if (canManage) return clickGuard(e, 'layout.header.nav');
+                    if (label === 'Home') navigate('/');
+                    else navigate('/products');
+                  }}
+                  style={{ background: 'none', border: 0, color: text, cursor: 'pointer' }}
+                >
+                  {label}
+                </button>
+              ))}
             </nav>
           )}
 
@@ -159,11 +217,16 @@ const descColor = asString(settings.template_description_color) || muted;
       >
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 40, alignItems: 'center' }}>
           {/* Product images */}
-          <div>
+          <div data-edit-path="layout.hero.image" onClick={(e) => clickGuard(e, 'layout.hero.image')}>
             <div style={{ background: '#fff', borderRadius: 16, padding: 16, border: `2px solid ${accent}30` }}>
               {products.length > 0 && (
                 <div style={{ aspectRatio: '1', borderRadius: 12, overflow: 'hidden', marginBottom: 12 }}>
                   <img src={productImage(products[0])} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+              )}
+              {products.length === 0 && canManage && (
+                <div style={{ aspectRatio: '1', borderRadius: 12, overflow: 'hidden', marginBottom: 12, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280', fontSize: 12 }}>
+                  Add hero image
                 </div>
               )}
               {products.length > 1 && (
@@ -180,12 +243,58 @@ const descColor = asString(settings.template_description_color) || muted;
 
           {/* Product info & order */}
           <div>
-            <h1 style={{ fontSize: isMobile ? 28 : 36, fontWeight: 800, lineHeight: 1.2, margin: 0 }}>
+            <div
+              data-edit-path="layout.hero.kicker"
+              onClick={(e) => clickGuard(e, 'layout.hero.kicker')}
+              style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', color: accent, marginBottom: 10 }}
+            >
+              {heroKicker}
+            </div>
+
+            <h1
+              style={{ fontSize: isMobile ? 28 : 36, fontWeight: 800, lineHeight: 1.2, margin: 0 }}
+              data-edit-path="layout.hero.title"
+              onClick={(e) => clickGuard(e, 'layout.hero.title')}
+            >
               {heroTitle}
             </h1>
-            <p style={{ marginTop: 16, fontSize: 16, color: muted, lineHeight: 1.8 }}>
+            <p
+              style={{ marginTop: 16, fontSize: 16, color: muted, lineHeight: 1.8 }}
+              data-edit-path="layout.hero.subtitle"
+              onClick={(e) => clickGuard(e, 'layout.hero.subtitle')}
+            >
               {heroSubtitle}
             </p>
+
+            <div
+              data-edit-path="layout.hero.badge"
+              onClick={(e) => clickGuard(e, 'layout.hero.badge')}
+              style={{ marginTop: 16, display: 'inline-block', background: '#fff', border: `1px solid ${accent}33`, padding: '10px 12px', borderRadius: 12 }}
+            >
+              <div style={{ fontSize: 12, fontWeight: 800, color: accent }}>{badgeTitle}</div>
+              {(canManage || badgeSubtitle) && <div style={{ marginTop: 4, fontSize: 12, color: muted }}>{badgeSubtitle || 'Add badge subtitle...'}</div>}
+            </div>
+
+            <div style={{ marginTop: 18 }}>
+              <button
+                data-edit-path="layout.hero.cta"
+                onClick={(e) => {
+                  if (canManage) return clickGuard(e, 'layout.hero.cta');
+                  navigate('/products');
+                }}
+                style={{
+                  background: accent,
+                  border: 0,
+                  borderRadius: 10,
+                  padding: '12px 18px',
+                  color: '#fff',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                }}
+              >
+                {cta}
+              </button>
+            </div>
 
             {products.length > 0 && (
               <div style={{ marginTop: 24, background: '#fff', borderRadius: 12, padding: 20, border: `2px solid ${accent}` }}>
@@ -258,13 +367,32 @@ const descColor = asString(settings.template_description_color) || muted;
         onClick={() => canManage && onSelect('layout.grid')}
         style={{ maxWidth: 1200, margin: '0 auto', padding: `${sectionSpacing}px 24px 60px` }}
       >
-        <h2 data-edit-path="layout.featured.title" style={{ fontSize: 24, fontWeight: 800, marginBottom: 24, textAlign: 'center' }}>{sectionTitle}</h2>
+        <div data-edit-path="layout.featured" onClick={(e) => clickGuard(e, 'layout.featured')}>
+          <h2
+            data-edit-path="layout.featured.title"
+            onClick={(e) => clickGuard(e, 'layout.featured.title')}
+            style={{ fontSize: 24, fontWeight: 800, marginBottom: 10, textAlign: 'center' }}
+          >
+            {sectionTitle}
+          </h2>
+          {(canManage || sectionSubtitle) && (
+            <p
+              data-edit-path="layout.featured.subtitle"
+              onClick={(e) => clickGuard(e, 'layout.featured.subtitle')}
+              style={{ margin: '0 0 24px', color: muted, textAlign: 'center' }}
+            >
+              {sectionSubtitle || (canManage ? 'Add section subtitle...' : '')}
+            </p>
+          )}
+        </div>
         <div
           style={{
             display: 'grid',
             gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : `repeat(${gridColumns}, 1fr)`,
             gap: gridGap,
           }}
+          data-edit-path="layout.featured.items"
+          onClick={(e) => clickGuard(e, 'layout.featured.items')}
         >
           {products.slice(0, 8).map((p) => (
             <div
@@ -300,8 +428,16 @@ const descColor = asString(settings.template_description_color) || muted;
                 </h3>
                 <div style={{ marginTop: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ color: accent, fontWeight: 800 }}>{formatPrice(Number(p.price) || 0)}</span>
-                  <button style={{ background: accent, border: 0, borderRadius: 6, padding: '8px 12px', color: '#fff', fontWeight: 700, fontSize: 11, cursor: 'pointer' }}>
-                    Order
+                  <button
+                    style={{ background: accent, border: 0, borderRadius: 6, padding: '8px 12px', color: '#fff', fontWeight: 700, fontSize: 11, cursor: 'pointer' }}
+                    data-edit-path="layout.featured.addLabel"
+                    onClick={(e) => {
+                      if (canManage) return clickGuard(e, 'layout.featured.addLabel');
+                      e.stopPropagation();
+                      if ((p as any).slug) navigate((p as any).slug);
+                    }}
+                  >
+                    {addToCartLabel}
                   </button>
                 </div>
               </div>
@@ -328,7 +464,47 @@ const descColor = asString(settings.template_description_color) || muted;
       >
         <div style={{ maxWidth: 1200, margin: '0 auto', textAlign: 'center' }}>
           <div style={{ fontSize: 20, fontWeight: 800, color: accent, marginBottom: 12 }}>{storeName}</div>
-          <p style={{ color: muted, fontSize: 13 }}>{copyright}</p>
+          <p
+            style={{ color: muted, fontSize: 13 }}
+            data-edit-path="layout.footer.copyright"
+            onClick={(e) => clickGuard(e, 'layout.footer.copyright')}
+          >
+            {copyright}
+          </p>
+
+          <div
+            style={{ display: 'flex', gap: 14, justifyContent: 'center', marginTop: 14, flexWrap: 'wrap' }}
+            data-edit-path="layout.footer.links"
+            onClick={(e) => clickGuard(e, 'layout.footer.links')}
+          >
+            {['Shipping', 'Returns', 'Contact'].map((label) => (
+              <a
+                key={label}
+                href="#"
+                style={{ color: text, textDecoration: 'none', fontSize: 12, opacity: 0.85 }}
+                onClick={(e) => clickGuard(e, 'layout.footer.links')}
+              >
+                {label}
+              </a>
+            ))}
+          </div>
+
+          <div
+            style={{ display: 'flex', gap: 14, justifyContent: 'center', marginTop: 10, flexWrap: 'wrap' }}
+            data-edit-path="layout.footer.social"
+            onClick={(e) => clickGuard(e, 'layout.footer.social')}
+          >
+            {['instagram', 'tiktok', 'facebook'].map((platform) => (
+              <a
+                key={platform}
+                href="#"
+                style={{ color: text, textDecoration: 'none', fontSize: 12, opacity: 0.75 }}
+                onClick={(e) => clickGuard(e, 'layout.footer.social')}
+              >
+                {platform}
+              </a>
+            ))}
+          </div>
         </div>
       </footer>
     </div>

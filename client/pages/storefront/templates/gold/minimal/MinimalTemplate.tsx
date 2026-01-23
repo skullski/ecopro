@@ -112,6 +112,9 @@ const headerBg = asString(settings.template_header_bg) || '#ffffff';
   const heroSubtitle = asString(settings.template_hero_subtitle) || 'Discover our carefully curated collection of essential pieces.';
   const ctaText = asString(settings.template_button_text) || 'Explore';
   const heroImage = asString(settings.banner_url) || '';
+  const heroKicker = asString((settings as any).template_hero_kicker) || 'NEW • MINIMAL EDIT';
+  const badgeTitle = asString((settings as any).template_hero_badge_title) || 'Featured';
+  const badgeSubtitle = asString((settings as any).template_hero_badge_subtitle) || '';
 
   const storeName = asString(settings.store_name) || 'MINIMAL';
 
@@ -177,6 +180,31 @@ const headerBg = asString(settings.template_header_bg) || '#ffffff';
       data-edit-path="__root"
       onClick={() => onSelect('__root')}
     >
+      {canManage && (
+        <button
+          type="button"
+          data-edit-path="__settings"
+          onClick={(e) => clickGuard(e, '__settings')}
+          style={{
+            position: 'fixed',
+            right: 12,
+            bottom: 12,
+            zIndex: 1000,
+            background: 'rgba(255,255,255,0.92)',
+            border: `1px solid ${border}`,
+            borderRadius: 9999,
+            padding: '8px 10px',
+            fontSize: 11,
+            letterSpacing: '0.18em',
+            textTransform: 'uppercase',
+            color: text,
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+          }}
+        >
+          Settings
+        </button>
+      )}
       {/* Header - Ultra minimal */}
       <header
         style={{
@@ -209,18 +237,21 @@ const headerBg = asString(settings.template_header_bg) || '#ffffff';
                 fontSize: '18px', 
                 letterSpacing: '0.2em',
                 textTransform: 'uppercase'
-              }}>
+              }}
+              data-edit-path="__settings.store_name"
+              onClick={(e) => clickGuard(e, '__settings.store_name')}
+              >
                 {storeName}
               </span>
             </div>
 
-            {!isMobile && navLinks.length > 0 && (
+            {!isMobile && (canManage || navLinks.length > 0) && (
               <nav
                 style={{ display: 'flex', gap: '32px' }}
                 data-edit-path="layout.header.nav"
                 onClick={(e) => clickGuard(e, 'layout.header.nav')}
               >
-                {navLinks.map((link, i) => (
+                {(navLinks.length ? navLinks : [{ label: 'Shop', url: '/products' }, { label: 'About', url: '/about' }, { label: 'Contact', url: '/contact' }]).map((link, i) => (
                   <a
                     key={i}
                     href={link.url}
@@ -229,6 +260,12 @@ const headerBg = asString(settings.template_header_bg) || '#ffffff';
                       fontSize: '13px',
                       textDecoration: 'none',
                       letterSpacing: '0.05em',
+                    }}
+                    onClick={(e) => {
+                      if (!canManage) return;
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onSelect('layout.header.nav');
                     }}
                   >
                     {link.label}
@@ -261,6 +298,26 @@ const headerBg = asString(settings.template_header_bg) || '#ffffff';
           data-edit-path="layout.hero"
           onClick={(e) => clickGuard(e, 'layout.hero')}
         >
+          {canManage && (
+            <div
+              data-edit-path="layout.hero.image"
+              onClick={(e) => clickGuard(e, 'layout.hero.image')}
+              style={{
+                position: 'absolute',
+                top: 16,
+                left: 16,
+                background: 'rgba(255,255,255,0.9)',
+                color: '#111',
+                padding: '6px 10px',
+                border: `1px solid ${border}`,
+                fontSize: 11,
+                letterSpacing: '0.08em',
+                cursor: 'pointer',
+              }}
+            >
+              Hero image
+            </div>
+          )}
           <div style={{
             position: 'absolute',
             inset: 0,
@@ -272,6 +329,13 @@ const headerBg = asString(settings.template_header_bg) || '#ffffff';
             padding: '0 24px',
             maxWidth: '600px' 
           }}>
+            <div
+              data-edit-path="layout.hero.kicker"
+              onClick={(e) => clickGuard(e, 'layout.hero.kicker')}
+              style={{ fontSize: 12, letterSpacing: '0.2em', textTransform: 'uppercase', color: muted, marginBottom: 10 }}
+            >
+              {heroKicker}
+            </div>
             <h1
               style={{
                 fontSize: isMobile ? '32px' : '48px',
@@ -312,6 +376,24 @@ const headerBg = asString(settings.template_header_bg) || '#ffffff';
             >
               {ctaText}
             </button>
+
+            {canManage && (
+              <div
+                data-edit-path="layout.hero.badge"
+                onClick={(e) => clickGuard(e, 'layout.hero.badge')}
+                style={{
+                  marginTop: 14,
+                  display: 'inline-block',
+                  background: 'rgba(255,255,255,0.92)',
+                  border: `1px solid ${border}`,
+                  padding: '10px 12px',
+                  textAlign: 'left',
+                }}
+              >
+                <div style={{ fontSize: 12, color: text, letterSpacing: '0.06em' }}>{badgeTitle}</div>
+                <div style={{ marginTop: 4, fontSize: 12, color: muted }}>{badgeSubtitle || 'Add badge subtitle...'}</div>
+              </div>
+            )}
           </div>
         </section>
       ) : (
@@ -325,6 +407,30 @@ const headerBg = asString(settings.template_header_bg) || '#ffffff';
           data-edit-path="layout.hero"
           onClick={(e) => clickGuard(e, 'layout.hero')}
         >
+          <div
+            data-edit-path="layout.hero.kicker"
+            onClick={(e) => clickGuard(e, 'layout.hero.kicker')}
+            style={{ fontSize: 12, letterSpacing: '0.2em', textTransform: 'uppercase', color: muted, marginBottom: 14 }}
+          >
+            {heroKicker}
+          </div>
+          {canManage && (
+            <div
+              data-edit-path="layout.hero.image"
+              onClick={(e) => clickGuard(e, 'layout.hero.image')}
+              style={{
+                display: 'inline-block',
+                background: '#fff',
+                border: `1px dashed ${border}`,
+                padding: '10px 12px',
+                marginBottom: 18,
+                color: muted,
+                fontSize: 12,
+              }}
+            >
+              Add hero image
+            </div>
+          )}
           <h1
             style={{
               fontSize: isMobile ? '36px' : '56px',
@@ -365,6 +471,24 @@ const headerBg = asString(settings.template_header_bg) || '#ffffff';
           >
             {ctaText}
           </button>
+
+          {canManage && (
+            <div
+              data-edit-path="layout.hero.badge"
+              onClick={(e) => clickGuard(e, 'layout.hero.badge')}
+              style={{
+                marginTop: 18,
+                display: 'inline-block',
+                background: '#fff',
+                border: `1px solid ${border}`,
+                padding: '10px 12px',
+                textAlign: 'left',
+              }}
+            >
+              <div style={{ fontSize: 12, color: text, letterSpacing: '0.06em' }}>{badgeTitle}</div>
+              <div style={{ marginTop: 4, fontSize: 12, color: muted }}>{badgeSubtitle || 'Add badge subtitle...'}</div>
+            </div>
+          )}
         </section>
       )}
 
@@ -435,6 +559,11 @@ const headerBg = asString(settings.template_header_bg) || '#ffffff';
           </p>
 
           {/* Product Grid */}
+          <div
+            style={{ width: '100%' }}
+            data-edit-path="layout.featured.items"
+            onClick={(e) => clickGuard(e, 'layout.featured.items')}
+          >
           <div
             style={{
               display: 'grid',
@@ -511,8 +640,31 @@ const headerBg = asString(settings.template_header_bg) || '#ffffff';
                 }}>
                   {props.formatPrice(product.price)}
                 </p>
+
+                <button
+                  style={{
+                    marginTop: 14,
+                    backgroundColor: accent,
+                    color: '#ffffff',
+                    padding: '10px 14px',
+                    fontSize: 12,
+                    letterSpacing: '0.08em',
+                    border: 'none',
+                    borderRadius: `${buttonRadius}px`,
+                    cursor: 'pointer',
+                  }}
+                  data-edit-path="layout.featured.addLabel"
+                  onClick={(e) => {
+                    if (canManage) return clickGuard(e, 'layout.featured.addLabel');
+                    e.stopPropagation();
+                    props.navigate(product.slug || String(product.id));
+                  }}
+                >
+                  {addToCartLabel}
+                </button>
               </div>
             ))}
+            </div>
           </div>
 
           {filteredProducts.length === 0 && (
@@ -543,14 +695,39 @@ const headerBg = asString(settings.template_header_bg) || '#ffffff';
           gap: '24px',
         }}>
           <div style={{ textAlign: isMobile ? 'center' : 'left' }}>
-            <p style={{ fontSize: '12px', color: muted, letterSpacing: '0.05em' }}>
+            <p
+              style={{ fontSize: '12px', color: muted, letterSpacing: '0.05em' }}
+              data-edit-path="layout.footer.copyright"
+              onClick={(e) => clickGuard(e, 'layout.footer.copyright')}
+            >
               {copyright}
             </p>
           </div>
 
-          {socialLinks.length > 0 && (
-            <div style={{ display: 'flex', gap: '20px' }}>
-              {socialLinks.map((link, i) => (
+          <div
+            style={{ display: 'flex', gap: '18px', flexWrap: 'wrap', justifyContent: isMobile ? 'center' : 'flex-start' }}
+            data-edit-path="layout.footer.links"
+            onClick={(e) => clickGuard(e, 'layout.footer.links')}
+          >
+            {['Shipping', 'Returns', 'Contact'].map((label) => (
+              <a
+                key={label}
+                href="#"
+                style={{ color: muted, fontSize: 12, textDecoration: 'none' }}
+                onClick={(e) => clickGuard(e, 'layout.footer.links')}
+              >
+                {label}
+              </a>
+            ))}
+          </div>
+
+          {(canManage || socialLinks.length > 0) && (
+            <div
+              style={{ display: 'flex', gap: '20px' }}
+              data-edit-path="layout.footer.social"
+              onClick={(e) => clickGuard(e, 'layout.footer.social')}
+            >
+              {(socialLinks.length ? socialLinks : [{ platform: 'instagram', url: '#' }, { platform: 'tiktok', url: '#' }]).map((link, i) => (
                 <a
                   key={i}
                   href={link.url}
@@ -561,6 +738,12 @@ const headerBg = asString(settings.template_header_bg) || '#ffffff';
                     fontSize: '12px',
                     textDecoration: 'none',
                     textTransform: 'capitalize',
+                  }}
+                  onClick={(e) => {
+                    if (!canManage) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onSelect('layout.footer.social');
                   }}
                 >
                   {link.platform}

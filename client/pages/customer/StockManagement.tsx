@@ -40,6 +40,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { useTranslation } from '@/lib/i18n';
+import { useToast } from '@/components/ui/use-toast';
 
 interface StockItem {
   id: number;
@@ -93,12 +94,14 @@ type StockVariantDraft = {
 
 export default function StockManagement() {
   const { t } = useTranslation();
+  const { toast } = useToast();
   const [stock, setStock] = useState<StockItem[]>([]);
   const [filteredStock, setFilteredStock] = useState<StockItem[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [allCategories, setAllCategories] = useState<StockCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [showLowStock, setShowLowStock] = useState(false);
   
@@ -243,7 +246,14 @@ export default function StockManagement() {
 
   useEffect(() => {
     filterStock();
-  }, [stock, searchQuery, categoryFilter, showLowStock]);
+  }, [stock, debouncedSearchQuery, categoryFilter, showLowStock]);
+
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 200);
+    return () => clearTimeout(handle);
+  }, [searchQuery]);
 
   useEffect(() => {
     // Calculate stats
@@ -258,9 +268,6 @@ export default function StockManagement() {
       const res = await fetch('/api/client/stock');
       if (res.ok) {
         const data = await res.json();
-        console.log('[loadStock] Fetched stock items:', data);
-        console.log('[loadStock] First item:', data[0]);
-        console.log('[loadStock] First item images:', data[0]?.images);
         setStock(data);
       } else {
         console.error('[loadStock] Failed with status:', res.status);
@@ -317,11 +324,19 @@ export default function StockManagement() {
         setCategoryPopoverOpen(false);
       } else {
         const error = await res.json();
-        alert(error.error || 'Failed to create category');
+        toast({
+          variant: 'destructive',
+          title: t('stock.toast.createCategoryFailedTitle'),
+          description: error?.error || t('stock.toast.createCategoryFailedDesc'),
+        });
       }
     } catch (error) {
       console.error('Failed to create category:', error);
-      alert('Failed to create category');
+      toast({
+        variant: 'destructive',
+        title: t('stock.toast.createCategoryFailedTitle'),
+        description: t('stock.toast.createCategoryFailedDesc'),
+      });
     } finally {
       setCreatingCategory(false);
     }
@@ -349,8 +364,8 @@ export default function StockManagement() {
     let filtered = [...stock];
 
     // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
+    if (debouncedSearchQuery) {
+      const query = debouncedSearchQuery.toLowerCase();
       filtered = filtered.filter(item =>
         item.name.toLowerCase().includes(query) ||
         item.description?.toLowerCase().includes(query)
@@ -406,7 +421,11 @@ export default function StockManagement() {
     const existing = Array.isArray(formData.images) ? formData.images : [];
     const remaining = Math.max(0, 10 - existing.length);
     if (remaining <= 0) {
-      alert('You can upload up to 10 images');
+      toast({
+        variant: 'destructive',
+        title: t('stock.toast.maxImagesTitle'),
+        description: t('stock.toast.maxImagesDesc'),
+      });
       e.target.value = '';
       return;
     }
@@ -437,10 +456,20 @@ export default function StockManagement() {
         }
       }
 
-      alert(uploadedUrls.length > 1 ? 'Images uploaded successfully!' : 'Image uploaded successfully!');
+      toast({
+        title: t('stock.toast.imagesUploadedTitle'),
+        description: t('stock.toast.imagesUploadedDesc'),
+      });
     } catch (error) {
       console.error('Upload error:', error);
-      alert(`Upload error: ${error instanceof Error ? error.message : 'Failed to upload image'}`);
+      toast({
+        variant: 'destructive',
+        title: t('stock.toast.uploadErrorTitle'),
+        description:
+          error instanceof Error
+            ? error.message
+            : t('stock.toast.uploadErrorDesc'),
+      });
     } finally {
       setUploading(false);
       e.target.value = '';
@@ -469,10 +498,6 @@ export default function StockManagement() {
   const handleCreateStock = async () => {
     try {
       const payload = buildCreatePayload();
-      console.log('[handleCreateStock] Submitting form data:', formData);
-      console.log('[handleCreateStock] Payload:', payload);
-      console.log('[handleCreateStock] Images in formData:', formData.images);
-      console.log('[handleCreateStock] Images count:', formData.images?.length);
       
       const res = await fetch('/api/client/stock', {
         method: 'POST',
@@ -481,13 +506,9 @@ export default function StockManagement() {
         },
         body: JSON.stringify(payload)
       });
-
-      console.log('[handleCreateStock] Response status:', res.status);
       
       if (res.ok) {
         const createdItem = await res.json();
-        console.log('[handleCreateStock] Created item:', createdItem);
-        console.log('[handleCreateStock] Created item images:', createdItem.images);
 
         const createdId = Number(createdItem?.id);
         if (createdId && variantsDraft.length > 0) {
@@ -503,20 +524,38 @@ export default function StockManagement() {
         setVariantsDraft([]);
         setVariantsLoaded(false);
         setVariantsDirty(false);
-        alert('Stock item created successfully!');
+        toast({
+          title: t('stock.toast.createdTitle'),
+          description: t('stock.toast.createdDesc'),
+        });
       } else {
         try {
           const error = await res.json();
           console.error('[handleCreateStock] Error response:', error);
-          alert(error.error || `Failed to create stock item: ${res.status}`);
+          toast({
+            variant: 'destructive',
+            title: t('stock.toast.createFailedTitle'),
+            description: error?.error || t('stock.toast.createFailedDesc'),
+          });
         } catch (parseErr) {
           console.error('[handleCreateStock] Failed to parse error response');
-          alert(`Failed to create stock item: ${res.status} ${res.statusText}`);
+          toast({
+            variant: 'destructive',
+            title: t('stock.toast.createFailedTitle'),
+            description: t('stock.toast.createFailedDesc'),
+          });
         }
       }
     } catch (error) {
       console.error('Create stock error:', error);
-      alert(`Failed to create stock item: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      toast({
+        variant: 'destructive',
+        title: t('stock.toast.createFailedTitle'),
+        description:
+          error instanceof Error
+            ? error.message
+            : t('stock.toast.createFailedDesc'),
+      });
     }
   };
 
@@ -540,7 +579,11 @@ export default function StockManagement() {
             setVariantsDirty(false);
           } catch (e) {
             console.error('Failed to save stock variants', e);
-            alert((e as any)?.message || 'Failed to save variants');
+            toast({
+              variant: 'destructive',
+              title: t('stock.toast.saveVariantsFailedTitle'),
+              description: (e as any)?.message || t('stock.toast.saveVariantsFailedDesc'),
+            });
           }
         }
         await loadStock();
@@ -552,11 +595,19 @@ export default function StockManagement() {
         setVariantsDirty(false);
       } else {
         const error = await res.json();
-        alert(error.error || 'Failed to update stock item');
+        toast({
+          variant: 'destructive',
+          title: t('stock.toast.updateFailedTitle'),
+          description: error?.error || t('stock.toast.updateFailedDesc'),
+        });
       }
     } catch (error) {
       console.error('Update stock error:', error);
-      alert('Failed to update stock item');
+      toast({
+        variant: 'destructive',
+        title: t('stock.toast.updateFailedTitle'),
+        description: t('stock.toast.updateFailedDesc'),
+      });
     }
   };
 
@@ -579,11 +630,19 @@ export default function StockManagement() {
         setAdjustData({ adjustment: 0, reason: 'adjustment', notes: '' });
       } else {
         const error = await res.json();
-        alert(error.error || 'Failed to adjust quantity');
+        toast({
+          variant: 'destructive',
+          title: t('stock.toast.adjustFailedTitle'),
+          description: error?.error || t('stock.toast.adjustFailedDesc'),
+        });
       }
     } catch (error) {
       console.error('Adjust quantity error:', error);
-      alert('Failed to adjust quantity');
+      toast({
+        variant: 'destructive',
+        title: t('stock.toast.adjustFailedTitle'),
+        description: t('stock.toast.adjustFailedDesc'),
+      });
     }
   };
 
@@ -601,11 +660,19 @@ export default function StockManagement() {
         setSelectedItem(null);
       } else {
         const error = await res.json();
-        alert(error.error || 'Failed to delete stock item');
+        toast({
+          variant: 'destructive',
+          title: t('stock.toast.deleteFailedTitle'),
+          description: error?.error || t('stock.toast.deleteFailedDesc'),
+        });
       }
     } catch (error) {
       console.error('Delete stock error:', error);
-      alert('Failed to delete stock item');
+      toast({
+        variant: 'destructive',
+        title: t('stock.toast.deleteFailedTitle'),
+        description: t('stock.toast.deleteFailedDesc'),
+      });
     }
   };
 
@@ -696,6 +763,10 @@ export default function StockManagement() {
               {t('stock.title')}
             </h1>
             <p className="text-muted-foreground text-base font-semibold">{t('stock.subtitle')}</p>
+            <div className="mt-2 rounded-md border border-primary/20 bg-background/70 dark:bg-slate-900/30 px-3 py-2 text-xs text-muted-foreground">
+              <div className="font-semibold text-foreground">{t('stock.hints.headerTitle')}</div>
+              <div className="mt-1">{t('stock.hints.headerDesc')}</div>
+            </div>
           </div>
           <div className="flex gap-1 md:gap-2">
             <Button 
@@ -1023,6 +1094,9 @@ export default function StockManagement() {
                       placeholder={t('stock.productName')}
                       className="border-primary/30 focus:border-primary/60 transition-colors h-9 text-base"
                     />
+                    <p className="text-xs text-muted-foreground">
+                      {t('stock.hints.name')}
+                    </p>
                   </div>
                 </div>
 
@@ -1162,6 +1236,9 @@ export default function StockManagement() {
                     <p className="text-sm text-muted-foreground">
                       Optional. If you add variants, total stock quantity is automatically the sum of active variant stock.
                     </p>
+                    <p className="text-xs text-muted-foreground">
+                      {t('stock.hints.variants')}
+                    </p>
                   </div>
                   <Button
                     type="button"
@@ -1296,6 +1373,9 @@ export default function StockManagement() {
                       min="0"
                       className="border-amber-500/30 focus:border-amber-500/60 transition-colors h-9 text-base"
                     />
+                    <p className="text-xs text-muted-foreground">
+                      {t('stock.hints.quantity')}
+                    </p>
                   </div>
 
                   <div className="space-y-1">
@@ -1329,6 +1409,9 @@ export default function StockManagement() {
                       min="0"
                       className="border-amber-500/30 focus:border-amber-500/60 transition-colors h-9 text-base"
                     />
+                    <p className="text-xs text-muted-foreground">
+                      {t('stock.hints.reorder')}
+                    </p>
                   </div>
                 </div>
               </div>

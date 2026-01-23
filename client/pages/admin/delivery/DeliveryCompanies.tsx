@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Truck, Key, CheckCircle2, X, ExternalLink, Zap, Globe } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "@/lib/i18n";
+import { DELIVERY_LOGO_FALLBACK_SRC, getDeliveryCompanyLogoSrc } from "@/lib/deliveryLogos";
+import { DeliveryCompanyLogo } from "@/components/delivery/DeliveryCompanyLogo";
 
 interface DeliveryCompany {
   id: string;
@@ -34,7 +36,7 @@ interface DeliveryCompany {
   apiRating: number; // 1-5 stars
 }
 
-const LOGO_FALLBACK_SRC = '/delivery-logos/placeholder.svg';
+const LOGO_FALLBACK_SRC = DELIVERY_LOGO_FALLBACK_SRC;
 
 function toCompanyLookupKey(name: string): string {
   return String(name || '')
@@ -70,12 +72,12 @@ export default function DeliveryCompanies() {
   // List of company IDs that should appear first (working ones)
   const workingCompanyOrder = ['zr-express', 'noest', 'anderson', 'zimou-express'];
 
-  const [companies, setCompanies] = useState<DeliveryCompany[]>([
+  const [companies, setCompanies] = useState<DeliveryCompany[]>(() => [
     // ⭐ TIER 1: Best API - Yalidine (Most documented, npm packages available)
     {
       id: "yalidine",
       name: "Yalidine Express",
-      logo: "/delivery-logos/yalidine.png",
+      logo: getDeliveryCompanyLogoSrc("Yalidine Express"),
       description: "#1 delivery in Algeria - Full REST API with npm SDK. Covers all 58 wilayas.",
       apiFields: [
         { label: "API Token", placeholder: "Your Yalidine API Token", field: "apiToken" },
@@ -91,7 +93,7 @@ export default function DeliveryCompanies() {
     {
       id: "guepex",
       name: "Guepex",
-      logo: "/delivery-logos/guepex.png",
+      logo: getDeliveryCompanyLogoSrc("Guepex"),
       description: "160+ bureaus across 58 wilayas. Express (24h) & Economic (48h) delivery.",
       apiFields: [
         { label: "API Token", placeholder: "Your Guepex API Token", field: "apiToken" },
@@ -107,7 +109,7 @@ export default function DeliveryCompanies() {
     {
       id: "zr-express",
       name: "ZR Express",
-      logo: "/delivery-logos/zr-express.png",
+      logo: getDeliveryCompanyLogoSrc("ZR Express"),
       description: "Official ZR Express API. Requires API Key + Tenant ID for full parcel management.",
       apiFields: [
         { label: "API Key", placeholder: "Your ZR Express API Key", field: "apiKey" },
@@ -123,7 +125,7 @@ export default function DeliveryCompanies() {
     {
       id: "ecotrack",
       name: "Ecotrack",
-      logo: "/delivery-logos/ecotrack.png",
+      logo: getDeliveryCompanyLogoSrc("Ecotrack"),
       description: "Logistics SaaS platform. Aggregates multiple carriers (DHD, Conexlog/UPS).",
       apiFields: [
         { label: "API Token", placeholder: "Your Ecotrack API Token", field: "apiToken" },
@@ -139,7 +141,7 @@ export default function DeliveryCompanies() {
     {
       id: "maystro",
       name: "Maystro Delivery",
-      logo: "/delivery-logos/maystro.png",
+      logo: getDeliveryCompanyLogoSrc("Maystro Delivery"),
       description: "3K+ stores, 600+ drivers. Warehousing, packaging & call center included.",
       apiFields: [
         { label: "API Token", placeholder: "Your Maystro API Token", field: "apiToken" },
@@ -155,7 +157,7 @@ export default function DeliveryCompanies() {
     {
       id: "dolivroo",
       name: "Dolivroo",
-      logo: "/delivery-logos/dolivroo.png",
+      logo: getDeliveryCompanyLogoSrc("Dolivroo"),
       description: "🔗 UNIFIED API - One integration for Yalidine, Ecotrack & more. Best choice!",
       apiFields: [
         { label: "Dolivroo API Key", placeholder: "Your Dolivroo API Key", field: "apiKey" },
@@ -172,7 +174,7 @@ export default function DeliveryCompanies() {
     {
       id: "noest",
       name: "Noest",
-      logo: "/delivery-logos/noest.png",
+      logo: getDeliveryCompanyLogoSrc("Noest"),
       description: "Noest uses an Ecotrack-powered API. Use your Noest Token + GUID to create shipments and generate labels.",
       apiFields: [
         { label: "API Token", placeholder: "Your Noest API Token", field: "apiToken" },
@@ -187,7 +189,7 @@ export default function DeliveryCompanies() {
     {
       id: "zimou-express",
       name: "Zimou Express",
-      logo: "/delivery-logos/zimou.png",
+      logo: getDeliveryCompanyLogoSrc("Zimou Express"),
       description: "Fast delivery across Algeria. Express & standard shipping options.",
       apiFields: [
         { label: "API Token", placeholder: "Your Zimou API Token (Bearer)", field: "apiToken" },
@@ -202,7 +204,7 @@ export default function DeliveryCompanies() {
     {
       id: "anderson",
       name: "Anderson Ecommerce",
-      logo: "/delivery-logos/anderson.png",
+      logo: getDeliveryCompanyLogoSrc("Anderson Ecommerce"),
       description: "Ecotrack-powered delivery. Full API for shipments, tracking & labels.",
       apiFields: [
         { label: "API Token", placeholder: "Your Anderson API Token", field: "apiToken" },
@@ -221,7 +223,7 @@ export default function DeliveryCompanies() {
     {
       id: "procolis",
       name: "ProColis",
-      logo: "/delivery-logos/procolis.png",
+      logo: getDeliveryCompanyLogoSrc("ProColis"),
       description: "ProColis account integration (manual assignment-ready).",
       apiFields: [
         { label: "API Key / Client Code", placeholder: "Your ProColis API Key (or client code)", field: "apiKey" },
@@ -235,7 +237,7 @@ export default function DeliveryCompanies() {
     {
       id: "nord-et-ouest",
       name: "Nord Et Ouest",
-      logo: "/delivery-logos/nord-et-ouest.png",
+      logo: getDeliveryCompanyLogoSrc("Nord Et Ouest"),
       description: "Nord Et Ouest integration (manual assignment-ready).",
       apiFields: [
         { label: "Account Code", placeholder: "Your account/client code", field: "apiKey" },
@@ -248,7 +250,7 @@ export default function DeliveryCompanies() {
     {
       id: "elogistia",
       name: "Elogistia",
-      logo: "/delivery-logos/elogistia.png",
+      logo: getDeliveryCompanyLogoSrc("Elogistia"),
       description: "Elogistia integration (manual assignment-ready).",
       apiFields: [
         { label: "Account Code", placeholder: "Your account/client code", field: "apiKey" },
@@ -261,7 +263,7 @@ export default function DeliveryCompanies() {
     {
       id: "colivraison-express",
       name: "Colivraison Express",
-      logo: "/delivery-logos/colivraison-express.png",
+      logo: getDeliveryCompanyLogoSrc("Colivraison Express"),
       description: "Colivraison Express integration (manual assignment-ready).",
       apiFields: [
         { label: "Account Code", placeholder: "Your account/client code", field: "apiKey" },
@@ -274,7 +276,7 @@ export default function DeliveryCompanies() {
     {
       id: "mdm-express",
       name: "MDM Express",
-      logo: "/delivery-logos/mdm-express.png",
+      logo: getDeliveryCompanyLogoSrc("MDM Express"),
       description: "MDM Express integration (manual assignment-ready).",
       apiFields: [
         { label: "Account Code", placeholder: "Your account/client code", field: "apiKey" },
@@ -287,7 +289,7 @@ export default function DeliveryCompanies() {
     {
       id: "yalitec",
       name: "Yalitec",
-      logo: "/delivery-logos/yalitec.png",
+      logo: getDeliveryCompanyLogoSrc("Yalitec"),
       description: "Yalitec integration (manual assignment-ready).",
       apiFields: [
         { label: "Account Code", placeholder: "Your account/client code", field: "apiKey" },
@@ -300,7 +302,7 @@ export default function DeliveryCompanies() {
     {
       id: "mylerz-algerie",
       name: "Mylerz Algérie",
-      logo: "/delivery-logos/mylerz-algerie.png",
+      logo: getDeliveryCompanyLogoSrc("Mylerz Algérie"),
       description: "Mylerz Algérie integration (manual assignment-ready).",
       apiFields: [
         { label: "Account Code", placeholder: "Your account/client code", field: "apiKey" },
@@ -313,7 +315,7 @@ export default function DeliveryCompanies() {
     {
       id: "ecom-delivery",
       name: "Ecom Delivery",
-      logo: "/delivery-logos/ecom-delivery.png",
+      logo: getDeliveryCompanyLogoSrc("Ecom Delivery"),
       description: "Ecom Delivery integration (manual assignment-ready).",
       apiFields: [
         { label: "Account Code", placeholder: "Your account/client code", field: "apiKey" },
@@ -326,7 +328,7 @@ export default function DeliveryCompanies() {
     {
       id: "flash-delivery",
       name: "Flash Delivery",
-      logo: "/delivery-logos/flash-delivery.png",
+      logo: getDeliveryCompanyLogoSrc("Flash Delivery"),
       description: "Flash Delivery integration (manual assignment-ready).",
       apiFields: [
         { label: "Account Code", placeholder: "Your account/client code", field: "apiKey" },
@@ -639,16 +641,10 @@ export default function DeliveryCompanies() {
               <div className="flex items-start gap-3">
                 <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary/15 to-accent/15 flex items-center justify-center overflow-hidden border border-border/60 flex-shrink-0">
                   {company.logo.startsWith('/') ? (
-                    <img 
-                      src={company.logo} 
+                    <DeliveryCompanyLogo
+                      name={company.name}
                       alt={company.name}
                       className="w-full h-full object-contain p-1.5"
-                      onError={(e) => {
-                        const target = e.currentTarget as HTMLImageElement;
-                        if (target.getAttribute('data-fallback-applied') === '1') return;
-                        target.setAttribute('data-fallback-applied', '1');
-                        target.src = LOGO_FALLBACK_SRC;
-                      }}
                     />
                   ) : (
                     <Truck className="w-6 h-6 text-primary" />
@@ -706,16 +702,10 @@ export default function DeliveryCompanies() {
             <div className="flex items-start gap-3">
               <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center flex-shrink-0 border border-primary/20">
                 {selectedCompany?.logo.startsWith('/') ? (
-                  <img 
-                    src={selectedCompany?.logo} 
+                  <DeliveryCompanyLogo
+                    name={selectedCompany?.name}
                     alt={selectedCompany?.name}
                     className="w-full h-full object-contain p-2 rounded-lg"
-                    onError={(e) => {
-                      const target = e.currentTarget as HTMLImageElement;
-                      if (target.getAttribute('data-fallback-applied') === '1') return;
-                      target.setAttribute('data-fallback-applied', '1');
-                      target.src = LOGO_FALLBACK_SRC;
-                    }}
                   />
                 ) : (
                   <Truck className="w-7 h-7 text-primary" />

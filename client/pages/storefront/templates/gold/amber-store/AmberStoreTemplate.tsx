@@ -34,6 +34,13 @@ export default function AmberStoreTemplate(props: TemplateProps) {
     }
   };
 
+  const select = (e: React.MouseEvent, path: string) => {
+    if (!canManage) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onSelect(path);
+  };
+
   const [isMobile, setIsMobile] = React.useState((props as any).forcedBreakpoint === 'mobile');
   React.useEffect(() => {
     const bp = (props as any).forcedBreakpoint;
@@ -95,6 +102,29 @@ const descColor = asString(settings.template_description_color) || muted;
         fontFamily: '"Playfair Display", Georgia, serif',
       }}
     >
+      {canManage && (
+        <button
+          type="button"
+          data-edit-path="__settings"
+          onClick={(e) => select(e, '__settings')}
+          style={{
+            position: 'fixed',
+            right: 16,
+            bottom: 16,
+            zIndex: 9999,
+            background: '#111827',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: 9999,
+            padding: '10px 14px',
+            fontSize: 12,
+            letterSpacing: '0.08em',
+            cursor: 'pointer',
+          }}
+        >
+          Settings
+        </button>
+      )}
       {/* Header */}
       <header
         data-edit-path="layout.header"
@@ -105,20 +135,48 @@ const descColor = asString(settings.template_description_color) || muted;
         }}
       >
         <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: 12 }}
+            data-edit-path="layout.header.logo"
+            onClick={(e) => select(e, 'layout.header.logo')}
+          >
             {asString(settings.store_logo) ? (
               <img src={asString(settings.store_logo)} alt="" style={{ width: 48, height: 48 }} />
             ) : (
-              <div style={{ fontSize: 32, fontWeight: 700, color: accent, fontStyle: 'italic' }}>{storeName}</div>
+              <div
+                style={{ fontSize: 32, fontWeight: 700, color: accent, fontStyle: 'italic' }}
+                data-edit-path="__settings.store_name"
+                onClick={(e) => select(e, '__settings.store_name')}
+              >
+                {storeName}
+              </div>
             )}
           </div>
           
           {!isMobile && (
-            <nav style={{ display: 'flex', gap: 36, fontSize: 14, fontFamily: '"Inter", sans-serif', letterSpacing: '0.05em' }}>
+            <nav
+              style={{ display: 'flex', gap: 36, fontSize: 14, fontFamily: '"Inter", sans-serif', letterSpacing: '0.05em' }}
+              data-edit-path="layout.header.nav"
+              onClick={(e) => select(e, 'layout.header.nav')}
+            >
               <button onClick={() => navigate('/')} style={{ background: 'none', border: 0, color: text, cursor: 'pointer', textTransform: 'uppercase' }}>Home</button>
               <button onClick={() => navigate('/products')} style={{ background: 'none', border: 0, color: text, cursor: 'pointer', textTransform: 'uppercase' }}>Shop</button>
               <button onClick={() => navigate('/products')} style={{ background: 'none', border: 0, color: text, cursor: 'pointer', textTransform: 'uppercase' }}>Collections</button>
               <button onClick={() => navigate('/products')} style={{ background: 'none', border: 0, color: text, cursor: 'pointer', textTransform: 'uppercase' }}>About</button>
+            </nav>
+          )}
+
+          {canManage && isMobile && (
+            <nav
+              style={{ display: 'flex', gap: 18, fontSize: 12, fontFamily: '"Inter", sans-serif', letterSpacing: '0.1em' }}
+              data-edit-path="layout.header.nav"
+              onClick={(e) => select(e, 'layout.header.nav')}
+            >
+              {['Home', 'Shop', 'About'].map((label) => (
+                <a key={label} href="#" onClick={(e) => select(e, 'layout.header.nav')} style={{ color: text, textDecoration: 'none', textTransform: 'uppercase' }}>
+                  {label}
+                </a>
+              ))}
             </nav>
           )}
 
@@ -140,17 +198,33 @@ const descColor = asString(settings.template_description_color) || muted;
       >
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1.2fr', gap: 48, alignItems: 'center' }}>
           <div style={{ order: isMobile ? 2 : 1 }}>
-            <p style={{ color: accent, fontSize: 13, letterSpacing: '0.2em', textTransform: 'uppercase', fontFamily: '"Inter", sans-serif', marginBottom: 16 }}>
+            <p
+              style={{ color: accent, fontSize: 13, letterSpacing: '0.2em', textTransform: 'uppercase', fontFamily: '"Inter", sans-serif', marginBottom: 16 }}
+              data-edit-path="layout.hero.kicker"
+              onClick={(e) => select(e, 'layout.hero.kicker')}
+            >
               New Arrivals
             </p>
-            <h1 style={{ fontSize: isMobile ? 40 : 56, fontWeight: 500, lineHeight: 1.15, margin: 0, fontStyle: 'italic' }}>
+            <h1
+              style={{ fontSize: isMobile ? 40 : 56, fontWeight: 500, lineHeight: 1.15, margin: 0, fontStyle: 'italic' }}
+              data-edit-path="layout.hero.title"
+              onClick={(e) => select(e, 'layout.hero.title')}
+            >
               {heroTitle}
             </h1>
-            <p style={{ marginTop: 24, fontSize: 17, color: muted, lineHeight: 1.8, fontFamily: '"Inter", sans-serif' }}>
+            <p
+              style={{ marginTop: 24, fontSize: 17, color: muted, lineHeight: 1.8, fontFamily: '"Inter", sans-serif' }}
+              data-edit-path="layout.hero.subtitle"
+              onClick={(e) => select(e, 'layout.hero.subtitle')}
+            >
               {heroSubtitle}
             </p>
             <button
-              onClick={() => navigate('/products')}
+              data-edit-path="layout.hero.cta"
+              onClick={(e) => {
+                if (canManage) return select(e, 'layout.hero.cta');
+                navigate('/products');
+              }}
               style={{
                 marginTop: 36,
                 background: accent,
@@ -167,6 +241,16 @@ const descColor = asString(settings.template_description_color) || muted;
             >
               {cta}
             </button>
+
+            {canManage && (
+              <div
+                data-edit-path="layout.hero.badge"
+                onClick={(e) => select(e, 'layout.hero.badge')}
+                style={{ marginTop: 18, display: 'inline-block', border: `1px dashed ${accent}`, padding: '8px 10px', fontSize: 12, fontFamily: '"Inter", sans-serif' }}
+              >
+                HERO BADGE
+              </div>
+            )}
           </div>
           
           {products.length > 0 && (
@@ -175,8 +259,22 @@ const descColor = asString(settings.template_description_color) || muted;
                 <img 
                   src={productImage(products[0])} 
                   alt="" 
+                  data-edit-path="layout.hero.image"
+                  onClick={(e) => select(e, 'layout.hero.image')}
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                 />
+              </div>
+            </div>
+          )}
+
+          {canManage && products.length === 0 && (
+            <div style={{ order: isMobile ? 1 : 2 }}>
+              <div
+                data-edit-path="layout.hero.image"
+                onClick={(e) => select(e, 'layout.hero.image')}
+                style={{ aspectRatio: '4/5', border: `1px dashed ${accent}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: muted }}
+              >
+                Hero image
               </div>
             </div>
           )}
@@ -225,22 +323,25 @@ const descColor = asString(settings.template_description_color) || muted;
 
       {/* Products */}
       <section
-        data-edit-path="layout.grid"
-        onClick={() => canManage && onSelect('layout.grid')}
+        data-edit-path="layout.featured"
+        onClick={() => canManage && onSelect('layout.featured')}
         style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 24px 80px' }}
       >
         <div style={{ textAlign: 'center', marginBottom: 48 }}>
-          <h2 data-edit-path="layout.featured.title" style={{ fontSize: 36, fontWeight: 400, margin: 0, fontStyle: 'italic' }}>{sectionTitle}</h2>
-          <p data-edit-path="layout.featured.subtitle" style={{ color: muted, marginTop: 12, fontFamily: '"Inter", sans-serif' }}>{sectionSubtitle}</p>
+          <h2 data-edit-path="layout.featured.title" onClick={(e) => select(e, 'layout.featured.title')} style={{ fontSize: 36, fontWeight: 400, margin: 0, fontStyle: 'italic' }}>{sectionTitle}</h2>
+          <p data-edit-path="layout.featured.subtitle" onClick={(e) => select(e, 'layout.featured.subtitle')} style={{ color: muted, marginTop: 12, fontFamily: '"Inter", sans-serif' }}>{sectionSubtitle || (canManage ? 'Add featured subtitle...' : '')}</p>
         </div>
 
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : `repeat(${gridColumns}, 1fr)`,
-            gap: gridGap,
-          }}
-        >
+        <div data-edit-path="layout.featured.items" onClick={(e) => select(e, 'layout.featured.items')}>
+          <div
+            data-edit-path="layout.grid"
+            onClick={(e) => select(e, 'layout.grid')}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : `repeat(${gridColumns}, 1fr)`,
+              gap: gridGap,
+            }}
+          >
           {products.slice(0, 6).map((p) => (
             <div
               key={p.id}
@@ -266,11 +367,16 @@ const descColor = asString(settings.template_description_color) || muted;
               </p>
             </div>
           ))}
+          </div>
         </div>
 
         <div style={{ textAlign: 'center', marginTop: 56 }}>
           <button
-            onClick={() => navigate('/products')}
+            data-edit-path="layout.featured.addLabel"
+            onClick={(e) => {
+              if (canManage) return select(e, 'layout.featured.addLabel');
+              navigate('/products');
+            }}
             style={{
               background: 'transparent',
               border: `1px solid ${text}`,
@@ -307,7 +413,11 @@ const descColor = asString(settings.template_description_color) || muted;
         style={{ background: '#292524', color: '#fff', padding: '60px 24px' }}
       >
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(4, 1fr)', gap: 40 }}>
+          <div
+            style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(4, 1fr)', gap: 40 }}
+            data-edit-path="layout.footer.links"
+            onClick={(e) => select(e, 'layout.footer.links')}
+          >
             <div>
               <div style={{ fontSize: 28, fontStyle: 'italic', color: accent, marginBottom: 16 }}>{storeName}</div>
               <p style={{ opacity: 0.6, fontSize: 14, lineHeight: 1.7, fontFamily: '"Inter", sans-serif' }}>
@@ -324,9 +434,29 @@ const descColor = asString(settings.template_description_color) || muted;
               </div>
             ))}
           </div>
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: 48, paddingTop: 24, textAlign: 'center', fontSize: 13, opacity: 0.5, fontFamily: '"Inter", sans-serif' }}>
+          <div
+            style={{ borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: 48, paddingTop: 24, textAlign: 'center', fontSize: 13, opacity: 0.5, fontFamily: '"Inter", sans-serif' }}
+            data-edit-path="layout.footer.copyright"
+            onClick={(e) => select(e, 'layout.footer.copyright')}
+          >
             {copyright}
           </div>
+
+          {canManage && (
+            <div style={{ marginTop: 16, display: 'flex', justifyContent: 'center' }}>
+              <div
+                data-edit-path="layout.footer.social"
+                onClick={(e) => select(e, 'layout.footer.social')}
+                style={{ display: 'flex', gap: 12, flexWrap: 'wrap', fontFamily: '"Inter", sans-serif', fontSize: 12, opacity: 0.7 }}
+              >
+                {['Instagram', 'TikTok'].map((label) => (
+                  <a key={label} href="#" onClick={(e) => select(e, 'layout.footer.social')} style={{ color: '#fff', textDecoration: 'none' }}>
+                    {label}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </footer>
     </div>

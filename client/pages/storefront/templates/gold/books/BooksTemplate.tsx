@@ -51,6 +51,11 @@ export default function BooksTemplate(props: TemplateProps) {
   const heroSubtitle = settings.template_hero_subtitle || 'Curated books for curious minds';
   const ctaText = settings.template_button_text || 'Browse Collection';
 
+  const heroKicker = asString((settings as any).template_hero_kicker) || 'NEW ARRIVALS • LIMITED EDITIONS';
+  const badgeTitle = asString((settings as any).template_hero_badge_title) || 'Editor’s Pick';
+  const badgeSubtitle = asString((settings as any).template_hero_badge_subtitle) || '';
+  const heroImage = asString((settings as any).banner_url) || (props.products?.[0]?.images?.[0] || '/placeholder.png');
+
   const addLabel = asString((settings as any).template_add_to_cart_label) || 'VIEW';
   const productTitleColor = asString((settings as any).template_product_title_color) || text;
   const productPriceColor = asString((settings as any).template_product_price_color) || accent;
@@ -94,6 +99,31 @@ export default function BooksTemplate(props: TemplateProps) {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: bg, color: text, fontFamily: 'Georgia, serif' }} data-edit-path="__root">
+      {canManage && (
+        <button
+          type="button"
+          data-edit-path="__settings"
+          onClick={(e) => clickGuard(e, '__settings')}
+          style={{
+            position: 'fixed',
+            right: 12,
+            bottom: 12,
+            zIndex: 1000,
+            background: 'rgba(255,255,255,0.92)',
+            border: `1px solid ${accent}33`,
+            borderRadius: 9999,
+            padding: '8px 10px',
+            fontSize: 11,
+            letterSpacing: '0.18em',
+            textTransform: 'uppercase',
+            color: accent,
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+          }}
+        >
+          Settings
+        </button>
+      )}
       {/* Header */}
       <header style={{ padding: '20px 24px', display: 'flex', justifyContent: 'center', alignItems: 'center', borderBottom: `1px solid ${accent}22` }} data-edit-path="layout.header" onClick={(e) => clickGuard(e, 'layout.header')}>
         <div
@@ -109,7 +139,13 @@ export default function BooksTemplate(props: TemplateProps) {
             />
           )}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-            <h1 style={{ fontSize: '28px', fontWeight: 400, fontStyle: 'italic', color: accent, margin: 0 }}>{storeName}</h1>
+            <h1
+              style={{ fontSize: '28px', fontWeight: 400, fontStyle: 'italic', color: accent, margin: 0 }}
+              data-edit-path="__settings.store_name"
+              onClick={(e) => clickGuard(e, '__settings.store_name')}
+            >
+              {storeName}
+            </h1>
             {(canManage || storeDescription) && (
               <div style={{ fontSize: 12, color: muted, maxWidth: 520, lineHeight: 1.35 }}>
                 {storeDescription || (canManage ? 'Add store description...' : '')}
@@ -119,19 +155,63 @@ export default function BooksTemplate(props: TemplateProps) {
         </div>
       </header>
 
+      {(canManage) && (
+        <div
+          style={{ padding: '16px 24px', display: 'flex', justifyContent: 'center' }}
+          data-edit-path="layout.header.nav"
+          onClick={(e) => clickGuard(e, 'layout.header.nav')}
+        >
+          <div style={{ display: 'flex', gap: 18, fontSize: 12, fontFamily: 'inherit', color: accent }}>
+            {['Shop', 'About', 'Contact'].map((label) => (
+              <a
+                key={label}
+                href="#"
+                style={{ color: accent, textDecoration: 'none' }}
+                onClick={(e) => clickGuard(e, 'layout.header.nav')}
+              >
+                {label}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Hero */}
       <section style={{ padding: isMobile ? '48px 16px' : '80px 24px', textAlign: 'center', backgroundColor: '#fffbeb' }} data-edit-path="layout.hero" onClick={(e) => clickGuard(e, 'layout.hero')}>
+        <div
+          style={{ display: 'inline-block', fontSize: 12, letterSpacing: '0.2em', textTransform: 'uppercase', color: muted, marginBottom: 14 }}
+          data-edit-path="layout.hero.kicker"
+          onClick={(e) => clickGuard(e, 'layout.hero.kicker')}
+        >
+          {heroKicker}
+        </div>
         <h2 style={{ fontSize: isMobile ? '28px' : '48px', fontWeight: 400, fontStyle: 'italic', marginBottom: '16px' }} data-edit-path="layout.hero.title" onClick={(e) => clickGuard(e, 'layout.hero.title')}>{heroTitle}</h2>
         <p style={{ color: muted, fontSize: '18px', marginBottom: '32px' }} data-edit-path="layout.hero.subtitle" onClick={(e) => clickGuard(e, 'layout.hero.subtitle')}>{heroSubtitle}</p>
         <button style={{ backgroundColor: accent, color: '#fff', padding: '14px 40px', fontSize: '14px', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }} data-edit-path="layout.hero.cta" onClick={(e) => clickGuard(e, 'layout.hero.cta')}>{ctaText}</button>
+
+        <div style={{ maxWidth: 900, margin: '32px auto 0', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 260px', gap: 18, alignItems: 'center' }}>
+          <div data-edit-path="layout.hero.image" onClick={(e) => clickGuard(e, 'layout.hero.image')} style={{ background: '#fff', padding: 10, border: `1px solid ${accent}22` }}>
+            <div style={{ aspectRatio: '16/9', overflow: 'hidden' }}>
+              <img src={heroImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+          </div>
+          <div data-edit-path="layout.hero.badge" onClick={(e) => clickGuard(e, 'layout.hero.badge')} style={{ background: '#fff', padding: 14, border: `1px solid ${accent}22`, textAlign: 'left' }}>
+            <div style={{ fontSize: 12, color: accent, fontWeight: 700, letterSpacing: '0.08em' }}>{badgeTitle}</div>
+            {(canManage || badgeSubtitle) && <div style={{ marginTop: 6, fontSize: 12, color: muted }}>{badgeSubtitle || 'Add badge subtitle...'}</div>}
+          </div>
+        </div>
       </section>
 
       {/* Categories */}
-      {categories.length > 0 && (
-        <div style={{ padding: '24px', display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center' }}>
+      {(canManage || categories.length > 0) && (
+        <div
+          style={{ padding: '24px', display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center' }}
+          data-edit-path="layout.categories"
+          onClick={(e) => clickGuard(e, 'layout.categories')}
+        >
           <button onClick={() => setCategoryFilter('')} style={{ padding: '8px 24px', backgroundColor: !categoryFilter ? accent : 'transparent', color: !categoryFilter ? '#fff' : accent, border: `1px solid ${accent}`, fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}>All</button>
-          {categories.map(cat => (
-            <button key={cat} onClick={() => setCategoryFilter(cat)} style={{ padding: '8px 24px', backgroundColor: categoryFilter === cat ? accent : 'transparent', color: categoryFilter === cat ? '#fff' : accent, border: `1px solid ${accent}`, fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}>{cat}</button>
+          {(categories.length ? categories : ['Category']).map(cat => (
+            <button key={cat} onClick={() => setCategoryFilter(cat === 'Category' ? '' : cat)} style={{ padding: '8px 24px', backgroundColor: categoryFilter === cat ? accent : 'transparent', color: categoryFilter === cat ? '#fff' : accent, border: `1px solid ${accent}`, fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}>{cat}</button>
           ))}
         </div>
       )}
@@ -164,7 +244,11 @@ export default function BooksTemplate(props: TemplateProps) {
         data-edit-path="layout.grid"
         onClick={(e) => clickGuard(e, 'layout.grid')}
       >
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: `${gridGap}px` }}>
+        <div
+          style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: `${gridGap}px` }}
+          data-edit-path="layout.featured.items"
+          onClick={(e) => clickGuard(e, 'layout.featured.items')}
+        >
           {products.map(product => (
             <div key={product.id} style={{ cursor: canManage ? 'default' : 'pointer', textAlign: 'center', transition: `transform ${animationSpeed}ms` }} data-edit-path={`layout.products.${product.id}`}
               onMouseEnter={(e) => (e.currentTarget.style.transform = `scale(${hoverScale})`)}
@@ -197,6 +281,24 @@ export default function BooksTemplate(props: TemplateProps) {
         <p style={{ fontSize: '14px', opacity: 0.8, margin: 0 }} data-edit-path="layout.footer.copyright" onClick={(e) => clickGuard(e, 'layout.footer.copyright')}>
           {copyright}
         </p>
+
+        <div
+          style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 14, flexWrap: 'wrap' }}
+          data-edit-path="layout.footer.links"
+          onClick={(e) => clickGuard(e, 'layout.footer.links')}
+        >
+          {['Shipping', 'Returns', 'Contact'].map((label) => (
+            <a
+              key={label}
+              href="#"
+              style={{ color: '#fff', textDecoration: 'none', fontSize: 12, opacity: 0.9 }}
+              onClick={(e) => clickGuard(e, 'layout.footer.links')}
+            >
+              {label}
+            </a>
+          ))}
+        </div>
+
         <div
           style={{ display: 'flex', gap: 14, justifyContent: 'center', marginTop: 14, flexWrap: 'wrap' }}
           data-edit-path="layout.footer.social"

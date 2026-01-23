@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Truck, Printer, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { DeliveryCompanyLogo } from '@/components/delivery/DeliveryCompanyLogo';
 
 interface DeliveryCompany {
   id: number;
@@ -139,6 +140,7 @@ export function OrderFulfillment({ order, onDeliveryAssigned }: OrderFulfillment
   };
 
   const selectedCompanyData = companies.find(c => c.id === selectedCompany);
+  const assignedCompanyData = companies.find(c => c.id === order.delivery_company_id);
   const canGenerateLabel = !!selectedCompanyData?.features?.supports_labels;
   const isNoest = String(selectedCompanyData?.name || '').trim().toLowerCase() === 'noest';
 
@@ -166,7 +168,13 @@ export function OrderFulfillment({ order, onDeliveryAssigned }: OrderFulfillment
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div>
                   <p className="text-muted-foreground">Company</p>
-                  <p className="font-medium">{companies.find(c => c.id === order.delivery_company_id)?.name}</p>
+                  <div className="flex items-center gap-2">
+                    <DeliveryCompanyLogo
+                      name={assignedCompanyData?.name}
+                      className="w-7 h-7 rounded bg-white object-contain p-1 border"
+                    />
+                    <p className="font-medium">{assignedCompanyData?.name}</p>
+                  </div>
                 </div>
                 {order.tracking_number && (
                   <div>
@@ -281,6 +289,10 @@ export function OrderFulfillment({ order, onDeliveryAssigned }: OrderFulfillment
                     checked={selectedCompany === company.id}
                     onChange={(e) => setSelectedCompany(parseInt(e.target.value))}
                     className="w-4 h-4"
+                  />
+                  <DeliveryCompanyLogo
+                    name={company.name}
+                    className="w-9 h-9 rounded bg-white object-contain p-1 border"
                   />
                   <div className="flex-1">
                     <p className="font-medium text-sm">{company.name}</p>

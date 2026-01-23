@@ -323,6 +323,7 @@ export const ar = {
   "orders.status.failed": "فشل",
   "orders.status.completed": "مكتملة",
   "orders.status.cancelled": "ملغية من قبل العميل",
+  "orders.status.declined": "مرفوض",
   "orders.status.at_delivery": "عند شركة التوصيل",
   "orders.status.no_answer_1": "لم يرد (1)",
   "orders.status.no_answer_2": "لم يرد (2)",
@@ -334,6 +335,9 @@ export const ar = {
   "orders.status.duplicate": "مكرر",
   "orders.status.delivered": "تم التوصيل",
   "orders.status.returned": "مرتجع",
+  "orders.status.didnt_pickup": "لم يستلم",
+  "orders.status.delivery_failed": "فشل التوصيل",
+  "orders.status.followup": "متابعة",
   "orders.status.processing": "قيد المعالجة",
   "orders.status.shipped": "تم الشحن",
   "orders.status.refunded": "مسترد",
@@ -377,6 +381,14 @@ export const ar = {
   "store.views": "مشاهدات",
   "store.storeSummary": "ملخص المتجر",
   "store.howToUse": "كيفية استخدام متجرك",
+  "store.howToUse.step1.title": "إضافة المنتجات",
+  "store.howToUse.step1.desc": "أنشئ منتجات بصور وأسعار وأوصاف",
+  "store.howToUse.step2.title": "مشاركة رابط متجرك",
+  "store.howToUse.step2.desc": "انسخ رابط المتجر بالأعلى وشاركه مع العملاء عبر السوشيال ميديا أو واتساب أو البريد، إلخ.",
+  "store.howToUse.step3.title": "مشاركة منتجات محددة",
+  "store.howToUse.step3.desc": "اضغط \"مشاركة\" على أي منتج للحصول على رابط مباشر للإعلانات المستهدفة",
+  "store.howToUse.step4.title": "تتبع الأداء",
+  "store.howToUse.step4.desc": "راقب المشاهدات والتفاعل لكل منتج داخل لوحة التحكم",
   "store.yourStoreUrl": "رابط متجرك",
   "store.shareWithCustomers": "شارك هذا الرابط مع عملائك لتصفح واجهة متجرك",
   "store.openStore": "فتح المتجر",
@@ -385,6 +397,12 @@ export const ar = {
   "store.filterByStatus": "تصفية حسب الحالة",
   "store.shareProduct": "مشاركة المنتج",
   "store.shareProductDesc": "شارك هذا الرابط على وسائل التواصل الاجتماعي أو أرسله مباشرة للعملاء",
+  "store.shareModal.tipTitle": "💡 نصيحة:",
+  "store.shareModal.tip.share": "شارك هذا الرابط على السوشيال ميديا أو البريد أو تطبيقات المراسلة",
+  "store.shareModal.tip.private": "المنتج يبقى خاصًا — فقط من يملك هذا الرابط يمكنه رؤيته",
+  "store.shareModal.tip.track": "تتبّع المشاهدات من لوحة التحكم",
+  "store.shareModal.close": "إغلاق",
+  "store.shareModal.openLink": "فتح الرابط",
   "store.copyLink": "نسخ الرابط",
   "store.linkCopied": "تم نسخ الرابط!",
   "store.selectFromInventory": "اختر من المخزون",
@@ -406,6 +424,104 @@ export const ar = {
   "store.isFeatured": "منتج مميز",
   "store.creating": "جاري الإنشاء...",
   "store.updating": "جاري التحديث...",
+
+  "store.productForm.sections.product": "المنتج",
+  "store.productForm.sections.price": "السعر والمخزون",
+  "store.productForm.sections.variants": "الأنواع",
+  "store.productForm.sections.status": "الحالة",
+  "store.productForm.sections.images": "الصور",
+  "store.productForm.basicInfo": "معلومات أساسية",
+  "store.productForm.title": "عنوان المنتج",
+  "store.productForm.titlePlaceholder": "أدخل اسم المنتج",
+  "store.productForm.titleRequired": "عنوان المنتج مطلوب.",
+  "store.productForm.description": "الوصف",
+  "store.productForm.descriptionPlaceholder": "وصف المنتج",
+  "store.productForm.category": "التصنيف",
+  "store.productForm.categoryPlaceholder": "مثال: إلكترونيات",
+  "store.productForm.pricingStock": "السعر والمخزون",
+  "store.productForm.activeNoStockWarning": "هذا المنتج نشط لكن المخزون 0. لن يتمكن العملاء من طلبه حتى تحدد المخزون (أو تضيف أنواعًا).",
+  "store.productForm.price": "السعر",
+  "store.productForm.priceRequired": "أدخل سعرًا صحيحًا أكبر من 0.",
+  "store.productForm.originalPrice": "السعر الأصلي",
+  "store.productForm.stockQuantity": "كمية المخزون",
+  "store.productForm.stockHint": "نصيحة: اجعلها 1 على الأقل ليتمكن العملاء من الطلب.",
+  "store.productForm.variantsTitle": "الأنواع (مقاس / لون)",
+  "store.productForm.variantsDesc": "اختياري. عند إضافة أنواع، يصبح مخزون المنتج مجموع مخزون الأنواع النشطة تلقائيًا.",
+  "store.productForm.addVariant": "إضافة نوع",
+  "store.productForm.loadingVariants": "جارٍ تحميل الأنواع…",
+  "store.productForm.noVariants": "لا توجد أنواع. سيشتري العملاء المنتج الرئيسي كما هو.",
+  "store.productForm.variantColor": "اللون",
+  "store.productForm.variantColorPlaceholder": "مثال: أحمر",
+  "store.productForm.variantSize": "المقاس",
+  "store.productForm.variantSizePlaceholder": "مثال: M",
+  "store.productForm.variantStock": "المخزون",
+  "store.productForm.variantPriceOptional": "السعر (اختياري)",
+  "store.productForm.variantPricePlaceholder": "استخدم سعر المنتج",
+  "store.productForm.variantActive": "نشط",
+  "store.productForm.removeVariant": "إزالة",
+  "store.productForm.statusTitle": "الحالة والتمييز",
+  "store.productForm.status": "الحالة",
+  "store.productForm.statusActive": "نشط",
+  "store.productForm.statusDraft": "مسودة",
+  "store.productForm.statusArchived": "مؤرشف",
+  "store.productForm.featured": "منتج مميز",
+  "store.productForm.featuredHint": "تعيينه كمنتج مميز",
+  "store.productForm.imagesTitle": "صورة المنتج",
+  "store.productForm.removeImage": "إزالة",
+  "store.productForm.uploading": "جاري الرفع...",
+  "store.productForm.upload": "رفع",
+  "store.productForm.imageUrlHint": "أو ألصق رابط الصورة بالأسفل (حد أقصى 2MB)",
+
+  "store.toast.savedTitle": "تم الحفظ",
+  "store.toast.settingsUpdatedDesc": "تم تحديث إعدادات المتجر.",
+  "store.toast.saveFailedTitle": "فشل الحفظ",
+  "store.toast.saveFailedDesc": "تعذر حفظ الإعدادات",
+  "store.toast.uploadFailedTitle": "فشل الرفع",
+  "store.toast.uploadFailedDesc": "تعذر رفع الصورة. حاول مرة أخرى.",
+  "store.toast.removeFailedTitle": "فشل الإزالة",
+  "store.toast.removeFailedDesc": "تعذر إزالة الصورة.",
+  "store.toast.addProductFailedTitle": "فشل إضافة المنتج",
+  "store.toast.addProductFailedDesc": "تعذر إضافة المنتج",
+
+  "store.settingsModal.desc": "رابط متجرك الخاص وخيارات التخصيص",
+  "store.settingsModal.tabs.branding": "الهوية",
+  "store.settingsModal.tabs.customization": "التخصيص",
+  "store.settingsModal.tabs.templates": "القوالب",
+  "store.settingsModal.tabs.storeUrl": "رابط المتجر",
+  "store.settingsModal.tabs.statsHelp": "الإحصائيات والمساعدة",
+  "store.settingsModal.brandingTitle": "هوية المتجر",
+  "store.settingsModal.customizationTitle": "التخصيص",
+  "store.settingsModal.quickTip.title": "نصيحة سريعة",
+  "store.settingsModal.quickTip.desc": "الهوية تتحكم فيما يراه العملاء في واجهة المتجر. إنشاء المنتجات يتم في لوحة التحكم → إدارة المتجر، والمخزون/الأنواع في لوحة التحكم → المخزون.",
+  "store.settingsModal.storeNameHint": "هذا هو العنوان الذي يظهر للعملاء على واجهة متجرك.",
+  "store.settingsModal.shareLinkFormat": "صيغة الرابط: /store/{slug}",
+  "store.settingsModal.sellerNameHint": "يظهر في رأس/تذييل المتجر في أغلب القوالب.",
+  "store.settingsModal.sellerEmailHint": "اختياري. استخدم بريدًا يمكن للعملاء التواصل عبره.",
+  "store.settingsModal.storeDescriptionHint": "نصيحة: اذكر مناطق التوصيل ووقت الرد وما الذي تبيعه.",
+  "store.settingsModal.logoHint": "ارفع الشعار أو ألصق رابطًا مباشرًا (مستحسن: صورة مربعة، ≤ 2MB).",
+  "store.settingsModal.bannerHint": "صورة خلفية القسم الرئيسي (مستحسن: صورة عريضة، ≤ 2MB).",
+  "store.settingsModal.heroTilesHint": "قسم البطل الرئيسي وبلاطتين تُستخدم في واجهة المتجر",
+  "store.settingsModal.storeUrlTitle": "رابط المتجر",
+  "store.settingsModal.storeUrlDesc": "هذا هو الرابط الذي تشاركه مع العملاء. يتغير عندما يتغير اسم/slug المتجر.",
+  "store.settingsModal.storeUrlLabel": "رابط متجرك",
+  "store.settingsModal.storeUrlHint": "شارك هذا الرابط على واتساب، بايو إنستغرام، فيسبوك، إلخ.",
+  "store.settingsModal.helpTitle": "كيف تعمل المنتجات والمخزون",
+  "store.settingsModal.help.products": "المنتجات: يتم إنشاؤها/تعديلها في لوحة التحكم → إدارة المتجر.",
+  "store.settingsModal.help.stock": "المخزون: الجرد الرئيسي + الأنواع في لوحة التحكم → المخزون.",
+  "store.settingsModal.help.addFromStock": "إضافة منتج من المخزون (داخل إدارة المتجر): تنسخ عنصر مخزون إلى منتج ويمكن استيراد الأنواع لتجنب إعادة الكتابة.",
+  "store.settingsModal.help.important": "مهم: المنتج النشط مع مخزون 0 سيظهر غير متوفر للعملاء.",
+
+  "myStore.title": "متجري",
+  "myStore.loading": "جارٍ تحميل بيانات المتجر...",
+  "myStore.loadingHint": "إذا طال الانتظار فقد تكون قاعدة البيانات بطيئة أو غير متاحة.",
+  "myStore.errorLoad": "فشل تحميل إعدادات المتجر.",
+  "myStore.storeLoaded": "تم تحميل المتجر: {slug}",
+  "myStore.tip": "نصيحة: إدارة المنتجات في إدارة المتجر وإدارة المخزون/الأنواع في المخزون.",
+  "myStore.dashboard": "إدارة المتجر",
+  "myStore.dashboardHint": "أضف المنتجات والصور والسعر وحالة النشر",
+  "myStore.stock": "المخزون",
+  "myStore.stockHint": "إدارة الجرد + الأنواع التي يمكنك استيرادها للمنتجات",
+  "myStore.noStore": "لا يوجد متجر مرتبط بحسابك.",
 
   // Products
   "product.add": "إضافة منتج",
@@ -597,6 +713,7 @@ export const ar = {
   "checkout.placeOrder": "تأكيد الطلب",
   "checkout.processing": "جاري المعالجة...",
   "checkout.success": "تم تأكيد الطلب بنجاح!",
+  "checkout.successDesc": "شكراً! سنتواصل معك قريباً لتأكيد طلبك.",
   "checkout.orderNumber": "رقم الطلب",
   "checkout.thankYou": "شكراً لطلبك!",
   "checkout.orderSummary": "ملخص الطلب",
@@ -604,7 +721,99 @@ export const ar = {
   "checkout.subtotal": "المجموع الفرعي",
   "checkout.deliveryFee": "رسوم التوصيل",
   "checkout.total": "المجموع الكلي",
+  "checkout.orderTotal": "إجمالي الطلب",
   "checkout.selectWilayaForDelivery": "اختر الولاية لمعرفة رسوم التوصيل",
+
+  "checkout.returnToStore": "العودة إلى المتجر",
+  "checkout.confirmation.telegramTitle": "تأكيد تيليجرام",
+  "checkout.confirmation.messengerTitle": "تأكيد ماسنجر",
+  "checkout.confirmation.connected": "متصل ✓",
+  "checkout.confirmation.waiting": "في انتظار الاتصال...",
+  "checkout.confirmation.waitingShort": "انتظار...",
+  "checkout.confirmation.notConnectedYet": "غير متصل بعد",
+  "checkout.confirmation.unavailable": "غير متاح",
+  "checkout.confirmation.notAvailable": "غير متوفر",
+  "checkout.confirmation.connect": "ربط",
+  "checkout.confirmation.ready": "جاهز",
+  "checkout.confirmation.youWillReceive": "ستستلم:",
+  "checkout.confirmation.orderReceived": "1) رسالة استلام الطلب",
+  "checkout.confirmation.pinInstructions": "2) تعليمات الرمز (PIN)",
+  "checkout.confirmation.confirmButtons": "3) أزرار التأكيد (تأكيد / إلغاء)",
+  "checkout.confirmation.messengerConfirmButtons": "2) أزرار التأكيد (تأكيد / إلغاء)",
+  "checkout.confirmation.openTelegram": "فتح تيليجرام",
+  "checkout.confirmation.messengerDisabled": "تتبع ماسنجر غير مفعل لهذا المتجر.",
+
+  "checkout.status.successDeliveredSoon": "✓ تم إرسال الطلب بنجاح! سيتم توصيل {n} عنصر(عناصر) قريباً.",
+  "checkout.status.partialSuccess": "نجاح جزئي: تم طلب {n}/{total} عناصر",
+  "checkout.status.failed": "فشل إرسال الطلب. {reason}",
+  "checkout.status.failedWithError": "فشل إرسال الطلب: {error}. تحقق من الاتصال وحاول مرة أخرى.",
+
+  // Storefront
+  "storefront.productNotFoundTitle": "المنتج غير موجود",
+  "storefront.productDefaultName": "منتج",
+  "storefront.productDefaultDesc": "منتج عالي الجودة",
+
+  // Order Confirmation
+  "orderConfirmation.loading": "جاري تحميل تفاصيل الطلب...",
+  "orderConfirmation.title": "تأكيد الطلب",
+  "orderConfirmation.orderNumber": "الطلب رقم #{id}",
+  "orderConfirmation.errorTitle": "لم يتم العثور على الطلب",
+  "orderConfirmation.errorDescDefault": "رابط تأكيد الطلب غير صالح أو منتهي الصلاحية.",
+
+  "orderConfirmation.productDetails": "تفاصيل المنتج",
+  "orderConfirmation.customerInfo": "معلومات الزبون",
+  "orderConfirmation.shippingAddress": "عنوان التوصيل",
+  "orderConfirmation.noAddressProvided": "لم يتم توفير عنوان",
+
+  "orderConfirmation.label.product": "المنتج",
+  "orderConfirmation.label.variant": "النوع",
+  "orderConfirmation.label.quantity": "الكمية",
+  "orderConfirmation.label.price": "السعر",
+  "orderConfirmation.label.name": "الاسم",
+  "orderConfirmation.label.phone": "الهاتف",
+  "orderConfirmation.label.email": "البريد الإلكتروني",
+
+  "orderConfirmation.edit.customerName": "اسم الزبون",
+  "orderConfirmation.edit.phoneNumber": "رقم الهاتف",
+  "orderConfirmation.edit.emailOptional": "البريد الإلكتروني (اختياري)",
+  "orderConfirmation.edit.shippingAddress": "عنوان التوصيل",
+  "orderConfirmation.edit.quantity": "الكمية",
+
+  "orderConfirmation.action.changeDetails": "تعديل المعلومات",
+  "orderConfirmation.action.decline": "رفض",
+  "orderConfirmation.action.approve": "تأكيد الطلب",
+  "orderConfirmation.action.approving": "جاري التأكيد...",
+  "orderConfirmation.action.cancel": "إلغاء",
+  "orderConfirmation.action.saving": "جاري الحفظ...",
+  "orderConfirmation.action.saveContinue": "حفظ والمتابعة",
+
+  "orderConfirmation.alert.confirmed": "✅ تم تأكيد الطلب! شكراً لشرائك.",
+  "orderConfirmation.alert.declined": "تم رفض الطلب. يمكنك إنشاء طلب جديد في أي وقت.",
+  "orderConfirmation.alert.updated": "تم تحديث الطلب بنجاح",
+
+  "orderConfirmation.confirm.declinePrompt": "هل أنت متأكد أنك تريد رفض هذا الطلب؟",
+
+  "orderConfirmation.error.missingToken": "رمز التأكيد مفقود",
+  "orderConfirmation.error.notFoundOrExpired": "الطلب غير موجود أو الرابط منتهي",
+  "orderConfirmation.error.failedLoad": "فشل تحميل الطلب",
+  "orderConfirmation.error.failedConfirm": "فشل تأكيد الطلب",
+  "orderConfirmation.error.failedDecline": "فشل رفض الطلب",
+  "orderConfirmation.error.failedUpdate": "فشل تحديث الطلب",
+
+  "orderConfirmation.info.expiry": "ينتهي رابط التأكيد خلال 48 ساعة. يرجى تأكيد طلبك قريباً!",
+
+  "checkout.error.outOfStockTitle": "غير متوفر",
+  "checkout.error.outOfStockDesc": "هذا المنتج غير متوفر حاليًا.",
+  "checkout.error.insufficientStockTitle": "الكمية غير كافية",
+  "checkout.error.insufficientStockDesc": "يرجى تقليل الكمية.",
+  "checkout.error.selectVariantTitle": "اختر النوع",
+  "checkout.error.selectVariantDesc": "يرجى اختيار المقاس/اللون قبل تأكيد الطلب.",
+  "checkout.error.requiredFieldsTitle": "حقول مطلوبة",
+  "checkout.error.requiredFieldsDesc": "يرجى ملء جميع الحقول المطلوبة.",
+  "checkout.error.productTitle": "خطأ في المنتج",
+  "checkout.error.productDesc": "يرجى تحديث الصفحة والمحاولة مرة أخرى.",
+  "checkout.error.orderFailedTitle": "فشل الطلب",
+  "checkout.error.orderFailedDesc": "تعذر إنشاء الطلب",
 
   // Customer Info
   "customer.name": "الاسم الكامل",
@@ -1410,6 +1619,32 @@ export const ar = {
   // Stock Management Page
   "stock.title": "📦 إدارة المخزون",
   "stock.subtitle": "تتبع وتحسين مخزونك",
+  "stock.hints.headerTitle": "المخزون = الجرد الرئيسي",
+  "stock.hints.headerDesc": "أنشئ العناصر والأنواع هنا، ثم استوردها داخل المنتجات في إدارة المتجر لتجنب إعادة كتابة المقاسات/الألوان.",
+  "stock.hints.name": "استخدم اسمًا واضحًا (مثال: 'تيشيرت'). يمكنك إضافة عدة أنواع بالأسفل.",
+  "stock.hints.variants": "أضف أنواعًا مثل المقاسات/الألوان. يمكنك استيرادها عند إنشاء منتج.",
+  "stock.hints.quantity": "هذه هي كمية الجرد الرئيسية. إذا كان المنتج نشطًا لكن المخزون 0 فسيظهر غير متوفر للعملاء.",
+  "stock.hints.reorder": "اختياري: حدد مستوى إعادة طلب لتتبع انخفاض المخزون.",
+  "stock.toast.createCategoryFailedTitle": "فشل التصنيف",
+  "stock.toast.createCategoryFailedDesc": "تعذر إنشاء التصنيف",
+  "stock.toast.maxImagesTitle": "صور كثيرة",
+  "stock.toast.maxImagesDesc": "يمكنك رفع حتى 10 صور",
+  "stock.toast.imagesUploadedTitle": "تم الرفع",
+  "stock.toast.imagesUploadedDesc": "تم رفع الصور بنجاح",
+  "stock.toast.uploadErrorTitle": "خطأ في الرفع",
+  "stock.toast.uploadErrorDesc": "تعذر رفع الصورة",
+  "stock.toast.createdTitle": "تم الإنشاء",
+  "stock.toast.createdDesc": "تم إنشاء عنصر المخزون بنجاح",
+  "stock.toast.createFailedTitle": "فشل الإنشاء",
+  "stock.toast.createFailedDesc": "تعذر إنشاء عنصر المخزون",
+  "stock.toast.saveVariantsFailedTitle": "فشل الحفظ",
+  "stock.toast.saveVariantsFailedDesc": "تعذر حفظ الأنواع",
+  "stock.toast.updateFailedTitle": "فشل التحديث",
+  "stock.toast.updateFailedDesc": "تعذر تحديث عنصر المخزون",
+  "stock.toast.adjustFailedTitle": "فشل التعديل",
+  "stock.toast.adjustFailedDesc": "تعذر تعديل الكمية",
+  "stock.toast.deleteFailedTitle": "فشل الحذف",
+  "stock.toast.deleteFailedDesc": "تعذر حذف عنصر المخزون",
   "stock.categories": "التصنيفات",
   "stock.export": "تصدير",
   "stock.add": "إضافة",
@@ -1531,5 +1766,74 @@ export const ar = {
   "pixels.installInstructions": "تعليمات التثبيت",
   "pixels.installDesc": "أضف هذا الكود إلى متجرك لبدء التتبع",
   "pixels.copyCode": "نسخ الكود",
-  "pixels.codeCopied": "تم نسخ الكود إلى الحافظة!"
+  "pixels.codeCopied": "تم نسخ الكود إلى الحافظة!",
+
+  // Storefront PC Builder
+  "buildPage.backToStore": "العودة إلى المتجر",
+  "buildPage.title": "قم ببناء جهازك",
+  "buildPage.action.load": "تحميل",
+  "buildPage.action.save": "حفظ",
+  "buildPage.action.previous": "السابق",
+  "buildPage.action.next": "التالي",
+  "buildPage.action.addBuildToCart": "إضافة التجميعة إلى السلة",
+  "buildPage.action.cancel": "إلغاء",
+  "buildPage.action.close": "إغلاق",
+
+  "buildPage.skipStepTitle": "تخطي هذه الخطوة",
+  "buildPage.skipStepDesc": "عدم إضافة {step}",
+  "buildPage.yourBuild": "تجميعتك",
+  "buildPage.notSelected": "غير محدد",
+  "buildPage.total": "الإجمالي",
+  "buildPage.performanceEstimate": "تقدير الأداء",
+  "buildPage.performance.entry": "مستوى مبتدئ",
+  "buildPage.performance.mid": "ألعاب متوسطة",
+  "buildPage.performance.high": "ألعاب عالية",
+  "buildPage.performance.enthusiast": "احترافي",
+  "buildPage.compatibility": "التوافق",
+
+  "buildPage.modal.saveTitle": "حفظ التجميعة",
+  "buildPage.modal.buildNamePlaceholder": "اسم التجميعة...",
+  "buildPage.modal.loadTitle": "تحميل تجميعة",
+  "buildPage.modal.noSavedBuilds": "لا توجد تجميعات محفوظة بعد",
+
+  "buildPage.alert.fixCompatibility": "يرجى إصلاح مشاكل التوافق قبل الإضافة إلى السلة.",
+  "buildPage.alert.selectParts": "يرجى اختيار: {parts}",
+  "buildPage.alert.addedToCart": "تمت إضافة التجميعة إلى السلة!",
+
+  "buildPage.step.cpu.label": "المعالج",
+  "buildPage.step.cpu.desc": "اختر المعالج",
+  "buildPage.step.motherboard.label": "اللوحة الأم",
+  "buildPage.step.motherboard.desc": "اختر اللوحة الأم",
+  "buildPage.step.ram.label": "الذاكرة",
+  "buildPage.step.ram.desc": "اختر الذاكرة",
+  "buildPage.step.gpu.label": "كرت الشاشة",
+  "buildPage.step.gpu.desc": "بطاقة الرسوميات",
+  "buildPage.step.storage.label": "التخزين",
+  "buildPage.step.storage.desc": "NVMe/SSD",
+  "buildPage.step.case.label": "الصندوق",
+  "buildPage.step.case.desc": "صندوق الكمبيوتر",
+  "buildPage.step.psu.label": "مزود الطاقة",
+  "buildPage.step.psu.desc": "مزود الطاقة",
+
+  "buildPage.compat.cpuSocketMismatch": "مقبس المعالج ({cpuSocket}) لا يطابق مقبس اللوحة الأم ({mbSocket})",
+  "buildPage.compat.ramTypeMismatch": "نوع الذاكرة ({ramType}) غير متوافق مع اللوحة الأم ({mbRamType})",
+  "buildPage.compat.psuNotEnough": "مزود الطاقة ({psuWattage}W) قد لا يوفر طاقة كافية. الاستهلاك المتوقع: {estimatedDraw}W",
+  "buildPage.compat.psuClose": "مزود الطاقة ({psuWattage}W) قريب من الاستهلاك المتوقع ({estimatedDraw}W). يفضّل اختيار واط أعلى لهامش أمان.",
+  "buildPage.compat.formFactorMismatch": "مقاس اللوحة الأم ({mbFormFactor}) لا يناسب الصندوق (يدعم: {caseFormFactors})",
+  "buildPage.compat.gpuTooLong": "كرت الشاشة ({gpuLength}مم) طويل جداً للصندوق (الحد الأقصى: {maxGpuLength}مم)",
+
+  // Storefront Product Detail
+  "productDetail.storeFallback": "المتجر",
+  "productDetail.premium": "مميز",
+  "productDetail.inclusiveTaxes": "شامل جميع الضرائب",
+  "productDetail.descriptionTitle": "الوصف",
+  "productDetail.inStock": "✓ متوفر ({count} قطعة)",
+  "productDetail.outOfStock": "✗ غير متوفر",
+  "productDetail.quantity": "الكمية",
+  "productDetail.buyNow": "اشترِ الآن",
+  "productDetail.shareProduct": "مشاركة المنتج",
+  "productDetail.reviewsCount": "({count} مراجعات)",
+  "productDetail.stats.views": "المشاهدات",
+  "productDetail.stats.sold": "المبيعات",
+  "productDetail.stats.popularity": "الشعبية"
 };

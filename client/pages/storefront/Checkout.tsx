@@ -1119,18 +1119,20 @@ export default function Checkout() {
                         if (successCount === cart.length) {
                           setOrderStatus({
                             type: 'success',
-                            message: `✓ Order placed successfully! ${successCount} item(s) will be delivered soon.`,
+                            message: t('checkout.status.successDeliveredSoon', { n: successCount }),
                           });
                           // Stay on page so customer can optionally start Telegram tracking.
                         } else if (successCount > 0) {
                           setOrderStatus({
                             type: 'error',
-                            message: `Partial success: ${successCount}/${cart.length} items ordered`,
+                            message: t('checkout.status.partialSuccess', { n: successCount, total: cart.length }),
                           });
                         } else {
                           setOrderStatus({
                             type: 'error',
-                            message: `Failed to place order. ${errorMessage || 'Please try again.'}`,
+                            message: t('checkout.status.failed', {
+                              reason: errorMessage || t('checkout.error.orderFailedDesc'),
+                            }),
                           });
                         }
                       } catch (error) {
@@ -1138,7 +1140,7 @@ export default function Checkout() {
                         const errorMsg = error instanceof Error ? error.message : 'Unknown error';
                         setOrderStatus({
                           type: 'error',
-                          message: `Failed to place order: ${errorMsg}. Check your connection and try again.`,
+                          message: t('checkout.status.failedWithError', { error: errorMsg }),
                         });
                       } finally {
                         setIsSubmitting(false);
@@ -1148,7 +1150,7 @@ export default function Checkout() {
                     className={`flex-1 py-1.5 sm:py-2 md:py-1.5 lg:py-3 rounded-lg font-bold text-xs sm:text-xs md:text-xs lg:text-base transition hover:shadow-lg disabled:opacity-50`}
                     style={{ backgroundColor: accentColor, color: style.bg === 'bg-black' ? '#000' : '#fff' }}
                   >
-                    {isSubmitting ? 'Processing...' : 'Place Order →'}
+                    {isSubmitting ? t('checkout.processing') : `${t('checkout.placeOrder')} →`}
                   </button>
                 </div>
               </div>
@@ -1157,7 +1159,7 @@ export default function Checkout() {
 
           {/* Order Summary Sidebar */}
           <div className={`border ${style.border} rounded-lg p-2 sm:p-3 md:p-3 lg:p-3 h-fit sticky top-16 md:top-16`}>
-            <h3 className="text-xs sm:text-sm md:text-sm lg:text-lg font-bold mb-2 sm:mb-3 md:mb-2 lg:mb-4">Order Total</h3>
+            <h3 className="text-xs sm:text-sm md:text-sm lg:text-lg font-bold mb-2 sm:mb-3 md:mb-2 lg:mb-4">{t('checkout.orderTotal')}</h3>
             <div className="space-y-1 sm:space-y-1.5 md:space-y-1 lg:space-y-2 mb-2 sm:mb-3 md:mb-2 lg:mb-4 pb-2 sm:pb-3 md:pb-2 lg:pb-6 border-b border-gray-300">
               <div className="flex justify-between text-xs sm:text-xs md:text-xs lg:text-sm">
                 <span>Subtotal</span>

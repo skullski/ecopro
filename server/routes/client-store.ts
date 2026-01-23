@@ -234,6 +234,113 @@ export const createStoreProduct: RequestHandler = async (req, res) => {
       [slug, product.id, clientId]
     );
 
+    // If this product was created directly in Store Management (not imported from Stock),
+    // also create a matching stock item so it shows up in Stock immediately.
+    // We store the linkage in product.metadata.stock_id.
+    if (!Number.isInteger(importStockId) || !(importStockId! > 0)) {
+      const existingMeta = product?.metadata && typeof product.metadata === 'object' ? product.metadata : {};
+      const existingStockId = (existingMeta as any)?.stock_id;
+
+      if (!(Number.isInteger(Number(existingStockId)) && Number(existingStockId) > 0)) {
+        const stockName = String(title || '').trim();
+        const qty = Math.max(0, Number(stock_quantity ?? 0) || 0);
+        const statusForStock = qty > 0 ? 'active' : 'out_of_stock';
+
+        let stockRes: any;
+        try {
+          stockRes = await client.query(
+            `INSERT INTO client_stock_products (
+              client_id, name, sku, description, category,
+              sizes, colors,
+              quantity, unit_price, reorder_level, location,
+              supplier_name, supplier_contact, status,
+              shipping_mode, shipping_flat_fee,
+              notes, images
+            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+            RETURNING id`,
+            [
+              clientId,
+              stockName,
+              null,
+              description || null,
+              category || null,
+              Array.isArray(sizes) ? sizes : [],
+              Array.isArray(colors) ? colors : [],
+              qty,
+              price == null ? null : Number(price),
+              0,
+              null,
+              null,
+              null,
+              statusForStock,
+              'delivery_pricing',
+              null,
+              null,
+              imagesArray,
+            ]
+          );
+        } catch (err: any) {
+          // Backward compatible if the DB is missing newer stock columns.
+          if (err?.code === '42703') {
+            stockRes = await client.query(
+              `INSERT INTO client_stock_products (
+                client_id, name, sku, description, category,
+                quantity, unit_price, reorder_level, location,
+                supplier_name, supplier_contact, status,
+                notes
+              ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+              RETURNING id`,
+              [
+                clientId,
+                stockName,
+                null,
+                description || null,
+                category || null,
+                qty,
+                price == null ? null : Number(price),
+                0,
+                null,
+                null,
+                null,
+                statusForStock,
+                null,
+              ]
+            );
+          } else {
+            throw err;
+          }
+        }
+
+        const createdStockId = Number(stockRes?.rows?.[0]?.id);
+        if (Number.isInteger(createdStockId) && createdStockId > 0) {
+          try {
+            // log initial stock history (best-effort)
+            if (qty > 0) {
+              await client.query(
+                `INSERT INTO client_stock_history (
+                  stock_id, client_id, quantity_before, quantity_after, adjustment, reason, created_by
+                ) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+                [createdStockId, clientId, 0, qty, qty, 'initial_stock', clientId]
+              );
+            }
+          } catch {
+            // ignore
+          }
+
+          const nextMeta = {
+            ...(existingMeta || {}),
+            stock_id: createdStockId,
+            stock_source: 'store_management',
+          };
+          await client.query(
+            'UPDATE client_store_products SET metadata = $1, updated_at = NOW() WHERE id = $2 AND client_id = $3',
+            [nextMeta, product.id, clientId]
+          );
+          product.metadata = nextMeta;
+        }
+      }
+    }
+
     const computeVariantName = (v: { color?: string | null; size?: string | null; variant_name?: string | null }) => {
       const explicit = String(v.variant_name || '').trim();
       if (explicit) return explicit;
@@ -692,6 +799,7 @@ async function withRetry<T>(operation: (db: typeof pool) => Promise<T>, maxRetri
     } catch (err: any) {
       lastError = err;
       const isRetryable = err?.message?.includes('Connection terminated') ||
+                          err?.message?.includes('Query read timeout') ||
                           err?.message?.includes('ECONNRESET') ||
                           err?.message?.includes('Cannot read properties of null') ||
                           err?.message?.includes('Pool was reset') ||
@@ -1218,7 +1326,7 @@ export const updateStoreTemplate: RequestHandler = async (req, res) => {
       return res.status(403).json({ error: 'Admins do not have a client store' });
     }
     const clientId = (req as any).user.id;
-    const { template } = req.body;
+    const { template, mode, importKeys } = req.body || {};
     
     if (!template || typeof template !== 'string') {
       return res.status(400).json({ error: 'Template ID required' });
@@ -1227,19 +1335,152 @@ export const updateStoreTemplate: RequestHandler = async (req, res) => {
     const normalizedTemplate = String(template).trim().toLowerCase()
       .replace(/^gold-/, '').replace(/-gold$/, '');
     
-    logStoreSettings('updateStoreTemplate:start', { clientId, template: normalizedTemplate });
-    
-    const result = await pool.query(
-      'UPDATE client_store_settings SET template = $1, updated_at = CURRENT_TIMESTAMP WHERE client_id = $2 RETURNING template',
-      [normalizedTemplate, clientId]
-    );
-    
-    if (result.rowCount === 0) {
+    const switchMode = mode === 'defaults' ? 'defaults' : 'import';
+    const safeImportKeys: string[] = Array.isArray(importKeys) ? importKeys.map((k: any) => String(k)) : [];
+
+    logStoreSettings('updateStoreTemplate:start', {
+      clientId,
+      template: normalizedTemplate,
+      mode: switchMode,
+      importKeysCount: safeImportKeys.length,
+    });
+
+    // Load current row so we can persist template snapshots (per-template edits).
+    const currentRes = await pool.query('SELECT * FROM client_store_settings WHERE client_id = $1', [clientId]);
+    if (currentRes.rowCount === 0) {
       return res.status(404).json({ error: 'Store settings not found' });
     }
-    
-    logStoreSettings('updateStoreTemplate:success', { clientId, template: result.rows[0].template });
-    res.json({ success: true, template: result.rows[0].template });
+
+    const existingRow = currentRes.rows[0];
+
+    // Discover existing columns so we can safely update scoped columns if present.
+    const colsRes = await pool.query(
+      `SELECT column_name FROM information_schema.columns WHERE table_name = 'client_store_settings'`
+    );
+    const existingCols = new Set<string>(colsRes.rows.map((r) => String(r.column_name)));
+
+    const normalizeTemplateIdForAvailability = (id: any): string => {
+      const normalized = String(id || '')
+        .trim()
+        .toLowerCase()
+        .replace(/^gold-/, '')
+        .replace(/-gold$/, '');
+      if (!normalized) return 'pro';
+      if (normalized === 'shiro-hana') return 'pro';
+      if (normalized === 'babyos' || normalized === 'baby') return 'kids';
+      return normalized;
+    };
+
+    const existingTemplateRaw = existingRow?.template || 'pro';
+    const existingTemplate = normalizeTemplateIdForAvailability(existingTemplateRaw);
+    const existingTemplateSettings =
+      existingRow?.template_settings && typeof existingRow.template_settings === 'object'
+        ? existingRow.template_settings
+        : {};
+    const existingTemplateByTemplate =
+      existingRow?.template_settings_by_template && typeof existingRow.template_settings_by_template === 'object'
+        ? existingRow.template_settings_by_template
+        : {};
+
+    const safeObject = (v: any) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
+
+    // Columns we treat as template-scoped for per-template snapshots.
+    const templateScopedCols = [
+      'template_hero_heading',
+      'template_hero_subtitle',
+      'template_button_text',
+      'template_accent_color',
+      'hero_main_url',
+      'hero_tile1_url',
+      'hero_tile2_url',
+      'store_images',
+    ].filter((col) => existingCols.has(col));
+
+    const buildTemplateSnapshot = (row: any) => {
+      const snapshot: any = {
+        ...(row?.template_settings && typeof row.template_settings === 'object' ? row.template_settings : {}),
+      };
+      for (const col of templateScopedCols) {
+        if (row && Object.prototype.hasOwnProperty.call(row, col)) snapshot[col] = row[col];
+      }
+      return snapshot;
+    };
+
+    const oldSnapshot = buildTemplateSnapshot(existingRow);
+    const map = { ...safeObject(existingTemplateByTemplate) } as any;
+    map[existingTemplate] = oldSnapshot;
+
+    const targetSnapshotBase =
+      switchMode === 'defaults' ? {} : { ...safeObject(map[normalizedTemplate]) };
+
+    if (switchMode === 'import' && safeImportKeys.length > 0) {
+      for (const k of safeImportKeys) {
+        if (Object.prototype.hasOwnProperty.call(oldSnapshot, k)) {
+          targetSnapshotBase[k] = oldSnapshot[k];
+        }
+      }
+    }
+
+    // Apply scoped columns (or reset to null on defaults).
+    const columnUpdates: Record<string, any> = { template: normalizedTemplate };
+    for (const col of templateScopedCols) {
+      if (Object.prototype.hasOwnProperty.call(targetSnapshotBase, col)) {
+        columnUpdates[col] = targetSnapshotBase[col];
+      } else {
+        columnUpdates[col] = null;
+      }
+    }
+
+    // JSON settings are snapshot minus template-scoped columns.
+    const nextTemplateSettings = { ...targetSnapshotBase } as any;
+    for (const col of templateScopedCols) delete nextTemplateSettings[col];
+    delete nextTemplateSettings.template;
+
+    map[normalizedTemplate] = targetSnapshotBase;
+    const nextTemplateByTemplate = map;
+
+    // Build update query.
+    const fields: string[] = [];
+    const values: any[] = [];
+    let paramCount = 1;
+
+    Object.entries(columnUpdates).forEach(([key, value]) => {
+      if (!existingCols.has(key)) return;
+      fields.push(`${key} = $${paramCount}`);
+      values.push(value);
+      paramCount++;
+    });
+
+    if (existingCols.has('template_settings')) {
+      fields.push(`template_settings = $${paramCount}`);
+      values.push(nextTemplateSettings);
+      paramCount++;
+    }
+    if (existingCols.has('template_settings_by_template')) {
+      fields.push(`template_settings_by_template = $${paramCount}`);
+      values.push(nextTemplateByTemplate);
+      paramCount++;
+    }
+
+    fields.push(`updated_at = CURRENT_TIMESTAMP`);
+    values.push(clientId);
+
+    const queryText = `UPDATE client_store_settings SET ${fields.join(", ")} WHERE client_id = $${paramCount} RETURNING *`;
+    const result = await pool.query(queryText, values);
+
+    const updatedRow = result.rows[0];
+    const templateSettings =
+      updatedRow?.template_settings && typeof updatedRow.template_settings === 'object' ? updatedRow.template_settings : {};
+    const globalSettings =
+      updatedRow?.global_settings && typeof updatedRow.global_settings === 'object' ? updatedRow.global_settings : {};
+    const dbTemplate = updatedRow?.template;
+    const merged = { ...globalSettings, ...templateSettings, ...updatedRow, template: dbTemplate };
+
+    invalidateSettingsCache(clientId);
+    setCachedSettings(clientId, merged);
+
+    logStoreSettings('updateStoreTemplate:success', { clientId, template: dbTemplate, mode: switchMode });
+    res.json(merged);
   } catch (error) {
     console.error('Update store template error:', error);
     logStoreSettings('updateStoreTemplate:error', { error: (error as any)?.message });

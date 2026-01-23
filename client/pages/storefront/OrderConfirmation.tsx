@@ -2,11 +2,13 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, CheckCircle, XCircle, Edit2 } from "lucide-react";
+import { useTranslation } from '@/lib/i18n';
 
 export default function OrderConfirmation() {
   const { storeSlug, orderId } = useParams<{ storeSlug: string; orderId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation();
   const token = new URLSearchParams(location.search).get('t') || new URLSearchParams(location.search).get('token') || '';
   
   const [order, setOrder] = useState<any>(null);
@@ -24,19 +26,19 @@ export default function OrderConfirmation() {
     try {
       setLoading(true);
       if (!token) {
-        throw new Error('Missing confirmation token');
+        throw new Error(t('orderConfirmation.error.missingToken'));
       }
       const res = await fetch(`/api/storefront/${storeSlug}/order/${orderId}?t=${encodeURIComponent(token)}`);
       
       if (!res.ok) {
-        throw new Error("Order not found or link expired");
+        throw new Error(t('orderConfirmation.error.notFoundOrExpired'));
       }
 
       const data = await res.json();
       setOrder(data.order);
       setEditedOrder(data.order);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load order");
+      setError(err instanceof Error ? err.message : t('orderConfirmation.error.failedLoad'));
     } finally {
       setLoading(false);
     }
@@ -45,7 +47,7 @@ export default function OrderConfirmation() {
   const handleApprove = async () => {
     try {
       setSubmitting(true);
-      if (!token) throw new Error('Missing confirmation token');
+      if (!token) throw new Error(t('orderConfirmation.error.missingToken'));
       const res = await fetch(`/api/storefront/${storeSlug}/order/${orderId}/confirm?t=${encodeURIComponent(token)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -55,24 +57,24 @@ export default function OrderConfirmation() {
         })
       });
 
-      if (!res.ok) throw new Error("Failed to confirm order");
+      if (!res.ok) throw new Error(t('orderConfirmation.error.failedConfirm'));
 
       const data = await res.json();
-      alert("✅ Order confirmed! Thank you for your purchase.");
+      alert(t('orderConfirmation.alert.confirmed'));
       navigate(`/store/${storeSlug}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to confirm order");
+      setError(err instanceof Error ? err.message : t('orderConfirmation.error.failedConfirm'));
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDecline = async () => {
-    if (!window.confirm("Are you sure you want to decline this order?")) return;
+    if (!window.confirm(t('orderConfirmation.confirm.declinePrompt'))) return;
 
     try {
       setSubmitting(true);
-      if (!token) throw new Error('Missing confirmation token');
+      if (!token) throw new Error(t('orderConfirmation.error.missingToken'));
       const res = await fetch(`/api/storefront/${storeSlug}/order/${orderId}/confirm?t=${encodeURIComponent(token)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -81,12 +83,12 @@ export default function OrderConfirmation() {
         })
       });
 
-      if (!res.ok) throw new Error("Failed to decline order");
+      if (!res.ok) throw new Error(t('orderConfirmation.error.failedDecline'));
 
-      alert("Order declined. You can place a new order anytime.");
+      alert(t('orderConfirmation.alert.declined'));
       navigate(`/store/${storeSlug}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to decline order");
+      setError(err instanceof Error ? err.message : t('orderConfirmation.error.failedDecline'));
     } finally {
       setSubmitting(false);
     }
@@ -95,21 +97,21 @@ export default function OrderConfirmation() {
   const handleSaveChanges = async () => {
     try {
       setSubmitting(true);
-      if (!token) throw new Error('Missing confirmation token');
+      if (!token) throw new Error(t('orderConfirmation.error.missingToken'));
       const res = await fetch(`/api/storefront/${storeSlug}/order/${orderId}/update?t=${encodeURIComponent(token)}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editedOrder)
       });
 
-      if (!res.ok) throw new Error("Failed to update order");
+      if (!res.ok) throw new Error(t('orderConfirmation.error.failedUpdate'));
 
       const data = await res.json();
       setOrder(data.order);
       setIsEditing(false);
-      alert("Order updated successfully");
+      alert(t('orderConfirmation.alert.updated'));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update order");
+      setError(err instanceof Error ? err.message : t('orderConfirmation.error.failedUpdate'));
     } finally {
       setSubmitting(false);
     }
@@ -120,7 +122,7 @@ export default function OrderConfirmation() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-          <p className="mt-4 text-gray-600">Loading order details...</p>
+          <p className="mt-4 text-gray-600">{t('orderConfirmation.loading')}</p>
         </div>
       </div>
     );
@@ -131,10 +133,10 @@ export default function OrderConfirmation() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-pink-100 p-4">
         <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
-          <h1 className="text-xl md:text-2xl font-bold text-gray-800 mb-2">Order Not Found</h1>
-          <p className="text-sm md:text-base text-gray-600 mb-4">{error || "This order confirmation link is invalid or has expired."}</p>
+          <h1 className="text-xl md:text-2xl font-bold text-gray-800 mb-2">{t('orderConfirmation.errorTitle')}</h1>
+          <p className="text-sm md:text-base text-gray-600 mb-4">{error || t('orderConfirmation.errorDescDefault')}</p>
           <Button onClick={() => navigate("/")} className="w-full">
-            Back to Home
+            {t('common.backToHome')}
           </Button>
         </div>
       </div>
@@ -146,8 +148,8 @@ export default function OrderConfirmation() {
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-6">
-          <h1 className="text-2xl md:text-xl md:text-2xl lg:text-lg md:text-xl md:text-2xl font-bold text-gray-800 mb-1">Order Confirmation</h1>
-          <p className="text-xs md:text-sm text-gray-600">Order #{order.id}</p>
+          <h1 className="text-2xl md:text-xl md:text-2xl lg:text-lg md:text-xl md:text-2xl font-bold text-gray-800 mb-1">{t('orderConfirmation.title')}</h1>
+          <p className="text-xs md:text-sm text-gray-600">{t('orderConfirmation.orderNumber', { id: String(order.id) })}</p>
         </div>
 
         {/* Order Details */}
@@ -156,15 +158,15 @@ export default function OrderConfirmation() {
             <>
               {/* Product Info */}
               <div className="mb-4 pb-4 border-b">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">📦 Product Details</h2>
+                <h2 className="text-xl font-bold text-gray-800 mb-4">📦 {t('orderConfirmation.productDetails')}</h2>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Product:</span>
+                    <span className="text-gray-600">{t('orderConfirmation.label.product')}:</span>
                     <span className="font-semibold text-gray-800">{order.product_title}</span>
                   </div>
                   {(order.variant_name || order.variant_color || order.variant_size) && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Variant:</span>
+                      <span className="text-gray-600">{t('orderConfirmation.label.variant')}:</span>
                       <span className="font-semibold text-gray-800">
                         {String(order.variant_name || '').trim() ||
                           [String(order.variant_color || '').trim(), String(order.variant_size || '').trim()]
@@ -174,11 +176,11 @@ export default function OrderConfirmation() {
                     </div>
                   )}
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Quantity:</span>
+                    <span className="text-gray-600">{t('orderConfirmation.label.quantity')}:</span>
                     <span className="font-semibold text-gray-800">{order.quantity}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Price:</span>
+                    <span className="text-gray-600">{t('orderConfirmation.label.price')}:</span>
                     <span className="font-semibold text-gray-800">{order.total_price} DZD</span>
                   </div>
                 </div>
@@ -186,19 +188,19 @@ export default function OrderConfirmation() {
 
               {/* Customer Info */}
               <div className="mb-6 pb-6 border-b">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">👤 Customer Information</h2>
+                <h2 className="text-xl font-bold text-gray-800 mb-4">👤 {t('orderConfirmation.customerInfo')}</h2>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Name:</span>
+                    <span className="text-gray-600">{t('orderConfirmation.label.name')}:</span>
                     <span className="font-semibold text-gray-800">{order.customer_name}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Phone:</span>
+                    <span className="text-gray-600">{t('orderConfirmation.label.phone')}:</span>
                     <span className="font-semibold text-gray-800">{order.customer_phone}</span>
                   </div>
                   {order.customer_email && (
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Email:</span>
+                      <span className="text-gray-600">{t('orderConfirmation.label.email')}:</span>
                       <span className="font-semibold text-gray-800">{order.customer_email}</span>
                     </div>
                   )}
@@ -207,9 +209,9 @@ export default function OrderConfirmation() {
 
               {/* Shipping Address */}
               <div className="mb-6">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">📍 Shipping Address</h2>
+                <h2 className="text-xl font-bold text-gray-800 mb-4">📍 {t('orderConfirmation.shippingAddress')}</h2>
                 <p className="text-gray-800 bg-gray-50 p-4 rounded">
-                  {order.shipping_address || "No address provided"}
+                  {order.shipping_address || t('orderConfirmation.noAddressProvided')}
                 </p>
               </div>
             </>
@@ -219,7 +221,7 @@ export default function OrderConfirmation() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Customer Name
+                    {t('orderConfirmation.edit.customerName')}
                   </label>
                   <input
                     type="text"
@@ -233,7 +235,7 @@ export default function OrderConfirmation() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone Number
+                    {t('orderConfirmation.edit.phoneNumber')}
                   </label>
                   <input
                     type="tel"
@@ -247,7 +249,7 @@ export default function OrderConfirmation() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email (Optional)
+                    {t('orderConfirmation.edit.emailOptional')}
                   </label>
                   <input
                     type="email"
@@ -261,7 +263,7 @@ export default function OrderConfirmation() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Shipping Address
+                    {t('orderConfirmation.edit.shippingAddress')}
                   </label>
                   <textarea
                     value={editedOrder.shipping_address || ""}
@@ -275,7 +277,7 @@ export default function OrderConfirmation() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Quantity
+                    {t('orderConfirmation.edit.quantity')}
                   </label>
                   <input
                     type="number"
@@ -303,7 +305,7 @@ export default function OrderConfirmation() {
                 disabled={submitting}
               >
                 <Edit2 className="w-4 h-4" />
-                Change Details
+                {t('orderConfirmation.action.changeDetails')}
               </Button>
 
               <Button
@@ -313,7 +315,7 @@ export default function OrderConfirmation() {
                 disabled={submitting}
               >
                 <XCircle className="w-4 h-4" />
-                Decline
+                {t('orderConfirmation.action.decline')}
               </Button>
 
               <Button
@@ -322,7 +324,7 @@ export default function OrderConfirmation() {
                 disabled={submitting}
               >
                 <CheckCircle className="w-4 h-4" />
-                {submitting ? "Approving..." : "Approve Order"}
+                {submitting ? t('orderConfirmation.action.approving') : t('orderConfirmation.action.approve')}
               </Button>
             </>
           ) : (
@@ -333,7 +335,7 @@ export default function OrderConfirmation() {
                 className="w-full"
                 disabled={submitting}
               >
-                Cancel
+                {t('orderConfirmation.action.cancel')}
               </Button>
 
               <Button
@@ -341,7 +343,7 @@ export default function OrderConfirmation() {
                 className="w-full md:col-span-2 bg-green-600 hover:bg-green-700 text-white"
                 disabled={submitting}
               >
-                {submitting ? "Saving..." : "Save & Continue"}
+                {submitting ? t('orderConfirmation.action.saving') : t('orderConfirmation.action.saveContinue')}
               </Button>
             </>
           )}
@@ -357,7 +359,7 @@ export default function OrderConfirmation() {
         {/* Info Message */}
         <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
           <p className="text-blue-700 text-sm">
-            ⏰ This confirmation link expires in 48 hours. Please confirm your order soon!
+            ⏰ {t('orderConfirmation.info.expiry')}
           </p>
         </div>
       </div>

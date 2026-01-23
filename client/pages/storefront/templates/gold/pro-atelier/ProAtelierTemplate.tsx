@@ -103,6 +103,29 @@ const descText = asString(settings.template_description_text);
         fontFamily: '"Playfair Display", Georgia, serif',
       }}
     >
+      {canManage && (
+        <button
+          type="button"
+          data-edit-path="__settings"
+          onClick={(e) => select(e, '__settings')}
+          style={{
+            position: 'fixed',
+            right: 16,
+            bottom: 16,
+            zIndex: 9999,
+            background: '#111827',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: 9999,
+            padding: '10px 14px',
+            fontSize: 12,
+            letterSpacing: '0.08em',
+            cursor: 'pointer',
+          }}
+        >
+          Settings
+        </button>
+      )}
       {/* Header - Ultra minimal */}
       <header
         data-edit-path="layout.header"
@@ -132,10 +155,20 @@ const descText = asString(settings.template_description_text);
               style={{ width: 42, height: 42, borderRadius: 9999, objectFit: 'cover' }}
             />
           )}
-          <span style={{ fontSize: 22, fontWeight: 600, letterSpacing: '0.2em' }}>{storeName}</span>
+          <span
+            style={{ fontSize: 22, fontWeight: 600, letterSpacing: '0.2em' }}
+            data-edit-path="__settings.store_name"
+            onClick={(e) => select(e, '__settings.store_name')}
+          >
+            {storeName}
+          </span>
         </div>
         <button
-          onClick={() => navigate('/products')}
+          data-edit-path="layout.header.nav"
+          onClick={(e) => {
+            if (canManage) return select(e, 'layout.header.nav');
+            navigate('/products');
+          }}
           style={{
             background: 'transparent',
             border: `1px solid ${text}`,
@@ -168,6 +201,8 @@ const descText = asString(settings.template_description_text);
           <img
             src={productImage(products[0])}
             alt=""
+            data-edit-path="layout.hero.image"
+            onClick={(e) => select(e, 'layout.hero.image')}
             style={{
               position: 'absolute',
               inset: 0,
@@ -185,14 +220,35 @@ const descText = asString(settings.template_description_text);
           }}
         />
         <div style={{ position: 'relative', padding: isMobile ? '40px 24px' : '80px 60px', color: '#fff', maxWidth: 700 }}>
-          <h1 style={{ fontSize: isMobile ? 40 : 72, fontWeight: 400, lineHeight: 1.1, margin: 0, fontStyle: 'italic' }}>
+          {canManage && (
+            <div
+              data-edit-path="layout.hero.kicker"
+              onClick={(e) => select(e, 'layout.hero.kicker')}
+              style={{ display: 'inline-block', border: '1px dashed rgba(255,255,255,0.6)', padding: '6px 10px', fontSize: 12, letterSpacing: '0.12em' }}
+            >
+              HERO KICKER
+            </div>
+          )}
+          <h1
+            data-edit-path="layout.hero.title"
+            onClick={(e) => select(e, 'layout.hero.title')}
+            style={{ fontSize: isMobile ? 40 : 72, fontWeight: 400, lineHeight: 1.1, margin: 0, fontStyle: 'italic' }}
+          >
             {heroTitle}
           </h1>
-          <p style={{ marginTop: 20, fontSize: 18, opacity: 0.85, fontFamily: 'system-ui, sans-serif', fontWeight: 300 }}>
+          <p
+            data-edit-path="layout.hero.subtitle"
+            onClick={(e) => select(e, 'layout.hero.subtitle')}
+            style={{ marginTop: 20, fontSize: 18, opacity: 0.85, fontFamily: 'system-ui, sans-serif', fontWeight: 300 }}
+          >
             {heroSubtitle}
           </p>
           <button
-            onClick={() => navigate('/products')}
+            data-edit-path="layout.hero.cta"
+            onClick={(e) => {
+              if (canManage) return select(e, 'layout.hero.cta');
+              navigate('/products');
+            }}
             style={{
               marginTop: 32,
               background: '#fff',
@@ -208,6 +264,15 @@ const descText = asString(settings.template_description_text);
           >
             {cta.toUpperCase()}
           </button>
+          {canManage && (
+            <div
+              data-edit-path="layout.hero.badge"
+              onClick={(e) => select(e, 'layout.hero.badge')}
+              style={{ marginTop: 18, display: 'inline-block', border: '1px dashed rgba(255,255,255,0.6)', padding: '8px 10px', fontSize: 12 }}
+            >
+              HERO BADGE
+            </div>
+          )}
         </div>
       </section>
 
@@ -226,13 +291,16 @@ const descText = asString(settings.template_description_text);
 
       {/* Products - Editorial alternating layout */}
       <section
-        data-edit-path="layout.grid"
-        onClick={() => canManage && onSelect('layout.grid')}
+        data-edit-path="layout.featured"
+        onClick={() => canManage && onSelect('layout.featured')}
         style={{ padding: isMobile ? '0 24px 60px' : '0 60px 100px' }}
       >
         <div style={{ textAlign: 'center', marginBottom: isMobile ? 40 : 60 }}>
-          <h2 data-edit-path="layout.featured.title" style={{ fontSize: isMobile ? 28 : 42, fontWeight: 400, fontStyle: 'italic', margin: 0 }}>{sectionTitle}</h2>
+          <h2 data-edit-path="layout.featured.title" onClick={(e) => select(e, 'layout.featured.title')} style={{ fontSize: isMobile ? 28 : 42, fontWeight: 400, fontStyle: 'italic', margin: 0 }}>{sectionTitle}</h2>
         </div>
+
+        <div data-edit-path="layout.featured.items" onClick={(e) => select(e, 'layout.featured.items')}>
+          <div data-edit-path="layout.grid" onClick={(e) => select(e, 'layout.grid')}>
 
         {products.slice(0, 6).map((p, idx) => (
           <div
@@ -269,11 +337,17 @@ const descText = asString(settings.template_description_text);
               <h3 style={{ fontSize: isMobile ? 24 : 32, fontWeight: 400, margin: 0, fontStyle: 'italic' , color: productTitleColor}}>
                 {productTitle(p)}
               </h3>
-              <p data-edit-path="layout.featured.subtitle" style={{ marginTop: 16, color: muted, fontSize: 14, lineHeight: 1.7, fontFamily: 'system-ui, sans-serif' }}>{sectionSubtitle}</p>
+              <p data-edit-path="layout.featured.subtitle" onClick={(e) => select(e, 'layout.featured.subtitle')} style={{ marginTop: 16, color: muted, fontSize: 14, lineHeight: 1.7, fontFamily: 'system-ui, sans-serif' }}>{sectionSubtitle || (canManage ? 'Add featured subtitle...' : '')}</p>
               <div style={{ marginTop: 20, fontSize: 20, fontWeight: 600, color: accent }}>
                 {formatPrice(Number(p.price) || 0)}
               </div>
               <button
+                data-edit-path="layout.featured.addLabel"
+                onClick={(e) => {
+                  if (canManage) return select(e, 'layout.featured.addLabel');
+                  e.stopPropagation();
+                  if ((p as any).slug) navigate((p as any).slug);
+                }}
                 style={{
                   marginTop: 24,
                   background: 'transparent',
@@ -320,6 +394,9 @@ const descText = asString(settings.template_description_text);
             ))}
           </div>
         )}
+
+          </div>
+        </div>
       </section>
 
       {/* Footer */}
@@ -347,9 +424,32 @@ const descText = asString(settings.template_description_text);
             </div>
           )}
         </div>
-        <p style={{ color: muted, fontSize: 13, fontFamily: 'system-ui, sans-serif' }}>
+        <p
+          data-edit-path="layout.footer.copyright"
+          onClick={(e) => select(e, 'layout.footer.copyright')}
+          style={{ color: muted, fontSize: 13, fontFamily: 'system-ui, sans-serif' }}
+        >
           © {new Date().getFullYear()} All rights reserved.
         </p>
+
+        {canManage && (
+          <div style={{ marginTop: 16, display: 'flex', justifyContent: 'center', gap: 18, flexWrap: 'wrap' }}>
+            <div data-edit-path="layout.footer.links" onClick={(e) => select(e, 'layout.footer.links')} style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              {['Shipping', 'Returns', 'Contact'].map((label) => (
+                <a key={label} href="#" onClick={(e) => select(e, 'layout.footer.links')} style={{ color: muted, fontSize: 12, textDecoration: 'none' }}>
+                  {label}
+                </a>
+              ))}
+            </div>
+            <div data-edit-path="layout.footer.social" onClick={(e) => select(e, 'layout.footer.social')} style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              {['Instagram', 'TikTok'].map((label) => (
+                <a key={label} href="#" onClick={(e) => select(e, 'layout.footer.social')} style={{ color: muted, fontSize: 12, textDecoration: 'none' }}>
+                  {label}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
       </footer>
     </div>
   );

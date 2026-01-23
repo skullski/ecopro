@@ -1,52 +1,29 @@
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { storeNameToSlug } from '@/utils/storeUrl';
+import { useTranslation } from '@/lib/i18n';
+import { useStoreSettings } from '@/hooks/useStoreSettings';
 
 export default function MyStoreIndex() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [storeSlug, setStoreSlug] = useState<string | null>(null);
+  const { t } = useTranslation();
 
-  useEffect(() => {
-    let cancelled = false;
-    const run = async () => {
-      try {
-        const res = await fetch('/api/client/store/settings');
-        if (cancelled) return;
-        if (res.status === 401 || res.status === 403) {
-          navigate('/login');
-          return;
-        }
-        if (!res.ok) {
-          setError('Failed to load store settings.');
-          setLoading(false);
-          return;
-        }
-        const data = await res.json().catch(() => ({} as any));
-        const preferred = data?.store_name ? storeNameToSlug(String(data.store_name)) : null;
-        const fallback = data?.store_slug ? String(data.store_slug) : null;
-        const slug = preferred || fallback;
-        setStoreSlug(slug);
-        setLoading(false);
-      } catch (error) {
-        setError('Failed to load store settings.');
-        setLoading(false);
-      }
-    };
-    run();
-    return () => { cancelled = true; };
-  }, [navigate]);
+  const { storeSlug, isFetching, isError } = useStoreSettings({
+    enabled: true,
+    onUnauthorized: () => navigate('/login'),
+  });
+
+  const loading = isFetching && !storeSlug;
+  const error = useMemo(() => (isError ? t('myStore.errorLoad') : null), [isError, t]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen">
-      <h1 className="text-2xl font-bold mb-6">My Store</h1>
+      <h1 className="text-2xl font-bold mb-6">{t('myStore.title')}</h1>
       {/* Main UI always visible */}
       <div className="w-full max-w-xl bg-background rounded-xl shadow p-6 mb-6">
         {loading && (
           <div className="flex flex-col items-center justify-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading store data...<br />If this takes too long, your database may be slow or offline.</p>
+            <p className="text-muted-foreground">{t('myStore.loading')}<br />{t('myStore.loadingHint')}</p>
           </div>
         )}
         {error && (
@@ -54,25 +31,45 @@ export default function MyStoreIndex() {
         )}
         {!loading && !error && storeSlug && (
           <div className="text-center">
-            <p className="text-lg">Store loaded: <span className="font-bold">{storeSlug}</span></p>
+            <p className="text-lg">{t('myStore.storeLoaded', { slug: storeSlug })}</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {t('myStore.tip')}
+            </p>
             <div className="mt-4 flex items-center justify-center gap-3">
               <button
                 className="px-4 py-2 rounded bg-primary text-white font-bold"
-                onClick={() => navigate(`/my-store/storefront`)}
+                onClick={() => navigate(`/store/${storeSlug}`)}
               >
-                View Storefront
+                {t('store.viewStorefront')}
               </button>
               <button
                 className="px-4 py-2 rounded border border-slate-200 bg-white text-slate-900 font-bold"
-                onClick={() => navigate(`/my-store/template-editor`)}
+                onClick={() => navigate(`/template-editor`)}
               >
-                Edit Template
+                {t('store.templateEditor')}
+              </button>
+            </div>
+
+            <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                className="px-4 py-3 rounded border border-slate-200 bg-white text-slate-900 font-bold"
+                onClick={() => navigate('/dashboard/preview')}
+              >
+                {t('myStore.dashboard')}
+                <div className="text-xs text-muted-foreground font-normal mt-1">{t('myStore.dashboardHint')}</div>
+              </button>
+              <button
+                className="px-4 py-3 rounded border border-slate-200 bg-white text-slate-900 font-bold"
+                onClick={() => navigate('/dashboard/stock')}
+              >
+                {t('myStore.stock')}
+                <div className="text-xs text-muted-foreground font-normal mt-1">{t('myStore.stockHint')}</div>
               </button>
             </div>
           </div>
         )}
         {!loading && !error && !storeSlug && (
-          <div className="text-center text-muted-foreground">No store found for your account.</div>
+          <div className="text-center text-muted-foreground">{t('myStore.noStore')}</div>
         )}
       </div>
     </div>

@@ -36,7 +36,16 @@ type StaffOrder = {
   product_images: any;
 };
 
-const STATUSES = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'] as const;
+type OrderStatus = {
+  id: string | number;
+  name: string;
+  key: string;
+  color?: string;
+  icon?: string;
+  sort_order?: number;
+  is_default?: boolean;
+  is_system?: boolean;
+};
 
 export default function StaffOrders() {
   const { t } = useTranslation();
@@ -44,6 +53,7 @@ export default function StaffOrders() {
 
   const [me, setMe] = React.useState<StaffUser | null>(null);
   const [orders, setOrders] = React.useState<StaffOrder[]>([]);
+  const [statusOptions, setStatusOptions] = React.useState<OrderStatus[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [updatingId, setUpdatingId] = React.useState<number | null>(null);
@@ -89,6 +99,17 @@ export default function StaffOrders() {
           return;
         }
 
+        // Load statuses for dropdown (includes system/bot statuses like didnt_pickup)
+        try {
+          const statusRes = await fetch('/api/staff/order-statuses');
+          const statusData = await statusRes.json().catch(() => null);
+          if (statusRes.ok && Array.isArray(statusData)) {
+            setStatusOptions(statusData);
+          }
+        } catch {
+          // ignore
+        }
+
         setOrders(Array.isArray(ordersData) ? ordersData : []);
         setLoading(false);
       } catch (e: any) {
@@ -99,6 +120,15 @@ export default function StaffOrders() {
 
     void run();
   }, [navigate]);
+
+  const getStatusLabel = (statusKey: string) => {
+    const key = (statusKey || 'pending').toLowerCase();
+    const translated = t(`orders.status.${key}`);
+    if (translated && translated !== `orders.status.${key}`) return translated;
+    const fromServer = statusOptions.find((s) => String(s.key).toLowerCase() === key)?.name;
+    if (fromServer) return fromServer;
+    return key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+  };
 
   const handleLogout = async () => {
     try {
@@ -197,6 +227,12 @@ export default function StaffOrders() {
               orders.map((o) => {
                 const status = (o.status || 'pending').toLowerCase();
                 const updating = updatingId === o.id;
+
+                const fallbackStatuses = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'completed', 'cancelled', 'refunded', 'failed', 'returned', 'didnt_pickup', 'delivery_failed'];
+                const dropdownStatuses = statusOptions.length > 0
+                  ? statusOptions.map((s) => String(s.key)).filter(Boolean)
+                  : fallbackStatuses;
+
                 return (
                   <Card key={o.id}>
                     <CardHeader className="flex flex-row items-center justify-between gap-4">
@@ -212,7 +248,7 @@ export default function StaffOrders() {
                         </div>
                       </div>
                       <Badge variant="secondary" className="capitalize">
-                        {status}
+                        {getStatusLabel(status)}
                       </Badge>
                     </CardHeader>
                     <CardContent className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -231,12 +267,12 @@ export default function StaffOrders() {
                           onValueChange={(v) => updateStatus(o.id, v)}
                         >
                           <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Change status" />
+                            <SelectValue placeholder={t('orders.changeStatus') || 'Change status'} />
                           </SelectTrigger>
                           <SelectContent>
-                            {STATUSES.map((s) => (
-                              <SelectItem key={s} value={s} className="capitalize">
-                                {s}
+                            {dropdownStatuses.map((s) => (
+                              <SelectItem key={s} value={s}>
+                                {getStatusLabel(s)}
                               </SelectItem>
                             ))}
                           </SelectContent>

@@ -14,6 +14,7 @@ import { useStaffPermissions } from "@/contexts/StaffPermissionContext";
 import { prefetchRouteData } from "@/lib/prefetch";
 import { safeJsonParse } from "@/utils/safeJson";
 import { useNotifications } from "@/contexts/NotificationContext";
+import { useStoreSettings } from "@/hooks/useStoreSettings";
 
 interface MenuItem {
   titleKey: string;
@@ -59,7 +60,7 @@ const CATEGORY_COLORS: { [key: string]: string } = {
 };
 
 const buildMenuItems = (storeSlug: string | null): MenuItem[] => {
-  const storefrontPath = storeSlug ? `/store/${encodeURIComponent(storeSlug)}` : "/my-store/storefront";
+  const storefrontPath = storeSlug ? `/store/${encodeURIComponent(storeSlug)}` : "/my-store";
 
   return [
     { titleKey: "sidebar.home", path: "/dashboard", icon: <Home className="w-[18px] h-[18px]" />, permission: "view_dashboard" },
@@ -128,24 +129,7 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
   const location = useLocation();
   const { newOrdersCount } = useNotifications();
 
-  const [storeSlug, setStoreSlug] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    const run = async () => {
-      try {
-        const res = await fetch('/api/client/store/settings');
-        if (!res.ok) return;
-        const data = await res.json().catch(() => ({} as any));
-        const slug = data?.store_slug ? String(data.store_slug) : null;
-        if (!cancelled) setStoreSlug(slug);
-      } catch {
-        // ignore
-      }
-    };
-    void run();
-    return () => { cancelled = true; };
-  }, []);
+  const { storeSlug } = useStoreSettings({ enabled: true });
 
   const menuItems = useMemo(() => buildMenuItems(storeSlug), [storeSlug]);
   
@@ -186,9 +170,12 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
   const isParentActive = (item: MenuItem) => 
     item.children?.some(child => location.pathname === child.path);
 
-  // Prefetch data on hover for instant navigation
-  const handlePrefetch = useCallback((path: string) => {
-    prefetchRouteData(path);
+  // IMPORTANT: prefetching dashboard endpoints on hover causes lots of extra remote DB calls
+  // (Render Postgres over the network), which makes the platform feel extremely slow.
+  // Keep the hook stable, but do nothing by default.
+  const handlePrefetch = useCallback((_path: string) => {
+    // To re-enable, change prefetchRouteData() gate in client/lib/prefetch.ts
+    // prefetchRouteData(_path);
   }, []);
 
   const renderMenuItem = (item: MenuItem, level = 0) => {

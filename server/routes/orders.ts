@@ -1154,6 +1154,14 @@ export const getOrderStatuses: RequestHandler = async (req, res) => {
       return;
     }
 
+    // Backfill missing system/bot statuses for existing accounts as well.
+    // This keeps the UI and bots aligned even if the account was created before new statuses were added.
+    try {
+      await ensureSystemOrderStatuses(Number(clientId));
+    } catch (e) {
+      console.warn('[getOrderStatuses] Failed to ensure system statuses:', (e as any)?.message || e);
+    }
+
     let result = await pool.query(
       `SELECT id, name, key, color, icon, sort_order, is_default, is_system, counts_as_revenue 
        FROM order_statuses 
@@ -1162,24 +1170,28 @@ export const getOrderStatuses: RequestHandler = async (req, res) => {
       [clientId]
     );
 
-    // If no statuses exist for this client, create system defaults so the rest of the platform
-    // (dashboards, revenue calculations, status UI) can rely on DB rows.
-    if (result.rows.length === 0) {
-      try {
-        await ensureSystemOrderStatuses(Number(clientId));
-        result = await pool.query(
-          `SELECT id, name, key, color, icon, sort_order, is_default, is_system, counts_as_revenue 
-           FROM order_statuses 
-           WHERE client_id = $1 
-           ORDER BY sort_order ASC, id ASC`,
-          [clientId]
-        );
-      } catch (e) {
-        console.warn('[getOrderStatuses] Failed to seed defaults:', (e as any)?.message || e);
-      }
-    }
+    const allowedSystemKeys = new Set([
+      'pending',
+      'confirmed',
+      'completed',
+      'cancelled',
+      'at_delivery',
+      // bot-used
+      'declined',
+      'delivered',
+      'didnt_pickup',
+      'delivery_failed',
+      'failed',
+      'returned',
+    ]);
 
-    res.json(result.rows);
+    const filtered = (result.rows || []).filter((s: any) => {
+      if (!s?.is_system) return true;
+      const key = String(s.key || '').trim();
+      return allowedSystemKeys.has(key);
+    });
+
+    res.json(filtered);
   } catch (error) {
     console.error("Get order statuses error:", error);
     res.status(500).json({ error: "Failed to fetch order statuses" });

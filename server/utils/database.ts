@@ -65,10 +65,25 @@ function getDbDefaults() {
   const retries = readIntEnv('DB_CONNECT_RETRIES', isProd ? 5 : (devFastFail ? 0 : 6));
   const retryBaseDelayMs = readIntEnv('DB_RETRY_BASE_DELAY_MS', 500);
   const retryMaxDelayMs = readIntEnv('DB_RETRY_MAX_DELAY_MS', 4000);
+
+  // Local dev often connects to Render Postgres over a slower network.
+  // Guard against overly aggressive env overrides (e.g., 5s timeouts) that make the platform unusable.
+  // Respect DB_FAST_FAIL explicitly; otherwise enforce sane minimums.
+  let usingRender = false;
+  try {
+    const raw = String(process.env.DATABASE_URL || '');
+    usingRender = raw.includes('render.com');
+  } catch {
+    usingRender = false;
+  }
+  const safeConnectTimeoutMs = !isProd && usingRender && !devFastFail ? Math.max(connectTimeoutMs, 15000) : connectTimeoutMs;
+  const safeQueryTimeoutMs = !isProd && usingRender && !devFastFail ? Math.max(queryTimeoutMs, 60000) : queryTimeoutMs;
+  const safeStatementTimeoutMs = !isProd && usingRender && !devFastFail ? Math.max(statementTimeoutMs, 60000) : statementTimeoutMs;
+
   return {
-    connectTimeoutMs,
-    statementTimeoutMs,
-    queryTimeoutMs,
+    connectTimeoutMs: safeConnectTimeoutMs,
+    statementTimeoutMs: safeStatementTimeoutMs,
+    queryTimeoutMs: safeQueryTimeoutMs,
     max,
     idleTimeoutMs,
     retries,
@@ -333,30 +348,31 @@ export async function findUserByEmail(email: string): Promise<User | null> {
   const db = await ensureConnection();
   const adminPasswordCol = await getPasswordColumn('admins');
   const clientPasswordCol = await getPasswordColumn('clients');
+  const normalizedEmail = String(email || '').trim().toLowerCase();
   // First try admins table
   let result;
   try {
     result = await db.query(
-      `SELECT id, email, ${adminPasswordCol} as password, full_name as name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, lock_type, totp_enabled, totp_secret_encrypted, totp_pending_secret_encrypted, totp_backup_codes_hashes, totp_enrolled_at, created_at, updated_at FROM admins WHERE email = $1`,
-      [email]
+      `SELECT id, email, ${adminPasswordCol} as password, full_name as name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, lock_type, totp_enabled, totp_secret_encrypted, totp_pending_secret_encrypted, totp_backup_codes_hashes, totp_enrolled_at, created_at, updated_at FROM admins WHERE lower(email) = $1`,
+      [normalizedEmail]
     );
   } catch (err: any) {
     // Backward compatible if lock_type column doesn't exist yet
     try {
       result = await db.query(
-        `SELECT id, email, ${adminPasswordCol} as password, full_name as name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, lock_type, created_at, updated_at FROM admins WHERE email = $1`,
-        [email]
+        `SELECT id, email, ${adminPasswordCol} as password, full_name as name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, lock_type, created_at, updated_at FROM admins WHERE lower(email) = $1`,
+        [normalizedEmail]
       );
     } catch (_err2: any) {
       try {
         result = await db.query(
-          `SELECT id, email, ${adminPasswordCol} as password, full_name as name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, created_at, updated_at FROM admins WHERE email = $1`,
-          [email]
+          `SELECT id, email, ${adminPasswordCol} as password, full_name as name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, created_at, updated_at FROM admins WHERE lower(email) = $1`,
+          [normalizedEmail]
         );
       } catch (_err3: any) {
         result = await db.query(
-          `SELECT id, email, ${adminPasswordCol} as password, full_name as name, role, user_type, is_verified, is_locked, locked_reason, created_at, updated_at FROM admins WHERE email = $1`,
-          [email]
+          `SELECT id, email, ${adminPasswordCol} as password, full_name as name, role, user_type, is_verified, is_locked, locked_reason, created_at, updated_at FROM admins WHERE lower(email) = $1`,
+          [normalizedEmail]
         );
       }
     }
@@ -369,19 +385,19 @@ export async function findUserByEmail(email: string): Promise<User | null> {
   // Then try clients table
   try {
     result = await db.query(
-      `SELECT id, email, ${clientPasswordCol} as password, name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, lock_type, created_at, updated_at FROM clients WHERE email = $1`,
-      [email]
+      `SELECT id, email, ${clientPasswordCol} as password, name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, lock_type, created_at, updated_at FROM clients WHERE lower(email) = $1`,
+      [normalizedEmail]
     );
   } catch (err: any) {
     try {
       result = await db.query(
-        `SELECT id, email, ${clientPasswordCol} as password, name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, created_at, updated_at FROM clients WHERE email = $1`,
-        [email]
+        `SELECT id, email, ${clientPasswordCol} as password, name, role, user_type, is_verified, is_blocked, blocked_reason, is_locked, locked_reason, created_at, updated_at FROM clients WHERE lower(email) = $1`,
+        [normalizedEmail]
       );
     } catch (_err2: any) {
       result = await db.query(
-        `SELECT id, email, ${clientPasswordCol} as password, name, role, user_type, is_verified, is_locked, locked_reason, created_at, updated_at FROM clients WHERE email = $1`,
-        [email]
+        `SELECT id, email, ${clientPasswordCol} as password, name, role, user_type, is_verified, is_locked, locked_reason, created_at, updated_at FROM clients WHERE lower(email) = $1`,
+        [normalizedEmail]
       );
     }
   }

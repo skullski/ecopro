@@ -34,6 +34,13 @@ export default function ProStudioTemplate(props: TemplateProps) {
     }
   };
 
+  const select = (e: React.MouseEvent, path: string) => {
+    if (!canManage) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onSelect(path);
+  };
+
   const [isMobile, setIsMobile] = React.useState((props as any).forcedBreakpoint === 'mobile');
   React.useEffect(() => {
     const bp = (props as any).forcedBreakpoint;
@@ -95,6 +102,29 @@ const descColor = asString(settings.template_description_color) || muted;
         fontFamily: '"Inter", system-ui, sans-serif',
       }}
     >
+      {canManage && (
+        <button
+          type="button"
+          data-edit-path="__settings"
+          onClick={(e) => select(e, '__settings')}
+          style={{
+            position: 'fixed',
+            right: 16,
+            bottom: 16,
+            zIndex: 9999,
+            background: '#111827',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: 9999,
+            padding: '10px 14px',
+            fontSize: 12,
+            letterSpacing: '0.08em',
+            cursor: 'pointer',
+          }}
+        >
+          Settings
+        </button>
+      )}
       {/* Header - Bold and visible */}
       <header
         data-edit-path="layout.header"
@@ -107,7 +137,11 @@ const descColor = asString(settings.template_description_color) || muted;
           borderBottom: '1px solid #262626',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div
+          style={{ display: 'flex', alignItems: 'center', gap: 16 }}
+          data-edit-path="layout.header.logo"
+          onClick={(e) => select(e, 'layout.header.logo')}
+        >
           {asString(settings.store_logo) ? (
             <img src={asString(settings.store_logo)} alt="" style={{ width: 40, height: 40, objectFit: 'cover' }} />
           ) : (
@@ -115,10 +149,20 @@ const descColor = asString(settings.template_description_color) || muted;
               S
             </div>
           )}
-          <span style={{ fontSize: 20, fontWeight: 900, letterSpacing: '-0.02em' }}>{storeName}</span>
+          <span
+            style={{ fontSize: 20, fontWeight: 900, letterSpacing: '-0.02em' }}
+            data-edit-path="__settings.store_name"
+            onClick={(e) => select(e, '__settings.store_name')}
+          >
+            {storeName}
+          </span>
         </div>
         <button
-          onClick={() => navigate('/products')}
+          data-edit-path="layout.header.nav"
+          onClick={(e) => {
+            if (canManage) return select(e, 'layout.header.nav');
+            navigate('/products');
+          }}
           style={{
             background: accent,
             border: 0,
@@ -144,7 +188,18 @@ const descColor = asString(settings.template_description_color) || muted;
         }}
       >
         <div style={{ maxWidth: 1400, margin: '0 auto', position: 'relative' }}>
+          {canManage && (
+            <div
+              data-edit-path="layout.hero.kicker"
+              onClick={(e) => select(e, 'layout.hero.kicker')}
+              style={{ display: 'inline-block', border: `1px dashed ${accent}`, padding: '6px 10px', fontSize: 12, letterSpacing: '0.12em', marginBottom: 14 }}
+            >
+              HERO KICKER
+            </div>
+          )}
           <h1
+            data-edit-path="layout.hero.title"
+            onClick={(e) => select(e, 'layout.hero.title')}
             style={{
               fontSize: isMobile ? 48 : 120,
               fontWeight: 900,
@@ -164,6 +219,8 @@ const descColor = asString(settings.template_description_color) || muted;
           {/* Floating product preview */}
           {!isMobile && products[0] && (
             <div
+              data-edit-path="layout.hero.image"
+              onClick={(e) => select(e, 'layout.hero.image')}
               style={{
                 position: 'absolute',
                 right: 40,
@@ -182,13 +239,21 @@ const descColor = asString(settings.template_description_color) || muted;
             </div>
           )}
 
-          <p style={{ marginTop: 32, fontSize: 16, color: muted, maxWidth: 500, lineHeight: 1.7 }}>
+          <p
+            data-edit-path="layout.hero.subtitle"
+            onClick={(e) => select(e, 'layout.hero.subtitle')}
+            style={{ marginTop: 32, fontSize: 16, color: muted, maxWidth: 500, lineHeight: 1.7 }}
+          >
             {heroSubtitle}
           </p>
 
           <div style={{ marginTop: 32, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
             <button
-              onClick={() => navigate('/products')}
+              data-edit-path="layout.hero.cta"
+              onClick={(e) => {
+                if (canManage) return select(e, 'layout.hero.cta');
+                navigate('/products');
+              }}
               style={{
                 background: '#fff',
                 border: 0,
@@ -216,6 +281,16 @@ const descColor = asString(settings.template_description_color) || muted;
               FEATURED →
             </button>
           </div>
+
+          {canManage && (
+            <div
+              data-edit-path="layout.hero.badge"
+              onClick={(e) => select(e, 'layout.hero.badge')}
+              style={{ marginTop: 22, display: 'inline-block', border: `1px dashed ${accent}`, padding: '8px 10px', fontSize: 12 }}
+            >
+              HERO BADGE
+            </div>
+          )}
         </div>
       </section>
 
@@ -234,33 +309,43 @@ const descColor = asString(settings.template_description_color) || muted;
 
       {/* Products - Asymmetric bento grid */}
       <section
-        data-edit-path="layout.grid"
-        onClick={() => canManage && onSelect('layout.grid')}
+        data-edit-path="layout.featured"
+        onClick={() => canManage && onSelect('layout.featured')}
         style={{ padding: isMobile ? `${sectionSpacing / 2}px ${baseSpacing}px` : `${sectionSpacing}px ${baseSpacing * 2}px` }}
       >
         <div style={{ maxWidth: 1400, margin: '0 auto' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40 }}>
             <div>
               <div style={{ fontSize: 12, color: accent, fontWeight: 800, letterSpacing: '0.2em', marginBottom: 8 }}>PRODUCTS</div>
-              <h2 data-edit-path="layout.featured.title" style={{ fontSize: isMobile ? 28 : 42, fontWeight: 900, margin: 0, letterSpacing: '-0.02em' }}>{sectionTitle}</h2>
+              <h2 data-edit-path="layout.featured.title" onClick={(e) => select(e, 'layout.featured.title')} style={{ fontSize: isMobile ? 28 : 42, fontWeight: 900, margin: 0, letterSpacing: '-0.02em' }}>{sectionTitle}</h2>
+              <p data-edit-path="layout.featured.subtitle" onClick={(e) => select(e, 'layout.featured.subtitle')} style={{ marginTop: 10, color: muted, fontSize: 14, maxWidth: 520 }}>
+                {sectionSubtitle || (canManage ? 'Add featured subtitle...' : '')}
+              </p>
             </div>
             <button
-              onClick={() => navigate('/products')}
+              data-edit-path="layout.featured.addLabel"
+              onClick={(e) => {
+                if (canManage) return select(e, 'layout.featured.addLabel');
+                navigate('/products');
+              }}
               style={{ background: 'transparent', border: 0, color: text, fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
             >
-              View All
+              {addToCartLabel}
             </button>
           </div>
 
           {/* Bento grid */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : `repeat(${gridColumns}, 1fr)`,
-              gridAutoRows: isMobile ? 'auto' : '200px',
-              gap: gridGap,
-            }}
-          >
+          <div data-edit-path="layout.featured.items" onClick={(e) => select(e, 'layout.featured.items')}>
+            <div
+              data-edit-path="layout.grid"
+              onClick={(e) => select(e, 'layout.grid')}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : `repeat(${gridColumns}, 1fr)`,
+                gridAutoRows: isMobile ? 'auto' : '200px',
+                gap: gridGap,
+              }}
+            >
             {products.map((p, idx) => {
               // First item spans 2x2, some items span 2 cols
               const isLarge = idx === 0;
@@ -314,6 +399,7 @@ const descColor = asString(settings.template_description_color) || muted;
                 </div>
               );
             })}
+            </div>
           </div>
         </div>
       </section>
@@ -336,7 +422,32 @@ const descColor = asString(settings.template_description_color) || muted;
           <div style={{ width: 32, height: 32, background: accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900 }}>S</div>
           <span style={{ fontWeight: 800 }}>{storeName}</span>
         </div>
-        <span style={{ color: muted, fontSize: 13 }}>© {new Date().getFullYear()} All rights reserved.</span>
+        <span
+          style={{ color: muted, fontSize: 13 }}
+          data-edit-path="layout.footer.copyright"
+          onClick={(e) => select(e, 'layout.footer.copyright')}
+        >
+          © {new Date().getFullYear()} All rights reserved.
+        </span>
+
+        {canManage && (
+          <div style={{ width: '100%', marginTop: 12, display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+            <div data-edit-path="layout.footer.links" onClick={(e) => select(e, 'layout.footer.links')} style={{ display: 'flex', gap: 12, flexWrap: 'wrap', color: muted, fontSize: 12 }}>
+              {['Shipping', 'Returns', 'Contact'].map((label) => (
+                <a key={label} href="#" onClick={(e) => select(e, 'layout.footer.links')} style={{ color: 'inherit', textDecoration: 'none' }}>
+                  {label}
+                </a>
+              ))}
+            </div>
+            <div data-edit-path="layout.footer.social" onClick={(e) => select(e, 'layout.footer.social')} style={{ display: 'flex', gap: 10, flexWrap: 'wrap', color: muted, fontSize: 12 }}>
+              {['Instagram', 'TikTok'].map((label) => (
+                <a key={label} href="#" onClick={(e) => select(e, 'layout.footer.social')} style={{ color: 'inherit', textDecoration: 'none' }}>
+                  {label}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
       </footer>
     </div>
   );

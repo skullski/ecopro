@@ -353,6 +353,30 @@ export default function BagsTemplate(props: TemplateProps) {
         data-edit-path="__root"
         onClick={() => onSelect('__root')}
       >
+        {canManage && (
+          <button
+            type="button"
+            data-edit-path="__settings"
+            onClick={(e) => clickGuard(e, '__settings')}
+            style={{
+              position: 'fixed',
+              right: 12,
+              bottom: 12,
+              zIndex: 1000,
+              background: 'rgba(255,255,255,0.92)',
+              border: '1px solid #e5e7eb',
+              borderRadius: 9999,
+              padding: '8px 10px',
+              fontSize: 11,
+              letterSpacing: '0.18em',
+              textTransform: 'uppercase',
+              color: '#111827',
+              cursor: 'pointer',
+            }}
+          >
+            Settings
+          </button>
+        )}
       <div ref={containerRef}>
       {/* HEADER */}
       <header
@@ -372,7 +396,9 @@ export default function BagsTemplate(props: TemplateProps) {
               style={{ height: '36px', width: '36px', objectFit: 'contain', borderRadius: '4px' }}
             />
           )}
-          {storeName}
+          <span data-edit-path="__settings.store_name" onClick={(e) => clickGuard(e, '__settings.store_name')}>
+            {storeName}
+          </span>
         </div>
 
         <nav
@@ -664,6 +690,8 @@ export default function BagsTemplate(props: TemplateProps) {
             gridTemplateColumns: breakpoint === 'desktop' ? `repeat(${gridColumns}, 1fr)` : breakpoint === 'tablet' ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)',
             gap: breakpoint === 'mobile' ? '20px' : `${gridGap}px`,
           }}
+          data-edit-path="layout.featured.items"
+          onClick={(e) => clickGuard(e, 'layout.featured.items')}
         >
           {gridProducts.map((p, index) => (
             <div
@@ -710,13 +738,15 @@ export default function BagsTemplate(props: TemplateProps) {
             <FooterLinks label="Warranty" href="/" />
           </div>
 
-          {socialLinks.length ? (
+          {canManage || socialLinks.length ? (
             <div
               style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 11, color: footerLinkColor }}
               data-edit-path="layout.footer.social"
               onClick={(e) => clickGuard(e, 'layout.footer.social')}
             >
-              {socialLinks.slice(0, 5).map((s) => (
+              {(socialLinks.length ? socialLinks : [{ platform: 'instagram', url: '#' }, { platform: 'tiktok', url: '#' }, { platform: 'facebook', url: '#' }])
+                .slice(0, 5)
+                .map((s) => (
                 <a
                   key={`${s.platform}-${s.url}`}
                   href={s.url}

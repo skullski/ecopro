@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createRoot } from 'react-dom/client';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,8 +10,27 @@ import { ArrowLeft, Save, Eye, Settings, Check, Search, X, ChevronDown } from 'l
 import { RenderStorefront, normalizeTemplateId } from './storefront/templates';
 import { uploadImage } from '@/lib/api';
 import { useTranslation } from '@/lib/i18n';
+import { useStoreSettings } from '@/hooks/useStoreSettings';
+import { useStoreProducts } from '@/hooks/useStoreProducts';
 
-const DEFAULT_TEMPLATE_ID = 'tea';
+const DEFAULT_TEMPLATE_ID = 'minimal';
+
+// Templates that are considered 100% editable + verified against TEMPLATE_EDITS_CONTRACT.
+// These are the only templates shown by default in the picker.
+const READY_TEMPLATE_IDS = new Set([
+  'bags',
+  'books',
+  'wedding',
+  'tools',
+  'pro-atelier',
+  'pro-studio',
+  'amber-store',
+  'rose-catalog',
+  'lime-direct',
+  'urgency-max',
+  'papercraft',
+  'minimal',
+]);
 
 // Template preview data with categories
 const TEMPLATE_PREVIEWS = [
@@ -224,18 +244,36 @@ type StoreProduct = {
 export default function GoldTemplateEditor() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const previewRootRef = React.useRef<HTMLDivElement | null>(null);
   const previewFitRef = React.useRef<HTMLDivElement | null>(null);
   const previewIframeRef = React.useRef<HTMLIFrameElement | null>(null);
   const previewIframeRootRef = React.useRef<ReturnType<typeof createRoot> | null>(null);
   const [iframeReady, setIframeReady] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [settings, setSettings] = useState<StoreSettings>({});
   const [products, setProducts] = useState<StoreProduct[]>([]);
   const [activeTab, setActiveTab] = useState<'preview' | 'settings'>('preview');
+
+  const {
+    data: storeSettingsData,
+    isLoading: settingsLoading,
+    error: storeSettingsError,
+  } = useStoreSettings({
+    onUnauthorized: () => navigate('/login'),
+  });
+
+  const {
+    data: storeProductsData,
+    isLoading: productsLoading,
+    error: storeProductsError,
+  } = useStoreProducts({
+    onUnauthorized: () => navigate('/login'),
+  });
+
+  const loading = settingsLoading || productsLoading;
 
   const [previewDevice, setPreviewDevice] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
   const [selectedEditPath, setSelectedEditPath] = useState<string | null>(null);
@@ -293,21 +331,50 @@ export default function GoldTemplateEditor() {
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
   const [templateSearch, setTemplateSearch] = useState('');
   const [templateCategory, setTemplateCategory] = useState('all');
+  const [showAllTemplates, setShowAllTemplates] = useState(false);
+  const autoExpandedForLegacyTemplateRef = React.useRef(false);
+
+  const currentTemplateIsReady = useMemo(() => {
+    const normalized = normalizeTemplateId(String(settings.template || DEFAULT_TEMPLATE_ID));
+    return READY_TEMPLATE_IDS.has(normalized);
+  }, [settings.template]);
+
+  // If this store is already on a non-ready template, automatically expand so the
+  // current selection is still reachable from the picker.
+  useEffect(() => {
+    if (loading) return;
+    if (autoExpandedForLegacyTemplateRef.current) return;
+
+    const normalized = normalizeTemplateId(String(settings.template || DEFAULT_TEMPLATE_ID));
+    if (!READY_TEMPLATE_IDS.has(normalized)) {
+      setShowAllTemplates(true);
+      autoExpandedForLegacyTemplateRef.current = true;
+    }
+  }, [loading, settings.template]);
 
   const filteredTemplates = useMemo(() => {
     const q = templateSearch.trim().toLowerCase();
-    return TEMPLATE_PREVIEWS.filter((tpl) => {
+    const base = showAllTemplates
+      ? TEMPLATE_PREVIEWS
+      : TEMPLATE_PREVIEWS.filter((tpl) => READY_TEMPLATE_IDS.has(tpl.id));
+
+    return base.filter((tpl) => {
       const searchMatch = !q || tpl.name.toLowerCase().includes(q) || tpl.id.toLowerCase().includes(q);
       const categoryMatch = templateCategory === 'all' || (tpl.categories && tpl.categories.includes(templateCategory));
       return searchMatch && categoryMatch;
     });
-  }, [templateSearch, templateCategory]);
+  }, [templateSearch, templateCategory, showAllTemplates]);
 
   const effectiveTemplateId = useMemo(() => {
     const normalized = normalizeTemplateId(String(settings.template || DEFAULT_TEMPLATE_ID));
     const allowed = TEMPLATE_PREVIEWS.some((t) => t.id === normalized);
     return allowed ? normalized : DEFAULT_TEMPLATE_ID;
   }, [settings.template]);
+
+  // Preview-only selection (does not save until user clicks "Use template")
+  const [previewTemplateId, setPreviewTemplateId] = useState<string | null>(null);
+  const activeTemplateId = previewTemplateId ? normalizeTemplateId(previewTemplateId) : effectiveTemplateId;
+  const isPreviewingDifferentTemplate = Boolean(previewTemplateId && normalizeTemplateId(previewTemplateId) !== effectiveTemplateId);
 
   // If an old/removed template is present in settings, switch locally to a valid one.
   useEffect(() => {
@@ -322,45 +389,26 @@ export default function GoldTemplateEditor() {
 
   // Load store data
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch settings and products in PARALLEL for faster loading
-        const [settingsRes, productsRes] = await Promise.all([
-          fetch('/api/client/store/settings', { credentials: 'include' }),
-          fetch('/api/client/store/products', { credentials: 'include' }),
-        ]);
-        
-        // Handle settings
-        if (!settingsRes.ok) {
-          if (settingsRes.status === 401) {
-            navigate('/login');
-            return;
-          }
-          const detail = await settingsRes.json().catch(() => null);
-          const msg = (detail && (detail.error || detail.message)) ? String(detail.error || detail.message) : `HTTP ${settingsRes.status}`;
-          throw new Error(`Failed to load settings (${msg})`);
-        }
-        const settingsData = await settingsRes.json();
-        setSettings(settingsData || {});
+    if (storeSettingsData) setSettings(storeSettingsData);
+  }, [storeSettingsData]);
 
-        // Handle products
-        if (!productsRes.ok) {
-          const detail = await productsRes.json().catch(() => null);
-          const msg = (detail && (detail.error || detail.message)) ? String(detail.error || detail.message) : `HTTP ${productsRes.status}`;
-          throw new Error(`Failed to load products (${msg})`);
-        }
-        const productsData = await productsRes.json();
-        setProducts(Array.isArray(productsData) ? productsData : []);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to load store data';
-        setError(message);
-      } finally {
-        setLoading(false);
-      }
-    };
+  useEffect(() => {
+    if (Array.isArray(storeProductsData)) setProducts(storeProductsData);
+  }, [storeProductsData]);
 
-    fetchData();
-  }, [navigate]);
+  useEffect(() => {
+    if (storeSettingsError && !error) {
+      const message = storeSettingsError instanceof Error ? storeSettingsError.message : 'Failed to load store settings';
+      setError(message);
+    }
+  }, [storeSettingsError, error]);
+
+  useEffect(() => {
+    if (storeProductsError && !error) {
+      const message = storeProductsError instanceof Error ? storeProductsError.message : 'Failed to load products';
+      setError(message);
+    }
+  }, [storeProductsError, error]);
 
   const handleSettingChange = (key: string, value: any) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
@@ -370,39 +418,34 @@ export default function GoldTemplateEditor() {
   const handleTemplateChange = async (newTemplateId: string) => {
     const currentTemplate = settings.template || DEFAULT_TEMPLATE_ID;
     if (newTemplateId === currentTemplate) return;
-    
-    // Build updated settings with new template and reset template-specific settings
-    const updated = { ...settings, template: newTemplateId };
-    TEMPLATE_SETTING_KEYS.forEach(key => {
-      updated[key] = null;
-    });
-    
-    // Update local state immediately for responsive UI
-    setSettings(updated);
-    
-    // Use fast template-only endpoint to avoid timeout on slow DB
+
+    // Use fast template-only endpoint (now supports per-template snapshots).
     setSaving(true);
     try {
       const res = await fetch('/api/client/store/template', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ template: newTemplateId }),
+        body: JSON.stringify({ template: newTemplateId, mode: 'import' }),
       });
       
       if (!res.ok) {
         const data = await res.json().catch(() => null);
         throw new Error((data && (data.error || data.message)) ? String(data.error || data.message) : t('editor.saveFailed'));
       }
-      
+
       const savedData = await res.json().catch(() => ({} as any));
 
       // If backend is running in dev fallback mode (DB unavailable), don't pretend it saved.
       if (savedData && (savedData as any).__dbUnavailable) {
         throw new Error('Database unavailable. Changes were not saved.');
       }
-      // Update only the template in settings, keep other local changes
-      setSettings(prev => ({ ...prev, template: savedData.template || newTemplateId }));
+
+      // Server returns the merged settings for the selected template snapshot.
+      setSelectedEditPath(null);
+      setPreviewTemplateId(null);
+      setSettings(savedData || { template: newTemplateId });
+      queryClient.invalidateQueries({ queryKey: ['storeSettings'] });
       setSuccess(t('editor.templateChanged', { name: newTemplateId }) || `Template changed to ${newTemplateId}`);
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
@@ -413,19 +456,44 @@ export default function GoldTemplateEditor() {
   };
 
   // Reset current template to its defaults
-  const handleResetTemplate = () => {
-    if (!confirm('Reset all template customizations? This will restore the template to its original colors and text.')) {
+  const handleResetTemplate = async () => {
+    if (!confirm('Reset this template to its original layout and settings? This only affects the currently selected template.')) {
       return;
     }
-    setSettings((prev) => {
-      const updated = { ...prev };
-      TEMPLATE_SETTING_KEYS.forEach(key => {
-        updated[key] = null;
+
+    setSaving(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const res = await fetch('/api/client/store/template', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ template: effectiveTemplateId, mode: 'defaults' }),
       });
-      return updated;
-    });
-    setSuccess('Template reset to defaults');
-    setTimeout(() => setSuccess(null), 3000);
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error((data && (data.error || data.message)) ? String(data.error || data.message) : 'Failed to reset template');
+      }
+
+      const savedData = await res.json().catch(() => ({} as any));
+      if (savedData && (savedData as any).__dbUnavailable) {
+        throw new Error('Database unavailable. Changes were not saved.');
+      }
+
+      setSelectedEditPath(null);
+      setPreviewTemplateId(null);
+      setSettings(savedData || { template: effectiveTemplateId });
+      queryClient.invalidateQueries({ queryKey: ['storeSettings'] });
+      setSuccess('Template reset to defaults');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err: any) {
+      setError(err.message || 'Failed to reset template');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSave = async () => {
@@ -454,6 +522,7 @@ export default function GoldTemplateEditor() {
         throw new Error('Database unavailable. Changes were not saved.');
       }
       setSettings(savedData);
+      queryClient.invalidateQueries({ queryKey: ['storeSettings'] });
       
       setSuccess(t('editor.saved'));
       setTimeout(() => setSuccess(null), 3000);
@@ -584,7 +653,8 @@ export default function GoldTemplateEditor() {
       storeSlug: settings.store_slug || 'preview',
       settings: {
         ...settings,
-        template: effectiveTemplateId,
+        ...(isPreviewingDifferentTemplate ? getTemplateDefaults() : null),
+        template: activeTemplateId,
       },
       products,
       filtered: products,
@@ -606,10 +676,10 @@ export default function GoldTemplateEditor() {
       forcedBreakpoint: previewDevice,
       onSelect: handleSelectEditPath,
     }),
-    [settings, products, formatPrice, navigate, previewDevice, effectiveTemplateId, handleSelectEditPath]
+    [settings, products, formatPrice, navigate, previewDevice, activeTemplateId, isPreviewingDifferentTemplate, handleSelectEditPath]
   );
 
-  const selectedTemplateId = useMemo(() => normalizeTemplateId(String(effectiveTemplateId)), [effectiveTemplateId]);
+  const selectedTemplateId = useMemo(() => normalizeTemplateId(String(activeTemplateId)), [activeTemplateId]);
 
   // Render storefront into an iframe for mobile/tablet so CSS breakpoints match the simulated device width.
   useEffect(() => {
@@ -1180,7 +1250,7 @@ export default function GoldTemplateEditor() {
               className="gap-2"
               aria-label="Select template"
             >
-              {TEMPLATE_PREVIEWS.find((t) => t.id === String(settings.template || 'shiro-hana'))?.name || 'Shiro Hana'}
+              {TEMPLATE_PREVIEWS.find((t) => t.id === activeTemplateId)?.name || activeTemplateId}
               <ChevronDown className="w-4 h-4" />
             </Button>
 
@@ -1441,13 +1511,46 @@ export default function GoldTemplateEditor() {
                           <Check className="w-4 h-4 text-primary" />
                           <span className="text-sm text-muted-foreground whitespace-nowrap">{(t('editor.currentTemplate') as any) || 'Current'}:</span>
                           <span className="font-semibold text-primary truncate">
-                            {TEMPLATE_PREVIEWS.find((t) => t.id === String(settings.template || 'shiro-hana'))?.name || 'Shiro Hana'}
+                            {TEMPLATE_PREVIEWS.find((t) => t.id === effectiveTemplateId)?.name || effectiveTemplateId}
                           </span>
                         </div>
                         <Button variant="outline" size="sm" onClick={handleResetTemplate} className="text-xs">
                           🔄 Reset
                         </Button>
                       </div>
+
+                      {isPreviewingDifferentTemplate && (
+                        <div className="flex items-center justify-between gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                          <div className="min-w-0">
+                            <div className="text-xs text-muted-foreground">Previewing:</div>
+                            <div className="font-semibold truncate">
+                              {TEMPLATE_PREVIEWS.find((t) => t.id === activeTemplateId)?.name || activeTemplateId}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              disabled={saving || !previewTemplateId}
+                              onClick={() => {
+                                if (!previewTemplateId) return;
+                                handleTemplateChange(previewTemplateId);
+                              }}
+                            >
+                              Use template
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={saving}
+                              onClick={() => setPreviewTemplateId(null)}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      )}
 
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -1488,9 +1591,34 @@ export default function GoldTemplateEditor() {
                         ))}
                       </div>
 
-                      <p className="text-sm text-muted-foreground">
-                        Showing {filteredTemplates.length} of {TEMPLATE_PREVIEWS.length}
-                      </p>
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm text-muted-foreground">
+                          Showing {filteredTemplates.length} of {showAllTemplates ? TEMPLATE_PREVIEWS.length : READY_TEMPLATE_IDS.size}
+                        </p>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={!currentTemplateIsReady && showAllTemplates}
+                          onClick={() => {
+                            // If current template isn't ready, keep expanded so the current template remains reachable.
+                            if (!currentTemplateIsReady && showAllTemplates) return;
+                            setShowAllTemplates((v) => !v);
+                          }}
+                          className="text-xs"
+                          title={!currentTemplateIsReady && showAllTemplates ? 'Your current template is not fully tested. Keep all templates visible.' : undefined}
+                        >
+                          {showAllTemplates ? 'Show ready only' : 'Show all templates'}
+                        </Button>
+                      </div>
+
+                      {showAllTemplates && (
+                        <Alert className="border-amber-200 bg-amber-50 text-amber-900">
+                          <AlertDescription className="text-sm">
+                            Some templates are not fully tested in the editor yet. Use them at your own decision.
+                          </AlertDescription>
+                        </Alert>
+                      )}
 
                       <div
                         className={`grid gap-3 pb-1 ${
@@ -1502,12 +1630,14 @@ export default function GoldTemplateEditor() {
                         }`}
                       >
                         {filteredTemplates.map((template) => {
-                          const isSelected = String(settings.template || 'shiro-hana') === template.id;
+                          const isSelected = activeTemplateId === template.id;
+                          const isCurrent = effectiveTemplateId === template.id;
+                          const isReady = READY_TEMPLATE_IDS.has(template.id);
                           return (
                             <div
                               key={template.id}
                               onClick={() => {
-                                handleTemplateChange(template.id);
+                                setPreviewTemplateId(template.id);
                               }}
                               className={`relative cursor-pointer group transition-all duration-200 ${
                                 isSelected ? 'scale-[1.01]' : 'hover:scale-[1.01]'
@@ -1517,7 +1647,7 @@ export default function GoldTemplateEditor() {
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter' || e.key === ' ') {
                                   e.preventDefault();
-                                  handleTemplateChange(template.id);
+                                  setPreviewTemplateId(template.id);
                                 }
                               }}
                             >
@@ -1539,6 +1669,19 @@ export default function GoldTemplateEditor() {
                                     isSelected ? 'bg-primary/10' : 'bg-black/0 group-hover:bg-black/20'
                                   }`}
                                 />
+
+                                {!isReady && showAllTemplates && (
+                                  <div className="absolute top-2 left-2 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-semibold text-white">
+                                    Not ready
+                                  </div>
+                                )}
+
+                                {isCurrent && (
+                                  <div className="absolute bottom-2 left-2 rounded-full bg-primary/90 px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">
+                                    Current
+                                  </div>
+                                )}
+
                                 {isSelected && (
                                   <div className="absolute top-2 right-2 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
                                     <Check className="w-3 h-3 text-primary-foreground" />

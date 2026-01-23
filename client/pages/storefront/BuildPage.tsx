@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Check, AlertTriangle, Cpu, HardDrive, Monitor, Box, Zap, Save, ShoppingCart, Trash2, Download, Upload } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, AlertTriangle, Cpu, HardDrive, Monitor, Box, Zap, Save, ShoppingCart, Trash2, Download } from 'lucide-react';
 import { safeJsonParse } from '@/utils/safeJson';
+import { useTranslation } from '@/lib/i18n';
 
 // Types
 interface ProductMeta {
@@ -61,18 +62,19 @@ interface CompatibilityIssue {
 }
 
 const STEPS = [
-  { id: 'cpu', label: 'CPU', icon: Cpu, description: 'Choose your processor' },
-  { id: 'motherboard', label: 'Motherboard', icon: HardDrive, description: 'Select motherboard' },
-  { id: 'ram', label: 'RAM', icon: Monitor, description: 'Pick memory' },
-  { id: 'gpu', label: 'GPU', icon: Monitor, description: 'Graphics card' },
-  { id: 'storage', label: 'Storage', icon: HardDrive, description: 'NVMe/SSD' },
-  { id: 'case', label: 'Case', icon: Box, description: 'PC case' },
-  { id: 'psu', label: 'PSU', icon: Zap, description: 'Power supply' },
+  { id: 'cpu', icon: Cpu },
+  { id: 'motherboard', icon: HardDrive },
+  { id: 'ram', icon: Monitor },
+  { id: 'gpu', icon: Monitor },
+  { id: 'storage', icon: HardDrive },
+  { id: 'case', icon: Box },
+  { id: 'psu', icon: Zap },
 ];
 
 export default function BuildPage() {
   const { storeSlug } = useParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   
   const [currentStep, setCurrentStep] = useState(0);
   const [products, setProducts] = useState<Product[]>([]);
@@ -120,6 +122,22 @@ export default function BuildPage() {
     return products.filter(p => p.subCategory === subCategory);
   };
 
+  const steps = useMemo(
+    () =>
+      STEPS.map((step) => ({
+        ...step,
+        label: t(`buildPage.step.${step.id}.label`),
+        description: t(`buildPage.step.${step.id}.desc`),
+      })),
+    [t]
+  );
+
+  const stepLabelById = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const step of steps) map[step.id] = step.label;
+    return map;
+  }, [steps]);
+
   // Compatibility checks
   const compatibilityIssues = useMemo((): CompatibilityIssue[] => {
     const issues: CompatibilityIssue[] = [];
@@ -129,7 +147,10 @@ export default function BuildPage() {
       if (config.cpu.meta.socket !== config.motherboard.meta.socket) {
         issues.push({
           type: 'error',
-          message: `CPU socket (${config.cpu.meta.socket}) doesn't match motherboard socket (${config.motherboard.meta.socket})`,
+          message: t('buildPage.compat.cpuSocketMismatch', {
+            cpuSocket: config.cpu.meta.socket,
+            mbSocket: config.motherboard.meta.socket,
+          }),
           components: ['cpu', 'motherboard'],
         });
       }
@@ -140,7 +161,10 @@ export default function BuildPage() {
       if (config.ram.meta.type !== config.motherboard.meta.ramType) {
         issues.push({
           type: 'error',
-          message: `RAM type (${config.ram.meta.type}) is not compatible with motherboard (${config.motherboard.meta.ramType})`,
+          message: t('buildPage.compat.ramTypeMismatch', {
+            ramType: config.ram.meta.type,
+            mbRamType: config.motherboard.meta.ramType,
+          }),
           components: ['ram', 'motherboard'],
         });
       }
@@ -156,13 +180,19 @@ export default function BuildPage() {
       if (psuWattage < estimatedDraw) {
         issues.push({
           type: 'error',
-          message: `PSU (${psuWattage}W) may not provide enough power. Estimated draw: ${estimatedDraw}W`,
+          message: t('buildPage.compat.psuNotEnough', {
+            psuWattage,
+            estimatedDraw,
+          }),
           components: ['psu', 'cpu', 'gpu'],
         });
       } else if (psuWattage < estimatedDraw * 1.2) {
         issues.push({
           type: 'warning',
-          message: `PSU (${psuWattage}W) is close to estimated draw (${estimatedDraw}W). Consider a higher wattage for headroom.`,
+          message: t('buildPage.compat.psuClose', {
+            psuWattage,
+            estimatedDraw,
+          }),
           components: ['psu'],
         });
       }
@@ -178,7 +208,10 @@ export default function BuildPage() {
       if (mbFormFactor && !caseFormFactors.includes(mbFormFactor)) {
         issues.push({
           type: 'error',
-          message: `Motherboard form factor (${mbFormFactor}) doesn't fit in case (supports: ${caseFormFactors.join(', ')})`,
+          message: t('buildPage.compat.formFactorMismatch', {
+            mbFormFactor,
+            caseFormFactors: caseFormFactors.join(', '),
+          }),
           components: ['case', 'motherboard'],
         });
       }
@@ -192,14 +225,17 @@ export default function BuildPage() {
       if (gpuLength > maxGpuLength) {
         issues.push({
           type: 'error',
-          message: `GPU (${gpuLength}mm) is too long for case (max: ${maxGpuLength}mm)`,
+          message: t('buildPage.compat.gpuTooLong', {
+            gpuLength,
+            maxGpuLength,
+          }),
           components: ['gpu', 'case'],
         });
       }
     }
     
     return issues;
-  }, [config]);
+  }, [config, t]);
 
   // Calculate totals
   const totalPrice = useMemo(() => {
@@ -257,7 +293,7 @@ export default function BuildPage() {
   const addToCart = () => {
     const hasErrors = compatibilityIssues.some(i => i.type === 'error');
     if (hasErrors) {
-      alert('Please fix compatibility issues before adding to cart.');
+      alert(t('buildPage.alert.fixCompatibility'));
       return;
     }
     
@@ -265,7 +301,10 @@ export default function BuildPage() {
     const missingParts = requiredParts.filter(part => !config[part as keyof BuildConfig]);
     
     if (missingParts.length > 0) {
-      alert(`Please select: ${missingParts.join(', ')}`);
+      const partsLabel = missingParts
+        .map((part) => stepLabelById[part] ?? part)
+        .join(', ');
+      alert(t('buildPage.alert.selectParts', { parts: partsLabel }));
       return;
     }
     
@@ -284,11 +323,11 @@ export default function BuildPage() {
     });
     localStorage.setItem('cart', JSON.stringify(cart));
     
-    alert('Build added to cart!');
+    alert(t('buildPage.alert.addedToCart'));
     navigate(`/store/${storeSlug}`);
   };
 
-  const currentStepData = STEPS[currentStep];
+  const currentStepData = steps[currentStep];
   const currentProducts = getProductsBySubCategory(currentStepData.id);
   const selectedProduct = config[currentStepData.id as keyof BuildConfig];
 
@@ -310,11 +349,11 @@ export default function BuildPage() {
             className="flex items-center gap-2 text-gray-400 hover:text-white transition"
           >
             <ChevronLeft className="w-5 h-5" />
-            Back to Store
+            {t('buildPage.backToStore')}
           </button>
           
           <h1 className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
-            Build Your PC
+            {t('buildPage.title')}
           </h1>
           
           <div className="flex items-center gap-3">
@@ -323,14 +362,14 @@ export default function BuildPage() {
               className="flex items-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition"
             >
               <Download className="w-4 h-4" />
-              Load
+              {t('buildPage.action.load')}
             </button>
             <button
               onClick={() => setShowSaveModal(true)}
               className="flex items-center gap-2 px-3 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg transition"
             >
               <Save className="w-4 h-4" />
-              Save
+              {t('buildPage.action.save')}
             </button>
           </div>
         </div>
@@ -340,7 +379,7 @@ export default function BuildPage() {
         {/* Progress Steps */}
         <div className="mb-8 overflow-x-auto pb-2">
           <div className="flex items-center gap-2 min-w-max">
-            {STEPS.map((step, idx) => {
+            {steps.map((step, idx) => {
               const StepIcon = step.icon;
               const isActive = idx === currentStep;
               const isComplete = config[step.id as keyof BuildConfig] !== null;
@@ -365,7 +404,7 @@ export default function BuildPage() {
                     {isComplete && !hasIssue && <Check className="w-4 h-4" />}
                     {hasIssue && <AlertTriangle className="w-4 h-4" />}
                   </button>
-                  {idx < STEPS.length - 1 && (
+                  {idx < steps.length - 1 && (
                     <ChevronRight className="w-4 h-4 text-gray-600 flex-shrink-0" />
                   )}
                 </React.Fragment>
@@ -395,8 +434,8 @@ export default function BuildPage() {
                     <span className="text-gray-500">—</span>
                   </div>
                   <div className="text-left">
-                    <div className="font-medium">Skip this step</div>
-                    <div className="text-sm text-gray-400">Don't include {currentStepData.label}</div>
+                    <div className="font-medium">{t('buildPage.skipStepTitle')}</div>
+                    <div className="text-sm text-gray-400">{t('buildPage.skipStepDesc', { step: currentStepData.label })}</div>
                   </div>
                 </button>
                 
@@ -452,15 +491,15 @@ export default function BuildPage() {
                 className="flex items-center gap-2 px-6 py-3 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition"
               >
                 <ChevronLeft className="w-5 h-5" />
-                Previous
+                {t('buildPage.action.previous')}
               </button>
               
-              {currentStep < STEPS.length - 1 ? (
+              {currentStep < steps.length - 1 ? (
                 <button
-                  onClick={() => setCurrentStep(s => Math.min(STEPS.length - 1, s + 1))}
+                  onClick={() => setCurrentStep(s => Math.min(steps.length - 1, s + 1))}
                   className="flex items-center gap-2 px-6 py-3 bg-cyan-600 hover:bg-cyan-500 rounded-lg transition"
                 >
-                  Next
+                  {t('buildPage.action.next')}
                   <ChevronRight className="w-5 h-5" />
                 </button>
               ) : (
@@ -469,7 +508,7 @@ export default function BuildPage() {
                   className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-400 hover:to-purple-400 rounded-lg transition font-bold"
                 >
                   <ShoppingCart className="w-5 h-5" />
-                  Add Build to Cart
+                  {t('buildPage.action.addBuildToCart')}
                 </button>
               )}
             </div>
@@ -479,10 +518,10 @@ export default function BuildPage() {
           <div className="space-y-6">
             {/* Preview Panel */}
             <div className="bg-gray-800/50 backdrop-blur rounded-xl p-6 border border-gray-700">
-              <h3 className="text-lg font-bold mb-4">Your Build</h3>
+              <h3 className="text-lg font-bold mb-4">{t('buildPage.yourBuild')}</h3>
               
               <div className="space-y-3">
-                {STEPS.map(step => {
+                {steps.map(step => {
                   const product = config[step.id as keyof BuildConfig];
                   return (
                     <div 
@@ -513,7 +552,7 @@ export default function BuildPage() {
                           </div>
                           <div className="flex-1">
                             <div className="text-sm text-gray-500">{step.label}</div>
-                            <div className="text-xs text-gray-600">Not selected</div>
+                            <div className="text-xs text-gray-600">{t('buildPage.notSelected')}</div>
                           </div>
                         </>
                       )}
@@ -525,7 +564,7 @@ export default function BuildPage() {
               {/* Total */}
               <div className="mt-6 pt-4 border-t border-gray-700">
                 <div className="flex justify-between items-center text-lg font-bold">
-                  <span>Total</span>
+                  <span>{t('buildPage.total')}</span>
                   <span className="text-cyan-400">{totalPrice.toLocaleString()} DZD</span>
                 </div>
               </div>
@@ -533,7 +572,7 @@ export default function BuildPage() {
 
             {/* Performance Estimate */}
             <div className="bg-gray-800/50 backdrop-blur rounded-xl p-6 border border-gray-700">
-              <h3 className="text-lg font-bold mb-4">Performance Estimate</h3>
+              <h3 className="text-lg font-bold mb-4">{t('buildPage.performanceEstimate')}</h3>
               <div className="relative h-4 bg-gray-700 rounded-full overflow-hidden">
                 <div 
                   className="absolute inset-y-0 left-0 bg-gradient-to-r from-cyan-500 to-purple-500 transition-all duration-500"
@@ -541,9 +580,13 @@ export default function BuildPage() {
                 />
               </div>
               <div className="mt-2 text-center text-sm text-gray-400">
-                {performanceScore < 30 ? 'Entry Level' : 
-                 performanceScore < 60 ? 'Mid-Range Gaming' : 
-                 performanceScore < 80 ? 'High-End Gaming' : 'Enthusiast'}
+                {performanceScore < 30
+                  ? t('buildPage.performance.entry')
+                  : performanceScore < 60
+                    ? t('buildPage.performance.mid')
+                    : performanceScore < 80
+                      ? t('buildPage.performance.high')
+                      : t('buildPage.performance.enthusiast')}
               </div>
             </div>
 
@@ -552,7 +595,7 @@ export default function BuildPage() {
               <div className="bg-gray-800/50 backdrop-blur rounded-xl p-6 border border-gray-700">
                 <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5 text-amber-400" />
-                  Compatibility
+                  {t('buildPage.compatibility')}
                 </h3>
                 <div className="space-y-3">
                   {compatibilityIssues.map((issue, idx) => (
@@ -578,10 +621,10 @@ export default function BuildPage() {
       {showSaveModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
           <div className="bg-gray-800 rounded-xl p-6 w-full max-w-md border border-gray-700">
-            <h3 className="text-xl font-bold mb-4">Save Build</h3>
+            <h3 className="text-xl font-bold mb-4">{t('buildPage.modal.saveTitle')}</h3>
             <input
               type="text"
-              placeholder="Build name..."
+              placeholder={t('buildPage.modal.buildNamePlaceholder')}
               value={buildName}
               onChange={(e) => setBuildName(e.target.value)}
               className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:border-cyan-500 outline-none mb-4"
@@ -591,14 +634,14 @@ export default function BuildPage() {
                 onClick={() => setShowSaveModal(false)}
                 className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition"
               >
-                Cancel
+                {t('buildPage.action.cancel')}
               </button>
               <button
                 onClick={saveBuild}
                 disabled={!buildName.trim()}
                 className="flex-1 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 rounded-lg transition"
               >
-                Save
+                {t('buildPage.action.save')}
               </button>
             </div>
           </div>
@@ -609,10 +652,10 @@ export default function BuildPage() {
       {showLoadModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
           <div className="bg-gray-800 rounded-xl p-6 w-full max-w-md border border-gray-700 max-h-[80vh] overflow-y-auto">
-            <h3 className="text-xl font-bold mb-4">Load Build</h3>
+            <h3 className="text-xl font-bold mb-4">{t('buildPage.modal.loadTitle')}</h3>
             
             {savedBuilds.length === 0 ? (
-              <p className="text-gray-400 text-center py-8">No saved builds yet</p>
+              <p className="text-gray-400 text-center py-8">{t('buildPage.modal.noSavedBuilds')}</p>
             ) : (
               <div className="space-y-3">
                 {savedBuilds.map(build => (
@@ -636,7 +679,7 @@ export default function BuildPage() {
                         onClick={() => loadBuild(build)}
                         className="flex-1 px-3 py-2 bg-cyan-600 hover:bg-cyan-500 rounded transition text-sm"
                       >
-                        Load
+                        {t('buildPage.action.load')}
                       </button>
                       <button
                         onClick={() => deleteBuild(build.id)}
@@ -654,7 +697,7 @@ export default function BuildPage() {
               onClick={() => setShowLoadModal(false)}
               className="w-full mt-4 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition"
             >
-              Close
+              {t('buildPage.action.close')}
             </button>
           </div>
         </div>

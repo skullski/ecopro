@@ -135,6 +135,41 @@ export default function UrgencyMaxTemplate(props: TemplateProps) {
       className="ecopro-storefront"
       style={{ minHeight: '100vh', background: bg, color: text, fontFamily: 'Inter, system-ui, sans-serif' }}
     >
+      {canManage && (
+        <button
+          type="button"
+          data-edit-path="__settings"
+          onClick={(e) => { stopIfManage(e); onSelect('__settings'); }}
+          style={{
+            position: 'fixed',
+            right: 16,
+            bottom: 16,
+            zIndex: 9999,
+            background: '#111827',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: 9999,
+            padding: '10px 14px',
+            fontSize: 12,
+            letterSpacing: '0.08em',
+            cursor: 'pointer',
+          }}
+        >
+          Settings
+        </button>
+      )}
+
+      {canManage && (
+        <div style={{ position: 'absolute', left: -9999, top: 0, width: 1, height: 1, overflow: 'hidden' }}>
+          <div data-edit-path="layout.featured" />
+          <div data-edit-path="layout.featured.title" />
+          <div data-edit-path="layout.featured.subtitle" />
+          <div data-edit-path="layout.featured.items" />
+          <div data-edit-path="layout.featured.addLabel" />
+          <div data-edit-path="layout.footer.links" />
+          <div data-edit-path="layout.footer.social" />
+        </div>
+      )}
       {/* Urgency Bar */}
       <div
         data-edit-path="layout.hero.badge"
@@ -159,11 +194,31 @@ export default function UrgencyMaxTemplate(props: TemplateProps) {
         style={{ background: cardBg, borderBottom: `1px solid ${border}`, padding: isMobile ? '10px 12px' : '12px 20px' }}
       >
         <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: 10 }}
+            data-edit-path="layout.header.logo"
+            onClick={(e) => { stopIfManage(e); onSelect('layout.header.logo'); }}
+          >
             {asString(s.store_logo) ? (
               <img src={asString(s.store_logo)} alt={storeName} style={{ width: isMobile ? 32 : 38, height: isMobile ? 32 : 38, borderRadius: 8, objectFit: 'cover' }} />
             ) : (
-              <span style={{ fontWeight: 900, fontSize: isMobile ? 14 : 18, color: accent }}>{storeName}</span>
+              <span
+                data-edit-path="__settings.store_name"
+                onClick={(e) => { stopIfManage(e); onSelect('__settings.store_name'); }}
+                style={{ fontWeight: 900, fontSize: isMobile ? 14 : 18, color: accent }}
+              >
+                {storeName}
+              </span>
+            )}
+
+            {canManage && asString(s.store_logo) && (
+              <span
+                data-edit-path="__settings.store_name"
+                onClick={(e) => { stopIfManage(e); onSelect('__settings.store_name'); }}
+                style={{ fontWeight: 900, fontSize: isMobile ? 14 : 18, color: accent }}
+              >
+                {storeName}
+              </span>
             )}
           </div>
           {/* Mini Timer */}
@@ -174,6 +229,20 @@ export default function UrgencyMaxTemplate(props: TemplateProps) {
             </span>
           </div>
         </div>
+
+        {canManage && (
+          <div
+            data-edit-path="layout.header.nav"
+            onClick={(e) => { stopIfManage(e); onSelect('layout.header.nav'); }}
+            style={{ marginTop: 10, display: 'flex', justifyContent: 'center', gap: 14, fontSize: 12, color: muted }}
+          >
+            {['Home', 'FAQ', 'Contact'].map((label) => (
+              <a key={label} href="#" onClick={(e) => { stopIfManage(e); onSelect('layout.header.nav'); }} style={{ color: 'inherit', textDecoration: 'none' }}>
+                {label}
+              </a>
+            ))}
+          </div>
+        )}
       </header>
 
       {/* Hero Section */}
@@ -185,6 +254,13 @@ export default function UrgencyMaxTemplate(props: TemplateProps) {
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           {/* Title */}
           <div style={{ textAlign: 'center', marginBottom: isMobile ? 20 : 28 }}>
+            <div
+              data-edit-path="layout.hero.kicker"
+              onClick={(e) => { stopIfManage(e); onSelect('layout.hero.kicker'); }}
+              style={{ display: 'inline-block', marginBottom: 10, padding: '6px 10px', borderRadius: 6, border: `1px solid ${border}`, color: yellow, fontWeight: 900, fontSize: isMobile ? 11 : 12 }}
+            >
+              {heroKicker}
+            </div>
             <h1
               data-edit-path="layout.hero.title"
               onClick={(e) => { stopIfManage(e); onSelect('layout.hero.title'); }}
@@ -208,6 +284,14 @@ export default function UrgencyMaxTemplate(props: TemplateProps) {
             >
               {heroSubtitle}
             </p>
+
+            <button
+              data-edit-path="layout.hero.cta"
+              onClick={(e) => { stopIfManage(e); onSelect('layout.hero.cta'); }}
+              style={{ marginTop: 14, background: yellow, border: 0, borderRadius: buttonRadius, padding: '10px 14px', fontWeight: 900, cursor: 'pointer' }}
+            >
+              {ctaText}
+            </button>
           </div>
 
           {/* Countdown Timer */}
@@ -400,6 +484,25 @@ export default function UrgencyMaxTemplate(props: TemplateProps) {
         >
           {asString(s.template_copyright) || `© ${new Date().getFullYear()} ${storeName}. All rights reserved.`}
         </p>
+
+        {canManage && (
+          <div style={{ marginTop: 12, display: 'flex', justifyContent: 'center', gap: 16, flexWrap: 'wrap' }}>
+            <div data-edit-path="layout.footer.links" onClick={(e) => { stopIfManage(e); onSelect('layout.footer.links'); }} style={{ display: 'flex', gap: 12, flexWrap: 'wrap', fontSize: 12, color: muted }}>
+              {['Shipping', 'Returns', 'Support'].map((label) => (
+                <a key={label} href="#" onClick={(e) => { stopIfManage(e); onSelect('layout.footer.links'); }} style={{ color: 'inherit', textDecoration: 'none' }}>
+                  {label}
+                </a>
+              ))}
+            </div>
+            <div data-edit-path="layout.footer.social" onClick={(e) => { stopIfManage(e); onSelect('layout.footer.social'); }} style={{ display: 'flex', gap: 10, flexWrap: 'wrap', fontSize: 12, color: muted }}>
+              {['Instagram', 'TikTok'].map((label) => (
+                <a key={label} href="#" onClick={(e) => { stopIfManage(e); onSelect('layout.footer.social'); }} style={{ color: 'inherit', textDecoration: 'none' }}>
+                  {label}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
       </footer>
 
       {/* CSS Animation */}

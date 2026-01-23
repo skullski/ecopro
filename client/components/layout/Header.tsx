@@ -8,6 +8,7 @@ import { authApi } from "@/lib/auth";
 import { storeNameToSlug } from "@/utils/storeUrl";
 import { safeJsonParse } from "@/utils/safeJson";
 import { useNotifications } from "@/contexts/NotificationContext";
+import { useStoreSettings } from "@/hooks/useStoreSettings";
 
 export default function Header() {
   const { toggle, theme } = useTheme();
@@ -17,26 +18,13 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [langMenuOpen, setLangMenuOpen] = useState(false);
   const { unreadMessagesCount } = useNotifications();
-  const [storeSlug, setStoreSlug] = useState<string | null>(null);
 
   const user = typeof window !== "undefined" ? safeJsonParse(localStorage.getItem("user"), null as any) : null;
   const isAdmin = user?.role === "admin";
   const isSeller = user?.role === "seller";
   const isClient = !isAdmin && !isSeller;
 
-  // Fetch store slug for clients
-  useEffect(() => {
-    if (user && isClient) {
-      fetch('/api/client/store/settings', { credentials: 'include' })
-        .then(res => res.ok ? res.json() : null)
-        .then(data => {
-          const preferred = data?.store_name ? storeNameToSlug(String(data.store_name)) : null;
-          const fallback = data?.store_slug ? String(data.store_slug) : null;
-          setStoreSlug(preferred || fallback);
-        })
-        .catch(() => {});
-    }
-  }, [user, isClient]);
+  const { storeSlug } = useStoreSettings({ enabled: Boolean(user && isClient) });
 
   const unreadCount = unreadMessagesCount;
 

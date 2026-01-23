@@ -13,6 +13,9 @@ import { Label } from '@/components/ui/label';
 import { TemplatesTab } from '@/components/TemplatesTab';
 import { generateStoreUrl } from '@/utils/storeUrl';
 import { useTranslation } from '@/lib/i18n';
+import { useToast } from '@/components/ui/use-toast';
+import { useStoreSettings } from '@/hooks/useStoreSettings';
+import { useStoreProducts } from '@/hooks/useStoreProducts';
 import {
   Dialog,
   DialogContent,
@@ -61,7 +64,16 @@ interface StoreProduct {
 export default function Store() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { toast } = useToast();
   // Products Management was duplicated with Overview; keep a single Store page.
+
+  const { data: storeSettingsData } = useStoreSettings({
+    onUnauthorized: () => navigate('/login'),
+  });
+
+  const { data: storeProductsData } = useStoreProducts({
+    onUnauthorized: () => navigate('/login'),
+  });
 
   const applyFilters = (
     list: StoreProduct[],
@@ -111,30 +123,15 @@ export default function Store() {
     setTimeout(() => setStoreLinkCopiedRef(false), 2000);
   };
 
-  // Fetch store settings and products on mount
+  // Fetch remaining store data on mount (settings/products come from cached hooks)
   useEffect(() => {
     const fetchData = async () => {
       try {
         // Fetch all data in PARALLEL for faster loading
-        const [settingsRes, productsRes, inventoryRes, statsRes] = await Promise.all([
-          fetch('/api/client/store/settings'),
-          fetch('/api/client/store/products'),
-          fetch('/api/client/stock'),
-          fetch('/api/client/store/stats'),
+        const [inventoryRes, statsRes] = await Promise.all([
+          fetch('/api/client/stock', { credentials: 'include' }),
+          fetch('/api/client/store/stats', { credentials: 'include' }),
         ]);
-        
-        // Process settings
-        if (settingsRes.ok) {
-          const settingsData = await settingsRes.json();
-          setStoreSettings(settingsData);
-        }
-        
-        // Process products
-        if (productsRes.ok) {
-          const productsData = await productsRes.json();
-          setProducts(productsData);
-          setFilteredProducts(applyFilters(productsData, searchQuery, statusFilter));
-        }
         
         // Process inventory
         if (inventoryRes.ok) {
@@ -149,43 +146,9 @@ export default function Store() {
         }
       } catch (err) {
         console.error('Failed to fetch store data', err);
-      } finally {
-        setLoading(false);
       }
     };
     fetchData();
-  }, []);
-
-  // Refresh stats + product views every 5s
-  useEffect(() => {
-    let stopped = false;
-    const refresh = async () => {
-      try {
-        const [productsRes, statsRes] = await Promise.all([
-          fetch('/api/client/store/products'),
-          fetch('/api/client/store/stats'),
-        ]);
-
-        if (!stopped && productsRes.ok) {
-          const productsData = await productsRes.json();
-          setProducts(productsData);
-          setFilteredProducts(applyFilters(productsData, searchQuery, statusFilter));
-        }
-
-        if (!stopped && statsRes.ok) {
-          const statsData = await statsRes.json();
-          setStatsServer(statsData);
-        }
-      } catch (err) {
-        // non-fatal; polling should be silent
-      }
-    };
-
-    const intervalId = window.setInterval(refresh, 5_000);
-    return () => {
-      stopped = true;
-      window.clearInterval(intervalId);
-    };
   }, []);
   // Product action states
   const [showShareModal, setShowShareModal] = useState(false);
@@ -281,6 +244,16 @@ export default function Store() {
 
           const handleCreateProduct = async () => {
             try {
+              setProductFormSubmitAttempted(true);
+              setProductFormServerError(null);
+              if (!canSubmitProduct) {
+                toast({
+                  variant: 'destructive',
+                  title: 'Missing required fields',
+                  description: 'Please enter a product title and a valid price.',
+                });
+                return;
+              }
               const res = await fetch('/api/client/store/products', {
                 method: 'POST',
                 headers: {
@@ -297,22 +270,39 @@ export default function Store() {
                 // reload products
                 await reloadProducts();
                 setShowAddModal(false);
-                setFormData({ status: 'active', is_featured: false, stock_quantity: 0 });
+                setFormData({ status: 'active', is_featured: false, stock_quantity: 1 });
                 setVariantsDraft([]);
                 setVariantsLoaded(false);
                 setVariantsDirty(false);
+                setProductFormSubmitAttempted(false);
+                setProductFormServerError(null);
+                toast({ title: 'Product created', description: 'Your product is now in your store.' });
               } else {
-                const error = await res.json();
-                alert(error.error || 'Failed to create product');
+                const error = await res.json().catch(() => ({} as any));
+                const msg = String((error as any)?.error || 'Failed to create product');
+                setProductFormServerError(msg);
+                toast({ variant: 'destructive', title: 'Create failed', description: msg });
               }
             } catch (error) {
               console.error('Create product error:', error);
-              alert('Failed to create product');
+              const msg = error instanceof Error ? error.message : 'Failed to create product';
+              setProductFormServerError(msg);
+              toast({ variant: 'destructive', title: 'Create failed', description: msg });
             }
           };
           const handleUpdateProduct = async () => {
             if (!selectedProduct) return;
             try {
+              setProductFormSubmitAttempted(true);
+              setProductFormServerError(null);
+              if (!canSubmitProduct) {
+                toast({
+                  variant: 'destructive',
+                  title: 'Missing required fields',
+                  description: 'Please enter a product title and a valid price.',
+                });
+                return;
+              }
               const res = await fetch(`/api/client/store/products/${selectedProduct.id}`, {
                 method: 'PUT',
                 headers: {
@@ -328,17 +318,24 @@ export default function Store() {
                 await reloadProducts();
                 setShowEditModal(false);
                 setSelectedProduct(null);
-                setFormData({ status: 'active', is_featured: false, stock_quantity: 0 });
+                setFormData({ status: 'active', is_featured: false, stock_quantity: 1 });
                 setVariantsDraft([]);
                 setVariantsLoaded(false);
                 setVariantsDirty(false);
+                setProductFormSubmitAttempted(false);
+                setProductFormServerError(null);
+                toast({ title: 'Saved', description: 'Product updated successfully.' });
               } else {
-                const error = await res.json();
-                alert(error.error || 'Failed to update product');
+                const error = await res.json().catch(() => ({} as any));
+                const msg = String((error as any)?.error || 'Failed to update product');
+                setProductFormServerError(msg);
+                toast({ variant: 'destructive', title: 'Save failed', description: msg });
               }
             } catch (error) {
               console.error('Update product error:', error);
-              alert('Failed to update product');
+              const msg = error instanceof Error ? error.message : 'Failed to update product';
+              setProductFormServerError(msg);
+              toast({ variant: 'destructive', title: 'Save failed', description: msg });
             }
           };
           const handleDeleteProduct = async () => {
@@ -352,13 +349,16 @@ export default function Store() {
                 await reloadProducts();
                 setShowDeleteDialog(false);
                 setSelectedProduct(null);
+                toast({ title: 'Deleted', description: 'Product removed.' });
               } else {
-                const error = await res.json();
-                alert(error.error || 'Failed to delete product');
+                const error = await res.json().catch(() => ({} as any));
+                const msg = String((error as any)?.error || 'Failed to delete product');
+                toast({ variant: 'destructive', title: 'Delete failed', description: msg });
               }
             } catch (error) {
               console.error('Delete product error:', error);
-              alert('Failed to delete product');
+              const msg = error instanceof Error ? error.message : 'Failed to delete product';
+              toast({ variant: 'destructive', title: 'Delete failed', description: msg });
             }
           };
           const handleGetShareLink = async (product: StoreProduct) => {
@@ -379,8 +379,18 @@ export default function Store() {
   const [formData, setFormData] = useState<Partial<StoreProduct>>({
     status: 'active',
     is_featured: false,
-    stock_quantity: 0,
+    stock_quantity: 1,
   });
+  const [productFormSubmitAttempted, setProductFormSubmitAttempted] = useState(false);
+  const [productFormServerError, setProductFormServerError] = useState<string | null>(null);
+  const titleIsValid = String(formData.title || '').trim().length > 0;
+  const priceValue = formData.price;
+  const priceIsValid = typeof priceValue === 'number' && Number.isFinite(priceValue) && priceValue > 0;
+  const canSubmitProduct = titleIsValid && priceIsValid;
+  const isActiveWithoutStock =
+    (formData.status || 'active') === 'active' &&
+    Number(formData.stock_quantity ?? 0) <= 0 &&
+    variantsDraft.filter((v) => v.is_active ?? true).length === 0;
   // Product modal state
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   // Product logic
@@ -438,9 +448,14 @@ export default function Store() {
             } catch (e) {
               if (saved) setStoreSettings(saved);
             }
+            toast({ title: t('store.toast.savedTitle'), description: t('store.toast.settingsUpdatedDesc') });
           } catch (e) {
             console.error('Failed to save store settings', e);
-            alert(`Failed to save settings: ${(e as any)?.message || e}`);
+            toast({
+              variant: 'destructive',
+              title: t('store.toast.saveFailedTitle'),
+              description: String((e as any)?.message || t('store.toast.saveFailedDesc')),
+            });
           } finally {
             setSavingSettings(false);
           }
@@ -452,10 +467,36 @@ export default function Store() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (storeSettingsData) {
+      setStoreSettings(storeSettingsData);
+    }
+  }, [storeSettingsData]);
+
+  useEffect(() => {
+    if (Array.isArray(storeProductsData)) {
+      setProducts(storeProductsData);
+    }
+  }, [storeProductsData]);
+
+  useEffect(() => {
+    setFilteredProducts(applyFilters(products, searchQuery, statusFilter));
+  }, [products, searchQuery, statusFilter]);
+
+  useEffect(() => {
+    // Consider the page "ready" once core settings/products are present; inventory/stats can load in background.
+    if (storeSettingsData && Array.isArray(storeProductsData)) {
+      setLoading(false);
+    }
+  }, [storeSettingsData, storeProductsData]);
   // Product modals
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showSelectInventory, setShowSelectInventory] = useState(false);
+  const [productFormSection, setProductFormSection] = useState<
+    'product' | 'price' | 'variants' | 'status' | 'images'
+  >('product');
   // Selected product
   const [selectedProduct, setSelectedProduct] = useState<StoreProduct | null>(null);
   // Available products from shared inventory for private store
@@ -555,7 +596,11 @@ export default function Store() {
         }
       } catch (error) {
         console.error('Failed to upload logo:', error);
-        alert('Failed to upload image. Please try again.');
+        toast({
+          variant: 'destructive',
+          title: t('store.toast.uploadFailedTitle'),
+          description: t('store.toast.uploadFailedDesc'),
+        });
       } finally {
         setUploadingLogo(false);
       }
@@ -574,14 +619,22 @@ export default function Store() {
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
           console.error('Failed to persist removeLogo', err);
-          alert('Failed to remove logo');
+          toast({
+            variant: 'destructive',
+            title: t('store.toast.removeFailedTitle'),
+            description: t('store.toast.removeFailedDesc'),
+          });
           return;
         }
         const updated = await res.json();
         setStoreSettings(updated);
       } catch (error) {
         console.error('removeLogo error:', error);
-        alert('Failed to remove logo');
+        toast({
+          variant: 'destructive',
+          title: t('store.toast.removeFailedTitle'),
+          description: t('store.toast.removeFailedDesc'),
+        });
       }
     };
     const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -616,7 +669,11 @@ export default function Store() {
         }
       } catch (error) {
         console.error('Failed to upload banner:', error);
-        alert('Failed to upload image. Please try again.');
+        toast({
+          variant: 'destructive',
+          title: t('store.toast.uploadFailedTitle'),
+          description: t('store.toast.uploadFailedDesc'),
+        });
       } finally {
         setUploadingBanner(false);
       }
@@ -634,14 +691,22 @@ export default function Store() {
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
           console.error('Failed to persist removeBanner', err);
-          alert('Failed to remove banner');
+          toast({
+            variant: 'destructive',
+            title: t('store.toast.removeFailedTitle'),
+            description: t('store.toast.removeFailedDesc'),
+          });
           return;
         }
         const updated = await res.json();
         setStoreSettings(updated);
       } catch (error) {
         console.error('removeBanner error:', error);
-        alert('Failed to remove banner');
+        toast({
+          variant: 'destructive',
+          title: t('store.toast.removeFailedTitle'),
+          description: t('store.toast.removeFailedDesc'),
+        });
       }
     };
     const handleFieldUpload = async (field: string, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -675,7 +740,11 @@ export default function Store() {
         }
       } catch (err) {
         console.error('Field upload error', err);
-        alert('Failed to upload image');
+        toast({
+          variant: 'destructive',
+          title: t('store.toast.uploadFailedTitle'),
+          description: t('store.toast.uploadFailedDesc'),
+        });
       } finally {
         if (e && (e.target as HTMLInputElement)) (e.target as HTMLInputElement).value = '';
       }
@@ -696,14 +765,22 @@ export default function Store() {
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
           console.error('Failed to persist removeField', err);
-          alert('Failed to remove image');
+          toast({
+            variant: 'destructive',
+            title: t('store.toast.removeFailedTitle'),
+            description: t('store.toast.removeFailedDesc'),
+          });
           return;
         }
         const updated = await res.json();
         setStoreSettings(updated);
       } catch (error) {
         console.error('removeField error:', error);
-        alert('Failed to remove image');
+        toast({
+          variant: 'destructive',
+          title: t('store.toast.removeFailedTitle'),
+          description: t('store.toast.removeFailedDesc'),
+        });
       }
     };
     // store images handlers removed (not used)
@@ -723,14 +800,14 @@ export default function Store() {
 
     // Validate file size (2MB max)
     if (file.size > 2 * 1024 * 1024) {
-      alert('Image must be less than 2MB');
+      toast({ variant: 'destructive', title: 'Upload failed', description: 'Image must be less than 2MB.' });
       e.target.value = '';
       return;
     }
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+      toast({ variant: 'destructive', title: 'Upload failed', description: 'Please select an image file.' });
       e.target.value = '';
       return;
     }
@@ -749,16 +826,24 @@ export default function Store() {
         const fullUrl = `${window.location.origin}${data.url}`;
         setFormData(prev => ({ ...prev, images: [fullUrl] }));
         e.target.value = '';
-        alert('Image uploaded successfully!');
+        toast({ title: 'Uploaded', description: 'Product image uploaded successfully.' });
       } else {
         const error = await res.json();
         console.error('Upload failed:', error);
-        alert(`Upload failed: ${error.error || 'Unknown error'}`);
+        toast({
+          variant: 'destructive',
+          title: 'Upload failed',
+          description: String((error as any)?.error || 'Unknown error'),
+        });
         e.target.value = '';
       }
     } catch (error) {
       console.error('Upload error:', error);
-      alert(`Upload error: ${error instanceof Error ? error.message : 'Failed to upload image'}`);
+      toast({
+        variant: 'destructive',
+        title: 'Upload failed',
+        description: error instanceof Error ? error.message : 'Failed to upload image',
+      });
       e.target.value = '';
     } finally {
       setUploading(false);
@@ -837,16 +922,33 @@ export default function Store() {
               <Settings className="w-4 h-4 mr-2" />
               {t('store.templateEditor')}
             </Button>
-            <Button 
+            <Button
+              onClick={() => {
+                setSelectedProduct(null);
+                setFormData({ status: 'active', is_featured: false, stock_quantity: 1 });
+                setVariantsDraft([]);
+                setVariantsLoaded(true);
+                setVariantsDirty(false);
+                setProductFormSubmitAttempted(false);
+                setProductFormServerError(null);
+                setShowAddModal(true);
+              }}
+              className="bg-gradient-to-r from-primary to-purple-600 h-9 px-3"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              {t('store.createProduct')}
+            </Button>
+            <Button
+              variant="outline"
               onClick={() => {
                 setShowSelectInventory(true);
                 setSelectedInventoryProduct(null);
                 setInventoryStockQuantity(1);
               }}
-              className="bg-gradient-to-r from-primary to-purple-600 h-9 px-3"
+              className="h-9 px-3"
             >
-              <Plus className="w-4 h-4 mr-2" />
-              {t('store.addProduct')}
+              <Package className="w-4 h-4 mr-2" />
+              {t('store.selectFromInventory')}
             </Button>
           </div>
         </div>
@@ -1015,15 +1117,34 @@ export default function Store() {
             <p className="text-muted-foreground mb-4">
               {t('store.createFirstProduct')}
             </p>
-            <Button onClick={() => {
-              setVariantsDraft([]);
-              setVariantsLoaded(true);
-              setVariantsDirty(false);
-              setShowAddModal(true);
-            }}>
-              <Plus className="w-4 h-4 mr-2" />
-              {t('store.addFirstProduct')}
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 justify-center">
+              <Button
+                onClick={() => {
+                  setSelectedProduct(null);
+                  setFormData({ status: 'active', is_featured: false, stock_quantity: 1 });
+                  setVariantsDraft([]);
+                  setVariantsLoaded(true);
+                  setVariantsDirty(false);
+                  setProductFormSubmitAttempted(false);
+                  setProductFormServerError(null);
+                  setShowAddModal(true);
+                }}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                {t('store.createProduct')}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowSelectInventory(true);
+                  setSelectedInventoryProduct(null);
+                  setInventoryStockQuantity(1);
+                }}
+              >
+                <Package className="w-4 h-4 mr-2" />
+                {t('store.selectFromInventory')}
+              </Button>
+            </div>
           </div>
         ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 md:gap-3">
@@ -1463,11 +1584,19 @@ export default function Store() {
                     }
                   } else {
                     const error = await res.json();
-                    alert(error.error || 'Failed to add product');
+                    toast({
+                      variant: 'destructive',
+                      title: t('store.toast.addProductFailedTitle'),
+                      description: error?.error || t('store.toast.addProductFailedDesc'),
+                    });
                   }
                 } catch (error) {
                   console.error('Add product error:', error);
-                  alert('Failed to add product');
+                  toast({
+                    variant: 'destructive',
+                    title: t('store.toast.addProductFailedTitle'),
+                    description: t('store.toast.addProductFailedDesc'),
+                  });
                 }
               }}
               disabled={!selectedInventoryProduct || (inventoryVariants.length > 0 && selectedInventoryVariantIds.length === 0)}
@@ -1483,337 +1612,424 @@ export default function Store() {
         if (!open) {
           setShowAddModal(false);
           setShowEditModal(false);
-          setFormData({ status: 'active', is_featured: false, stock_quantity: 0 });
+          setFormData({ status: 'active', is_featured: false, stock_quantity: 1 });
           setSelectedProduct(null);
+          setProductFormSection('product');
           setVariantsDraft([]);
           setVariantsLoaded(false);
           setVariantsDirty(false);
+          setProductFormSubmitAttempted(false);
+          setProductFormServerError(null);
         }
       }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{showAddModal ? 'Add New Product' : 'Edit Product'}</DialogTitle>
-            <DialogDescription>
-              {showAddModal ? 'Create a new product for your private store' : 'Update product information'}
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-background via-background to-primary/5 dark:from-slate-950 dark:to-slate-900/30 p-3 md:p-4">
+          <DialogHeader className="space-y-1 pb-2 md:pb-3 border-b border-border/50">
+            <DialogTitle className="text-lg md:text-xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+              {showAddModal ? t('store.createProduct') : t('store.updateProduct')}
+            </DialogTitle>
+            <DialogDescription className="text-base font-semibold">
+              {showAddModal ? t('store.createFirstProduct') : t('store.updateProduct')}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Product Title *</Label>
-              <Input
-                id="title"
-                value={formData.title || ''}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="Enter product name"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description || ''}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Product description"
-                rows={4}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="price">Price *</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  step="0.01"
-                  value={formData.price || ''}
-                  onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
-                  placeholder="0"
-                />
+          <div className="grid gap-2 md:gap-3 py-2 md:py-3">
+            {productFormServerError && (
+              <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                {productFormServerError}
               </div>
+            )}
 
-              <div className="space-y-2">
-                <Label htmlFor="original_price">Original Price</Label>
-                <Input
-                  id="original_price"
-                  type="number"
-                  step="0.01"
-                  value={formData.original_price || ''}
-                  onChange={(e) => setFormData({ ...formData, original_price: parseFloat(e.target.value) || undefined })}
-                  placeholder="0"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <Input
-                  id="category"
-                  value={formData.category || ''}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  placeholder="e.g., Electronics"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="stock_quantity">Stock Quantity</Label>
-                <Input
-                  id="stock_quantity"
-                  type="number"
-                  value={formData.stock_quantity || 0}
-                  onChange={(e) => setFormData({ ...formData, stock_quantity: parseInt(e.target.value) || 0 })}
-                  min="0"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2 border rounded-lg p-3">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <Label>Variants (Size / Color)</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Optional. If you add variants, total product stock is automatically the sum of active variant stock.
-                  </p>
-                </div>
+            <div className="flex flex-wrap gap-2">
+              {(
+                [
+                  { key: 'product', label: t('store.productForm.sections.product') },
+                  { key: 'price', label: t('store.productForm.sections.price') },
+                  { key: 'variants', label: t('store.productForm.sections.variants') },
+                  { key: 'status', label: t('store.productForm.sections.status') },
+                  { key: 'images', label: t('store.productForm.sections.images') },
+                ] as const
+              ).map((sec) => (
                 <Button
+                  key={sec.key}
                   type="button"
-                  variant="outline"
+                  variant={productFormSection === sec.key ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => {
-                    setVariantsDraft((prev) => [
-                      ...prev,
-                      {
-                        color: '',
-                        size: '',
-                        variant_name: '',
-                        stock_quantity: 0,
-                        is_active: true,
-                        sort_order: prev.length,
-                      },
-                    ]);
-                    setVariantsDirty(true);
-                    setVariantsLoaded(true);
-                  }}
+                  onClick={() => setProductFormSection(sec.key)}
+                  className={productFormSection === sec.key ? 'bg-gradient-to-r from-primary to-purple-600 text-white' : 'border-primary/30 hover:bg-primary/10'}
                 >
-                  Add Variant
+                  {sec.label}
                 </Button>
-              </div>
-
-              {loadingVariants && (
-                <div className="text-sm text-muted-foreground">Loading variants…</div>
-              )}
-
-              {!loadingVariants && variantsLoaded && variantsDraft.length === 0 && (
-                <div className="text-sm text-muted-foreground">No variants. Customers will buy the main product as-is.</div>
-              )}
-
-              {!loadingVariants && variantsDraft.length > 0 && (
-                <div className="space-y-2">
-                  {variantsDraft.map((v, idx) => (
-                    <div key={v.id ?? idx} className="grid grid-cols-2 md:grid-cols-6 gap-2 items-end">
-                      <div className="space-y-1">
-                        <Label className="text-xs">Color</Label>
-                        <Input
-                          value={v.color || ''}
-                          onChange={(e) => {
-                            const next = e.target.value;
-                            setVariantsDraft((prev) =>
-                              prev.map((row, i) => (i === idx ? { ...row, color: next } : row))
-                            );
-                            setVariantsDirty(true);
-                          }}
-                          placeholder="e.g., Red"
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <Label className="text-xs">Size</Label>
-                        <Input
-                          value={v.size || ''}
-                          onChange={(e) => {
-                            const next = e.target.value;
-                            setVariantsDraft((prev) =>
-                              prev.map((row, i) => (i === idx ? { ...row, size: next } : row))
-                            );
-                            setVariantsDirty(true);
-                          }}
-                          placeholder="e.g., M"
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <Label className="text-xs">Stock</Label>
-                        <Input
-                          type="number"
-                          min={0}
-                          value={Number(v.stock_quantity ?? 0)}
-                          onChange={(e) => {
-                            const next = Number(e.target.value || 0);
-                            setVariantsDraft((prev) =>
-                              prev.map((row, i) => (i === idx ? { ...row, stock_quantity: next } : row))
-                            );
-                            setVariantsDirty(true);
-                          }}
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <Label className="text-xs">Price (optional)</Label>
-                        <Input
-                          type="number"
-                          min={0}
-                          step="0.01"
-                          value={v.price === undefined ? '' : String(v.price)}
-                          onChange={(e) => {
-                            const raw = e.target.value;
-                            const next = raw === '' ? undefined : Number(raw);
-                            setVariantsDraft((prev) =>
-                              prev.map((row, i) => (i === idx ? { ...row, price: next } : row))
-                            );
-                            setVariantsDirty(true);
-                          }}
-                          placeholder="Use product price"
-                        />
-                      </div>
-
-                      <div className="flex items-center gap-2 h-10">
-                        <input
-                          type="checkbox"
-                          checked={v.is_active ?? true}
-                          onChange={(e) => {
-                            const next = e.target.checked;
-                            setVariantsDraft((prev) =>
-                              prev.map((row, i) => (i === idx ? { ...row, is_active: next } : row))
-                            );
-                            setVariantsDirty(true);
-                          }}
-                          className="w-4 h-4"
-                        />
-                        <Label className="text-xs">Active</Label>
-                      </div>
-
-                      <div className="flex justify-end">
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => {
-                            setVariantsDraft((prev) => prev.filter((_, i) => i !== idx));
-                            setVariantsDirty(true);
-                            setVariantsLoaded(true);
-                          }}
-                        >
-                          Remove
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              ))}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select
-                  value={formData.status || 'active'}
-                  onValueChange={(value: any) => setFormData({ ...formData, status: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            {productFormSection === 'product' && (
+              <div className="space-y-2 bg-primary/5 dark:bg-slate-800/30 p-2 md:p-3 rounded border border-primary/20">
+                <h3 className="text-lg font-bold text-primary">{t('store.productForm.basicInfo')}</h3>
 
-              <div className="space-y-2">
-                <Label>Featured Product</Label>
-                <div className="flex items-center space-x-2 h-10">
-                  <input
-                    type="checkbox"
-                    id="is_featured"
-                    checked={formData.is_featured || false}
-                    onChange={(e) => setFormData({ ...formData, is_featured: e.target.checked })}
-                    className="w-4 h-4"
+                <div className="space-y-1">
+                  <Label htmlFor="title" className="text-base font-bold">{t('store.productForm.title')} *</Label>
+                  <Input
+                    id="title"
+                    value={formData.title || ''}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder={t('store.productForm.titlePlaceholder')}
+                    className="border-primary/30 focus:border-primary/60 transition-colors h-9 text-base"
                   />
-                  <label htmlFor="is_featured" className="text-sm">
-                    Mark as featured
-                  </label>
+                  {productFormSubmitAttempted && !titleIsValid && (
+                    <p className="text-xs text-destructive">{t('store.productForm.titleRequired')}</p>
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="description" className="text-base font-bold">{t('store.productForm.description')}</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description || ''}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder={t('store.productForm.descriptionPlaceholder')}
+                    rows={3}
+                    className="border-primary/30 focus:border-primary/60 transition-colors resize-none text-base"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="category" className="text-base font-bold">{t('store.productForm.category')}</Label>
+                  <Input
+                    id="category"
+                    value={formData.category || ''}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    placeholder={t('store.productForm.categoryPlaceholder')}
+                    className="border-primary/30 focus:border-primary/60 transition-colors h-9 text-base"
+                  />
                 </div>
               </div>
-            </div>
+            )}
 
-            <div className="space-y-2">
-              <Label htmlFor="images">Product Image</Label>
-              <div className="space-y-3">
-                {formData.images?.[0] && (
-                  <div className="relative w-full h-48 border rounded-lg overflow-hidden">
-                    <img
-                      src={formData.images[0]}
-                      alt="Product preview"
-                      className="w-full h-full object-cover"
-                    />
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      className="absolute top-2 right-2"
-                      onClick={() => setFormData({ ...formData, images: [] })}
-                    >
-                      Remove
-                    </Button>
+            {productFormSection === 'price' && (
+              <div className="space-y-2 bg-emerald-500/5 dark:bg-emerald-900/10 p-2 md:p-3 rounded border border-emerald-500/20">
+                <h3 className="text-lg font-bold text-emerald-700 dark:text-emerald-300">{t('store.productForm.pricingStock')}</h3>
+
+                {isActiveWithoutStock && (
+                  <div className="rounded-md border border-amber-300/40 bg-amber-50/60 px-3 py-2 text-sm text-amber-900">
+                    {t('store.productForm.activeNoStockWarning')}
                   </div>
                 )}
-                <div className="flex flex-col gap-2">
-                  <div className="flex gap-2">
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="price" className="text-base font-bold">{t('store.productForm.price')} *</Label>
                     <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      disabled={uploading}
-                      className="cursor-pointer"
+                      id="price"
+                      type="number"
+                      step="0.01"
+                      value={formData.price ?? ''}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        const parsed = raw === '' ? undefined : Number(raw);
+                        const next = typeof parsed === 'number' && Number.isFinite(parsed) ? parsed : undefined;
+                        setFormData({ ...formData, price: next });
+                      }}
+                      placeholder="0"
+                      className="border-emerald-500/30 focus:border-emerald-500/60 transition-colors h-9 text-base"
                     />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={uploading}
-                      onClick={() => document.getElementById('image-upload')?.click()}
-                    >
-                      {uploading ? 'Uploading...' : 'Upload'}
-                    </Button>
+                    {productFormSubmitAttempted && !priceIsValid && (
+                      <p className="text-xs text-destructive">{t('store.productForm.priceRequired')}</p>
+                    )}
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Or paste image URL below (2MB max)
-                  </p>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="original_price" className="text-base font-bold">{t('store.productForm.originalPrice')}</Label>
+                    <Input
+                      id="original_price"
+                      type="number"
+                      step="0.01"
+                      value={formData.original_price || ''}
+                      onChange={(e) => setFormData({ ...formData, original_price: parseFloat(e.target.value) || undefined })}
+                      placeholder="0"
+                      className="border-emerald-500/30 focus:border-emerald-500/60 transition-colors h-9 text-base"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <Label htmlFor="stock_quantity" className="text-base font-bold">{t('store.productForm.stockQuantity')}</Label>
                   <Input
-                    id="images"
-                    value={formData.images?.[0] || ''}
-                    onChange={(e) => setFormData({ ...formData, images: [e.target.value] })}
-                    placeholder="https://example.com/image.jpg"
+                    id="stock_quantity"
+                    type="number"
+                    value={formData.stock_quantity ?? 1}
+                    onChange={(e) => setFormData({ ...formData, stock_quantity: parseInt(e.target.value) || 0 })}
+                    min="0"
+                    className="border-emerald-500/30 focus:border-emerald-500/60 transition-colors h-9 text-base"
                   />
+                  <p className="text-xs text-muted-foreground">{t('store.productForm.stockHint')}</p>
                 </div>
               </div>
-            </div>
+            )}
+
+            {productFormSection === 'variants' && (
+              <div className="space-y-2 bg-indigo-500/5 dark:bg-indigo-900/10 p-2 md:p-3 rounded border border-indigo-500/20">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <h3 className="text-lg font-bold text-indigo-600 dark:text-indigo-400">{t('store.productForm.variantsTitle')}</h3>
+                    <p className="text-sm text-muted-foreground">{t('store.productForm.variantsDesc')}</p>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setVariantsDraft((prev) => [
+                        ...prev,
+                        {
+                          color: '',
+                          size: '',
+                          variant_name: '',
+                          stock_quantity: 0,
+                          is_active: true,
+                          sort_order: prev.length,
+                        },
+                      ]);
+                      setVariantsDirty(true);
+                      setVariantsLoaded(true);
+                    }}
+                    className="border-indigo-500/30 hover:bg-indigo-500/10"
+                  >
+                    {t('store.productForm.addVariant')}
+                  </Button>
+                </div>
+
+                {loadingVariants && (
+                  <div className="text-sm text-muted-foreground">{t('store.productForm.loadingVariants')}</div>
+                )}
+
+                {!loadingVariants && variantsLoaded && variantsDraft.length === 0 && (
+                  <div className="text-sm text-muted-foreground">{t('store.productForm.noVariants')}</div>
+                )}
+
+                {!loadingVariants && variantsDraft.length > 0 && (
+                  <div className="space-y-2">
+                    {variantsDraft.map((v, idx) => (
+                      <div key={v.id ?? idx} className="grid grid-cols-2 md:grid-cols-6 gap-2 items-end">
+                        <div className="space-y-1">
+                          <Label className="text-xs">{t('store.productForm.variantColor')}</Label>
+                          <Input
+                            value={v.color || ''}
+                            onChange={(e) => {
+                              const next = e.target.value;
+                              setVariantsDraft((prev) =>
+                                prev.map((row, i) => (i === idx ? { ...row, color: next } : row))
+                              );
+                              setVariantsDirty(true);
+                            }}
+                            placeholder={t('store.productForm.variantColorPlaceholder')}
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className="text-xs">{t('store.productForm.variantSize')}</Label>
+                          <Input
+                            value={v.size || ''}
+                            onChange={(e) => {
+                              const next = e.target.value;
+                              setVariantsDraft((prev) =>
+                                prev.map((row, i) => (i === idx ? { ...row, size: next } : row))
+                              );
+                              setVariantsDirty(true);
+                            }}
+                            placeholder={t('store.productForm.variantSizePlaceholder')}
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className="text-xs">{t('store.productForm.variantStock')}</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={Number(v.stock_quantity ?? 0)}
+                            onChange={(e) => {
+                              const next = Number(e.target.value || 0);
+                              setVariantsDraft((prev) =>
+                                prev.map((row, i) => (i === idx ? { ...row, stock_quantity: next } : row))
+                              );
+                              setVariantsDirty(true);
+                            }}
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className="text-xs">{t('store.productForm.variantPriceOptional')}</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            value={v.price === undefined ? '' : String(v.price)}
+                            onChange={(e) => {
+                              const raw = e.target.value;
+                              const next = raw === '' ? undefined : Number(raw);
+                              setVariantsDraft((prev) =>
+                                prev.map((row, i) => (i === idx ? { ...row, price: next } : row))
+                              );
+                              setVariantsDirty(true);
+                            }}
+                            placeholder={t('store.productForm.variantPricePlaceholder')}
+                          />
+                        </div>
+
+                        <div className="flex items-center gap-2 h-10">
+                          <input
+                            type="checkbox"
+                            checked={v.is_active ?? true}
+                            onChange={(e) => {
+                              const next = e.target.checked;
+                              setVariantsDraft((prev) =>
+                                prev.map((row, i) => (i === idx ? { ...row, is_active: next } : row))
+                              );
+                              setVariantsDirty(true);
+                            }}
+                            className="w-4 h-4"
+                          />
+                          <Label className="text-xs">{t('store.productForm.variantActive')}</Label>
+                        </div>
+
+                        <div className="flex justify-end">
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => {
+                              setVariantsDraft((prev) => prev.filter((_, i) => i !== idx));
+                              setVariantsDirty(true);
+                              setVariantsLoaded(true);
+                            }}
+                          >
+                            {t('store.productForm.removeVariant')}
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {productFormSection === 'status' && (
+              <div className="space-y-2 bg-amber-500/5 dark:bg-amber-900/10 p-2 md:p-3 rounded border border-amber-500/20">
+                <h3 className="text-lg font-bold text-amber-700 dark:text-amber-300">{t('store.productForm.statusTitle')}</h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="status" className="text-base font-bold">{t('store.productForm.status')}</Label>
+                    <Select
+                      value={formData.status || 'active'}
+                      onValueChange={(value: any) => setFormData({ ...formData, status: value })}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">{t('store.productForm.statusActive')}</SelectItem>
+                        <SelectItem value="draft">{t('store.productForm.statusDraft')}</SelectItem>
+                        <SelectItem value="archived">{t('store.productForm.statusArchived')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-base font-bold">{t('store.productForm.featured')}</Label>
+                    <div className="flex items-center space-x-2 h-9">
+                      <input
+                        type="checkbox"
+                        id="is_featured"
+                        checked={formData.is_featured || false}
+                        onChange={(e) => setFormData({ ...formData, is_featured: e.target.checked })}
+                        className="w-4 h-4"
+                      />
+                      <label htmlFor="is_featured" className="text-sm">
+                        {t('store.productForm.featuredHint')}
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {productFormSection === 'images' && (
+              <div className="space-y-2 bg-sky-500/5 dark:bg-sky-900/10 p-2 md:p-3 rounded border border-sky-500/20">
+                <h3 className="text-lg font-bold text-sky-700 dark:text-sky-300">{t('store.productForm.imagesTitle')}</h3>
+
+                <div className="space-y-3">
+                  {formData.images?.[0] && (
+                    <div className="relative w-full h-48 border rounded-lg overflow-hidden">
+                      <img
+                        src={formData.images[0]}
+                        alt="Product preview"
+                        className="w-full h-full object-cover"
+                      />
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="absolute top-2 right-2"
+                        onClick={() => setFormData({ ...formData, images: [] })}
+                      >
+                        {t('store.productForm.removeImage')}
+                      </Button>
+                    </div>
+                  )}
+
+                  <div className="flex flex-col gap-2">
+                    <div className="flex gap-2">
+                      <Input
+                        id="image-upload"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        disabled={uploading}
+                        className="cursor-pointer"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={uploading}
+                        onClick={() => document.getElementById('image-upload')?.click()}
+                      >
+                        {uploading ? t('store.productForm.uploading') : t('store.productForm.upload')}
+                      </Button>
+                    </div>
+
+                    <p className="text-xs text-muted-foreground">
+                      {t('store.productForm.imageUrlHint')}
+                    </p>
+                    <Input
+                      id="images"
+                      value={formData.images?.[0] || ''}
+                      onChange={(e) => setFormData({ ...formData, images: [e.target.value] })}
+                      placeholder="https://example.com/image.jpg"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => {
               setShowAddModal(false);
               setShowEditModal(false);
-              setFormData({ status: 'active', is_featured: false, stock_quantity: 0 });
+              setFormData({ status: 'active', is_featured: false, stock_quantity: 1 });
+              setProductFormSection('product');
               setVariantsDraft([]);
               setVariantsLoaded(false);
               setVariantsDirty(false);
+              setProductFormSubmitAttempted(false);
+              setProductFormServerError(null);
             }}>
-              Cancel
+              {t('cancel')}
             </Button>
-            <Button onClick={showAddModal ? handleCreateProduct : handleUpdateProduct}>
-              {showAddModal ? 'Create Product' : 'Save Changes'}
+            <Button
+              onClick={showAddModal ? handleCreateProduct : handleUpdateProduct}
+              disabled={!canSubmitProduct}
+            >
+              {showAddModal ? t('store.createProduct') : t('save')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1853,22 +2069,22 @@ export default function Store() {
             )}
 
             <div className="bg-muted rounded-lg p-4 space-y-2">
-              <p className="text-sm font-medium">💡 Tip:</p>
+              <p className="text-sm font-medium">{t('store.shareModal.tipTitle')}</p>
               <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                <li>Share this link on social media, email, or messaging apps</li>
-                <li>The product remains private - only people with this link can view it</li>
-                <li>Track views in your dashboard</li>
+                <li>{t('store.shareModal.tip.share')}</li>
+                <li>{t('store.shareModal.tip.private')}</li>
+                <li>{t('store.shareModal.tip.track')}</li>
               </ul>
             </div>
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowShareModal(false)}>
-              Close
+              {t('store.shareModal.close')}
             </Button>
             <Button onClick={() => window.open(shareLink, '_blank')}>
               <ExternalLink className="w-4 h-4 mr-2" />
-              Open Link
+              {t('store.shareModal.openLink')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1905,10 +2121,10 @@ export default function Store() {
           <div>
             <Label className="text-sm font-semibold">{t('store.howToUse')}</Label>
             <ol className="mt-2 text-sm space-y-1.5">
-              <li className="flex gap-1.5 items-start"><div className="w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">1</div><div><span className="font-medium">Add Products</span><div className="text-muted-foreground">Create products with images, prices, and descriptions</div></div></li>
-              <li className="flex gap-1.5 items-start"><div className="w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">2</div><div><span className="font-medium">Share Your Store Link</span><div className="text-muted-foreground">Copy the store URL above and share it with customers on social media, WhatsApp, email, etc.</div></div></li>
-              <li className="flex gap-1.5 items-start"><div className="w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">3</div><div><span className="font-medium">Share Individual Products</span><div className="text-muted-foreground">Click "Share" on any product to get a direct link for targeted advertising</div></div></li>
-              <li className="flex gap-1.5 items-start"><div className="w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">4</div><div><span className="font-medium">Track Performance</span><div className="text-muted-foreground">Monitor views and engagement for each product in your dashboard</div></div></li>
+              <li className="flex gap-1.5 items-start"><div className="w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">1</div><div><span className="font-medium">{t('store.howToUse.step1.title')}</span><div className="text-muted-foreground">{t('store.howToUse.step1.desc')}</div></div></li>
+              <li className="flex gap-1.5 items-start"><div className="w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">2</div><div><span className="font-medium">{t('store.howToUse.step2.title')}</span><div className="text-muted-foreground">{t('store.howToUse.step2.desc')}</div></div></li>
+              <li className="flex gap-1.5 items-start"><div className="w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">3</div><div><span className="font-medium">{t('store.howToUse.step3.title')}</span><div className="text-muted-foreground">{t('store.howToUse.step3.desc')}</div></div></li>
+              <li className="flex gap-1.5 items-start"><div className="w-5 h-5 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">4</div><div><span className="font-medium">{t('store.howToUse.step4.title')}</span><div className="text-muted-foreground">{t('store.howToUse.step4.desc')}</div></div></li>
             </ol>
           </div>
         </div>
@@ -1918,15 +2134,21 @@ export default function Store() {
       <Dialog open={showStoreSettingsModal} onOpenChange={setShowStoreSettingsModal}>
         <DialogContent className="max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
           <DialogHeader className="pb-4 border-b border-slate-200 dark:border-slate-700">
-            <DialogTitle className="text-2xl font-bold">Store Settings</DialogTitle>
+            <DialogTitle className="text-2xl font-bold">{t('store.settings')}</DialogTitle>
             <DialogDescription className="text-base">
-              Your private store URL and customization options
+              {t('store.settingsModal.desc')}
             </DialogDescription>
           </DialogHeader>
 
           {/* Tabs Navigation */}
           <div className="flex gap-1 mb-6 border-b-2 border-slate-200 dark:border-slate-700 overflow-x-auto bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
-            {['Branding', 'Customization', 'Templates', 'Store URL', 'Stats & Help'].map((tab, idx) => (
+            {[
+              t('store.settingsModal.tabs.branding'),
+              t('store.settingsModal.tabs.customization'),
+              t('store.settingsModal.tabs.templates'),
+              t('store.settingsModal.tabs.storeUrl'),
+              t('store.settingsModal.tabs.statsHelp'),
+            ].map((tab, idx) => (
               <button
                 key={tab}
                 className={`px-4 py-2.5 rounded-md font-semibold transition-all focus:outline-none whitespace-nowrap text-sm ${
@@ -1945,7 +2167,13 @@ export default function Store() {
           <div className="py-4">
             {selectedTab === 0 && (
               <div className="space-y-4 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-800 p-6 border border-blue-200 dark:border-slate-700 shadow-sm dark:text-slate-100">
-                <h3 className="text-base font-semibold">Store Branding</h3>
+                <h3 className="text-base font-semibold">{t('store.settingsModal.brandingTitle')}</h3>
+                <div className="rounded-md border border-blue-200/60 bg-white/70 dark:bg-slate-900/30 px-3 py-2 text-sm text-slate-700 dark:text-slate-200">
+                  <div className="font-semibold">{t('store.settingsModal.quickTip.title')}</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {t('store.settingsModal.quickTip.desc')}
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Store Name *</Label>
                   <Input
@@ -1953,8 +2181,11 @@ export default function Store() {
                     value={storeSettings.store_name || ''}
                     onChange={(e) => setStoreSettings((s: any) => ({ ...s, store_name: e.target.value }))}
                   />
-                  <p className="text-xs text-muted-foreground">This will be the main title of your store</p>
+                  <p className="text-xs text-muted-foreground">{t('store.settingsModal.storeNameHint')}</p>
                   <p className="text-xs text-muted-foreground mt-1">Store slug: <code className="px-1 py-0.5 bg-gray-100 rounded">{storeSettings.store_slug || '—'}</code></p>
+                  <p className="text-xs text-muted-foreground">
+                    {t('store.settingsModal.shareLinkFormat', { slug: storeSettings.store_slug || 'your-slug' })}
+                  </p>
                   <p className="text-xs mt-1 text-amber-600">These settings apply only to this store (slug shown above).</p>
                 </div>
                 <div className="space-y-2">
@@ -1964,6 +2195,7 @@ export default function Store() {
                     value={storeSettings.seller_name || ''}
                     onChange={(e) => setStoreSettings((s: any) => ({ ...s, seller_name: e.target.value }))}
                   />
+                  <p className="text-xs text-muted-foreground">{t('store.settingsModal.sellerNameHint')}</p>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Seller Email (Gmail)</Label>
@@ -1972,6 +2204,7 @@ export default function Store() {
                     value={storeSettings.seller_email || ''}
                     onChange={(e) => setStoreSettings((s: any) => ({ ...s, seller_email: e.target.value }))}
                   />
+                  <p className="text-xs text-muted-foreground">{t('store.settingsModal.sellerEmailHint')}</p>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Store Description</Label>
@@ -1981,12 +2214,13 @@ export default function Store() {
                     onChange={(e) => setStoreSettings((s: any) => ({ ...s, store_description: e.target.value }))}
                     rows={3}
                   />
+                  <p className="text-xs text-muted-foreground">{t('store.settingsModal.storeDescriptionHint')}</p>
                 </div>
               </div>
             )}
             {selectedTab === 1 && (
               <div className="space-y-3 rounded-xl bg-gradient-to-br from-white via-slate-50 to-slate-100 dark:from-transparent dark:via-transparent dark:to-transparent p-3 shadow-sm dark:bg-slate-900 dark:text-slate-100 overflow-hidden max-w-full">
-                <h3 className="text-base font-semibold">Customization</h3>
+                <h3 className="text-base font-semibold">{t('store.settingsModal.customizationTitle')}</h3>
                 {/* Store Logo */}
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Store Logo</Label>
@@ -2035,7 +2269,7 @@ export default function Store() {
                       </div>
                     </div>
                   ) : null}
-                  <p className="text-xs text-muted-foreground">Upload or paste a direct link to your logo</p>
+                  <p className="text-xs text-muted-foreground">{t('store.settingsModal.logoHint')}</p>
                 </div>
                 {/* Banner, Hero Images, Store Images */}
                 <div className="grid grid-cols-1 gap-3">
@@ -2084,7 +2318,7 @@ export default function Store() {
                         </div>
                       </div>
                     ) : null}
-                    <p className="text-xs text-muted-foreground">Hero section background image</p>
+                    <p className="text-xs text-muted-foreground">{t('store.settingsModal.bannerHint')}</p>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Hero Images (main + tiles)</Label>
@@ -2128,7 +2362,7 @@ export default function Store() {
                         </div>
                       </div>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-2">Main hero and two tiles used on storefront hero sections</p>
+                    <p className="text-xs text-muted-foreground mt-2">{t('store.settingsModal.heroTilesHint')}</p>
                   </div>
                 </div>
               </div>
@@ -2138,6 +2372,28 @@ export default function Store() {
                 storeSettings={storeSettings}
                 setStoreSettings={setStoreSettings}
               />
+            )}
+            {selectedTab === 3 && (
+              <div className="space-y-3 rounded-xl bg-white/70 dark:bg-slate-900/30 p-4 border border-slate-200 dark:border-slate-700">
+                <h3 className="text-base font-semibold">{t('store.settingsModal.storeUrlTitle')}</h3>
+                <p className="text-sm text-muted-foreground">{t('store.settingsModal.storeUrlDesc')}</p>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">{t('store.settingsModal.storeUrlLabel')}</Label>
+                  <Input readOnly value={getStorefrontFullUrl(storeSettings) || ''} />
+                  <p className="text-xs text-muted-foreground">{t('store.settingsModal.storeUrlHint')}</p>
+                </div>
+              </div>
+            )}
+            {selectedTab === 4 && (
+              <div className="space-y-3 rounded-xl bg-white/70 dark:bg-slate-900/30 p-4 border border-slate-200 dark:border-slate-700">
+                <h3 className="text-base font-semibold">{t('store.settingsModal.helpTitle')}</h3>
+                <ul className="text-sm text-slate-700 dark:text-slate-200 space-y-2 list-disc pl-5">
+                  <li>{t('store.settingsModal.help.products')}</li>
+                  <li>{t('store.settingsModal.help.stock')}</li>
+                  <li>{t('store.settingsModal.help.addFromStock')}</li>
+                  <li>{t('store.settingsModal.help.important')}</li>
+                </ul>
+              </div>
             )}
             {/* Store URL, product summary badges and 'How to Use Your Store' moved to Store Dashboard */}
           </div>

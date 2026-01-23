@@ -5,6 +5,7 @@ import { createOrderTelegramLink } from "../utils/telegram";
 import { createConfirmationLink, sendTelegramMessage, replaceTemplateVariables } from "../utils/bot-messaging";
 import { ensureBotSettingsRow } from "../utils/client-provisioning";
 import { z, ZodError } from "zod";
+import type { Pool } from "pg";
 
 const StoreSlugSchema = z
   .string()
@@ -20,6 +21,65 @@ const VariantIdSchema = z.preprocess(
   (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
   z.number().int().positive()
 );
+
+type CacheEntry<T> = { value: T; expiresAt: number };
+
+const isDev = process.env.NODE_ENV !== 'production';
+const SETTINGS_CACHE_TTL_MS = Number(
+  process.env.STOREFRONT_SETTINGS_CACHE_TTL_MS ?? (isDev ? 15_000 : 60_000)
+);
+const PRODUCTS_CACHE_TTL_MS = Number(
+  process.env.STOREFRONT_PRODUCTS_CACHE_TTL_MS ?? (isDev ? 15_000 : 30_000)
+);
+
+const storefrontSettingsCache = new Map<string, CacheEntry<any>>();
+const storefrontSettingsInFlight = new Map<string, Promise<any>>();
+const storefrontProductsCache = new Map<string, CacheEntry<any[]>>();
+const storefrontProductsInFlight = new Map<string, Promise<any[]>>();
+
+function getCached<T>(cache: Map<string, CacheEntry<T>>, key: string): T | null {
+  const hit = cache.get(key);
+  if (!hit) return null;
+  if (Date.now() > hit.expiresAt) {
+    cache.delete(key);
+    return null;
+  }
+  return hit.value;
+}
+
+function setCached<T>(cache: Map<string, CacheEntry<T>>, key: string, value: T, ttlMs: number): void {
+  cache.set(key, { value, expiresAt: Date.now() + Math.max(0, ttlMs) });
+}
+
+function isRetryableDbError(err: any): boolean {
+  const msg = String(err?.message || '').toLowerCase();
+  const code = String(err?.code || '').toUpperCase();
+  return (
+    msg.includes('query read timeout') ||
+    msg.includes('connection terminated') ||
+    msg.includes('timeout') ||
+    msg.includes('econnreset') ||
+    msg.includes('socket') && msg.includes('hang up') ||
+    code === 'ETIMEDOUT' ||
+    code === 'ECONNRESET'
+  );
+}
+
+async function withDbRetry<T>(operation: (db: Pool) => Promise<T>, maxRetries = 2): Promise<T> {
+  let lastErr: any;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const db = await ensureConnection();
+      return await operation(db as any);
+    } catch (err: any) {
+      lastErr = err;
+      if (!isRetryableDbError(err) || attempt === maxRetries) throw err;
+      const delay = Math.min(250 * Math.pow(2, attempt) + Math.random() * 150, 1500);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  throw lastErr;
+}
 
 async function getStoreOrdersColumns(): Promise<Set<string>> {
   const pool = await ensureConnection();
@@ -42,83 +102,133 @@ export const getStorefrontProducts: RequestHandler = async (req, res) => {
     return res.status(400).json({ error: 'Invalid store ID' });
   }
 
+  const cacheKey = `products:${storeSlug}`;
+  const cached = getCached(storefrontProductsCache, cacheKey);
+  if (cached) {
+    return res.json(cached);
+  }
+
+  const inFlight = storefrontProductsInFlight.get(cacheKey);
+  if (inFlight) {
+    try {
+      const value = await inFlight;
+      return res.json(value);
+    } catch (e) {
+      storefrontProductsInFlight.delete(cacheKey);
+      // fall through to normal handler
+    }
+  }
+
   try {
     if (!isProduction) {
       console.log(`[Storefront] Fetching products for store: ${storeSlug}`);
     }
-    const pool = await ensureConnection();
-    if (!isProduction) {
-      console.log(`[Storefront] DB connection established in ${Date.now() - startTime}ms`);
-    }
-    // First try client storefronts (client_store_settings)
-    // Match by exact store_slug OR by store_name (case-insensitive, spaces/special chars removed)
-    const clientCheck = await pool.query(
-      `SELECT client_id FROM client_store_settings 
-       WHERE store_slug = $1 
-          OR LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1)`,
-      [storeSlug]
-    );
-
-    if (clientCheck.rows.length > 0) {
-      const clientId = clientCheck.rows[0].client_id;
+    const promise = (async () => {
+      const pool = await ensureConnection();
       if (!isProduction) {
-        console.log(`Loading client store ${storeSlug} for client ID ${clientId}`);
+        console.log(`[Storefront] DB connection established in ${Date.now() - startTime}ms`);
       }
-      // Include store-level fields so product cards can show owner/store info without extra round-trip
-      const result = await pool.query(
-        `SELECT 
-          p.id, p.title, p.description, p.price, p.original_price, 
-          p.images, p.category, p.stock_quantity, p.is_featured, 
-          p.slug, p.views, p.created_at,
-          s.store_name, s.owner_name AS seller_name, s.owner_email AS seller_email
-        FROM client_store_products p
-        INNER JOIN client_store_settings s ON p.client_id = s.client_id
-        WHERE p.client_id = $1 AND p.status = 'active'
-        ORDER BY p.is_featured DESC, p.created_at DESC`,
-        [clientId]
+
+      // IMPORTANT PERFORMANCE NOTE:
+      // REGEXP_REPLACE-based matching forces a scan and is very slow on remote DB.
+      // Try indexed store_slug exact match first, then fall back only if needed.
+      let clientCheck = await withDbRetry((db) =>
+        db.query(
+          `SELECT client_id FROM client_store_settings WHERE store_slug = $1`,
+          [storeSlug]
+        ) as any
+      );
+      if (clientCheck.rows.length === 0) {
+        clientCheck = await withDbRetry((db) =>
+          db.query(
+            `SELECT client_id FROM client_store_settings 
+             WHERE LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1)`,
+            [storeSlug]
+          ) as any
+        );
+      }
+
+      if (clientCheck.rows.length > 0) {
+        const clientId = clientCheck.rows[0].client_id;
+        if (!isProduction) {
+          console.log(`Loading client store ${storeSlug} for client ID ${clientId}`);
+        }
+        // Include store-level fields so product cards can show owner/store info without extra round-trip
+        const result = await withDbRetry((db) =>
+          db.query(
+            `SELECT 
+              p.id, p.title, p.description, p.price, p.original_price, 
+              p.images, p.category, p.stock_quantity, p.is_featured, 
+              p.slug, p.views, p.created_at,
+              s.store_name, s.owner_name AS seller_name, s.owner_email AS seller_email
+            FROM client_store_products p
+            INNER JOIN client_store_settings s ON p.client_id = s.client_id
+            WHERE p.client_id = $1 AND p.status = 'active'
+            ORDER BY p.is_featured DESC, p.created_at DESC`,
+            [clientId]
+          ) as any
+        );
+        if (!isProduction) {
+          console.log(`Found ${result.rows.length} client products for store ${storeSlug}`);
+        }
+        // Ensure all products have a slug (generate fallback if missing)
+        const productsWithSlugs = result.rows.map((p: any) => ({
+          ...p,
+          slug: p.slug || `${String(p.title || 'product').toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${p.id}`
+        }));
+        setCached(storefrontProductsCache, cacheKey, productsWithSlugs, PRODUCTS_CACHE_TTL_MS);
+        return productsWithSlugs;
+      }
+
+      // Otherwise try seller storefronts (seller_store_settings) and return marketplace_products
+      let sellerCheck = await withDbRetry((db) =>
+        db.query(
+          `SELECT seller_id FROM seller_store_settings WHERE store_slug = $1`,
+          [storeSlug]
+        ) as any
+      );
+      if (sellerCheck.rows.length === 0) {
+        sellerCheck = await withDbRetry((db) =>
+          db.query(
+            `SELECT seller_id FROM seller_store_settings 
+             WHERE LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1)`,
+            [storeSlug]
+          ) as any
+        );
+      }
+      if (sellerCheck.rows.length === 0) {
+        if (!isProduction) {
+          console.log(`Store not found: ${storeSlug}`);
+        }
+        return [];
+      }
+      const sellerId = sellerCheck.rows[0].seller_id;
+      if (!isProduction) {
+        console.log(`Loading seller store ${storeSlug} for seller ID ${sellerId}`);
+      }
+      const mResult = await withDbRetry((db) =>
+        db.query(
+          `SELECT p.id, p.title, p.description, p.price, p.original_price, p.images, p.category, p.stock, p.condition, p.location, p.shipping_available AS shipping, p.views, p.created_at,
+                  ss.store_name, sel.name AS seller_name, sel.email AS seller_email
+           FROM marketplace_products p
+           INNER JOIN seller_store_settings ss ON p.seller_id = ss.seller_id
+           LEFT JOIN sellers sel ON p.seller_id = sel.id
+           WHERE p.seller_id = $1 AND p.status = 'active'
+           ORDER BY p.created_at DESC`,
+          [sellerId]
+        ) as any
       );
       if (!isProduction) {
-        console.log(`Found ${result.rows.length} client products for store ${storeSlug}`);
+        console.log(`Found ${mResult.rows.length} marketplace products for seller store ${storeSlug}`);
       }
-      // Ensure all products have a slug (generate fallback if missing)
-      const productsWithSlugs = result.rows.map(p => ({
-        ...p,
-        slug: p.slug || `${String(p.title || 'product').toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${p.id}`
-      }));
-      return res.json(productsWithSlugs);
-    }
+      setCached(storefrontProductsCache, cacheKey, mResult.rows, PRODUCTS_CACHE_TTL_MS);
+      return mResult.rows;
+    })();
 
-    // Otherwise try seller storefronts (seller_store_settings) and return marketplace_products
-    const sellerCheck = await pool.query(
-      `SELECT seller_id FROM seller_store_settings 
-       WHERE store_slug = $1 
-          OR LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1)`,
-      [storeSlug]
-    );
-    if (sellerCheck.rows.length === 0) {
-      if (!isProduction) {
-        console.log(`Store not found: ${storeSlug}`);
-      }
-      return res.status(404).json({ error: 'Store not found' });
-    }
-    const sellerId = sellerCheck.rows[0].seller_id;
-    if (!isProduction) {
-      console.log(`Loading seller store ${storeSlug} for seller ID ${sellerId}`);
-    }
-    const mResult = await pool.query(
-      `SELECT p.id, p.title, p.description, p.price, p.original_price, p.images, p.category, p.stock, p.condition, p.location, p.shipping_available AS shipping, p.views, p.created_at,
-              ss.store_name, sel.name AS seller_name, sel.email AS seller_email
-       FROM marketplace_products p
-       INNER JOIN seller_store_settings ss ON p.seller_id = ss.seller_id
-       LEFT JOIN sellers sel ON p.seller_id = sel.id
-       WHERE p.seller_id = $1 AND p.status = 'active'
-       ORDER BY p.created_at DESC`,
-      [sellerId]
-    );
-    if (!isProduction) {
-      console.log(`Found ${mResult.rows.length} marketplace products for seller store ${storeSlug}`);
-    }
-    res.json(mResult.rows);
+    storefrontProductsInFlight.set(cacheKey, promise);
+    const value = await promise;
+    storefrontProductsInFlight.delete(cacheKey);
+    res.json(value);
   } catch (error) {
     const isProduction = process.env.NODE_ENV === 'production';
     console.error('Get storefront products error:', isProduction ? (error as any)?.message : error);
@@ -139,6 +249,23 @@ export const getStorefrontSettings: RequestHandler = async (req, res) => {
   try {
     if (!isProduction) {
       console.log(`[Storefront] Fetching settings for store: ${storeSlug}`);
+    }
+
+    const cacheKey = `settings:${storeSlug}`;
+    const cached = getCached(storefrontSettingsCache, cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
+
+    const inFlight = storefrontSettingsInFlight.get(cacheKey);
+    if (inFlight) {
+      try {
+        const value = await inFlight;
+        return res.json(value);
+      } catch {
+        storefrontSettingsInFlight.delete(cacheKey);
+        // fall through to normal handler
+      }
     }
     
     // Helper function to convert store name to clean format (same as client-side)
@@ -166,14 +293,15 @@ export const getStorefrontSettings: RequestHandler = async (req, res) => {
       return raw;
     };
     
-    const pool = await ensureConnection();
-    if (!isProduction) {
-      console.log(`[Storefront] DB connection established in ${Date.now() - startTime}ms`);
-    }
-    // Try client storefront settings first
-    let clientRes;
-    try {
-      clientRes = await pool.query(
+    const promise = (async () => {
+      const pool = await ensureConnection();
+      if (!isProduction) {
+        console.log(`[Storefront] DB connection established in ${Date.now() - startTime}ms`);
+      }
+
+      // Try client storefront settings first
+      let clientRes: any;
+      const selectClientSettings = (whereSql: string) =>
         `SELECT store_name, store_description, store_logo, 
                 primary_color, secondary_color,
                 template, banner_url, currency_code,
@@ -181,67 +309,133 @@ export const getStorefrontSettings: RequestHandler = async (req, res) => {
                 store_images,
                 owner_name, owner_email,
                 template_hero_heading, template_hero_subtitle, template_button_text, template_accent_color,
-                 template_settings, template_settings_by_template, global_settings,
+                template_settings, template_settings_by_template, global_settings,
                 store_slug
          FROM client_store_settings
-         WHERE store_slug = $1
-            OR LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1)`,
-        [querySlug]
-      );
-    } catch (err: any) {
-      // If query fails (columns don't exist yet), try without new columns
-      if (err.code === '42703') {
-          clientRes = await pool.query(
-            "SELECT store_name, store_description, store_logo, primary_color, secondary_color, template, banner_url, currency_code, NULL as hero_main_url, NULL as hero_tile1_url, NULL as hero_tile2_url, store_images, owner_name, owner_email, NULL as template_hero_heading, NULL as template_hero_subtitle, NULL as template_button_text, NULL as template_accent_color, NULL as template_settings, NULL as template_settings_by_template, NULL as global_settings, store_slug FROM client_store_settings WHERE store_slug = $1 OR LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1)",
-            [querySlug]
-          );
-      } else {
-        throw err;
-      }
-    }
+         ${whereSql}`;
 
-    let row: any = null;
-    if (clientRes.rows.length > 0) {
-      row = clientRes.rows[0];
-    } else {
-      // Fall back to seller storefront settings
-      let sellerRes;
+      const selectClientSettingsLegacy = (whereSql: string) =>
+        `SELECT store_name, store_description, store_logo, primary_color, secondary_color, template, banner_url, currency_code,
+                NULL as hero_main_url, NULL as hero_tile1_url, NULL as hero_tile2_url,
+                store_images, owner_name, owner_email,
+                NULL as template_hero_heading, NULL as template_hero_subtitle, NULL as template_button_text, NULL as template_accent_color,
+                NULL as template_settings, NULL as template_settings_by_template, NULL as global_settings,
+                store_slug
+         FROM client_store_settings
+         ${whereSql}`;
+
+      // IMPORTANT: exact store_slug match first (indexed), fallback to expensive name normalization only if needed.
       try {
-        sellerRes = await pool.query(
-          `SELECT store_name, store_description, store_logo, primary_color, secondary_color, template, banner_url, currency_code, 
-                  hero_main_url, hero_tile1_url, hero_tile2_url, store_images
-           FROM seller_store_settings
-           WHERE store_slug = $1
-              OR LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1)`,
-          [querySlug]
-        );
+        clientRes = await withDbRetry((db) => db.query(selectClientSettings('WHERE store_slug = $1'), [querySlug]) as any);
       } catch (err: any) {
-        // If query fails (columns don't exist), try without them
         if (err.code === '42703') {
-          sellerRes = await pool.query(
-            "SELECT store_name, store_description, store_logo, primary_color, secondary_color, template, banner_url, currency_code, NULL as hero_main_url, NULL as hero_tile1_url, NULL as hero_tile2_url, store_images FROM seller_store_settings WHERE store_slug = $1 OR LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1)",
-            [querySlug]
-          );
+          clientRes = await withDbRetry((db) => db.query(selectClientSettingsLegacy('WHERE store_slug = $1'), [querySlug]) as any);
         } else {
           throw err;
         }
       }
-      if (sellerRes.rows.length === 0) {
-        return res.json({
-          store_name: 'Store',
-          primary_color: '#3b82f6',
-          secondary_color: '#8b5cf6',
-          template: 'books',
-          currency_code: 'DZD',
-          banner_url: null,
-          hero_main_url: null,
-          hero_tile1_url: null,
-          hero_tile2_url: null,
-          store_slug: storeSlug
-        });
+
+      if (clientRes.rows.length === 0) {
+        try {
+          clientRes = await withDbRetry(
+            (db) =>
+              db.query(
+                selectClientSettings(
+                  "WHERE LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1)"
+                ),
+                [querySlug]
+              ) as any
+          );
+        } catch (err: any) {
+          if (err.code === '42703') {
+            clientRes = await withDbRetry(
+              (db) =>
+                db.query(
+                  selectClientSettingsLegacy(
+                    "WHERE LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1)"
+                  ),
+                  [querySlug]
+                ) as any
+            );
+          } else {
+            throw err;
+          }
+        }
       }
-      row = sellerRes.rows[0];
-    }
+
+      let row: any = null;
+      if (clientRes.rows.length > 0) {
+        row = clientRes.rows[0];
+      } else {
+        // Fall back to seller storefront settings
+        let sellerRes: any;
+        const selectSellerSettings = (whereSql: string) =>
+          `SELECT store_name, store_description, store_logo, primary_color, secondary_color, template, banner_url, currency_code, 
+                  hero_main_url, hero_tile1_url, hero_tile2_url, store_images
+           FROM seller_store_settings
+           ${whereSql}`;
+        const selectSellerSettingsLegacy = (whereSql: string) =>
+          `SELECT store_name, store_description, store_logo, primary_color, secondary_color, template, banner_url, currency_code,
+                  NULL as hero_main_url, NULL as hero_tile1_url, NULL as hero_tile2_url, store_images
+           FROM seller_store_settings
+           ${whereSql}`;
+
+        try {
+          sellerRes = await withDbRetry((db) => db.query(selectSellerSettings('WHERE store_slug = $1'), [querySlug]) as any);
+        } catch (err: any) {
+          if (err.code === '42703') {
+            sellerRes = await withDbRetry((db) => db.query(selectSellerSettingsLegacy('WHERE store_slug = $1'), [querySlug]) as any);
+          } else {
+            throw err;
+          }
+        }
+
+        if (sellerRes.rows.length === 0) {
+          try {
+            sellerRes = await withDbRetry(
+              (db) =>
+                db.query(
+                  selectSellerSettings(
+                    "WHERE LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1)"
+                  ),
+                  [querySlug]
+                ) as any
+            );
+          } catch (err: any) {
+            if (err.code === '42703') {
+              sellerRes = await withDbRetry(
+                (db) =>
+                  db.query(
+                    selectSellerSettingsLegacy(
+                      "WHERE LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1)"
+                    ),
+                    [querySlug]
+                  ) as any
+              );
+            } else {
+              throw err;
+            }
+          }
+        }
+
+        if (sellerRes.rows.length === 0) {
+          // Don't hard-fail: return a safe default so UI doesn't show an opaque error.
+          // Products endpoint will still determine if store exists.
+          return {
+            store_name: 'Store',
+            primary_color: '#3b82f6',
+            secondary_color: '#8b5cf6',
+            template: 'books',
+            currency_code: 'DZD',
+            banner_url: null,
+            hero_main_url: null,
+            hero_tile1_url: null,
+            hero_tile2_url: null,
+            store_slug: storeSlug,
+          };
+        }
+        row = sellerRes.rows[0];
+      }
     // Sanitize image list fields: trim, remove empties; return null if empty
     const sanitize = (v: any) => {
       if (v == null) return null;
@@ -279,18 +473,26 @@ export const getStorefrontSettings: RequestHandler = async (req, res) => {
     // The template field from the database row takes precedence
     const dbTemplate = normalizeTemplateIdForPublic(row.template);
 
-    res.json({
-      ...globalSettings,
-      ...templateSettings,
-      ...row,
-      template: dbTemplate, // Explicitly set to ensure it's not overridden
-      store_slug: row?.store_slug || storeSlug,
-      banner_url: sanitize(row.banner_url),
-      hero_main_url: sanitize(row.hero_main_url),
-      hero_tile1_url: sanitize(row.hero_tile1_url),
-      hero_tile2_url: sanitize(row.hero_tile2_url),
-      store_images: storeImagesArr,
-    });
+      const payload = {
+        ...globalSettings,
+        ...templateSettings,
+        ...row,
+        template: dbTemplate, // Explicitly set to ensure it's not overridden
+        store_slug: row?.store_slug || storeSlug,
+        banner_url: sanitize(row.banner_url),
+        hero_main_url: sanitize(row.hero_main_url),
+        hero_tile1_url: sanitize(row.hero_tile1_url),
+        hero_tile2_url: sanitize(row.hero_tile2_url),
+        store_images: storeImagesArr,
+      };
+      setCached(storefrontSettingsCache, cacheKey, payload, SETTINGS_CACHE_TTL_MS);
+      return payload;
+    })();
+
+    storefrontSettingsInFlight.set(cacheKey, promise);
+    const value = await promise;
+    storefrontSettingsInFlight.delete(cacheKey);
+    return res.json(value);
   } catch (error) {
     console.error('Get storefront settings error:', isProduction ? (error as any)?.message : error);
     res.status(500).json({ error: 'Failed to fetch store settings' });

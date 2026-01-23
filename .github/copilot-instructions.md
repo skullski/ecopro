@@ -19,9 +19,8 @@
 - **Database**: PostgreSQL on Render (never local)
 - **Backend**: Node.js + Express on port 8080
 - **Frontend**: Vite + React on port 5173
-- **Auth**: JWT with role/user_type fields (admin, client, seller)
+- **Auth**: JWT with role/user_type fields (admin, client , staff("staff is the client agent or you can say manager"))
 
-## File Locations
 
 - Server routes: `/server/routes/`
 - Server services: `/server/services/`

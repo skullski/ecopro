@@ -43,6 +43,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   
   const prevOrdersCount = useRef(0);
   const prevMessagesCount = useRef(0);
+  const ordersInFlight = useRef(false);
+  const unreadInFlight = useRef(false);
 
   // Check permission on mount
   useEffect(() => {
@@ -74,10 +76,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   // Fetch new orders count
   const fetchNewOrdersCount = useCallback(async () => {
     if (!isClient) return;
+    if (ordersInFlight.current) return;
+    ordersInFlight.current = true;
     try {
       const lastSeen = localStorage.getItem(ORDERS_LAST_SEEN_KEY);
       const params = lastSeen ? `?since=${encodeURIComponent(lastSeen)}` : '';
-      const res = await fetch(`/api/orders/new-count${params}`);
+      const res = await fetch(`/api/orders/new-count${params}`, { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         const newCount = data.count || 0;
@@ -96,13 +100,17 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       }
     } catch (err) {
       console.error('Failed to fetch new orders count:', err);
+    } finally {
+      ordersInFlight.current = false;
     }
   }, [isClient, navigate]);
 
   // Fetch unread messages count
   const fetchUnreadCount = useCallback(async () => {
+    if (unreadInFlight.current) return;
+    unreadInFlight.current = true;
     try {
-      const res = await fetch('/api/chat/unread-count');
+      const res = await fetch('/api/chat/unread-count', { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         const newCount = data.unread_count || 0;
@@ -122,6 +130,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       }
     } catch (err) {
       console.error('Failed to fetch unread count:', err);
+    } finally {
+      unreadInFlight.current = false;
     }
   }, [isAdmin, navigate]);
 

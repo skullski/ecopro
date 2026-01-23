@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Zimou Express">
+  <rect x="0" y="0" width="256" height="256" rx="24" fill="#ffffff"/>
+  <rect x="18" y="18" width="220" height="220" rx="20" fill="#0b0b0c"/>
+  <path d="M36 72h72l-18 20H36z" fill="#e11d48" opacity="0.95"/>
+  <path d="M36 104h88l-18 20H36z" fill="#ef4444" opacity="0.9"/>
+  <path d="M36 136h104l-18 20H36z" fill="#f97316" opacity="0.85"/>
+  <text x="128" y="120" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, Arial" font-size="28" font-weight="700" fill="#ffffff">Zimou</text>
+  <text x="128" y="154" text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, Arial" font-size="20" font-weight="600" fill="#ff3b4f">Express</text>
+</svg>

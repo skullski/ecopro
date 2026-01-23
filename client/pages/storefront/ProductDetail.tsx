@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Heart, Share2, ChevronLeft, Plus, Minus } from 'lucide-react';
 import PixelScripts, { trackAllPixels, PixelEvents } from '@/components/storefront/PixelScripts';
 import { safeJsonParse } from '@/utils/safeJson';
+import { useTranslation } from '@/lib/i18n';
 
 interface Product {
   id: number;
@@ -124,6 +125,7 @@ const TEMPLATE_STYLES: Record<string, Record<string, string>> = {
 export default function ProductDetail() {
   const { id, slug } = useParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [quantity, setQuantity] = useState(1);
   const [wishlist, setWishlist] = useState(false);
 
@@ -263,7 +265,7 @@ export default function ProductDetail() {
   if (isLoading) {
     return (
       <div className={`min-h-screen ${style.bg} flex items-center justify-center`}>
-        <div className={`text-center ${style.text}`}>Loading...</div>
+        <div className={`text-center ${style.text}`}>{t('loading')}</div>
       </div>
     );
   }
@@ -271,15 +273,15 @@ export default function ProductDetail() {
   if (error || !product) {
     return (
       <div className={`min-h-screen ${style.bg} flex items-center justify-center`}>
-        <div className={`text-center ${style.text}`}>Product not found</div>
+        <div className={`text-center ${style.text}`}>{t('storefront.productNotFoundTitle')}</div>
       </div>
     );
   }
 
   const productImage = product.images?.[0] || 'https://via.placeholder.com/500';
   const productPrice = product.price || 0;
-  const productName = product.title || product.name || 'Product';
-  const productDesc = product.description || 'Premium quality product';
+  const productName = product.title || product.name || t('storefront.productDefaultName');
+  const productDesc = product.description || t('storefront.productDefaultDesc');
 
   return (
     <>
@@ -294,7 +296,7 @@ export default function ProductDetail() {
             >
               <ChevronLeft className="w-6 h-6" />
             </button>
-            <h1 className="text-lg font-semibold flex-1 text-center">{settings.store_name || 'Store'}</h1>
+            <h1 className="text-lg font-semibold flex-1 text-center">{settings.store_name || t('productDetail.storeFallback')}</h1>
             <div className="w-10" />
         </div>
       </div>
@@ -332,10 +334,10 @@ export default function ProductDetail() {
                 className="inline-block px-3 py-1 rounded-full text-xs font-semibold mb-3"
                 style={{ backgroundColor: accentColor, color: style.bg === 'bg-black' ? '#000' : '#fff' }}
               >
-                {product.category || 'Product'}
+                {product.category || t('storefront.productDefaultName')}
               </div>
               <h1 className="text-2xl md:text-xl md:text-2xl font-bold mb-2">{productName}</h1>
-              <p className="text-gray-500 text-lg mb-4">{product.material || product.realm || product.category || 'Premium'}</p>
+              <p className="text-gray-500 text-lg mb-4">{product.material || product.realm || product.category || t('productDetail.premium')}</p>
 
               {/* Rating */}
               <div className="flex items-center gap-2 mb-6">
@@ -346,26 +348,26 @@ export default function ProductDetail() {
                     </span>
                   ))}
                 </div>
-                <span className="text-sm text-gray-500">(128 reviews)</span>
+                <span className="text-sm text-gray-500">{t('productDetail.reviewsCount', { count: 128 })}</span>
               </div>
 
               {/* Product Statistics */}
               <div className={`grid grid-cols-3 gap-3 p-4 rounded-lg mb-4 border ${style.border}`}
                    style={{ backgroundColor: accentColor + '10', borderColor: accentColor + '50' }}>
                 <div className="text-center">
-                  <div className="text-xs text-gray-500 uppercase tracking-wide">Views</div>
+                  <div className="text-xs text-gray-500 uppercase tracking-wide">{t('productDetail.stats.views')}</div>
                   <div className="text-2xl font-bold" style={{ color: accentColor }}>
                     {Math.floor(Math.random() * 5000) + 100}
                   </div>
                 </div>
                 <div className="text-center">
-                  <div className="text-xs text-gray-500 uppercase tracking-wide">Sold</div>
+                  <div className="text-xs text-gray-500 uppercase tracking-wide">{t('productDetail.stats.sold')}</div>
                   <div className="text-2xl font-bold" style={{ color: accentColor }}>
                     {Math.floor(Math.random() * 500) + 10}
                   </div>
                 </div>
                 <div className="text-center">
-                  <div className="text-xs text-gray-500 uppercase tracking-wide">Popularity</div>
+                  <div className="text-xs text-gray-500 uppercase tracking-wide">{t('productDetail.stats.popularity')}</div>
                   <div className="text-2xl font-bold" style={{ color: accentColor }}>
                     {(Math.random() * 40 + 60).toFixed(0)}%
                   </div>
@@ -378,12 +380,12 @@ export default function ProductDetail() {
               <div className="text-xl md:text-2xl font-bold" style={{ color: accentColor }}>
                 {productPrice} DZD
               </div>
-              <p className="text-sm text-gray-500 mt-2">Inclusive of all taxes</p>
+              <p className="text-sm text-gray-500 mt-2">{t('productDetail.inclusiveTaxes')}</p>
             </div>
 
             {/* Description */}
             <div className="space-y-2">
-              <h3 className="font-semibold text-lg">Description</h3>
+              <h3 className="font-semibold text-lg">{t('productDetail.descriptionTitle')}</h3>
               <p className="text-gray-600 leading-relaxed">{productDesc}</p>
             </div>
 
@@ -391,9 +393,9 @@ export default function ProductDetail() {
             {product && (
               <div className="space-y-2">
                 {product.stock_quantity > 0 ? (
-                  <p className="text-green-600 font-semibold">✓ In Stock ({product.stock_quantity} available)</p>
+                  <p className="text-green-600 font-semibold">{t('productDetail.inStock', { count: product.stock_quantity })}</p>
                 ) : (
-                  <p className="text-red-600 font-semibold">✗ Out of Stock</p>
+                  <p className="text-red-600 font-semibold">{t('productDetail.outOfStock')}</p>
                 )}
               </div>
             )}
@@ -401,7 +403,7 @@ export default function ProductDetail() {
             {/* Quantity Selector */}
             {product && product.stock_quantity > 0 && (
               <div className="space-y-3">
-                <label className="block font-semibold">Quantity</label>
+                <label className="block font-semibold">{t('productDetail.quantity')}</label>
                 <div className="flex items-center gap-4 w-max">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -446,7 +448,7 @@ export default function ProductDetail() {
                     : 'bg-gray-400 text-gray-600 cursor-not-allowed'
                 } transition-colors`}
               >
-                {product && product.stock_quantity === 0 ? 'Out of Stock' : 'Buy Now'}
+                {product && product.stock_quantity === 0 ? t('productDetail.outOfStock') : t('productDetail.buyNow')}
               </button>
             </div>
 
@@ -456,7 +458,7 @@ export default function ProductDetail() {
               style={{ color: accentColor }}
             >
               <Share2 className="w-4 h-4" />
-              Share Product
+              {t('productDetail.shareProduct')}
             </button>
           </div>
         </div>

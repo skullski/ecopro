@@ -675,6 +675,14 @@ export function createServer(options?: { skipDbInit?: boolean }) {
     staffRoutes.getStaffOrders
   );
 
+  // Staff order statuses (for staff UI dropdowns)
+  app.get(
+    "/api/staff/order-statuses",
+    authenticateStaff,
+    requireStaffPermission('view_orders_list'),
+    staffRoutes.getStaffOrderStatuses
+  );
+
   // Staff profile (auth check)
   app.get(
     "/api/staff/me",

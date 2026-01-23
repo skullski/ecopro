@@ -65,7 +65,8 @@ function setAuthCookies(res: any, accessToken: string, refreshToken: string) {
  */
 export const adminLogin: RequestHandler = async (req, res) => {
   try {
-    const { email, password, totp_code, backup_code } = req.body as any;
+    const { email: rawEmail, password, totp_code, backup_code } = req.body as any;
+    const email = String(rawEmail || '').trim().toLowerCase();
     const ip = (req as any).clientIp || (req.headers['cf-connecting-ip'] as string | undefined) || null;
 
     if (!email || !password) {
@@ -172,7 +173,13 @@ export const adminLogin: RequestHandler = async (req, res) => {
     });
   } catch (error) {
     console.error('[ADMIN LOGIN] error:', error);
-    return jsonError(res, 500, 'Login failed');
+    const isProduction = process.env.NODE_ENV === 'production';
+    const msg = error instanceof Error ? error.message : String(error);
+    const looksLikeDb = /DATABASE_URL|postgres|pg_hba|Failed to establish database connection|connect attempt|ECONN|ETIMEDOUT|timeout/i.test(msg);
+    if (looksLikeDb) {
+      return jsonError(res, 503, isProduction ? 'Service temporarily unavailable' : msg);
+    }
+    return jsonError(res, 500, isProduction ? 'Login failed' : msg);
   }
 };
 

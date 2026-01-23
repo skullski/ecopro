@@ -24,6 +24,17 @@ const routePrefetchMap: Record<string, string[]> = {
  * Call this on mouseenter/focus of navigation links
  */
 export function prefetchRouteData(path: string) {
+  // Remote Render Postgres + many concurrent prefetches can make the whole platform feel slow.
+  // Keep prefetch OFF by default; power users can opt-in.
+  try {
+    if (typeof window !== 'undefined') {
+      const enabled = window.localStorage.getItem('ecopro_prefetch') === '1';
+      if (!enabled) return;
+    }
+  } catch {
+    return;
+  }
+
   const urls = routePrefetchMap[path];
   if (!urls) return;
 

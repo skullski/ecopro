@@ -111,8 +111,10 @@ export async function ensureBotSettingsRow(
 export async function ensureSystemOrderStatuses(clientId: number): Promise<void> {
   const pool = await ensureConnection();
 
-  const exists = await pool.query('SELECT 1 FROM order_statuses WHERE client_id = $1 LIMIT 1', [clientId]);
-  if (exists.rowCount) return;
+  // IMPORTANT:
+  // Do not return early if the client already has statuses.
+  // Existing accounts might have a partial set (missing bot/system statuses like didnt_pickup).
+  // We only insert missing keys and never overwrite user/custom rows.
 
   const hasIsSystem = await orderStatusesHasIsSystem();
 
@@ -120,15 +122,28 @@ export async function ensureSystemOrderStatuses(clientId: number): Promise<void>
   const cols = hasIsSystem ? [...baseCols, 'is_system'] : baseCols;
 
   const values: any[] = [];
+  // Keep system statuses minimal: only core defaults + statuses actually read/written by the bot system.
+  // (Extra statuses can still exist as user-created custom statuses.)
   const rows = [
+    // Core defaults used throughout the UI
     { key: 'pending', name: 'Pending', color: '#eab308', icon: '●', sort_order: 0, is_default: true, counts_as_revenue: false, is_system: true },
     { key: 'confirmed', name: 'Confirmed', color: '#22c55e', icon: '✓', sort_order: 1, is_default: true, counts_as_revenue: false, is_system: true },
     { key: 'completed', name: 'Completed', color: '#10b981', icon: '✓', sort_order: 2, is_default: true, counts_as_revenue: true, is_system: true },
     { key: 'cancelled', name: 'Cancelled', color: '#ef4444', icon: '✕', sort_order: 3, is_default: true, counts_as_revenue: false, is_system: true },
     { key: 'at_delivery', name: 'At Delivery', color: '#8b5cf6', icon: '🚚', sort_order: 4, is_default: true, counts_as_revenue: false, is_system: true },
+
+    // Bot-used order statuses
+    { key: 'declined', name: 'Declined', color: '#ef4444', icon: '✕', sort_order: 10, is_default: false, counts_as_revenue: false, is_system: true },
+    { key: 'delivered', name: 'Delivered', color: '#10b981', icon: '✓', sort_order: 11, is_default: false, counts_as_revenue: false, is_system: true },
+    { key: 'didnt_pickup', name: "Didn't Pickup", color: '#f97316', icon: '⛔', sort_order: 12, is_default: false, counts_as_revenue: false, is_system: true },
+    { key: 'delivery_failed', name: 'Delivery Failed', color: '#ef4444', icon: '🚫', sort_order: 13, is_default: false, counts_as_revenue: false, is_system: true },
+    { key: 'failed', name: 'Failed', color: '#ef4444', icon: '✕', sort_order: 14, is_default: false, counts_as_revenue: false, is_system: true },
+    { key: 'returned', name: 'Returned', color: '#f97316', icon: '↩️', sort_order: 15, is_default: false, counts_as_revenue: false, is_system: true },
   ];
 
-  const tuples: string[] = [];
+  // Insert missing keys one-by-one using WHERE NOT EXISTS to avoid duplicates.
+  // (Some older DBs may not have a unique constraint on (client_id, key).)
+  // We also add explicit casts to avoid Postgres "inconsistent types deduced" errors.
   for (const r of rows) {
     const rowVals = [
       clientId,
@@ -141,15 +156,30 @@ export async function ensureSystemOrderStatuses(clientId: number): Promise<void>
       r.counts_as_revenue,
       ...(hasIsSystem ? [r.is_system] : []),
     ];
-    const placeholders = rowVals.map((_, i) => `$${values.length + i + 1}`);
+    values.length = 0;
     values.push(...rowVals);
-    tuples.push(`(${placeholders.join(',')})`);
-  }
+    const placeholders = rowVals.map((_, i) => {
+      const idx = i + 1;
+      // Fixed column order: client_id, name, key, color, icon, sort_order, is_default, counts_as_revenue, [is_system]
+      if (idx === 1) return `$${idx}::int`;
+      if (idx === 2) return `$${idx}::text`;
+      if (idx === 3) return `$${idx}::text`;
+      if (idx === 4) return `$${idx}::text`;
+      if (idx === 5) return `$${idx}::text`;
+      if (idx === 6) return `$${idx}::int`;
+      if (idx === 7) return `$${idx}::boolean`;
+      if (idx === 8) return `$${idx}::boolean`;
+      if (idx === 9) return `$${idx}::boolean`;
+      return `$${idx}`;
+    });
 
-  await pool.query(
-    `INSERT INTO order_statuses (${cols.join(', ')})
-     VALUES ${tuples.join(', ')}
-     ON CONFLICT DO NOTHING`,
-    values
-  );
+    await pool.query(
+      `INSERT INTO order_statuses (${cols.join(', ')})
+       SELECT ${placeholders.join(', ')}
+       WHERE NOT EXISTS (
+         SELECT 1 FROM order_statuses WHERE client_id = $1::int AND key = $3::text
+       )`,
+      values
+    );
+  }
 }

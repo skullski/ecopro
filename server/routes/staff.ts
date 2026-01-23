@@ -1,6 +1,7 @@
 import { RequestHandler } from 'express';
 import jwt from 'jsonwebtoken';
 import { ensureConnection } from '../utils/database';
+import { ensureSystemOrderStatuses } from '../utils/client-provisioning';
 import { hashPassword, generateSecurePassword, comparePassword, getJwtSecret } from '../utils/auth';
 import { StaffMember, ActivityLog } from '@shared/staff';
 import { checkLoginAllowed, recordFailedLogin, recordSuccessfulLogin } from '../utils/brute-force';
@@ -558,7 +559,8 @@ export function requirePermission(permission: string): RequestHandler {
 export const staffLogin: RequestHandler = async (req, res) => {
   try {
     const pool = await ensureConnection();
-    const { username, password } = req.body;
+    const { username: rawUsername, password } = req.body;
+    const username = String(rawUsername || '').trim().toLowerCase();
       const schema = await getStaffPasswordSchema(pool);
       const passwordCol = schema.hasPasswordHash ? 'password_hash' : 'password';
     const ip = getClientIp(req as any);
@@ -584,7 +586,7 @@ export const staffLogin: RequestHandler = async (req, res) => {
     const result = await pool.query(
       `SELECT id, email, ${passwordCol} as password_hash, client_id, role, status, permissions, full_name
        FROM staff 
-       WHERE email = $1 AND status IN ('active', 'pending')`,
+       WHERE lower(email) = $1 AND status IN ('active', 'pending')`,
       [username]
     );
 
@@ -675,13 +677,17 @@ export const staffLogin: RequestHandler = async (req, res) => {
     const isProduction = process.env.NODE_ENV === 'production';
     console.error('Staff login error:', error);
     const errorMsg = error instanceof Error ? error.message : String(error);
+    const looksLikeDb = /DATABASE_URL|postgres|pg_hba|Failed to establish database connection|connect attempt|ECONN|ETIMEDOUT|timeout/i.test(errorMsg);
+
     if (!isProduction) {
       console.error('Error details:', errorMsg);
     }
-    return res.status(500).json({
-      error: 'Login failed',
-      ...(!isProduction ? { details: errorMsg } : {}),
-    });
+
+    if (looksLikeDb) {
+      return res.status(503).json({ error: isProduction ? 'Service temporarily unavailable' : errorMsg });
+    }
+
+    return res.status(500).json({ error: isProduction ? 'Login failed' : errorMsg });
   }
 };
 
@@ -816,6 +822,84 @@ export const getStaffOrders: RequestHandler = async (req, res) => {
 };
 
 /**
+ * STAFF ACCESS: List order statuses for this store (client)
+ * Used by staff UI to populate the status dropdown with system/bot statuses.
+ */
+export const getStaffOrderStatuses: RequestHandler = async (req, res) => {
+  try {
+    const pool = await ensureConnection();
+    const clientId = req.user?.clientId;
+    const staffId = req.user?.staffId;
+
+    if (!clientId || !staffId) {
+      return res.status(401).json({ error: 'Invalid authentication' });
+    }
+
+    // Verify staff still has access to this store
+    const staffVerify = await pool.query(
+      'SELECT permissions FROM staff WHERE id = $1 AND client_id = $2 AND status = $3',
+      [staffId, clientId, 'active']
+    );
+    if (staffVerify.rows.length === 0) {
+      return res.status(403).json({ error: 'You do not have access to this store' });
+    }
+
+    const permsRaw = staffVerify.rows[0]?.permissions;
+    const permissions = typeof permsRaw === 'string' ? JSON.parse(permsRaw) : (permsRaw || {});
+    const canViewOrders = permissions.view_orders_list === true || permissions.view_orders === true;
+    if (!canViewOrders) {
+      return res.status(403).json({ error: 'Permission denied: view_orders_list' });
+    }
+
+    // Backfill missing system/bot statuses for existing stores.
+    try {
+      await ensureSystemOrderStatuses(Number(clientId));
+    } catch (e) {
+      console.warn('[Staff] Failed to ensure system order statuses:', (e as any)?.message || e);
+    }
+
+    const statuses = await pool.query(
+      `SELECT id, name, key, color, icon, sort_order, is_default, is_system, counts_as_revenue
+       FROM order_statuses
+       WHERE client_id = $1
+       ORDER BY sort_order ASC, id ASC`,
+      [clientId]
+    );
+
+    const allowedSystemKeys = new Set([
+      'pending',
+      'confirmed',
+      'completed',
+      'cancelled',
+      'at_delivery',
+      // bot-used
+      'declined',
+      'delivered',
+      'didnt_pickup',
+      'delivery_failed',
+      'failed',
+      'returned',
+    ]);
+
+    const filtered = (statuses.rows || []).filter((s: any) => {
+      if (!s?.is_system) return true;
+      const key = String(s.key || '').trim();
+      return allowedSystemKeys.has(key);
+    });
+
+    res.json(filtered);
+  } catch (error) {
+    const isProduction = process.env.NODE_ENV === 'production';
+    console.error('[Staff] Get order statuses error:', error);
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    return res.status(500).json({
+      error: 'Failed to fetch order statuses',
+      ...(!isProduction ? { details: errorMsg } : {}),
+    });
+  }
+};
+
+/**
  * STAFF ACCESS: Update order status
  * Staff members can change order status (pending -> confirmed -> shipped -> delivered)
  * 
@@ -851,14 +935,38 @@ export const updateStaffOrderStatus: RequestHandler = async (req, res) => {
       return res.status(400).json({ error: 'Invalid orderId' });
     }
 
-    // Built-in valid statuses (same as owner route)
-    const builtInStatuses = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'];
+    // Built-in valid statuses (keep for backward compatibility)
+    const builtInStatuses = [
+      'pending',
+      'confirmed',
+      'processing',
+      'shipped',
+      'delivered',
+      'completed',
+      'cancelled',
+      'refunded',
+      // system/bot statuses
+      'failed',
+      'returned',
+      'didnt_pickup',
+      'delivery_failed',
+      'no_answer_1',
+      'no_answer_2',
+      'no_answer_3',
+      'waiting_callback',
+      'postponed',
+      'line_closed',
+      'followup',
+      'fake',
+      'duplicate',
+      'at_delivery',
+    ];
 
-    // Check if status is a built-in status OR a custom status for this client
+    // Prefer validating against order_statuses.key (UI sends keys). Fallback to name for legacy callers.
     let isValidStatus = builtInStatuses.includes(nextStatus);
     if (!isValidStatus) {
       const customStatusCheck = await pool.query(
-        'SELECT id FROM order_statuses WHERE client_id = $1 AND name = $2',
+        'SELECT id FROM order_statuses WHERE client_id = $1 AND (key = $2 OR name = $2) LIMIT 1',
         [clientId, nextStatus]
       );
       isValidStatus = customStatusCheck.rows.length > 0;
