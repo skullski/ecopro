@@ -202,8 +202,12 @@ export default function Checkout() {
   });
   const [haiSuggestions, setHaiSuggestions] = useState<string[]>([]);
   const [haiSuggestionsSupported, setHaiSuggestionsSupported] = useState(true);
-  const [deliveryPrice, setDeliveryPrice] = useState<number | null>(null);
+  const [deliveryType, setDeliveryType] = useState<'home' | 'desk'>('home');
+  const [deliveryPriceHome, setDeliveryPriceHome] = useState<number | null>(null);
+  const [deliveryPriceDesk, setDeliveryPriceDesk] = useState<number | null>(null);
   const [loadingDeliveryPrice, setLoadingDeliveryPrice] = useState(false);
+
+  const deliveryPrice = deliveryType === 'desk' ? (deliveryPriceDesk ?? deliveryPriceHome) : deliveryPriceHome;
 
   // Get template and settings
   const template = localStorage.getItem('template') || 'fashion';
@@ -473,7 +477,8 @@ export default function Checkout() {
       const shippingMeta: any = (product as any)?.metadata?.shipping || null;
       const shippingMode = shippingMeta?.mode || shippingMeta?.shipping_mode || null;
       if (shippingMode === 'free') {
-        setDeliveryPrice(0);
+        setDeliveryPriceHome(0);
+        setDeliveryPriceDesk(0);
         setLoadingDeliveryPrice(false);
         return;
       }
@@ -484,13 +489,16 @@ export default function Checkout() {
           shippingMeta?.shipping_flat_fee ??
           0
         );
-        setDeliveryPrice(Number.isFinite(fee) && fee >= 0 ? fee : 0);
+        const safeFee = Number.isFinite(fee) && fee >= 0 ? fee : 0;
+        setDeliveryPriceHome(safeFee);
+        setDeliveryPriceDesk(safeFee);
         setLoadingDeliveryPrice(false);
         return;
       }
 
       if (!settings?.store_slug || !formData.wilayaId) {
-        setDeliveryPrice(null);
+        setDeliveryPriceHome(null);
+        setDeliveryPriceDesk(null);
         return;
       }
 
@@ -502,17 +510,25 @@ export default function Checkout() {
         if (res.ok) {
           const data = await res.json();
           if (data.price) {
-            setDeliveryPrice(data.price.home_delivery_price);
+            const home = data.price.home_delivery_price;
+            const desk = data.price.desk_delivery_price;
+            setDeliveryPriceHome(home == null ? null : Number(home));
+            setDeliveryPriceDesk(desk == null ? null : Number(desk));
           } else if (data.default_price) {
-            setDeliveryPrice(data.default_price);
+            const fallback = Number(data.default_price);
+            setDeliveryPriceHome(Number.isFinite(fallback) ? fallback : null);
+            setDeliveryPriceDesk(null);
           } else {
-            setDeliveryPrice(null);
+            setDeliveryPriceHome(null);
+            setDeliveryPriceDesk(null);
           }
         } else {
-          setDeliveryPrice(null);
+          setDeliveryPriceHome(null);
+          setDeliveryPriceDesk(null);
         }
       } catch {
-        setDeliveryPrice(null);
+        setDeliveryPriceHome(null);
+        setDeliveryPriceDesk(null);
       } finally {
         setLoadingDeliveryPrice(false);
       }
@@ -872,16 +888,69 @@ export default function Checkout() {
                   {/* Hai / Neighborhood removed per request */}
 
                   <div className="space-y-0.5 sm:space-y-0.5 md:space-y-0.5 md:col-span-2">
-                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">{t("checkout.address") || "Delivery Address"} *</label>
-                    <input
-                      type="text"
-                      placeholder={t("checkout.addressPlaceholder") || "Street address, building, apartment number, etc."}
-                      value={formData.address}
-                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                      className={`w-full px-2 sm:px-3 md:px-2 lg:px-4 py-1 sm:py-1.5 md:py-1.5 lg:py-3 rounded-lg border-2 text-xs sm:text-sm md:text-xs lg:text-sm ${style.inputBg} focus:outline-none focus:ring-2 focus:ring-offset-1 transition shadow-sm`}
-                      style={{ '--tw-ring-color': accentColor } as any}
-                    />
+                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">{t('checkout.deliveryType') || 'Delivery type'} *</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDeliveryType('desk');
+                          setFormData((f) => ({ ...f, address: '' }));
+                        }}
+                        disabled={deliveryPriceDesk == null && deliveryPriceHome != null}
+                        className={`w-full px-2 sm:px-3 md:px-2 lg:px-4 py-1 sm:py-1.5 md:py-1.5 lg:py-3 rounded-lg border-2 text-xs sm:text-sm md:text-xs lg:text-sm font-bold transition shadow-sm text-left ${
+                          deliveryType === 'desk'
+                            ? 'bg-gray-900 text-white border-gray-900'
+                            : `${style.inputBg} hover:bg-opacity-80`
+                        } ${(deliveryPriceDesk == null && deliveryPriceHome != null) ? 'opacity-60 cursor-not-allowed' : ''}`}
+                      >
+                        <div>{t('checkout.deliveryTypeDesk') || 'Desk'}</div>
+                        <div className={`text-[11px] ${deliveryType === 'desk' ? 'text-white/80' : 'opacity-70'}`}>
+                          {loadingDeliveryPrice
+                            ? (t('checkout.loading') || 'Loading…')
+                            : deliveryPriceDesk != null
+                              ? `${deliveryPriceDesk} DZD`
+                              : (t('checkout.notAvailable') || 'Not available')}
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeliveryType('home')}
+                        className={`w-full px-2 sm:px-3 md:px-2 lg:px-4 py-1 sm:py-1.5 md:py-1.5 lg:py-3 rounded-lg border-2 text-xs sm:text-sm md:text-xs lg:text-sm font-bold transition shadow-sm text-left ${
+                          deliveryType === 'home'
+                            ? 'text-white'
+                            : `${style.inputBg} hover:bg-opacity-80`
+                        }`}
+                        style={
+                          deliveryType === 'home'
+                            ? ({ backgroundColor: accentColor, borderColor: accentColor } as any)
+                            : undefined
+                        }
+                      >
+                        <div>{t('checkout.deliveryTypeHome') || 'Home'}</div>
+                        <div className={`text-[11px] ${deliveryType === 'home' ? 'text-white/80' : 'opacity-70'}`}>
+                          {loadingDeliveryPrice
+                            ? (t('checkout.loading') || 'Loading…')
+                            : deliveryPriceHome != null
+                              ? `${deliveryPriceHome} DZD`
+                              : (t('checkout.selectWilaya') || 'Select Wilaya')}
+                        </div>
+                      </button>
+                    </div>
                   </div>
+
+                  {deliveryType === 'home' && (
+                    <div className="space-y-0.5 sm:space-y-0.5 md:space-y-0.5 md:col-span-2">
+                      <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">{t("checkout.address") || "Delivery Address"} *</label>
+                      <input
+                        type="text"
+                        placeholder={t("checkout.addressPlaceholder") || "Street address, building, apartment number, etc."}
+                        value={formData.address}
+                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                        className={`w-full px-2 sm:px-3 md:px-2 lg:px-4 py-1 sm:py-1.5 md:py-1.5 lg:py-3 rounded-lg border-2 text-xs sm:text-sm md:text-xs lg:text-sm ${style.inputBg} focus:outline-none focus:ring-2 focus:ring-offset-1 transition shadow-sm`}
+                        style={{ '--tw-ring-color': accentColor } as any}
+                      />
+                    </div>
+                  )}
 
                 </div>
 
@@ -891,14 +960,14 @@ export default function Checkout() {
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className={`p-0.5 sm:p-1 rounded border ${style.border} hover:bg-opacity-50 transition`}
+                      className={`p-0.5 sm:p-1 rounded border-2 ${style.border} hover:bg-opacity-50 transition`}
                     >
                       <Minus className="w-3 sm:w-3 h-3 sm:h-3" />
                     </button>
                     <span className="text-sm sm:text-base font-bold w-6 text-center">{quantity}</span>
                     <button
                       onClick={() => setQuantity(quantity + 1)}
-                      className={`p-0.5 sm:p-1 rounded border ${style.border} hover:bg-opacity-50 transition`}
+                      className={`p-0.5 sm:p-1 rounded border-2 ${style.border} hover:bg-opacity-50 transition`}
                     >
                       <Plus className="w-3 sm:w-3 h-3 sm:h-3" />
                     </button>
@@ -992,9 +1061,13 @@ export default function Checkout() {
                       <p className="opacity-60 text-xs font-semibold">City</p>
                       <p className="font-bold">{formData.city || 'Not filled'}</p>
                     </div>
+                    <div>
+                      <p className="opacity-60 text-xs font-semibold">Delivery Type</p>
+                      <p className="font-bold">{deliveryType === 'desk' ? 'Desk' : 'Home'}</p>
+                    </div>
                     <div className="md:col-span-2">
                       <p className="opacity-60 text-xs font-semibold">Address</p>
-                      <p className="font-bold">{formData.address || 'Not filled'}</p>
+                      <p className="font-bold">{deliveryType === 'home' ? (formData.address || 'Not filled') : 'Hidden (Desk delivery)'}</p>
                     </div>
                   </div>
                 </div>
@@ -1052,7 +1125,7 @@ export default function Checkout() {
                         if (!formData.phone) missingFields.push('Phone');
                         if (!formData.wilayaId) missingFields.push('Wilaya');
                         if (!formData.communeId) missingFields.push('Baladia/Commune');
-                        if (!formData.address) missingFields.push('Address');
+                        if (deliveryType === 'home' && !formData.address) missingFields.push('Address');
                         if (formData.phone && !/^\+?[0-9]{7,}$/.test(formData.phone.replace(/\s/g, ''))) {
                           missingFields.push('Valid Phone Number');
                         }
@@ -1071,24 +1144,23 @@ export default function Checkout() {
                         const selectedCommune = getAlgeriaCommuneById(formData.communeId);
 
                         for (const item of cart) {
+                          const addressParts =
+                            deliveryType === 'home'
+                              ? [formData.address, selectedCommune?.name || formData.city, selectedWilaya?.name ? selectedWilaya.name : '']
+                              : [selectedCommune?.name || formData.city, selectedWilaya?.name ? selectedWilaya.name : ''];
+
                           const orderData = {
                             product_id: item.id,
                             quantity: item.quantity,
                             total_price: item.price * item.quantity + (deliveryPrice || 0),
                             delivery_fee: deliveryPrice || 0,
-                            delivery_type: 'home',
+                            delivery_type: deliveryType,
                             customer_name: formData.fullName,
                             ...(formData.email?.trim() ? { customer_email: formData.email.trim() } : {}),
                             customer_phone: formData.phone,
                             shipping_wilaya_id: formData.wilayaId ? Number(formData.wilayaId) : null,
                             shipping_commune_id: formData.communeId ? Number(formData.communeId) : null,
-                            customer_address: [
-                              formData.address,
-                              selectedCommune?.name || formData.city,
-                              selectedWilaya?.name ? selectedWilaya.name : '',
-                            ]
-                              .filter(Boolean)
-                              .join(', '),
+                            customer_address: addressParts.filter(Boolean).join(', '),
                           };
 
                           const endpoint = `/api/storefront/${settings.store_slug}/orders`;

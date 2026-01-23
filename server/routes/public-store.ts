@@ -181,19 +181,19 @@ export const getStorefrontProducts: RequestHandler = async (req, res) => {
       }
 
       // Otherwise try seller storefronts (seller_store_settings) and return marketplace_products
-      let sellerCheck = await withDbRetry((db) =>
+      let sellerCheck = await withDbRetry<any>((db) =>
         db.query(
           `SELECT seller_id FROM seller_store_settings WHERE store_slug = $1`,
           [storeSlug]
-        ) as any
+        )
       );
       if (sellerCheck.rows.length === 0) {
-        sellerCheck = await withDbRetry((db) =>
+        sellerCheck = await withDbRetry<any>((db) =>
           db.query(
             `SELECT seller_id FROM seller_store_settings 
              WHERE LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1)`,
             [storeSlug]
-          ) as any
+          )
         );
       }
       if (sellerCheck.rows.length === 0) {
@@ -206,7 +206,7 @@ export const getStorefrontProducts: RequestHandler = async (req, res) => {
       if (!isProduction) {
         console.log(`Loading seller store ${storeSlug} for seller ID ${sellerId}`);
       }
-      const mResult = await withDbRetry((db) =>
+      const mResult = await withDbRetry<any>((db) =>
         db.query(
           `SELECT p.id, p.title, p.description, p.price, p.original_price, p.images, p.category, p.stock, p.condition, p.location, p.shipping_available AS shipping, p.views, p.created_at,
                   ss.store_name, sel.name AS seller_name, sel.email AS seller_email
@@ -216,7 +216,7 @@ export const getStorefrontProducts: RequestHandler = async (req, res) => {
            WHERE p.seller_id = $1 AND p.status = 'active'
            ORDER BY p.created_at DESC`,
           [sellerId]
-        ) as any
+        )
       );
       if (!isProduction) {
         console.log(`Found ${mResult.rows.length} marketplace products for seller store ${storeSlug}`);

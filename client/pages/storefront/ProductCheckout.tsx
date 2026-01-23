@@ -780,7 +780,8 @@ export default function ProductCheckout() {
       toast({ variant: 'destructive', title: t('checkout.error.selectVariantTitle'), description: t('checkout.error.selectVariantDesc') });
       return;
     }
-    if (!formData.fullName || !formData.phone || !formData.wilayaId || !formData.communeId || !formData.address) {
+    const requiresHomeAddress = deliveryType === 'home';
+    if (!formData.fullName || !formData.phone || !formData.wilayaId || !formData.communeId || (requiresHomeAddress && !formData.address)) {
       toast({ variant: 'destructive', title: t('checkout.error.requiredFieldsTitle'), description: t('checkout.error.requiredFieldsDesc') });
       return;
     }
@@ -813,12 +814,13 @@ export default function ProductCheckout() {
         ...(formData.email?.trim() ? { customer_email: formData.email.trim() } : {}),
         shipping_wilaya_id: formData.wilayaId ? Number(formData.wilayaId) : null,
         shipping_commune_id: formData.communeId ? Number(formData.communeId) : null,
-        customer_address: [
-          selectedCommune?.name || formData.city,
-          selectedWilaya?.name ? selectedWilaya.name : '',
-        ]
-          .filter(Boolean)
-          .join(', ') + ` - ${formData.address}${formData.notes ? ` (${formData.notes})` : ''}`,
+        customer_address:
+          [selectedCommune?.name || formData.city, selectedWilaya?.name ? selectedWilaya.name : '']
+            .filter(Boolean)
+            .join(', ') +
+          (deliveryType === 'home'
+            ? ` - ${formData.address}${formData.notes ? ` (${formData.notes})` : ''}`
+            : `${formData.notes ? ` (${formData.notes})` : ''}`),
       };
 
       console.log('Submitting order:', orderData);
@@ -1479,14 +1481,14 @@ export default function ProductCheckout() {
                     placeholder="Full Name *"
                     value={formData.fullName}
                     onChange={(e) => setFormData((f) => ({ ...f, fullName: e.target.value }))}
-                    className="px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[var(--accentRing)] focus:border-[var(--accentBorder)]"
+                    className="px-3 py-2 rounded-lg border-2 border-slate-300 bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[var(--accentRing)] focus:border-[var(--accentBorder)]"
                   />
                   <input
                     type="tel"
                     placeholder="Phone Number *"
                     value={formData.phone}
                     onChange={(e) => setFormData((f) => ({ ...f, phone: e.target.value }))}
-                    className="px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[var(--accentRing)] focus:border-[var(--accentBorder)]"
+                    className="px-3 py-2 rounded-lg border-2 border-slate-300 bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[var(--accentRing)] focus:border-[var(--accentBorder)]"
                     dir="ltr"
                   />
 
@@ -1496,7 +1498,7 @@ export default function ProductCheckout() {
                       setFormData((f) => ({ ...f, wilayaId: nextId, communeId: '', city: '' }));
                     }}
                   >
-                    <SelectTrigger className="px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 text-sm h-auto focus:ring-2 focus:ring-[var(--accentRing)] focus:border-[var(--accentBorder)]">
+                    <SelectTrigger className="px-3 py-2 rounded-lg border-2 border-slate-300 bg-white text-slate-900 text-sm h-auto focus:ring-2 focus:ring-[var(--accentRing)] focus:border-[var(--accentBorder)]">
                       <SelectValue placeholder="Wilaya *" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1516,7 +1518,7 @@ export default function ProductCheckout() {
                       setFormData((f) => ({ ...f, communeId: nextId, city: c?.name || '' }));
                     }}
                   >
-                    <SelectTrigger className="px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 text-sm disabled:opacity-60 h-auto focus:ring-2 focus:ring-[var(--accentRing)] focus:border-[var(--accentBorder)]">
+                    <SelectTrigger className="px-3 py-2 rounded-lg border-2 border-slate-300 bg-white text-slate-900 text-sm disabled:opacity-60 h-auto focus:ring-2 focus:ring-[var(--accentRing)] focus:border-[var(--accentBorder)]">
                       <SelectValue placeholder={formData.wilayaId ? 'Baladia/Commune *' : 'Select Wilaya first'} />
                     </SelectTrigger>
                     <SelectContent>
@@ -1528,13 +1530,15 @@ export default function ProductCheckout() {
                     </SelectContent>
                   </Select>
 
-                  <input
-                    type="text"
-                    placeholder="Address *"
-                    value={formData.address}
-                    onChange={(e) => setFormData((f) => ({ ...f, address: e.target.value }))}
-                    className="col-span-2 px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[var(--accentRing)] focus:border-[var(--accentBorder)]"
-                  />
+                  {deliveryType === 'home' && (
+                    <input
+                      type="text"
+                      placeholder="Address *"
+                      value={formData.address}
+                      onChange={(e) => setFormData((f) => ({ ...f, address: e.target.value }))}
+                      className="col-span-2 px-3 py-2 rounded-lg border-2 border-slate-300 bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[var(--accentRing)] focus:border-[var(--accentBorder)]"
+                    />
+                  )}
                 </div>
 
                 {/* Delivery type */}
@@ -1543,9 +1547,12 @@ export default function ProductCheckout() {
                   <div className="mt-2 grid grid-cols-2 gap-2">
                     <button
                       type="button"
-                      onClick={() => setDeliveryType('desk')}
+                      onClick={() => {
+                        setDeliveryType('desk');
+                        setFormData((f) => ({ ...f, address: '' }));
+                      }}
                       disabled={deliveryPriceDesk == null && deliveryPriceHome != null}
-                      className={`rounded-xl border px-3 py-2 text-sm text-left transition ${
+                      className={`rounded-xl border-2 px-3 py-2 text-sm text-left transition ${
                         deliveryType === 'desk'
                           ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
                           : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-50'
@@ -1563,7 +1570,7 @@ export default function ProductCheckout() {
                     <button
                       type="button"
                       onClick={() => setDeliveryType('home')}
-                      className={`rounded-xl border px-3 py-2 text-sm text-left transition ${
+                      className={`rounded-xl border-2 px-3 py-2 text-sm text-left transition ${
                         deliveryType === 'home'
                           ? 'text-white shadow-sm'
                           : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-50'

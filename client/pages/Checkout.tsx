@@ -75,6 +75,7 @@ export default function Checkout() {
   const [messengerConnected, setMessengerConnected] = useState(false);
   const [checkingMessengerConnection, setCheckingMessengerConnection] = useState(false);
   const [waitingForMessengerConnection, setWaitingForMessengerConnection] = useState(false);
+  const [deliveryPlace, setDeliveryPlace] = useState<'home' | 'desk'>('home');
   const [searchQuery, setSearchQuery] = useState("");
   const [addr, setAddr] = useState<AddressFormValue & { hai?: string }>({
     name: "",
@@ -426,8 +427,13 @@ export default function Checkout() {
         return;
       }
       // Anderson/Ecotrack required fields validation
-      if (!addr.name || !addr.line1 || !addr.city || !addr.country || !addr.phone || !dzWilayaId || !dzCommuneId) {
-        setErrorMsg("Please fill in all required fields: Name, Phone, Address, Wilaya, Commune, Country");
+      const needsHomeAddress = deliveryPlace === 'home';
+      if (!addr.name || !addr.city || !addr.country || !addr.phone || !dzWilayaId || !dzCommuneId || (needsHomeAddress && !addr.line1)) {
+        setErrorMsg(
+          needsHomeAddress
+            ? "Please fill in all required fields: Name, Phone, Address, Wilaya, Commune, Country"
+            : "Please fill in all required fields: Name, Phone, Wilaya, Commune, Country"
+        );
         setSubmitting(false);
         return;
       }
@@ -442,9 +448,15 @@ export default function Checkout() {
         setSubmitting(false);
         return;
       }
-      const addressStr = [addr.line1, addr.line2, addr.hai, addr.city, addr.state, addr.postalCode, addr.country]
-        .filter(Boolean)
-        .join(', ');
+      const selectedWilaya = dzWilayaId ? getAlgeriaWilayaById(dzWilayaId) : null;
+      const selectedCommune = dzCommuneId ? getAlgeriaCommuneById(dzCommuneId) : null;
+
+      const addressStr =
+        deliveryPlace === 'desk'
+          ? ['Desk delivery', selectedCommune?.name, selectedWilaya?.name, addr.country].filter(Boolean).join(', ')
+          : [addr.line1, addr.line2, addr.hai, addr.city, addr.state, addr.postalCode, addr.country]
+              .filter(Boolean)
+              .join(', ');
 
       const unitPrice = selectedVariant && selectedVariant.price != null ? Number(selectedVariant.price) : Number(product?.price ?? 0);
       const payload = {
@@ -512,7 +524,7 @@ export default function Checkout() {
           {/* Left: Order Summary */}
           <div className="flex flex-col gap-3 md:gap-4">
             {Array.isArray(product.variants) && product.variants.length > 0 && (
-              <div className="bg-[#13162a] rounded-2xl shadow-lg border border-[#23264a] p-6">
+              <div className="bg-[#13162a] rounded-2xl shadow-lg border-2 border-[#23264a] p-6">
                 <h3 className="text-lg font-semibold text-white mb-3">Choose Variant</h3>
                 {(() => {
                   const variants = product.variants || [];
@@ -546,7 +558,7 @@ export default function Checkout() {
                                   }
                                 }}
                               >
-                                <SelectTrigger className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all h-auto">
+                                <SelectTrigger className="w-full rounded-lg bg-[#181b2a] border-2 border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all h-auto">
                                   <SelectValue placeholder="Select Color" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -580,7 +592,7 @@ export default function Checkout() {
                                   }
                                 }}
                               >
-                                <SelectTrigger className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all h-auto">
+                                <SelectTrigger className="w-full rounded-lg bg-[#181b2a] border-2 border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all h-auto">
                                   <SelectValue placeholder="Select Size" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -610,12 +622,12 @@ export default function Checkout() {
               </div>
             )}
 
-            <div className="bg-[#13162a] rounded-2xl shadow-lg border border-[#23264a] p-6">
+            <div className="bg-[#13162a] rounded-2xl shadow-lg border-2 border-[#23264a] p-6">
               <h3 className="text-lg font-semibold text-white mb-3">Quantity</h3>
               <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  className="px-3 py-2 rounded-lg bg-[#181b2a] border border-[#23264a] text-white disabled:opacity-50"
+                  className="px-3 py-2 rounded-lg bg-[#181b2a] border-2 border-[#23264a] text-white disabled:opacity-50"
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                   disabled={quantity <= 1}
                 >
@@ -624,7 +636,7 @@ export default function Checkout() {
                 <div className="min-w-[56px] text-center text-white font-semibold">{quantity}</div>
                 <button
                   type="button"
-                  className="px-3 py-2 rounded-lg bg-[#181b2a] border border-[#23264a] text-white"
+                  className="px-3 py-2 rounded-lg bg-[#181b2a] border-2 border-[#23264a] text-white"
                   onClick={() => setQuantity((q) => q + 1)}
                 >
                   +
@@ -633,10 +645,10 @@ export default function Checkout() {
               <p className="text-xs text-gray-500 mt-2">If a variant is selected, quantity is limited by variant stock.</p>
             </div>
 
-            <div className="bg-[#13162a] rounded-2xl shadow-lg border border-[#23264a] p-6">
+            <div className="bg-[#13162a] rounded-2xl shadow-lg border-2 border-[#23264a] p-6">
               <h2 className="text-xl font-bold text-white mb-4">Order Summary</h2>
               <div className="flex items-center gap-4">
-                <img src={product.imageUrl} alt={product.title} className="w-20 h-20 object-cover rounded-xl border border-[#23264a]" />
+                <img src={product.imageUrl} alt={product.title} className="w-20 h-20 object-cover rounded-xl border-2 border-[#23264a]" />
                 <div>
                   <div className="font-semibold text-white text-lg mb-1">{product.title}</div>
                   <div className="text-cyan-400 text-xl md:text-2xl font-extrabold">
@@ -652,7 +664,7 @@ export default function Checkout() {
                 </div>
               </div>
             </div>
-            <div className="bg-[#13162a] rounded-2xl shadow-lg border border-[#23264a] p-6">
+            <div className="bg-[#13162a] rounded-2xl shadow-lg border-2 border-[#23264a] p-6">
               <h3 className="text-lg font-semibold text-white mb-3">Order Details</h3>
               <div className="flex flex-col gap-2 text-base">
                 <div className="flex justify-between text-gray-300">
@@ -686,7 +698,7 @@ export default function Checkout() {
                 </div>
               </div>
             </div>
-            <div className="bg-[#13162a] rounded-2xl shadow-lg border border-[#23264a] p-5">
+            <div className="bg-[#13162a] rounded-2xl shadow-lg border-2 border-[#23264a] p-5">
               <div className="flex gap-3 items-start">
                 <svg className="w-5 h-5 text-cyan-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -699,25 +711,61 @@ export default function Checkout() {
             </div>
           </div>
           {/* Right: Shipping Form */}
-          <div className="bg-[#13162a] rounded-2xl shadow-lg border border-[#23264a] p-4 md:p-6 flex flex-col justify-center">
+          <div className="bg-[#13162a] rounded-2xl shadow-lg border-2 border-[#23264a] p-4 md:p-6 flex flex-col justify-center">
             <h2 className="text-xl font-bold text-white mb-4">Shipping Information</h2>
             <form className="flex flex-col gap-4" onSubmit={e => { e.preventDefault(); console.log('Form submitted, placing order...'); placeOrder(); }}>
               {/* Restore previous input field styles for clarity */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Full Name <span className="text-red-500">*</span></label>
-                <input type="text" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all" value={addr.name || ''} onChange={e => setAddr({ ...addr, name: e.target.value })} required />
+                <input type="text" className="w-full rounded-lg bg-[#181b2a] border-2 border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all" value={addr.name || ''} onChange={e => setAddr({ ...addr, name: e.target.value })} required />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
-                <input type="email" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all" value={addr.email || ''} onChange={e => setAddr({ ...addr, email: e.target.value })} />
+                <input type="email" className="w-full rounded-lg bg-[#181b2a] border-2 border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all" value={addr.email || ''} onChange={e => setAddr({ ...addr, email: e.target.value })} />
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Delivery Location</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setDeliveryPlace('home')}
+                    className={
+                      deliveryPlace === 'home'
+                        ? 'w-full py-3 rounded-lg bg-[#181b2a] border-2 border-cyan-400 text-white font-bold'
+                        : 'w-full py-3 rounded-lg bg-[#181b2a] border-2 border-[#23264a] text-gray-200 font-semibold hover:border-cyan-400/60'
+                    }
+                  >
+                    Home
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeliveryPlace('desk')}
+                    className={
+                      deliveryPlace === 'desk'
+                        ? 'w-full py-3 rounded-lg bg-[#181b2a] border-2 border-cyan-400 text-white font-bold'
+                        : 'w-full py-3 rounded-lg bg-[#181b2a] border-2 border-[#23264a] text-gray-200 font-semibold hover:border-cyan-400/60'
+                    }
+                  >
+                    Desk
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  {deliveryPlace === 'home'
+                    ? 'Home: enter your full address.'
+                    : 'Desk: address fields are hidden.'}
+                </p>
+              </div>
+
+              {deliveryPlace === 'home' && (
+                <>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Address Line 1 <span className="text-red-500">*</span></label>
-                <input type="text" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all" value={addr.line1 || ''} onChange={e => setAddr({ ...addr, line1: e.target.value })} required />
+                <input type="text" className="w-full rounded-lg bg-[#181b2a] border-2 border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all" value={addr.line1 || ''} onChange={e => setAddr({ ...addr, line1: e.target.value })} required />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Address Line 2</label>
-                <input type="text" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all" value={addr.line2 || ''} onChange={e => setAddr({ ...addr, line2: e.target.value })} placeholder="Apartment, suite, etc. (optional)" />
+                <input type="text" className="w-full rounded-lg bg-[#181b2a] border-2 border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all" value={addr.line2 || ''} onChange={e => setAddr({ ...addr, line2: e.target.value })} placeholder="Apartment, suite, etc. (optional)" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Hai / Neighborhood</label>
@@ -728,7 +776,7 @@ export default function Checkout() {
                       value={String(addr.hai || '')}
                       onValueChange={(v) => setAddr({ ...addr, hai: v })}
                     >
-                      <SelectTrigger className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all h-auto">
+                      <SelectTrigger className="w-full rounded-lg bg-[#181b2a] border-2 border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all h-auto">
                         <SelectValue placeholder="Select Hai" />
                       </SelectTrigger>
                       <SelectContent>
@@ -743,12 +791,14 @@ export default function Checkout() {
                 )}
                 <input
                   type="text"
-                  className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all"
+                  className="w-full rounded-lg bg-[#181b2a] border-2 border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all"
                   value={addr.hai || ''}
                   onChange={e => setAddr({ ...addr, hai: e.target.value })}
                   placeholder="Example: Hai Badr Eddine"
                 />
               </div>
+                </>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Wilaya <span className="text-red-500">*</span></label>
@@ -761,7 +811,7 @@ export default function Checkout() {
                       setAddr({ ...addr, state: w?.name || "", city: "" });
                     }}
                   >
-                    <SelectTrigger className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all h-auto">
+                    <SelectTrigger className="w-full rounded-lg bg-[#181b2a] border-2 border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all h-auto">
                       <SelectValue placeholder="Select Wilaya" />
                     </SelectTrigger>
                     <SelectContent>
@@ -784,7 +834,7 @@ export default function Checkout() {
                       setAddr({ ...addr, city: c?.name || "" });
                     }}
                   >
-                    <SelectTrigger className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all disabled:opacity-60 h-auto">
+                    <SelectTrigger className="w-full rounded-lg bg-[#181b2a] border-2 border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all disabled:opacity-60 h-auto">
                       <SelectValue placeholder={dzWilayaId ? "Select Baladia/Commune" : "Select Wilaya first"} />
                     </SelectTrigger>
                     <SelectContent>
@@ -799,15 +849,15 @@ export default function Checkout() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Country <span className="text-red-500">*</span></label>
-                <input type="text" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all" value={addr.country || ''} onChange={e => setAddr({ ...addr, country: e.target.value })} required />
+                <input type="text" className="w-full rounded-lg bg-[#181b2a] border-2 border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all" value={addr.country || ''} onChange={e => setAddr({ ...addr, country: e.target.value })} required />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">Phone Number</label>
-                <input type="tel" className="w-full rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all" value={addr.phone || ''} onChange={e => setAddr({ ...addr, phone: e.target.value })} placeholder="+1 (555) 000-0000" />
+                <input type="tel" className="w-full rounded-lg bg-[#181b2a] border-2 border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all" value={addr.phone || ''} onChange={e => setAddr({ ...addr, phone: e.target.value })} placeholder="05xx xx xx xx" />
               </div>
 
               {storeSlug && telegramBotInfo && (
-                <div className="rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3">
+                <div className="rounded-lg bg-[#181b2a] border-2 border-[#23264a] px-4 py-3">
                   <div className="flex items-center justify-between gap-3">
                     <div className="text-sm font-semibold text-gray-200">Telegram (Optional)</div>
                     <div className="text-xs text-gray-400">
@@ -843,7 +893,7 @@ export default function Checkout() {
               )}
 
               {storeSlug && messengerInfo && (
-                <div className="rounded-lg bg-[#181b2a] border border-[#23264a] px-4 py-3">
+                <div className="rounded-lg bg-[#181b2a] border-2 border-[#23264a] px-4 py-3">
                   <div className="flex items-center justify-between gap-3">
                     <div className="text-sm font-semibold text-gray-200">Messenger (Optional)</div>
                     <div className="text-xs text-gray-400">

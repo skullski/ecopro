@@ -796,8 +796,6 @@ export default function Store() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    console.log('Starting image upload:', file.name, file.size, file.type);
-
     // Validate file size (2MB max)
     if (file.size > 2 * 1024 * 1024) {
       toast({ variant: 'destructive', title: 'Upload failed', description: 'Image must be less than 2MB.' });
@@ -821,22 +819,22 @@ export default function Store() {
         body: uploadFormData
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        const fullUrl = `${window.location.origin}${data.url}`;
-        setFormData(prev => ({ ...prev, images: [fullUrl] }));
-        e.target.value = '';
-        toast({ title: 'Uploaded', description: 'Product image uploaded successfully.' });
-      } else {
-        const error = await res.json();
-        console.error('Upload failed:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Upload failed',
-          description: String((error as any)?.error || 'Unknown error'),
-        });
-        e.target.value = '';
+      const responseText = await res.text();
+      if (!res.ok) {
+        try {
+          const error = JSON.parse(responseText);
+          throw new Error(error?.error || 'Upload failed');
+        } catch {
+          throw new Error(`Upload failed: ${res.statusText}`);
+        }
       }
+      if (!responseText) throw new Error('Upload succeeded but server returned empty response');
+      const data = JSON.parse(responseText);
+      const url = String((data as any)?.url || '').trim();
+      if (!url) throw new Error('Upload succeeded but server returned invalid url');
+
+      setFormData((prev) => ({ ...prev, images: [url] }));
+      toast({ title: 'Uploaded', description: 'Product image uploaded successfully.' });
     } catch (error) {
       console.error('Upload error:', error);
       toast({
@@ -844,9 +842,9 @@ export default function Store() {
         title: 'Upload failed',
         description: error instanceof Error ? error.message : 'Failed to upload image',
       });
-      e.target.value = '';
     } finally {
       setUploading(false);
+      e.target.value = '';
     }
   };
 
