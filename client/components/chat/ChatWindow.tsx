@@ -1,9 +1,11 @@
 // Chat Window Component - Main Chat Area with Rich UI
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Send, Upload, AlertCircle, Loader, Smile, Paperclip, Phone, Plus } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Send, Upload, AlertCircle, Loader, Smile, Paperclip, Phone, Plus, Search, Mic, X } from 'lucide-react';
 import { MessageList } from './MessageList';
 import { FileUploadUI } from './FileUploadUI';
+import { VoiceRecorder } from './VoiceRecorder';
+import { useWebSocket, ChatMessageWS } from '../../hooks/useWebSocket';
 
 interface ChatMessage {
   id: number;
@@ -11,10 +13,12 @@ interface ChatMessage {
   sender_id: number;
   sender_type: 'client' | 'seller' | 'admin';
   message_content: string;
-  message_type: 'text' | 'code_request' | 'code_response' | 'system' | 'file_attachment';
+  message_type: 'text' | 'code_request' | 'code_response' | 'system' | 'file_attachment' | 'voice';
   metadata?: any;
   is_read: boolean;
   created_at: string;
+  reply_to_id?: number;
+  reactions?: Record<string, number[]>; // emoji -> userIds
 }
 
 interface Chat {
@@ -24,6 +28,12 @@ interface Chat {
   store_id?: number;
   status: 'active' | 'open' | 'archived' | 'closed' | string;
   created_at: string;
+}
+
+interface TypingUser {
+  userId: number;
+  userName?: string;
+  timestamp: number;
 }
 
 interface ChatWindowProps {
@@ -42,6 +52,11 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
   const [error, setError] = useState<string | null>(null);
   const [showFileUpload, setShowFileUpload] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
+  const [typingUsers, setTypingUsers] = useState<Map<number, TypingUser>>(new Map());
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -49,6 +64,90 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
   const isUserScrollingRef = useRef<boolean>(false);
   const shouldScrollRef = useRef<boolean>(true);
   const scrollRafRef = useRef<number | null>(null);
+
+  // WebSocket connection for real-time updates
+  const {
+    isConnected,
+    sendTyping,
+    sendStopTyping,
+  } = useWebSocket({
+    chatId,
+    autoConnect: true,
+    onMessage: useCallback((msg: ChatMessageWS) => {
+      // Add new message from WebSocket
+      setMessages(prev => {
+        // Check if message already exists
+        if (prev.some(m => m.id === msg.id)) return prev;
+        return [...prev, msg as ChatMessage];
+      });
+    }, []),
+    onTyping: useCallback((typingUserId: number, userName?: string) => {
+      if (typingUserId === userId) return; // Ignore our own typing
+      setTypingUsers(prev => {
+        const newMap = new Map(prev);
+        newMap.set(typingUserId, { userId: typingUserId, userName, timestamp: Date.now() });
+        return newMap;
+      });
+    }, [userId]),
+    onStopTyping: useCallback((typingUserId: number) => {
+      setTypingUsers(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(typingUserId);
+        return newMap;
+      });
+    }, []),
+    onEdit: useCallback((messageId: number, newContent: string) => {
+      setMessages(prev => prev.map(m => 
+        m.id === messageId 
+          ? { ...m, message_content: newContent, metadata: { ...m.metadata, edited: true } }
+          : m
+      ));
+    }, []),
+    onDelete: useCallback((messageId: number) => {
+      setMessages(prev => prev.filter(m => m.id !== messageId));
+    }, []),
+    onReaction: useCallback((messageId: number, reaction: string, reactUserId: number, action: 'add' | 'remove') => {
+      setMessages(prev => prev.map(m => {
+        if (m.id !== messageId) return m;
+        const reactions = { ...(m.reactions || {}) };
+        if (action === 'add') {
+          if (!reactions[reaction]) reactions[reaction] = [];
+          if (!reactions[reaction].includes(reactUserId)) {
+            reactions[reaction] = [...reactions[reaction], reactUserId];
+          }
+        } else {
+          if (reactions[reaction]) {
+            reactions[reaction] = reactions[reaction].filter(id => id !== reactUserId);
+            if (reactions[reaction].length === 0) delete reactions[reaction];
+          }
+        }
+        return { ...m, reactions };
+      }));
+    }, []),
+    onRead: useCallback((readerId: number) => {
+      if (readerId === userId) return;
+      setMessages(prev => prev.map(m => 
+        m.sender_id === userId && !m.is_read ? { ...m, is_read: true } : m
+      ));
+    }, [userId]),
+  });
+
+  // Clear typing indicators after 5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      setTypingUsers(prev => {
+        const newMap = new Map(prev);
+        for (const [id, user] of newMap) {
+          if (now - user.timestamp > 5000) {
+            newMap.delete(id);
+          }
+        }
+        return newMap;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const scrollToBottom = (options?: { force?: boolean; behavior?: ScrollBehavior }) => {
     const force = options?.force ?? false;
@@ -98,10 +197,16 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
     loadChat();
     loadMessages();
     shouldScrollRef.current = true; // Scroll on initial load
-    // Poll for new messages every 3 seconds for real-time feel
-    const interval = setInterval(loadMessages, 3000);
+    
+    // Fallback polling when WebSocket is not connected (every 5 seconds instead of 3)
+    const interval = setInterval(() => {
+      if (!isConnected) {
+        loadMessages();
+      }
+    }, 5000);
+    
     return () => clearInterval(interval);
-  }, [chatId]);
+  }, [chatId, isConnected]);
 
   useEffect(() => {
     // Only auto-scroll if:
@@ -239,6 +344,49 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
     }
   };
 
+  const handleMessageReaction = async (messageId: number, reaction: string, action: 'add' | 'remove') => {
+    try {
+      const response = await fetch(`/api/chat/${chatId}/message/${messageId}/reaction`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ reaction, action })
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to add reaction');
+      }
+
+      // Update local state immediately for responsiveness
+      setMessages(prev => prev.map(m => {
+        if (m.id !== messageId) return m;
+        const reactions = { ...(m.reactions || {}) };
+        if (action === 'add') {
+          if (!reactions[reaction]) reactions[reaction] = [];
+          if (!reactions[reaction].includes(userId)) {
+            reactions[reaction] = [...reactions[reaction], userId];
+          }
+        } else {
+          if (reactions[reaction]) {
+            reactions[reaction] = reactions[reaction].filter(id => id !== userId);
+            if (reactions[reaction].length === 0) delete reactions[reaction];
+          }
+        }
+        return { ...m, reactions };
+      }));
+    } catch (err: any) {
+      console.error('Failed to add reaction:', err);
+      setError(err.message || 'Failed to add reaction');
+    }
+  };
+
+  const handleReply = (message: ChatMessage) => {
+    setReplyingTo(message);
+    inputRef.current?.focus();
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!messageInput.trim() || sending) return;
@@ -247,12 +395,22 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
     setSending(true);
     setError(null);
 
+    // Stop typing indicator when sending
+    if (isConnected) {
+      sendStopTyping();
+    }
+
     try {
-      const payload = {
+      const payload: any = {
         chat_id: Number(chatId),
         message_content: messageContent,
         message_type: 'text'
       };
+
+      // Add reply_to_id if replying to a message
+      if (replyingTo) {
+        payload.metadata = { reply_to_id: replyingTo.id };
+      }
 
       const response = await fetch(`/api/chat/${chatId}/message`, {
         method: 'POST',
@@ -269,6 +427,7 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
       }
 
       setMessageInput('');
+      setReplyingTo(null); // Clear reply state
       if (inputRef.current) {
         inputRef.current.style.height = 'auto';
       }
@@ -293,6 +452,13 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
     // Auto-grow textarea
     e.target.style.height = 'auto';
     e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+
+    // Send typing indicator via WebSocket
+    if (e.target.value.trim() && isConnected) {
+      sendTyping();
+    } else if (!e.target.value.trim() && isConnected) {
+      sendStopTyping();
+    }
 
     // If the user is typing, keep the chat pinned to the newest messages.
     // (This avoids the situation where the user scrolls up, focuses input, then types while still not at bottom.)
@@ -360,12 +526,25 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
           </div>
           <div className="flex items-center flex-shrink-0" style={{ gap: 'clamp(0.1rem, 0.8vh, 1rem)' }}>
             <button 
+              onClick={() => setShowSearch(!showSearch)}
+              className={`hover:bg-white/10 rounded-lg transition ${showSearch ? 'bg-white/20 text-white' : 'text-white'}`}
+              title="Search messages"
+              style={{ padding: 'clamp(0.15rem, 0.8vh, 0.625rem)' }}
+            >
+              <Search style={{ width: 'clamp(0.75rem, 2vh, 1.5rem)', height: 'clamp(0.75rem, 2vh, 1.5rem)' }} />
+            </button>
+            <button 
               className="hover:bg-white/10 rounded-lg transition text-white" 
               title="Voice call"
               style={{ padding: 'clamp(0.15rem, 0.8vh, 0.625rem)' }}
             >
               <Phone style={{ width: 'clamp(0.75rem, 2vh, 1.5rem)', height: 'clamp(0.75rem, 2vh, 1.5rem)' }} />
             </button>
+            {/* WebSocket connection indicator */}
+            <div 
+              className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-yellow-400'}`}
+              title={isConnected ? 'Real-time connected' : 'Connecting...'}
+            />
             {onClose && (
               <button 
                 onClick={onClose} 
@@ -377,6 +556,24 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
             )}
           </div>
         </div>
+        
+        {/* Search Bar */}
+        {showSearch && (
+          <div className="mt-2 flex items-center gap-2">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search messages..."
+              className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 text-white placeholder-white/50 text-sm focus:outline-none focus:ring-2 focus:ring-white/30"
+            />
+            {searchQuery && (
+              <span className="text-white/70 text-xs">
+                {messages.filter(m => m.message_content.toLowerCase().includes(searchQuery.toLowerCase())).length} results
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Messages Area */}
@@ -404,15 +601,35 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
         ) : (
           <>
             <MessageList 
-              messages={messages} 
+              messages={searchQuery 
+                ? messages.filter(m => m.message_content.toLowerCase().includes(searchQuery.toLowerCase()))
+                : messages
+              } 
               userRole={userRole} 
               userId={userId} 
               chatId={chatId}
               onMessageEdit={handleEditMessage}
               onMessageDelete={handleDeleteMessage}
+              onMessageReaction={handleMessageReaction}
+              onReply={handleReply}
+              searchHighlight={searchQuery}
             />
             <div ref={messagesEndRef} />
           </>
+        )}
+        
+        {/* Typing Indicator */}
+        {typingUsers.size > 0 && (
+          <div className="flex items-center gap-2 px-3 py-2 text-gray-400 text-sm animate-pulse">
+            <div className="flex gap-1">
+              <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+              <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+              <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+            </div>
+            <span>
+              {Array.from(typingUsers.values()).map(u => u.userName || `User ${u.userId}`).join(', ')} {typingUsers.size === 1 ? 'is' : 'are'} typing...
+            </span>
+          </div>
         )}
       </div>
 
@@ -435,6 +652,23 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
         className="border-t border-gray-700 bg-gray-900 shadow-2xl"
         style={{ padding: 'clamp(0.25rem, 1.2vh, 1.25rem)' }}
       >
+        {/* Reply Preview */}
+        {replyingTo && (
+          <div className="flex items-center justify-between bg-gray-800/50 rounded-lg p-2 mb-2 border-l-2 border-blue-500">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-gray-400">Replying to {replyingTo.sender_type}</p>
+              <p className="text-sm text-gray-300 truncate">{replyingTo.message_content}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setReplyingTo(null)}
+              className="p-1 text-gray-400 hover:text-white transition"
+            >
+              <X style={{ width: '1rem', height: '1rem' }} />
+            </button>
+          </div>
+        )}
+        
         <form onSubmit={handleSendMessage} className="flex flex-col" style={{ gap: 'clamp(0.2rem, 0.8vh, 0.625rem)' }}>
           <div className="flex" style={{ gap: 'clamp(0.2rem, 0.8vh, 0.625rem)' }}>
             {(userRole === 'client' || userRole === 'admin') && (
@@ -495,7 +729,32 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
                 <Send style={{ width: 'clamp(0.75rem, 2vh, 1.5rem)', height: 'clamp(0.75rem, 2vh, 1.5rem)' }} />
               )}
             </button>
+
+            {/* Voice Message Button */}
+            <button
+              type="button"
+              onClick={() => setShowVoiceRecorder(true)}
+              className="hover:bg-red-500/20 rounded-lg transition flex-shrink-0 text-red-400 hover:text-red-300"
+              title="Record voice message"
+              style={{ padding: 'clamp(0.2rem, 1vh, 0.875rem)' }}
+            >
+              <Mic style={{ width: 'clamp(0.75rem, 2vh, 1.5rem)', height: 'clamp(0.75rem, 2vh, 1.5rem)' }} />
+            </button>
           </div>
+
+          {/* Voice Recorder */}
+          {showVoiceRecorder && (
+            <div className="mt-2">
+              <VoiceRecorder
+                chatId={chatId}
+                onSuccess={() => {
+                  setShowVoiceRecorder(false);
+                  loadMessages();
+                }}
+                onCancel={() => setShowVoiceRecorder(false)}
+              />
+            </div>
+          )}
 
           {/* Emoji Picker - Scales with viewport height */}
           {showEmojiPicker && (

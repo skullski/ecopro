@@ -1,7 +1,9 @@
 import { createServer } from "./index";
+import http from "http";
 import { initializeDatabase, runPendingMigrations, ensureConnection } from "./utils/database";
 import { processPendingMessages, cleanupOldOrders } from "./utils/bot-messaging";
 import { cleanupExpiredCodes } from "./utils/code-utils";
+import { initWebSocket } from "./utils/websocket";
 
 const PORT = process.env.PORT || 8080;
 
@@ -17,9 +19,15 @@ async function startServer() {
 
   // Start server immediately (don't block boot on remote DB + migrations).
   const app = createServer({ skipDbInit: true });
-  app.listen(PORT, () => {
+  const server = http.createServer(app);
+  
+  // Initialize WebSocket server for real-time chat
+  initWebSocket(server);
+  
+  server.listen(PORT, () => {
     console.log(`\n🚀 API Server running on http://localhost:${PORT}`);
     console.log(`📡 API endpoints available at http://localhost:${PORT}/api`);
+    console.log(`🔌 WebSocket available at ws://localhost:${PORT}/ws/chat`);
     console.log(`📊 Dashboard available at http://localhost:${PORT}/dashboard\n`);
   });
 

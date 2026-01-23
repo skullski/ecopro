@@ -1,37 +1,24 @@
 import { createServer } from "./index";
+import http from "http";
 import { startScheduledMessageWorker, stopScheduledMessageWorker } from "./utils/scheduled-messages";
 import { startBotMessageWorker, stopBotMessageWorker } from "./utils/bot-messaging";
+import { initWebSocket } from "./utils/websocket";
 
 async function startServer() {
   try {
     // Create and start server with WebSocket support
     const app = createServer();
     const port = process.env.PORT || 3000;
-    const http = require('http');
     const server = http.createServer(app);
-    // WebSocket setup
-    const WebSocket = require('ws');
-    const wss = new WebSocket.Server({ server });
-
-    wss.on('connection', (ws: any) => {
-      ws.on('message', (msg: string) => {
-        // Optionally handle incoming messages from clients
-      });
-    });
-
-    // Broadcast function for order updates
-    function broadcastOrderUpdate(order: any) {
-      wss.clients.forEach((client: any) => {
-        if (client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify({ type: 'order-update', order }));
-        }
-      });
-    }
+    
+    // Initialize WebSocket server for real-time chat
+    initWebSocket(server);
 
     server.listen(port, () => {
       console.log(`\n🚀 EcoPro server running on port ${port}`);
       console.log(`📱 Frontend: http://localhost:${port}`);
       console.log(`🔧 API: http://localhost:${port}/api`);
+      console.log(`🔌 WebSocket: ws://localhost:${port}/ws/chat`);
       console.log(`📊 Dashboard: http://localhost:${port}/dashboard\n`);
       
       // Start the scheduled message worker

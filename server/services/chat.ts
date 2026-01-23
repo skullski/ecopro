@@ -147,13 +147,16 @@ export class ChatService {
         }
       }
 
+      // Extract reply_to_id from metadata if present
+      const replyToId = metadata?.reply_to_id || null;
+      
       // Insert message
       const result = await pool.query(
         `INSERT INTO chat_messages 
-         (chat_id, sender_id, sender_type, message_content, message_type, metadata, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+         (chat_id, sender_id, sender_type, message_content, message_type, metadata, reply_to_id, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
          RETURNING *`,
-        [chatId, senderId, senderType, content, messageType, metadata ? JSON.stringify(metadata) : null]
+        [chatId, senderId, senderType, content, messageType, metadata ? JSON.stringify(metadata) : null, replyToId]
       );
 
       // Update chat updated_at
@@ -528,6 +531,73 @@ export class ChatService {
       await pool.query('DELETE FROM chat_messages WHERE id = $1', [messageId]);
     } catch (error: any) {
       throw new Error(`Failed to delete message: ${error.message}`);
+    }
+  }
+
+  /**
+   * Toggle a reaction on a message
+   */
+  async toggleReaction(
+    messageId: number,
+    userId: number,
+    reaction: string,
+    action: 'add' | 'remove'
+  ): Promise<{ reactions: Record<string, number[]> }> {
+    try {
+      // Get current reactions
+      const msgCheck = await pool.query(
+        'SELECT reactions FROM chat_messages WHERE id = $1',
+        [messageId]
+      );
+
+      if (msgCheck.rows.length === 0) {
+        throw new Error('Message not found');
+      }
+
+      let reactions: Record<string, number[]> = msgCheck.rows[0].reactions || {};
+
+      if (action === 'add') {
+        // Add reaction
+        if (!reactions[reaction]) {
+          reactions[reaction] = [];
+        }
+        if (!reactions[reaction].includes(userId)) {
+          reactions[reaction].push(userId);
+        }
+      } else {
+        // Remove reaction
+        if (reactions[reaction]) {
+          reactions[reaction] = reactions[reaction].filter(id => id !== userId);
+          if (reactions[reaction].length === 0) {
+            delete reactions[reaction];
+          }
+        }
+      }
+
+      // Update in database
+      await pool.query(
+        'UPDATE chat_messages SET reactions = $1, updated_at = NOW() WHERE id = $2',
+        [JSON.stringify(reactions), messageId]
+      );
+
+      return { reactions };
+    } catch (error: any) {
+      throw new Error(`Failed to toggle reaction: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get a message by ID (for reply context)
+   */
+  async getMessageById(messageId: number): Promise<ChatMessage | null> {
+    try {
+      const result = await pool.query(
+        'SELECT * FROM chat_messages WHERE id = $1',
+        [messageId]
+      );
+      return result.rows[0] || null;
+    } catch (error: any) {
+      throw new Error(`Failed to get message: ${error.message}`);
     }
   }
 }

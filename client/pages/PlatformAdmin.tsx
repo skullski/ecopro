@@ -74,7 +74,7 @@ interface ServerHealth {
       totalPct: number | null;
       perCorePct: number[] | null;
       intervalMs: number | null;
-      mode: 'delta' | 'avg' | null;
+      mode: 'delta' | 'avg' | 'cgroup' | null;
     };
     memory?: {
       totalBytes: number;

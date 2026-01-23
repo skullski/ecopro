@@ -20,6 +20,12 @@ import {
   UpdateChatStatusSchema,
 } from '../types/chat';
 import { ZodError } from 'zod';
+import { 
+  notifyNewMessage, 
+  notifyMessageEdit, 
+  notifyMessageDelete,
+  notifyMessagesRead 
+} from '../utils/websocket';
 
 const router = Router();
 
@@ -195,6 +201,9 @@ router.post('/:chatId/message', async (req: Request, res: Response) => {
       data.metadata
     );
 
+    // Broadcast new message to room via WebSocket
+    notifyNewMessage(Number(chatId), message, userId);
+
     res.json({ message });
   } catch (error: any) {
     if (error instanceof ZodError) {
@@ -218,6 +227,10 @@ router.post('/:chatId/mark-read', async (req: Request, res: Response) => {
 
   try {
     await chatService.markMessagesAsRead(Number(chatId), userId, role);
+    
+    // Notify others that messages were read
+    notifyMessagesRead(Number(chatId), userId);
+    
     res.json({ success: true });
   } catch (error: any) {
     return serverError(res, error);
@@ -230,7 +243,7 @@ router.post('/:chatId/mark-read', async (req: Request, res: Response) => {
  */
 router.patch('/:chatId/message/:messageId', async (req: Request, res: Response) => {
   const { userId, role } = getUserRole(req);
-  const { messageId } = req.params;
+  const { chatId, messageId } = req.params;
 
   if (!userId || !role) {
     return res.status(401).json({ error: 'Unauthorized' });
@@ -250,6 +263,9 @@ router.patch('/:chatId/message/:messageId', async (req: Request, res: Response) 
       message_content.trim()
     );
 
+    // Notify via WebSocket
+    notifyMessageEdit(Number(chatId), Number(messageId), message_content.trim(), userId);
+
     res.json({ message });
   } catch (error: any) {
     if (error.message.includes('Unauthorized')) {
@@ -265,7 +281,7 @@ router.patch('/:chatId/message/:messageId', async (req: Request, res: Response) 
  */
 router.delete('/:chatId/message/:messageId', async (req: Request, res: Response) => {
   const { userId, role } = getUserRole(req);
-  const { messageId } = req.params;
+  const { chatId, messageId } = req.params;
 
   if (!userId || !role) {
     return res.status(401).json({ error: 'Unauthorized' });
@@ -273,11 +289,55 @@ router.delete('/:chatId/message/:messageId', async (req: Request, res: Response)
 
   try {
     await chatService.deleteMessage(Number(messageId), userId, role);
+    
+    // Notify via WebSocket
+    notifyMessageDelete(Number(chatId), Number(messageId), userId);
+    
     res.json({ success: true, deleted: Number(messageId) });
   } catch (error: any) {
     if (error.message.includes('Unauthorized')) {
       return res.status(403).json({ error: error.message });
     }
+    return serverError(res, error);
+  }
+});
+
+/**
+ * POST /api/chat/:chatId/message/:messageId/reaction
+ * Add or remove a reaction to a message
+ */
+router.post('/:chatId/message/:messageId/reaction', async (req: Request, res: Response) => {
+  const { userId, role } = getUserRole(req);
+  const { chatId, messageId } = req.params;
+
+  if (!userId || !role) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    const { reaction, action } = req.body;
+
+    if (!reaction || typeof reaction !== 'string') {
+      return res.status(400).json({ error: 'Reaction emoji is required' });
+    }
+
+    if (!['add', 'remove'].includes(action)) {
+      return res.status(400).json({ error: 'Action must be "add" or "remove"' });
+    }
+
+    const result = await chatService.toggleReaction(
+      Number(messageId),
+      userId,
+      reaction,
+      action
+    );
+
+    // Notify via WebSocket
+    const { notifyMessageReaction } = await import('../utils/websocket');
+    notifyMessageReaction(Number(chatId), Number(messageId), reaction, userId, action);
+
+    res.json({ success: true, reactions: result.reactions });
+  } catch (error: any) {
     return serverError(res, error);
   }
 });

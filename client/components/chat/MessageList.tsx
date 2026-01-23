@@ -1,17 +1,19 @@
 // Message List Component - Display Messages with Rich UI
 
 import React, { useState } from 'react';
-import { CheckCheck, Check, AlertCircle, Download, File, Pencil, Trash2, X, Check as CheckIcon } from 'lucide-react';
+import { CheckCheck, Check, AlertCircle, Download, File, Pencil, Trash2, X, Check as CheckIcon, SmilePlus, Reply, CornerUpLeft } from 'lucide-react';
 
 interface ChatMessage {
   id: number;
   sender_id: number;
   sender_type: 'client' | 'seller' | 'admin';
   message_content: string;
-  message_type: 'text' | 'code_request' | 'code_response' | 'system' | 'file_attachment';
+  message_type: 'text' | 'code_request' | 'code_response' | 'system' | 'file_attachment' | 'voice';
   metadata?: any;
   is_read: boolean;
   created_at: string;
+  reply_to_id?: number;
+  reactions?: Record<string, number[]>;
 }
 
 interface MessageListProps {
@@ -21,12 +23,43 @@ interface MessageListProps {
   chatId?: number;
   onMessageEdit?: (messageId: number, newContent: string) => Promise<void>;
   onMessageDelete?: (messageId: number) => Promise<void>;
+  onMessageReaction?: (messageId: number, reaction: string, action: 'add' | 'remove') => Promise<void>;
+  onReply?: (message: ChatMessage) => void;
+  searchHighlight?: string;
 }
 
-export function MessageList({ messages, userRole, userId, chatId, onMessageEdit, onMessageDelete }: MessageListProps) {
+export function MessageList({ messages, userRole, userId, chatId, onMessageEdit, onMessageDelete, onMessageReaction, onReply, searchHighlight }: MessageListProps) {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editContent, setEditContent] = useState('');
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [showReactionPicker, setShowReactionPicker] = useState<number | null>(null);
+
+  const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏', '🔥', '👏'];
+
+  // Find replied message
+  const getReplyMessage = (replyToId?: number): ChatMessage | undefined => {
+    if (!replyToId) return undefined;
+    return messages.find(m => m.id === replyToId);
+  };
+
+  // Highlight search term in text
+  const highlightText = (text: string, highlight?: string) => {
+    if (!highlight) return text;
+    const parts = text.split(new RegExp(`(${highlight})`, 'gi'));
+    return parts.map((part, i) => 
+      part.toLowerCase() === highlight.toLowerCase() 
+        ? <mark key={i} className="bg-yellow-400 text-black rounded px-0.5">{part}</mark>
+        : part
+    );
+  };
+
+  const handleReaction = async (messageId: number, reaction: string) => {
+    if (!onMessageReaction) return;
+    const message = messages.find(m => m.id === messageId);
+    const hasReaction = message?.reactions?.[reaction]?.includes(userId);
+    await onMessageReaction(messageId, reaction, hasReaction ? 'remove' : 'add');
+    setShowReactionPicker(null);
+  };
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -96,35 +129,92 @@ export function MessageList({ messages, userRole, userId, chatId, onMessageEdit,
                       <p className="text-xs font-bold text-gray-400 mb-1 ml-1">{getSenderLabel(message.sender_type)}</p>
                     )}
 
-                    {/* Edit/Delete Actions - Only for own messages */}
-                    {isOwnMessage && message.message_type === 'text' && editingId !== message.id && (
-                      <div className="flex items-center gap-1 mb-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => {
-                            setEditingId(message.id);
-                            setEditContent(message.message_content);
-                          }}
-                          className="p-1 rounded hover:bg-white/10 text-blue-300 hover:text-blue-200 transition"
-                          title="Edit message"
-                        >
-                          <Pencil className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={async () => {
-                            if (deletingId === message.id) return;
-                            setDeletingId(message.id);
-                            try {
-                              await onMessageDelete?.(message.id);
-                            } finally {
-                              setDeletingId(null);
-                            }
-                          }}
-                          disabled={deletingId === message.id}
-                          className="p-1 rounded hover:bg-red-500/20 text-red-400 hover:text-red-300 transition disabled:opacity-50"
-                          title="Delete message"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
+                    {/* Reply Preview */}
+                    {message.reply_to_id && (
+                      <div className={`text-xs mb-1 px-2 py-1 rounded-lg border-l-2 ${
+                        isOwnMessage ? 'bg-blue-400/20 border-blue-400' : 'bg-gray-700/50 border-gray-500'
+                      }`}>
+                        <div className="flex items-center gap-1 text-gray-400">
+                          <CornerUpLeft className="w-3 h-3" />
+                          <span>Replying to</span>
+                        </div>
+                        <p className="text-gray-300 truncate">
+                          {getReplyMessage(message.reply_to_id)?.message_content || 'Deleted message'}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Edit/Delete/Reaction Actions - Only for own messages (edit/delete) or any message (react) */}
+                    {editingId !== message.id && (
+                      <div className={`flex items-center gap-1 mb-1 opacity-0 group-hover:opacity-100 transition-opacity ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
+                        {/* Reaction button */}
+                        <div className="relative">
+                          <button
+                            onClick={() => setShowReactionPicker(showReactionPicker === message.id ? null : message.id)}
+                            className="p-1 rounded hover:bg-white/10 text-gray-400 hover:text-gray-200 transition"
+                            title="Add reaction"
+                          >
+                            <SmilePlus className="w-3 h-3" />
+                          </button>
+                          
+                          {/* Reaction Picker */}
+                          {showReactionPicker === message.id && (
+                            <div className={`absolute ${isOwnMessage ? 'right-0' : 'left-0'} bottom-full mb-1 bg-gray-800 rounded-lg border border-gray-700 p-1 flex gap-0.5 shadow-lg z-10`}>
+                              {REACTIONS.map(emoji => (
+                                <button
+                                  key={emoji}
+                                  onClick={() => handleReaction(message.id, emoji)}
+                                  className="p-1 hover:bg-gray-700 rounded transition text-sm"
+                                >
+                                  {emoji}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Reply button */}
+                        {onReply && (
+                          <button
+                            onClick={() => onReply(message)}
+                            className="p-1 rounded hover:bg-white/10 text-gray-400 hover:text-gray-200 transition"
+                            title="Reply"
+                          >
+                            <Reply className="w-3 h-3" />
+                          </button>
+                        )}
+
+                        {/* Edit/Delete for own messages only */}
+                        {isOwnMessage && message.message_type === 'text' && (
+                          <>
+                            <button
+                              onClick={() => {
+                                setEditingId(message.id);
+                                setEditContent(message.message_content);
+                              }}
+                              className="p-1 rounded hover:bg-white/10 text-blue-300 hover:text-blue-200 transition"
+                              title="Edit message"
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={async () => {
+                                if (deletingId === message.id) return;
+                                setDeletingId(message.id);
+                                try {
+                                  await onMessageDelete?.(message.id);
+                                } finally {
+                                  setDeletingId(null);
+                                }
+                              }}
+                              disabled={deletingId === message.id}
+                              className="p-1 rounded hover:bg-red-500/20 text-red-400 hover:text-red-300 transition disabled:opacity-50"
+                              title="Delete message"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     )}
 
@@ -186,7 +276,7 @@ export function MessageList({ messages, userRole, userId, chatId, onMessageEdit,
                         ) : (
                           <div>
                             <p className="text-sm break-words leading-relaxed whitespace-pre-wrap">
-                              {message.message_content}
+                              {highlightText(message.message_content, searchHighlight)}
                             </p>
                             {message.metadata?.edited && (
                               <span className="text-xs opacity-60 italic">(edited)</span>
@@ -299,7 +389,47 @@ export function MessageList({ messages, userRole, userId, chatId, onMessageEdit,
                           )}
                         </div>
                       )}
+
+                      {/* Voice Message */}
+                      {message.message_type === 'voice' && (
+                        <div className={`text-sm ${isOwnMessage ? 'text-blue-100' : 'text-gray-300'}`}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-lg">🎤</span>
+                            <span className="font-medium">Voice Message</span>
+                          </div>
+                          <audio
+                            src={message.metadata?.fileUrl}
+                            controls
+                            className="w-full max-w-xs h-10"
+                          />
+                          {message.metadata?.duration && (
+                            <p className="text-xs opacity-75 mt-1">
+                              Duration: {Math.floor(message.metadata.duration / 60)}:{String(message.metadata.duration % 60).padStart(2, '0')}
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
+
+                    {/* Reactions Display */}
+                    {message.reactions && Object.keys(message.reactions).length > 0 && (
+                      <div className={`flex flex-wrap gap-1 mt-1 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
+                        {Object.entries(message.reactions).map(([emoji, userIds]) => (
+                          <button
+                            key={emoji}
+                            onClick={() => handleReaction(message.id, emoji)}
+                            className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs transition ${
+                              userIds.includes(userId)
+                                ? 'bg-blue-500/30 border border-blue-400/50 text-blue-200'
+                                : 'bg-gray-700/50 border border-gray-600/50 text-gray-300 hover:bg-gray-600/50'
+                            }`}
+                          >
+                            <span>{emoji}</span>
+                            <span className="font-medium">{userIds.length}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
 
                     {/* Time and Read Status */}
                     <div className={`flex items-center justify-end gap-1 mt-1 text-xs font-medium ${

@@ -461,18 +461,18 @@ export default function AdminWasselniSettings() {
                   {settings.platformTelegramAvailable && (
                     <div className="flex items-center justify-between gap-3 p-3 rounded-xl border bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-700">
                       <p className="text-xs text-slate-600 dark:text-slate-300">
-                        <strong>{!showTelegramAdvanced ? 'Platform mode:' : 'Custom mode:'}</strong>
+                        <strong>{!showTelegramAdvanced ? t('bot.platformMode') : t('bot.customMode')}</strong>
                         {' '}
                         {!showTelegramAdvanced
-                          ? 'EcoPro uses the shared platform Telegram bot automatically. (Token is never shown.)'
-                          : 'Use your own Telegram bot token + username.'}
+                          ? t('bot.platformModeDesc')
+                          : t('bot.customModeDesc')}
                       </p>
                       <button
                         type="button"
                         onClick={() => setShowTelegramAdvanced((v) => !v)}
                         className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/70"
                       >
-                        {showTelegramAdvanced ? 'Use platform bot' : 'Use my own bot'}
+                        {showTelegramAdvanced ? t('bot.usePlatformBot') : t('bot.useMyOwnBot')}
                       </button>
                     </div>
                   )}
@@ -480,7 +480,7 @@ export default function AdminWasselniSettings() {
                   {!showTelegramAdvanced && settings.platformTelegramAvailable && (
                     <div className="p-3 rounded-xl border bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30">
                       <p className="text-xs text-emerald-800 dark:text-emerald-200">
-                        <strong>Configured (platform mode):</strong> EcoPro will use the platform Telegram bot for your store.
+                        <strong>{t('bot.configuredPlatformMode')}</strong> {t('bot.configuredPlatformModeDesc')}
                       </p>
                     </div>
                   )}
@@ -497,7 +497,7 @@ export default function AdminWasselniSettings() {
                         />
                         {settings.telegramTokenConfigured && !String(settings.telegramBotToken || '').trim() && (
                           <p className="text-xs text-slate-500">
-                            Token is saved (hidden). Paste a new token to replace it.
+                            {t('bot.tokenSavedHidden')}
                           </p>
                         )}
                       </div>

@@ -173,15 +173,15 @@ export default function ImageManager() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Image className="w-5 h-5" />
-            {t('imageManager.title') || 'Image Manager'}
+            {t('imageManager.title')}
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            {t('imageManager.description') || 'Manage all images uploaded to your store'}
+            {t('imageManager.description')}
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => refetch()}>
           <RefreshCw className="w-4 h-4 mr-2" />
-          Refresh
+          {t('imageManager.refresh')}
         </Button>
       </div>
 
@@ -194,7 +194,7 @@ export default function ImageManager() {
             </div>
             <div>
               <p className="text-2xl font-bold">{data?.total || 0}</p>
-              <p className="text-sm text-muted-foreground">Total Images</p>
+              <p className="text-sm text-muted-foreground">{t('imageManager.totalImages')}</p>
             </div>
           </CardContent>
         </Card>
@@ -205,7 +205,7 @@ export default function ImageManager() {
             </div>
             <div>
               <p className="text-2xl font-bold">{data?.inUse || 0}</p>
-              <p className="text-sm text-muted-foreground">In Use</p>
+              <p className="text-sm text-muted-foreground">{t('imageManager.inUse')}</p>
             </div>
           </CardContent>
         </Card>
@@ -216,7 +216,7 @@ export default function ImageManager() {
             </div>
             <div>
               <p className="text-2xl font-bold">{data?.orphaned || 0}</p>
-              <p className="text-sm text-muted-foreground">Unused (Can Delete)</p>
+              <p className="text-sm text-muted-foreground">{t('imageManager.unused')}</p>
             </div>
           </CardContent>
         </Card>
@@ -227,7 +227,7 @@ export default function ImageManager() {
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search images..."
+            placeholder={t('imageManager.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9 h-9"
@@ -239,9 +239,9 @@ export default function ImageManager() {
             <SelectValue placeholder="Filter" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Images</SelectItem>
-            <SelectItem value="inUse">In Use</SelectItem>
-            <SelectItem value="orphaned">Unused Only</SelectItem>
+            <SelectItem value="all">{t('imageManager.filter.all')}</SelectItem>
+            <SelectItem value="inUse">{t('imageManager.filter.inUse')}</SelectItem>
+            <SelectItem value="orphaned">{t('imageManager.filter.orphaned')}</SelectItem>
           </SelectContent>
         </Select>
         <div className="flex border rounded-md h-9">
@@ -268,7 +268,7 @@ export default function ImageManager() {
       {filteredImages.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
           <Image className="w-14 h-14 mb-3 opacity-30" />
-          <p>No images found</p>
+          <p>{t('imageManager.noImages')}</p>
         </div>
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
@@ -296,7 +296,7 @@ export default function ImageManager() {
                   variant="outline" 
                   className="absolute top-1.5 left-1.5 bg-orange-100 text-orange-700 border-orange-300"
                 >
-                  Unused
+                  {t('imageManager.filter.orphaned').replace(' Only', '')}
                 </Badge>
               )}
               {img.isExternal && (
@@ -304,7 +304,7 @@ export default function ImageManager() {
                   variant="outline" 
                   className="absolute top-1.5 right-1.5 bg-blue-100 text-blue-700 border-blue-300 text-[10px]"
                 >
-                  URL
+                  {t('imageManager.externalUrl')}
                 </Badge>
               )}
               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
@@ -349,7 +349,7 @@ export default function ImageManager() {
                 <p className="font-medium truncate">{img.filename}</p>
                 <p className="text-sm text-muted-foreground">
                   {formatFileSize(img.size)} • {formatDate(img.createdAt)}
-                  {img.isExternal && <span className="ml-2 text-blue-600">(External URL)</span>}
+                  {img.isExternal && <span className="ml-2 text-blue-600">({t('imageManager.externalUrl')})</span>}
                 </p>
                 <div className="flex gap-1 mt-1 flex-wrap">
                   {img.usedIn.length > 0 ? (
@@ -363,7 +363,7 @@ export default function ImageManager() {
                     ))
                   ) : (
                     <Badge variant="outline" className="text-xs bg-orange-100 text-orange-700">
-                      Unused
+                      {t('imageManager.filter.orphaned').replace(' Only', '')}
                     </Badge>
                   )}
                 </div>
@@ -389,7 +389,7 @@ export default function ImageManager() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Image className="w-4 h-4" />
-              Image Details
+              {t('imageManager.imageDetails')}
             </DialogTitle>
           </DialogHeader>
           {selectedImage && (
@@ -403,30 +403,30 @@ export default function ImageManager() {
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="text-muted-foreground">Filename</p>
+                  <p className="text-muted-foreground">{t('imageManager.filename')}</p>
                   <p className="font-mono text-xs break-all">{selectedImage.filename}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Size</p>
+                  <p className="text-muted-foreground">{t('imageManager.size')}</p>
                   <p>{formatFileSize(selectedImage.size)}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Created</p>
+                  <p className="text-muted-foreground">{t('imageManager.created')}</p>
                   <p>{formatDate(selectedImage.createdAt)}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Status</p>
+                  <p className="text-muted-foreground">{t('imageManager.status')}</p>
                   <p>{selectedImage.isOrphaned ? (
-                    <span className="text-orange-600">Unused (can be deleted)</span>
+                    <span className="text-orange-600">{t('imageManager.statusUnused')}</span>
                   ) : (
-                    <span className="text-green-600">In use</span>
+                    <span className="text-green-600">{t('imageManager.statusInUse')}</span>
                   )}</p>
                 </div>
               </div>
               
               {selectedImage.usedIn.length > 0 && (
                 <div>
-                  <p className="text-muted-foreground mb-2">Used in:</p>
+                  <p className="text-muted-foreground mb-2">{t('imageManager.usedIn')}</p>
                   <div className="flex flex-wrap gap-2">
                     {selectedImage.usedIn.map((usage, i) => (
                       <Badge key={i} variant="secondary">
@@ -440,18 +440,18 @@ export default function ImageManager() {
               
               <DialogFooter>
                 <Button variant="outline" onClick={() => setSelectedImage(null)}>
-                  Close
+                  {t('imageManager.close')}
                 </Button>
                 <a href={selectedImage.url} download={selectedImage.filename} target="_blank" rel="noopener noreferrer">
                   <Button variant="outline">
                     <Download className="w-4 h-4 mr-2" />
-                    Download
+                    {t('imageManager.download')}
                   </Button>
                 </a>
                 {selectedImage.isOrphaned && (
                   <Button variant="destructive" onClick={() => handleDeleteClick(selectedImage)}>
                     <Trash2 className="w-4 h-4 mr-2" />
-                    Delete
+                    {t('imageManager.delete')}
                   </Button>
                 )}
               </DialogFooter>
@@ -466,16 +466,15 @@ export default function ImageManager() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-destructive">
               <Trash2 className="w-5 h-5" />
-              Delete Image
+              {t('imageManager.deleteTitle')}
             </DialogTitle>
             <DialogDescription>
               {imageToDelete && !imageToDelete.isOrphaned ? (
                 <span className="text-orange-600 dark:text-orange-400">
-                  ⚠️ This image is currently used in: {imageToDelete.usedIn.map(u => u.name).join(', ')}. 
-                  Deleting it will remove it from <strong>all locations</strong> in your account.
+                  {t('imageManager.deleteWarning').replace('{locations}', imageToDelete.usedIn.map(u => u.name).join(', '))}
                 </span>
               ) : (
-                'Are you sure you want to delete this image? This action cannot be undone.'
+                t('imageManager.deleteConfirm')
               )}
             </DialogDescription>
           </DialogHeader>
@@ -492,21 +491,21 @@ export default function ImageManager() {
                 <p className="font-medium text-sm truncate max-w-[200px]">{imageToDelete.filename}</p>
                 <p className="text-sm text-muted-foreground">{formatFileSize(imageToDelete.size)}</p>
                 {imageToDelete.isExternal && (
-                  <Badge variant="outline" className="mt-1 text-xs">External URL</Badge>
+                  <Badge variant="outline" className="mt-1 text-xs">{t('imageManager.externalUrl')}</Badge>
                 )}
               </div>
             </div>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
-              Cancel
+              {t('imageManager.cancel')}
             </Button>
             <Button 
               variant="destructive" 
               onClick={confirmDelete}
               disabled={deleteMutation.isPending}
             >
-              {deleteMutation.isPending ? 'Deleting...' : 'Delete from Everywhere'}
+              {deleteMutation.isPending ? t('imageManager.deleting') : t('imageManager.deleteFromEverywhere')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -517,12 +516,12 @@ export default function ImageManager() {
         <CardContent className="flex gap-2 p-3">
           <Info className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-muted-foreground">
-            <p className="font-medium text-foreground mb-1">About Image Management</p>
+            <p className="font-medium text-foreground mb-1">{t('imageManager.aboutTitle')}</p>
             <ul className="list-disc list-inside space-y-1">
-              <li>Shows <strong>all images</strong> from your products, stock, and store settings</li>
-              <li>Deleting an image removes it from <strong>everywhere</strong> in your account</li>
-              <li><strong>External URLs</strong> (http/https) are also tracked and can be removed</li>
-              <li>Deleted images cannot be recovered</li>
+              <li>{t('imageManager.aboutItem1')}</li>
+              <li>{t('imageManager.aboutItem2')}</li>
+              <li>{t('imageManager.aboutItem3')}</li>
+              <li>{t('imageManager.aboutItem4')}</li>
             </ul>
           </div>
         </CardContent>

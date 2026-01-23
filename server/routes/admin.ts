@@ -454,16 +454,61 @@ const readProcMeminfo = (): ProcMeminfo | null => {
   }
 };
 
-type CpuSnapshot = { ts: number; perCore: Array<{ idle: number; total: number }> };
+type CpuSnapshot = { ts: number; perCore: Array<{ idle: number; total: number }>; cgroupUsage?: number };
 let lastCpuSnapshot: CpuSnapshot | null = null;
 
 const clampPct = (v: number) => Math.max(0, Math.min(100, v));
 
-const sampleCpuPercents = (): { perCorePct: number[]; totalPct: number; intervalMs: number | null; mode: 'delta' | 'avg' } | null => {
+// Read container CPU usage from cgroups (more accurate in Docker/Render)
+const getCgroupCpuUsage = (): number | null => {
+  // cgroup v2: cpu.stat => usage_usec
+  const v2Stat = safeReadFileTrim('/sys/fs/cgroup/cpu.stat');
+  if (v2Stat) {
+    const match = v2Stat.match(/usage_usec\s+(\d+)/);
+    if (match) {
+      const usec = Number(match[1]);
+      if (Number.isFinite(usec)) return usec * 1000; // Convert to nanoseconds
+    }
+  }
+  
+  // cgroup v1: cpuacct.usage (nanoseconds)
+  const v1Usage = safeReadFileTrim('/sys/fs/cgroup/cpuacct/cpuacct.usage') 
+    || safeReadFileTrim('/sys/fs/cgroup/cpu,cpuacct/cpuacct.usage');
+  if (v1Usage) {
+    const ns = Number(v1Usage);
+    if (Number.isFinite(ns)) return ns;
+  }
+  
+  return null;
+};
+
+// Read container memory usage from cgroups (more accurate in Docker/Render)
+const getCgroupMemoryUsage = (): number | null => {
+  // cgroup v2: memory.current
+  const v2 = safeReadFileTrim('/sys/fs/cgroup/memory.current');
+  if (v2) {
+    const bytes = Number(v2);
+    if (Number.isFinite(bytes) && bytes > 0) return bytes;
+  }
+  
+  // cgroup v1: memory.usage_in_bytes
+  const v1 = safeReadFileTrim('/sys/fs/cgroup/memory/memory.usage_in_bytes');
+  if (v1) {
+    const bytes = Number(v1);
+    if (Number.isFinite(bytes) && bytes > 0) return bytes;
+  }
+  
+  return null;
+};
+
+const sampleCpuPercents = (): { perCorePct: number[]; totalPct: number; intervalMs: number | null; mode: 'delta' | 'avg' | 'cgroup' } | null => {
   const cpuInfo = os.cpus();
   if (!cpuInfo || cpuInfo.length === 0) return null;
 
   const now = Date.now();
+  const cgroupUsage = getCgroupCpuUsage();
+  const cgroupCpu = getCgroupCpuLimit();
+  
   const perCore = cpuInfo.map((c) => {
     const t = c.times;
     const total = t.user + t.nice + t.sys + t.idle + t.irq;
@@ -471,7 +516,24 @@ const sampleCpuPercents = (): { perCorePct: number[]; totalPct: number; interval
   });
 
   const prev = lastCpuSnapshot;
-  lastCpuSnapshot = { ts: now, perCore };
+  lastCpuSnapshot = { ts: now, perCore, cgroupUsage: cgroupUsage ?? undefined };
+
+  // If we have cgroup CPU usage data (container environment), use that for totalPct
+  if (cgroupUsage != null && prev?.cgroupUsage != null && cgroupCpu?.cpus) {
+    const intervalMs = Math.max(1, now - prev.ts);
+    const cpuDeltaNs = cgroupUsage - prev.cgroupUsage;
+    const elapsedNs = intervalMs * 1_000_000; // ms to ns
+    
+    // Calculate CPU % based on container's CPU limit
+    // cpuDeltaNs / elapsedNs gives total CPU time used
+    // Divide by number of CPUs allocated to get percentage
+    const totalPct = clampPct((cpuDeltaNs / elapsedNs / cgroupCpu.cpus) * 100);
+    
+    // For per-core, we don't have accurate data in containers, use even distribution
+    const perCorePct = Array(cpuInfo.length).fill(totalPct);
+    
+    return { perCorePct, totalPct, intervalMs, mode: 'cgroup' };
+  }
 
   // First sample: return average since boot (still useful), interval null.
   if (!prev || prev.perCore.length !== perCore.length) {
@@ -899,11 +961,11 @@ export const getServerHealth: RequestHandler = async (_req, res) => {
     // For containers, prefer cgroup memory limit over host's /proc/meminfo
     const memTotalBytes = cgroupMemoryLimitBytes ?? meminfo?.memTotalBytes ?? os.totalmem();
     const memAvailableBytes = meminfo?.memAvailableBytes ?? os.freemem();
-    // In containers, available memory can exceed the cgroup limit (it's host memory)
-    // So we calculate used memory based on process RSS for container environments
+    // In containers, use cgroup memory usage for accurate container memory
+    const cgroupMemUsage = getCgroupMemoryUsage();
     const processRss = process.memoryUsage().rss;
     const memUsedBytes = cgroupMemoryLimitBytes 
-      ? processRss  // In container, use process RSS as "used"
+      ? (cgroupMemUsage ?? processRss)  // In container, prefer cgroup usage, fallback to RSS
       : Math.max(0, memTotalBytes - memAvailableBytes);
     const memPctUsed = memTotalBytes > 0 ? (memUsedBytes / memTotalBytes) * 100 : 0;
 
