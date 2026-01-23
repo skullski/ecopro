@@ -269,15 +269,18 @@ export default function AdminWasselniSettings() {
   }
 
   const variables = [
-    { key: '{customerName}', desc: 'Customer name' },
-    { key: '{orderId}', desc: 'Order ID' },
-    { key: '{productName}', desc: 'Product name' },
-    { key: '{totalPrice}', desc: 'Total price' },
-    { key: '{address}', desc: 'Delivery address' },
-    { key: '{companyName}', desc: 'Your company name' },
-    { key: '{supportPhone}', desc: 'Support phone number' },
-    { key: '{storeUrl}', desc: 'Store URL' },
-    { key: '{trackingNumber}', desc: 'Shipping tracking number' }
+    { key: '{customerName}', desc: t('bot.customerName') },
+    { key: '{orderId}', desc: t('bot.orderId') },
+    { key: '{productName}', desc: t('bot.productName') },
+    { key: '{totalPrice}', desc: t('bot.totalPrice') },
+    { key: '{address}', desc: t('bot.deliveryAddress') },
+    { key: '{companyName}', desc: t('bot.companyName') },
+    { key: '{supportPhone}', desc: t('bot.supportPhone') },
+    { key: '{storeUrl}', desc: t('bot.storeUrl') },
+    { key: '{trackingNumber}', desc: t('bot.trackingNumber') },
+    { key: '{quantity}', desc: t('bot.quantity') },
+    { key: '{storeName}', desc: t('bot.storeName') },
+    { key: '{customerPhone}', desc: t('bot.customerPhone') },
   ];
 
   return (

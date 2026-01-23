@@ -350,12 +350,12 @@ export default function Profile() {
                   >
                     <Lock className={isLight ? "w-3.5 h-3.5 text-amber-700" : "w-3.5 h-3.5 text-amber-400"} />
                   </div>
-                  <h2 className={isLight ? "text-sm font-bold text-amber-900" : "text-sm font-bold text-amber-300"}>Subscription</h2>
+                  <h2 className={isLight ? "text-sm font-bold text-amber-900" : "text-sm font-bold text-amber-300"}>{t('admin.profile.subscription')}</h2>
                 </div>
 
                 <div className="p-1.5 space-y-1">
                   <div className="flex items-center justify-between text-sm">
-                    <span className={isLight ? "text-slate-700" : "text-slate-300"}>Status</span>
+                    <span className={isLight ? "text-slate-700" : "text-slate-300"}>{t('admin.profile.status')}</span>
                     <Badge
                       className={`text-xs ${
                         hasAccess
@@ -373,14 +373,14 @@ export default function Profile() {
 
                   {typeof access?.daysLeft === 'number' && (
                     <div className="flex items-center justify-between text-sm">
-                      <span className={isLight ? "text-slate-700" : "text-slate-300"}>Days left</span>
+                      <span className={isLight ? "text-slate-700" : "text-slate-300"}>{t('admin.profile.daysLeft')}</span>
                       <span className={isLight ? "text-slate-900 font-semibold" : "text-slate-100 font-semibold"}>{access.daysLeft}</span>
                     </div>
                   )}
 
                   {(trialEnds || periodEnds) && (
                     <div className="flex items-center justify-between text-sm">
-                      <span className={isLight ? "text-slate-700" : "text-slate-300"}>Renewal / Trial ends</span>
+                      <span className={isLight ? "text-slate-700" : "text-slate-300"}>{t('admin.profile.renewalEnds')}</span>
                       <span className={isLight ? "text-slate-900 font-semibold" : "text-slate-100 font-semibold"}>{formatDate(periodEnds || trialEnds)}</span>
                     </div>
                   )}
@@ -388,7 +388,7 @@ export default function Profile() {
                   {profile?.is_locked && (
                     <div className="bg-slate-800/50 rounded-lg p-1.5 border border-slate-700/50">
                       <p className="text-xs text-slate-300">
-                        <span className="font-semibold">Locked:</span> {profile.lock_type || 'locked'}
+                        <span className="font-semibold">{t('admin.profile.locked')}:</span> {profile.lock_type || t('admin.profile.locked')}
                       </p>
                       {profile.locked_reason && <p className="text-xs text-slate-400 mt-1">{profile.locked_reason}</p>}
                     </div>
@@ -398,13 +398,13 @@ export default function Profile() {
                   <div className="bg-slate-800/60 rounded-lg p-1.5 border border-slate-700/50 space-y-1.5">
                     <div className="flex items-center gap-1.5">
                       <Ticket className="w-3 h-3 text-cyan-400" />
-                      <span className="text-xs font-semibold text-white">Redeem Voucher Code</span>
+                      <span className="text-xs font-semibold text-white">{t('admin.profile.redeemVoucher')}</span>
                     </div>
 
                     {voucherSuccess ? (
                       <div className="flex items-center gap-1.5 p-1.5 bg-green-500/20 border border-green-500/30 rounded-lg">
                         <CheckCircle className="w-3.5 h-3.5 text-green-400" />
-                        <span className="text-xs text-green-300">Code redeemed! Reloading...</span>
+                        <span className="text-xs text-green-300">{t('admin.profile.codeRedeemed')}</span>
                       </div>
                     ) : (
                       <form onSubmit={handleRedeemVoucher} className="space-y-1.5">
@@ -439,12 +439,12 @@ export default function Profile() {
                           {voucherLoading ? (
                             <>
                               <Loader className="w-3 h-3 mr-1 animate-spin" />
-                              Redeeming...
+                              {t('admin.profile.redeeming')}
                             </>
                           ) : (
                             <>
                               <Gift className="w-3 h-3 mr-1" />
-                              Redeem Code
+                              {t('admin.profile.redeemCode')}
                             </>
                           )}
                         </Button>

@@ -6,20 +6,6 @@ import { useTranslation } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/api';
 
-const FEATURES = [
-  'Unlimited products & orders',
-  'Staff accounts & permissions',
-  'Stock & inventory management',
-  '100+ premium templates',
-  'Public storefront + checkout (Cash on Delivery)',
-  'WhatsApp, Telegram, Viber & Messenger bots',
-  'Facebook & TikTok Pixel tracking',
-  'Analytics dashboard',
-  'Delivery company integrations',
-  'Voucher & discount codes',
-  'No commissions',
-];
-
 type PublicBillingInfo = {
   trialDays: number;
   subscriptionPriceUsd: number;
@@ -32,6 +18,20 @@ export default function Pricing() {
   const [error, setError] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [publicBilling, setPublicBilling] = useState<PublicBillingInfo | null>(null);
+
+  const FEATURES = [
+    t('pricing.features.unlimited'),
+    t('pricing.features.staff'),
+    t('pricing.features.stock'),
+    t('pricing.features.templates'),
+    t('pricing.features.storefront'),
+    t('pricing.features.bots'),
+    t('pricing.features.pixels'),
+    t('pricing.features.analytics'),
+    t('pricing.features.delivery'),
+    t('pricing.features.vouchers'),
+    t('pricing.features.noCommissions'),
+  ];
 
   useEffect(() => {
     const check = async () => {
@@ -121,14 +121,14 @@ export default function Pricing() {
           <div className="bg-gradient-to-r from-indigo-600 to-cyan-600 p-5 text-white text-center">
             <div className="flex items-center justify-center gap-2 mb-2">
               <Infinity className="w-6 h-6" />
-              <h1 className="text-xl font-bold">Unlimited Plan</h1>
+              <h1 className="text-xl font-bold">{t('pricing.unlimitedPlan')}</h1>
             </div>
             <div className="flex items-baseline justify-center gap-1">
               <span className="text-4xl font-black">2000</span>
-              <span className="text-lg opacity-90">DZD/mo</span>
+              <span className="text-lg opacity-90">{t('pricing.dzdMonth')}</span>
             </div>
             <p className="text-sm opacity-80 mt-1">
-              ~${publicBilling?.subscriptionPriceUsd ?? 7}/mo
+              ~${publicBilling?.subscriptionPriceUsd ?? 7}/{t('pricing.month')}
             </p>
           </div>
 
@@ -138,7 +138,7 @@ export default function Pricing() {
             <div className="flex items-center justify-center gap-2 mb-4 py-2 px-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
               <Gift className="w-4 h-4 text-green-600" />
               <span className="text-sm font-medium text-green-700 dark:text-green-400">
-                {publicBilling?.trialDays ?? 30} days free trial
+                {t('pricing.freeTrial', { days: publicBilling?.trialDays ?? 30 })}
               </span>
             </div>
 
@@ -159,22 +159,22 @@ export default function Pricing() {
               className="w-full h-11 font-semibold bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-700 hover:to-cyan-700 text-white"
             >
               {loading ? (
-                <><Loader className="w-4 h-4 mr-2 animate-spin" />Processing...</>
+                <><Loader className="w-4 h-4 mr-2 animate-spin" />{t('pricing.processing')}</>
               ) : isLoggedIn ? (
-                <><MessageCircle className="w-4 h-4 mr-2" />Request Activation Code</>
+                <><MessageCircle className="w-4 h-4 mr-2" />{t('pricing.requestCode')}</>
               ) : (
-                <><Rocket className="w-4 h-4 mr-2" />Start Free Trial</>
+                <><Rocket className="w-4 h-4 mr-2" />{t('pricing.startTrial')}</>
               )}
             </Button>
 
             <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-3">
-              Activation is handled via admin chat (code-based). Payments via checkout are available from the Billing dashboard.
+              {t('pricing.activationNote')}
             </p>
 
             {/* Trust */}
             <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-3 flex items-center justify-center gap-1">
               <Shield className="w-3.5 h-3.5" />
-              Secure • Cancel anytime • No hidden fees
+              {t('pricing.trustBadge')}
             </p>
           </div>
         </div>
@@ -182,8 +182,8 @@ export default function Pricing() {
         {/* Login link */}
         {!isLoggedIn && (
           <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-4">
-            Already have an account?{" "}
-            <Link to="/login" className="text-indigo-600 hover:underline font-medium">Log in</Link>
+            {t('pricing.haveAccount')}{" "}
+            <Link to="/login" className="text-indigo-600 hover:underline font-medium">{t('pricing.login')}</Link>
           </p>
         )}
       </div>

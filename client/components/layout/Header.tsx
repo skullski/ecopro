@@ -56,10 +56,10 @@ export default function Header() {
                   style={{ width: 'clamp(2rem, 4.5vh, 2.5rem)', height: 'clamp(2rem, 4.5vh, 2.5rem)' }}
                 >
                   <img
-                    src="/brand/sahla4eco-mark.svg"
+                    src="/brand/logo.png"
                     alt="Sahla4Eco"
-                    className="drop-shadow"
-                    style={{ width: 'clamp(1.25rem, 2.6vh, 1.5rem)', height: 'clamp(1.25rem, 2.6vh, 1.5rem)' }}
+                    className="drop-shadow rounded-md"
+                    style={{ width: 'clamp(1.5rem, 3.2vh, 2rem)', height: 'clamp(1.5rem, 3.2vh, 2rem)', objectFit: 'contain' }}
                   />
                   <div className="absolute -top-0.5 -right-0.5 bg-green-500 rounded-full border border-background animate-pulse" style={{ width: 'clamp(0.5rem, 1vh, 0.5rem)', height: 'clamp(0.5rem, 1vh, 0.5rem)' }}></div>
                 </div>

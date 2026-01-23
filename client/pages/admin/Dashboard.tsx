@@ -196,8 +196,8 @@ export default function Dashboard() {
               <p className="text-base sm:text-lg font-bold">{Math.round(stats.revenue)} DZD</p>
             </div>
             <div className="flex gap-1.5 text-xs">
-              <span className="bg-white/20 px-2 py-0.5 rounded">{stats.orders} orders</span>
-              <span className="bg-white/20 px-2 py-0.5 rounded">{stats.products} products</span>
+              <span className="bg-white/20 px-2 py-0.5 rounded">{stats.orders} {t('dashboard.ordersLabel')}</span>
+              <span className="bg-white/20 px-2 py-0.5 rounded">{stats.products} {t('dashboard.productsLabel')}</span>
             </div>
           </div>
         </div>

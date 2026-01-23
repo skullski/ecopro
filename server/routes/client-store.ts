@@ -1557,7 +1557,7 @@ export const getProductShareLink: RequestHandler = async (req, res) => {
       [clientId]
     );
     const storeSlug = settingsRes.rows[0]?.store_slug || clientId;
-    const baseUrl = process.env.BASE_URL || "https://ecopro-1lbl.onrender.com";
+    const baseUrl = process.env.BASE_URL || "https://sahla4eco.com";
     const shareLink = `${baseUrl}/store/${storeSlug}/${result.rows[0].slug}`;
 
     res.json({ shareLink, slug: result.rows[0].slug, store_slug: storeSlug });

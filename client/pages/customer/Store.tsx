@@ -1169,10 +1169,10 @@ export default function Store() {
                   <div className="absolute top-1.5 left-1.5 flex flex-col gap-1">
                     <Badge
                       variant="secondary"
-                      className="text-[10px] px-1.5 py-0.5 bg-background/70 backdrop-blur border border-border/60"
+                      className="text-[10px] px-1.5 py-0.5 bg-background/70 backdrop-blur border border-border/60 text-foreground"
                       title={t('store.views')}
                     >
-                      <Eye className="w-2.5 h-2.5 mr-0.5" />
+                      <Eye className="w-2.5 h-2.5 mr-0.5 text-foreground" />
                       {product.views ?? 0}
                     </Badge>
                     {product.is_featured && (
@@ -1283,11 +1283,11 @@ export default function Store() {
                       <span className="text-lg font-bold text-primary">
                         ${Math.round(Number(product.price) || 0)}
                       </span>
-                      <Badge variant="outline" className="text-xs">
-                        <Eye className="w-3 h-3 mr-1" />
+                      <Badge variant="outline" className="text-xs text-foreground">
+                        <Eye className="w-3 h-3 mr-1 text-foreground" />
                         {product.views} views
                       </Badge>
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="text-xs text-foreground">
                         Stock: {product.stock_quantity}
                       </Badge>
                     </div>

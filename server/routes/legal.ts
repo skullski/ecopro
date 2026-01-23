@@ -42,7 +42,7 @@ function escapeHtml(input: string): string {
 const privacyPolicy: RequestHandler = (_req, res) => {
   const companyName = process.env.COMPANY_NAME || 'EcoPro';
   const supportEmail = process.env.SUPPORT_EMAIL || 'support@ecopro.com';
-  const baseUrl = process.env.BASE_URL || 'https://ecopro-1lbl.onrender.com';
+  const baseUrl = process.env.BASE_URL || 'https://sahla4eco.com';
 
   const body = `
     <h1>Privacy Policy</h1>

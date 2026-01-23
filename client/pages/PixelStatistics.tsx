@@ -17,12 +17,15 @@ import {
   Activity,
   DollarSign,
   Users,
-  Target
+  Target,
+  Plus,
+  Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { useTranslation } from '@/lib/i18n';
 // Local type defs for pixel statistics
 type PixelType = 'facebook' | 'tiktok' | string;
 
@@ -82,13 +85,36 @@ import {
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
 import TikTokIcon from '@/components/icons/TikTokIcon';
+
+// Multi-pixel item type
+interface PixelItem {
+  id: string;
+  type: 'facebook' | 'tiktok';
+  pixel_id: string;
+  access_token?: string;
+  enabled: boolean;
+  name?: string;
+}
+
 export default function PixelStatistics() {
+  const { t, locale } = useTranslation();
+  const isRTL = locale === 'ar';
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedDays, setSelectedDays] = useState('30');
   const [activeTab, setActiveTab] = useState('overview');
   const [settingsForm, setSettingsForm] = useState<PixelConfig[]>([]);
   const [settingsObj, setSettingsObj] = useState<PixelSettings>({});
+  
+  // Multi-pixel state
+  const [pixels, setPixels] = useState<PixelItem[]>([]);
+  const [newPixel, setNewPixel] = useState<Partial<PixelItem>>({
+    type: 'facebook',
+    pixel_id: '',
+    access_token: '',
+    enabled: true,
+    name: ''
+  });
 
   // Fetch pixel settings
   const { data: settings, isLoading: settingsLoading } = useQuery<PixelSettings>({
@@ -164,8 +190,68 @@ export default function PixelStatistics() {
     if (settings) {
       if (settings.pixels) setSettingsForm(settings.pixels);
       setSettingsObj(settings);
+      
+      // Initialize multi-pixel list from settings
+      const loadedPixels: PixelItem[] = [];
+      if (settings.facebook_pixel_id) {
+        loadedPixels.push({
+          id: 'fb-main',
+          type: 'facebook',
+          pixel_id: settings.facebook_pixel_id,
+          access_token: (settings as any).facebook_access_token || '',
+          enabled: settings.is_facebook_enabled || false,
+          name: t('pixels.mainFacebookPixel')
+        });
+      }
+      if (settings.tiktok_pixel_id) {
+        loadedPixels.push({
+          id: 'tt-main',
+          type: 'tiktok',
+          pixel_id: settings.tiktok_pixel_id,
+          access_token: (settings as any).tiktok_access_token || '',
+          enabled: settings.is_tiktok_enabled || false,
+          name: t('pixels.mainTiktokPixel')
+        });
+      }
+      // Load additional pixels if stored
+      if ((settings as any).additional_pixels) {
+        loadedPixels.push(...(settings as any).additional_pixels);
+      }
+      setPixels(loadedPixels);
     }
   }, [settings]);
+
+  // Add new pixel
+  const handleAddPixel = () => {
+    if (!newPixel.pixel_id?.trim()) {
+      toast({ title: t('common.error'), description: t('pixels.enterPixelId'), variant: 'destructive' });
+      return;
+    }
+    
+    const pixel: PixelItem = {
+      id: `${newPixel.type}-${Date.now()}`,
+      type: newPixel.type || 'facebook',
+      pixel_id: newPixel.pixel_id.trim(),
+      access_token: newPixel.access_token?.trim() || '',
+      enabled: true,
+      name: newPixel.name?.trim() || `${newPixel.type === 'facebook' ? 'Facebook' : 'TikTok'} Pixel ${pixels.filter(p => p.type === newPixel.type).length + 1}`
+    };
+    
+    setPixels(prev => [...prev, pixel]);
+    setNewPixel({ type: 'facebook', pixel_id: '', access_token: '', enabled: true, name: '' });
+    toast({ title: t('common.success'), description: t('pixels.pixelAdded') });
+  };
+
+  // Remove pixel
+  const handleRemovePixel = (id: string) => {
+    setPixels(prev => prev.filter(p => p.id !== id));
+    toast({ title: t('common.success'), description: t('pixels.pixelRemoved') });
+  };
+
+  // Toggle pixel enabled
+  const handleTogglePixel = (id: string, enabled: boolean) => {
+    setPixels(prev => prev.map(p => p.id === id ? { ...p, enabled } : p));
+  };
 
   const formatNumber = (num: number | string | undefined) => {
     if (num === undefined || num === null) return '0';
@@ -210,7 +296,7 @@ export default function PixelStatistics() {
           <CardContent className="p-2.5 md:p-3">
             <div className="flex items-center gap-1.5 mb-1">
               <Eye className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">Page Views</span>
+              <span className="text-xs text-muted-foreground">{t('pixels.pageViews')}</span>
             </div>
             <p className="text-lg md:text-xl font-bold">{formatNumber(data?.total_page_views)}</p>
           </CardContent>
@@ -220,7 +306,7 @@ export default function PixelStatistics() {
           <CardContent className="p-2.5 md:p-3">
             <div className="flex items-center gap-1.5 mb-1">
               <MousePointer className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">View Content</span>
+              <span className="text-xs text-muted-foreground">{t('pixels.viewContent')}</span>
             </div>
             <p className="text-lg md:text-xl font-bold">{formatNumber(data?.total_view_content)}</p>
           </CardContent>
@@ -230,10 +316,10 @@ export default function PixelStatistics() {
           <CardContent className="p-2.5 md:p-3">
             <div className="flex items-center gap-1.5 mb-1">
               <ShoppingCart className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">Add to Cart</span>
+              <span className="text-xs text-muted-foreground">{t('pixels.addToCart')}</span>
             </div>
             <p className="text-lg md:text-xl font-bold">{formatNumber(data?.total_add_to_cart)}</p>
-            <p className="text-xs text-muted-foreground">Rate: {data?.cart_rate || 0}%</p>
+            <p className="text-xs text-muted-foreground">{t('pixels.cartRate')}: {data?.cart_rate || 0}%</p>
           </CardContent>
         </Card>
         
@@ -241,10 +327,10 @@ export default function PixelStatistics() {
           <CardContent className="p-2.5 md:p-3">
             <div className="flex items-center gap-1.5 mb-1">
               <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">Purchases</span>
+              <span className="text-xs text-muted-foreground">{t('pixels.purchases')}</span>
             </div>
             <p className="text-lg md:text-xl font-bold">{formatNumber(data?.total_purchases)}</p>
-            <p className="text-xs text-muted-foreground">Conv: {data?.conversion_rate || 0}%</p>
+            <p className="text-xs text-muted-foreground">{t('pixels.conversionRate')}: {data?.conversion_rate || 0}%</p>
           </CardContent>
         </Card>
       </div>
@@ -257,15 +343,12 @@ export default function PixelStatistics() {
         <div className="flex items-start gap-2">
           <AlertCircle className="w-4 h-4 mt-0.5 text-muted-foreground" />
           <div className="text-sm text-muted-foreground leading-relaxed">
-            <div className="font-semibold text-foreground">Important</div>
+            <div className="font-semibold text-foreground">{t('pixels.important')}</div>
             <div>
-              The “Facebook” and “TikTok” sections here are <b>pixel platform buckets</b> (which pixel is enabled/used),
-              not a guarantee that the visitor came from an ad.
-              Pixels fire on any visit (direct link, WhatsApp, inside the store, etc).
+              {t('pixels.platformExplanation')}
             </div>
             <div className="mt-2">
-              “Page Views” are event counts. Refreshing can increase them; we de-duplicate rapid duplicates server-side,
-              but this is still not the same as “unique visitors”.
+              {t('pixels.pageViewNote')}
             </div>
           </div>
         </div>
@@ -287,10 +370,10 @@ export default function PixelStatistics() {
         <CardHeader className="p-3 md:p-4">
           <CardTitle className="flex items-center gap-2 text-sm md:text-base">
             <Target className="h-4 w-4" />
-            Conversion Funnel
+            {t('pixels.conversionFunnel')}
           </CardTitle>
           <CardDescription className="text-xs">
-            {platform === 'facebook' ? 'Facebook' : 'TikTok'} Pixel - Last {data.period_days} days
+            {platform === 'facebook' ? t('pixels.facebookPixel') : t('pixels.tiktokPixel')} - {t('pixels.last')} {data.period_days} {t('pixels.days')}
           </CardDescription>
         </CardHeader>
         <CardContent className="p-3 md:p-4 pt-0">
@@ -315,11 +398,11 @@ export default function PixelStatistics() {
           
           <div className="mt-3 pt-3 border-t grid grid-cols-2 gap-3">
             <div>
-              <p className="text-xs text-muted-foreground">Total Revenue</p>
+              <p className="text-xs text-muted-foreground">{t('pixels.totalRevenue')}</p>
               <p className="text-base md:text-lg font-bold text-green-600 dark:text-green-400">{formatCurrency(data.total_revenue)}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Avg Order Value</p>
+              <p className="text-xs text-muted-foreground">{t('pixels.avgOrderValue')}</p>
               <p className="text-base md:text-lg font-bold">{formatCurrency(data.avg_order_value)}</p>
             </div>
           </div>
@@ -329,30 +412,30 @@ export default function PixelStatistics() {
   };
 
   return (
-    <div className="container mx-auto p-2 md:p-4 space-y-3 md:space-y-4 max-w-6xl">
+    <div className="container mx-auto p-2 md:p-4 space-y-3 md:space-y-4 max-w-6xl" dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-3">
         <div>
           <h1 className="text-lg md:text-xl lg:text-2xl font-bold flex items-center gap-2">
             <BarChart3 className="h-4 w-4 md:h-5 md:w-5" />
-            Pixel Statistics
+            {t('pixels.title')}
           </h1>
           <p className="text-muted-foreground text-xs md:text-sm mt-0.5">
-            Track pixel events and conversions
+            {t('pixels.description')}
           </p>
         </div>
         
         <div className="flex items-center gap-2">
           <Select value={selectedDays} onValueChange={setSelectedDays}>
             <SelectTrigger className="w-32 h-8 text-xs">
-              <SelectValue placeholder="Time period" />
+              <SelectValue placeholder={t('pixels.period')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="7">Last 7 days</SelectItem>
-              <SelectItem value="14">Last 14 days</SelectItem>
-              <SelectItem value="30">Last 30 days</SelectItem>
-              <SelectItem value="60">Last 60 days</SelectItem>
-              <SelectItem value="90">Last 90 days</SelectItem>
+              <SelectItem value="7">{t('pixels.last7Days')}</SelectItem>
+              <SelectItem value="14">{t('pixels.last14Days')}</SelectItem>
+              <SelectItem value="30">{t('pixels.last30Days')}</SelectItem>
+              <SelectItem value="60">{t('pixels.last60Days')}</SelectItem>
+              <SelectItem value="90">{t('pixels.last90Days')}</SelectItem>
             </SelectContent>
           </Select>
           
@@ -372,19 +455,21 @@ export default function PixelStatistics() {
                   <Facebook className="h-4 w-4 md:h-5 md:w-5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-xs md:text-sm">Facebook Pixel</h3>
+                  <h3 className="font-semibold text-xs md:text-sm">{t('pixels.facebookPixel')}</h3>
                   <p className="text-xs text-muted-foreground truncate max-w-[120px] md:max-w-none">
-                    {settings?.facebook_pixel_id || 'Not configured'}
+                    {pixels.filter(p => p.type === 'facebook').length > 0 
+                      ? `${pixels.filter(p => p.type === 'facebook').length} ${t('pixels.pixelsConfigured')}`
+                      : t('pixels.notConfigured')}
                   </p>
                 </div>
               </div>
-              {settings?.is_facebook_enabled ? (
+              {pixels.filter(p => p.type === 'facebook' && p.enabled).length > 0 ? (
                 <Badge className="bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300 text-xs">
-                  <CheckCircle className="h-3 w-3 mr-1" /> Active
+                  <CheckCircle className="h-3 w-3 mr-1" /> {t('pixels.active')}
                 </Badge>
               ) : (
                 <Badge variant="secondary" className="text-xs">
-                  <XCircle className="h-3 w-3 mr-1" /> Inactive
+                  <XCircle className="h-3 w-3 mr-1" /> {t('pixels.inactive')}
                 </Badge>
               )}
             </div>
@@ -399,19 +484,21 @@ export default function PixelStatistics() {
                   <TikTokIcon className="h-4 w-4 md:h-5 md:w-5 text-pink-600 dark:text-pink-400" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-xs md:text-sm">TikTok Pixel</h3>
+                  <h3 className="font-semibold text-xs md:text-sm">{t('pixels.tiktokPixel')}</h3>
                   <p className="text-xs text-muted-foreground truncate max-w-[120px] md:max-w-none">
-                    {settings?.tiktok_pixel_id || 'Not configured'}
+                    {pixels.filter(p => p.type === 'tiktok').length > 0 
+                      ? `${pixels.filter(p => p.type === 'tiktok').length} ${t('pixels.pixelsConfigured')}`
+                      : t('pixels.notConfigured')}
                   </p>
                 </div>
               </div>
-              {settings?.is_tiktok_enabled ? (
+              {pixels.filter(p => p.type === 'tiktok' && p.enabled).length > 0 ? (
                 <Badge className="bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300 text-xs">
-                  <CheckCircle className="h-3 w-3 mr-1" /> Active
+                  <CheckCircle className="h-3 w-3 mr-1" /> {t('pixels.active')}
                 </Badge>
               ) : (
                 <Badge variant="secondary" className="text-xs">
-                  <XCircle className="h-3 w-3 mr-1" /> Inactive
+                  <XCircle className="h-3 w-3 mr-1" /> {t('pixels.inactive')}
                 </Badge>
               )}
             </div>
@@ -422,13 +509,10 @@ export default function PixelStatistics() {
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto">
-          <TabsTrigger value="overview" className="text-xs py-1.5">Overview</TabsTrigger>
-          {settingsForm.map((pixel, idx) => (
-            <TabsTrigger key={pixel.pixel_type + idx} value={pixel.pixel_type} className="text-xs py-1.5">
-              {pixel.pixel_type.charAt(0).toUpperCase() + pixel.pixel_type.slice(1)}
-            </TabsTrigger>
-          ))}
-          <TabsTrigger value="settings" className="text-xs py-1.5">Settings</TabsTrigger>
+          <TabsTrigger value="overview" className="text-xs py-1.5">{t('pixels.overviewTab')}</TabsTrigger>
+          <TabsTrigger value="facebook" className="text-xs py-1.5">{t('pixels.facebookTab')}</TabsTrigger>
+          <TabsTrigger value="tiktok" className="text-xs py-1.5">{t('pixels.tiktokTab')}</TabsTrigger>
+          <TabsTrigger value="settings" className="text-xs py-1.5">{t('pixels.settingsTab')}</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -440,7 +524,7 @@ export default function PixelStatistics() {
               <CardContent className="p-2.5 md:p-3">
                 <div className="flex items-center gap-1.5 mb-1">
                   <Eye className="h-3.5 w-3.5 text-blue-500" />
-                  <span className="text-xs text-muted-foreground">Total Page Views</span>
+                  <span className="text-xs text-muted-foreground">{t('pixels.totalPageViews')}</span>
                 </div>
                 <p className="text-lg md:text-xl font-bold">
                   {formatNumber((stats?.facebook?.total_page_views || 0) + (stats?.tiktok?.total_page_views || 0))}
@@ -452,7 +536,7 @@ export default function PixelStatistics() {
               <CardContent className="p-2.5 md:p-3">
                 <div className="flex items-center gap-1.5 mb-1">
                   <ShoppingCart className="h-3.5 w-3.5 text-orange-500" />
-                  <span className="text-xs text-muted-foreground">Total Add to Cart</span>
+                  <span className="text-xs text-muted-foreground">{t('pixels.totalAddToCart')}</span>
                 </div>
                 <p className="text-lg md:text-xl font-bold">
                   {formatNumber((stats?.facebook?.total_add_to_cart || 0) + (stats?.tiktok?.total_add_to_cart || 0))}
@@ -464,7 +548,7 @@ export default function PixelStatistics() {
               <CardContent className="p-2.5 md:p-3">
                 <div className="flex items-center gap-1.5 mb-1">
                   <CreditCard className="h-3.5 w-3.5 text-green-500" />
-                  <span className="text-xs text-muted-foreground">Total Purchases</span>
+                  <span className="text-xs text-muted-foreground">{t('pixels.totalPurchases')}</span>
                 </div>
                 <p className="text-lg md:text-xl font-bold">
                   {formatNumber((stats?.facebook?.total_purchases || 0) + (stats?.tiktok?.total_purchases || 0))}
@@ -476,7 +560,7 @@ export default function PixelStatistics() {
               <CardContent className="p-2.5 md:p-3">
                 <div className="flex items-center gap-1.5 mb-1">
                   <DollarSign className="h-3.5 w-3.5 text-green-500" />
-                  <span className="text-xs text-muted-foreground">Total Revenue</span>
+                  <span className="text-xs text-muted-foreground">{t('pixels.totalRevenue')}</span>
                 </div>
                 <p className="text-lg md:text-xl font-bold text-green-600 dark:text-green-400">
                   {formatCurrency((Number(stats?.facebook?.total_revenue) || 0) + (Number(stats?.tiktok?.total_revenue) || 0))}
@@ -490,10 +574,10 @@ export default function PixelStatistics() {
             <CardHeader className="p-3 md:p-4">
               <CardTitle className="flex items-center gap-2 text-sm md:text-base">
                 <Activity className="h-4 w-4" />
-                Recent Events
+                {t('pixels.recentEvents')}
               </CardTitle>
               <CardDescription className="text-xs">
-                Latest pixel events from your store
+                {t('pixels.latestEvents')}
               </CardDescription>
             </CardHeader>
             <CardContent className="p-3 md:p-4 pt-0">
@@ -501,11 +585,11 @@ export default function PixelStatistics() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Platform</TableHead>
-                      <TableHead>Event</TableHead>
-                      <TableHead>Page</TableHead>
-                      <TableHead className="text-xs">Revenue</TableHead>
-                      <TableHead className="text-xs hidden md:table-cell">Time</TableHead>
+                      <TableHead>{t('pixels.platform')}</TableHead>
+                      <TableHead>{t('pixels.event')}</TableHead>
+                      <TableHead>{t('pixels.page')}</TableHead>
+                      <TableHead className="text-xs">{t('pixels.revenue')}</TableHead>
+                      <TableHead className="text-xs hidden md:table-cell">{t('pixels.time')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -539,8 +623,8 @@ export default function PixelStatistics() {
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   <Activity className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p>No events recorded yet</p>
-                  <p className="text-sm mt-1">Events will appear here once your pixels start tracking</p>
+                  <p>{t('pixels.noEvents')}</p>
+                  <p className="text-sm mt-1">{t('pixels.eventsWillAppear')}</p>
                 </div>
               )}
             </CardContent>
@@ -559,13 +643,15 @@ export default function PixelStatistics() {
               <Card>
                 <CardContent className="p-6 md:p-8 text-center">
                   <BarChart3 className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="text-lg md:text-xl font-semibold mb-2">{pixel.pixel_type.charAt(0).toUpperCase() + pixel.pixel_type.slice(1)} Pixel Not Configured</h3>
+                  <h3 className="text-lg md:text-xl font-semibold mb-2">
+                    {pixel.pixel_type === 'facebook' ? t('pixels.facebookPixel') : t('pixels.tiktokPixel')} - {t('pixels.pixelNotConfigured')}
+                  </h3>
                   <p className="text-muted-foreground text-sm md:text-base mb-4">
-                    Add your {pixel.pixel_type} Pixel ID in the Settings tab to start tracking
+                    {t('pixels.addPixelIdToStart')}
                   </p>
                   <Button onClick={() => setActiveTab('settings')}>
                     <Settings className="h-4 w-4 mr-2" />
-                    Configure Pixel
+                    {t('pixels.configurePixel')}
                   </Button>
                 </CardContent>
               </Card>
@@ -581,44 +667,44 @@ export default function PixelStatistics() {
               <CardHeader className="p-4 md:p-6">
                 <CardTitle className="flex items-center gap-2 text-base md:text-lg">
                   <Facebook className="h-4 w-4 md:h-5 md:w-5 text-blue-600 dark:text-blue-400" />
-                  Facebook Pixel
+                  {t('pixels.facebookPixel')}
                 </CardTitle>
                 <CardDescription className="text-xs md:text-sm">
-                  Configure your Facebook Pixel for conversion tracking
+                  {t('pixels.facebookSettingsDesc')}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4 p-4 md:p-6 pt-0 md:pt-0">
                 <div>
-                  <Label htmlFor="fb-pixel-id" className="text-sm">Pixel ID</Label>
+                  <Label htmlFor="fb-pixel-id" className="text-sm">{t('pixels.pixelId')}</Label>
                   <Input
                     id="fb-pixel-id"
-                    placeholder="Enter your Facebook Pixel ID"
+                    placeholder={t('pixels.enterPixelId')}
                     value={settingsObj.facebook_pixel_id || ''}
                     onChange={(e) => setSettingsObj(prev => ({ ...prev, facebook_pixel_id: e.target.value }))}
                     className="mt-1"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Find this in your Facebook Events Manager
+                    {t('pixels.findInFacebookManager')}
                   </p>
                 </div>
                 
                 <div>
-                  <Label htmlFor="fb-access-token" className="text-sm">Access Token (Optional)</Label>
+                  <Label htmlFor="fb-access-token" className="text-sm">{t('pixels.accessToken')}</Label>
                   <Input
                     id="fb-access-token"
                     type="password"
-                    placeholder="For server-side tracking"
+                    placeholder={t('pixels.forServerSideTracking')}
                     value={(settingsObj as any).facebook_access_token || ''}
                     onChange={(e) => setSettingsObj(prev => ({ ...prev, facebook_access_token: e.target.value }))}
                     className="mt-1"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Required for Conversions API (server-side events)
+                    {t('pixels.requiredForConversionsApi')}
                   </p>
                 </div>
                 
                 <div className="flex items-center justify-between pt-2">
-                  <Label htmlFor="fb-enabled" className="text-sm">Enable Facebook Pixel</Label>
+                  <Label htmlFor="fb-enabled" className="text-sm">{t('pixels.enableFacebookPixel')}</Label>
                   <Switch
                     id="fb-enabled"
                     checked={settingsObj.is_facebook_enabled || false}
@@ -633,44 +719,44 @@ export default function PixelStatistics() {
               <CardHeader className="p-4 md:p-6">
                 <CardTitle className="flex items-center gap-2 text-base md:text-lg">
                   <TikTokIcon className="h-4 w-4 md:h-5 md:w-5 text-pink-600 dark:text-pink-400" />
-                  TikTok Pixel
+                  {t('pixels.tiktokPixel')}
                 </CardTitle>
                 <CardDescription className="text-xs md:text-sm">
-                  Configure your TikTok Pixel for conversion tracking
+                  {t('pixels.tiktokSettingsDesc')}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4 p-4 md:p-6 pt-0 md:pt-0">
                 <div>
-                  <Label htmlFor="tt-pixel-id" className="text-sm">Pixel ID</Label>
+                  <Label htmlFor="tt-pixel-id" className="text-sm">{t('pixels.pixelId')}</Label>
                   <Input
                     id="tt-pixel-id"
-                    placeholder="Enter your TikTok Pixel ID"
+                    placeholder={t('pixels.enterPixelId')}
                     value={settingsObj.tiktok_pixel_id || ''}
                     onChange={(e) => setSettingsObj(prev => ({ ...prev, tiktok_pixel_id: e.target.value }))}
                     className="mt-1"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Find this in your TikTok Ads Manager
+                    {t('pixels.findInTiktokManager')}
                   </p>
                 </div>
                 
                 <div>
-                  <Label htmlFor="tt-access-token" className="text-sm">Access Token (Optional)</Label>
+                  <Label htmlFor="tt-access-token" className="text-sm">{t('pixels.accessToken')}</Label>
                   <Input
                     id="tt-access-token"
                     type="password"
-                    placeholder="For server-side tracking"
+                    placeholder={t('pixels.forServerSideTracking')}
                     value={(settingsObj as any).tiktok_access_token || ''}
                     onChange={(e) => setSettingsObj(prev => ({ ...prev, tiktok_access_token: e.target.value }))}
                     className="mt-1"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Required for Events API (server-side events)
+                    {t('pixels.requiredForEventsApi')}
                   </p>
                 </div>
                 
                 <div className="flex items-center justify-between pt-2">
-                  <Label htmlFor="tt-enabled" className="text-sm">Enable TikTok Pixel</Label>
+                  <Label htmlFor="tt-enabled" className="text-sm">{t('pixels.enableTiktokPixel')}</Label>
                   <Switch
                     id="tt-enabled"
                     checked={settingsObj.is_tiktok_enabled || false}
@@ -681,18 +767,161 @@ export default function PixelStatistics() {
             </Card>
           </div>
 
+          {/* Multi-Pixel Management Section */}
+          <Card>
+            <CardHeader className="p-4 md:p-6">
+              <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                <Plus className="h-4 w-4 md:h-5 md:w-5" />
+                {t('pixels.addNewPixel')}
+              </CardTitle>
+              <CardDescription className="text-xs md:text-sm">
+                {t('pixels.addFirstPixel')}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 md:p-6 pt-0">
+              <div className="flex flex-col md:flex-row gap-3">
+                <Select
+                  value={newPixel.type}
+                  onValueChange={(value: 'facebook' | 'tiktok') => setNewPixel(prev => ({ ...prev, type: value }))}
+                >
+                  <SelectTrigger className="w-full md:w-[160px]">
+                    <SelectValue placeholder={t('pixels.selectPixelType')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="facebook">
+                      <div className="flex items-center gap-2">
+                        <Facebook className="h-4 w-4 text-blue-600" />
+                        Facebook
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="tiktok">
+                      <div className="flex items-center gap-2">
+                        <TikTokIcon className="h-4 w-4 text-pink-600" />
+                        TikTok
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <Input
+                  placeholder={t('pixels.pixelNamePlaceholder')}
+                  value={newPixel.name || ''}
+                  onChange={(e) => setNewPixel(prev => ({ ...prev, name: e.target.value }))}
+                  className="flex-1"
+                />
+                
+                <Input
+                  placeholder={t('pixels.enterPixelId')}
+                  value={newPixel.pixel_id || ''}
+                  onChange={(e) => setNewPixel(prev => ({ ...prev, pixel_id: e.target.value }))}
+                  className="flex-1"
+                />
+                
+                <Input
+                  type="password"
+                  placeholder={t('pixels.accessToken')}
+                  value={newPixel.access_token || ''}
+                  onChange={(e) => setNewPixel(prev => ({ ...prev, access_token: e.target.value }))}
+                  className="flex-1"
+                />
+                
+                <Button onClick={handleAddPixel} className="shrink-0">
+                  <Plus className="h-4 w-4 mr-1" />
+                  {t('pixels.add')}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Your Pixels List */}
+          <Card>
+            <CardHeader className="p-4 md:p-6">
+              <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+                <BarChart3 className="h-4 w-4 md:h-5 md:w-5" />
+                {t('pixels.yourPixels')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 md:p-6 pt-0">
+              {pixels.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <BarChart3 className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p>{t('pixels.noPixelsYet')}</p>
+                  <p className="text-sm mt-1">{t('pixels.addFirstPixel')}</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {pixels.map((pixel) => (
+                    <div
+                      key={pixel.id}
+                      className={`flex items-center justify-between p-3 rounded-lg border ${
+                        pixel.enabled 
+                          ? pixel.type === 'facebook' 
+                            ? 'border-blue-500/30 bg-blue-500/10' 
+                            : 'border-pink-500/30 bg-pink-500/10'
+                          : 'border-muted bg-muted/30'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${
+                          pixel.type === 'facebook' 
+                            ? 'bg-blue-100 dark:bg-blue-900/50' 
+                            : 'bg-pink-100 dark:bg-pink-900/50'
+                        }`}>
+                          {pixel.type === 'facebook' ? (
+                            <Facebook className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                          ) : (
+                            <TikTokIcon className="h-4 w-4 text-pink-600 dark:text-pink-400" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">{pixel.name || pixel.pixel_id}</p>
+                          <p className="text-xs text-muted-foreground">{pixel.pixel_id}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-3">
+                        <Badge className={pixel.enabled 
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' 
+                          : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                        }>
+                          {pixel.enabled ? t('pixels.active') : t('pixels.inactive')}
+                        </Badge>
+                        <Switch
+                          checked={pixel.enabled}
+                          onCheckedChange={(checked) => handleTogglePixel(pixel.id, checked)}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemovePixel(pixel.id)}
+                          className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <div className="flex justify-end">
             <Button 
-              onClick={() => updateSettings.mutate({ ...settingsObj, pixels: settingsForm })}
+              onClick={() => updateSettings.mutate({ 
+                ...settingsObj, 
+                pixels: settingsForm,
+                additional_pixels: pixels.filter(p => !p.id.endsWith('-main'))
+              })}
               disabled={updateSettings.isPending}
             >
               {updateSettings.isPending ? (
                 <>
                   <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Saving...
+                  {t('pixels.saving')}
                 </>
               ) : (
-                'Save Settings'
+                t('pixels.saveSettings')
               )}
             </Button>
           </div>
@@ -702,24 +931,22 @@ export default function PixelStatistics() {
             <CardHeader className="p-4 md:p-6">
               <CardTitle className="flex items-center gap-2 text-base md:text-lg">
                 <AlertCircle className="h-4 w-4 md:h-5 md:w-5" />
-                How Pixel Tracking Works
+                {t('pixels.howItWorks')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-xs md:text-sm text-muted-foreground p-4 md:p-6 pt-0 md:pt-0">
               <p>
-                Once you configure your pixel IDs and enable tracking, your store will automatically 
-                track the following events:
+                {t('pixels.howItWorksDesc')}
               </p>
-              <ul className="list-disc pl-5 space-y-1">
-                <li><strong className="text-foreground">PageView</strong> - When a customer visits any page</li>
-                <li><strong className="text-foreground">ViewContent</strong> - When a customer views a product</li>
-                <li><strong className="text-foreground">AddToCart</strong> - When a customer adds a product to cart</li>
-                <li><strong className="text-foreground">InitiateCheckout</strong> - When a customer starts checkout</li>
-                <li><strong className="text-foreground">Purchase</strong> - When an order is completed</li>
+              <ul className={`list-disc space-y-1 ${isRTL ? 'pr-5' : 'pl-5'}`}>
+                <li><strong className="text-foreground">PageView</strong> - {t('pixels.pageViewEvent')}</li>
+                <li><strong className="text-foreground">ViewContent</strong> - {t('pixels.viewContentEvent')}</li>
+                <li><strong className="text-foreground">AddToCart</strong> - {t('pixels.addToCartEvent')}</li>
+                <li><strong className="text-foreground">InitiateCheckout</strong> - {t('pixels.initiateCheckoutEvent')}</li>
+                <li><strong className="text-foreground">Purchase</strong> - {t('pixels.purchaseEvent')}</li>
               </ul>
               <p>
-                All events are tracked both in-browser (standard pixel) and server-side (if access 
-                token is provided) for maximum accuracy and iOS 14+ compatibility.
+                {t('pixels.trackingNote')}
               </p>
             </CardContent>
           </Card>

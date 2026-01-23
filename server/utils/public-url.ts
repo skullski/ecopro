@@ -14,7 +14,7 @@ export function getPublicBaseUrl(req?: Request): string {
   }
 
   // Legacy fallback.
-  if (!url) url = 'https://ecopro-1lbl.onrender.com';
+  if (!url) url = 'https://sahla4eco.com';
 
   return url.replace(/\/$/, '');
 }

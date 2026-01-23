@@ -240,7 +240,7 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
           
           {!collapsed && (
             <>
-              <span className="flex-1 font-semibold text-[15px] leading-none min-w-0 truncate whitespace-nowrap">{t(item.titleKey)}</span>
+              <span className="flex-1 font-semibold text-[14px] leading-tight min-w-0">{t(item.titleKey)}</span>
 
               {badgeCount > 0 && (
                 <span
@@ -300,10 +300,10 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
         }}>
         <div className="flex items-center gap-2">
           <img
-            src="/brand/sahla4eco-mark.svg"
+            src="/brand/logo.png"
             alt="Sahla4Eco"
             className="rounded-md"
-            style={{ width: collapsed ? '22px' : '26px', height: collapsed ? '22px' : '26px' }}
+            style={{ width: collapsed ? '24px' : '30px', height: collapsed ? '24px' : '30px', objectFit: 'contain' }}
           />
           {!collapsed && (
             <div>
@@ -434,7 +434,7 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
       <aside className={cn(
         "hidden lg:block fixed top-0 h-screen transition-all duration-300 z-40 desktop-sidebar",
         isRTL ? "right-0 border-l shadow-2xl" : "left-0 border-r shadow-2xl",
-        collapsed ? "w-20" : "w-64"
+        collapsed ? "w-20" : "w-[270px]"
       )}
       style={{
         backgroundColor: SIDEBAR_THEMES[activeTheme].bg,
@@ -454,7 +454,7 @@ export function EnhancedSidebar({ onCollapseChange }: EnhancedSidebarProps = {})
             onClick={() => setMobileOpen(false)}
           />
           <aside className={cn(
-            "lg:hidden fixed top-0 h-screen w-64 z-[70] border-r transition-all duration-300",
+            "lg:hidden fixed top-0 h-screen w-[270px] z-[70] border-r transition-all duration-300",
             isRTL ? "right-0" : "left-0"
           )}
           style={{
