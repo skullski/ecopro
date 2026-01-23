@@ -225,6 +225,64 @@ router.post('/:chatId/mark-read', async (req: Request, res: Response) => {
 });
 
 /**
+ * PATCH /api/chat/:chatId/message/:messageId
+ * Edit a message (only sender can edit their own message)
+ */
+router.patch('/:chatId/message/:messageId', async (req: Request, res: Response) => {
+  const { userId, role } = getUserRole(req);
+  const { messageId } = req.params;
+
+  if (!userId || !role) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    const { message_content } = req.body;
+
+    if (!message_content || typeof message_content !== 'string' || !message_content.trim()) {
+      return res.status(400).json({ error: 'Message content is required' });
+    }
+
+    const message = await chatService.editMessage(
+      Number(messageId),
+      userId,
+      role,
+      message_content.trim()
+    );
+
+    res.json({ message });
+  } catch (error: any) {
+    if (error.message.includes('Unauthorized')) {
+      return res.status(403).json({ error: error.message });
+    }
+    return serverError(res, error);
+  }
+});
+
+/**
+ * DELETE /api/chat/:chatId/message/:messageId
+ * Delete a message (only sender can delete their own message)
+ */
+router.delete('/:chatId/message/:messageId', async (req: Request, res: Response) => {
+  const { userId, role } = getUserRole(req);
+  const { messageId } = req.params;
+
+  if (!userId || !role) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    await chatService.deleteMessage(Number(messageId), userId, role);
+    res.json({ success: true, deleted: Number(messageId) });
+  } catch (error: any) {
+    if (error.message.includes('Unauthorized')) {
+      return res.status(403).json({ error: error.message });
+    }
+    return serverError(res, error);
+  }
+});
+
+/**
  * POST /api/chat/:chatId/request-code
  * Request a code (client)
  */

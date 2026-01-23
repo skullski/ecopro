@@ -47,6 +47,7 @@ import { GradientCard } from '@/components/ui/GradientCard';
 import { Button } from '@/components/ui/button';
 import GlobalAnnouncementsManager from '@/components/platform-admin/GlobalAnnouncementsManager';
 import SpeedometerGauge from '@/components/platform-admin/SpeedometerGauge';
+import BigCarGauge from '@/components/platform-admin/BigCarGauge';
 interface PlatformStats {
   totalUsers: number;
   totalClients: number;
@@ -3027,15 +3028,55 @@ export default function PlatformAdmin() {
 
               {serverHealth && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.625rem, 1.25vh, 0.875rem)', marginTop: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
-                  <div className="bg-slate-950/60 rounded-lg border border-slate-700/50" style={{ padding: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
-                    <div className="text-slate-400 text-xs mb-3">Speedometers (live)</div>
+                  {/* Big Car Gauges - Server & Database */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {(() => {
                       const cpuPct = serverHealth.htop?.cpu?.totalPct ?? null;
                       const memPct = serverHealth.htop?.memory?.pctUsed ?? null;
-                      const eluPct = serverHealth.eventLoop?.utilization != null ? serverHealth.eventLoop.utilization * 100 : null;
-
                       const dbMs = serverHealth.db.latencyMs ?? null;
                       const dbSlowMs = serverHealth.thresholds?.dbSlowMs ?? 150;
+                      const dbPoolWaiting = serverHealth.db.pool?.waitingCount ?? 0;
+                      const dbPoolTotal = serverHealth.db.pool?.totalCount ?? 10;
+                      const dbPoolPct = (dbPoolWaiting / dbPoolTotal) * 100;
+                      
+                      return (
+                        <>
+                          <BigCarGauge
+                            title="🖥️ Server"
+                            mainValue={cpuPct}
+                            mainLabel="CPU Usage"
+                            mainUnit="%"
+                            secondaryValue={memPct}
+                            secondaryLabel="RAM"
+                            secondaryUnit="%"
+                            goodThreshold={50}
+                            warnThreshold={80}
+                            trend="higher-is-worse"
+                            icon={<Cpu className="w-5 h-5" />}
+                          />
+                          <BigCarGauge
+                            title="🗄️ Database"
+                            mainValue={dbMs !== null ? Math.min(100, (dbMs / (dbSlowMs * 2)) * 100) : null}
+                            mainLabel={dbMs !== null ? `Latency: ${dbMs.toFixed(0)}ms` : "Latency"}
+                            mainUnit="%"
+                            secondaryValue={dbPoolPct}
+                            secondaryLabel="Pool Load"
+                            secondaryUnit="%"
+                            goodThreshold={50}
+                            warnThreshold={75}
+                            trend="higher-is-worse"
+                            icon={<Database className="w-5 h-5" />}
+                          />
+                        </>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Smaller Speedometer Gauges */}
+                  <div className="bg-slate-950/60 rounded-lg border border-slate-700/50" style={{ padding: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
+                    <div className="text-slate-400 text-xs mb-3">Other Metrics (live)</div>
+                    {(() => {
+                      const eluPct = serverHealth.eventLoop?.utilization != null ? serverHealth.eventLoop.utilization * 100 : null;
 
                       const uploadsTotal = serverHealth.disk?.uploads?.total ?? null;
                       const uploadsAvail = serverHealth.disk?.uploads?.available ?? null;
@@ -3060,33 +3101,7 @@ export default function PlatformAdmin() {
                           : null;
 
                       return (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6" style={{ gap: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
-                          <SpeedometerGauge
-                            title="Server Load"
-                            subtitle="CPU usage"
-                            value={cpuPct}
-                            min={0}
-                            max={100}
-                            unit="%"
-                            decimals={1}
-                            goodThreshold={50}
-                            warnThreshold={80}
-                            trend="higher-is-worse"
-                            tone="cyan"
-                          />
-                          <SpeedometerGauge
-                            title="RAM Load"
-                            subtitle={serverHealth.htop?.memory ? `${formatBytesShort(serverHealth.htop.memory.usedBytes)}/${formatBytesShort(serverHealth.htop.memory.totalBytes)}` : 'Memory usage'}
-                            value={memPct}
-                            min={0}
-                            max={100}
-                            unit="%"
-                            decimals={1}
-                            goodThreshold={60}
-                            warnThreshold={85}
-                            trend="higher-is-worse"
-                            tone="violet"
-                          />
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6" style={{ gap: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
                           <SpeedometerGauge
                             title="Runtime"
                             subtitle="Event loop utilization"
@@ -3099,32 +3114,6 @@ export default function PlatformAdmin() {
                             warnThreshold={(serverHealth.thresholds?.eventLoopHighUtil ?? 0.7) * 100}
                             trend="higher-is-worse"
                             tone="emerald"
-                          />
-                          <SpeedometerGauge
-                            title="Database"
-                            subtitle="Ping latency"
-                            value={dbMs}
-                            min={0}
-                            max={Math.max(300, dbSlowMs * 3)}
-                            unit="ms"
-                            decimals={0}
-                            goodThreshold={dbSlowMs}
-                            warnThreshold={dbSlowMs * 2}
-                            trend="higher-is-worse"
-                            tone="amber"
-                          />
-                          <SpeedometerGauge
-                            title="DB Load"
-                            subtitle="Pool waiting"
-                            value={serverHealth.db.pool?.waitingCount ?? null}
-                            min={0}
-                            max={20}
-                            decimals={0}
-                            compactValue
-                            goodThreshold={0}
-                            warnThreshold={2}
-                            trend="higher-is-worse"
-                            tone="red"
                           />
                           <SpeedometerGauge
                             title="Storage"

@@ -199,6 +199,46 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
     }
   };
 
+  const handleEditMessage = async (messageId: number, newContent: string) => {
+    try {
+      const response = await fetch(`/api/chat/${chatId}/message/${messageId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ message_content: newContent })
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to edit message');
+      }
+
+      await loadMessages();
+    } catch (err: any) {
+      console.error('Failed to edit message:', err);
+      setError(err.message || 'Failed to edit message');
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: number) => {
+    try {
+      const response = await fetch(`/api/chat/${chatId}/message/${messageId}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to delete message');
+      }
+
+      await loadMessages();
+    } catch (err: any) {
+      console.error('Failed to delete message:', err);
+      setError(err.message || 'Failed to delete message');
+    }
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!messageInput.trim() || sending) return;
@@ -363,7 +403,14 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
           </div>
         ) : (
           <>
-            <MessageList messages={messages} userRole={userRole} userId={userId} />
+            <MessageList 
+              messages={messages} 
+              userRole={userRole} 
+              userId={userId} 
+              chatId={chatId}
+              onMessageEdit={handleEditMessage}
+              onMessageDelete={handleDeleteMessage}
+            />
             <div ref={messagesEndRef} />
           </>
         )}

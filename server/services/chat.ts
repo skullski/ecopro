@@ -448,6 +448,88 @@ export class ChatService {
       throw new Error(`Failed to delete chat: ${error.message}`);
     }
   }
+
+  /**
+   * Edit a message (only by sender)
+   */
+  async editMessage(
+    messageId: number,
+    senderId: number,
+    senderType: 'client' | 'seller' | 'admin',
+    newContent: string
+  ): Promise<ChatMessage> {
+    try {
+      // Verify message exists and belongs to sender
+      const msgCheck = await pool.query(
+        'SELECT * FROM chat_messages WHERE id = $1',
+        [messageId]
+      );
+
+      if (msgCheck.rows.length === 0) {
+        throw new Error('Message not found');
+      }
+
+      const message = msgCheck.rows[0];
+
+      // Only the sender can edit their message
+      if (Number(message.sender_id) !== senderId || message.sender_type !== senderType) {
+        throw new Error('Unauthorized: You can only edit your own messages');
+      }
+
+      // Only allow editing text messages
+      if (message.message_type !== 'text') {
+        throw new Error('Only text messages can be edited');
+      }
+
+      // Update the message
+      const result = await pool.query(
+        `UPDATE chat_messages 
+         SET message_content = $1, 
+             metadata = COALESCE(metadata, '{}'::jsonb) || '{"edited": true, "edited_at": "${new Date().toISOString()}"}'::jsonb,
+             updated_at = NOW()
+         WHERE id = $2
+         RETURNING *`,
+        [newContent, messageId]
+      );
+
+      return result.rows[0];
+    } catch (error: any) {
+      throw new Error(`Failed to edit message: ${error.message}`);
+    }
+  }
+
+  /**
+   * Delete a message (only by sender)
+   */
+  async deleteMessage(
+    messageId: number,
+    senderId: number,
+    senderType: 'client' | 'seller' | 'admin'
+  ): Promise<void> {
+    try {
+      // Verify message exists and belongs to sender
+      const msgCheck = await pool.query(
+        'SELECT * FROM chat_messages WHERE id = $1',
+        [messageId]
+      );
+
+      if (msgCheck.rows.length === 0) {
+        throw new Error('Message not found');
+      }
+
+      const message = msgCheck.rows[0];
+
+      // Only the sender can delete their message
+      if (Number(message.sender_id) !== senderId || message.sender_type !== senderType) {
+        throw new Error('Unauthorized: You can only delete your own messages');
+      }
+
+      // Delete the message
+      await pool.query('DELETE FROM chat_messages WHERE id = $1', [messageId]);
+    } catch (error: any) {
+      throw new Error(`Failed to delete message: ${error.message}`);
+    }
+  }
 }
 
 export const chatService = new ChatService();

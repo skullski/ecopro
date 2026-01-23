@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Pencil, Trash2, X, Check } from 'lucide-react';
 
 type Announcement = {
   id: number;
@@ -35,6 +36,12 @@ export default function GlobalAnnouncementsManager() {
   const [startsAt, setStartsAt] = useState<string>('');
   const [endsAt, setEndsAt] = useState<string>('');
   const [minViewSec, setMinViewSec] = useState<number>(3);
+
+  // Edit mode state
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editBody, setEditBody] = useState('');
+  const [editVariant, setEditVariant] = useState<'blue' | 'red'>('blue');
 
   const csrf = useMemo(() => getCookie('ecopro_csrf'), []);
 
@@ -113,6 +120,66 @@ export default function GlobalAnnouncementsManager() {
           ...(csrf ? { 'X-CSRF-Token': csrf } : {}),
         },
         body: JSON.stringify({ is_enabled: !a.is_enabled }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || 'Failed');
+      await load();
+    } catch (e: any) {
+      setError(e?.message || 'Failed');
+    }
+  }
+
+  // Start editing an announcement
+  function startEdit(a: Announcement) {
+    setEditingId(a.id);
+    setEditTitle(a.title);
+    setEditBody(a.body);
+    setEditVariant(a.variant as 'blue' | 'red');
+  }
+
+  // Cancel editing
+  function cancelEdit() {
+    setEditingId(null);
+    setEditTitle('');
+    setEditBody('');
+    setEditVariant('blue');
+  }
+
+  // Save edit
+  async function saveEdit(id: number) {
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/announcements/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(csrf ? { 'X-CSRF-Token': csrf } : {}),
+        },
+        body: JSON.stringify({
+          title: editTitle,
+          body: editBody,
+          variant: editVariant,
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || 'Failed');
+      cancelEdit();
+      await load();
+    } catch (e: any) {
+      setError(e?.message || 'Failed');
+    }
+  }
+
+  // Delete announcement
+  async function deleteAnnouncement(id: number) {
+    if (!confirm('Are you sure you want to delete this announcement?')) return;
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/announcements/${id}`, {
+        method: 'DELETE',
+        headers: {
+          ...(csrf ? { 'X-CSRF-Token': csrf } : {}),
+        },
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(data?.error || 'Failed');
@@ -232,37 +299,103 @@ export default function GlobalAnnouncementsManager() {
           <div className="space-y-3 max-h-[420px] overflow-auto pr-1">
             {items.map((a) => (
               <div key={a.id} className="rounded-xl border border-slate-700/60 bg-slate-950/30 p-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="text-slate-100 font-semibold truncate">{a.title}</div>
-                    <div className="text-slate-400 text-xs mt-0.5">{new Date(a.created_at).toLocaleString()}</div>
+                {editingId === a.id ? (
+                  // Edit mode
+                  <div className="space-y-3">
+                    <input
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      className="w-full rounded-lg border border-slate-600 bg-slate-900/60 px-3 py-2 text-sm text-slate-100"
+                      placeholder="Title"
+                    />
+                    <textarea
+                      value={editBody}
+                      onChange={(e) => setEditBody(e.target.value)}
+                      className="w-full rounded-lg border border-slate-600 bg-slate-900/60 px-3 py-2 text-sm text-slate-100 min-h-[80px]"
+                      placeholder="Message"
+                    />
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={editVariant}
+                        onChange={(e) => setEditVariant(e.target.value as 'blue' | 'red')}
+                        className="rounded-lg border border-slate-600 bg-slate-900/60 px-2 py-1 text-xs text-slate-100"
+                      >
+                        <option value="blue">Blue</option>
+                        <option value="red">Red</option>
+                      </select>
+                      <div className="flex-1" />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-slate-400 hover:text-white"
+                        onClick={cancelEdit}
+                      >
+                        <X className="w-4 h-4 mr-1" /> Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                        onClick={() => saveEdit(a.id)}
+                        disabled={!editTitle.trim() || !editBody.trim()}
+                      >
+                        <Check className="w-4 h-4 mr-1" /> Save
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className={a.variant === 'red' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'}>
-                      {a.variant}
-                    </Badge>
-                    <Badge className={a.is_enabled ? 'bg-emerald-600 text-white' : 'bg-slate-600 text-white'}>
-                      {a.is_enabled ? 'enabled' : 'disabled'}
-                    </Badge>
-                  </div>
-                </div>
+                ) : (
+                  // View mode
+                  <>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="text-slate-100 font-semibold truncate">{a.title}</div>
+                        <div className="text-slate-400 text-xs mt-0.5">{new Date(a.created_at).toLocaleString()}</div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge className={a.variant === 'red' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'}>
+                          {a.variant}
+                        </Badge>
+                        <Badge className={a.is_enabled ? 'bg-emerald-600 text-white' : 'bg-slate-600 text-white'}>
+                          {a.is_enabled ? 'enabled' : 'disabled'}
+                        </Badge>
+                      </div>
+                    </div>
 
-                <div className="text-slate-300 text-sm mt-2 whitespace-pre-wrap">{a.body}</div>
+                    <div className="text-slate-300 text-sm mt-2 whitespace-pre-wrap">{a.body}</div>
 
-                <div className="mt-2 flex items-center justify-between gap-2 flex-wrap text-xs text-slate-400">
-                  <div>
-                    {a.starts_at ? `Start: ${new Date(a.starts_at).toLocaleString()}` : 'Start: now'}
-                    {' • '}
-                    {a.ends_at ? `End: ${new Date(a.ends_at).toLocaleString()}` : 'End: none'}
-                  </div>
-                  <Button
-                    size="sm"
-                    className={a.is_enabled ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-emerald-700 hover:bg-emerald-600 text-white'}
-                    onClick={() => toggleEnabled(a)}
-                  >
-                    {a.is_enabled ? 'Disable' : 'Enable'}
-                  </Button>
-                </div>
+                    <div className="mt-2 flex items-center justify-between gap-2 flex-wrap text-xs text-slate-400">
+                      <div>
+                        {a.starts_at ? `Start: ${new Date(a.starts_at).toLocaleString()}` : 'Start: now'}
+                        {' • '}
+                        {a.ends_at ? `End: ${new Date(a.ends_at).toLocaleString()}` : 'End: none'}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-slate-400 hover:text-cyan-400"
+                          onClick={() => startEdit(a)}
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-slate-400 hover:text-red-400"
+                          onClick={() => deleteAnnouncement(a.id)}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          className={a.is_enabled ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-emerald-700 hover:bg-emerald-600 text-white'}
+                          onClick={() => toggleEnabled(a)}
+                        >
+                          {a.is_enabled ? 'Disable' : 'Enable'}
+                        </Button>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             ))}
           </div>

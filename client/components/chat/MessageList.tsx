@@ -1,7 +1,7 @@
 // Message List Component - Display Messages with Rich UI
 
-import React from 'react';
-import { CheckCheck, Check, AlertCircle, Download, File } from 'lucide-react';
+import React, { useState } from 'react';
+import { CheckCheck, Check, AlertCircle, Download, File, Pencil, Trash2, X, Check as CheckIcon } from 'lucide-react';
 
 interface ChatMessage {
   id: number;
@@ -18,9 +18,16 @@ interface MessageListProps {
   messages: ChatMessage[];
   userRole: 'client' | 'seller' | 'admin';
   userId: number;
+  chatId?: number;
+  onMessageEdit?: (messageId: number, newContent: string) => Promise<void>;
+  onMessageDelete?: (messageId: number) => Promise<void>;
 }
 
-export function MessageList({ messages, userRole, userId }: MessageListProps) {
+export function MessageList({ messages, userRole, userId, chatId, onMessageEdit, onMessageDelete }: MessageListProps) {
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editContent, setEditContent] = useState('');
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
@@ -89,6 +96,38 @@ export function MessageList({ messages, userRole, userId }: MessageListProps) {
                       <p className="text-xs font-bold text-gray-400 mb-1 ml-1">{getSenderLabel(message.sender_type)}</p>
                     )}
 
+                    {/* Edit/Delete Actions - Only for own messages */}
+                    {isOwnMessage && message.message_type === 'text' && editingId !== message.id && (
+                      <div className="flex items-center gap-1 mb-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => {
+                            setEditingId(message.id);
+                            setEditContent(message.message_content);
+                          }}
+                          className="p-1 rounded hover:bg-white/10 text-blue-300 hover:text-blue-200 transition"
+                          title="Edit message"
+                        >
+                          <Pencil className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (deletingId === message.id) return;
+                            setDeletingId(message.id);
+                            try {
+                              await onMessageDelete?.(message.id);
+                            } finally {
+                              setDeletingId(null);
+                            }
+                          }}
+                          disabled={deletingId === message.id}
+                          className="p-1 rounded hover:bg-red-500/20 text-red-400 hover:text-red-300 transition disabled:opacity-50"
+                          title="Delete message"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
+
                     {/* Message Bubble */}
                     <div
                       className={`px-3 py-2 rounded-2xl transition-all shadow-sm hover:shadow-md ${
@@ -106,11 +145,54 @@ export function MessageList({ messages, userRole, userId }: MessageListProps) {
                         </p>
                       )}
 
-                      {/* Regular Text Message */}
+                      {/* Regular Text Message - with edit mode */}
                       {message.message_type === 'text' && (
-                        <p className="text-sm break-words leading-relaxed whitespace-pre-wrap">
-                          {message.message_content}
-                        </p>
+                        editingId === message.id ? (
+                          <div className="space-y-2">
+                            <textarea
+                              value={editContent}
+                              onChange={(e) => setEditContent(e.target.value)}
+                              className="w-full bg-white/10 border border-white/20 rounded-lg p-2 text-sm text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30 resize-none"
+                              rows={3}
+                              autoFocus
+                            />
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => {
+                                  setEditingId(null);
+                                  setEditContent('');
+                                }}
+                                className="p-1.5 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition"
+                                title="Cancel"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  if (editContent.trim() && editContent !== message.message_content) {
+                                    await onMessageEdit?.(message.id, editContent.trim());
+                                  }
+                                  setEditingId(null);
+                                  setEditContent('');
+                                }}
+                                disabled={!editContent.trim()}
+                                className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white transition disabled:opacity-50"
+                                title="Save"
+                              >
+                                <CheckIcon className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div>
+                            <p className="text-sm break-words leading-relaxed whitespace-pre-wrap">
+                              {message.message_content}
+                            </p>
+                            {message.metadata?.edited && (
+                              <span className="text-xs opacity-60 italic">(edited)</span>
+                            )}
+                          </div>
+                        )
                       )}
 
                       {/* Code Request Message */}

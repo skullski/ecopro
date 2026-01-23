@@ -132,3 +132,23 @@ const updateAnnouncement: RequestHandler = async (req, res) => {
 adminAnnouncementsRouter.get('/', listAnnouncements);
 adminAnnouncementsRouter.post('/', createAnnouncement);
 adminAnnouncementsRouter.patch('/:id', updateAnnouncement);
+
+// Delete announcement
+const deleteAnnouncement: RequestHandler = async (req, res) => {
+  try {
+    const id = Number((req.params as any).id);
+    if (!Number.isFinite(id)) return jsonError(res, 400, 'Invalid id');
+
+    const pool = await ensureConnection();
+    const r = await pool.query('DELETE FROM platform_announcements WHERE id = $1 RETURNING id', [id]);
+    
+    if (!r.rows.length) return jsonError(res, 404, 'Not found');
+    
+    res.json({ ok: true, deleted: id });
+  } catch (e) {
+    console.error('[AdminAnnouncements] delete error:', e);
+    return jsonError(res, 500, 'Failed');
+  }
+};
+
+adminAnnouncementsRouter.delete('/:id', deleteAnnouncement);
