@@ -18,7 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
-import { Link } from 'wouter';
+import { Link } from 'react-router-dom';
 
 interface Subscription {
   id: number;
@@ -270,7 +270,7 @@ const AdminBilling = () => {
                     Your subscription has expired. Contact support to renew.
                   </AlertDescription>
                 </Alert>
-                <Link href="/admin/chat">
+                <Link to="/dashboard/chat">
                   <Button className="gap-2 bg-red-600 hover:bg-red-700 w-full sm:w-auto">
                     <MessageCircle className="w-4 h-4" />
                     Contact Support
@@ -285,7 +285,7 @@ const AdminBilling = () => {
                     {daysUntilExpiry} days of free trial remaining. Contact support when ready to subscribe.
                   </AlertDescription>
                 </Alert>
-                <Link href="/admin/chat">
+                <Link to="/dashboard/chat">
                   <Button className="gap-2 bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">
                     <MessageCircle className="w-4 h-4" />
                     Contact Support to Pay

@@ -66,6 +66,7 @@ const ProductCheckout = lazy(() => import("./pages/storefront/ProductCheckout"))
 const StorefrontCheckout = lazy(() => import("./pages/storefront/Checkout"));
 const OrderConfirmation = lazy(() => import("./pages/storefront/OrderConfirmation"));
 const AccountLocked = lazy(() => import("./pages/AccountLocked"));
+const Billing = lazy(() => import("./pages/admin/Billing"));
 const BillingSuccess = lazy(() => import("./pages/BillingSuccess"));
 const BillingCancelled = lazy(() => import("./pages/BillingCancelled"));
 
@@ -432,6 +433,7 @@ const App = () => (
                     <Route path="calls" element={<AdminCalls />} />
                     <Route path="wasselni-settings" element={<SubscriptionPageLock><AdminWasselniSettings /></SubscriptionPageLock>} />
                     <Route path="pixel-statistics" element={<PixelStatistics />} />
+                    <Route path="billing" element={<Billing />} />
                   </Route>
                   {/* Secret Platform Admin Panel removed */}
                   {/* Old admin routes: redirect to /dashboard (preserve subpath) */}

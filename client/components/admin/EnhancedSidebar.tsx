@@ -102,6 +102,7 @@ const buildMenuItems = (storeSlug: string | null): MenuItem[] => {
       permission: "manage_bot_settings"
     },
     { titleKey: "sidebar.staff", path: "/dashboard/staff", icon: <Users className="w-[18px] h-[18px]" />, permission: "view_staff" },
+    { titleKey: "sidebar.billing", path: "/dashboard/billing", icon: <CreditCard className="w-[18px] h-[18px]" />, permission: "view_settings" },
   ];
 };
 

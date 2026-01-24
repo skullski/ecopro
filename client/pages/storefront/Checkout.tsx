@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, Plus, Minus, Trash2, Lock, Truck } from 'lucide-react';
-import { useTranslation } from '@/lib/i18n';
 import {
   formatWilayaLabel,
   getAlgeriaCommuneById,
@@ -151,16 +150,7 @@ const TEMPLATE_STYLES: Record<string, Record<string, string>> = {
 };
 
 export default function Checkout() {
-  const { t, locale, setLocale } = useTranslation();
-
-  useEffect(() => {
-    const prev = locale;
-    if (prev !== 'ar') setLocale('ar');
-    return () => {
-      if (prev !== 'ar') setLocale(prev);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Force Arabic/RTL - no translation hook needed
   const { productId } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -586,14 +576,14 @@ export default function Checkout() {
   ];
 
   return (
-    <div className={`min-h-screen ${style.bg} ${style.text}`}>
+    <div dir="rtl" className={`min-h-screen ${style.bg} ${style.text}`}>
       {/* Header */}
       <div className={`border-b ${style.border} sticky top-0 z-40 bg-opacity-95 backdrop-blur`}>
         <div className="max-w-6xl mx-auto px-2 sm:px-3 md:px-3 py-2 sm:py-3 md:py-3 flex items-center gap-2 sm:gap-3 md:gap-3">
           <button onClick={() => navigate(-1)} className="p-1 sm:p-1.5 md:p-1">
-            <ChevronLeft className="w-5 sm:w-6 md:w-5 h-5 sm:h-6 md:h-5" />
+            <ChevronLeft className="w-5 sm:w-6 md:w-5 h-5 sm:h-6 md:h-5 rotate-180" />
           </button>
-          <h1 className="text-lg sm:text-xl md:text-xl font-bold">{t('checkout.title')}</h1>
+          <h1 className="text-lg sm:text-xl md:text-xl font-bold">إتمام الطلب</h1>
         </div>
       </div>
 
@@ -632,7 +622,7 @@ export default function Checkout() {
             {/* Step 1: Cart */}
             {currentStep === 1 && (
               <div className={`border ${style.border} rounded-lg p-2 sm:p-3 md:p-3 lg:p-3`}>
-                <h2 className="text-base sm:text-lg md:text-lg lg:text-xl font-bold mb-2 sm:mb-3 md:mb-3 lg:mb-4">{t('checkout.orderSummary')}</h2>
+                <h2 className="text-base sm:text-lg md:text-lg lg:text-xl font-bold mb-2 sm:mb-3 md:mb-3 lg:mb-4">ملخص الطلب</h2>
                 <div className="space-y-2 sm:space-y-2.5 md:space-y-2 lg:space-y-3">
                   {cart.map((item) => (
                     <div key={item.id} className={`flex gap-2 sm:gap-2.5 md:gap-2 lg:gap-4 border-b ${style.border} pb-2 sm:pb-2.5 md:pb-2 lg:pb-4`}>
@@ -723,10 +713,10 @@ export default function Checkout() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5 sm:gap-2 md:gap-1.5 lg:gap-4">
                   <div className="space-y-0.5 sm:space-y-0.5 md:space-y-0.5">
-                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">{t("checkout.fullName")} *</label>
+                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">الاسم الكامل *</label>
                     <input
                       type="text"
-                      placeholder={t("checkout.enterFullName")}
+                      placeholder="أدخل اسمك الكامل"
                       value={formData.fullName}
                       onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                       className={`w-full px-2 sm:px-3 md:px-2 lg:px-4 py-1 sm:py-1.5 md:py-1.5 lg:py-3 rounded-lg border-2 text-xs sm:text-sm md:text-xs lg:text-sm ${style.inputBg} focus:outline-none focus:ring-2 focus:ring-offset-1 transition shadow-sm`}
@@ -735,10 +725,10 @@ export default function Checkout() {
                   </div>
 
                   <div className="space-y-0.5 sm:space-y-0.5 md:space-y-0.5">
-                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">{t("checkout.email")} *</label>
+                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">البريد الإلكتروني *</label>
                     <input
                       type="email"
-                      placeholder={t("checkout.emailPlaceholder")}
+                      placeholder="example@email.com"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       className={`w-full px-2 sm:px-3 md:px-2 lg:px-4 py-1 sm:py-1.5 md:py-1.5 lg:py-3 rounded-lg border-2 text-xs sm:text-sm md:text-xs lg:text-sm ${style.inputBg} focus:outline-none focus:ring-2 focus:ring-offset-1 transition shadow-sm`}
@@ -747,10 +737,10 @@ export default function Checkout() {
                   </div>
 
                   <div className="space-y-0.5 sm:space-y-0.5 md:space-y-0.5">
-                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">{t("checkout.phone")} *</label>
+                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">رقم الهاتف *</label>
                     <input
                       type="tel"
-                      placeholder={t("checkout.phonePlaceholder")}
+                      placeholder="05XXXXXXXX"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       className={`w-full px-2 sm:px-3 md:px-2 lg:px-4 py-1 sm:py-1.5 md:py-1.5 lg:py-3 rounded-lg border-2 text-xs sm:text-sm md:text-xs lg:text-sm ${style.inputBg} focus:outline-none focus:ring-2 focus:ring-offset-1 transition shadow-sm`}
@@ -845,7 +835,7 @@ export default function Checkout() {
                   </div>
 
                   <div className="space-y-0.5 sm:space-y-0.5 md:space-y-0.5">
-                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">{t("checkout.wilaya")} *</label>
+                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">الولاية *</label>
                     <Select
                       value={formData.wilayaId}
                       onValueChange={(nextId) => {
@@ -856,7 +846,7 @@ export default function Checkout() {
                         className={`w-full px-2 sm:px-3 md:px-2 lg:px-4 py-1 sm:py-1.5 md:py-1.5 lg:py-3 rounded-lg border-2 text-xs sm:text-sm md:text-xs lg:text-sm ${style.inputBg} focus:outline-none focus:ring-2 focus:ring-offset-1 transition shadow-sm h-auto`}
                         style={{ '--tw-ring-color': accentColor } as any}
                       >
-                        <SelectValue placeholder={t("checkout.selectWilaya")} />
+                        <SelectValue placeholder="اختر الولاية" />
                       </SelectTrigger>
                       <SelectContent>
                         {dzWilayas.map((w) => (
@@ -869,7 +859,7 @@ export default function Checkout() {
                   </div>
 
                   <div className="space-y-0.5 sm:space-y-0.5 md:space-y-0.5">
-                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">{t("checkout.commune")} *</label>
+                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">البلدية *</label>
                     <Select
                       value={formData.communeId}
                       disabled={!formData.wilayaId}
@@ -882,7 +872,7 @@ export default function Checkout() {
                         className={`w-full px-2 sm:px-3 md:px-2 lg:px-4 py-1 sm:py-1.5 md:py-1.5 lg:py-3 rounded-lg border-2 text-xs sm:text-sm md:text-xs lg:text-sm ${style.inputBg} focus:outline-none focus:ring-2 focus:ring-offset-1 transition shadow-sm disabled:opacity-60 h-auto`}
                         style={{ '--tw-ring-color': accentColor } as any}
                       >
-                        <SelectValue placeholder={formData.wilayaId ? t("checkout.selectCommune") : t("checkout.selectWilayaFirst")} />
+                        <SelectValue placeholder={formData.wilayaId ? "اختر البلدية" : "اختر الولاية أولاً"} />
                       </SelectTrigger>
                       <SelectContent>
                         {dzCommunes.map((c) => (
@@ -897,7 +887,7 @@ export default function Checkout() {
                   {/* Hai / Neighborhood removed per request */}
 
                   <div className="space-y-0.5 sm:space-y-0.5 md:space-y-0.5 md:col-span-2">
-                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">{t('checkout.deliveryType')} *</label>
+                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">نوع التوصيل *</label>
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
@@ -912,13 +902,13 @@ export default function Checkout() {
                             : `${style.inputBg} hover:bg-opacity-80`
                         } ${(deliveryPriceDesk == null && deliveryPriceHome != null) ? 'opacity-60 cursor-not-allowed' : ''}`}
                       >
-                        <div>{t('checkout.deliveryTypeDesk')}</div>
+                        <div>توصيل للمكتب</div>
                         <div className={`text-[11px] ${deliveryType === 'desk' ? 'text-white/80' : 'opacity-70'}`}>
                           {loadingDeliveryPrice
-                            ? t('checkout.loading')
+                            ? 'جاري التحميل...'
                             : deliveryPriceDesk != null
                               ? `${deliveryPriceDesk} دج`
-                              : t('checkout.notAvailable')}
+                              : 'غير متوفر'}
                         </div>
                       </button>
                       <button
@@ -935,13 +925,13 @@ export default function Checkout() {
                             : undefined
                         }
                       >
-                        <div>{t('checkout.deliveryTypeHome')}</div>
+                        <div>توصيل للمنزل</div>
                         <div className={`text-[11px] ${deliveryType === 'home' ? 'text-white/80' : 'opacity-70'}`}>
                           {loadingDeliveryPrice
-                            ? t('checkout.loading')
+                            ? 'جاري التحميل...'
                             : deliveryPriceHome != null
                               ? `${deliveryPriceHome} دج`
-                              : t('checkout.selectWilaya')}
+                              : 'اختر الولاية'}
                         </div>
                       </button>
                     </div>
@@ -949,10 +939,10 @@ export default function Checkout() {
 
                   {deliveryType === 'home' && (
                     <div className="space-y-0.5 sm:space-y-0.5 md:space-y-0.5 md:col-span-2">
-                      <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">{t("checkout.address")} *</label>
+                      <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">العنوان *</label>
                       <input
                         type="text"
-                        placeholder={t("checkout.addressPlaceholder")}
+                        placeholder="أدخل عنوانك الكامل"
                         value={formData.address}
                         onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                         className={`w-full px-2 sm:px-3 md:px-2 lg:px-4 py-1 sm:py-1.5 md:py-1.5 lg:py-3 rounded-lg border-2 text-xs sm:text-sm md:text-xs lg:text-sm ${style.inputBg} focus:outline-none focus:ring-2 focus:ring-offset-1 transition shadow-sm`}
@@ -1004,7 +994,7 @@ export default function Checkout() {
             {/* Step 3: Review */}
             {currentStep === 3 && (
               <div className={`border-2 ${style.border} rounded-xl p-2 sm:p-3 md:p-2 lg:p-3 space-y-1.5 sm:space-y-2 md:space-y-1.5 lg:space-y-2 md:space-y-3 shadow-lg`}>
-                <h2 className="text-base sm:text-lg md:text-lg lg:text-xl md:text-2xl font-bold mb-1 sm:mb-2 md:mb-2 lg:mb-4">{t("checkout.orderSummary")}</h2>
+                <h2 className="text-base sm:text-lg md:text-lg lg:text-xl md:text-2xl font-bold mb-1 sm:mb-2 md:mb-2 lg:mb-4">ملخص الطلب</h2>
                 <div className="bg-gradient-to-r from-green-50 to-transparent border-l-4 border-green-500 p-2 sm:p-3 md:p-4 lg:p-5 rounded-lg mb-2 sm:mb-3 md:mb-4 lg:mb-4 shadow-sm">
                   <p className="text-green-700 font-bold text-sm sm:text-base md:text-base lg:text-lg">✓ جاهز لإتمام طلبك</p>
                   <p className="text-xs sm:text-xs md:text-xs lg:text-sm text-green-600 mt-1">سيتم تحصيل الدفع عند التوصيل</p>
@@ -1012,7 +1002,7 @@ export default function Checkout() {
 
                 <div className={`${style.inputBg} rounded-lg p-2 sm:p-2.5 md:p-2 lg:p-3 space-y-1.5 sm:space-y-2 md:space-y-1.5 lg:space-y-3 border-2 ${style.border}`}>
                   <div>
-                    <h3 className="font-bold text-xs sm:text-sm md:text-xs lg:text-lg mb-1.5 sm:mb-2 md:mb-1.5 lg:mb-2">{t("checkout.orderItems")}</h3>
+                    <h3 className="font-bold text-xs sm:text-sm md:text-xs lg:text-lg mb-1.5 sm:mb-2 md:mb-1.5 lg:mb-2">المنتجات</h3>
                     <div className="space-y-1">
                       {cart.map((item) => (
                         <div key={item.id} className="flex justify-between text-xs sm:text-xs md:text-xs lg:text-sm">
@@ -1026,21 +1016,21 @@ export default function Checkout() {
                   {/* Price Summary */}
                   <div className="border-t border-gray-400 pt-1.5 space-y-1">
                     <div className="flex justify-between text-xs sm:text-xs md:text-xs lg:text-sm">
-                      <span className="opacity-70">{t("checkout.subtotal")}</span>
+                      <span className="opacity-70">المجموع الفرعي</span>
                       <span>{cart.reduce((sum, item) => sum + item.price * item.quantity, 0)} دج</span>
                     </div>
                     <div className="flex justify-between text-xs sm:text-xs md:text-xs lg:text-sm">
-                      <span className="opacity-70">{t("checkout.deliveryFee")}</span>
+                      <span className="opacity-70">رسوم التوصيل</span>
                       {loadingDeliveryPrice ? (
-                        <span className="opacity-50">{t("common.loading")}</span>
+                        <span className="opacity-50">جاري التحميل...</span>
                       ) : deliveryPrice !== null ? (
                         <span>{deliveryPrice} دج</span>
                       ) : (
-                        <span className="opacity-50 text-xs">{t("checkout.selectWilayaForDelivery")}</span>
+                        <span className="opacity-50 text-xs">اختر الولاية لحساب التوصيل</span>
                       )}
                     </div>
                     <div className="flex justify-between text-sm sm:text-base md:text-sm lg:text-lg font-bold pt-1 border-t border-gray-300">
-                      <span>{t("checkout.total")}</span>
+                      <span>المجموع</span>
                       <span style={{ color: style.accent }}>
                         {cart.reduce((sum, item) => sum + item.price * item.quantity, 0) + (deliveryPrice || 0)} دج
                       </span>
@@ -1188,7 +1178,7 @@ export default function Checkout() {
                               tgLinks.push(String(responseData.telegramStartUrl));
                             }
                           } else {
-                            errorMessage = responseData.error || t('checkout.error.orderFailedDesc');
+                            errorMessage = responseData.error || 'فشل في إنشاء الطلب';
                             console.error('[Checkout] Order creation error:', errorMessage);
                           }
                         }
@@ -1198,20 +1188,18 @@ export default function Checkout() {
                         if (successCount === cart.length) {
                           setOrderStatus({
                             type: 'success',
-                            message: t('checkout.status.successDeliveredSoon', { n: successCount }),
+                            message: `تم استلام ${successCount} طلب بنجاح! سيتم التوصيل قريباً.`,
                           });
                           // Stay on page so customer can optionally start Telegram tracking.
                         } else if (successCount > 0) {
                           setOrderStatus({
                             type: 'error',
-                            message: t('checkout.status.partialSuccess', { n: successCount, total: cart.length }),
+                            message: `نجح ${successCount} من ${cart.length} طلبات فقط`,
                           });
                         } else {
                           setOrderStatus({
                             type: 'error',
-                            message: t('checkout.status.failed', {
-                              reason: errorMessage || t('checkout.error.orderFailedDesc'),
-                            }),
+                            message: `فشل الطلب: ${errorMessage || 'فشل في إنشاء الطلب'}`,
                           });
                         }
                       } catch (error) {
@@ -1219,7 +1207,7 @@ export default function Checkout() {
                         const errorMsg = error instanceof Error ? error.message : 'خطأ غير معروف';
                         setOrderStatus({
                           type: 'error',
-                          message: t('checkout.status.failedWithError', { error: errorMsg }),
+                          message: `فشل الطلب: ${errorMsg}`,
                         });
                       } finally {
                         setIsSubmitting(false);
@@ -1229,7 +1217,7 @@ export default function Checkout() {
                     className={`flex-1 py-1.5 sm:py-2 md:py-1.5 lg:py-3 rounded-lg font-bold text-xs sm:text-xs md:text-xs lg:text-base transition hover:shadow-lg disabled:opacity-50`}
                     style={{ backgroundColor: accentColor, color: style.bg === 'bg-black' ? '#000' : '#fff' }}
                   >
-                    {isSubmitting ? t('checkout.processing') : `${t('checkout.placeOrder')} →`}
+                    {isSubmitting ? 'جاري المعالجة...' : 'تأكيد الطلب →'}
                   </button>
                 </div>
               </div>
@@ -1238,7 +1226,7 @@ export default function Checkout() {
 
           {/* Order Summary Sidebar */}
           <div className={`border ${style.border} rounded-lg p-2 sm:p-3 md:p-3 lg:p-3 h-fit sticky top-16 md:top-16`}>
-            <h3 className="text-xs sm:text-sm md:text-sm lg:text-lg font-bold mb-2 sm:mb-3 md:mb-2 lg:mb-4">{t('checkout.orderTotal')}</h3>
+            <h3 className="text-xs sm:text-sm md:text-sm lg:text-lg font-bold mb-2 sm:mb-3 md:mb-2 lg:mb-4">إجمالي الطلب</h3>
             <div className="space-y-1 sm:space-y-1.5 md:space-y-1 lg:space-y-2 mb-2 sm:mb-3 md:mb-2 lg:mb-4 pb-2 sm:pb-3 md:pb-2 lg:pb-6 border-b border-gray-300">
               <div className="flex justify-between text-xs sm:text-xs md:text-xs lg:text-sm">
                 <span>المجموع الفرعي</span>
