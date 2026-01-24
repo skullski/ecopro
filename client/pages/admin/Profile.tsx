@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Gift, Lock, CheckCircle, AlertCircle, Loader, Ticket, Save, User, Key, Eye, EyeOff } from 'lucide-react';
+import { Gift, Lock, CheckCircle, AlertCircle, Loader, Ticket, Save, User, Key, Eye, EyeOff, Tag, Percent } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 
 type SubscriptionRow = {
@@ -72,6 +72,18 @@ export default function Profile() {
   const [voucherError, setVoucherError] = useState<string | null>(null);
   const [voucherSuccess, setVoucherSuccess] = useState(false);
   const [attemptsRemaining, setAttemptsRemaining] = useState(3);
+
+  // Affiliate voucher code state
+  const [affiliateCode, setAffiliateCode] = useState('');
+  const [affiliateLoading, setAffiliateLoading] = useState(false);
+  const [affiliateError, setAffiliateError] = useState<string | null>(null);
+  const [affiliateInfo, setAffiliateInfo] = useState<{
+    has_referral: boolean;
+    affiliate_name?: string;
+    voucher_code?: string;
+    discount_percent?: number;
+    discount_applied?: boolean;
+  } | null>(null);
 
   // Password change state
   const [passwordForm, setPasswordForm] = useState({
@@ -198,8 +210,62 @@ export default function Profile() {
     }
   };
 
+  // Load affiliate referral info
+  const loadAffiliateInfo = async () => {
+    try {
+      const res = await fetch('/api/affiliates/my-referral', { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        setAffiliateInfo(data);
+      }
+    } catch (err) {
+      console.error('Failed to load affiliate info:', err);
+    }
+  };
+
+  // Apply affiliate code
+  const handleApplyAffiliateCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAffiliateError(null);
+    setAffiliateLoading(true);
+
+    try {
+      if (!affiliateCode.trim()) {
+        throw new Error('Please enter a voucher code');
+      }
+
+      const res = await fetch('/api/affiliates/apply-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ code: affiliateCode.trim().toUpperCase() }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to apply code');
+      }
+
+      toast({ 
+        title: 'Success!', 
+        description: `Code applied! You'll get ${data.affiliate.discount_percent}% off your first payment.` 
+      });
+      
+      setAffiliateCode('');
+      await loadAffiliateInfo();
+    } catch (err: any) {
+      setAffiliateError(err.message || 'Failed to apply code');
+    } finally {
+      setAffiliateLoading(false);
+    }
+  };
+
   // Make main content area and sidebar transparent so wallpaper shows through
   useEffect(() => {
+    // Load affiliate info on mount
+    loadAffiliateInfo();
+    
     // Add data attribute to body for CSS targeting
     document.body.setAttribute('data-profile-wallpaper', 'true');
     
@@ -445,6 +511,72 @@ export default function Profile() {
                             <>
                               <Gift className="w-3 h-3 mr-1" />
                               {t('admin.profile.redeemCode')}
+                            </>
+                          )}
+                        </Button>
+                      </form>
+                    )}
+                  </div>
+
+                  {/* Affiliate Voucher Code Section */}
+                  <div className="bg-gradient-to-r from-emerald-900/40 to-green-900/40 rounded-lg p-1.5 border border-emerald-500/30 space-y-1.5">
+                    <div className="flex items-center gap-1.5">
+                      <Tag className="w-3 h-3 text-emerald-400" />
+                      <span className="text-xs font-semibold text-white">Referral Discount Code</span>
+                    </div>
+
+                    {affiliateInfo?.has_referral ? (
+                      <div className="flex items-center gap-2 p-1.5 bg-emerald-500/20 border border-emerald-500/30 rounded-lg">
+                        <CheckCircle className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                        <div className="flex-1 text-xs">
+                          <p className="text-emerald-300">
+                            Referred by <strong>{affiliateInfo.affiliate_name}</strong>
+                          </p>
+                          <p className="text-emerald-400/70 flex items-center gap-1">
+                            <Percent className="w-3 h-3" />
+                            {affiliateInfo.discount_percent}% off {affiliateInfo.discount_applied ? '(used)' : 'on first payment'}
+                          </p>
+                        </div>
+                        <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-[10px]">
+                          {affiliateInfo.voucher_code}
+                        </Badge>
+                      </div>
+                    ) : (
+                      <form onSubmit={handleApplyAffiliateCode} className="space-y-1.5">
+                        <p className="text-[10px] text-slate-400">
+                          Have a referral code? Get a discount on your first payment!
+                        </p>
+                        <Input
+                          type="text"
+                          value={affiliateCode}
+                          onChange={(e) => setAffiliateCode(e.target.value.toUpperCase())}
+                          placeholder="e.g., AHMED20"
+                          disabled={affiliateLoading}
+                          className="h-6 bg-slate-900/50 border-emerald-600/50 text-white placeholder:text-slate-500 font-mono text-center text-xs uppercase"
+                        />
+
+                        {affiliateError && (
+                          <div className="flex items-start gap-1.5 p-1.5 bg-red-500/20 border border-red-500/30 rounded-lg">
+                            <AlertCircle className="w-3.5 h-3.5 text-red-400 flex-shrink-0 mt-0.5" />
+                            <p className="text-xs text-red-300">{affiliateError}</p>
+                          </div>
+                        )}
+
+                        <Button
+                          type="submit"
+                          disabled={affiliateLoading || !affiliateCode}
+                          className="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white h-6 font-semibold text-xs"
+                          size="sm"
+                        >
+                          {affiliateLoading ? (
+                            <>
+                              <Loader className="w-3 h-3 mr-1 animate-spin" />
+                              Applying...
+                            </>
+                          ) : (
+                            <>
+                              <Tag className="w-3 h-3 mr-1" />
+                              Apply Code
                             </>
                           )}
                         </Button>

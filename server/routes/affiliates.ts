@@ -979,4 +979,147 @@ router.post('/admin/record-payment', requireAdmin, async (req, res) => {
   }
 });
 
+// ============================================================
+// CLIENT ROUTES (for logged-in users)
+// ============================================================
+
+// POST /api/affiliates/apply-code - Apply affiliate code to current user
+// Allows users who signed up without a code to add one later
+router.post('/apply-code', async (req, res) => {
+  try {
+    const user = (req as any).user;
+    if (!user || !user.id) {
+      return jsonError(res, 401, 'Not authenticated');
+    }
+
+    const { code } = req.body;
+    if (!code || typeof code !== 'string') {
+      return jsonError(res, 400, 'Voucher code is required');
+    }
+
+    const voucherCode = code.toUpperCase().trim();
+
+    // Check if user already has an affiliate
+    const userResult = await pool.query(
+      'SELECT id, referred_by_affiliate_id, referral_voucher_code FROM clients WHERE id = $1',
+      [user.id]
+    );
+
+    if (!userResult.rows.length) {
+      return jsonError(res, 404, 'User not found');
+    }
+
+    if (userResult.rows[0].referred_by_affiliate_id) {
+      return jsonError(res, 400, `You already have an affiliate code applied: ${userResult.rows[0].referral_voucher_code}`);
+    }
+
+    // Check if user has made any payments (can only apply before first payment)
+    const paymentsResult = await pool.query(
+      `SELECT COUNT(*) as count FROM payments p
+       JOIN subscriptions s ON s.id = p.subscription_id
+       WHERE s.user_id = $1 AND p.status = 'completed'`,
+      [user.id]
+    );
+
+    if (parseInt(paymentsResult.rows[0].count) > 0) {
+      return jsonError(res, 400, 'Cannot apply affiliate code after making a payment');
+    }
+
+    // Validate the affiliate code
+    const affiliateResult = await pool.query(
+      `SELECT id, name, voucher_code, discount_percent, commission_percent, commission_months
+       FROM affiliates 
+       WHERE voucher_code = $1 AND status = 'active'`,
+      [voucherCode]
+    );
+
+    if (!affiliateResult.rows.length) {
+      return jsonError(res, 400, 'Invalid or inactive voucher code');
+    }
+
+    const affiliate = affiliateResult.rows[0];
+
+    // Update user with affiliate info
+    await pool.query(
+      `UPDATE clients 
+       SET referred_by_affiliate_id = $1, referral_voucher_code = $2 
+       WHERE id = $3`,
+      [affiliate.id, voucherCode, user.id]
+    );
+
+    // Create referral record
+    await pool.query(
+      `INSERT INTO affiliate_referrals (affiliate_id, user_id, voucher_code_used, discount_applied)
+       VALUES ($1, $2, $3, false)
+       ON CONFLICT (user_id) DO NOTHING`,
+      [affiliate.id, user.id, voucherCode]
+    );
+
+    // Update affiliate referral count
+    await pool.query(
+      `UPDATE affiliates SET total_referrals = total_referrals + 1 WHERE id = $1`,
+      [affiliate.id]
+    );
+
+    res.json({
+      success: true,
+      message: 'Affiliate code applied successfully',
+      affiliate: {
+        name: affiliate.name,
+        voucher_code: affiliate.voucher_code,
+        discount_percent: parseFloat(affiliate.discount_percent),
+      },
+    });
+  } catch (error) {
+    console.error('[Affiliate] Apply code error:', error);
+    return jsonServerError(res, 'Failed to apply affiliate code');
+  }
+});
+
+// GET /api/affiliates/my-referral - Get current user's affiliate referral info
+router.get('/my-referral', async (req, res) => {
+  try {
+    const user = (req as any).user;
+    if (!user || !user.id) {
+      return jsonError(res, 401, 'Not authenticated');
+    }
+
+    const result = await pool.query(`
+      SELECT 
+        c.referred_by_affiliate_id,
+        c.referral_voucher_code,
+        a.name as affiliate_name,
+        a.discount_percent,
+        ar.discount_applied,
+        ar.created_at as referral_date
+      FROM clients c
+      LEFT JOIN affiliates a ON a.id = c.referred_by_affiliate_id
+      LEFT JOIN affiliate_referrals ar ON ar.user_id = c.id AND ar.affiliate_id = a.id
+      WHERE c.id = $1
+    `, [user.id]);
+
+    if (!result.rows.length) {
+      return res.json({ has_referral: false });
+    }
+
+    const row = result.rows[0];
+
+    if (!row.referred_by_affiliate_id) {
+      return res.json({ has_referral: false });
+    }
+
+    res.json({
+      has_referral: true,
+      affiliate_name: row.affiliate_name,
+      voucher_code: row.referral_voucher_code,
+      discount_percent: parseFloat(row.discount_percent),
+      discount_applied: row.discount_applied || false,
+      referral_date: row.referral_date,
+    });
+  } catch (error) {
+    console.error('[Affiliate] Get my referral error:', error);
+    return jsonServerError(res, 'Failed to get referral info');
+  }
+});
+
 export default router;
