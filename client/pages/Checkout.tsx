@@ -3,6 +3,7 @@ import { StoreHeader } from '@/components/StoreHeader';
 import { useNavigate, useParams } from "react-router-dom";
 import { AddressForm, AddressFormValue } from "@/components/AddressForm";
 import { apiFetch } from "@/lib/api";
+import { useTranslation } from "@/lib/i18n";
 import { z } from "zod";
 import {
   formatWilayaLabel,
@@ -42,7 +43,18 @@ type Product = {
 
 
 export default function Checkout() {
-    const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const { t, locale, setLocale } = useTranslation();
+
+  useEffect(() => {
+    const prev = locale;
+    if (prev !== 'ar') setLocale('ar');
+    return () => {
+      if (prev !== 'ar') setLocale(prev);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const { productId, storeSlug, productSlug } = useParams();
   const nav = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
@@ -86,7 +98,7 @@ export default function Checkout() {
     city: "",
     state: "",
     postalCode: "",
-    country: "Algeria",
+    country: "الجزائر",
     phone: "",
   } as AddressFormValue & { hai?: string });
   const [dzWilayaId, setDzWilayaId] = useState<string>("");
@@ -95,6 +107,7 @@ export default function Checkout() {
   const [haiSuggestionsSupported, setHaiSuggestionsSupported] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
+  const [telegramStartUrl, setTelegramStartUrl] = useState<string | null>(null);
 
   const dzWilayas = getAlgeriaWilayas();
   const dzCommunes = getAlgeriaCommunesByWilayaId(dzWilayaId);
@@ -249,6 +262,14 @@ export default function Checkout() {
 
   const handleConnectTelegram = async () => {
     if (!storeSlug || !telegramBotInfo?.botUsername) return;
+
+    // If the order is already created, use the order-scoped start link.
+    // This prevents Telegram from treating the connection as "preconnect before ordering".
+    if (telegramStartUrl) {
+      window.open(telegramStartUrl, '_blank');
+      return;
+    }
+
     let url = `https://t.me/${telegramBotInfo.botUsername}`;
     const normalizedPhone = (addr.phone || '').replace(/\D/g, '');
     if (normalizedPhone.length >= 9) {
@@ -419,32 +440,28 @@ export default function Checkout() {
         ? Number(selectedVariant.stock_quantity ?? 0)
         : (typeof product?.stock_quantity === 'number' ? Number(product.stock_quantity) : null);
       if (currentStock !== null && Number.isFinite(currentStock) && currentStock <= 0) {
-        setErrorMsg('❌ Out of stock');
+        setErrorMsg(t('checkout.error.outOfStockTitle'));
         return;
       }
       if (currentStock !== null && Number.isFinite(currentStock) && currentStock < quantity) {
-        setErrorMsg('❌ Insufficient stock');
+        setErrorMsg(t('checkout.error.insufficientStockTitle'));
         return;
       }
       // Anderson/Ecotrack required fields validation
       const needsHomeAddress = deliveryPlace === 'home';
       if (!addr.name || !addr.city || !addr.country || !addr.phone || !dzWilayaId || !dzCommuneId || (needsHomeAddress && !addr.line1)) {
-        setErrorMsg(
-          needsHomeAddress
-            ? "Please fill in all required fields: Name, Phone, Address, Wilaya, Commune, Country"
-            : "Please fill in all required fields: Name, Phone, Wilaya, Commune, Country"
-        );
+        setErrorMsg(t('checkout.error.requiredFieldsDesc'));
         setSubmitting(false);
         return;
       }
       // Additional Anderson/Ecotrack fields
       if (!product?.title) {
-        setErrorMsg("Product title/description is required");
+        setErrorMsg(t('checkout.error.productDesc'));
         setSubmitting(false);
         return;
       }
       if (!quantity || quantity < 1) {
-        setErrorMsg("Quantity must be at least 1");
+        setErrorMsg("الكمية يجب أن تكون 1 على الأقل");
         setSubmitting(false);
         return;
       }
@@ -453,7 +470,7 @@ export default function Checkout() {
 
       const addressStr =
         deliveryPlace === 'desk'
-          ? ['Desk delivery', selectedCommune?.name, selectedWilaya?.name, addr.country].filter(Boolean).join(', ')
+          ? [t('checkout.deliveryLocationDesk'), selectedCommune?.name, selectedWilaya?.name, addr.country].filter(Boolean).join(', ')
           : [addr.line1, addr.line2, addr.hai, addr.city, addr.state, addr.postalCode, addr.country]
               .filter(Boolean)
               .join(', ');
@@ -491,16 +508,17 @@ export default function Checkout() {
       }
       if (!res.ok) {
         const errorDetail = responseJson?.error || responseJson?.message || responseText;
-        setErrorMsg(`❌ Order failed: ${errorDetail}`);
+        setErrorMsg(`${t('checkout.error.orderFailedPrefix')}: ${errorDetail}`);
         console.error('Order failed:', { status: res.status, response: responseJson, text: responseText });
         return;
       }
       const orderId = String(responseJson?.order?.id || responseJson?.id || '');
       setOrderId(orderId);
+      setTelegramStartUrl(responseJson?.telegramStartUrl ? String(responseJson.telegramStartUrl) : null);
       console.log('✅ Order created successfully:', { orderId, response: responseJson });
     } catch (e: any) {
-      const errorMsg = e?.message || String(e) || "Unknown error";
-      setErrorMsg(`❌ Network error: ${errorMsg}`);
+      const msg = e?.message || String(e) || "";
+      setErrorMsg(`${t('checkout.error.networkErrorPrefix')}: ${msg || t('checkout.notAvailable')}`);
       console.error('Order create failed:', { error: e, stack: e?.stack });
     } finally {
       setSubmitting(false);
@@ -515,8 +533,8 @@ export default function Checkout() {
         <div className="flex items-center justify-center w-full h-full">
           <div className="p-6 text-center">
             <div className="animate-spin inline-block w-8 h-8 border-4 border-t-green-400 border-gray-700 rounded-full mb-4"></div>
-            <div className="text-lg text-white font-semibold">Loading product details...</div>
-            <div className="text-gray-400 mt-2">Please wait, then place your order.</div>
+            <div className="text-lg text-white font-semibold">{t('checkout.loadingProductTitle')}</div>
+            <div className="text-gray-400 mt-2">{t('checkout.loadingProductDesc')}</div>
           </div>
         </div>
       ) : (
@@ -525,7 +543,7 @@ export default function Checkout() {
           <div className="flex flex-col gap-3 md:gap-4">
             {Array.isArray(product.variants) && product.variants.length > 0 && (
               <div className="bg-[#13162a] rounded-2xl shadow-lg border-2 border-[#23264a] p-6">
-                <h3 className="text-lg font-semibold text-white mb-3">Choose Variant</h3>
+                <h3 className="text-lg font-semibold text-white mb-3">{t('checkout.chooseVariant')}</h3>
                 {(() => {
                   const variants = product.variants || [];
                   const colors = Array.from(new Set(variants.map((v) => String(v.color || '').trim()).filter(Boolean)));
@@ -540,7 +558,7 @@ export default function Checkout() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {colors.length > 0 && (
                             <div>
-                              <label className="block text-sm font-medium text-gray-300 mb-1">Color</label>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">{t('checkout.variant.color')}</label>
                               <Select
                                 value={selectedColor}
                                 onValueChange={(c) => {
@@ -559,7 +577,7 @@ export default function Checkout() {
                                 }}
                               >
                                 <SelectTrigger className="w-full rounded-lg bg-[#181b2a] border-2 border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all h-auto">
-                                  <SelectValue placeholder="Select Color" />
+                                  <SelectValue placeholder={t('checkout.variant.selectColor')} />
                                 </SelectTrigger>
                                 <SelectContent>
                                   {colors.map((c) => (
@@ -574,7 +592,7 @@ export default function Checkout() {
 
                           {sizes.length > 0 && (
                             <div>
-                              <label className="block text-sm font-medium text-gray-300 mb-1">Size</label>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">{t('checkout.variant.size')}</label>
                               <Select
                                 value={selectedSize}
                                 onValueChange={(s) => {
@@ -593,7 +611,7 @@ export default function Checkout() {
                                 }}
                               >
                                 <SelectTrigger className="w-full rounded-lg bg-[#181b2a] border-2 border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all h-auto">
-                                  <SelectValue placeholder="Select Size" />
+                                  <SelectValue placeholder={t('checkout.variant.selectSize')} />
                                 </SelectTrigger>
                                 <SelectContent>
                                   {sizes.map((s) => (
@@ -610,9 +628,9 @@ export default function Checkout() {
 
                       {selectedName && (
                         <div className="text-sm text-gray-300">
-                          Selected: <span className="font-semibold text-white">{selectedName}</span>
+                          {t('checkout.variant.selected')} <span className="font-semibold text-white">{selectedName}</span>
                           {selectedStock != null && (
-                            <span className="ml-2 text-xs text-gray-400">(Stock: {selectedStock})</span>
+                            <span className="ml-2 text-xs text-gray-400">({t('checkout.variant.stock')}: {selectedStock})</span>
                           )}
                         </div>
                       )}
@@ -623,7 +641,7 @@ export default function Checkout() {
             )}
 
             <div className="bg-[#13162a] rounded-2xl shadow-lg border-2 border-[#23264a] p-6">
-              <h3 className="text-lg font-semibold text-white mb-3">Quantity</h3>
+              <h3 className="text-lg font-semibold text-white mb-3">{t('checkout.quantityTitle')}</h3>
               <div className="flex items-center gap-3">
                 <button
                   type="button"
@@ -642,11 +660,11 @@ export default function Checkout() {
                   +
                 </button>
               </div>
-              <p className="text-xs text-gray-500 mt-2">If a variant is selected, quantity is limited by variant stock.</p>
+              <p className="text-xs text-gray-500 mt-2">{t('checkout.quantityHint')}</p>
             </div>
 
             <div className="bg-[#13162a] rounded-2xl shadow-lg border-2 border-[#23264a] p-6">
-              <h2 className="text-xl font-bold text-white mb-4">Order Summary</h2>
+              <h2 className="text-xl font-bold text-white mb-4">{t('checkout.orderSummary')}</h2>
               <div className="flex items-center gap-4">
                 <img src={product.imageUrl} alt={product.title} className="w-20 h-20 object-cover rounded-xl border-2 border-[#23264a]" />
                 <div>
@@ -665,10 +683,10 @@ export default function Checkout() {
               </div>
             </div>
             <div className="bg-[#13162a] rounded-2xl shadow-lg border-2 border-[#23264a] p-6">
-              <h3 className="text-lg font-semibold text-white mb-3">Order Details</h3>
+              <h3 className="text-lg font-semibold text-white mb-3">{t('checkout.orderDetails')}</h3>
               <div className="flex flex-col gap-2 text-base">
                 <div className="flex justify-between text-gray-300">
-                  <span>Subtotal</span>
+                  <span>{t('checkout.subtotal')}</span>
                   <span className="font-medium text-white">
                     {Math.round(
                       (
@@ -680,12 +698,12 @@ export default function Checkout() {
                   </span>
                 </div>
                 <div className="flex justify-between text-gray-300">
-                  <span>Shipping</span>
-                  <span className="font-medium text-green-400">Free</span>
+                  <span>{t('checkout.shippingLabel')}</span>
+                  <span className="font-medium text-green-400">{t('checkout.free')}</span>
                 </div>
                 <div className="border-t border-[#23264a] my-2"></div>
                 <div className="flex justify-between text-lg">
-                  <span className="font-bold text-white">Total</span>
+                  <span className="font-bold text-white">{t('checkout.total')}</span>
                   <span className="font-extrabold text-cyan-400">
                     {Math.round(
                       (
@@ -704,28 +722,28 @@ export default function Checkout() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <div className="text-sm">
-                  <div className="font-semibold text-white mb-1">Buyer Protection</div>
-                  <p className="text-gray-400">Your order is protected. The seller will receive your shipping information to fulfill your order.</p>
+                  <div className="font-semibold text-white mb-1">{t('checkout.buyerProtectionTitle')}</div>
+                  <p className="text-gray-400">{t('checkout.buyerProtectionDesc')}</p>
                 </div>
               </div>
             </div>
           </div>
           {/* Right: Shipping Form */}
           <div className="bg-[#13162a] rounded-2xl shadow-lg border-2 border-[#23264a] p-4 md:p-6 flex flex-col justify-center">
-            <h2 className="text-xl font-bold text-white mb-4">Shipping Information</h2>
+            <h2 className="text-xl font-bold text-white mb-4">{t('checkout.shipping')}</h2>
             <form className="flex flex-col gap-4" onSubmit={e => { e.preventDefault(); console.log('Form submitted, placing order...'); placeOrder(); }}>
               {/* Restore previous input field styles for clarity */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Full Name <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">{t('checkout.fullName')} <span className="text-red-500">*</span></label>
                 <input type="text" className="w-full rounded-lg bg-[#181b2a] border-2 border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all" value={addr.name || ''} onChange={e => setAddr({ ...addr, name: e.target.value })} required />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">{t('checkout.email')}</label>
                 <input type="email" className="w-full rounded-lg bg-[#181b2a] border-2 border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all" value={addr.email || ''} onChange={e => setAddr({ ...addr, email: e.target.value })} />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Delivery Location</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">{t('checkout.deliveryLocation')}</label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
@@ -736,7 +754,7 @@ export default function Checkout() {
                         : 'w-full py-3 rounded-lg bg-[#181b2a] border-2 border-[#23264a] text-gray-200 font-semibold hover:border-cyan-400/60'
                     }
                   >
-                    Home
+                    {t('checkout.deliveryLocationHome')}
                   </button>
                   <button
                     type="button"
@@ -747,37 +765,37 @@ export default function Checkout() {
                         : 'w-full py-3 rounded-lg bg-[#181b2a] border-2 border-[#23264a] text-gray-200 font-semibold hover:border-cyan-400/60'
                     }
                   >
-                    Desk
+                    {t('checkout.deliveryLocationDesk')}
                   </button>
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
                   {deliveryPlace === 'home'
-                    ? 'Home: enter your full address.'
-                    : 'Desk: address fields are hidden.'}
+                    ? t('checkout.deliveryHintHome')
+                    : t('checkout.deliveryHintDesk')}
                 </p>
               </div>
 
               {deliveryPlace === 'home' && (
                 <>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Address Line 1 <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">{t('checkout.addressLine1')} <span className="text-red-500">*</span></label>
                 <input type="text" className="w-full rounded-lg bg-[#181b2a] border-2 border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all" value={addr.line1 || ''} onChange={e => setAddr({ ...addr, line1: e.target.value })} required />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Address Line 2</label>
-                <input type="text" className="w-full rounded-lg bg-[#181b2a] border-2 border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all" value={addr.line2 || ''} onChange={e => setAddr({ ...addr, line2: e.target.value })} placeholder="Apartment, suite, etc. (optional)" />
+                <label className="block text-sm font-medium text-gray-300 mb-1">{t('checkout.addressLine2')}</label>
+                <input type="text" className="w-full rounded-lg bg-[#181b2a] border-2 border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all" value={addr.line2 || ''} onChange={e => setAddr({ ...addr, line2: e.target.value })} placeholder={t('checkout.addressLine2Placeholder')} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Hai / Neighborhood</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">{t('checkout.haiNeighborhood')}</label>
                 {haiSuggestions.length > 0 && (
                   <div className="mb-2">
-                    <label className="block text-xs font-medium text-gray-400 mb-1">Choose Hai (optional)</label>
+                    <label className="block text-xs font-medium text-gray-400 mb-1">{t('checkout.chooseHaiOptional')}</label>
                     <Select
                       value={String(addr.hai || '')}
                       onValueChange={(v) => setAddr({ ...addr, hai: v })}
                     >
                       <SelectTrigger className="w-full rounded-lg bg-[#181b2a] border-2 border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all h-auto">
-                        <SelectValue placeholder="Select Hai" />
+                        <SelectValue placeholder={t('checkout.selectHai')} />
                       </SelectTrigger>
                       <SelectContent>
                         {haiSuggestions.map((h) => (
@@ -794,14 +812,14 @@ export default function Checkout() {
                   className="w-full rounded-lg bg-[#181b2a] border-2 border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all"
                   value={addr.hai || ''}
                   onChange={e => setAddr({ ...addr, hai: e.target.value })}
-                  placeholder="Example: Hai Badr Eddine"
+                  placeholder={t('checkout.haiExamplePlaceholder')}
                 />
               </div>
                 </>
               )}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Wilaya <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">{t('checkout.wilaya')} <span className="text-red-500">*</span></label>
                   <Select
                     value={dzWilayaId}
                     onValueChange={(nextId) => {
@@ -812,7 +830,7 @@ export default function Checkout() {
                     }}
                   >
                     <SelectTrigger className="w-full rounded-lg bg-[#181b2a] border-2 border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all h-auto">
-                      <SelectValue placeholder="Select Wilaya" />
+                      <SelectValue placeholder={t('checkout.selectWilaya')} />
                     </SelectTrigger>
                     <SelectContent>
                       {dzWilayas.map((w) => (
@@ -824,7 +842,7 @@ export default function Checkout() {
                   </Select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Baladia/Commune <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">{t('checkout.commune')} <span className="text-red-500">*</span></label>
                   <Select
                     value={dzCommuneId}
                     disabled={!dzWilayaId}
@@ -835,7 +853,7 @@ export default function Checkout() {
                     }}
                   >
                     <SelectTrigger className="w-full rounded-lg bg-[#181b2a] border-2 border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all disabled:opacity-60 h-auto">
-                      <SelectValue placeholder={dzWilayaId ? "Select Baladia/Commune" : "Select Wilaya first"} />
+                      <SelectValue placeholder={dzWilayaId ? t('checkout.selectCommune') : t('checkout.selectWilayaFirst')} />
                     </SelectTrigger>
                     <SelectContent>
                       {dzCommunes.map((c) => (
@@ -848,26 +866,26 @@ export default function Checkout() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Country <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-300 mb-1">{t('checkout.country')} <span className="text-red-500">*</span></label>
                 <input type="text" className="w-full rounded-lg bg-[#181b2a] border-2 border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all" value={addr.country || ''} onChange={e => setAddr({ ...addr, country: e.target.value })} required />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Phone Number</label>
-                <input type="tel" className="w-full rounded-lg bg-[#181b2a] border-2 border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all" value={addr.phone || ''} onChange={e => setAddr({ ...addr, phone: e.target.value })} placeholder="05xx xx xx xx" />
+                <label className="block text-sm font-medium text-gray-300 mb-1">{t('checkout.phone')}</label>
+                <input type="tel" className="w-full rounded-lg bg-[#181b2a] border-2 border-[#23264a] px-4 py-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all" value={addr.phone || ''} onChange={e => setAddr({ ...addr, phone: e.target.value })} placeholder={t('checkout.phonePlaceholder')} />
               </div>
 
               {storeSlug && telegramBotInfo && (
                 <div className="rounded-lg bg-[#181b2a] border-2 border-[#23264a] px-4 py-3">
                   <div className="flex items-center justify-between gap-3">
-                    <div className="text-sm font-semibold text-gray-200">Telegram (Optional)</div>
+                    <div className="text-sm font-semibold text-gray-200">{t('checkout.telegramOptional')}</div>
                     <div className="text-xs text-gray-400">
                       {checkingTelegramConnection
-                        ? 'Checking…'
+                        ? t('checkout.status.checking')
                         : telegramConnected
-                        ? 'Connected ✓'
+                        ? t('checkout.confirmation.connected')
                         : telegramBotInfo.enabled
-                        ? 'Not connected'
-                        : 'Unavailable'}
+                        ? t('checkout.status.notConnected')
+                        : t('checkout.confirmation.unavailable')}
                     </div>
                   </div>
                   <button
@@ -879,15 +897,15 @@ export default function Checkout() {
                     }
                     className="w-full mt-3 py-2 rounded-lg bg-gradient-to-r from-cyan-400 to-cyan-500 text-white font-bold shadow hover:from-cyan-500 hover:to-cyan-600 focus:ring-2 focus:ring-cyan-400 focus:outline-none transition-all disabled:opacity-60"
                   >
-                    {telegramBotInfo.enabled ? 'Connect Telegram' : 'Telegram Unavailable'}
+                    {telegramBotInfo.enabled ? t('checkout.action.connectTelegram') : t('checkout.action.telegramUnavailable')}
                   </button>
                   {!telegramBotInfo.enabled && (
                     <div className="text-xs text-gray-500 mt-2">
-                      Telegram is not configured for this store.
+                      {t('checkout.telegramNotConfigured')}
                     </div>
                   )}
                   <div className="text-xs text-gray-500 mt-2">
-                    Add your phone number first, then connect to receive instant order updates.
+                    {t('checkout.connectInfo')}
                   </div>
                 </div>
               )}
@@ -895,17 +913,17 @@ export default function Checkout() {
               {storeSlug && messengerInfo && (
                 <div className="rounded-lg bg-[#181b2a] border-2 border-[#23264a] px-4 py-3">
                   <div className="flex items-center justify-between gap-3">
-                    <div className="text-sm font-semibold text-gray-200">Messenger (Optional)</div>
+                    <div className="text-sm font-semibold text-gray-200">{t('checkout.messengerOptional')}</div>
                     <div className="text-xs text-gray-400">
                       {checkingMessengerConnection
-                        ? 'Checking…'
+                        ? t('checkout.status.checking')
                         : messengerConnected
-                        ? 'Connected ✓'
+                        ? t('checkout.confirmation.connected')
                         : waitingForMessengerConnection
-                        ? 'Waiting…'
+                        ? t('checkout.confirmation.waitingShort')
                         : messengerInfo.enabled
-                        ? 'Not connected'
-                        : 'Unavailable'}
+                        ? t('checkout.status.notConnected')
+                        : t('checkout.confirmation.unavailable')}
                     </div>
                   </div>
                   <button
@@ -919,33 +937,33 @@ export default function Checkout() {
                     className="w-full mt-3 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold shadow hover:from-blue-600 hover:to-blue-700 focus:ring-2 focus:ring-blue-400 focus:outline-none transition-all disabled:opacity-60"
                   >
                     {waitingForMessengerConnection
-                      ? 'Connecting…'
+                      ? t('checkout.action.connecting')
                       : messengerInfo.enabled
-                      ? 'Connect Messenger'
-                      : 'Messenger Unavailable'}
+                      ? t('checkout.action.connectMessenger')
+                      : t('checkout.action.messengerUnavailable')}
                   </button>
                   {!messengerInfo.enabled && (
                     <div className="text-xs text-gray-500 mt-2">
-                      Messenger is not configured for this store.
+                      {t('checkout.messengerNotConfigured')}
                     </div>
                   )}
                   <div className="text-xs text-gray-500 mt-2">
-                    Add your phone number first, then connect to receive instant order updates.
+                    {t('checkout.connectInfo')}
                   </div>
                 </div>
               )}
               <button type="submit" className="w-full py-3 mt-2 rounded-lg bg-gradient-to-r from-green-400 to-green-500 text-white font-bold text-lg shadow-lg hover:from-green-500 hover:to-green-600 focus:ring-2 focus:ring-green-400 focus:outline-none transition-all disabled:opacity-60" disabled={submitting || !product}>
-                {submitting ? "Placing..." : "Place Order"}
+                {submitting ? t('checkout.action.placing') : t('checkout.placeOrder')}
               </button>
               {errorMsg && (
                 <div className="mt-4 bg-red-900/20 border border-red-700 text-red-300 text-center px-4 py-3 rounded-lg font-semibold shadow">
                   {errorMsg}
                 </div>
               )}
-              <p className="text-xs text-center text-gray-500 mt-2">By placing this order, you agree to our terms of service and privacy policy</p>
+              <p className="text-xs text-center text-gray-500 mt-2">{t('checkout.termsNotice')}</p>
               {orderId && (
                 <div className="mt-4 bg-green-900/20 border border-green-700 text-green-300 text-center px-4 py-3 rounded-lg font-semibold shadow">
-                  Order created: {orderId}. The seller received your shipping info.
+                  {t('checkout.orderCreatedNotice', { id: orderId })}
                 </div>
               )}
             </form>

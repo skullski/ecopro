@@ -91,6 +91,101 @@ function parseStartPayload(text: string | undefined | null): string | null {
   return payload.trim();
 }
 
+async function sendLateConnectOrderMessages(opts: {
+  pool: any;
+  botToken: string;
+  chatId: string;
+  clientId: number;
+  orderId: number;
+}): Promise<void> {
+  const { pool, botToken, chatId, clientId, orderId } = opts;
+
+  const orderRes = await pool.query(
+    `SELECT o.id, o.customer_name, o.customer_phone, o.shipping_address, o.quantity, o.total_price,
+            p.title AS product_title,
+            s.store_name
+     FROM store_orders o
+     INNER JOIN client_store_settings s ON o.client_id = s.client_id
+     LEFT JOIN client_store_products p ON o.product_id = p.id
+     WHERE o.id = $1 AND o.client_id = $2
+     LIMIT 1`,
+    [orderId, clientId]
+  );
+
+  const row = orderRes.rows[0];
+  if (!row) return;
+
+  const storeName = String(row.store_name || 'Store');
+  const customerName = String(row.customer_name || 'Customer');
+  const customerPhone = String(row.customer_phone || '');
+  const address = String(row.shipping_address || 'Not specified');
+  const quantity = Number(row.quantity || 1);
+  const totalPrice = Number(row.total_price || 0);
+  const productName = String(row.product_title || 'Product');
+
+  const botRes = await pool.query(
+    `SELECT template_instant_order, template_pin_instructions
+     FROM bot_settings
+     WHERE client_id = $1 AND enabled = true
+     LIMIT 1`,
+    [clientId]
+  );
+
+  const defaultInstantOrder = `🎉 Thank you, {customerName}!
+
+Your order has been received successfully ✅
+
+━━━━━━━━━━━━━━━━
+📦 Order Details
+━━━━━━━━━━━━━━━━
+🔢 Order ID: #{orderId}
+📱 Product: {productName}
+💰 Price: {totalPrice} DZD
+📍 Quantity: {quantity}
+
+━━━━━━━━━━━━━━━━
+👤 Delivery Information
+━━━━━━━━━━━━━━━━
+📛 Name: {customerName}
+📞 Phone: {customerPhone}
+🏠 Address: {address}
+
+━━━━━━━━━━━━━━━━
+🚚 Order Status: Processing
+━━━━━━━━━━━━━━━━
+
+We will contact you soon for confirmation 📞
+
+⭐ From {storeName}`;
+
+  const defaultPinInstructions = `📌 Important tip:
+
+Long press on the previous message and select "Pin" to easily track your order!
+
+🔔 Make sure to:
+• Enable notifications for the bot
+• Don't mute the conversation
+• You will receive order status updates here directly`;
+
+  const instantOrderTemplate = botRes.rows[0]?.template_instant_order || defaultInstantOrder;
+  const pinInstructionsTemplate = botRes.rows[0]?.template_pin_instructions || defaultPinInstructions;
+
+  const orderMessage = replaceTemplateVariables(String(instantOrderTemplate), {
+    customerName,
+    productName,
+    totalPrice: totalPrice.toLocaleString(),
+    quantity,
+    orderId,
+    customerPhone,
+    address,
+    storeName,
+    companyName: storeName,
+  });
+
+  await sendTelegramMessage(botToken, chatId, orderMessage);
+  await sendTelegramMessage(botToken, chatId, String(pinInstructionsTemplate));
+}
+
 /**
  * Get Telegram bot link for a store (public endpoint)
  * Used by checkout page to show "Connect with Telegram" button
@@ -775,6 +870,31 @@ We will send you order confirmation directly here! 📦`;
     );
 
     await sendTelegramMessage(botToken, chatId, greeting);
+
+    // Late-connect fix: send the missing immediate order info now, and release any queued Telegram bot messages.
+    // This ensures customers who connect AFTER ordering still receive the full flow.
+    try {
+      await sendLateConnectOrderMessages({ pool, botToken, chatId, clientId, orderId });
+    } catch (e) {
+      console.warn('[Telegram] Late-connect order backfill failed:', (e as any)?.message || e);
+    }
+
+    try {
+      await pool.query(
+        `UPDATE bot_messages
+         SET send_at = NOW(),
+             status = 'pending',
+             error_message = NULL,
+             updated_at = NOW()
+         WHERE order_id = $1
+           AND client_id = $2
+           AND message_type = 'telegram'
+           AND status = 'pending'`,
+        [orderId, clientId]
+      );
+    } catch (e) {
+      console.warn('[Telegram] Failed to release queued Telegram bot_messages:', (e as any)?.message || e);
+    }
 
     return res.status(200).json({ ok: true });
   } catch (e) {

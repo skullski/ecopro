@@ -7,6 +7,9 @@ import {
 import { Card } from "@/components/ui/card";
 import { useTranslation } from "@/lib/i18n";
 import OnboardingGuide from "@/components/OnboardingGuide";
+import { useStoreProducts } from "@/hooks/useStoreProducts";
+import { useStoreSettings } from "@/hooks/useStoreSettings";
+import { getOnboardingProgress } from "@/lib/onboarding";
 
 interface DashboardStats {
   products: number;
@@ -33,6 +36,24 @@ interface Analytics {
 
 export default function Dashboard() {
   const { t } = useTranslation();
+  const onboarding = getOnboardingProgress();
+
+  const { storeSettings } = useStoreSettings();
+  const { products: storeProducts } = useStoreProducts();
+
+  const normalizeTemplateId = (id: any): string =>
+    String(id || '')
+      .trim()
+      .toLowerCase()
+      .replace(/^gold-/, '')
+      .replace(/-gold$/, '');
+
+  // Defaults historically: 'classic', and since 2026-01-21: 'books'
+  const defaultTemplates = new Set(['books', 'classic']);
+  const currentTemplate = normalizeTemplateId((storeSettings as any)?.template);
+  const templateIsNonDefault = Boolean(currentTemplate) && !defaultTemplates.has(currentTemplate);
+  const hasTemplateSwitched = Boolean(onboarding?.completed?.template_switched) || templateIsNonDefault;
+
   const [stats, setStats] = useState<DashboardStats>({ 
     products: 0, 
     orders: 0, 
@@ -177,9 +198,12 @@ export default function Dashboard() {
     <div className="space-y-2 p-2 sm:p-3">
       {/* Onboarding Guide for New Users */}
       <OnboardingGuide 
-        hasProducts={stats.products > 0}
-        hasStoreSettings={true}
+        hasProducts={(storeProducts?.length || 0) > 0}
+        hasStoreBasics={Boolean((storeSettings as any)?.store_name) && Boolean((storeSettings as any)?.store_slug)}
+        hasBranding={Boolean((storeSettings as any)?.store_logo) || Boolean((storeSettings as any)?.banner_url)}
         hasOrders={stats.orders > 0}
+        hasTemplateSwitched={hasTemplateSwitched}
+        hasStoreLinkCopied={Boolean(onboarding?.completed?.store_link_copied)}
       />
 
       {/* Welcome Header */}

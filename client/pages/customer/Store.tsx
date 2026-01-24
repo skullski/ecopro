@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Plus, Search, Eye, Copy, ExternalLink, Edit, Trash2, 
   Star, Package, DollarSign, Image as ImageIcon, Settings,
@@ -16,6 +16,7 @@ import { useTranslation } from '@/lib/i18n';
 import { useToast } from '@/components/ui/use-toast';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
 import { useStoreProducts } from '@/hooks/useStoreProducts';
+import { markOnboardingStepComplete } from '@/lib/onboarding';
 import {
   Dialog,
   DialogContent,
@@ -63,6 +64,7 @@ interface StoreProduct {
 
 export default function Store() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
   const { toast } = useToast();
   // Products Management was duplicated with Overview; keep a single Store page.
@@ -121,6 +123,7 @@ export default function Store() {
     navigator.clipboard.writeText(storeUrl);
     setStoreLinkCopiedRef(true);
     setTimeout(() => setStoreLinkCopiedRef(false), 2000);
+    markOnboardingStepComplete('store_link_copied');
   };
 
   // Fetch remaining store data on mount (settings/products come from cached hooks)
@@ -155,6 +158,7 @@ export default function Store() {
   const [shareLink, setShareLink] = useState('');
   const [linkCopied, setLinkCopied] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [creatingSampleProducts, setCreatingSampleProducts] = useState(false);
 
   type ProductVariantDraft = {
     id?: number;
@@ -242,6 +246,52 @@ export default function Store() {
             }
           };
 
+          const createSampleProducts = async () => {
+            try {
+              setCreatingSampleProducts(true);
+              const samples = [
+                { title: t('store.sampleProduct1') || 'منتج تجريبي 1', price: 1200 },
+                { title: t('store.sampleProduct2') || 'منتج تجريبي 2', price: 2500 },
+                { title: t('store.sampleProduct3') || 'منتج تجريبي 3', price: 3900 },
+              ];
+
+              for (const s of samples) {
+                const res = await fetch('/api/client/store/products', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    title: s.title,
+                    description: t('store.sampleProductDesc') || 'هذا منتج تجريبي لمساعدتك على فهم شكل المتجر.',
+                    price: s.price,
+                    stock_quantity: 10,
+                    status: 'draft',
+                    is_featured: false,
+                  }),
+                });
+                if (!res.ok) {
+                  const err = await res.json().catch(() => ({} as any));
+                  throw new Error(String((err as any)?.error || `Failed to create sample product (${res.status})`));
+                }
+              }
+
+              await reloadProducts();
+              markOnboardingStepComplete('product_created');
+              toast({
+                title: t('store.sampleProductsCreatedTitle') || 'Sample products created',
+                description: t('store.sampleProductsCreatedDesc') || 'We added 3 draft products. Edit them or delete them anytime.',
+              });
+            } catch (e) {
+              console.error('Failed to create sample products', e);
+              toast({
+                variant: 'destructive',
+                title: t('store.sampleProductsFailedTitle') || 'Failed to create sample products',
+                description: String((e as any)?.message || 'Please try again.'),
+              });
+            } finally {
+              setCreatingSampleProducts(false);
+            }
+          };
+
           const handleCreateProduct = async () => {
             try {
               setProductFormSubmitAttempted(true);
@@ -277,6 +327,7 @@ export default function Store() {
                 setProductFormSubmitAttempted(false);
                 setProductFormServerError(null);
                 toast({ title: 'Product created', description: 'Your product is now in your store.' });
+                markOnboardingStepComplete('product_created');
               } else {
                 const error = await res.json().catch(() => ({} as any));
                 const msg = String((error as any)?.error || 'Failed to create product');
@@ -448,6 +499,7 @@ export default function Store() {
             } catch (e) {
               if (saved) setStoreSettings(saved);
             }
+            markOnboardingStepComplete('store_branding_saved');
             toast({ title: t('store.toast.savedTitle'), description: t('store.toast.settingsUpdatedDesc') });
           } catch (e) {
             console.error('Failed to save store settings', e);
@@ -563,6 +615,56 @@ export default function Store() {
   // Set refs for copyStoreLink
   storeSettingsRef = storeSettings;
   setStoreLinkCopiedRef = setStoreLinkCopied;
+
+  // Onboarding deep-links (from Dashboard checklist)
+  useEffect(() => {
+    const qs = new URLSearchParams(location.search || '');
+    const hasOnboardingFlag = qs.get('onboarding') === '1';
+    const openSettings = qs.get('openSettings') === '1';
+    const tab = (qs.get('tab') || '').trim();
+    const action = (qs.get('action') || '').trim();
+
+    if (!hasOnboardingFlag && !openSettings && !tab && !action) return;
+
+    const tabMap: Record<string, number> = {
+      branding: 0,
+      customization: 1,
+      templates: 2,
+      storeUrl: 3,
+      statsHelp: 4,
+      help: 4,
+    };
+
+    if (openSettings || tab) {
+      setShowStoreSettingsModal(true);
+      markOnboardingStepComplete('store_settings_opened');
+    }
+
+    if (tab && tabMap[tab] != null) {
+      setSelectedTab(tabMap[tab]);
+    }
+
+    if (action === 'create-product' || action === 'add-product' || action === 'createProduct') {
+      setSelectedProduct(null);
+      setFormData({ status: 'active', is_featured: false, stock_quantity: 1 });
+      setVariantsDraft([]);
+      setVariantsLoaded(true);
+      setVariantsDirty(false);
+      setProductFormSubmitAttempted(false);
+      setProductFormServerError(null);
+      setShowAddModal(true);
+    }
+
+    // Remove query params after applying actions (prevents retrigger on refresh)
+    navigate(location.pathname, { replace: true });
+  }, [location.pathname, location.search, navigate]);
+
+  // Mark template step once user visits the Templates tab.
+  useEffect(() => {
+    if (showStoreSettingsModal && selectedTab === 2) {
+      markOnboardingStepComplete('templates_opened');
+    }
+  }, [showStoreSettingsModal, selectedTab]);
     // Handlers for uploads and removals
     const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -1115,6 +1217,18 @@ export default function Store() {
             <p className="text-muted-foreground mb-4">
               {t('store.createFirstProduct')}
             </p>
+
+            <div className="mx-auto mb-4 max-w-xl rounded-lg border bg-muted/30 p-3 text-left">
+              <div className="text-sm font-medium">
+                {t('onboarding.subtitle') || 'Complete these steps to launch your store'}
+              </div>
+              <ul className="mt-2 text-sm text-muted-foreground space-y-1">
+                <li>• {t('onboarding.addProducts') || 'Add Your Products'}</li>
+                <li>• {t('onboarding.chooseTemplate') || 'Choose a Template'}</li>
+                <li>• {t('onboarding.shareStore') || 'Share Your Store'}</li>
+              </ul>
+            </div>
+
             <div className="flex flex-col sm:flex-row gap-2 justify-center">
               <Button
                 onClick={() => {
@@ -1131,6 +1245,41 @@ export default function Store() {
                 <Plus className="w-4 h-4 mr-2" />
                 {t('store.createProduct')}
               </Button>
+
+              <Button
+                variant="secondary"
+                disabled={creatingSampleProducts}
+                onClick={() => {
+                  void createSampleProducts();
+                }}
+              >
+                {creatingSampleProducts ? (t('store.creatingSampleProducts') || 'Creating samples...') : (t('store.addSampleProducts') || 'Add sample products')}
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowStoreSettingsModal(true);
+                  setSelectedTab(2);
+                  markOnboardingStepComplete('store_settings_opened');
+                }}
+              >
+                <Settings className="w-4 h-4 mr-2" />
+                {t('onboarding.chooseTemplate') || 'Choose a Template'}
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowStoreSettingsModal(true);
+                  setSelectedTab(3);
+                  markOnboardingStepComplete('store_settings_opened');
+                }}
+              >
+                <LinkIcon className="w-4 h-4 mr-2" />
+                {t('store.copyLink') || 'Copy Link'}
+              </Button>
+
               <Button
                 variant="outline"
                 onClick={() => {
@@ -2129,7 +2278,13 @@ export default function Store() {
       </div>
 
       {/* Store Settings Modal with Tabs */}
-      <Dialog open={showStoreSettingsModal} onOpenChange={setShowStoreSettingsModal}>
+      <Dialog
+        open={showStoreSettingsModal}
+        onOpenChange={(open) => {
+          setShowStoreSettingsModal(open);
+          if (open) markOnboardingStepComplete('store_settings_opened');
+        }}
+      >
         <DialogContent className="max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
           <DialogHeader className="pb-4 border-b border-slate-200 dark:border-slate-700">
             <DialogTitle className="text-2xl font-bold">{t('store.settings')}</DialogTitle>

@@ -1,6 +1,7 @@
 import { Router, RequestHandler } from "express";
 import { randomBytes } from "crypto";
 import { pool, ensureConnection, getPool } from "../utils/database";
+import type { Pool } from "pg";
 import { logStoreSettings } from "../utils/logger";
 
 const router = Router();
@@ -1345,19 +1346,50 @@ export const updateStoreTemplate: RequestHandler = async (req, res) => {
       importKeysCount: safeImportKeys.length,
     });
 
-    // Load current row so we can persist template snapshots (per-template edits).
-    const currentRes = await pool.query('SELECT * FROM client_store_settings WHERE client_id = $1', [clientId]);
-    if (currentRes.rowCount === 0) {
-      return res.status(404).json({ error: 'Store settings not found' });
-    }
+    const isRetryableDbError = (err: any): boolean => {
+      const msg = String(err?.message || '').toLowerCase();
+      const code = String(err?.code || '').toUpperCase();
+      return (
+        msg.includes('query read timeout') ||
+        msg.includes('connection terminated') ||
+        msg.includes('timeout') ||
+        msg.includes('econnreset') ||
+        (msg.includes('socket') && msg.includes('hang up')) ||
+        code === 'ETIMEDOUT' ||
+        code === 'ECONNRESET'
+      );
+    };
 
-    const existingRow = currentRes.rows[0];
+    const withDbRetry = async <T,>(operation: (db: Pool) => Promise<T>, maxRetries = 2): Promise<T> => {
+      let lastErr: any;
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+          const db = await ensureConnection();
+          return await operation(db as any);
+        } catch (err: any) {
+          lastErr = err;
+          if (!isRetryableDbError(err) || attempt === maxRetries) throw err;
+          const delay = Math.min(250 * Math.pow(2, attempt) + Math.random() * 150, 1500);
+          await new Promise((r) => setTimeout(r, delay));
+        }
+      }
+      throw lastErr;
+    };
 
-    // Discover existing columns so we can safely update scoped columns if present.
-    const colsRes = await pool.query(
-      `SELECT column_name FROM information_schema.columns WHERE table_name = 'client_store_settings'`
-    );
-    const existingCols = new Set<string>(colsRes.rows.map((r) => String(r.column_name)));
+    const merged = await withDbRetry(async (db) => {
+      // Load current row so we can persist template snapshots (per-template edits).
+      const currentRes = await db.query('SELECT * FROM client_store_settings WHERE client_id = $1', [clientId]);
+      if (currentRes.rowCount === 0) {
+        return null;
+      }
+
+      const existingRow = currentRes.rows[0];
+
+      // Discover existing columns so we can safely update scoped columns if present.
+      const colsRes = await db.query(
+        `SELECT column_name FROM information_schema.columns WHERE table_name = 'client_store_settings'`
+      );
+      const existingCols = new Set<string>(colsRes.rows.map((r) => String(r.column_name)));
 
     const normalizeTemplateIdForAvailability = (id: any): string => {
       const normalized = String(id || '')
@@ -1371,7 +1403,7 @@ export const updateStoreTemplate: RequestHandler = async (req, res) => {
       return normalized;
     };
 
-    const existingTemplateRaw = existingRow?.template || 'pro';
+      const existingTemplateRaw = existingRow?.template || 'pro';
     const existingTemplate = normalizeTemplateIdForAvailability(existingTemplateRaw);
     const existingTemplateSettings =
       existingRow?.template_settings && typeof existingRow.template_settings === 'object'
@@ -1396,7 +1428,7 @@ export const updateStoreTemplate: RequestHandler = async (req, res) => {
       'store_images',
     ].filter((col) => existingCols.has(col));
 
-    const buildTemplateSnapshot = (row: any) => {
+      const buildTemplateSnapshot = (row: any) => {
       const snapshot: any = {
         ...(row?.template_settings && typeof row.template_settings === 'object' ? row.template_settings : {}),
       };
@@ -1404,7 +1436,7 @@ export const updateStoreTemplate: RequestHandler = async (req, res) => {
         if (row && Object.prototype.hasOwnProperty.call(row, col)) snapshot[col] = row[col];
       }
       return snapshot;
-    };
+      };
 
     const oldSnapshot = buildTemplateSnapshot(existingRow);
     const map = { ...safeObject(existingTemplateByTemplate) } as any;
@@ -1465,8 +1497,8 @@ export const updateStoreTemplate: RequestHandler = async (req, res) => {
     fields.push(`updated_at = CURRENT_TIMESTAMP`);
     values.push(clientId);
 
-    const queryText = `UPDATE client_store_settings SET ${fields.join(", ")} WHERE client_id = $${paramCount} RETURNING *`;
-    const result = await pool.query(queryText, values);
+      const queryText = `UPDATE client_store_settings SET ${fields.join(", ")} WHERE client_id = $${paramCount} RETURNING *`;
+      const result = await db.query(queryText, values);
 
     const updatedRow = result.rows[0];
     const templateSettings =
@@ -1476,14 +1508,30 @@ export const updateStoreTemplate: RequestHandler = async (req, res) => {
     const dbTemplate = updatedRow?.template;
     const merged = { ...globalSettings, ...templateSettings, ...updatedRow, template: dbTemplate };
 
+      return merged;
+    });
+
+    if (!merged) {
+      return res.status(404).json({ error: 'Store settings not found' });
+    }
+
     invalidateSettingsCache(clientId);
     setCachedSettings(clientId, merged);
 
-    logStoreSettings('updateStoreTemplate:success', { clientId, template: dbTemplate, mode: switchMode });
+    logStoreSettings('updateStoreTemplate:success', { clientId, template: merged?.template, mode: switchMode });
     res.json(merged);
   } catch (error) {
     console.error('Update store template error:', error);
     logStoreSettings('updateStoreTemplate:error', { error: (error as any)?.message });
+    const isDev = process.env.NODE_ENV !== 'production' || String(process.env.SKIP_DB_INIT || '') === 'true';
+    if (isDev) {
+      return res.json({
+        ...(req.body || {}),
+        __dbUnavailable: true,
+        __note: 'Update accepted in dev fallback (DB unavailable)',
+        error: String((error as any)?.message || 'Failed to update template'),
+      });
+    }
     res.status(500).json({ error: 'Failed to update template' });
   }
 };

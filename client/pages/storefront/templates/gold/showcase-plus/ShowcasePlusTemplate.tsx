@@ -1,5 +1,6 @@
 import React from 'react';
 import type { TemplateProps, StoreProduct } from '../../types';
+import EmbeddedCheckout from '../shared/EmbeddedCheckout';
 
 /**
  * SHOWCASE PLUS - Multi-image product showcase template.
@@ -28,6 +29,9 @@ function productImage(p: StoreProduct): string {
 export default function ShowcasePlusTemplate(props: TemplateProps) {
   const { settings, formatPrice, navigate } = props;
   const canManage = Boolean(props.canManage);
+
+  const dir: 'rtl' | 'ltr' =
+    typeof document !== 'undefined' && document.documentElement?.dir === 'rtl' ? 'rtl' : 'ltr';
   const onSelect = (path: string) => {
     if (canManage && typeof (props as any).onSelect === 'function') {
       (props as any).onSelect(path);
@@ -59,6 +63,15 @@ export default function ShowcasePlusTemplate(props: TemplateProps) {
 
   const cardBg = asString(settings.template_card_bg) || "#ffffff";
 const storeName = asString(settings.store_name) || 'Showcase+';
+
+  const checkoutTheme = {
+    bg: '#ffffff',
+    text: '#111827',
+    muted: '#6b7280',
+    accent,
+    cardBg: '#ffffff',
+    border: '#e7e5e4',
+  };
   
   const copyright = asString(settings.template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
 const heroTitle = asString(settings.template_hero_heading) || 'Featured Product';
@@ -293,31 +306,16 @@ const descColor = asString(settings.template_description_color) || muted;
 
             {/* Order Form */}
             <div style={{ marginTop: 28, background: '#fff', borderRadius: cardRadius, padding: 20, boxShadow: '0 2px 10px rgba(0,0,0,0.04)' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <input placeholder="Name" style={{ padding: '14px', border: '1px solid #e7e5e4', borderRadius: 10, fontSize: 14 }} />
-                <input placeholder="Phone" style={{ padding: '14px', border: '1px solid #e7e5e4', borderRadius: 10, fontSize: 14 }} />
-              </div>
-              <input placeholder="Address" style={{ width: '100%', padding: '14px', border: '1px solid #e7e5e4', borderRadius: 10, fontSize: 14, marginTop: 12, boxSizing: 'border-box' }} />
-              
-              <button
-                style={{
-                  width: '100%',
-                  marginTop: 16,
-                  background: accent,
-                  border: 0,
-                  borderRadius: 10,
-                  padding: '16px',
-                  color: '#fff',
-                  fontWeight: 700,
-                  fontSize: 15,
-                  cursor: 'pointer',
-                }}
-              >
-                {cta}
-              </button>
-              <p style={{ marginTop: 12, textAlign: 'center', color: muted, fontSize: 12 }}>
-                🔒 Secure checkout • Free shipping
-              </p>
+              <EmbeddedCheckout
+                storeSlug={String(props.storeSlug || (settings as any).store_slug || '')}
+                product={mainProduct || products[0]}
+                formatPrice={formatPrice}
+                theme={checkoutTheme}
+                disabled={canManage}
+                heading={dir === 'rtl' ? 'إتمام الطلب' : 'Checkout'}
+                subheading={canManage ? (dir === 'rtl' ? 'معطل في وضع التعديل' : 'Disabled in editor') : (dir === 'rtl' ? 'دفع عند الاستلام • توصيل سريع' : 'Cash on delivery • Fast delivery')}
+                dir={dir}
+              />
             </div>
           </div>
         </div>

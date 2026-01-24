@@ -258,6 +258,11 @@ export default function PixelStatistics() {
     return Number(num).toLocaleString();
   };
 
+  const surfaceCard =
+    'bg-white/80 dark:bg-slate-950/45 backdrop-blur-xl border-slate-200/70 dark:border-slate-800/60 shadow-sm transition-shadow hover:shadow-md';
+  const surfaceMuted =
+    'bg-white/65 dark:bg-slate-950/35 backdrop-blur-xl border-slate-200/60 dark:border-slate-800/50 shadow-sm';
+
   const formatCurrency = (amount: number | string | undefined) => {
     if (amount === undefined || amount === null) return '0 DZD';
     return `${Number(amount).toLocaleString()} DZD`;
@@ -412,42 +417,63 @@ export default function PixelStatistics() {
   };
 
   return (
-    <div className="container mx-auto p-2 md:p-4 space-y-3 md:space-y-4 max-w-6xl" dir={isRTL ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-3">
-        <div>
-          <h1 className="text-lg md:text-xl lg:text-2xl font-bold flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 md:h-5 md:w-5" />
-            {t('pixels.title')}
-          </h1>
-          <p className="text-muted-foreground text-xs md:text-sm mt-0.5">
-            {t('pixels.description')}
-          </p>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <Select value={selectedDays} onValueChange={setSelectedDays}>
-            <SelectTrigger className="w-32 h-8 text-xs">
-              <SelectValue placeholder={t('pixels.period')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7">{t('pixels.last7Days')}</SelectItem>
-              <SelectItem value="14">{t('pixels.last14Days')}</SelectItem>
-              <SelectItem value="30">{t('pixels.last30Days')}</SelectItem>
-              <SelectItem value="60">{t('pixels.last60Days')}</SelectItem>
-              <SelectItem value="90">{t('pixels.last90Days')}</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => refetchStats()}>
-            <RefreshCw className="h-3.5 w-3.5" />
-          </Button>
-        </div>
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Decorative background */}
+      <div aria-hidden className="absolute inset-0">
+        <div className="absolute -top-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-gradient-to-br from-indigo-500/25 via-purple-500/20 to-pink-500/20 blur-3xl" />
+        <div className="absolute -bottom-56 -left-56 h-[40rem] w-[40rem] rounded-full bg-gradient-to-tr from-cyan-500/20 via-emerald-500/16 to-lime-500/14 blur-3xl" />
+        <div className="absolute top-24 left-1/2 -translate-x-1/2 h-64 w-64 rounded-full bg-gradient-to-br from-sky-500/18 to-violet-500/12 blur-3xl" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(148,163,184,0.20)_1px,transparent_0)] [background-size:22px_22px] opacity-[0.35]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-50/30 via-transparent to-slate-50/30 dark:from-slate-950/30 dark:to-slate-950/30" />
       </div>
+
+      <div className="relative z-10 container mx-auto p-2 md:p-4 space-y-3 md:space-y-4 max-w-6xl" dir={isRTL ? 'rtl' : 'ltr'}>
+        {/* Header */}
+        <div className={`rounded-2xl border p-3 md:p-4 ${surfaceMuted}`}>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-3">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 border bg-white/60 dark:bg-slate-950/35">
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-cyan-400 text-white shadow-sm">
+                  <BarChart3 className="h-4 w-4" />
+                </span>
+                <h1 className="text-base md:text-lg lg:text-xl font-extrabold tracking-tight">
+                  {t('pixels.title')}
+                </h1>
+              </div>
+              <p className="text-muted-foreground text-xs md:text-sm mt-2">
+                {t('pixels.description')}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Select value={selectedDays} onValueChange={setSelectedDays}>
+                <SelectTrigger className="w-36 h-9 text-xs bg-white/70 dark:bg-slate-950/35 backdrop-blur border-slate-200/70 dark:border-slate-800/60">
+                  <SelectValue placeholder={t('pixels.period')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="7">{t('pixels.last7Days')}</SelectItem>
+                  <SelectItem value="14">{t('pixels.last14Days')}</SelectItem>
+                  <SelectItem value="30">{t('pixels.last30Days')}</SelectItem>
+                  <SelectItem value="60">{t('pixels.last60Days')}</SelectItem>
+                  <SelectItem value="90">{t('pixels.last90Days')}</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 bg-white/70 dark:bg-slate-950/35 backdrop-blur border-slate-200/70 dark:border-slate-800/60"
+                onClick={() => refetchStats()}
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
 
       {/* Pixel Status Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <Card className={settings?.is_facebook_enabled ? 'border-blue-500/30 bg-blue-500/10 dark:bg-blue-900/20' : ''}>
+        <Card className={`${surfaceCard} ${settings?.is_facebook_enabled ? 'border-blue-500/30 bg-gradient-to-br from-blue-500/12 via-transparent to-indigo-500/10' : ''}`}>
           <CardContent className="p-2.5 md:p-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -476,7 +502,7 @@ export default function PixelStatistics() {
           </CardContent>
         </Card>
 
-        <Card className={settings?.is_tiktok_enabled ? 'border-pink-500/30 bg-pink-500/10 dark:bg-pink-900/20' : ''}>
+        <Card className={`${surfaceCard} ${settings?.is_tiktok_enabled ? 'border-pink-500/30 bg-gradient-to-br from-pink-500/12 via-transparent to-fuchsia-500/10' : ''}`}>
           <CardContent className="p-2.5 md:p-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -508,7 +534,7 @@ export default function PixelStatistics() {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto bg-white/70 dark:bg-slate-950/35 backdrop-blur border border-slate-200/70 dark:border-slate-800/60 rounded-2xl p-1">
           <TabsTrigger value="overview" className="text-xs py-1.5">{t('pixels.overviewTab')}</TabsTrigger>
           <TabsTrigger value="facebook" className="text-xs py-1.5">{t('pixels.facebookTab')}</TabsTrigger>
           <TabsTrigger value="tiktok" className="text-xs py-1.5">{t('pixels.tiktokTab')}</TabsTrigger>
@@ -520,7 +546,7 @@ export default function PixelStatistics() {
           <PlatformExplanation />
           {/* Summary Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
-            <Card>
+            <Card className={surfaceCard}>
               <CardContent className="p-2.5 md:p-3">
                 <div className="flex items-center gap-1.5 mb-1">
                   <Eye className="h-3.5 w-3.5 text-blue-500" />
@@ -532,7 +558,7 @@ export default function PixelStatistics() {
               </CardContent>
             </Card>
             
-            <Card>
+            <Card className={surfaceCard}>
               <CardContent className="p-2.5 md:p-3">
                 <div className="flex items-center gap-1.5 mb-1">
                   <ShoppingCart className="h-3.5 w-3.5 text-orange-500" />
@@ -544,7 +570,7 @@ export default function PixelStatistics() {
               </CardContent>
             </Card>
             
-            <Card>
+            <Card className={surfaceCard}>
               <CardContent className="p-2.5 md:p-3">
                 <div className="flex items-center gap-1.5 mb-1">
                   <CreditCard className="h-3.5 w-3.5 text-green-500" />
@@ -556,7 +582,7 @@ export default function PixelStatistics() {
               </CardContent>
             </Card>
             
-            <Card>
+            <Card className={surfaceCard}>
               <CardContent className="p-2.5 md:p-3">
                 <div className="flex items-center gap-1.5 mb-1">
                   <DollarSign className="h-3.5 w-3.5 text-green-500" />
@@ -570,7 +596,7 @@ export default function PixelStatistics() {
           </div>
 
           {/* Recent Events */}
-          <Card>
+          <Card className={surfaceCard}>
             <CardHeader className="p-3 md:p-4">
               <CardTitle className="flex items-center gap-2 text-sm md:text-base">
                 <Activity className="h-4 w-4" />
@@ -927,7 +953,7 @@ export default function PixelStatistics() {
           </div>
 
           {/* How it works */}
-          <Card>
+          <Card className={surfaceCard}>
             <CardHeader className="p-4 md:p-6">
               <CardTitle className="flex items-center gap-2 text-base md:text-lg">
                 <AlertCircle className="h-4 w-4 md:h-5 md:w-5" />
@@ -952,6 +978,7 @@ export default function PixelStatistics() {
           </Card>
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   );
 }

@@ -23,6 +23,7 @@ type ProductLike = {
   price: number;
   images?: string[];
   stock_quantity?: number;
+  metadata?: any;
 };
 
 export default function EmbeddedCheckout(props: {
@@ -49,6 +50,7 @@ export default function EmbeddedCheckout(props: {
   const dzWilayas = getAlgeriaWilayas();
 
   const [quantity, setQuantity] = React.useState(1);
+  const [deliveryType, setDeliveryType] = React.useState<'home' | 'desk'>('home');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [orderStatus, setOrderStatus] = React.useState<{ type: 'success' | 'error' | null; message: string }>({
     type: null,
@@ -68,7 +70,8 @@ export default function EmbeddedCheckout(props: {
   const [haiSuggestions, setHaiSuggestions] = React.useState<string[]>([]);
   const [haiSuggestionsSupported, setHaiSuggestionsSupported] = React.useState(true);
 
-  const [deliveryPrice, setDeliveryPrice] = React.useState<number | null>(null);
+  const [deliveryPriceHome, setDeliveryPriceHome] = React.useState<number | null>(null);
+  const [deliveryPriceDesk, setDeliveryPriceDesk] = React.useState<number | null>(null);
   const [loadingDeliveryPrice, setLoadingDeliveryPrice] = React.useState(false);
 
   const dzCommunes = getAlgeriaCommunesByWilayaId(formData.wilayaId);
@@ -76,6 +79,11 @@ export default function EmbeddedCheckout(props: {
   React.useEffect(() => {
     setTelegramStartUrl(null);
     setOrderStatus({ type: null, message: '' });
+  }, [product?.id]);
+
+  React.useEffect(() => {
+    // Reset delivery type when switching products.
+    setDeliveryType('home');
   }, [product?.id]);
 
   React.useEffect(() => {
@@ -129,8 +137,26 @@ export default function EmbeddedCheckout(props: {
     let cancelled = false;
 
     const fetchDeliveryPrice = async () => {
+      const shippingMeta: any = (product as any)?.metadata?.shipping || null;
+      const shippingMode = shippingMeta?.mode || shippingMeta?.shipping_mode || null;
+      if (shippingMode === 'free') {
+        setDeliveryPriceHome(0);
+        setDeliveryPriceDesk(0);
+        setLoadingDeliveryPrice(false);
+        return;
+      }
+      if (shippingMode === 'flat') {
+        const fee = Number(shippingMeta?.flat_fee ?? shippingMeta?.flatFee ?? shippingMeta?.shipping_flat_fee ?? 0);
+        const safeFee = Number.isFinite(fee) && fee >= 0 ? fee : 0;
+        setDeliveryPriceHome(safeFee);
+        setDeliveryPriceDesk(safeFee);
+        setLoadingDeliveryPrice(false);
+        return;
+      }
+
       if (disabled || !storeSlug || !formData.wilayaId) {
-        setDeliveryPrice(0);
+        setDeliveryPriceHome(null);
+        setDeliveryPriceDesk(null);
         setLoadingDeliveryPrice(false);
         return;
       }
@@ -144,19 +170,38 @@ export default function EmbeddedCheckout(props: {
         );
 
         if (!res.ok) {
-          if (!cancelled) setDeliveryPrice(null);
+          if (!cancelled) {
+            setDeliveryPriceHome(null);
+            setDeliveryPriceDesk(null);
+          }
           return;
         }
 
         const data = await res.json();
-        const fee =
-          (data?.price && typeof data.price.home_delivery_price === 'number' && data.price.home_delivery_price) ||
-          (typeof data?.default_price === 'number' && data.default_price) ||
-          0;
-
-        if (!cancelled) setDeliveryPrice(Number.isFinite(fee) && fee >= 0 ? fee : 0);
+        if (data?.price) {
+          const home = data.price.home_delivery_price;
+          const desk = data.price.desk_delivery_price;
+          if (!cancelled) {
+            setDeliveryPriceHome(home == null ? null : Number(home));
+            setDeliveryPriceDesk(desk == null ? null : Number(desk));
+          }
+        } else if (data?.default_price != null) {
+          const fallback = Number(data.default_price);
+          if (!cancelled) {
+            setDeliveryPriceHome(Number.isFinite(fallback) ? fallback : null);
+            setDeliveryPriceDesk(null);
+          }
+        } else {
+          if (!cancelled) {
+            setDeliveryPriceHome(null);
+            setDeliveryPriceDesk(null);
+          }
+        }
       } catch {
-        if (!cancelled) setDeliveryPrice(null);
+        if (!cancelled) {
+          setDeliveryPriceHome(null);
+          setDeliveryPriceDesk(null);
+        }
       } finally {
         if (!cancelled) setLoadingDeliveryPrice(false);
       }
@@ -166,12 +211,15 @@ export default function EmbeddedCheckout(props: {
     return () => {
       cancelled = true;
     };
-  }, [disabled, storeSlug, formData.wilayaId]);
+  }, [disabled, storeSlug, formData.wilayaId, product]);
 
   const title = product ? String(product.title || product.name || 'Product') : 'Product';
   const price = product ? Number(product.price) || 0 : 0;
   const subtotal = price * quantity;
-  const total = subtotal + (deliveryPrice || 0);
+  const deliveryFee = deliveryType === 'desk' ? (deliveryPriceDesk ?? deliveryPriceHome) : deliveryPriceHome;
+  const total = subtotal + (deliveryFee || 0);
+
+  const deskUnavailable = deliveryPriceDesk == null && deliveryPriceHome != null;
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
@@ -202,12 +250,20 @@ export default function EmbeddedCheckout(props: {
       return;
     }
 
+    if (deliveryType === 'desk' && deskUnavailable) {
+      setOrderStatus({
+        type: 'error',
+        message: dir === 'rtl' ? 'توصيل إلى مكتب غير متوفر لهذه الولاية' : 'Desk delivery is not available for this state.',
+      });
+      return;
+    }
+
     const missing: string[] = [];
     if (!formData.fullName.trim()) missing.push(dir === 'rtl' ? 'الاسم' : 'Name');
     if (!formData.phone.trim()) missing.push(dir === 'rtl' ? 'الهاتف' : 'Phone');
     if (!formData.wilayaId) missing.push(dir === 'rtl' ? 'الولاية' : 'State');
     if (!formData.communeId) missing.push(dir === 'rtl' ? 'البلدية' : 'City');
-    if (!formData.address.trim()) missing.push(dir === 'rtl' ? 'العنوان' : 'Address');
+    if (deliveryType === 'home' && !formData.address.trim()) missing.push(dir === 'rtl' ? 'العنوان' : 'Address');
 
     const normalizedPhone = formData.phone.replace(/\s/g, '');
     if (formData.phone && !/^\+?[0-9]{7,}$/.test(normalizedPhone)) {
@@ -225,23 +281,23 @@ export default function EmbeddedCheckout(props: {
       const selectedWilaya = getAlgeriaWilayaById(formData.wilayaId);
       const selectedCommune = getAlgeriaCommuneById(formData.communeId);
 
+      const addressParts =
+        deliveryType === 'home'
+          ? [formData.address, selectedCommune?.name || '', selectedWilaya?.name || '']
+          : [selectedCommune?.name || '', selectedWilaya?.name || ''];
+
       const orderData: any = {
         product_id: product.id,
         quantity,
-        delivery_fee: deliveryPrice || 0,
-        delivery_type: 'home',
+        total_price: price * quantity + (deliveryFee || 0),
+        delivery_fee: deliveryFee || 0,
+        delivery_type: deliveryType,
         customer_name: formData.fullName.trim(),
         ...(formData.email?.trim() ? { customer_email: formData.email.trim() } : {}),
         customer_phone: normalizedPhone,
         shipping_wilaya_id: formData.wilayaId ? Number(formData.wilayaId) : null,
         shipping_commune_id: formData.communeId ? Number(formData.communeId) : null,
-        customer_address: [
-          formData.address,
-          selectedCommune?.name || '',
-          selectedWilaya?.name || '',
-        ]
-          .filter(Boolean)
-          .join(', '),
+        customer_address: addressParts.filter(Boolean).join(', '),
       };
 
       const endpoint = `/api/storefront/${encodeURIComponent(String(storeSlug))}/orders`;
@@ -315,6 +371,67 @@ export default function EmbeddedCheckout(props: {
           </label>
         </div>
 
+        <div style={{ display: 'grid', gap: 6 }}>
+          <div style={{ fontSize: 12, color: theme.muted }}>{dir === 'rtl' ? 'نوع التوصيل' : 'Delivery type'}</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <button
+              type="button"
+              disabled={disabled || deskUnavailable}
+              onClick={() => {
+                if (disabled || deskUnavailable) return;
+                setDeliveryType('desk');
+              }}
+              style={{
+                borderRadius: 12,
+                border: `1px solid ${theme.border}`,
+                padding: '10px 12px',
+                background: deliveryType === 'desk' ? theme.accent : theme.bg,
+                color: deliveryType === 'desk' ? '#fff' : theme.text,
+                cursor: disabled || deskUnavailable ? 'not-allowed' : 'pointer',
+                fontWeight: 900,
+                opacity: deskUnavailable ? 0.6 : 1,
+              }}
+            >
+              {dir === 'rtl' ? 'مكتب' : 'Desk'}
+              <div style={{ marginTop: 2, fontSize: 11, fontWeight: 700, opacity: deliveryType === 'desk' ? 0.85 : 0.7 }}>
+                {deskUnavailable
+                  ? dir === 'rtl'
+                    ? 'غير متوفر'
+                    : 'Unavailable'
+                  : deliveryPriceDesk != null
+                    ? formatPrice(deliveryPriceDesk)
+                    : dir === 'rtl'
+                      ? 'اختر الولاية'
+                      : 'Select state'}
+              </div>
+            </button>
+
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => setDeliveryType('home')}
+              style={{
+                borderRadius: 12,
+                border: `1px solid ${theme.border}`,
+                padding: '10px 12px',
+                background: deliveryType === 'home' ? theme.accent : theme.bg,
+                color: deliveryType === 'home' ? '#fff' : theme.text,
+                cursor: disabled ? 'not-allowed' : 'pointer',
+                fontWeight: 900,
+              }}
+            >
+              {dir === 'rtl' ? 'منزل' : 'Home'}
+              <div style={{ marginTop: 2, fontSize: 11, fontWeight: 700, opacity: deliveryType === 'home' ? 0.85 : 0.7 }}>
+                {deliveryPriceHome != null
+                  ? formatPrice(deliveryPriceHome)
+                  : dir === 'rtl'
+                    ? 'اختر الولاية'
+                    : 'Select state'}
+              </div>
+            </button>
+          </div>
+        </div>
+
         <label style={{ display: 'grid', gap: 6 }}>
           <span style={{ fontSize: 12, color: theme.muted }}>{dir === 'rtl' ? 'البريد الإلكتروني (اختياري)' : 'Email (optional)'}</span>
           <input
@@ -366,16 +483,18 @@ export default function EmbeddedCheckout(props: {
 
         {/* Hai / Neighborhood removed per UI update */}
 
-        <label style={{ display: 'grid', gap: 6 }}>
-          <span style={{ fontSize: 12, color: theme.muted }}>{dir === 'rtl' ? 'العنوان' : 'Address'}</span>
-          <input
-            value={formData.address}
-            disabled={disabled}
-            onChange={(e) => setFormData((s) => ({ ...s, address: e.target.value }))}
-            style={inputStyle}
-            placeholder={dir === 'rtl' ? 'الشارع / رقم المنزل' : 'Street / house number'}
-          />
-        </label>
+        {deliveryType === 'home' && (
+          <label style={{ display: 'grid', gap: 6 }}>
+            <span style={{ fontSize: 12, color: theme.muted }}>{dir === 'rtl' ? 'العنوان' : 'Address'}</span>
+            <input
+              value={formData.address}
+              disabled={disabled}
+              onChange={(e) => setFormData((s) => ({ ...s, address: e.target.value }))}
+              style={inputStyle}
+              placeholder={dir === 'rtl' ? 'الشارع / رقم المنزل' : 'Street / house number'}
+            />
+          </label>
+        )}
 
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center', border: `1px solid ${theme.border}`, borderRadius: 14, padding: 12, background: 'rgba(0,0,0,0.02)' }}>
           <div style={{ fontSize: 12, color: theme.muted }}>{dir === 'rtl' ? 'الكمية' : 'Quantity'}</div>
@@ -407,7 +526,13 @@ export default function EmbeddedCheckout(props: {
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 12, color: theme.muted }}>
             <span>{dir === 'rtl' ? 'التوصيل' : 'Delivery'}</span>
-            <span>{loadingDeliveryPrice ? (dir === 'rtl' ? '...جارٍ' : '...') : formatPrice(deliveryPrice || 0)}</span>
+            <span>
+              {loadingDeliveryPrice
+                ? dir === 'rtl'
+                  ? '...جارٍ'
+                  : '...'
+                : formatPrice(deliveryFee || 0)}
+            </span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 13, fontWeight: 900 }}>
             <span>{dir === 'rtl' ? 'الإجمالي' : 'Total'}</span>

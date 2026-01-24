@@ -3,8 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Heart, Share2, ChevronLeft, Plus, Minus } from 'lucide-react';
 import PixelScripts, { trackAllPixels, PixelEvents } from '@/components/storefront/PixelScripts';
-import { safeJsonParse } from '@/utils/safeJson';
 import { useTranslation } from '@/lib/i18n';
+import { readStorefrontSettings, readStorefrontTemplate } from '@/lib/storefrontStorage';
 
 interface Product {
   id: number;
@@ -130,8 +130,8 @@ export default function ProductDetail() {
   const [wishlist, setWishlist] = useState(false);
 
   // Get template and settings from session/props
-  const template = localStorage.getItem('template') || 'fashion';
-  const settings: StoreSettings = safeJsonParse<StoreSettings>(localStorage.getItem('storeSettings'), {} as StoreSettings);
+  const template = readStorefrontTemplate('fashion');
+  const settings: StoreSettings = readStorefrontSettings<StoreSettings>({} as StoreSettings);
   const style = TEMPLATE_STYLES[template] || TEMPLATE_STYLES.fashion;
   const accentColor = settings.template_accent_color || style.accent;
 

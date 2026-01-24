@@ -6,7 +6,18 @@ import { useTranslation } from '@/lib/i18n';
 
 export default function OrderSuccess() {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, locale, setLocale } = useTranslation();
+
+  React.useEffect(() => {
+    const prev = locale;
+    if (prev !== 'ar') setLocale('ar');
+    return () => {
+      if (prev !== 'ar') setLocale(prev);
+    };
+  }, [locale, setLocale]);
+
+  const storeSlug = (localStorage.getItem('currentStoreSlug') || '').trim();
+  const storefrontHome = storeSlug ? `/store/${encodeURIComponent(storeSlug)}` : '/';
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-b from-slate-50 to-blue-50">
@@ -19,8 +30,7 @@ export default function OrderSuccess() {
           <p className="mt-2 text-slate-600">{t('checkout.successDesc')}</p>
 
           <div className="mt-6">
-            <Button className="w-full bg-slate-900 hover:bg-slate-950" onClick={() => navigate('/')}
-            >
+            <Button className="w-full bg-slate-900 hover:bg-slate-950" onClick={() => navigate(storefrontHome)}>
               {t('checkout.returnToStore')}
             </Button>
           </div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import type { TemplateProps, StoreProduct } from '../../types';
+import EmbeddedCheckout from '../shared/EmbeddedCheckout';
 
 /**
  * GALLERY PRO - Image gallery focused template.
@@ -35,6 +36,9 @@ function productImages(p: StoreProduct): string[] {
 export default function GalleryProTemplate(props: TemplateProps) {
   const { settings, formatPrice, navigate } = props;
   const canManage = Boolean(props.canManage);
+
+  const dir: 'rtl' | 'ltr' =
+    typeof document !== 'undefined' && document.documentElement?.dir === 'rtl' ? 'rtl' : 'ltr';
   const onSelect = (path: string) => {
     if (canManage && typeof (props as any).onSelect === 'function') {
       (props as any).onSelect(path);
@@ -66,6 +70,15 @@ export default function GalleryProTemplate(props: TemplateProps) {
 
   const cardBg = asString(settings.template_card_bg) || "#ffffff";
 const storeName = asString(settings.store_name) || 'Gallery Pro';
+
+  const checkoutTheme = {
+    bg: '#ffffff',
+    text: '#111827',
+    muted: '#6b7280',
+    accent,
+    cardBg: '#ffffff',
+    border: '#e4e4e7',
+  };
   
   const copyright = asString(settings.template_copyright) || `© ${new Date().getFullYear()} ${storeName}`;
 const heroTitle = asString(settings.template_hero_heading) || 'Premium Selection';
@@ -248,39 +261,16 @@ const descColor = asString(settings.template_description_color) || muted;
 
             {/* Order Form */}
             <div style={{ marginTop: 24, borderTop: '1px solid #e4e4e7', paddingTop: 24 }}>
-              <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 , color: productTitleColor}}>Quick Order</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <input placeholder="Full Name" style={{ padding: '14px', border: '1px solid #e4e4e7', borderRadius: 10, fontSize: 14, background: '#fff' }} />
-                <input placeholder="Phone" style={{ padding: '14px', border: '1px solid #e4e4e7', borderRadius: 10, fontSize: 14, background: '#fff' }} />
-                <input placeholder="City" style={{ padding: '14px', border: '1px solid #e4e4e7', borderRadius: 10, fontSize: 14, background: '#fff' }} />
-                <textarea placeholder="Full Address" rows={2} style={{ padding: '14px', border: '1px solid #e4e4e7', borderRadius: 10, fontSize: 14, resize: 'none', background: '#fff' }} />
-                
-                {/* Quantity */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>Qty:</span>
-                  <div style={{ display: 'flex', border: '1px solid #e4e4e7', borderRadius: 8, overflow: 'hidden' }}>
-                    <button style={{ width: 36, height: 36, border: 0, background: '#fff', cursor: 'pointer', fontSize: 18 }}>−</button>
-                    <span style={{ width: 40, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', borderLeft: '1px solid #e4e4e7', borderRight: '1px solid #e4e4e7', fontWeight: 600 }}>1</span>
-                    <button style={{ width: 36, height: 36, border: 0, background: '#fff', cursor: 'pointer', fontSize: 18 }}>+</button>
-                  </div>
-                </div>
-
-                <button
-                  style={{
-                    background: accent,
-                    border: 0,
-                    borderRadius: 10,
-                    padding: '16px',
-                    color: '#fff',
-                    fontWeight: 700,
-                    fontSize: 15,
-                    cursor: 'pointer',
-                    marginTop: 8,
-                  }}
-                >
-                  {cta}
-                </button>
-              </div>
+              <EmbeddedCheckout
+                storeSlug={String(props.storeSlug || (settings as any).store_slug || '')}
+                product={mainProduct || products[0]}
+                formatPrice={formatPrice}
+                theme={checkoutTheme}
+                disabled={canManage}
+                heading={dir === 'rtl' ? 'الطلب السريع' : 'Quick Order'}
+                subheading={canManage ? (dir === 'rtl' ? 'معطل في وضع التعديل' : 'Disabled in editor') : (dir === 'rtl' ? 'الدفع عند الاستلام • توصيل سريع' : 'Cash on delivery • Fast delivery')}
+                dir={dir}
+              />
             </div>
           </div>
         </div>

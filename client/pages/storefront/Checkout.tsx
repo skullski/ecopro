@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { safeJsonParse } from '@/utils/safeJson';
 import { ChevronLeft, Plus, Minus, Trash2, Lock, Truck } from 'lucide-react';
 import { useTranslation } from '@/lib/i18n';
 import {
@@ -18,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { readStorefrontSettings, readStorefrontTemplate } from '@/lib/storefrontStorage';
 
 interface CartItem {
   id: number;
@@ -151,7 +151,16 @@ const TEMPLATE_STYLES: Record<string, Record<string, string>> = {
 };
 
 export default function Checkout() {
-  const { t } = useTranslation();
+  const { t, locale, setLocale } = useTranslation();
+
+  useEffect(() => {
+    const prev = locale;
+    if (prev !== 'ar') setLocale('ar');
+    return () => {
+      if (prev !== 'ar') setLocale(prev);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const { productId } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -210,8 +219,8 @@ export default function Checkout() {
   const deliveryPrice = deliveryType === 'desk' ? (deliveryPriceDesk ?? deliveryPriceHome) : deliveryPriceHome;
 
   // Get template and settings
-  const template = localStorage.getItem('template') || 'fashion';
-  const settings: StoreSettings = safeJsonParse<StoreSettings>(localStorage.getItem('storeSettings'), {} as StoreSettings);
+  const template = readStorefrontTemplate('fashion');
+  const settings: StoreSettings = readStorefrontSettings<StoreSettings>({} as StoreSettings);
   const style = TEMPLATE_STYLES[template] || TEMPLATE_STYLES.fashion;
   const accentColor = settings.template_accent_color || style.accent;
 
@@ -571,9 +580,9 @@ export default function Checkout() {
   const total = subtotal + deliveryCost + tax;
 
   const steps: CheckoutStep[] = [
-    { id: 1, label: 'Cart', completed: currentStep > 1 },
-    { id: 2, label: 'Delivery', completed: currentStep > 2 },
-    { id: 3, label: 'Review', completed: false },
+    { id: 1, label: 'السلة', completed: currentStep > 1 },
+    { id: 2, label: 'التوصيل', completed: currentStep > 2 },
+    { id: 3, label: 'مراجعة', completed: false },
   ];
 
   return (
@@ -584,7 +593,7 @@ export default function Checkout() {
           <button onClick={() => navigate(-1)} className="p-1 sm:p-1.5 md:p-1">
             <ChevronLeft className="w-5 sm:w-6 md:w-5 h-5 sm:h-6 md:h-5" />
           </button>
-          <h1 className="text-lg sm:text-xl md:text-xl font-bold">Checkout</h1>
+          <h1 className="text-lg sm:text-xl md:text-xl font-bold">{t('checkout.title')}</h1>
         </div>
       </div>
 
@@ -623,7 +632,7 @@ export default function Checkout() {
             {/* Step 1: Cart */}
             {currentStep === 1 && (
               <div className={`border ${style.border} rounded-lg p-2 sm:p-3 md:p-3 lg:p-3`}>
-                <h2 className="text-base sm:text-lg md:text-lg lg:text-xl font-bold mb-2 sm:mb-3 md:mb-3 lg:mb-4">Order Summary</h2>
+                <h2 className="text-base sm:text-lg md:text-lg lg:text-xl font-bold mb-2 sm:mb-3 md:mb-3 lg:mb-4">{t('checkout.orderSummary')}</h2>
                 <div className="space-y-2 sm:space-y-2.5 md:space-y-2 lg:space-y-3">
                   {cart.map((item) => (
                     <div key={item.id} className={`flex gap-2 sm:gap-2.5 md:gap-2 lg:gap-4 border-b ${style.border} pb-2 sm:pb-2.5 md:pb-2 lg:pb-4`}>
@@ -634,7 +643,7 @@ export default function Checkout() {
                       />
                       <div className="flex-1">
                         <h3 className="font-semibold text-xs sm:text-sm md:text-sm">{item.name}</h3>
-                        <p className="text-xs sm:text-xs md:text-xs text-gray-500">{item.price} DZD each</p>
+                        <p className="text-xs sm:text-xs md:text-xs text-gray-500">{item.price} دج للقطعة</p>
                       </div>
                       <div className="text-right">
                         <div className="flex items-center gap-1 sm:gap-1.5 mb-1 sm:mb-2">
@@ -677,14 +686,14 @@ export default function Checkout() {
                           </button>
                         </div>
                         <p className="font-bold text-xs sm:text-sm" style={{ color: accentColor }}>
-                          {item.price * item.quantity} DZD
+                          {item.price * item.quantity} دج
                         </p>
                         <button
                           onClick={() => setCart(cart.filter((i) => i.id !== item.id))}
                           className="text-red-500 text-xs mt-1 sm:mt-2 flex items-center gap-0.5 sm:gap-1"
                         >
                           <Trash2 className="w-3 h-3" />
-                          Remove
+                          إزالة
                         </button>
                       </div>
                     </div>
@@ -694,7 +703,7 @@ export default function Checkout() {
                   onClick={() => setCurrentStep(2)}
                   className={`w-full py-3 rounded-lg font-bold text-lg mt-6 ${style.button}`}
                 >
-                  Continue to Delivery
+                  متابعة إلى معلومات التوصيل
                 </button>
               </div>
             )}
@@ -706,18 +715,18 @@ export default function Checkout() {
                   <div style={{ backgroundColor: accentColor }} className="p-0.5 sm:p-1 md:p-1 lg:p-3 rounded-lg">
                     <Truck className="w-3 sm:w-4 md:w-4 lg:w-7 h-3 sm:h-4 md:h-4 lg:h-7" style={{ color: style.bg === 'bg-black' ? '#000' : '#fff' }} />
                   </div>
-                  Delivery Info
+                  معلومات التوصيل
                 </h2>
                 
                 <div className="bg-gradient-to-r from-blue-50 to-transparent p-1.5 sm:p-2 md:p-1.5 lg:p-4 rounded-lg border-l-4 border-blue-500">
-                  <p className="text-xs sm:text-xs md:text-xs lg:text-sm text-gray-700">📍 <strong>Payment:</strong> Cash on Delivery - Pay driver on arrival</p>
+                  <p className="text-xs sm:text-xs md:text-xs lg:text-sm text-gray-700">📍 <strong>الدفع:</strong> الدفع عند الاستلام - ادفع للموزّع عند الوصول</p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5 sm:gap-2 md:gap-1.5 lg:gap-4">
                   <div className="space-y-0.5 sm:space-y-0.5 md:space-y-0.5">
-                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">{t("checkout.fullName") || "Full Name"} *</label>
+                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">{t("checkout.fullName")} *</label>
                     <input
                       type="text"
-                      placeholder={t("checkout.enterFullName") || "Enter your full name"}
+                      placeholder={t("checkout.enterFullName")}
                       value={formData.fullName}
                       onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                       className={`w-full px-2 sm:px-3 md:px-2 lg:px-4 py-1 sm:py-1.5 md:py-1.5 lg:py-3 rounded-lg border-2 text-xs sm:text-sm md:text-xs lg:text-sm ${style.inputBg} focus:outline-none focus:ring-2 focus:ring-offset-1 transition shadow-sm`}
@@ -726,10 +735,10 @@ export default function Checkout() {
                   </div>
 
                   <div className="space-y-0.5 sm:space-y-0.5 md:space-y-0.5">
-                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">{t("checkout.email") || "Email"} *</label>
+                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">{t("checkout.email")} *</label>
                     <input
                       type="email"
-                      placeholder={t("checkout.emailPlaceholder") || "your@email.com"}
+                      placeholder={t("checkout.emailPlaceholder")}
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       className={`w-full px-2 sm:px-3 md:px-2 lg:px-4 py-1 sm:py-1.5 md:py-1.5 lg:py-3 rounded-lg border-2 text-xs sm:text-sm md:text-xs lg:text-sm ${style.inputBg} focus:outline-none focus:ring-2 focus:ring-offset-1 transition shadow-sm`}
@@ -738,17 +747,17 @@ export default function Checkout() {
                   </div>
 
                   <div className="space-y-0.5 sm:space-y-0.5 md:space-y-0.5">
-                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">{t("checkout.phone") || "Phone Number"} *</label>
+                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">{t("checkout.phone")} *</label>
                     <input
                       type="tel"
-                      placeholder={t("checkout.phonePlaceholder") || "+213 5XX XXX XXX"}
+                      placeholder={t("checkout.phonePlaceholder")}
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       className={`w-full px-2 sm:px-3 md:px-2 lg:px-4 py-1 sm:py-1.5 md:py-1.5 lg:py-3 rounded-lg border-2 text-xs sm:text-sm md:text-xs lg:text-sm ${style.inputBg} focus:outline-none focus:ring-2 focus:ring-offset-1 transition shadow-sm`}
                       style={{ '--tw-ring-color': accentColor } as any}
                     />
                     {formData.phone && !/^\+?[0-9]{7,}$/.test(formData.phone.replace(/\s/g, '')) && (
-                      <p className="text-xs text-red-600 mt-1">Please enter a valid phone number</p>
+                      <p className="text-xs text-red-600 mt-1">يرجى إدخال رقم هاتف صحيح</p>
                     )}
 
                     {telegramBotInfo && settings?.store_slug && (
@@ -793,7 +802,7 @@ export default function Checkout() {
                     {messengerInfo && settings?.store_slug && (
                       <div className={`mt-2 p-2 rounded-lg border ${style.border}`}>
                         <div className="flex items-center justify-between gap-2">
-                          <div className="text-[11px] sm:text-xs font-bold opacity-75">Messenger (Optional)</div>
+                          <div className="text-[11px] sm:text-xs font-bold opacity-75">ماسنجر (اختياري)</div>
                           <div className="text-[11px] sm:text-xs">
                             {checkingMessengerConnection
                               ? 'Checking…'
@@ -836,7 +845,7 @@ export default function Checkout() {
                   </div>
 
                   <div className="space-y-0.5 sm:space-y-0.5 md:space-y-0.5">
-                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">{t("checkout.wilaya") || "Wilaya"} *</label>
+                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">{t("checkout.wilaya")} *</label>
                     <Select
                       value={formData.wilayaId}
                       onValueChange={(nextId) => {
@@ -847,7 +856,7 @@ export default function Checkout() {
                         className={`w-full px-2 sm:px-3 md:px-2 lg:px-4 py-1 sm:py-1.5 md:py-1.5 lg:py-3 rounded-lg border-2 text-xs sm:text-sm md:text-xs lg:text-sm ${style.inputBg} focus:outline-none focus:ring-2 focus:ring-offset-1 transition shadow-sm h-auto`}
                         style={{ '--tw-ring-color': accentColor } as any}
                       >
-                        <SelectValue placeholder={t("checkout.selectWilaya") || "Select Wilaya"} />
+                        <SelectValue placeholder={t("checkout.selectWilaya")} />
                       </SelectTrigger>
                       <SelectContent>
                         {dzWilayas.map((w) => (
@@ -860,7 +869,7 @@ export default function Checkout() {
                   </div>
 
                   <div className="space-y-0.5 sm:space-y-0.5 md:space-y-0.5">
-                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">{t("checkout.commune") || "Baladia/Commune"} *</label>
+                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">{t("checkout.commune")} *</label>
                     <Select
                       value={formData.communeId}
                       disabled={!formData.wilayaId}
@@ -873,7 +882,7 @@ export default function Checkout() {
                         className={`w-full px-2 sm:px-3 md:px-2 lg:px-4 py-1 sm:py-1.5 md:py-1.5 lg:py-3 rounded-lg border-2 text-xs sm:text-sm md:text-xs lg:text-sm ${style.inputBg} focus:outline-none focus:ring-2 focus:ring-offset-1 transition shadow-sm disabled:opacity-60 h-auto`}
                         style={{ '--tw-ring-color': accentColor } as any}
                       >
-                        <SelectValue placeholder={formData.wilayaId ? (t("checkout.selectCommune") || 'Select Baladia/Commune') : (t("checkout.selectWilayaFirst") || 'Select Wilaya first')} />
+                        <SelectValue placeholder={formData.wilayaId ? t("checkout.selectCommune") : t("checkout.selectWilayaFirst")} />
                       </SelectTrigger>
                       <SelectContent>
                         {dzCommunes.map((c) => (
@@ -888,7 +897,7 @@ export default function Checkout() {
                   {/* Hai / Neighborhood removed per request */}
 
                   <div className="space-y-0.5 sm:space-y-0.5 md:space-y-0.5 md:col-span-2">
-                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">{t('checkout.deliveryType') || 'Delivery type'} *</label>
+                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">{t('checkout.deliveryType')} *</label>
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
@@ -903,13 +912,13 @@ export default function Checkout() {
                             : `${style.inputBg} hover:bg-opacity-80`
                         } ${(deliveryPriceDesk == null && deliveryPriceHome != null) ? 'opacity-60 cursor-not-allowed' : ''}`}
                       >
-                        <div>{t('checkout.deliveryTypeDesk') || 'Desk'}</div>
+                        <div>{t('checkout.deliveryTypeDesk')}</div>
                         <div className={`text-[11px] ${deliveryType === 'desk' ? 'text-white/80' : 'opacity-70'}`}>
                           {loadingDeliveryPrice
-                            ? (t('checkout.loading') || 'Loading…')
+                            ? t('checkout.loading')
                             : deliveryPriceDesk != null
-                              ? `${deliveryPriceDesk} DZD`
-                              : (t('checkout.notAvailable') || 'Not available')}
+                              ? `${deliveryPriceDesk} دج`
+                              : t('checkout.notAvailable')}
                         </div>
                       </button>
                       <button
@@ -926,13 +935,13 @@ export default function Checkout() {
                             : undefined
                         }
                       >
-                        <div>{t('checkout.deliveryTypeHome') || 'Home'}</div>
+                        <div>{t('checkout.deliveryTypeHome')}</div>
                         <div className={`text-[11px] ${deliveryType === 'home' ? 'text-white/80' : 'opacity-70'}`}>
                           {loadingDeliveryPrice
-                            ? (t('checkout.loading') || 'Loading…')
+                            ? t('checkout.loading')
                             : deliveryPriceHome != null
-                              ? `${deliveryPriceHome} DZD`
-                              : (t('checkout.selectWilaya') || 'Select Wilaya')}
+                              ? `${deliveryPriceHome} دج`
+                              : t('checkout.selectWilaya')}
                         </div>
                       </button>
                     </div>
@@ -940,10 +949,10 @@ export default function Checkout() {
 
                   {deliveryType === 'home' && (
                     <div className="space-y-0.5 sm:space-y-0.5 md:space-y-0.5 md:col-span-2">
-                      <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">{t("checkout.address") || "Delivery Address"} *</label>
+                      <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">{t("checkout.address")} *</label>
                       <input
                         type="text"
-                        placeholder={t("checkout.addressPlaceholder") || "Street address, building, apartment number, etc."}
+                        placeholder={t("checkout.addressPlaceholder")}
                         value={formData.address}
                         onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                         className={`w-full px-2 sm:px-3 md:px-2 lg:px-4 py-1 sm:py-1.5 md:py-1.5 lg:py-3 rounded-lg border-2 text-xs sm:text-sm md:text-xs lg:text-sm ${style.inputBg} focus:outline-none focus:ring-2 focus:ring-offset-1 transition shadow-sm`}
@@ -956,7 +965,7 @@ export default function Checkout() {
 
                 {/* Compact Quantity Selector */}
                 <div className="flex items-center gap-2">
-                  <label className="text-xs sm:text-xs md:text-xs lg:text-sm font-bold whitespace-nowrap">Qty:</label>
+                  <label className="text-xs sm:text-xs md:text-xs lg:text-sm font-bold whitespace-nowrap">الكمية:</label>
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -979,14 +988,14 @@ export default function Checkout() {
                     onClick={() => setCurrentStep(1)}
                     className={`flex-1 py-1.5 sm:py-2 md:py-1.5 lg:py-3 rounded-lg border-2 text-xs sm:text-xs md:text-xs lg:text-base ${style.border} font-bold transition hover:shadow-lg`}
                   >
-                    ← Back to Cart
+                    ← الرجوع إلى السلة
                   </button>
                   <button
                     onClick={() => setCurrentStep(3)}
                     className={`flex-1 py-1.5 sm:py-2 md:py-1.5 lg:py-3 rounded-lg font-bold text-xs sm:text-xs md:text-xs lg:text-base transition hover:shadow-lg ${style.button}`}
                     style={{ backgroundColor: accentColor, color: style.bg === 'bg-black' ? '#000' : '#fff' }}
                   >
-                    Continue to Review →
+                    متابعة إلى المراجعة →
                   </button>
                 </div>
               </div>
@@ -995,20 +1004,20 @@ export default function Checkout() {
             {/* Step 3: Review */}
             {currentStep === 3 && (
               <div className={`border-2 ${style.border} rounded-xl p-2 sm:p-3 md:p-2 lg:p-3 space-y-1.5 sm:space-y-2 md:space-y-1.5 lg:space-y-2 md:space-y-3 shadow-lg`}>
-                <h2 className="text-base sm:text-lg md:text-lg lg:text-xl md:text-2xl font-bold mb-1 sm:mb-2 md:mb-2 lg:mb-4">{t("checkout.orderSummary") || "Order Review"}</h2>
+                <h2 className="text-base sm:text-lg md:text-lg lg:text-xl md:text-2xl font-bold mb-1 sm:mb-2 md:mb-2 lg:mb-4">{t("checkout.orderSummary")}</h2>
                 <div className="bg-gradient-to-r from-green-50 to-transparent border-l-4 border-green-500 p-2 sm:p-3 md:p-4 lg:p-5 rounded-lg mb-2 sm:mb-3 md:mb-4 lg:mb-4 shadow-sm">
-                  <p className="text-green-700 font-bold text-sm sm:text-base md:text-base lg:text-lg">✓ Ready to complete your order</p>
-                  <p className="text-xs sm:text-xs md:text-xs lg:text-sm text-green-600 mt-1">Payment will be collected upon delivery</p>
+                  <p className="text-green-700 font-bold text-sm sm:text-base md:text-base lg:text-lg">✓ جاهز لإتمام طلبك</p>
+                  <p className="text-xs sm:text-xs md:text-xs lg:text-sm text-green-600 mt-1">سيتم تحصيل الدفع عند التوصيل</p>
                 </div>
 
                 <div className={`${style.inputBg} rounded-lg p-2 sm:p-2.5 md:p-2 lg:p-3 space-y-1.5 sm:space-y-2 md:space-y-1.5 lg:space-y-3 border-2 ${style.border}`}>
                   <div>
-                    <h3 className="font-bold text-xs sm:text-sm md:text-xs lg:text-lg mb-1.5 sm:mb-2 md:mb-1.5 lg:mb-2">{t("checkout.orderItems") || "Order Items"}</h3>
+                    <h3 className="font-bold text-xs sm:text-sm md:text-xs lg:text-lg mb-1.5 sm:mb-2 md:mb-1.5 lg:mb-2">{t("checkout.orderItems")}</h3>
                     <div className="space-y-1">
                       {cart.map((item) => (
                         <div key={item.id} className="flex justify-between text-xs sm:text-xs md:text-xs lg:text-sm">
                           <span>{item.name} x {item.quantity}</span>
-                          <span className="font-bold">{item.price * item.quantity} DZD</span>
+                          <span className="font-bold">{item.price * item.quantity} دج</span>
                         </div>
                       ))}
                     </div>
@@ -1017,57 +1026,57 @@ export default function Checkout() {
                   {/* Price Summary */}
                   <div className="border-t border-gray-400 pt-1.5 space-y-1">
                     <div className="flex justify-between text-xs sm:text-xs md:text-xs lg:text-sm">
-                      <span className="opacity-70">{t("checkout.subtotal") || "Subtotal"}</span>
-                      <span>{cart.reduce((sum, item) => sum + item.price * item.quantity, 0)} DZD</span>
+                      <span className="opacity-70">{t("checkout.subtotal")}</span>
+                      <span>{cart.reduce((sum, item) => sum + item.price * item.quantity, 0)} دج</span>
                     </div>
                     <div className="flex justify-between text-xs sm:text-xs md:text-xs lg:text-sm">
-                      <span className="opacity-70">{t("checkout.deliveryFee") || "Delivery Fee"}</span>
+                      <span className="opacity-70">{t("checkout.deliveryFee")}</span>
                       {loadingDeliveryPrice ? (
-                        <span className="opacity-50">{t("common.loading") || "Loading..."}</span>
+                        <span className="opacity-50">{t("common.loading")}</span>
                       ) : deliveryPrice !== null ? (
-                        <span>{deliveryPrice} DZD</span>
+                        <span>{deliveryPrice} دج</span>
                       ) : (
-                        <span className="opacity-50 text-xs">{t("checkout.selectWilayaForDelivery") || "Select wilaya"}</span>
+                        <span className="opacity-50 text-xs">{t("checkout.selectWilayaForDelivery")}</span>
                       )}
                     </div>
                     <div className="flex justify-between text-sm sm:text-base md:text-sm lg:text-lg font-bold pt-1 border-t border-gray-300">
-                      <span>{t("checkout.total") || "Total"}</span>
+                      <span>{t("checkout.total")}</span>
                       <span style={{ color: style.accent }}>
-                        {cart.reduce((sum, item) => sum + item.price * item.quantity, 0) + (deliveryPrice || 0)} DZD
+                        {cart.reduce((sum, item) => sum + item.price * item.quantity, 0) + (deliveryPrice || 0)} دج
                       </span>
                     </div>
                   </div>
                   
                   <div className="border-t border-gray-400 pt-1.5" />
-                  <h3 className="font-bold text-xs sm:text-sm md:text-xs lg:text-lg mb-1.5 sm:mb-2 md:mb-1.5 lg:mb-4">Delivery Details</h3>
+                  <h3 className="font-bold text-xs sm:text-sm md:text-xs lg:text-lg mb-1.5 sm:mb-2 md:mb-1.5 lg:mb-4">تفاصيل التوصيل</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5 sm:gap-2 md:gap-1.5 lg:gap-4 text-xs sm:text-xs md:text-xs lg:text-sm">
                     <div>
-                      <p className="opacity-60 text-xs font-semibold">Name</p>
-                      <p className="font-bold">{formData.fullName || 'Not filled'}</p>
+                      <p className="opacity-60 text-xs font-semibold">الاسم</p>
+                      <p className="font-bold">{formData.fullName || 'غير مُدخل'}</p>
                     </div>
                     <div>
-                      <p className="opacity-60 text-xs font-semibold">Email</p>
-                      <p className="font-bold">{formData.email || 'Not filled'}</p>
+                      <p className="opacity-60 text-xs font-semibold">البريد الإلكتروني</p>
+                      <p className="font-bold">{formData.email || 'غير مُدخل'}</p>
                     </div>
                     <div>
-                      <p className="opacity-60 text-xs font-semibold">Phone</p>
-                      <p className="font-bold">{formData.phone || 'Not filled'}</p>
+                      <p className="opacity-60 text-xs font-semibold">الهاتف</p>
+                      <p className="font-bold">{formData.phone || 'غير مُدخل'}</p>
                     </div>
                     <div>
-                      <p className="opacity-60 text-xs font-semibold">Amount</p>
-                      <p className="font-bold">{formData.amount || '0'} DZD</p>
+                      <p className="opacity-60 text-xs font-semibold">المبلغ</p>
+                      <p className="font-bold">{formData.amount || '0'} دج</p>
                     </div>
                     <div>
-                      <p className="opacity-60 text-xs font-semibold">City</p>
-                      <p className="font-bold">{formData.city || 'Not filled'}</p>
+                      <p className="opacity-60 text-xs font-semibold">المدينة</p>
+                      <p className="font-bold">{formData.city || 'غير مُدخل'}</p>
                     </div>
                     <div>
-                      <p className="opacity-60 text-xs font-semibold">Delivery Type</p>
-                      <p className="font-bold">{deliveryType === 'desk' ? 'Desk' : 'Home'}</p>
+                      <p className="opacity-60 text-xs font-semibold">نوع التوصيل</p>
+                      <p className="font-bold">{deliveryType === 'desk' ? 'مكتب' : 'منزل'}</p>
                     </div>
                     <div className="md:col-span-2">
-                      <p className="opacity-60 text-xs font-semibold">Address</p>
-                      <p className="font-bold">{deliveryType === 'home' ? (formData.address || 'Not filled') : 'Hidden (Desk delivery)'}</p>
+                      <p className="opacity-60 text-xs font-semibold">العنوان</p>
+                      <p className="font-bold">{deliveryType === 'home' ? (formData.address || 'غير مُدخل') : 'مخفي (توصيل إلى مكتب)'}</p>
                     </div>
                   </div>
                 </div>
@@ -1086,7 +1095,7 @@ export default function Checkout() {
 
                 {orderStatus.type === 'success' && telegramStartUrls.length > 0 && (
                   <div className="p-2 sm:p-3 md:p-3 lg:p-4 rounded-lg border border-blue-200 bg-blue-50 text-blue-900 text-xs sm:text-sm">
-                    <div className="font-bold mb-2">Telegram Tracking (Optional)</div>
+                    <div className="font-bold mb-2">تتبع تيليجرام (اختياري)</div>
                     <div className="space-y-2">
                       {telegramStartUrls.slice(0, 3).map((url, idx) => (
                         <a
@@ -1096,12 +1105,10 @@ export default function Checkout() {
                           rel="noreferrer"
                           className="inline-block px-3 py-2 rounded-lg bg-white border border-blue-200 font-bold"
                         >
-                          Start Telegram Chat
+                          بدء محادثة تيليجرام
                         </a>
                       ))}
-                      <div className="text-[11px] text-blue-800">
-                        Open the chat and press Start once to receive confirmation & order updates.
-                      </div>
+                      <div className="text-[11px] text-blue-800">افتح المحادثة واضغط "بدء" مرة واحدة لتصلك رسالة التأكيد وتحديثات الطلب.</div>
                     </div>
                   </div>
                 )}
@@ -1111,7 +1118,7 @@ export default function Checkout() {
                     onClick={() => setCurrentStep(2)}
                     className={`flex-1 py-1.5 sm:py-2 md:py-1.5 lg:py-3 rounded-lg border-2 text-xs sm:text-xs md:text-xs lg:text-base ${style.border} font-bold transition hover:shadow-lg`}
                   >
-                    ← Edit Delivery
+                    ← تعديل معلومات التوصيل
                   </button>
                   <button
                     onClick={async () => {
@@ -1120,18 +1127,18 @@ export default function Checkout() {
                         setOrderStatus({ type: null, message: '' });
 
                         const missingFields: string[] = [];
-                        if (!formData.fullName) missingFields.push('Full Name');
-                        if (!formData.email) missingFields.push('Email');
-                        if (!formData.phone) missingFields.push('Phone');
-                        if (!formData.wilayaId) missingFields.push('Wilaya');
-                        if (!formData.communeId) missingFields.push('Baladia/Commune');
-                        if (deliveryType === 'home' && !formData.address) missingFields.push('Address');
+                        if (!formData.fullName) missingFields.push('الاسم الكامل');
+                        if (!formData.email) missingFields.push('البريد الإلكتروني');
+                        if (!formData.phone) missingFields.push('رقم الهاتف');
+                        if (!formData.wilayaId) missingFields.push('الولاية');
+                        if (!formData.communeId) missingFields.push('البلدية');
+                        if (deliveryType === 'home' && !formData.address) missingFields.push('العنوان');
                         if (formData.phone && !/^\+?[0-9]{7,}$/.test(formData.phone.replace(/\s/g, ''))) {
-                          missingFields.push('Valid Phone Number');
+                          missingFields.push('رقم هاتف صحيح');
                         }
 
                         if (missingFields.length > 0) {
-                          setOrderStatus({ type: 'error', message: `Please fill in: ${missingFields.join(', ')}` });
+                          setOrderStatus({ type: 'error', message: `يرجى ملء الحقول التالية: ${missingFields.join('، ')}` });
                           setIsSubmitting(false);
                           return;
                         }
@@ -1181,7 +1188,7 @@ export default function Checkout() {
                               tgLinks.push(String(responseData.telegramStartUrl));
                             }
                           } else {
-                            errorMessage = responseData.error || 'Order creation failed';
+                            errorMessage = responseData.error || t('checkout.error.orderFailedDesc');
                             console.error('[Checkout] Order creation error:', errorMessage);
                           }
                         }
@@ -1209,7 +1216,7 @@ export default function Checkout() {
                         }
                       } catch (error) {
                         console.error('Error placing order:', error);
-                        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+                        const errorMsg = error instanceof Error ? error.message : 'خطأ غير معروف';
                         setOrderStatus({
                           type: 'error',
                           message: t('checkout.status.failedWithError', { error: errorMsg }),
@@ -1234,23 +1241,23 @@ export default function Checkout() {
             <h3 className="text-xs sm:text-sm md:text-sm lg:text-lg font-bold mb-2 sm:mb-3 md:mb-2 lg:mb-4">{t('checkout.orderTotal')}</h3>
             <div className="space-y-1 sm:space-y-1.5 md:space-y-1 lg:space-y-2 mb-2 sm:mb-3 md:mb-2 lg:mb-4 pb-2 sm:pb-3 md:pb-2 lg:pb-6 border-b border-gray-300">
               <div className="flex justify-between text-xs sm:text-xs md:text-xs lg:text-sm">
-                <span>Subtotal</span>
-                <span>{subtotal} DZD</span>
+                <span>المجموع الفرعي</span>
+                <span>{subtotal} دج</span>
               </div>
               <div className="flex justify-between text-xs sm:text-xs md:text-xs lg:text-sm">
-                <span>Delivery</span>
-                <span>{deliveryCost} DZD</span>
+                <span>التوصيل</span>
+                <span>{deliveryCost} دج</span>
               </div>
               <div className="flex justify-between text-xs sm:text-xs md:text-xs lg:text-sm">
-                <span>Tax (10%)</span>
-                <span>{tax} DZD</span>
+                <span>الضريبة (10%)</span>
+                <span>{tax} دج</span>
               </div>
             </div>
             <div className="flex justify-between text-sm sm:text-base md:text-sm lg:text-xl font-bold" style={{ color: accentColor }}>
-              <span>Total</span>
-              <span>{total} DZD</span>
+              <span>الإجمالي</span>
+              <span>{total} دج</span>
             </div>
-            <p className="text-xs text-gray-500 mt-1 sm:mt-2 md:mt-1 lg:mt-4 text-center">Secure checkout with SSL encryption</p>
+            <p className="text-xs text-gray-500 mt-1 sm:mt-2 md:mt-1 lg:mt-4 text-center">الدفع آمن مع تشفير SSL</p>
           </div>
         </div>
       </div>

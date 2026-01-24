@@ -1,5 +1,6 @@
 import React from 'react';
 import type { TemplateProps, StoreProduct } from '../../types';
+import EmbeddedCheckout from '../shared/EmbeddedCheckout';
 
 /**
  * LIME DIRECT - Bright lime green direct sales template.
@@ -28,6 +29,9 @@ function productImage(p: StoreProduct): string {
 export default function LimeDirectTemplate(props: TemplateProps) {
   const { settings, formatPrice, navigate } = props;
   const canManage = Boolean(props.canManage);
+
+  const dir: 'rtl' | 'ltr' =
+    typeof document !== 'undefined' && document.documentElement?.dir === 'rtl' ? 'rtl' : 'ltr';
   const onSelect = (path: string) => {
     if (canManage && typeof (props as any).onSelect === 'function') {
       (props as any).onSelect(path);
@@ -74,6 +78,15 @@ const heroTitle = asString(settings.template_hero_heading) || 'Premium Quality P
   const badgeSubtitle = asString((settings as any).template_hero_badge_subtitle) || '';
 
   const products = (props.filtered?.length ? props.filtered : props.products)?.slice(0, 12) || [];
+
+  const checkoutTheme = {
+    bg: '#ffffff',
+    text: '#111827',
+    muted: '#6b7280',
+    accent,
+    cardBg: '#ffffff',
+    border: 'rgba(34,197,94,0.22)',
+  };
 
   
 
@@ -303,26 +316,16 @@ const descColor = asString(settings.template_description_color) || muted;
                   <span style={{ background: '#dcfce7', color: accent, padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700 }}>In Stock</span>
                 </div>
 
-                {/* Quick order form */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <input placeholder="Full Name" style={{ padding: '14px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }} />
-                  <input placeholder="Phone Number" style={{ padding: '14px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }} />
-                  <input placeholder="Address" style={{ padding: '14px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }} />
-                  <button
-                    style={{
-                      background: accent,
-                      border: 0,
-                      borderRadius: 8,
-                      padding: '16px',
-                      color: '#fff',
-                      fontWeight: 800,
-                      fontSize: 16,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    🛒 {cta} - {formatPrice(Number(products[0].price) || 0)}
-                  </button>
-                </div>
+                <EmbeddedCheckout
+                  storeSlug={String(props.storeSlug || (settings as any).store_slug || '')}
+                  product={products[0]}
+                  formatPrice={formatPrice}
+                  theme={checkoutTheme}
+                  disabled={canManage}
+                  heading={dir === 'rtl' ? 'الطلب السريع' : 'Quick Order'}
+                  subheading={canManage ? (dir === 'rtl' ? 'معطل في وضع التعديل' : 'Disabled in editor') : (dir === 'rtl' ? 'الدفع عند الاستلام • توصيل سريع' : 'Cash on delivery • Fast delivery')}
+                  dir={dir}
+                />
               </div>
             )}
           </div>

@@ -162,7 +162,7 @@ export default function BagsTemplate(props: TemplateProps) {
   // Advanced settings - properly parsed
   const gridGap = resolveInt((settings as any).template_grid_gap, 32, 8, 48);
   const baseSpacing = resolveInt((settings as any).template_spacing, 24, 8, 32);
-  const sectionSpacing = resolveInt((settings as any).template_section_spacing, 80, 24, 96);
+  const sectionSpacing = resolveInt((settings as any).template_section_spacing, 56, 24, 96);
   const animationSpeed = resolveInt((settings as any).template_animation_speed, 300, 100, 500);
   const hoverScale = asString((settings as any).template_hover_scale) || '1.02';
   const gridColumns = resolveInt((settings as any).template_grid_columns, 4, 1, 6);
@@ -292,12 +292,14 @@ export default function BagsTemplate(props: TemplateProps) {
           />
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+          <div style={{ minWidth: 0 }}>
             <div
-              style={{ fontFamily: headingFontFamily, fontSize: 14, color: productTitleColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+              style={{ fontSize: 14, fontWeight: 600, color: productTitleColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
               data-edit-path={`${path}.title`}
-              onClick={(e) => { if (canManage) clickGuard(e, `${path}.title`); }}
+              onClick={(e) => {
+                if (canManage) clickGuard(e, `${path}.title`);
+              }}
             >
               {title}
             </div>
@@ -308,7 +310,9 @@ export default function BagsTemplate(props: TemplateProps) {
           <div
             style={{ textAlign: 'right', fontSize: 13, color: productPriceColor, whiteSpace: 'nowrap', flexShrink: 0 }}
             data-edit-path={`${path}.price`}
-            onClick={(e) => { if (canManage) clickGuard(e, `${path}.price`); }}
+            onClick={(e) => {
+              if (canManage) clickGuard(e, `${path}.price`);
+            }}
           >
             {props.formatPrice(product?.price)}
           </div>
@@ -345,7 +349,7 @@ export default function BagsTemplate(props: TemplateProps) {
       }}
     >
       <div
-        className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pb-16"
+        className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pb-12"
         style={{
           background: 'rgba(255, 255, 255, 0.72)',
           backdropFilter: 'blur(12px)',
@@ -469,7 +473,7 @@ export default function BagsTemplate(props: TemplateProps) {
       {/* HERO */}
       <section
         className={(breakpoint === 'desktop' ? 'grid grid-cols-[0.9fr,1.1fr]' : 'grid grid-cols-1') + ' gap-8 lg:gap-10 items-end'}
-        style={{ padding: '40px 0' }}
+        style={{ padding: '28px 0' }}
         data-edit-path="layout.hero"
         onClick={() => onSelect('layout.hero')}
       >
@@ -486,7 +490,7 @@ export default function BagsTemplate(props: TemplateProps) {
             style={{
               margin: 0,
               fontFamily: headingFontFamily,
-              fontSize: `clamp(26px, 6vw, ${heroTitleSize}px)`,
+              fontSize: `clamp(24px, 4.8vw, ${heroTitleSize}px)`,
               lineHeight: 1.1,
               fontWeight: 500,
               color: heroTitleColor,
@@ -501,7 +505,7 @@ export default function BagsTemplate(props: TemplateProps) {
 
           <p
             style={{
-              fontSize: `clamp(12px, 3.2vw, ${heroSubtitleSize}px)`,
+              fontSize: `clamp(12px, 2.2vw, ${heroSubtitleSize}px)`,
               color: heroSubtitleColor,
               maxWidth: 448,
               margin: 0,
@@ -541,7 +545,7 @@ export default function BagsTemplate(props: TemplateProps) {
             <img
               src={heroImage}
               alt="Hero"
-              style={{ width: '100%', height: 'clamp(320px, 58vh, 460px)', objectFit: 'cover', display: 'block' }}
+              style={{ width: '100%', height: 'clamp(280px, 48vh, 420px)', objectFit: 'cover', display: 'block' }}
               onError={(e) => {
                 if (!e.currentTarget.src.endsWith('/placeholder.png')) e.currentTarget.src = '/placeholder.png';
               }}

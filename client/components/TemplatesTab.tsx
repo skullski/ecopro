@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { markOnboardingStepComplete } from '@/lib/onboarding';
+import { useTranslation } from '@/lib/i18n';
 import {
   Dialog,
   DialogContent,
@@ -32,10 +34,16 @@ interface TemplatesTabProps {
 }
 
 export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabProps) {
+  const { t } = useTranslation();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
+  const [previewTemplateId, setPreviewTemplateId] = useState<string | null>(null);
+
+  useEffect(() => {
+    markOnboardingStepComplete('templates_opened');
+  }, []);
 
   const [activeCategory, setActiveCategory] = useState<string>('All');
 
@@ -93,10 +101,19 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
 
   const getImageKey = (templateId: string, variant: 'carousel' | 'grid') => `${templateId}:${variant}`;
 
+  const currentTemplateId = normalizeTemplateId(storeSettings?.template);
+  const isPreviewingDifferentTemplate = Boolean(previewTemplateId && normalizeTemplateId(previewTemplateId) !== currentTemplateId);
+  const previewTemplateName = previewTemplateId
+    ? templates.find((tpl) => normalizeTemplateId(tpl.id) === normalizeTemplateId(previewTemplateId))?.name || previewTemplateId
+    : null;
+
   const openTemplateSwitch = (templateId: string) => {
     const nextId = normalizeTemplateId(templateId);
-    const currentId = normalizeTemplateId(storeSettings?.template);
-    if (currentId === nextId) return;
+    const currentId = currentTemplateId;
+    if (currentId === nextId) {
+      setPreviewTemplateId(null);
+      return;
+    }
     setPendingTemplateId(nextId);
     setSwitchMode('import');
     setSwitchError(null);
@@ -137,6 +154,7 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
       setStoreSettings(() => data);
       setSwitchOpen(false);
       setPendingTemplateId(null);
+      markOnboardingStepComplete('template_switched');
     } catch (e: any) {
       console.error('Template switch failed:', e);
       setSwitchError(e.message || 'Failed to switch template. Please try again.');
@@ -298,6 +316,13 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
 
   return (
     <div className="space-y-3 md:space-y-4">
+      <div className="rounded-lg border bg-muted/30 p-3">
+        <div className="text-sm font-medium">{t('templates.quickTipTitle') || 'Quick tip'}</div>
+        <div className="mt-1 text-sm text-muted-foreground">
+          {t('templates.quickTipDesc') || 'Pick a template you like, click Switch, then choose whether to import your hero text/colors.'}
+        </div>
+      </div>
+
       <Dialog open={switchOpen} onOpenChange={setSwitchOpen}>
         <DialogContent>
           <DialogHeader>
@@ -430,9 +455,9 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
           {[...visibleTemplates, ...visibleTemplates].map((template, idx) => (
             <button
               key={`${template.id}-${idx}`}
-              onClick={() => openTemplateSwitch(template.id)}
+              onClick={() => setPreviewTemplateId(template.id)}
               className={`flex-shrink-0 w-40 rounded-lg border-2 transition-all overflow-hidden hover:scale-105 hover:z-10 ${
-                normalizeTemplateId(storeSettings.template) === normalizeTemplateId(template.id)
+                currentTemplateId === normalizeTemplateId(template.id)
                   ? 'border-blue-500 ring-2 ring-blue-400 shadow-lg shadow-blue-500/30'
                   : 'border-slate-600 hover:border-slate-400'
               }`}
@@ -456,7 +481,7 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
                   </div>
                 )}
                 {/* Selected indicator */}
-                {normalizeTemplateId(storeSettings.template) === normalizeTemplateId(template.id) && (
+                {currentTemplateId === normalizeTemplateId(template.id) && (
                   <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow-lg">
                     ✓
                   </div>
@@ -470,14 +495,31 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
         </div>
       </div>
 
+      {isPreviewingDifferentTemplate && (
+        <div className="mt-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/40 p-3 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div className="text-xs text-muted-foreground">Previewing:</div>
+            <div className="font-semibold truncate">{previewTemplateName}</div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button type="button" size="sm" onClick={() => previewTemplateId && openTemplateSwitch(previewTemplateId)}>
+              Use template
+            </Button>
+            <Button type="button" size="sm" variant="outline" onClick={() => setPreviewTemplateId(null)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Quick Select Grid - Compact view */}
       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 bg-slate-50 dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
         {visibleTemplates.map((template) => (
           <button
             key={template.id}
-            onClick={() => openTemplateSwitch(template.id)}
+            onClick={() => setPreviewTemplateId(template.id)}
             className={`text-left rounded-lg border-2 transition-all overflow-hidden hover:shadow-lg ${
-              normalizeTemplateId(storeSettings.template) === normalizeTemplateId(template.id)
+              currentTemplateId === normalizeTemplateId(template.id)
                 ? 'border-blue-500 shadow-xl ring-2 ring-blue-400 ring-offset-1 dark:ring-offset-slate-900 bg-blue-50 dark:bg-slate-700'
                 : 'border-slate-300 hover:border-slate-400 dark:border-slate-600 dark:hover:border-slate-500 bg-white dark:bg-slate-800 hover:shadow-md'
             }`}
@@ -500,7 +542,7 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
                   <div className="text-xl">{template.icon}</div>
                 </div>
               )}
-              {normalizeTemplateId(storeSettings.template) === normalizeTemplateId(template.id) && (
+              {currentTemplateId === normalizeTemplateId(template.id) && (
                 <div className="absolute top-1 right-1 bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold shadow">
                   ✓
                 </div>

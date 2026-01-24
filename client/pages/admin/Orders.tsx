@@ -887,6 +887,14 @@ export default function OrdersAdmin() {
               <div className="text-lg mb-2">📭</div>
               <p className="text-xs md:text-sm font-semibold text-muted-foreground mb-1">{t('orders.noOrders')}</p>
               <p className="text-xs text-muted-foreground mb-2">{t('orders.noOrdersYet')}</p>
+
+              <div className="mx-auto mb-3 max-w-md rounded-lg border bg-muted/30 p-3 text-left">
+                <div className="text-xs font-semibold text-slate-700 dark:text-slate-200">{t('orders.demoTitle') || 'What an order looks like'}</div>
+                <div className="mt-1 text-xs text-muted-foreground">
+                  {t('orders.demoDesc') || 'When a customer orders from your store, it will appear here with customer info, product, amount, and status.'}
+                </div>
+              </div>
+
               <button
                 onClick={() => setShowAddOrder(true)}
                 className="inline-flex items-center gap-1 rounded bg-green-500 text-white px-2 py-1 text-xs font-medium hover:bg-green-600 transition-colors h-8"

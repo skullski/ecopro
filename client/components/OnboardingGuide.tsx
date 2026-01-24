@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Store, Package, ShoppingCart, Palette, Settings, Rocket,
   CheckCircle, ChevronRight, X, Sparkles, ArrowRight
 } from 'lucide-react';
 import { useTranslation } from '@/lib/i18n';
+import { dismissOnboarding, getOnboardingProgress } from '@/lib/onboarding';
 
 interface OnboardingStep {
   id: string;
@@ -17,73 +18,79 @@ interface OnboardingStep {
 
 interface OnboardingGuideProps {
   hasProducts: boolean;
-  hasStoreSettings: boolean;
+  hasStoreBasics: boolean;
+  hasBranding: boolean;
   hasOrders: boolean;
+  hasTemplateSwitched: boolean;
+  hasStoreLinkCopied: boolean;
   onDismiss?: () => void;
 }
 
 export default function OnboardingGuide({ 
   hasProducts, 
-  hasStoreSettings, 
+  hasStoreBasics,
+  hasBranding,
   hasOrders,
+  hasTemplateSwitched,
+  hasStoreLinkCopied,
   onDismiss 
 }: OnboardingGuideProps) {
   const { t } = useTranslation();
-  const [dismissed, setDismissed] = useState(false);
-
-  // Check if user has dismissed onboarding
-  useEffect(() => {
-    const wasDismissed = localStorage.getItem('onboarding_dismissed');
-    if (wasDismissed === 'true') {
-      setDismissed(true);
-    }
-  }, []);
+  const [dismissed, setDismissed] = useState(() => getOnboardingProgress().dismissed);
 
   const handleDismiss = () => {
-    localStorage.setItem('onboarding_dismissed', 'true');
+    dismissOnboarding();
     setDismissed(true);
     onDismiss?.();
   };
 
-  // If all steps complete or dismissed, don't show
-  if (dismissed || (hasProducts && hasStoreSettings)) {
+  // Show onboarding for both new users and existing accounts that are still empty.
+  // Rule: Only show if they have no products, no orders, and haven't switched templates yet.
+  if (dismissed || hasProducts || hasOrders || hasTemplateSwitched) {
     return null;
   }
 
-  const steps: OnboardingStep[] = [
-    {
-      id: 'store',
-      title: t('onboarding.setupStore') || 'Set Up Your Store',
-      description: t('onboarding.setupStoreDesc') || 'Customize your store name, logo, and theme colors',
-      icon: <Store className="w-5 h-5" />,
-      link: '/dashboard/store',
-      isComplete: hasStoreSettings
-    },
-    {
-      id: 'products',
-      title: t('onboarding.addProducts') || 'Add Your Products',
-      description: t('onboarding.addProductsDesc') || 'Upload products with photos, prices, and descriptions',
-      icon: <Package className="w-5 h-5" />,
-      link: '/dashboard/store',
-      isComplete: hasProducts
-    },
-    {
-      id: 'template',
-      title: t('onboarding.chooseTemplate') || 'Choose a Template',
-      description: t('onboarding.chooseTemplateDesc') || 'Pick a beautiful design for your storefront',
-      icon: <Palette className="w-5 h-5" />,
-      link: '/dashboard/store-layout',
-      isComplete: hasStoreSettings
-    },
-    {
-      id: 'share',
-      title: t('onboarding.shareStore') || 'Share Your Store',
-      description: t('onboarding.shareStoreDesc') || 'Get your store link and start selling',
-      icon: <Rocket className="w-5 h-5" />,
-      link: '/dashboard/store',
-      isComplete: hasOrders
-    }
-  ];
+  const steps: OnboardingStep[] = useMemo(() => {
+    const openBranding = '/dashboard/preview?onboarding=1&openSettings=1&tab=branding';
+    const openTemplates = '/dashboard/preview?onboarding=1&openSettings=1&tab=templates';
+    const openCreateProduct = '/dashboard/preview?onboarding=1&action=create-product';
+    const openShare = '/dashboard/preview?onboarding=1&openSettings=1&tab=storeUrl';
+
+    return [
+      {
+        id: 'store',
+        title: t('onboarding.setupStore') || 'Set Up Your Store',
+        description: t('onboarding.setupStoreDesc') || 'Add store name, logo, and description',
+        icon: <Store className="w-5 h-5" />,
+        link: openBranding,
+        isComplete: hasStoreBasics && hasBranding,
+      },
+      {
+        id: 'template',
+        title: t('onboarding.chooseTemplate') || 'Choose a Template',
+        description: t('onboarding.chooseTemplateDesc') || 'Pick a storefront design that fits your niche',
+        icon: <Palette className="w-5 h-5" />,
+        link: openTemplates,
+        isComplete: hasTemplateSwitched,
+      },
+      {
+        id: 'products',
+        title: t('onboarding.addProducts') || 'Create Your First Product',
+        description: t('onboarding.addProductsDesc') || 'Upload photos, price, stock, and variants',
+        icon: <Package className="w-5 h-5" />,
+        link: openCreateProduct,
+        isComplete: hasProducts,
+      },
+      {
+        id: 'share',
+        title: t('onboarding.shareStore') || 'Share Your Store Link',
+        description: t('onboarding.shareStoreDesc') || 'Copy your store link and start selling',
+        icon: <Rocket className="w-5 h-5" />,
+        link: openShare,
+        isComplete: hasStoreLinkCopied,
+      },
+    ];
+  }, [t, hasStoreBasics, hasBranding, hasTemplateSwitched, hasProducts, hasStoreLinkCopied]);
 
   const completedCount = steps.filter(s => s.isComplete).length;
   const progress = (completedCount / steps.length) * 100;
@@ -186,7 +193,7 @@ export default function OnboardingGuide({
         {!hasProducts && (
           <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
             <Link
-              to="/dashboard/store"
+              to="/dashboard/preview?onboarding=1&action=create-product"
               className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-primary to-accent text-white rounded-xl font-semibold text-sm shadow-lg shadow-primary/25 hover:shadow-xl hover:scale-[1.02] transition-all"
             >
               <Package className="w-4 h-4" />

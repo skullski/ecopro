@@ -22,9 +22,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import PixelScripts, { trackAllPixels, PixelEvents } from '@/components/storefront/PixelScripts';
-import { safeJsonParse } from '@/utils/safeJson';
 import { useToast } from '@/components/ui/use-toast';
 import { useTranslation } from '@/lib/i18n';
+import { readStorefrontSettings, readStorefrontTemplate } from '@/lib/storefrontStorage';
 
 interface Product {
   id: number;
@@ -83,11 +83,26 @@ export default function ProductCheckout() {
   const { id, slug, productSlug, storeSlug, productId } = useParams();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
-  const { t } = useTranslation();
+  const { t, locale, setLocale } = useTranslation();
   const navigate = useNavigate();
+
+  // Force Arabic-only checkout UI on this page
+  useEffect(() => {
+    const prev = locale;
+    if (prev !== 'ar') setLocale('ar');
+    return () => {
+      if (prev !== 'ar') setLocale(prev);
+    };
+  }, [locale, setLocale]);
   
   // Get the product identifier from any of the possible params
   const productIdentifier = id || slug || productSlug || productId;
+
+  const resolvedStoreSlug =
+    storeSlug ||
+    (localStorage.getItem('currentStoreSlug') || '').trim();
+
+  const storefrontHomePath = resolvedStoreSlug ? `/store/${encodeURIComponent(resolvedStoreSlug)}` : '/';
   
   // States
   const [quantity, setQuantity] = useState(1);
@@ -148,8 +163,8 @@ export default function ProductCheckout() {
   const [haiSuggestionsSupported, setHaiSuggestionsSupported] = useState(true);
 
   // Get template and settings
-  const template = localStorage.getItem('template') || 'fashion';
-  const settings: StoreSettings = safeJsonParse<StoreSettings>(localStorage.getItem('storeSettings'), {} as StoreSettings);
+  const template = readStorefrontTemplate('fashion');
+  const settings: StoreSettings = readStorefrontSettings<StoreSettings>({} as StoreSettings);
   const accentColor = settings.template_accent_color || settings.primary_color || '#3b82f6';
   const primaryColor = settings.primary_color || accentColor;
   const secondaryColor = settings.secondary_color || '#a855f7';
@@ -612,6 +627,14 @@ export default function ProductCheckout() {
   // Open Telegram with proper link
   const handleConnectTelegram = async () => {
     if (!telegramBotInfo?.enabled || !telegramBotInfo?.botUsername) return;
+
+    // If an order was already placed, prefer the order-scoped Telegram deep-link.
+    // This makes the bot treat the connection as linking to the existing order (not a new preconnect).
+    if (orderSuccess && telegramUrls.length > 0) {
+      setWaitingForTelegramConnection(true);
+      window.open(telegramUrls[0], '_blank');
+      return;
+    }
     
     let url = `https://t.me/${telegramBotInfo.botUsername}`;
     const slug = storeSlug || product?.store_slug || localStorage.getItem('currentStoreSlug');
@@ -1020,21 +1043,21 @@ export default function ProductCheckout() {
             <div className="bg-white rounded-xl p-4 mb-5 text-right border border-slate-300">
               <div className="flex justify-between text-slate-700 mb-2">
                 <span className="truncate">{productName}</span>
-                <span className="shrink-0">x{quantity}</span>
+                <span className="shrink-0">×{quantity}</span>
               </div>
               <div className="flex justify-between text-slate-600 text-sm">
                 <span>{t('checkout.subtotal')}</span>
-                <span>{subtotalPrice.toLocaleString()} DZD</span>
+                <span>{subtotalPrice.toLocaleString()} دج</span>
               </div>
               {deliveryPrice !== null && (
                 <div className="flex justify-between text-slate-600 text-sm">
                   <span>{t('checkout.deliveryFee')}</span>
-                  <span>{deliveryPrice.toLocaleString()} DZD</span>
+                  <span>{deliveryPrice.toLocaleString()} دج</span>
                 </div>
               )}
               <div className="flex justify-between text-slate-900 font-bold text-lg border-t border-slate-200 pt-2 mt-2">
                 <span>{t('checkout.total')}</span>
-                <span className="text-red-600">{totalPrice.toLocaleString()} DZD</span>
+                <span className="text-red-600">{totalPrice.toLocaleString()} دج</span>
               </div>
             </div>
 
@@ -1164,7 +1187,7 @@ export default function ProductCheckout() {
             )}
 
             <button
-              onClick={() => navigate('/')}
+              onClick={() => navigate(storefrontHomePath)}
               className="w-full py-3 bg-slate-900 hover:bg-slate-950 text-white rounded-xl font-bold transition-all border border-slate-900"
             >
               {t('checkout.returnToStore')}
@@ -1176,7 +1199,7 @@ export default function ProductCheckout() {
   }
 
   // Get store slug for pixel tracking
-  const pixelStoreSlug = storeSlug || product?.store_slug || settings.store_slug || '';
+  const pixelStoreSlug = storeSlug || product?.store_slug || settings.store_slug || resolvedStoreSlug || '';
 
   const storeLogoUrl = (settings as any).store_logo || settings.logo_url || '';
 
@@ -1216,7 +1239,7 @@ export default function ProductCheckout() {
                 borderColor: withAlpha(primaryColor, 0.18),
                 background: 'rgba(255,255,255,0.7)',
               }}
-              aria-label="Back"
+              aria-label="رجوع"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
@@ -1225,7 +1248,7 @@ export default function ProductCheckout() {
               {storeLogoUrl ? (
                 <img src={storeLogoUrl} alt="" className="w-8 h-8 rounded-md object-cover border border-slate-200" />
               ) : null}
-              <span className="font-semibold text-slate-900 truncate">{settings.store_name || 'Store'}</span>
+              <span className="font-semibold text-slate-900 truncate">{settings.store_name || 'متجر'}</span>
             </div>
 
             <button
@@ -1235,7 +1258,7 @@ export default function ProductCheckout() {
                   ? 'bg-rose-50 border-rose-200 text-rose-600'
                   : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
               }`}
-              aria-label="Wishlist"
+              aria-label="المفضلة"
             >
               <Heart className={`w-5 h-5 ${wishlist ? 'fill-current' : ''}`} />
             </button>
@@ -1265,7 +1288,7 @@ export default function ProductCheckout() {
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-2xl font-extrabold" style={{ color: '#ef4444' }}>
-                      {productPrice.toLocaleString()} DZD
+                      {productPrice.toLocaleString()} دج
                     </p>
                     <p
                       className={`mt-1 inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ${
@@ -1274,7 +1297,7 @@ export default function ProductCheckout() {
                           : 'bg-rose-50 text-rose-700 border-rose-200'
                       }`}
                     >
-                      {inStock ? 'In stock' : 'Out of stock'}
+                      {inStock ? 'متوفر' : 'غير متوفر'}
                     </p>
                   </div>
                 </div>
@@ -1284,7 +1307,7 @@ export default function ProductCheckout() {
                   <div className="mt-4 space-y-3">
                     {colors.length > 0 && (
                       <div>
-                        <div className="text-xs font-semibold text-slate-700 mb-2">Color</div>
+                        <div className="text-xs font-semibold text-slate-700 mb-2">اللون</div>
                         <div className="flex flex-wrap gap-2">
                           {colors.map((c) => {
                             const isActive = String(selectedColor).trim() === String(c).trim();
@@ -1336,7 +1359,7 @@ export default function ProductCheckout() {
 
                     {(sizesForSelectedColor.length > 0 || (sizes.length > 0 && colors.length === 0)) && (
                       <div>
-                        <div className="text-xs font-semibold text-slate-700 mb-2">Size / Type</div>
+                        <div className="text-xs font-semibold text-slate-700 mb-2">الحجم / النوع</div>
                         <div className="flex flex-wrap gap-2">
                           {(colors.length > 0 ? sizesForSelectedColor : sizes).map((s) => {
                             const isActive = String(selectedSize).trim() === String(s).trim();
@@ -1373,7 +1396,7 @@ export default function ProductCheckout() {
 
                     {colors.length === 0 && sizes.length === 0 && (
                       <div>
-                        <div className="text-xs font-semibold text-slate-700 mb-2">Options</div>
+                        <div className="text-xs font-semibold text-slate-700 mb-2">الخيارات</div>
                         <div className="flex flex-wrap gap-2">
                           {activeVariants.map((v) => {
                             const id = Number(v.id);
@@ -1383,7 +1406,7 @@ export default function ProductCheckout() {
                               [String(v?.color || '').trim(), String(v?.size || '').trim()]
                                 .filter(Boolean)
                                 .join(' / ') ||
-                              `Option #${v.id}`;
+                              `خيار رقم ${v.id}`;
                             const isActive = Number(selectedVariantId) === id;
                             return (
                               <button
@@ -1417,7 +1440,7 @@ export default function ProductCheckout() {
                 <div className="mt-4 rounded-xl border border-slate-300 bg-white/80 p-3">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-slate-600">Quantity</span>
+                      <span className="text-sm text-slate-600">الكمية</span>
                       <button
                         type="button"
                         onClick={() => setQuantity((q) => Math.max(1, q - 1))}
@@ -1441,25 +1464,25 @@ export default function ProductCheckout() {
                     </div>
 
                     <div className="text-right">
-                      <div className="text-xs text-slate-700 font-semibold">Product: {subtotalPrice.toLocaleString()} DZD</div>
+                      <div className="text-xs text-slate-700 font-semibold">المنتج: {subtotalPrice.toLocaleString()} دج</div>
                       <div className="text-xs text-slate-600">
-                        Delivery:{' '}
+                        التوصيل:{' '}
                         {loadingDeliveryPrice ? (
-                          <span>Loading…</span>
+                          <span>{t('checkout.loading')}</span>
                         ) : deliveryPrice != null ? (
                           <span className="font-semibold" style={{ color: '#2563eb' }}>
-                            {deliveryPrice.toLocaleString()} DZD
+                            {deliveryPrice.toLocaleString()} دج
                           </span>
                         ) : (
-                          <span>Select wilaya</span>
+                          <span>{t('checkout.selectWilaya')}</span>
                         )}
                       </div>
                       <div className="flex items-center justify-end gap-2">
                         <span className="text-[11px] font-bold uppercase tracking-wide text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">
-                          Important
+                          مهم
                         </span>
                         <span className="text-base font-extrabold" style={{ color: '#ef4444' }}>
-                          Total: {totalPrice.toLocaleString()} DZD
+                          الإجمالي: {totalPrice.toLocaleString()} دج
                         </span>
                       </div>
                     </div>
@@ -1478,14 +1501,14 @@ export default function ProductCheckout() {
                 >
                   <input
                     type="text"
-                    placeholder="Full Name *"
+                    placeholder={`${t('checkout.fullName')} *`}
                     value={formData.fullName}
                     onChange={(e) => setFormData((f) => ({ ...f, fullName: e.target.value }))}
                     className="px-3 py-2 rounded-lg border-2 border-slate-300 bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[var(--accentRing)] focus:border-[var(--accentBorder)]"
                   />
                   <input
                     type="tel"
-                    placeholder="Phone Number *"
+                    placeholder={`${t('checkout.phone')} *`}
                     value={formData.phone}
                     onChange={(e) => setFormData((f) => ({ ...f, phone: e.target.value }))}
                     className="px-3 py-2 rounded-lg border-2 border-slate-300 bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[var(--accentRing)] focus:border-[var(--accentBorder)]"
@@ -1499,7 +1522,7 @@ export default function ProductCheckout() {
                     }}
                   >
                     <SelectTrigger className="px-3 py-2 rounded-lg border-2 border-slate-300 bg-white text-slate-900 text-sm h-auto focus:ring-2 focus:ring-[var(--accentRing)] focus:border-[var(--accentBorder)]">
-                      <SelectValue placeholder="Wilaya *" />
+                      <SelectValue placeholder={`${t('checkout.wilaya')} *`} />
                     </SelectTrigger>
                     <SelectContent>
                       {dzWilayas.map((w) => (
@@ -1519,7 +1542,7 @@ export default function ProductCheckout() {
                     }}
                   >
                     <SelectTrigger className="px-3 py-2 rounded-lg border-2 border-slate-300 bg-white text-slate-900 text-sm disabled:opacity-60 h-auto focus:ring-2 focus:ring-[var(--accentRing)] focus:border-[var(--accentBorder)]">
-                      <SelectValue placeholder={formData.wilayaId ? 'Baladia/Commune *' : 'Select Wilaya first'} />
+                      <SelectValue placeholder={formData.wilayaId ? `${t('checkout.commune')} *` : t('checkout.selectWilayaFirst')} />
                     </SelectTrigger>
                     <SelectContent>
                       {dzCommunes.map((c) => (
@@ -1533,7 +1556,7 @@ export default function ProductCheckout() {
                   {deliveryType === 'home' && (
                     <input
                       type="text"
-                      placeholder="Address *"
+                      placeholder={`${t('checkout.address')} *`}
                       value={formData.address}
                       onChange={(e) => setFormData((f) => ({ ...f, address: e.target.value }))}
                       className="col-span-2 px-3 py-2 rounded-lg border-2 border-slate-300 bg-white text-slate-900 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[var(--accentRing)] focus:border-[var(--accentBorder)]"
@@ -1543,7 +1566,7 @@ export default function ProductCheckout() {
 
                 {/* Delivery type */}
                 <div className="mt-4">
-                  <div className="text-sm font-semibold text-slate-800">Delivery type</div>
+                  <div className="text-sm font-semibold text-slate-800">{t('checkout.deliveryType')}</div>
                   <div className="mt-2 grid grid-cols-2 gap-2">
                     <button
                       type="button"
@@ -1558,13 +1581,13 @@ export default function ProductCheckout() {
                           : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-50'
                       } ${(deliveryPriceDesk == null && deliveryPriceHome != null) ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                      <div className="font-semibold">Desk</div>
+                      <div className="font-semibold">{t('checkout.deliveryTypeDesk')}</div>
                       <div className={`text-xs ${deliveryType === 'desk' ? 'text-white/80' : 'text-slate-500'}`}>
                         {loadingDeliveryPrice
-                          ? 'Loading…'
+                          ? t('checkout.loading')
                           : deliveryPriceDesk != null
-                            ? `${deliveryPriceDesk.toLocaleString()} DZD`
-                            : 'Not available'}
+                            ? `${deliveryPriceDesk.toLocaleString()} دج`
+                            : t('checkout.notAvailable')}
                       </div>
                     </button>
                     <button
@@ -1584,13 +1607,13 @@ export default function ProductCheckout() {
                           : undefined
                       }
                     >
-                      <div className="font-semibold">Home</div>
+                      <div className="font-semibold">{t('checkout.deliveryTypeHome')}</div>
                       <div className={`text-xs ${deliveryType === 'home' ? 'text-white/80' : 'text-slate-500'}`}>
                         {loadingDeliveryPrice
-                          ? 'Loading…'
+                          ? t('checkout.loading')
                           : deliveryPriceHome != null
-                            ? `${deliveryPriceHome.toLocaleString()} DZD`
-                            : 'Select wilaya'}
+                            ? `${deliveryPriceHome.toLocaleString()} دج`
+                            : t('checkout.selectWilaya')}
                       </div>
                     </button>
                   </div>
@@ -1609,9 +1632,9 @@ export default function ProductCheckout() {
                       >
                         <div className="flex items-center gap-2">
                           <Send className="w-4 h-4 text-slate-700" />
-                          <span className="text-slate-900 text-sm">Telegram tracking</span>
+                          <span className="text-slate-900 text-sm">{t('checkout.confirmation.telegramTitle')}</span>
                           {telegramConnected && <span className="text-emerald-600 text-xs">✓</span>}
-                          {!telegramBotInfo.enabled && <span className="text-slate-400 text-xs">(Not available)</span>}
+                          {!telegramBotInfo.enabled && <span className="text-slate-400 text-xs">({t('checkout.confirmation.notAvailable')})</span>}
                         </div>
                         {!telegramConnected && (
                           <button
@@ -1624,7 +1647,7 @@ export default function ProductCheckout() {
                             className="px-3 py-1.5 rounded-lg text-white text-xs font-semibold disabled:opacity-50"
                             style={{ backgroundColor: '#2563eb' }}
                           >
-                            {telegramBotInfo.enabled ? 'Connect' : 'Unavailable'}
+                            {telegramBotInfo.enabled ? t('checkout.confirmation.connect') : t('checkout.confirmation.unavailable')}
                           </button>
                         )}
                       </div>
@@ -1640,9 +1663,9 @@ export default function ProductCheckout() {
                       >
                         <div className="flex items-center gap-2">
                           <MessageCircle className="w-4 h-4 text-slate-700" />
-                          <span className="text-slate-900 text-sm">Messenger tracking</span>
+                          <span className="text-slate-900 text-sm">{t('checkout.confirmation.messengerTitle')}</span>
                           {messengerConnected && <span className="text-emerald-600 text-xs">✓</span>}
-                          {!messengerInfo.enabled && <span className="text-slate-400 text-xs">(Not available)</span>}
+                          {!messengerInfo.enabled && <span className="text-slate-400 text-xs">({t('checkout.confirmation.notAvailable')})</span>}
                         </div>
                         {!messengerConnected && (
                           <button
@@ -1656,7 +1679,11 @@ export default function ProductCheckout() {
                             className="px-3 py-1.5 rounded-lg text-white text-xs font-semibold disabled:opacity-50"
                             style={{ backgroundColor: '#2563eb' }}
                           >
-                            {waitingForMessengerConnection ? 'Waiting…' : messengerInfo.enabled ? 'Connect' : 'Unavailable'}
+                            {waitingForMessengerConnection
+                              ? t('checkout.confirmation.waitingShort')
+                              : messengerInfo.enabled
+                                ? t('checkout.confirmation.connect')
+                                : t('checkout.confirmation.unavailable')}
                           </button>
                         )}
                       </div>
@@ -1676,7 +1703,7 @@ export default function ProductCheckout() {
                   ) : (
                     <>
                       <ShoppingBag className="w-4 h-4" />
-                      Confirm order • {totalPrice.toLocaleString()} DZD
+                      {t('checkout.placeOrder')} • {totalPrice.toLocaleString()} دج
                     </>
                   )}
                 </button>
@@ -1684,7 +1711,7 @@ export default function ProductCheckout() {
                 {/* Full description (simple, no clutter) */}
                 {product.description ? (
                   <div className="mt-5 pt-4 border-t border-slate-200">
-                    <div className="text-sm font-semibold text-slate-900 mb-2">Description</div>
+                    <div className="text-sm font-semibold text-slate-900 mb-2">الوصف</div>
                     <div className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">{product.description}</div>
                   </div>
                 ) : null}
@@ -1719,7 +1746,7 @@ export default function ProductCheckout() {
                         type="button"
                         onClick={() => setActiveImageIndex((i) => (i > 0 ? i - 1 : productImages.length - 1))}
                         className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 hover:bg-white border border-slate-200 text-slate-800"
-                        aria-label="Previous image"
+                        aria-label="الصورة السابقة"
                       >
                         <ChevronLeft className="w-4 h-4" />
                       </button>
@@ -1727,7 +1754,7 @@ export default function ProductCheckout() {
                         type="button"
                         onClick={() => setActiveImageIndex((i) => (i < productImages.length - 1 ? i + 1 : 0))}
                         className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 hover:bg-white border border-slate-200 text-slate-800"
-                        aria-label="Next image"
+                        aria-label="الصورة التالية"
                       >
                         <ChevronRight className="w-4 h-4" />
                       </button>

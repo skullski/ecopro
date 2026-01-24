@@ -11,6 +11,7 @@ import UniversalStyleInjector from '@/components/storefront/UniversalStyleInject
 import PixelScripts from '@/components/storefront/PixelScripts';
 import { setWindowTemplateSettings } from '@/lib/templateWindow';
 import { formatMoney } from '@/utils/money';
+import { STOREFRONT_SETTINGS_KEY, STOREFRONT_TEMPLATE_KEY } from '@/lib/storefrontStorage';
 
 interface StoreProduct {
   id: number;
@@ -113,12 +114,16 @@ export default function Storefront() {
   useEffect(() => {
     // Clear any corrupted localStorage on mount
     try {
-      const stored = localStorage.getItem('storeSettings');
+      const stored = localStorage.getItem(STOREFRONT_SETTINGS_KEY) || localStorage.getItem('storeSettings');
       if (stored && stored.length > 500000) {
         // Data too large, clear it
+        localStorage.removeItem(STOREFRONT_SETTINGS_KEY);
+        // legacy
         localStorage.removeItem('storeSettings');
       }
     } catch {
+      localStorage.removeItem(STOREFRONT_SETTINGS_KEY);
+      // legacy
       localStorage.removeItem('storeSettings');
     }
     
@@ -189,6 +194,8 @@ export default function Storefront() {
         
         // Save template and settings to localStorage for product pages
         // Exclude large base64 images to avoid quota exceeded errors
+        localStorage.setItem(STOREFRONT_TEMPLATE_KEY, newSettings.template);
+        // legacy: keep writing template for older pages until they migrate
         localStorage.setItem('template', newSettings.template);
         try {
           // Create a lightweight version without large base64 data
@@ -200,19 +207,27 @@ export default function Storefront() {
           if (lightSettings.banner_url?.startsWith('data:')) {
             lightSettings.banner_url = '';
           }
+          localStorage.setItem(STOREFRONT_SETTINGS_KEY, JSON.stringify(lightSettings));
+          // legacy: keep writing until all storefront pages migrate
           localStorage.setItem('storeSettings', JSON.stringify(lightSettings));
         } catch (e) {
           // Quota exceeded - clear and try again with minimal data
           console.warn('localStorage quota exceeded, storing minimal settings');
+          localStorage.removeItem(STOREFRONT_SETTINGS_KEY);
+          // legacy
           localStorage.removeItem('storeSettings');
-          localStorage.setItem('storeSettings', JSON.stringify({
+
+          const minimal = {
             template: newSettings.template,
             store_slug: newSettings.store_slug,
             store_name: newSettings.store_name,
             currency_code: newSettings.currency_code,
             primary_color: newSettings.primary_color,
             secondary_color: newSettings.secondary_color,
-          }));
+          };
+          localStorage.setItem(STOREFRONT_SETTINGS_KEY, JSON.stringify(minimal));
+          // legacy
+          localStorage.setItem('storeSettings', JSON.stringify(minimal));
         }
         
         // Track page view (fire and forget - don't await)

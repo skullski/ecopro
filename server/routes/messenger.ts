@@ -670,6 +670,26 @@ async function handleReferral(pageId: string, senderId: string, referral: any) {
       greeting
     );
 
+    // Late-connect fix: if the customer already placed an order, there may be queued bot_messages
+    // waiting for a PSID. Release those immediately now that we have linked the PSID.
+    try {
+      await pool.query(
+        `UPDATE bot_messages
+         SET send_at = NOW(),
+             status = 'pending',
+             error_message = NULL,
+             updated_at = NOW()
+         WHERE client_id = $1
+           AND customer_phone = $2
+           AND message_type = 'messenger'
+           AND status = 'pending'
+           AND error_message = 'WAITING_FOR_MESSENGER_PSID'`,
+        [client_id, customer_phone]
+      );
+    } catch (e) {
+      console.warn('[Messenger] Failed to release queued bot_messages after referral:', (e as any)?.message || e);
+    }
+
     console.log(`[Messenger] Successfully linked PSID ${senderId} to phone ${customer_phone} for client ${client_id}`);
   } catch (error) {
     console.error('[Messenger] Referral handler error:', error);
@@ -1039,6 +1059,25 @@ async function handlePostback(pageId: string, senderId: string, postback: any) {
           `UPDATE messenger_preconnect_tokens SET used_at = NOW() WHERE ref_token = $1`,
           [ref_token]
         );
+
+        // Late-connect fix: release queued Messenger messages now that PSID is known.
+        try {
+          await pool.query(
+            `UPDATE bot_messages
+             SET send_at = NOW(),
+                 status = 'pending',
+                 error_message = NULL,
+                 updated_at = NOW()
+             WHERE client_id = $1
+               AND customer_phone = $2
+               AND message_type = 'messenger'
+               AND status = 'pending'
+               AND error_message = 'WAITING_FOR_MESSENGER_PSID'`,
+            [client_id, customer_phone]
+          );
+        } catch (e) {
+          console.warn('[Messenger] Failed to release queued bot_messages after GET_STARTED:', (e as any)?.message || e);
+        }
 
         console.log(`[Messenger] Linked PSID ${senderId} to phone ${customer_phone} via GET_STARTED`);
 

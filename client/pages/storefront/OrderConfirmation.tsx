@@ -8,8 +8,17 @@ export default function OrderConfirmation() {
   const { storeSlug, orderId } = useParams<{ storeSlug: string; orderId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const { t } = useTranslation();
+  const { t, locale, setLocale } = useTranslation();
   const token = new URLSearchParams(location.search).get('t') || new URLSearchParams(location.search).get('token') || '';
+
+  // Force Arabic-only UI for the public confirmation flow
+  useEffect(() => {
+    const prev = locale;
+    if (prev !== 'ar') setLocale('ar');
+    return () => {
+      if (prev !== 'ar') setLocale(prev);
+    };
+  }, [locale, setLocale]);
   
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -135,7 +144,7 @@ export default function OrderConfirmation() {
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
           <h1 className="text-xl md:text-2xl font-bold text-gray-800 mb-2">{t('orderConfirmation.errorTitle')}</h1>
           <p className="text-sm md:text-base text-gray-600 mb-4">{error || t('orderConfirmation.errorDescDefault')}</p>
-          <Button onClick={() => navigate("/")} className="w-full">
+          <Button onClick={() => navigate(storeSlug ? `/store/${storeSlug}` : "/")} className="w-full">
             {t('common.backToHome')}
           </Button>
         </div>

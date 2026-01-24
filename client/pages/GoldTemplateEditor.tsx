@@ -416,8 +416,12 @@ export default function GoldTemplateEditor() {
 
   // Handle template change - reset template-specific settings when switching and auto-save
   const handleTemplateChange = async (newTemplateId: string) => {
-    const currentTemplate = settings.template || DEFAULT_TEMPLATE_ID;
-    if (newTemplateId === currentTemplate) return;
+    const currentTemplate = normalizeTemplateId(settings.template || DEFAULT_TEMPLATE_ID);
+    const nextTemplate = normalizeTemplateId(newTemplateId);
+    if (nextTemplate === currentTemplate) {
+      setPreviewTemplateId(null);
+      return;
+    }
 
     // Use fast template-only endpoint (now supports per-template snapshots).
     setSaving(true);
@@ -426,7 +430,7 @@ export default function GoldTemplateEditor() {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ template: newTemplateId, mode: 'import' }),
+        body: JSON.stringify({ template: nextTemplate, mode: 'import' }),
       });
       
       if (!res.ok) {
@@ -444,9 +448,9 @@ export default function GoldTemplateEditor() {
       // Server returns the merged settings for the selected template snapshot.
       setSelectedEditPath(null);
       setPreviewTemplateId(null);
-      setSettings(savedData || { template: newTemplateId });
+      setSettings(savedData || { template: nextTemplate });
       queryClient.invalidateQueries({ queryKey: ['storeSettings'] });
-      setSuccess(t('editor.templateChanged', { name: newTemplateId }) || `Template changed to ${newTemplateId}`);
+      setSuccess(t('editor.templateChanged', { name: nextTemplate }) || `Template changed to ${nextTemplate}`);
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
       setError(err.message || 'Failed to save template change');
