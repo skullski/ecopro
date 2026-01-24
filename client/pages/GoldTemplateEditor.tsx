@@ -1355,50 +1355,58 @@ export default function GoldTemplateEditor() {
     <div className="h-dvh flex flex-col overflow-hidden bg-background">
       {/* Header */}
       <div className="sticky top-0 z-50 bg-background border-b">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="container mx-auto px-2 md:px-4 py-2 md:py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+          <div className="flex items-center gap-2 md:gap-4">
             <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard')}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              {t('editor.back')}
+              <ArrowLeft className="w-4 h-4 md:mr-2" />
+              <span className="hidden md:inline">{t('editor.back')}</span>
             </Button>
-            <h1 className="text-lg font-semibold">{t('editor.title')}</h1>
+            <h1 className="text-base md:text-lg font-semibold truncate">{t('editor.title')}</h1>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={() => setTemplatePickerOpen((v) => !v)}
-              className="gap-2"
+              className="gap-1 md:gap-2 text-xs md:text-sm"
               aria-label="Select template"
             >
-              {TEMPLATE_PREVIEWS.find((t) => t.id === activeTemplateId)?.name || activeTemplateId}
+              <span className="max-w-[80px] md:max-w-none truncate">
+                {TEMPLATE_PREVIEWS.find((t) => t.id === activeTemplateId)?.name || activeTemplateId}
+              </span>
               <ChevronDown className="w-4 h-4" />
             </Button>
 
             {activeTab === 'preview' && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <Button
                   variant={previewDevice === 'mobile' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setPreviewDevice('mobile')}
+                  className="px-2 md:px-3 text-xs md:text-sm"
                 >
-                  {t('editor.mobile')}
+                  <span className="hidden sm:inline">{t('editor.mobile')}</span>
+                  <span className="sm:hidden">📱</span>
                 </Button>
                 <Button
                   variant={previewDevice === 'tablet' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setPreviewDevice('tablet')}
+                  className="px-2 md:px-3 text-xs md:text-sm"
                 >
-                  {t('editor.tablet')}
+                  <span className="hidden sm:inline">{t('editor.tablet')}</span>
+                  <span className="sm:hidden">📋</span>
                 </Button>
                 <Button
                   variant={previewDevice === 'desktop' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setPreviewDevice('desktop')}
+                  className="px-2 md:px-3 text-xs md:text-sm"
                 >
-                  {t('editor.desktop')}
+                  <span className="hidden sm:inline">{t('editor.desktop')}</span>
+                  <span className="sm:hidden">🖥️</span>
                 </Button>
               </div>
             )}
@@ -1407,21 +1415,23 @@ export default function GoldTemplateEditor() {
               variant={activeTab === 'preview' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setActiveTab('preview')}
+              className="px-2 md:px-3 text-xs md:text-sm"
             >
-              <Eye className="w-4 h-4 mr-2" />
-              {t('editor.preview')}
+              <Eye className="w-4 h-4 md:mr-2" />
+              <span className="hidden md:inline">{t('editor.preview')}</span>
             </Button>
             <Button
               variant={activeTab === 'settings' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setActiveTab('settings')}
+              className="px-2 md:px-3 text-xs md:text-sm"
             >
-              <Settings className="w-4 h-4 mr-2" />
-              {t('editor.settings')}
+              <Settings className="w-4 h-4 md:mr-2" />
+              <span className="hidden md:inline">{t('editor.settings')}</span>
             </Button>
-            <Button onClick={handleSave} disabled={saving}>
-              <Save className="w-4 h-4 mr-2" />
-              {saving ? t('editor.saving') : t('editor.save')}
+            <Button onClick={handleSave} disabled={saving} className="px-2 md:px-3 text-xs md:text-sm">
+              <Save className="w-4 h-4 md:mr-2" />
+              <span className="hidden sm:inline">{saving ? t('editor.saving') : t('editor.save')}</span>
             </Button>
           </div>
         </div>

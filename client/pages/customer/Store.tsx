@@ -1022,19 +1022,19 @@ export default function Store() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-4">
+    <div className="min-h-screen bg-background p-2 md:p-4 overflow-x-hidden">
       <div className="max-w-7xl mx-auto space-y-2 md:space-y-3">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div>
             <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
               {t('store.privateStore')}
             </h1>
-            <p className="text-muted-foreground mt-1">
+            <p className="text-muted-foreground mt-1 text-sm md:text-base">
               {t('store.manageExclusive')}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button 
               variant="outline"
               onClick={() => {
@@ -1044,18 +1044,18 @@ export default function Store() {
                 }
               }}
               disabled={!getStorefrontPath(storeSettings)}
-              className="h-9 px-3"
+              className="h-9 px-2 md:px-3 text-xs md:text-sm"
             >
-              <StoreIcon className="w-4 h-4 mr-2" />
-              {t('store.viewStorefront')}
+              <StoreIcon className="w-4 h-4 md:mr-2" />
+              <span className="hidden md:inline">{t('store.viewStorefront')}</span>
             </Button>
             <Button
               variant="outline"
               onClick={() => navigate('/template-editor')}
-              className="h-9 px-3"
+              className="h-9 px-2 md:px-3 text-xs md:text-sm"
             >
-              <Settings className="w-4 h-4 mr-2" />
-              {t('store.templateEditor')}
+              <Settings className="w-4 h-4 md:mr-2" />
+              <span className="hidden md:inline">{t('store.templateEditor')}</span>
             </Button>
             <Button
               onClick={() => {
@@ -1068,10 +1068,10 @@ export default function Store() {
                 setProductFormServerError(null);
                 setShowAddModal(true);
               }}
-              className="bg-gradient-to-r from-primary to-purple-600 h-9 px-3"
+              className="bg-gradient-to-r from-primary to-purple-600 h-9 px-2 md:px-3 text-xs md:text-sm"
             >
-              <Plus className="w-4 h-4 mr-2" />
-              {t('store.createProduct')}
+              <Plus className="w-4 h-4 md:mr-2" />
+              <span className="hidden sm:inline">{t('store.createProduct')}</span>
             </Button>
             <Button
               variant="outline"
@@ -1080,53 +1080,53 @@ export default function Store() {
                 setSelectedInventoryProduct(null);
                 setInventoryStockQuantity(1);
               }}
-              className="h-9 px-3"
+              className="h-9 px-2 md:px-3 text-xs md:text-sm"
             >
-              <Package className="w-4 h-4 mr-2" />
-              {t('store.selectFromInventory')}
+              <Package className="w-4 h-4 md:mr-2" />
+              <span className="hidden md:inline">{t('store.selectFromInventory')}</span>
             </Button>
           </div>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-3 text-white">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
+          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-2 md:p-3 text-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm opacity-90">{t('store.totalProducts')}</p>
-                <p className="text-xl md:text-2xl font-bold mt-1">{stats.total}</p>
+                <p className="text-xs md:text-sm opacity-90">{t('store.totalProducts')}</p>
+                <p className="text-lg md:text-2xl font-bold mt-1">{stats.total}</p>
               </div>
-              <Package className="w-8 h-8 opacity-80" />
+              <Package className="w-6 h-6 md:w-8 md:h-8 opacity-80" />
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-3 text-white">
+          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-2 md:p-3 text-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm opacity-90">{t('store.active')}</p>
-                <p className="text-xl md:text-2xl font-bold mt-1">{stats.active}</p>
+                <p className="text-xs md:text-sm opacity-90">{t('store.active')}</p>
+                <p className="text-lg md:text-2xl font-bold mt-1">{stats.active}</p>
               </div>
-              <Check className="w-8 h-8 opacity-80" />
+              <Check className="w-6 h-6 md:w-8 md:h-8 opacity-80" />
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-3 text-white">
+          <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-2 md:p-3 text-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm opacity-90">{t('store.drafts')}</p>
-                <p className="text-xl md:text-2xl font-bold mt-1">{stats.draft}</p>
+                <p className="text-xs md:text-sm opacity-90">{t('store.drafts')}</p>
+                <p className="text-lg md:text-2xl font-bold mt-1">{stats.draft}</p>
               </div>
-              <Edit className="w-8 h-8 opacity-80" />
+              <Edit className="w-6 h-6 md:w-8 md:h-8 opacity-80" />
             </div>
           </div>
 
-          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-3 text-white">
+          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-2 md:p-3 text-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm opacity-90">{t('store.totalViews')}</p>
-                <p className="text-xl md:text-2xl font-bold mt-1">{stats.totalViews}</p>
+                <p className="text-xs md:text-sm opacity-90">{t('store.totalViews')}</p>
+                <p className="text-lg md:text-2xl font-bold mt-1">{stats.totalViews}</p>
               </div>
-              <Eye className="w-8 h-8 opacity-80" />
+              <Eye className="w-6 h-6 md:w-8 md:h-8 opacity-80" />
             </div>
           </div>
         </div>
