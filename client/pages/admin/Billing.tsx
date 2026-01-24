@@ -10,15 +10,15 @@ import {
   Download,
   RefreshCw,
   Zap,
-  Tag,
-  Percent,
+  MessageCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
+import { Link } from 'wouter';
 
 interface Subscription {
   id: number;
@@ -48,16 +48,6 @@ interface Payment {
 const AdminBilling = () => {
   const { t } = useTranslation();
   const { toast } = useToast();
-  const [isCheckingOut, setIsCheckingOut] = useState(false);
-  const [showCheckoutDialog, setShowCheckoutDialog] = useState(false);
-  const [checkoutInfo, setCheckoutInfo] = useState<{
-    amount: number;
-    originalAmount: number;
-    discountPercent: number;
-    discountAmount: number;
-    voucherCode: string | null;
-    checkoutUrl: string;
-  } | null>(null);
 
   // Fetch subscription
   const { data: subscription, isLoading: subLoading, refetch: refetchSub } = useQuery({
@@ -80,62 +70,6 @@ const AdminBilling = () => {
   });
 
   const payments = paymentData?.payments || [];
-
-  // Handle checkout
-  const handleCheckout = async () => {
-    try {
-      setIsCheckingOut(true);
-      const res = await fetch('/api/billing/checkout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({}),
-      });
-
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || 'Checkout failed');
-      }
-
-      const data = await res.json();
-      
-      if (!data.checkoutUrl) {
-        throw new Error('No checkout URL received');
-      }
-
-      // If there's a discount, show confirmation dialog
-      if (data.discountPercent > 0) {
-        setCheckoutInfo({
-          amount: data.amount,
-          originalAmount: data.originalAmount,
-          discountPercent: data.discountPercent,
-          discountAmount: data.discountAmount,
-          voucherCode: data.voucherCode,
-          checkoutUrl: data.checkoutUrl,
-        });
-        setShowCheckoutDialog(true);
-        setIsCheckingOut(false);
-      } else {
-        // No discount, redirect directly
-        window.location.href = data.checkoutUrl;
-      }
-    } catch (error) {
-      console.error('Checkout error:', error);
-      toast({
-        title: 'Checkout Failed',
-        description: (error as any).message,
-        variant: 'destructive',
-      });
-      setIsCheckingOut(false);
-    }
-  };
-
-  const proceedToPayment = () => {
-    if (checkoutInfo?.checkoutUrl) {
-      window.location.href = checkoutInfo.checkoutUrl;
-    }
-  };
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { color: string; icon: React.ReactNode; label: string }> = {
@@ -327,44 +261,45 @@ const AdminBilling = () => {
           )}
 
           {/* Action Buttons */}
-          <div className="mt-6 flex gap-3">
+          <div className="mt-6 flex flex-col sm:flex-row gap-3">
             {isSubscriptionExpired ? (
-              <Button
-                onClick={handleCheckout}
-                disabled={isCheckingOut}
-                className="gap-2 bg-red-600 hover:bg-red-700"
-              >
-                <CreditCard className="w-4 h-4" />
-                {isCheckingOut ? 'Processing...' : 'Renew Subscription'}
-              </Button>
+              <>
+                <Alert className="flex-1 border-red-200 bg-red-50 dark:bg-red-950/20">
+                  <AlertCircle className="h-4 w-4 text-red-600" />
+                  <AlertDescription className="text-red-700 dark:text-red-400">
+                    Your subscription has expired. Contact support to renew.
+                  </AlertDescription>
+                </Alert>
+                <Link href="/admin/chat">
+                  <Button className="gap-2 bg-red-600 hover:bg-red-700 w-full sm:w-auto">
+                    <MessageCircle className="w-4 h-4" />
+                    Contact Support
+                  </Button>
+                </Link>
+              </>
             ) : isTrialActive ? (
               <>
-                <Button
-                  onClick={handleCheckout}
-                  disabled={isCheckingOut}
-                  className="gap-2 bg-blue-600 hover:bg-blue-700"
-                >
-                  <CreditCard className="w-4 h-4" />
-                  {isCheckingOut ? 'Processing...' : 'Start Paid Plan'}
-                </Button>
-                <p className="text-sm text-gray-600 dark:text-gray-400 self-center">
-                  {daysUntilExpiry} days of free trial remaining
-                </p>
+                <Alert className="flex-1 border-blue-200 bg-blue-50 dark:bg-blue-950/20">
+                  <Clock className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-700 dark:text-blue-400">
+                    {daysUntilExpiry} days of free trial remaining. Contact support when ready to subscribe.
+                  </AlertDescription>
+                </Alert>
+                <Link href="/admin/chat">
+                  <Button className="gap-2 bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">
+                    <MessageCircle className="w-4 h-4" />
+                    Contact Support to Pay
+                  </Button>
+                </Link>
               </>
             ) : subscription?.status === 'active' ? (
               <>
-                <Button variant="outline" disabled>
-                  ✓ Active Subscription
-                </Button>
-                <Button
-                  onClick={handleCheckout}
-                  disabled={isCheckingOut}
-                  variant="outline"
-                  className="gap-2"
-                >
-                  <CreditCard className="w-4 h-4" />
-                  {isCheckingOut ? 'Processing...' : 'Renew Next Month'}
-                </Button>
+                <Alert className="flex-1 border-green-200 bg-green-50 dark:bg-green-950/20">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <AlertDescription className="text-green-700 dark:text-green-400">
+                    Your subscription is active. Expires on {subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString() : 'N/A'}
+                  </AlertDescription>
+                </Alert>
               </>
             ) : null}
           </div>
@@ -493,16 +428,23 @@ const AdminBilling = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <details className="border rounded-lg p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
-            <summary className="font-semibold text-gray-900 dark:text-white">What happens when my subscription expires?</summary>
+            <summary className="font-semibold text-gray-900 dark:text-white">How do I pay for my subscription?</summary>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-3">
-              Your store access will be temporarily disabled. You can renew anytime to regain access. Your products and orders are safely stored.
+              Contact our support team through the chat. They will provide you with payment details. After you send the payment and provide proof, they'll issue a subscription code that you can redeem on your Profile page.
             </p>
           </details>
 
           <details className="border rounded-lg p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
-            <summary className="font-semibold text-gray-900 dark:text-white">Can I cancel my subscription?</summary>
+            <summary className="font-semibold text-gray-900 dark:text-white">What happens when my subscription expires?</summary>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-3">
-              Yes, you can cancel anytime. You won't be charged after the current billing period ends.
+              Your store access will be temporarily disabled. Contact support to renew anytime. Your products and orders are safely stored.
+            </p>
+          </details>
+
+          <details className="border rounded-lg p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
+            <summary className="font-semibold text-gray-900 dark:text-white">Where do I enter my subscription code?</summary>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-3">
+              Go to your <strong>Profile page</strong> and enter the code in the "Redeem Voucher Code" section. Your subscription will be activated instantly.
             </p>
           </details>
 
@@ -514,65 +456,6 @@ const AdminBilling = () => {
           </details>
         </CardContent>
       </Card>
-
-      {/* Checkout Discount Dialog */}
-      <Dialog open={showCheckoutDialog} onOpenChange={setShowCheckoutDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Tag className="w-5 h-5 text-green-600" />
-              Discount Applied!
-            </DialogTitle>
-            <DialogDescription>
-              You have a special discount on your first payment
-            </DialogDescription>
-          </DialogHeader>
-          
-          {checkoutInfo && (
-            <div className="space-y-4 py-4">
-              {/* Voucher Code Badge */}
-              <div className="flex items-center justify-center">
-                <div className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-4 py-2 rounded-full flex items-center gap-2">
-                  <Percent className="w-4 h-4" />
-                  <span className="font-semibold">{checkoutInfo.discountPercent}% OFF</span>
-                  <span className="text-sm">with code <strong>{checkoutInfo.voucherCode}</strong></span>
-                </div>
-              </div>
-
-              {/* Price Breakdown */}
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">Original Price</span>
-                  <span className="line-through text-gray-400">${checkoutInfo.originalAmount.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-sm text-green-600">
-                  <span>Discount ({checkoutInfo.discountPercent}%)</span>
-                  <span>-${checkoutInfo.discountAmount.toFixed(2)}</span>
-                </div>
-                <hr className="border-gray-200 dark:border-gray-700" />
-                <div className="flex justify-between font-semibold text-lg">
-                  <span>You Pay</span>
-                  <span className="text-green-600">${checkoutInfo.amount.toFixed(2)}</span>
-                </div>
-              </div>
-
-              <p className="text-xs text-gray-500 text-center">
-                This discount applies to your first payment only
-              </p>
-            </div>
-          )}
-
-          <DialogFooter className="flex gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setShowCheckoutDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={proceedToPayment} className="gap-2 bg-green-600 hover:bg-green-700">
-              <CreditCard className="w-4 h-4" />
-              Proceed to Payment
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
