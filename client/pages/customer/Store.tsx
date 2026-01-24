@@ -895,30 +895,45 @@ export default function Store() {
 
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-    // Validate file size (2MB max)
-    if (file.size > 2 * 1024 * 1024) {
-      toast({ variant: 'destructive', title: 'Upload failed', description: 'Image must be less than 2MB.' });
+    const MAX_IMAGES = 10;
+    const existing = Array.isArray(formData.images) ? formData.images : [];
+    const remaining = Math.max(0, MAX_IMAGES - existing.length);
+
+    if (remaining <= 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Max images reached',
+        description: `You can upload up to ${MAX_IMAGES} images.`,
+      });
       e.target.value = '';
       return;
     }
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast({ variant: 'destructive', title: 'Upload failed', description: 'Please select an image file.' });
-      e.target.value = '';
-      return;
+    const toUpload = files.slice(0, remaining);
+
+    // Validate upfront (2MB max)
+    for (const file of toUpload) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast({ variant: 'destructive', title: 'Upload failed', description: 'Each image must be less than 2MB.' });
+        e.target.value = '';
+        return;
+      }
+      if (!file.type.startsWith('image/')) {
+        toast({ variant: 'destructive', title: 'Upload failed', description: 'Please select image files only.' });
+        e.target.value = '';
+        return;
+      }
     }
 
-    setUploading(true);
-    try {
+    const uploadOne = async (file: File): Promise<string> => {
       const uploadFormData = new FormData();
       uploadFormData.append('image', file);
       const res = await fetch('/api/upload', {
         method: 'POST',
-        body: uploadFormData
+        body: uploadFormData,
       });
 
       const responseText = await res.text();
@@ -930,13 +945,33 @@ export default function Store() {
           throw new Error(`Upload failed: ${res.statusText}`);
         }
       }
+
       if (!responseText) throw new Error('Upload succeeded but server returned empty response');
       const data = JSON.parse(responseText);
       const url = String((data as any)?.url || '').trim();
       if (!url) throw new Error('Upload succeeded but server returned invalid url');
+      return url;
+    };
 
-      setFormData((prev) => ({ ...prev, images: [url] }));
-      toast({ title: 'Uploaded', description: 'Product image uploaded successfully.' });
+    setUploading(true);
+    try {
+      const uploadedUrls: string[] = [];
+      for (const file of toUpload) {
+        const url = await uploadOne(file);
+        uploadedUrls.push(url);
+      }
+
+      setFormData((prev) => {
+        const base = Array.isArray(prev.images) ? prev.images : [];
+        return { ...prev, images: [...base, ...uploadedUrls].slice(0, MAX_IMAGES) };
+      });
+      toast({
+        title: 'Uploaded',
+        description:
+          uploadedUrls.length === 1
+            ? 'Product image uploaded successfully.'
+            : `${uploadedUrls.length} images uploaded successfully.`,
+      });
     } catch (error) {
       console.error('Upload error:', error);
       toast({
@@ -2105,21 +2140,30 @@ export default function Store() {
                 <h3 className="text-lg font-bold text-sky-700 dark:text-sky-300">{t('store.productForm.imagesTitle')}</h3>
 
                 <div className="space-y-3">
-                  {formData.images?.[0] && (
-                    <div className="relative w-full h-48 border rounded-lg overflow-hidden">
-                      <img
-                        src={formData.images[0]}
-                        alt="Product preview"
-                        className="w-full h-full object-cover"
-                      />
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        className="absolute top-2 right-2"
-                        onClick={() => setFormData({ ...formData, images: [] })}
-                      >
-                        {t('store.productForm.removeImage')}
-                      </Button>
+                  {(formData.images?.length || 0) > 0 && (
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {(formData.images || []).slice(0, 10).map((url, idx) => (
+                        <div key={`${url}-${idx}`} className="relative w-full h-28 border rounded-lg overflow-hidden">
+                          <img
+                            src={url}
+                            alt="Product"
+                            className="w-full h-full object-cover"
+                          />
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="absolute top-1 right-1 h-7 px-2"
+                            onClick={() =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                images: (prev.images || []).filter((_, i) => i !== idx),
+                              }))
+                            }
+                          >
+                            {t('store.productForm.removeImage')}
+                          </Button>
+                        </div>
+                      ))}
                     </div>
                   )}
 
@@ -2129,14 +2173,15 @@ export default function Store() {
                         id="image-upload"
                         type="file"
                         accept="image/*"
+                        multiple
                         onChange={handleImageUpload}
-                        disabled={uploading}
+                        disabled={uploading || ((formData.images?.length || 0) >= 10)}
                         className="cursor-pointer"
                       />
                       <Button
                         type="button"
                         variant="outline"
-                        disabled={uploading}
+                        disabled={uploading || ((formData.images?.length || 0) >= 10)}
                         onClick={() => document.getElementById('image-upload')?.click()}
                       >
                         {uploading ? t('store.productForm.uploading') : t('store.productForm.upload')}
@@ -2146,10 +2191,20 @@ export default function Store() {
                     <p className="text-xs text-muted-foreground">
                       {t('store.productForm.imageUrlHint')}
                     </p>
+                    <p className="text-xs text-muted-foreground">
+                      Upload up to 10 images. Each image must be &lt; 2MB.
+                    </p>
                     <Input
                       id="images"
                       value={formData.images?.[0] || ''}
-                      onChange={(e) => setFormData({ ...formData, images: [e.target.value] })}
+                      onChange={(e) =>
+                        setFormData((prev) => {
+                          const nextFirst = e.target.value;
+                          const rest = Array.isArray(prev.images) ? prev.images.slice(1) : [];
+                          const next = nextFirst ? [nextFirst, ...rest] : rest;
+                          return { ...prev, images: next };
+                        })
+                      }
                       placeholder="https://example.com/image.jpg"
                     />
                   </div>

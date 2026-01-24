@@ -1,22 +1,32 @@
 import { Button } from "@/components/ui/button";
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  ArrowRight,
+  BadgeCheck,
+  Bot,
+  Layers,
+  Palette,
+  Rocket,
+  Shield,
+  Sparkles,
   Store,
   TrendingUp,
-  Users,
-  Shield,
-  Rocket,
-  Star,
-  ArrowRight,
-  Globe,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "@/lib/i18n";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, type ReactNode } from "react";
+
+type TemplatePreview = { name: string; img: string };
 
 export default function Index() {
   const { t } = useTranslation();
-  // Homepage is public marketing: keep it demo-only (no real platform metrics).
-  const previewItems = useMemo(
+
+  const previewItems: TemplatePreview[] = useMemo(
     () => [
       { name: "Modern", img: "/template-previews/modern.png" },
       { name: "Fashion", img: "/template-previews/fashion.png" },
@@ -30,432 +40,315 @@ export default function Index() {
     []
   );
 
-  const [targets, setTargets] = useState(() => ({
-    totalOrders: 1000,
-    salesToday: 500,
-    newOrders: 24,
-  }));
-
-  const [display, setDisplay] = useState(() => ({
-    totalOrders: 970,
-    salesToday: 430,
-    newOrders: 18,
-  }));
-
-  const [previewStart, setPreviewStart] = useState(0);
-  const [spark, setSpark] = useState<number[]>(() => Array.from({ length: 10 }, () => 20 + Math.floor(Math.random() * 60)));
-
-  // Slowly evolve demo stats so the UI feels alive.
-  useEffect(() => {
-    const randInt = (min: number, max: number) => Math.floor(min + Math.random() * (max - min + 1));
-    const id = window.setInterval(() => {
-      setTargets((prev) => ({
-        totalOrders: prev.totalOrders + randInt(0, 3),
-        salesToday: prev.salesToday + randInt(0, 12),
-        newOrders: prev.newOrders + randInt(0, 1),
-      }));
-      setSpark(Array.from({ length: 10 }, () => 18 + Math.floor(Math.random() * 70)));
-    }, 4500);
-    return () => window.clearInterval(id);
-  }, []);
-
-  // Smoothly animate displayed numbers toward targets.
-  useEffect(() => {
-    let raf = 0;
-    const step = () => {
-      setDisplay((cur) => {
-        const ease = (from: number, to: number) => {
-          const diff = to - from;
-          if (Math.abs(diff) < 1) return to;
-          return from + diff * 0.12;
-        };
-        return {
-          totalOrders: ease(cur.totalOrders, targets.totalOrders),
-          salesToday: ease(cur.salesToday, targets.salesToday),
-          newOrders: ease(cur.newOrders, targets.newOrders),
-        };
-      });
-      raf = window.requestAnimationFrame(step);
-    };
-    raf = window.requestAnimationFrame(step);
-    return () => window.cancelAnimationFrame(raf);
-  }, [targets]);
-
-  // Rotate preview thumbnails in the floating "New Products" card.
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      setPreviewStart((i) => (i + 1) % previewItems.length);
-    }, 2800);
-    return () => window.clearInterval(id);
-  }, [previewItems.length]);
-
-  const stats = {
-    totalOrders: Math.round(display.totalOrders),
-    salesToday: Math.round(display.salesToday),
-    newOrders: Math.round(display.newOrders),
-  };
-  
   return (
-    <div className="min-h-screen">
-      {/* Modern Hero Section */}
-      <section className="relative min-h-[75vh] flex items-center overflow-hidden py-6 sm:py-10">
-        {/* Animated Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-white to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM4ODg4ODgiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItaDJ2LTJoLTJ6bTAgNGgtMnYyaDJ2LTJ6bS0yIDJoLTJ2Mmgydi0yek0zMiAzOGgtMnYyaDJ2LTJ6bS0yLTJoLTJ2Mmgydi0yek0yOCAzNGgtMnYyaDJ2LTJ6bS02IDB2LTJoLTJ2Mmgyem0tMiAydi0ySDR2Mmgyem0tMiAydi0ySDR2MmgyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-40"></div>
-          <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-indigo-500/15 blur-3xl"></div>
-          <div className="absolute -bottom-28 -right-28 h-80 w-80 rounded-full bg-cyan-500/15 blur-3xl"></div>
-        </div>
+    <div className="min-h-screen bg-white dark:bg-gray-950">
+      {/* Hero */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-white to-cyan-50 dark:from-gray-950 dark:via-gray-950 dark:to-gray-900" />
+        <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-indigo-500/15 blur-3xl" />
+        <div className="absolute -bottom-28 -right-28 h-80 w-80 rounded-full bg-cyan-500/15 blur-3xl" />
 
-        <div className="container relative z-10 mx-auto px-3 sm:px-4">
-          <div className="grid lg:grid-cols-2 gap-6 lg:gap-10 items-center">
-            {/* Left Content */}
-            <div className="space-y-4 sm:space-y-5">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border shadow-md text-xs">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500"></span>
-                </span>
-                <span className="font-medium">{t("home.liveGrowing")}</span>
+        <div className="container relative mx-auto px-4 py-14 sm:py-20">
+          <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-gray-200/70 bg-white/70 px-3 py-1.5 text-xs font-semibold text-gray-700 shadow-sm backdrop-blur dark:border-gray-800/70 dark:bg-gray-900/40 dark:text-gray-200">
+                <Sparkles className="h-4 w-4 text-indigo-600" />
+                <span>{t("home.new.hero.kicker")}</span>
               </div>
 
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-black leading-[1.08]">
-                {t("home.heroYour")}
-                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-600">
+              <h1 className="mt-4 text-4xl font-black leading-[1.07] tracking-tight text-gray-900 dark:text-white sm:text-5xl">
+                {t("home.new.hero.title")}
+                <span className="block bg-gradient-to-r from-indigo-600 to-cyan-600 bg-clip-text text-transparent">
                   {t("brand")}
                 </span>
-                {t("home.heroTitle")}
               </h1>
 
-              <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300 max-w-xl leading-relaxed">
-                {t("home.heroDescription")}
+              <p className="mt-4 max-w-xl text-base leading-relaxed text-gray-600 dark:text-gray-300 sm:text-lg">
+                {t("home.new.hero.subtitle")}
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <Link to="/signup">
-                  <Button size="default" className="group bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-700 hover:to-cyan-700 text-white shadow-lg hover:shadow-xl px-5 h-11 text-sm">
-                    {t("home.getStarted")}
-                    <ArrowRight className="ml-1.5 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  <Button className="group h-11 bg-gradient-to-r from-indigo-600 to-cyan-600 px-5 text-sm font-semibold text-white shadow-lg hover:from-indigo-700 hover:to-cyan-700">
+                    {t("home.new.hero.primary")}
+                    <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </Button>
                 </Link>
-                <Link to="/about">
-                  <Button size="default" variant="outline" className="h-11 px-5 text-sm border hover:border-indigo-600 hover:text-indigo-600">
-                    {t("menu.about")}
+                <Link to="/pricing">
+                  <Button variant="outline" className="h-11 px-5 text-sm font-semibold">
+                    {t("home.new.hero.secondary")}
                   </Button>
                 </Link>
               </div>
 
-              {/* Trust Indicators */}
-              <div className="flex items-center gap-3 pt-2">
-                <div>
-                  <div className="flex items-center gap-0.5">
-                    {[1,2,3,4,5].map(i => (
-                      <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                    ))}
-                  </div>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">{t("home.reviews")}</p>
-                </div>
+              <div className="mt-8 grid max-w-xl grid-cols-1 gap-3 sm:grid-cols-3">
+                <ValueCard
+                  icon={<BadgeCheck className="h-5 w-5" />}
+                  title={t("home.new.hero.trust1.title")}
+                  desc={t("home.new.hero.trust1.desc")}
+                />
+                <ValueCard
+                  icon={<Shield className="h-5 w-5" />}
+                  title={t("home.new.hero.trust2.title")}
+                  desc={t("home.new.hero.trust2.desc")}
+                />
+                <ValueCard
+                  icon={<Bot className="h-5 w-5" />}
+                  title={t("home.new.hero.trust3.title")}
+                  desc={t("home.new.hero.trust3.desc")}
+                />
               </div>
             </div>
 
-            {/* Right Visual */}
             <div className="relative">
-              {/* Floating Cards */}
-              <div className="relative h-[420px] sm:h-[520px]">
-                <div className="absolute inset-0 -z-10">
-                  <div className="absolute -inset-8 bg-gradient-to-br from-indigo-600/10 via-transparent to-cyan-600/10 blur-3xl"></div>
-                </div>
-
-                {/* Main preview panel (makes the landing feel upgraded) */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-full max-w-[560px] rounded-3xl bg-white/70 dark:bg-gray-900/40 border border-gray-200/60 dark:border-gray-700/40 shadow-2xl backdrop-blur-md overflow-hidden">
-                    <div className="relative">
-                      <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/10 via-transparent to-cyan-600/10"></div>
-                      <img
-                        src="/template-previews/pro-landing.svg"
-                        alt="Sahla4Eco preview"
-                        className="w-full h-auto block"
-                        loading="lazy"
-                      />
-                      <div className="absolute top-3 left-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 dark:bg-gray-900/70 border border-gray-200/60 dark:border-gray-700/50 text-[11px] font-semibold">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                        {t('home.preview.live') || 'Live preview'}
-                      </div>
+              <div className="absolute -inset-6 -z-10 rounded-[2.5rem] bg-gradient-to-br from-indigo-600/10 via-transparent to-cyan-600/10 blur-2xl" />
+              <div className="overflow-hidden rounded-3xl border border-gray-200/70 bg-white/70 shadow-2xl backdrop-blur dark:border-gray-800/60 dark:bg-gray-900/40">
+                <div className="border-b border-gray-200/60 bg-white/60 px-4 py-3 dark:border-gray-800/60 dark:bg-gray-900/40">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="h-2.5 w-2.5 rounded-full bg-rose-500" />
+                      <div className="h-2.5 w-2.5 rounded-full bg-amber-500" />
+                      <div className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                    </div>
+                    <div className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                      {t("home.new.hero.previewLabel")}
                     </div>
                   </div>
                 </div>
-                {/* Card 1 */}
-                <div className="absolute top-0 right-0 w-[min(18rem,92vw)] sm:w-72 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-5 sm:p-6 animate-float">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center text-white font-bold">
-                      <TrendingUp />
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">{t("home.salesToday")}</p>
-                      <p className="text-2xl font-bold">{stats.salesToday}</p>
-                      <p className="text-xs text-gray-400">Demo preview</p>
-                    </div>
-                  </div>
-                  <div className="h-20 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg flex items-end gap-1 p-3">
-                    {spark.map((h, idx) => (
-                      <div
-                        key={idx}
-                        className="flex-1 rounded-sm bg-gradient-to-t from-emerald-500/70 to-green-400/40 dark:from-emerald-400/40 dark:to-green-300/20 transition-all duration-700"
-                        style={{ height: `${h}%` }}
-                      />
-                    ))}
-                  </div>
-                </div>
 
-                {/* Card 2 */}
-                <div className="absolute top-24 sm:top-32 left-0 w-[min(20rem,92vw)] sm:w-80 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-5 sm:p-6 animate-float" style={{animationDelay: '0.5s'}}>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold">{t("home.newTemplates") || 'New Templates'}</h3>
-                    <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 rounded-full text-xs font-medium animate-pulse">+{stats.newOrders}</span>
-                  </div>
-                  <div className="space-y-3">
-                    {[0, 1, 2].map((offset) => {
-                      const p = previewItems[(previewStart + offset) % previewItems.length];
-                      return (
-                        <div key={`${p.name}-${offset}`} className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600">
-                            <img
-                              src={p.img}
-                              alt={p.name}
-                              className="w-full h-full object-cover transition-opacity duration-500"
-                              loading="lazy"
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between">
-                              <p className="text-sm font-semibold">{p.name} template</p>
-                              <span className="text-[10px] text-gray-500">preview</span>
-                            </div>
-                            <div className="h-2 bg-gray-100 dark:bg-gray-600 rounded w-2/3 mt-2"></div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                <div className="relative">
+                  <img
+                    src="/template-previews/pro-landing.svg"
+                    alt={t("home.new.hero.previewAlt")}
+                    className="block w-full"
+                    loading="lazy"
+                  />
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-white/80 to-transparent dark:from-gray-950/80" />
                 </div>
+              </div>
 
-                {/* Card 3 */}
-                <div className="absolute bottom-0 right-0 sm:right-8 w-[min(16rem,92vw)] sm:w-60 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-5 sm:p-6 animate-float" style={{animationDelay: '1s'}}>
-                  <div className="flex items-center gap-2 mb-4">
-                    <Users className="w-5 h-5 text-purple-600" />
-                    <p className="text-sm font-medium">Total Orders</p>
-                  </div>
-                  <p className="text-2xl md:text-xl md:text-2xl font-black bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">{stats.totalOrders.toLocaleString()}</p>
-                  <p className="text-xs text-gray-500 mt-2">Real-time</p>
-                </div>
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <MiniStat
+                  icon={<TrendingUp className="h-4 w-4" />}
+                  title={t("home.new.hero.stat1.title")}
+                  value={t("home.new.hero.stat1.value")}
+                />
+                <MiniStat
+                  icon={<Store className="h-4 w-4" />}
+                  title={t("home.new.hero.stat2.title")}
+                  value={t("home.new.hero.stat2.value")}
+                />
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* How It Works */}
-      <section className="py-14 sm:py-20 bg-white dark:bg-gray-900">
+      {/* Templates */}
+      <section className="bg-white py-14 dark:bg-gray-950 sm:py-20">
         <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center mb-10 sm:mb-14">
-            <h2 className="text-3xl sm:text-4xl font-black">
-              {t('home.howItWorks.title') || 'All‑in‑one'}
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-600">
-                {t('home.howItWorks.subtitle') || 'Smart Ecommerce Automation'}
-              </span>
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="text-3xl font-black text-gray-900 dark:text-white sm:text-4xl">
+              {t("home.new.templates.title")}
             </h2>
-            <p className="mt-3 text-base sm:text-lg text-gray-600 dark:text-gray-300">
-              {t('home.howItWorks.desc') || 'Launch a storefront, add products, and manage orders — fast, clean, and reliable.'}
+            <p className="mt-3 text-base text-gray-600 dark:text-gray-300 sm:text-lg">
+              {t("home.new.templates.subtitle")}
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-4 md:gap-6 max-w-6xl mx-auto">
-            {[{
-              icon: <Store className="w-5 h-5" />,
-              title: t('home.howItWorks.step1.title') || 'Create your store',
-              desc: t('home.howItWorks.step1.desc') || 'Brand, logo, template — ready in minutes.',
-              accent: 'from-indigo-600 to-cyan-600',
-            }, {
-              icon: <Rocket className="w-5 h-5" />,
-              title: t('home.howItWorks.step2.title') || 'Add products',
-              desc: t('home.howItWorks.step2.desc') || 'Upload photos, price, variants, and stock.',
-              accent: 'from-cyan-600 to-indigo-600',
-            }, {
-              icon: <Shield className="w-5 h-5" />,
-              title: t('home.howItWorks.step3.title') || 'Manage orders',
-              desc: t('home.howItWorks.step3.desc') || 'Track orders and fulfillment with built‑in tools.',
-              accent: 'from-indigo-600 to-purple-600',
-            }].map((s, i) => (
-              <div key={i} className="bg-gray-50 dark:bg-gray-800/60 rounded-2xl border border-gray-100 dark:border-gray-700/60 p-5 sm:p-6 shadow-sm">
-                <div className={`inline-flex items-center justify-center w-11 h-11 rounded-xl text-white bg-gradient-to-br ${s.accent} shadow-lg`}>
-                  {s.icon}
+          <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {previewItems.map((p) => (
+              <div
+                key={p.name}
+                className="group overflow-hidden rounded-2xl border border-gray-200/70 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg dark:border-gray-800/70 dark:bg-gray-900"
+              >
+                <div className="aspect-[4/3] overflow-hidden bg-gray-100 dark:bg-gray-800">
+                  <img
+                    src={p.img}
+                    alt={p.name}
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                    loading="lazy"
+                  />
                 </div>
-                <div className="mt-4 font-bold text-lg">{s.title}</div>
-                <div className="mt-2 text-gray-600 dark:text-gray-300 text-sm leading-relaxed">{s.desc}</div>
+                <div className="flex items-center justify-between px-4 py-3">
+                  <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                    {p.name}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{t("home.new.templates.tag")}</div>
+                </div>
               </div>
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* Templates strip */}
-      <section className="py-12 sm:py-16 bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-950">
-        <div className="container mx-auto px-4">
-          <div className="flex items-end justify-between gap-4 flex-wrap mb-6">
-            <div>
-              <h3 className="text-xl sm:text-2xl font-black">
-                {t('home.templates.title') || 'Beautiful templates'}
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                {t('home.templates.desc') || 'Pick a style and start selling.'}
-              </p>
-            </div>
+          <div className="mt-8 flex justify-center">
             <Link to="/pricing">
-              <Button variant="outline" className="border-indigo-200 hover:border-indigo-400">
-                {t('home.templates.cta') || 'See pricing'}
-                <ArrowRight className="ml-2 w-4 h-4" />
+              <Button variant="outline" className="h-11 px-5 text-sm font-semibold">
+                {t("home.new.templates.cta")}
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
           </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            {previewItems.slice(0, 6).map((p) => (
-              <div key={p.name} className="group rounded-xl overflow-hidden border border-gray-200/70 dark:border-gray-800 bg-white/60 dark:bg-gray-900/40 backdrop-blur-sm shadow-sm">
-                <div className="aspect-[4/3] bg-gray-100 dark:bg-gray-800 overflow-hidden">
-                  <img src={p.img} alt={p.name} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300" loading="lazy" />
-                </div>
-                <div className="px-3 py-2 text-xs font-semibold text-gray-800 dark:text-gray-200 flex items-center justify-between">
-                  <span>{p.name}</span>
-                  <span className="text-[10px] text-gray-500">Template</span>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-24 bg-white dark:bg-gray-900">
+      {/* How it works */}
+      <section className="bg-gradient-to-b from-gray-50 to-white py-14 dark:from-gray-900 dark:to-gray-950 sm:py-20">
         <div className="container mx-auto px-4">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-3xl sm:text-4xl font-black mb-4">
-              {t("home.featuresTitle")}
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-cyan-600">
-                {t("home.featuresSubtitle")}
-              </span>
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="text-3xl font-black text-gray-900 dark:text-white sm:text-4xl">
+              {t("home.new.how.title")}
             </h2>
-            <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300">
-              {t("home.featuresDescription")}
+            <p className="mt-3 text-base text-gray-600 dark:text-gray-300 sm:text-lg">
+              {t("home.new.how.subtitle")}
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-3 md:gap-4">
-            <FeatureCard
-              icon={<Store />}
-              title={t("home.feature.storefront.title")}
-              description={t("home.feature.storefront.desc")}
-              color="from-blue-500 to-cyan-500"
+          <div className="mt-10 grid gap-4 md:grid-cols-3">
+            <StepCard
+              icon={<Palette className="h-5 w-5" />}
+              title={t("home.new.how.step1.title")}
+              desc={t("home.new.how.step1.desc")}
             />
-            <FeatureCard
-              icon={<TrendingUp />}
-              title={t("home.feature.analytics.title")}
-              description={t("home.feature.analytics.desc")}
-              color="from-green-500 to-emerald-500"
+            <StepCard
+              icon={<Layers className="h-5 w-5" />}
+              title={t("home.new.how.step2.title")}
+              desc={t("home.new.how.step2.desc")}
             />
-            <FeatureCard
-              icon={<Users />}
-              title={t("home.feature.audience.title")}
-              description={t("home.feature.audience.desc")}
-              color="from-purple-500 to-pink-500"
-            />
-            <FeatureCard
-              icon={<Shield />}
-              title={t("home.feature.payments.title")}
-              description={t("home.feature.payments.desc")}
-              color="from-orange-500 to-red-500"
-            />
-            <FeatureCard
-              icon={<Rocket />}
-              title={t("home.feature.launch.title")}
-              description={t("home.feature.launch.desc")}
-              color="from-indigo-500 to-purple-500"
-            />
-            <FeatureCard
-              icon={<Globe />}
-              title={t("home.feature.global.title")}
-              description={t("home.feature.global.desc")}
-              color="from-cyan-500 to-blue-500"
+            <StepCard
+              icon={<Rocket className="h-5 w-5" />}
+              title={t("home.new.how.step3.title")}
+              desc={t("home.new.how.step3.desc")}
             />
           </div>
         </div>
       </section>
 
-      {/* Social Proof */}
-      <section className="py-24 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900">
+      {/* Features */}
+      <section className="bg-white py-14 dark:bg-gray-950 sm:py-20">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-black mb-4">{t("home.testimonials.title")}</h2>
-            <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300">{t("home.testimonials.subtitle")}</p>
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="text-3xl font-black text-gray-900 dark:text-white sm:text-4xl">
+              {t("home.new.features.title")}
+            </h2>
+            <p className="mt-3 text-base text-gray-600 dark:text-gray-300 sm:text-lg">
+              {t("home.new.features.subtitle")}
+            </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-4 md:gap-3 md:gap-4 max-w-6xl mx-auto">
-            {[
-              { name: t("home.testimonial1.name"), role: t("home.testimonial1.role"), quote: t("home.testimonial1.quote"), avatar: "🎨" },
-              { name: t("home.testimonial2.name"), role: t("home.testimonial2.role"), quote: t("home.testimonial2.quote"), avatar: "⚡" },
-              { name: t("home.testimonial3.name"), role: t("home.testimonial3.role"), quote: t("home.testimonial3.quote"), avatar: "🌟" }
-            ].map((testimonial, i) => (
-              <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl p-4 md:p-6 shadow-xl">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center text-2xl">
-                    {testimonial.avatar}
-                  </div>
-                  <div>
-                    <p className="font-bold">{testimonial.name}</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{testimonial.role}</p>
-                  </div>
-                </div>
-                <div className="flex gap-1 mb-4">
-                  {[1,2,3,4,5].map(j => (
-                    <Star key={j} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  ))}
-                </div>
-                <p className="text-gray-700 dark:text-gray-300 italic">"{testimonial.quote}"</p>
-              </div>
-            ))}
+          <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <MiniFeature
+              icon={<Store className="h-5 w-5" />}
+              title={t("home.new.features.item1.title")}
+              desc={t("home.new.features.item1.desc")}
+            />
+            <MiniFeature
+              icon={<Bot className="h-5 w-5" />}
+              title={t("home.new.features.item2.title")}
+              desc={t("home.new.features.item2.desc")}
+            />
+            <MiniFeature
+              icon={<Shield className="h-5 w-5" />}
+              title={t("home.new.features.item3.title")}
+              desc={t("home.new.features.item3.desc")}
+            />
+            <MiniFeature
+              icon={<TrendingUp className="h-5 w-5" />}
+              title={t("home.new.features.item4.title")}
+              desc={t("home.new.features.item4.desc")}
+            />
+            <MiniFeature
+              icon={<BadgeCheck className="h-5 w-5" />}
+              title={t("home.new.features.item5.title")}
+              desc={t("home.new.features.item5.desc")}
+            />
+            <MiniFeature
+              icon={<Rocket className="h-5 w-5" />}
+              title={t("home.new.features.item6.title")}
+              desc={t("home.new.features.item6.desc")}
+            />
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-24 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-cyan-600"></div>
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzR2LTJoMnYyaC0yem0wIDRoLTJ2Mmgydi0yem0tMiAyaC0ydjJoMnYtMnptLTItMmgtMnYyaDJ2LTJ6bS0yLTJoLTJ2Mmgydi0yem0tMi0yaC0ydjJoMnYtMnoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-20"></div>
-
-        <div className="container relative z-10 mx-auto px-4 text-center">
-          <div className="max-w-3xl mx-auto">
-            <h2 className="text-3xl sm:text-4xl md:text-6xl font-black text-white mb-6">
-              {t("home.cta.title")}
+      {/* FAQ */}
+      <section className="bg-gradient-to-b from-white to-gray-50 py-14 dark:from-gray-950 dark:to-gray-900 sm:py-20">
+        <div className="container mx-auto px-4">
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="text-3xl font-black text-gray-900 dark:text-white sm:text-4xl">
+              {t("home.new.faq.title")}
             </h2>
-            <p className="text-base sm:text-lg text-white/90 mb-10">
-              {t("home.cta.description")}
+            <p className="mt-3 text-base text-gray-600 dark:text-gray-300 sm:text-lg">
+              {t("home.new.faq.subtitle")}
             </p>
+          </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <div className="mx-auto mt-10 max-w-3xl">
+            <Accordion type="single" collapsible className="rounded-2xl border border-gray-200/70 bg-white p-2 shadow-sm dark:border-gray-800/70 dark:bg-gray-900">
+              {[
+                {
+                  q: t("home.new.faq.q1"),
+                  a: t("home.new.faq.a1"),
+                },
+                {
+                  q: t("home.new.faq.q2"),
+                  a: t("home.new.faq.a2"),
+                },
+                {
+                  q: t("home.new.faq.q3"),
+                  a: t("home.new.faq.a3"),
+                },
+                {
+                  q: t("home.new.faq.q4"),
+                  a: t("home.new.faq.a4"),
+                },
+                {
+                  q: t("home.new.faq.q5"),
+                  a: t("home.new.faq.a5"),
+                },
+              ].map((item, idx) => (
+                <AccordionItem
+                  key={idx}
+                  value={`faq-${idx}`}
+                  className="rounded-xl border-b border-gray-200/70 px-3 last:border-b-0 dark:border-gray-800/70"
+                >
+                  <AccordionTrigger className="text-left text-sm font-semibold text-gray-900 dark:text-white">
+                    {item.q}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-sm leading-relaxed text-gray-600 dark:text-gray-300">
+                    {item.a}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
+        </div>
+      </section>
+
+      {/* Bottom CTA */}
+      <section className="relative overflow-hidden py-16">
+        <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-cyan-600" />
+        <div className="container relative mx-auto px-4">
+          <div className="mx-auto max-w-4xl rounded-3xl border border-white/15 bg-white/10 p-8 text-center shadow-2xl backdrop-blur sm:p-10">
+            <h2 className="text-3xl font-black text-white sm:text-4xl">
+              {t("home.new.cta.title")}
+            </h2>
+            <p className="mx-auto mt-3 max-w-2xl text-base text-white/90 sm:text-lg">
+              {t("home.new.cta.subtitle")}
+            </p>
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link to="/quick-sell">
-                <Button size="lg" className="bg-white text-indigo-600 hover:bg-gray-100 shadow-2xl px-4 md:px-6 h-14 text-lg font-bold">
-                  {t("home.cta.startFree")}
-                  <ArrowRight className="ml-2 w-5 h-5" />
+                <Button className="h-12 bg-white px-6 text-sm font-semibold text-indigo-700 hover:bg-white/90">
+                  {t("home.new.cta.primary")}
+                  <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
               <Link to="/about">
-                <Button size="lg" variant="outline" className="border-2 border-white text-white hover:bg-white/10 h-14 px-4 md:px-6 text-lg">
-                  {t("menu.about")}
+                <Button variant="outline" className="h-12 border-white/70 px-6 text-sm font-semibold text-white hover:bg-white/10">
+                  {t("home.new.cta.secondary")}
                 </Button>
               </Link>
             </div>
-
-            <p className="mt-4 md:mt-6 text-white/80 text-sm">
-              {t("home.cta.noFees")}
-            </p>
+            <div className="mt-4 text-xs text-white/80">{t("home.new.cta.footnote")}</div>
           </div>
         </div>
       </section>
@@ -463,23 +356,83 @@ export default function Index() {
   );
 }
 
-function FeatureCard({ icon, title, description, color }: { icon: React.ReactNode; title: string; description: string; color: string }) {
-  const { t } = useTranslation();
-  
+function ValueCard({
+  icon,
+  title,
+  desc,
+}: {
+  icon: ReactNode;
+  title: string;
+  desc: string;
+}) {
   return (
-    <div className="group relative bg-white dark:bg-gray-800 rounded-lg p-4 md:p-6 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 dark:border-gray-700">
-      <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${color} opacity-0 group-hover:opacity-10 rounded-2xl transition-opacity blur-2xl`}></div>
-      
-      <div className={`inline-flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br ${color} text-white mb-6 group-hover:scale-110 transition-transform shadow-lg`}>
+    <div className="rounded-2xl border border-gray-200/70 bg-white/70 p-4 shadow-sm backdrop-blur dark:border-gray-800/70 dark:bg-gray-900/40">
+      <div className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600/10 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-200">
         {icon}
       </div>
-      
-      <h3 className="text-xl font-bold mb-3">{title}</h3>
-      <p className="text-gray-600 dark:text-gray-300 leading-relaxed">{description}</p>
-      
-      <div className={`mt-6 inline-flex items-center text-sm font-medium bg-gradient-to-r ${color} bg-clip-text text-transparent group-hover:gap-2 transition-all`}>
-        {t("home.learnMore")}
-        <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+      <div className="mt-2 text-sm font-bold text-gray-900 dark:text-white">{title}</div>
+      <div className="mt-1 text-xs leading-relaxed text-gray-600 dark:text-gray-300">{desc}</div>
+    </div>
+  );
+}
+
+function StepCard({
+  icon,
+  title,
+  desc,
+}: {
+  icon: ReactNode;
+  title: string;
+  desc: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-gray-200/70 bg-white p-6 shadow-sm dark:border-gray-800/70 dark:bg-gray-900">
+      <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-cyan-600 text-white shadow-lg">
+        {icon}
+      </div>
+      <div className="mt-4 text-lg font-black text-gray-900 dark:text-white">{title}</div>
+      <div className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-300">{desc}</div>
+    </div>
+  );
+}
+
+function MiniFeature({
+  icon,
+  title,
+  desc,
+}: {
+  icon: ReactNode;
+  title: string;
+  desc: string;
+}) {
+  return (
+    <div className="group rounded-2xl border border-gray-200/70 bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg dark:border-gray-800/70 dark:bg-gray-900">
+      <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600/15 to-cyan-600/15 text-indigo-700 dark:from-indigo-500/15 dark:to-cyan-500/15 dark:text-indigo-200">
+        {icon}
+      </div>
+      <div className="mt-4 text-base font-black text-gray-900 dark:text-white">{title}</div>
+      <div className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-300">{desc}</div>
+    </div>
+  );
+}
+
+function MiniStat({
+  icon,
+  title,
+  value,
+}: {
+  icon: ReactNode;
+  title: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-2xl border border-gray-200/70 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-gray-800/70 dark:bg-gray-900/50">
+      <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-cyan-600 text-white">
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <div className="truncate text-xs font-semibold text-gray-600 dark:text-gray-300">{title}</div>
+        <div className="truncate text-sm font-black text-gray-900 dark:text-white">{value}</div>
       </div>
     </div>
   );

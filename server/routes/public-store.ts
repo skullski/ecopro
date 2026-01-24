@@ -132,14 +132,14 @@ export const getStorefrontProducts: RequestHandler = async (req, res) => {
       // IMPORTANT PERFORMANCE NOTE:
       // REGEXP_REPLACE-based matching forces a scan and is very slow on remote DB.
       // Try indexed store_slug exact match first, then fall back only if needed.
-      let clientCheck = await withDbRetry((db) =>
+      let clientCheck = await withDbRetry<any>((db) =>
         db.query(
           `SELECT client_id FROM client_store_settings WHERE store_slug = $1`,
           [storeSlug]
         ) as any
       );
       if (clientCheck.rows.length === 0) {
-        clientCheck = await withDbRetry((db) =>
+        clientCheck = await withDbRetry<any>((db) =>
           db.query(
             `SELECT client_id FROM client_store_settings 
              WHERE LOWER(REGEXP_REPLACE(store_name, '[^a-zA-Z0-9]', '', 'g')) = LOWER($1)`,
@@ -154,7 +154,7 @@ export const getStorefrontProducts: RequestHandler = async (req, res) => {
           console.log(`Loading client store ${storeSlug} for client ID ${clientId}`);
         }
         // Include store-level fields so product cards can show owner/store info without extra round-trip
-        const result = await withDbRetry((db) =>
+        const result = await withDbRetry<any>((db) =>
           db.query(
             `SELECT 
               p.id, p.title, p.description, p.price, p.original_price, 

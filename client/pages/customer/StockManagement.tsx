@@ -142,7 +142,7 @@ export default function StockManagement() {
       category: formData.category ? String(formData.category) : undefined,
       quantity: formData.quantity ?? 0,
       unit_price: formData.unit_price == null ? undefined : Number(formData.unit_price),
-      reorder_level: formData.reorder_level == null ? undefined : Number(formData.reorder_level),
+      reorder_level: formData.reorder_level == null ? 10 : Number(formData.reorder_level),
       location: (formData as any).location ? String((formData as any).location) : undefined,
       supplier_name: (formData as any).supplier_name ? String((formData as any).supplier_name) : undefined,
       supplier_contact: (formData as any).supplier_contact ? String((formData as any).supplier_contact) : undefined,
@@ -163,7 +163,7 @@ export default function StockManagement() {
       description: formData.description ? String(formData.description) : undefined,
       category: formData.category ? String(formData.category) : undefined,
       unit_price: formData.unit_price == null ? undefined : Number(formData.unit_price),
-      reorder_level: formData.reorder_level == null ? undefined : Number(formData.reorder_level),
+      reorder_level: formData.reorder_level == null ? 10 : Number(formData.reorder_level),
       location: (formData as any).location ? String((formData as any).location) : undefined,
       supplier_name: (formData as any).supplier_name ? String((formData as any).supplier_name) : undefined,
       supplier_contact: (formData as any).supplier_contact ? String((formData as any).supplier_contact) : undefined,
@@ -319,7 +319,7 @@ export default function StockManagement() {
         const newCategory = await res.json();
         setAllCategories([...allCategories, { ...newCategory, product_count: 0 }]);
         setCategories([...categories, newCategory.name]);
-        setFormData({ ...formData, category: newCategory.name });
+        setFormData(prev => ({ ...prev, category: newCategory.name }));
         setNewCategoryName('');
         setCategoryPopoverOpen(false);
       } else {
@@ -1090,7 +1090,7 @@ export default function StockManagement() {
                     <Input
                       id="name"
                       value={formData.name || ''}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                       placeholder={t('stock.productName')}
                       className="border-primary/30 focus:border-primary/60 transition-colors h-9 text-base"
                     />
@@ -1105,7 +1105,7 @@ export default function StockManagement() {
                   <Textarea
                     id="description"
                     value={formData.description || ''}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                     placeholder={t('stock.description')}
                     rows={3}
                     className="border-primary/30 focus:border-primary/60 transition-colors resize-none text-base"
@@ -1166,7 +1166,7 @@ export default function StockManagement() {
                                   formData.category === cat.name ? 'bg-primary/20' : ''
                                 }`}
                                 onClick={() => {
-                                  setFormData({ ...formData, category: cat.name });
+                                  setFormData(prev => ({ ...prev, category: cat.name }));
                                   setCategoryPopoverOpen(false);
                                 }}
                               >
@@ -1191,7 +1191,7 @@ export default function StockManagement() {
                                     formData.category === cat ? 'bg-primary/20' : ''
                                   }`}
                                   onClick={() => {
-                                    setFormData({ ...formData, category: cat });
+                                    setFormData(prev => ({ ...prev, category: cat }));
                                     setCategoryPopoverOpen(false);
                                   }}
                                 >
@@ -1214,7 +1214,7 @@ export default function StockManagement() {
                             size="sm"
                             className="w-full text-muted-foreground"
                             onClick={() => {
-                              setFormData({ ...formData, category: '' });
+                              setFormData(prev => ({ ...prev, category: '' }));
                               setCategoryPopoverOpen(false);
                             }}
                           >
@@ -1368,8 +1368,20 @@ export default function StockManagement() {
                     <Input
                       id="quantity"
                       type="number"
-                      value={formData.quantity || 0}
-                      onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 0 })}
+                      value={formData.quantity ?? ''}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        if (v === '') {
+                          setFormData(prev => ({ ...prev, quantity: undefined }));
+                          return;
+                        }
+
+                        const n = Number.parseInt(v, 10);
+                        setFormData(prev => ({
+                          ...prev,
+                          quantity: Number.isNaN(n) ? undefined : Math.max(0, n),
+                        }));
+                      }}
                       min="0"
                       className="border-amber-500/30 focus:border-amber-500/60 transition-colors h-9 text-base"
                     />
@@ -1388,7 +1400,7 @@ export default function StockManagement() {
                       onChange={(e) => {
                         const v = e.target.value;
                         const n = Number(v);
-                        setFormData({ ...formData, unit_price: v === '' || Number.isNaN(n) ? undefined : n });
+                        setFormData(prev => ({ ...prev, unit_price: v === '' || Number.isNaN(n) ? undefined : n }));
                       }}
                       min="0"
                       className="border-amber-500/30 focus:border-amber-500/60 transition-colors h-9 text-base"
@@ -1400,11 +1412,19 @@ export default function StockManagement() {
                     <Input
                       id="reorder_level"
                       type="number"
-                      value={formData.reorder_level || 10}
+                      value={formData.reorder_level ?? ''}
                       onChange={(e) => {
                         const v = e.target.value;
+                        if (v === '') {
+                          setFormData(prev => ({ ...prev, reorder_level: undefined }));
+                          return;
+                        }
+
                         const n = Number.parseInt(v, 10);
-                        setFormData({ ...formData, reorder_level: v === '' || Number.isNaN(n) ? 10 : n });
+                        setFormData(prev => ({
+                          ...prev,
+                          reorder_level: Number.isNaN(n) ? undefined : Math.max(0, n),
+                        }));
                       }}
                       min="0"
                       className="border-amber-500/30 focus:border-amber-500/60 transition-colors h-9 text-base"
@@ -1426,11 +1446,11 @@ export default function StockManagement() {
                     <Select
                       value={(formData.shipping_mode as any) || 'delivery_pricing'}
                       onValueChange={(value: any) => {
-                        setFormData({
-                          ...formData,
+                        setFormData(prev => ({
+                          ...prev,
                           shipping_mode: value,
-                          shipping_flat_fee: value === 'flat' ? (formData.shipping_flat_fee ?? 0) : null,
-                        });
+                          shipping_flat_fee: value === 'flat' ? (prev.shipping_flat_fee ?? 0) : null,
+                        }));
                       }}
                     >
                       <SelectTrigger className="border-indigo-500/30 focus:border-indigo-500/60 h-9 text-base font-semibold">
@@ -1452,7 +1472,7 @@ export default function StockManagement() {
                         min="0"
                         step="1"
                         value={formData.shipping_flat_fee ?? 0}
-                        onChange={(e) => setFormData({ ...formData, shipping_flat_fee: parseFloat(e.target.value) || 0 })}
+                        onChange={(e) => setFormData(prev => ({ ...prev, shipping_flat_fee: parseFloat(e.target.value) || 0 }))}
                         className="border-indigo-500/30 focus:border-indigo-500/60 h-9 text-base"
                       />
                     </div>
@@ -1504,7 +1524,7 @@ export default function StockManagement() {
                   <Textarea
                     id="notes"
                     value={formData.notes || ''}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                     placeholder={t('stock.additionalNotes')}
                     rows={4}
                     className="border-slate-500/30 focus:border-slate-500/60 transition-colors resize-none text-base"

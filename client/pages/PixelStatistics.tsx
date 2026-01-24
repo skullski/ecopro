@@ -259,9 +259,13 @@ export default function PixelStatistics() {
   };
 
   const surfaceCard =
-    'bg-white/80 dark:bg-slate-950/45 backdrop-blur-xl border-slate-200/70 dark:border-slate-800/60 shadow-sm transition-shadow hover:shadow-md';
+    'rounded-2xl bg-white/90 dark:bg-slate-900/45 backdrop-blur-xl border border-slate-200/80 dark:border-slate-700/70 ring-1 ring-black/5 dark:ring-white/10 shadow-lg shadow-slate-200/60 dark:shadow-black/40 transition-shadow hover:shadow-xl hover:shadow-slate-200/60 dark:hover:shadow-black/50';
   const surfaceMuted =
-    'bg-white/65 dark:bg-slate-950/35 backdrop-blur-xl border-slate-200/60 dark:border-slate-800/50 shadow-sm';
+    'rounded-2xl bg-white/75 dark:bg-slate-900/35 backdrop-blur-xl border border-slate-200/70 dark:border-slate-700/60 ring-1 ring-black/5 dark:ring-white/10 shadow-md shadow-slate-200/45 dark:shadow-black/35';
+  const controlSurface =
+    'rounded-xl bg-white/75 dark:bg-slate-900/35 backdrop-blur border border-slate-200/80 dark:border-slate-700/70 ring-1 ring-black/5 dark:ring-white/10 shadow-md shadow-slate-200/40 dark:shadow-black/35 hover:shadow-lg hover:shadow-slate-200/40 dark:hover:shadow-black/45 focus-visible:ring-2 focus-visible:ring-indigo-500/35 dark:focus-visible:ring-indigo-400/30';
+  const tabsSurface =
+    'bg-white/75 dark:bg-slate-900/35 backdrop-blur border border-slate-200/80 dark:border-slate-700/70 ring-1 ring-black/5 dark:ring-white/10 shadow-lg shadow-slate-200/55 dark:shadow-black/40 rounded-2xl p-1';
 
   const formatCurrency = (amount: number | string | undefined) => {
     if (amount === undefined || amount === null) return '0 DZD';
@@ -297,7 +301,7 @@ export default function PixelStatistics() {
     
     return (
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
-        <Card>
+        <Card className={surfaceCard}>
           <CardContent className="p-2.5 md:p-3">
             <div className="flex items-center gap-1.5 mb-1">
               <Eye className="h-3.5 w-3.5 text-muted-foreground" />
@@ -307,7 +311,7 @@ export default function PixelStatistics() {
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className={surfaceCard}>
           <CardContent className="p-2.5 md:p-3">
             <div className="flex items-center gap-1.5 mb-1">
               <MousePointer className="h-3.5 w-3.5 text-muted-foreground" />
@@ -317,7 +321,7 @@ export default function PixelStatistics() {
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className={surfaceCard}>
           <CardContent className="p-2.5 md:p-3">
             <div className="flex items-center gap-1.5 mb-1">
               <ShoppingCart className="h-3.5 w-3.5 text-muted-foreground" />
@@ -328,7 +332,7 @@ export default function PixelStatistics() {
           </CardContent>
         </Card>
         
-        <Card>
+        <Card className={surfaceCard}>
           <CardContent className="p-2.5 md:p-3">
             <div className="flex items-center gap-1.5 mb-1">
               <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
@@ -343,7 +347,7 @@ export default function PixelStatistics() {
   };
 
   const PlatformExplanation = () => (
-    <Card className="border-dashed">
+    <Card className={`border-dashed ${surfaceMuted}`}>
       <CardContent className="p-3 md:p-4">
         <div className="flex items-start gap-2">
           <AlertCircle className="w-4 h-4 mt-0.5 text-muted-foreground" />
@@ -371,7 +375,7 @@ export default function PixelStatistics() {
       : ['bg-pink-500', 'bg-pink-400', 'bg-pink-300', 'bg-pink-200', 'bg-green-500'];
     
     return (
-      <Card>
+      <Card className={surfaceCard}>
         <CardHeader className="p-3 md:p-4">
           <CardTitle className="flex items-center gap-2 text-sm md:text-base">
             <Target className="h-4 w-4" />
@@ -417,14 +421,16 @@ export default function PixelStatistics() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div
+      className="min-h-screen relative overflow-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50 [--foreground:222_47%_11%] dark:[--foreground:210_40%_98%] [--muted-foreground:215_16%_47%] dark:[--muted-foreground:215_20%_70%] [--secondary:210_40%_96%] dark:[--secondary:222_47%_11%] [--secondary-foreground:222_47%_11%] dark:[--secondary-foreground:210_40%_98%]"
+    >
       {/* Decorative background */}
       <div aria-hidden className="absolute inset-0">
-        <div className="absolute -top-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-gradient-to-br from-indigo-500/25 via-purple-500/20 to-pink-500/20 blur-3xl" />
-        <div className="absolute -bottom-56 -left-56 h-[40rem] w-[40rem] rounded-full bg-gradient-to-tr from-cyan-500/20 via-emerald-500/16 to-lime-500/14 blur-3xl" />
-        <div className="absolute top-24 left-1/2 -translate-x-1/2 h-64 w-64 rounded-full bg-gradient-to-br from-sky-500/18 to-violet-500/12 blur-3xl" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(148,163,184,0.20)_1px,transparent_0)] [background-size:22px_22px] opacity-[0.35]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-50/30 via-transparent to-slate-50/30 dark:from-slate-950/30 dark:to-slate-950/30" />
+        <div className="absolute -top-40 -right-40 h-[32rem] w-[32rem] rounded-full bg-gradient-to-br from-indigo-500/40 via-purple-500/32 to-pink-500/30 blur-3xl" />
+        <div className="absolute -bottom-56 -left-56 h-[40rem] w-[40rem] rounded-full bg-gradient-to-tr from-cyan-500/34 via-emerald-500/26 to-lime-500/22 blur-3xl" />
+        <div className="absolute top-24 left-1/2 -translate-x-1/2 h-64 w-64 rounded-full bg-gradient-to-br from-sky-500/28 to-violet-500/22 blur-3xl" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(148,163,184,0.22)_1px,transparent_0)] [background-size:22px_22px] opacity-[0.45]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-50/35 via-transparent to-slate-50/35 dark:from-slate-950/35 dark:to-slate-950/35" />
       </div>
 
       <div className="relative z-10 container mx-auto p-2 md:p-4 space-y-3 md:space-y-4 max-w-6xl" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -447,7 +453,7 @@ export default function PixelStatistics() {
 
             <div className="flex items-center gap-2">
               <Select value={selectedDays} onValueChange={setSelectedDays}>
-                <SelectTrigger className="w-36 h-9 text-xs bg-white/70 dark:bg-slate-950/35 backdrop-blur border-slate-200/70 dark:border-slate-800/60">
+                <SelectTrigger className={`w-36 h-9 text-xs ${controlSurface}`}>
                   <SelectValue placeholder={t('pixels.period')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -462,7 +468,7 @@ export default function PixelStatistics() {
               <Button
                 variant="outline"
                 size="icon"
-                className="h-9 w-9 bg-white/70 dark:bg-slate-950/35 backdrop-blur border-slate-200/70 dark:border-slate-800/60"
+                className={`h-9 w-9 ${controlSurface}`}
                 onClick={() => refetchStats()}
               >
                 <RefreshCw className="h-4 w-4" />
@@ -534,7 +540,7 @@ export default function PixelStatistics() {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto bg-white/70 dark:bg-slate-950/35 backdrop-blur border border-slate-200/70 dark:border-slate-800/60 rounded-2xl p-1">
+        <TabsList className={`grid w-full grid-cols-2 md:grid-cols-4 h-auto ${tabsSurface}`}>
           <TabsTrigger value="overview" className="text-xs py-1.5">{t('pixels.overviewTab')}</TabsTrigger>
           <TabsTrigger value="facebook" className="text-xs py-1.5">{t('pixels.facebookTab')}</TabsTrigger>
           <TabsTrigger value="tiktok" className="text-xs py-1.5">{t('pixels.tiktokTab')}</TabsTrigger>
@@ -608,44 +614,49 @@ export default function PixelStatistics() {
             </CardHeader>
             <CardContent className="p-3 md:p-4 pt-0">
               {recentEvents?.events && recentEvents.events.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t('pixels.platform')}</TableHead>
-                      <TableHead>{t('pixels.event')}</TableHead>
-                      <TableHead>{t('pixels.page')}</TableHead>
-                      <TableHead className="text-xs">{t('pixels.revenue')}</TableHead>
-                      <TableHead className="text-xs hidden md:table-cell">{t('pixels.time')}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {recentEvents.events.slice(0, 10).map((event) => (
-                      <TableRow key={event.id}>
-                        <TableCell className="p-2 md:p-4">
+                <div className="rounded-2xl overflow-hidden border border-slate-200/80 dark:border-slate-700/70 bg-white/60 dark:bg-slate-900/30 backdrop-blur ring-1 ring-black/5 dark:ring-white/10 shadow-md shadow-slate-200/40 dark:shadow-black/35">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-slate-50/70 dark:bg-slate-950/30">
+                        <TableHead className="text-[11px] md:text-xs uppercase tracking-wide text-muted-foreground">{t('pixels.platform')}</TableHead>
+                        <TableHead className="text-[11px] md:text-xs uppercase tracking-wide text-muted-foreground">{t('pixels.event')}</TableHead>
+                        <TableHead className="text-[11px] md:text-xs uppercase tracking-wide text-muted-foreground">{t('pixels.page')}</TableHead>
+                        <TableHead className="text-[11px] md:text-xs uppercase tracking-wide text-muted-foreground">{t('pixels.revenue')}</TableHead>
+                        <TableHead className="text-[11px] md:text-xs uppercase tracking-wide text-muted-foreground hidden md:table-cell">{t('pixels.time')}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {recentEvents.events.slice(0, 10).map((event) => (
+                        <TableRow
+                          key={event.id}
+                          className="transition-colors hover:bg-slate-100/50 dark:hover:bg-slate-800/30"
+                        >
+                          <TableCell className="p-2 md:p-4">
                           {event.pixel_type === 'facebook' ? (
                             <Facebook className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                           ) : (
                             <TikTokIcon className="h-4 w-4 text-pink-600 dark:text-pink-400" />
                           )}
-                        </TableCell>
-                        <TableCell className="p-2 md:p-4">
-                          <Badge className={getEventColor(event.event_name) + " text-xs"}>
+                          </TableCell>
+                          <TableCell className="p-2 md:p-4">
+                            <Badge className={getEventColor(event.event_name) + " text-xs shadow-sm"}>
                             {event.event_name}
                           </Badge>
-                        </TableCell>
-                        <TableCell className="max-w-[100px] md:max-w-[200px] truncate text-xs md:text-sm text-muted-foreground p-2 md:p-4">
+                          </TableCell>
+                          <TableCell className="max-w-[100px] md:max-w-[200px] truncate text-xs md:text-sm text-muted-foreground p-2 md:p-4">
                           {event.page_url?.replace(/^https?:\/\/[^/]+/, '') || '-'}
-                        </TableCell>
-                        <TableCell className="p-2 md:p-4 text-xs md:text-sm">
+                          </TableCell>
+                          <TableCell className="p-2 md:p-4 text-xs md:text-sm">
                           {event.revenue ? formatCurrency(event.revenue) : '-'}
-                        </TableCell>
-                        <TableCell className="text-xs md:text-sm text-muted-foreground hidden md:table-cell">
+                          </TableCell>
+                          <TableCell className="text-xs md:text-sm text-muted-foreground hidden md:table-cell">
                           {formatDate(event.created_at)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   <Activity className="h-12 w-12 mx-auto mb-3 opacity-50" />
@@ -666,7 +677,7 @@ export default function PixelStatistics() {
                 {/* FunnelChart can be extended for each pixel type if API supports */}
               </>
             ) : (
-              <Card>
+              <Card className={surfaceCard}>
                 <CardContent className="p-6 md:p-8 text-center">
                   <BarChart3 className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-4 text-muted-foreground" />
                   <h3 className="text-lg md:text-xl font-semibold mb-2">
@@ -689,7 +700,7 @@ export default function PixelStatistics() {
         <TabsContent value="settings" className="space-y-4 md:space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
             {/* Facebook Settings */}
-            <Card>
+            <Card className={surfaceCard}>
               <CardHeader className="p-4 md:p-6">
                 <CardTitle className="flex items-center gap-2 text-base md:text-lg">
                   <Facebook className="h-4 w-4 md:h-5 md:w-5 text-blue-600 dark:text-blue-400" />
@@ -741,7 +752,7 @@ export default function PixelStatistics() {
             </Card>
 
             {/* TikTok Settings */}
-            <Card>
+            <Card className={surfaceCard}>
               <CardHeader className="p-4 md:p-6">
                 <CardTitle className="flex items-center gap-2 text-base md:text-lg">
                   <TikTokIcon className="h-4 w-4 md:h-5 md:w-5 text-pink-600 dark:text-pink-400" />
@@ -794,7 +805,7 @@ export default function PixelStatistics() {
           </div>
 
           {/* Multi-Pixel Management Section */}
-          <Card>
+          <Card className={surfaceCard}>
             <CardHeader className="p-4 md:p-6">
               <CardTitle className="flex items-center gap-2 text-base md:text-lg">
                 <Plus className="h-4 w-4 md:h-5 md:w-5" />
@@ -810,7 +821,7 @@ export default function PixelStatistics() {
                   value={newPixel.type}
                   onValueChange={(value: 'facebook' | 'tiktok') => setNewPixel(prev => ({ ...prev, type: value }))}
                 >
-                  <SelectTrigger className="w-full md:w-[160px]">
+                  <SelectTrigger className={`w-full md:w-[160px] ${controlSurface}`}>
                     <SelectValue placeholder={t('pixels.selectPixelType')} />
                   </SelectTrigger>
                   <SelectContent>
@@ -860,7 +871,7 @@ export default function PixelStatistics() {
           </Card>
 
           {/* Your Pixels List */}
-          <Card>
+          <Card className={surfaceCard}>
             <CardHeader className="p-4 md:p-6">
               <CardTitle className="flex items-center gap-2 text-base md:text-lg">
                 <BarChart3 className="h-4 w-4 md:h-5 md:w-5" />
@@ -879,7 +890,7 @@ export default function PixelStatistics() {
                   {pixels.map((pixel) => (
                     <div
                       key={pixel.id}
-                      className={`flex items-center justify-between p-3 rounded-lg border ${
+                      className={`flex items-center justify-between p-3 rounded-xl border shadow-sm ${
                         pixel.enabled 
                           ? pixel.type === 'facebook' 
                             ? 'border-blue-500/30 bg-blue-500/10' 

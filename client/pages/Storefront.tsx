@@ -128,6 +128,41 @@ export default function Storefront() {
     }
     
     let isMounted = true;
+
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+    const fetchWithTimeout = async (
+      url: string,
+      timeoutMs: number,
+      options?: RequestInit,
+      retries = 1
+    ): Promise<Response> => {
+      let lastErr: any;
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        const controller = new AbortController();
+        const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+        try {
+          const res = await fetch(url, { ...options, signal: controller.signal });
+          return res;
+        } catch (err: any) {
+          const isAbort = err?.name === 'AbortError';
+          lastErr = isAbort ? new Error('Request timed out') : err;
+
+          // Retry only on abort/timeouts and generic network failures
+          const msg = String(err?.message || '').toLowerCase();
+          const isNetwork = msg.includes('failed to fetch') || msg.includes('network');
+          if (attempt < retries && (isAbort || isNetwork)) {
+            await sleep(250 * (attempt + 1));
+            continue;
+          }
+          throw lastErr;
+        } finally {
+          window.clearTimeout(timer);
+        }
+      }
+      throw lastErr;
+    };
+
     async function fetchAll() {
       if (!storeSlug) {
         if (isMounted) {
@@ -139,22 +174,21 @@ export default function Storefront() {
       try {
         setLoading(true);
         setError('');
-        // Race with a timeout to avoid infinite spinner - increased to 20s for slow DB
-        const timeout = new Promise<Response>((_, reject) => setTimeout(() => reject(new Error('Request timed out')), 20000));
-        
-        // Fetch settings and products in parallel
-        const settingsPromise = fetch(`/api/storefront/${storeSlug}/settings`);
-        const productsPromise = fetch(`/api/storefront/${storeSlug}/products`);
-        
-        const [settingsRes, productsRes] = await Promise.all([
-          Promise.race([settingsPromise, timeout]) as Promise<Response>,
-          Promise.race([productsPromise, timeout]) as Promise<Response>,
-        ]);
-        if (!settingsRes.ok || !productsRes.ok) {
-          throw new Error('Failed to load store');
+        // Fetch settings first so we can canonicalize slug and avoid slow DB fallbacks
+        const settingsRes = await fetchWithTimeout(
+          `/api/storefront/${encodeURIComponent(String(storeSlug))}/settings`,
+          25000,
+          undefined,
+          1
+        );
+
+        if (!settingsRes.ok) {
+          if (settingsRes.status === 404) throw new Error(t('storefront.notAvailable'));
+          const body = await settingsRes.text().catch(() => '');
+          throw new Error(body || 'Failed to load store');
         }
+
         const settingsData = await settingsRes.json();
-        const productsData = await productsRes.json();
         if (!isMounted) return;
         const incomingSettings = settingsData?.settings || settingsData || {};
         const newSettings = {
@@ -183,6 +217,22 @@ export default function Storefront() {
           navigate(`/store/${canonical}${location.search}`, { replace: true });
           return;
         }
+
+        // Now fetch products using the canonical slug to avoid expensive name-normalization scans
+        const productsRes = await fetchWithTimeout(
+          `/api/storefront/${encodeURIComponent(canonical)}/products`,
+          35000,
+          undefined,
+          1
+        );
+
+        if (!productsRes.ok) {
+          if (productsRes.status === 404) throw new Error(t('storefront.notAvailable'));
+          throw new Error('Failed to load store');
+        }
+
+        const productsData = await productsRes.json();
+        if (!isMounted) return;
 
         // Track storefront page view once per canonical slug.
         if (canonical && trackedViewRef.current !== canonical) {
@@ -229,9 +279,6 @@ export default function Storefront() {
           // legacy
           localStorage.setItem('storeSettings', JSON.stringify(minimal));
         }
-        
-        // Track page view (fire and forget - don't await)
-        fetch(`/api/storefront/${storeSlug}/track-view`, { method: 'POST' }).catch(() => {});
         
         const items = (productsData?.products || productsData || []) as StoreProduct[];
         // Strip categories from products for all storefront templates.

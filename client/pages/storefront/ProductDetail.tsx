@@ -5,6 +5,7 @@ import { Heart, Share2, ChevronLeft, Plus, Minus } from 'lucide-react';
 import PixelScripts, { trackAllPixels, PixelEvents } from '@/components/storefront/PixelScripts';
 import { useTranslation } from '@/lib/i18n';
 import { readStorefrontSettings, readStorefrontTemplate } from '@/lib/storefrontStorage';
+import { safeJsonParse } from '@/utils/safeJson';
 
 interface Product {
   id: number;
