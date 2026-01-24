@@ -780,4 +780,203 @@ router.get('/validate/:code', async (req, res) => {
   }
 });
 
+// GET /api/affiliates/admin/client/:clientId - Get client's affiliate info (admin only)
+// Used to show discount info in chat when admin is about to generate code
+router.get('/admin/client/:clientId', requireAdmin, async (req, res) => {
+  try {
+    const clientId = parseInt(req.params.clientId);
+    if (!clientId) {
+      return jsonError(res, 400, 'Invalid client ID');
+    }
+
+    // Get client's affiliate referral info
+    const result = await pool.query(`
+      SELECT 
+        c.id as client_id,
+        c.name as client_name,
+        c.email as client_email,
+        c.referred_by_affiliate_id,
+        c.referral_voucher_code,
+        a.id as affiliate_id,
+        a.name as affiliate_name,
+        a.email as affiliate_email,
+        a.discount_percent,
+        a.commission_percent,
+        a.commission_months,
+        ar.discount_applied,
+        ar.created_at as referral_date,
+        (SELECT COUNT(*) FROM payments p 
+         JOIN subscriptions s ON s.id = p.subscription_id 
+         WHERE s.user_id = c.id AND p.status = 'completed') as payment_count
+      FROM clients c
+      LEFT JOIN affiliates a ON a.id = c.referred_by_affiliate_id
+      LEFT JOIN affiliate_referrals ar ON ar.user_id = c.id AND ar.affiliate_id = a.id
+      WHERE c.id = $1
+    `, [clientId]);
+
+    if (!result.rows.length) {
+      return jsonError(res, 404, 'Client not found');
+    }
+
+    const client = result.rows[0];
+    
+    // Calculate if discount should apply
+    const isFirstPayment = parseInt(client.payment_count) === 0;
+    const hasAffiliate = !!client.affiliate_id;
+    const discountApplicable = hasAffiliate && isFirstPayment && !client.discount_applied;
+    
+    // Get standard subscription price
+    const priceResult = await pool.query(
+      "SELECT setting_value FROM platform_settings WHERE setting_key = 'subscription_price'"
+    );
+    const standardPrice = parseFloat(priceResult.rows[0]?.setting_value) || 7;
+    
+    let discountedPrice = standardPrice;
+    let discountAmount = 0;
+    if (discountApplicable && client.discount_percent) {
+      discountAmount = standardPrice * (parseFloat(client.discount_percent) / 100);
+      discountedPrice = standardPrice - discountAmount;
+    }
+
+    res.json({
+      client_id: client.client_id,
+      client_name: client.client_name,
+      client_email: client.client_email,
+      has_affiliate: hasAffiliate,
+      affiliate: hasAffiliate ? {
+        id: client.affiliate_id,
+        name: client.affiliate_name,
+        email: client.affiliate_email,
+        voucher_code: client.referral_voucher_code,
+        discount_percent: parseFloat(client.discount_percent),
+        commission_percent: parseFloat(client.commission_percent),
+        commission_months: client.commission_months,
+      } : null,
+      payment_count: parseInt(client.payment_count),
+      is_first_payment: isFirstPayment,
+      discount_already_applied: client.discount_applied || false,
+      referral_date: client.referral_date,
+      pricing: {
+        standard_price: standardPrice,
+        discount_applicable: discountApplicable,
+        discount_percent: discountApplicable ? parseFloat(client.discount_percent) : 0,
+        discount_amount: discountAmount,
+        final_price: discountedPrice,
+      },
+    });
+  } catch (error) {
+    console.error('[Affiliate Admin] Get client affiliate info error:', error);
+    return jsonServerError(res, 'Failed to get client affiliate info');
+  }
+});
+
+// POST /api/affiliates/admin/record-payment - Record a manual payment for affiliate commission
+// Called when admin issues a code for a referred client
+router.post('/admin/record-payment', requireAdmin, async (req, res) => {
+  try {
+    const { client_id, amount_paid, payment_method, notes } = req.body;
+
+    if (!client_id || !amount_paid) {
+      return jsonError(res, 400, 'client_id and amount_paid are required');
+    }
+
+    // Get client's affiliate info
+    const clientResult = await pool.query(`
+      SELECT 
+        c.id, c.referred_by_affiliate_id, c.referral_voucher_code,
+        a.commission_percent, a.commission_months, a.discount_percent,
+        ar.id as referral_id, ar.discount_applied
+      FROM clients c
+      LEFT JOIN affiliates a ON a.id = c.referred_by_affiliate_id
+      LEFT JOIN affiliate_referrals ar ON ar.user_id = c.id AND ar.affiliate_id = a.id
+      WHERE c.id = $1
+    `, [client_id]);
+
+    if (!clientResult.rows.length) {
+      return jsonError(res, 404, 'Client not found');
+    }
+
+    const client = clientResult.rows[0];
+
+    if (!client.referred_by_affiliate_id) {
+      return res.json({ 
+        success: true, 
+        commission_recorded: false,
+        message: 'Payment recorded but client has no affiliate referral' 
+      });
+    }
+
+    // Count existing payments to determine payment month
+    const paymentCountResult = await pool.query(`
+      SELECT COUNT(*) as count FROM affiliate_commissions 
+      WHERE user_id = $1 AND affiliate_id = $2
+    `, [client_id, client.referred_by_affiliate_id]);
+    
+    const paymentMonth = parseInt(paymentCountResult.rows[0].count) + 1;
+
+    // Check if within commission period
+    if (paymentMonth > client.commission_months) {
+      return res.json({
+        success: true,
+        commission_recorded: false,
+        message: `Payment is month ${paymentMonth}, beyond commission period of ${client.commission_months} months`
+      });
+    }
+
+    // Calculate commission
+    const commissionPercent = parseFloat(client.commission_percent) || 50;
+    const platformRevenue = parseFloat(amount_paid); // Assume all is platform revenue
+    const commissionAmount = platformRevenue * (commissionPercent / 100);
+
+    // Create commission record
+    const commissionResult = await pool.query(`
+      INSERT INTO affiliate_commissions 
+        (affiliate_id, referral_id, user_id, payment_id, payment_month, 
+         user_paid_amount, platform_revenue, commission_percent, commission_amount, status)
+      VALUES ($1, $2, $3, NULL, $4, $5, $6, $7, $8, 'pending')
+      RETURNING id, commission_amount
+    `, [
+      client.referred_by_affiliate_id,
+      client.referral_id,
+      client_id,
+      paymentMonth,
+      amount_paid,
+      platformRevenue,
+      commissionPercent,
+      commissionAmount
+    ]);
+
+    // Update affiliate totals
+    await pool.query(`
+      UPDATE affiliates 
+      SET total_commission_earned = total_commission_earned + $1,
+          total_paid_referrals = (
+            SELECT COUNT(DISTINCT user_id) FROM affiliate_commissions WHERE affiliate_id = $2
+          )
+      WHERE id = $2
+    `, [commissionAmount, client.referred_by_affiliate_id]);
+
+    // Mark discount as applied if this is first payment
+    if (paymentMonth === 1 && !client.discount_applied) {
+      await pool.query(
+        'UPDATE affiliate_referrals SET discount_applied = true WHERE id = $1',
+        [client.referral_id]
+      );
+    }
+
+    res.json({
+      success: true,
+      commission_recorded: true,
+      commission_id: commissionResult.rows[0].id,
+      commission_amount: commissionAmount,
+      payment_month: paymentMonth,
+      affiliate_id: client.referred_by_affiliate_id,
+      message: `Commission of $${commissionAmount.toFixed(2)} recorded for month ${paymentMonth}`
+    });
+  } catch (error) {
+    console.error('[Affiliate Admin] Record payment error:', error);
+    return jsonServerError(res, 'Failed to record payment');
+  }
+});
+
 export default router;

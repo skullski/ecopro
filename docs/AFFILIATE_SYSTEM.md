@@ -4,6 +4,16 @@
 
 The affiliate system allows influencers to earn commissions by referring new users to the platform. Each affiliate gets a unique voucher code (e.g., `AHMED20`) that users can enter during signup.
 
+## How Payment Works (Manual System)
+
+**Important**: This platform does NOT have automated payment gateway integration. Payments are handled manually through chat:
+
+1. **Store owner** → Messages support saying "I want to pay my subscription"
+2. **Support/Admin** → Checks if user has affiliate discount, replies with payment account
+3. **Store owner** → Sends money manually (bank transfer, etc.) + sends screenshot proof
+4. **Admin** → Verifies screenshot, generates 30-day subscription code
+5. **Store owner** → Redeems code on their Profile page → Subscription activated
+
 ## How It Works
 
 ### For Users (Signing Up with a Voucher Code)
@@ -11,19 +21,19 @@ The affiliate system allows influencers to earn commissions by referring new use
 2. Enters their details and the affiliate's voucher code (optional)
 3. If the code is valid, they see a message confirming the discount they'll receive
 4. After signup, they're linked to that affiliate in the database
-5. **On first payment**: User gets the discount (e.g., 20% off = $5.60 instead of $7.00)
-6. The affiliate earns their commission on the (discounted) amount
 
-### Discount Application (NEW)
-When a referred user goes to pay their subscription:
-1. System checks if user has an `referred_by_affiliate_id`
-2. Checks if this is the user's **first payment** (no completed payments before)
-3. If yes, applies the affiliate's `discount_percent` to the checkout amount:
-   - Original price: $7.00
-   - Discount (e.g., 20%): $1.40
-   - Final price: $5.60
-4. The checkout page shows both the original and discounted prices
-5. After payment completes, `discount_applied = true` is set in `affiliate_referrals`
+### When User Wants to Pay (Chat Flow)
+1. User messages support: "I want to pay for my subscription"
+2. Admin checks user's affiliate status via API: `GET /api/affiliates/admin/client/:clientId`
+3. If user was referred by `AHMED20` with 20% discount:
+   - Standard price: $7.00
+   - Discount: $1.40
+   - User should pay: **$5.60**
+4. Admin tells user to pay $5.60 to the payment account
+5. User pays and sends screenshot
+6. Admin generates subscription code
+7. Admin records the payment for commission: `POST /api/affiliates/admin/record-payment`
+8. User redeems code on Profile page
 
 **Note**: Each affiliate can have a different discount rate, allowing you to offer bigger discounts to larger influencers.
 
@@ -118,6 +128,48 @@ Added to `clients` table:
 - `GET /api/affiliates/admin/list` - List all affiliates
 - `POST /api/affiliates/admin/create` - Create affiliate
 - `PATCH /api/affiliates/admin/:id` - Update affiliate
+- `DELETE /api/affiliates/admin/:id` - Delete affiliate
+- `GET /api/affiliates/admin/:id/details` - Full details
+- `GET /api/affiliates/admin/stats` - Program overview
+- `GET /api/affiliates/admin/client/:clientId` - **Get client's affiliate info (for discount calculation)**
+- `POST /api/affiliates/admin/record-payment` - **Record manual payment for commission**
+- `POST /api/affiliates/admin/commissions/:id/pay` - Mark single commission paid
+- `POST /api/affiliates/admin/commissions/bulk-pay` - Pay all pending for an affiliate
+
+## Admin Workflow (Important!)
+
+### When a referred user wants to pay:
+
+1. **Check affiliate status**:
+   ```
+   GET /api/affiliates/admin/client/123
+   ```
+   Response shows:
+   ```json
+   {
+     "has_affiliate": true,
+     "affiliate": { "name": "Ahmed", "voucher_code": "AHMED20", "discount_percent": 20 },
+     "is_first_payment": true,
+     "pricing": {
+       "standard_price": 7.00,
+       "discount_applicable": true,
+       "discount_percent": 20,
+       "discount_amount": 1.40,
+       "final_price": 5.60
+     }
+   }
+   ```
+
+2. **Tell user to pay the discounted price** ($5.60)
+
+3. **After user pays and you verify screenshot, generate code as usual**
+
+4. **Record the payment for affiliate commission**:
+   ```
+   POST /api/affiliates/admin/record-payment
+   { "client_id": 123, "amount_paid": 5.60, "payment_method": "bank_transfer" }
+   ```
+   This creates the commission record for the affiliate.
 - `DELETE /api/affiliates/admin/:id` - Delete affiliate
 - `GET /api/affiliates/admin/:id/details` - Full details
 - `GET /api/affiliates/admin/stats` - Program overview
