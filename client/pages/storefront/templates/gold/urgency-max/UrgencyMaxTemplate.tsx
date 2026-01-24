@@ -29,6 +29,22 @@ function safePrice(value: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+type NavLink = { label: string; url: string };
+type SocialLink = { platform: string; url: string };
+
+function parseJsonArray<T>(value: unknown, fallback: T[]): T[] {
+  if (Array.isArray(value)) return value as T[];
+  if (typeof value !== 'string') return fallback;
+  const raw = value.trim();
+  if (!raw) return fallback;
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as T[]) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export default function UrgencyMaxTemplate(props: TemplateProps) {
   const { settings, formatPrice } = props;
   const s = settings as any;
@@ -102,6 +118,33 @@ export default function UrgencyMaxTemplate(props: TemplateProps) {
   // Warning text (editable)
   const warningText = asString(s.template_warning_text) || '⚠️ Price increases when timer ends!';
 
+  const navLinks = parseJsonArray<NavLink>(s.template_nav_links, [
+    { label: 'Home', url: '#' },
+    { label: 'FAQ', url: '#faq' },
+    { label: 'Contact', url: '#contact' },
+  ]).filter((l) => l && typeof (l as any).label === 'string' && typeof (l as any).url === 'string');
+
+  const footerLinks = parseJsonArray<NavLink>(s.template_footer_links, [
+    { label: 'Shipping', url: '#shipping' },
+    { label: 'Returns', url: '#returns' },
+    { label: 'Support', url: '#support' },
+  ]).filter((l) => l && typeof (l as any).label === 'string' && typeof (l as any).url === 'string');
+
+  const socialLinks = parseJsonArray<SocialLink>(s.template_social_links, [
+    { platform: 'instagram', url: '#' },
+    { platform: 'tiktok', url: '#' },
+  ]).filter((l) => l && typeof (l as any).platform === 'string' && typeof (l as any).url === 'string');
+
+  const endsInLabel = asString(s.template_timer_ends_label) || 'Ends in:';
+  const countdownHoursLabel = asString(s.template_timer_label_hours) || 'HOURS';
+  const countdownMinsLabel = asString(s.template_timer_label_mins) || 'MINS';
+  const countdownSecsLabel = asString(s.template_timer_label_secs) || 'SECS';
+
+  const saleBadgeText = asString(s.template_discount_badge_text) || '70% OFF';
+  const stockPrefix = asString(s.template_stock_prefix) || '⚠️ Only';
+
+  const trustBadges = parseJsonArray<string>(s.template_trust_badges, ['🔒 Secure', '📦 Fast Ship', '✅ Guaranteed']).filter(Boolean);
+
   // Spacing
   const baseSpacing = resolveInt(s.template_spacing, 16, 8, 32);
   const sectionSpacing = resolveInt(s.template_section_spacing, 48, 24, 96);
@@ -166,6 +209,7 @@ export default function UrgencyMaxTemplate(props: TemplateProps) {
           <div data-edit-path="layout.featured.subtitle" />
           <div data-edit-path="layout.featured.items" />
           <div data-edit-path="layout.featured.addLabel" />
+          <div data-edit-path="layout.grid" />
           <div data-edit-path="layout.footer.links" />
           <div data-edit-path="layout.footer.social" />
         </div>
@@ -222,27 +266,35 @@ export default function UrgencyMaxTemplate(props: TemplateProps) {
             )}
           </div>
           {/* Mini Timer */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: isMobile ? 10 : 12, color: muted }}>Ends in:</span>
+          <div data-edit-path="layout.urgency.timer" onClick={(e) => { stopIfManage(e); onSelect('layout.urgency.timer'); }} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span data-edit-path="layout.urgency.timer.endsLabel" onClick={(e) => { stopIfManage(e); onSelect('layout.urgency.timer.endsLabel'); }} style={{ fontSize: isMobile ? 10 : 12, color: muted }}>{endsInLabel}</span>
             <span style={{ fontWeight: 900, color: yellow, fontSize: isMobile ? 14 : 16 }}>
               {pad(timeLeft.hours)}:{pad(timeLeft.minutes)}:{pad(timeLeft.seconds)}
             </span>
           </div>
         </div>
 
-        {canManage && (
-          <div
-            data-edit-path="layout.header.nav"
-            onClick={(e) => { stopIfManage(e); onSelect('layout.header.nav'); }}
-            style={{ marginTop: 10, display: 'flex', justifyContent: 'center', gap: 14, fontSize: 12, color: muted }}
-          >
-            {['Home', 'FAQ', 'Contact'].map((label) => (
-              <a key={label} href="#" onClick={(e) => { stopIfManage(e); onSelect('layout.header.nav'); }} style={{ color: 'inherit', textDecoration: 'none' }}>
-                {label}
-              </a>
-            ))}
-          </div>
-        )}
+        <div
+          data-edit-path="layout.header.nav"
+          onClick={(e) => { stopIfManage(e); onSelect('layout.header.nav'); }}
+          style={{ marginTop: 10, display: 'flex', justifyContent: 'center', gap: 14, fontSize: 12, color: muted, flexWrap: 'wrap' }}
+        >
+          {navLinks.map((l) => (
+            <a
+              key={`${l.label}-${l.url}`}
+              href={l.url}
+              onClick={(e) => {
+                if (canManage) {
+                  stopIfManage(e);
+                  onSelect('layout.header.nav');
+                }
+              }}
+              style={{ color: 'inherit', textDecoration: 'none' }}
+            >
+              {l.label}
+            </a>
+          ))}
+        </div>
       </header>
 
       {/* Hero Section */}
@@ -302,11 +354,11 @@ export default function UrgencyMaxTemplate(props: TemplateProps) {
             marginBottom: isMobile ? 24 : 32 
           }}>
             {[
-              { value: timeLeft.hours, label: 'HOURS' },
-              { value: timeLeft.minutes, label: 'MINS' },
-              { value: timeLeft.seconds, label: 'SECS' },
+              { value: timeLeft.hours, label: countdownHoursLabel, key: 'hours' },
+              { value: timeLeft.minutes, label: countdownMinsLabel, key: 'mins' },
+              { value: timeLeft.seconds, label: countdownSecsLabel, key: 'secs' },
             ].map((item) => (
-              <div key={item.label} style={{ textAlign: 'center' }}>
+              <div key={item.key} data-edit-path={`layout.urgency.timer.${item.key}`} onClick={(e) => { stopIfManage(e); onSelect(`layout.urgency.timer.${item.key}`); }} style={{ textAlign: 'center' }}>
                 <div style={{ 
                   background: accent, 
                   borderRadius: cardRadius, 
@@ -315,7 +367,7 @@ export default function UrgencyMaxTemplate(props: TemplateProps) {
                 }}>
                   <div style={{ fontSize: isMobile ? 28 : 44, fontWeight: 900, color: '#fff' }}>{pad(item.value)}</div>
                 </div>
-                <div style={{ fontSize: isMobile ? 9 : 11, color: muted, marginTop: 6, fontWeight: 700 }}>{item.label}</div>
+                <div data-edit-path={`layout.urgency.timer.${item.key}.label`} onClick={(e) => { stopIfManage(e); onSelect(`layout.urgency.timer.${item.key}.label`); }} style={{ fontSize: isMobile ? 9 : 11, color: muted, marginTop: 6, fontWeight: 700 }}>{item.label}</div>
               </div>
             ))}
           </div>
@@ -340,7 +392,7 @@ export default function UrgencyMaxTemplate(props: TemplateProps) {
                 <img src={images[activeImage] || images[0]} alt="" style={{ width: '100%', aspectRatio: isMobile ? '4/3' : '16/10', objectFit: 'cover' }} />
                 
                 {/* Sale badge */}
-                <div style={{ 
+                <div data-edit-path="layout.urgency.saleBadge" onClick={(e) => { stopIfManage(e); onSelect('layout.urgency.saleBadge'); }} style={{ 
                   position: 'absolute', 
                   top: 16, 
                   left: 16, 
@@ -351,7 +403,7 @@ export default function UrgencyMaxTemplate(props: TemplateProps) {
                   fontWeight: 900, 
                   fontSize: isMobile ? 14 : 18,
                 }}>
-                  70% OFF
+                  {saleBadgeText}
                 </div>
 
                 {/* Stock warning */}
@@ -367,7 +419,9 @@ export default function UrgencyMaxTemplate(props: TemplateProps) {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                 }}>
-                  <span style={{ color: yellow, fontWeight: 700, fontSize: isMobile ? 12 : 14 }}>⚠️ Only {stockLeft} {stockText}</span>
+                  <span data-edit-path="layout.urgency.stock" onClick={(e) => { stopIfManage(e); onSelect('layout.urgency.stock'); }} style={{ color: yellow, fontWeight: 700, fontSize: isMobile ? 12 : 14 }}>
+                    {stockPrefix} {stockLeft} {stockText}
+                  </span>
                 </div>
               </div>
 
@@ -411,8 +465,8 @@ export default function UrgencyMaxTemplate(props: TemplateProps) {
 
               {/* Benefits */}
               <div
-                data-edit-path="layout.grid"
-                onClick={(e) => { stopIfManage(e); onSelect('layout.grid'); }}
+                data-edit-path="layout.urgency.benefits"
+                onClick={(e) => { stopIfManage(e); onSelect('layout.urgency.benefits'); }}
                 style={{ display: 'grid', gap: 10, marginTop: 20 }}
               >
                 {benefits.map((b) => (
@@ -424,7 +478,7 @@ export default function UrgencyMaxTemplate(props: TemplateProps) {
             {/* Right: Checkout */}
             <div style={{ position: isMobile ? 'relative' : 'sticky', top: isMobile ? 0 : 90 }}>
               {/* Price display */}
-              <div style={{ 
+              <div data-edit-path="layout.urgency.pricing" onClick={(e) => { stopIfManage(e); onSelect('layout.urgency.pricing'); }} style={{ 
                 background: cardBg, 
                 border: `2px solid ${accent}`, 
                 borderRadius: cardRadius, 
@@ -459,8 +513,8 @@ export default function UrgencyMaxTemplate(props: TemplateProps) {
               />
 
               {/* Trust badges */}
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 16, flexWrap: 'wrap' }}>
-                {['🔒 Secure', '📦 Fast Ship', '✅ Guaranteed'].map((badge) => (
+              <div data-edit-path="layout.urgency.trustBadges" onClick={(e) => { stopIfManage(e); onSelect('layout.urgency.trustBadges'); }} style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 16, flexWrap: 'wrap' }}>
+                {trustBadges.map((badge) => (
                   <span key={badge} style={{ fontSize: isMobile ? 10 : 12, color: muted, background: cardBg, padding: '4px 10px', borderRadius: 4 }}>
                     {badge}
                   </span>
@@ -488,16 +542,16 @@ export default function UrgencyMaxTemplate(props: TemplateProps) {
         {canManage && (
           <div style={{ marginTop: 12, display: 'flex', justifyContent: 'center', gap: 16, flexWrap: 'wrap' }}>
             <div data-edit-path="layout.footer.links" onClick={(e) => { stopIfManage(e); onSelect('layout.footer.links'); }} style={{ display: 'flex', gap: 12, flexWrap: 'wrap', fontSize: 12, color: muted }}>
-              {['Shipping', 'Returns', 'Support'].map((label) => (
-                <a key={label} href="#" onClick={(e) => { stopIfManage(e); onSelect('layout.footer.links'); }} style={{ color: 'inherit', textDecoration: 'none' }}>
-                  {label}
+              {footerLinks.map((l) => (
+                <a key={`${l.label}-${l.url}`} href={l.url} onClick={(e) => { stopIfManage(e); onSelect('layout.footer.links'); }} style={{ color: 'inherit', textDecoration: 'none' }}>
+                  {l.label}
                 </a>
               ))}
             </div>
             <div data-edit-path="layout.footer.social" onClick={(e) => { stopIfManage(e); onSelect('layout.footer.social'); }} style={{ display: 'flex', gap: 10, flexWrap: 'wrap', fontSize: 12, color: muted }}>
-              {['Instagram', 'TikTok'].map((label) => (
-                <a key={label} href="#" onClick={(e) => { stopIfManage(e); onSelect('layout.footer.social'); }} style={{ color: 'inherit', textDecoration: 'none' }}>
-                  {label}
+              {socialLinks.map((l) => (
+                <a key={`${l.platform}-${l.url}`} href={l.url} onClick={(e) => { stopIfManage(e); onSelect('layout.footer.social'); }} style={{ color: 'inherit', textDecoration: 'none' }}>
+                  {l.platform}
                 </a>
               ))}
             </div>

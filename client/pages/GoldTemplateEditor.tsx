@@ -984,13 +984,29 @@ export default function GoldTemplateEditor() {
         </div>
       );
     } else if (path.startsWith('layout.hero.badge')) {
-      body = (
-        <div className="space-y-4">
-          {bindText('Badge Title', 'template_hero_badge_title' as any, 'Soft Plush Elephant')}
-          {bindText('Badge Subtitle', 'template_hero_badge_subtitle' as any, 'Limited offer')}
-          {bindColor('Badge Accent', 'template_accent_color', '#F97316')}
-        </div>
-      );
+      if (activeTemplateId === 'papercraft') {
+        body = (
+          <div className="space-y-4">
+            {bindTextarea('Testimonial Text', 'template_testimonial_text' as any, '"Amazing product..."', 4)}
+            {bindText('Testimonial Author', 'template_testimonial_author' as any, '— Sarah M.')}
+          </div>
+        );
+      } else if (activeTemplateId === 'urgency-max') {
+        body = (
+          <div className="space-y-4">
+            {bindText('Urgency Bar Text', 'template_hero_kicker' as any, '🔥 SELLING FAST')}
+            {bindText('Urgency Bar Warning', 'template_warning_text' as any, '⚠️ Price increases when timer ends!')}
+          </div>
+        );
+      } else {
+        body = (
+          <div className="space-y-4">
+            {bindText('Badge Title', 'template_hero_badge_title' as any, 'Soft Plush Elephant')}
+            {bindText('Badge Subtitle', 'template_hero_badge_subtitle' as any, 'Limited offer')}
+            {bindColor('Badge Accent', 'template_accent_color', '#F97316')}
+          </div>
+        );
+      }
     } else if (path === 'layout.hero') {
       body = (
         <div className="space-y-4">
@@ -999,6 +1015,13 @@ export default function GoldTemplateEditor() {
           {bindText('Hero Subtitle', 'template_hero_subtitle', 'Subtitle')}
           {bindColor('Background Color', 'template_bg_color' as any, '#FDF8F3')}
           {bindColor('Accent Color', 'template_accent_color', '#F97316')}
+        </div>
+      );
+    } else if (path.startsWith('layout.checkout.')) {
+      body = (
+        <div className="space-y-4">
+          {bindText('Checkout Title', 'template_checkout_title' as any, 'Your Order')}
+          {bindText('Checkout Subheading', 'template_checkout_subheading' as any, 'Secure checkout subheading')}
         </div>
       );
     } else if (path.startsWith('layout.featured.title')) {
@@ -1086,8 +1109,9 @@ export default function GoldTemplateEditor() {
       body = (
         <div className="space-y-4">
           <div className="text-sm text-muted-foreground">
-            Footer links can be customized in Advanced settings.
+            Footer links can be customized in JSON format.
           </div>
+          {bindJsonArray('Footer Links', 'template_footer_links' as any, '[{"label":"Shipping","url":"/shipping"},{"label":"Returns","url":"/returns"},{"label":"Contact","url":"/contact"}]')}
           {bindColor('Link Color', 'template_footer_link_color' as any, '#78716C')}
         </div>
       );
@@ -1101,28 +1125,50 @@ export default function GoldTemplateEditor() {
         </div>
       );
     } else if (path === 'layout.categories') {
-      body = (
-        <div className="space-y-4">
-          <div className="font-medium text-sm">Description</div>
-          {bindTextarea('Description Text', 'template_description_text', 'Write a short description for your store...', 5)}
-          {bindColor('Text Color', 'template_description_color' as any, '#78716C')}
-          {bindRange('Font Size', 'template_description_size', 10, 32, 14, 'px')}
-          {bindSelect('Font Style', 'template_description_style', [
-            { value: 'normal', label: 'Normal' },
-            { value: 'italic', label: 'Italic' },
-          ], 'normal')}
-          {bindSelect('Font Weight', 'template_description_weight', [
-            { value: '300', label: 'Light (300)' },
-            { value: '400', label: 'Normal (400)' },
-            { value: '500', label: 'Medium (500)' },
-            { value: '600', label: 'Semi-bold (600)' },
-            { value: '700', label: 'Bold (700)' },
-          ], '400')}
-          <div className="text-xs text-muted-foreground">
-            Tip: if left empty, it will use your store description.
+      if (activeTemplateId === 'papercraft') {
+        body = (
+          <div className="space-y-4">
+            <div className="font-medium text-sm">Feature Cards</div>
+            {bindText('Feature 1 Title', 'template_feature1_title' as any, '✋ Handcrafted')}
+            {bindText('Feature 1 Description', 'template_feature1_desc' as any, 'Made by real artisans')}
+            {bindText('Feature 2 Title', 'template_feature2_title' as any, '🌿 Sustainable')}
+            {bindText('Feature 2 Description', 'template_feature2_desc' as any, 'Eco-friendly materials')}
+            {bindText('Feature 3 Title', 'template_feature3_title' as any, '🎁 Gift Ready')}
+            {bindText('Feature 3 Description', 'template_feature3_desc' as any, 'Beautiful packaging')}
           </div>
-        </div>
-      );
+        );
+      } else if (activeTemplateId === 'urgency-max') {
+        body = (
+          <div className="space-y-4">
+            <div className="font-medium text-sm">Social Proof</div>
+            {bindText('Viewers Text', 'template_viewers_text' as any, '47 people viewing this right now')}
+            {bindText('Sold Today Text', 'template_sold_today' as any, '156 sold in the last 24 hours')}
+          </div>
+        );
+      } else {
+        body = (
+          <div className="space-y-4">
+            <div className="font-medium text-sm">Description</div>
+            {bindTextarea('Description Text', 'template_description_text', 'Write a short description for your store...', 5)}
+            {bindColor('Text Color', 'template_description_color' as any, '#78716C')}
+            {bindRange('Font Size', 'template_description_size', 10, 32, 14, 'px')}
+            {bindSelect('Font Style', 'template_description_style', [
+              { value: 'normal', label: 'Normal' },
+              { value: 'italic', label: 'Italic' },
+            ], 'normal')}
+            {bindSelect('Font Weight', 'template_description_weight', [
+              { value: '300', label: 'Light (300)' },
+              { value: '400', label: 'Normal (400)' },
+              { value: '500', label: 'Medium (500)' },
+              { value: '600', label: 'Semi-bold (600)' },
+              { value: '700', label: 'Bold (700)' },
+            ], '400')}
+            <div className="text-xs text-muted-foreground">
+              Tip: if left empty, it will use your store description.
+            </div>
+          </div>
+        );
+      }
     } else if (path === 'layout.grid' || path.startsWith('layout.grid.')) {
       body = (
         <div className="space-y-4">
@@ -1138,6 +1184,79 @@ export default function GoldTemplateEditor() {
           {bindRange('Grid Gap', 'template_grid_gap', 8, 48, 24, 'px')}
           {bindRange('Card Border Radius', 'template_card_border_radius', 0, 32, 12, 'px')}
           {bindColor('Card Background', 'template_card_bg' as any, '#FFFFFF')}
+        </div>
+      );
+    } else if (path.startsWith('layout.urgency.')) {
+      if (path === 'layout.urgency.timer' || path.startsWith('layout.urgency.timer')) {
+        body = (
+          <div className="space-y-4">
+            <div className="font-medium text-sm">Timer Labels</div>
+            {bindText('Ends In Label', 'template_timer_ends_label' as any, 'Ends in:')}
+            {bindText('Hours Label', 'template_timer_label_hours' as any, 'HOURS')}
+            {bindText('Minutes Label', 'template_timer_label_mins' as any, 'MINS')}
+            {bindText('Seconds Label', 'template_timer_label_secs' as any, 'SECS')}
+          </div>
+        );
+      } else if (path === 'layout.urgency.saleBadge') {
+        body = (
+          <div className="space-y-4">
+            {bindText('Sale Badge Text', 'template_discount_badge_text' as any, '70% OFF')}
+          </div>
+        );
+      } else if (path === 'layout.urgency.stock') {
+        body = (
+          <div className="space-y-4">
+            <div className="font-medium text-sm">Stock Warning</div>
+            {bindText('Prefix', 'template_stock_prefix' as any, '⚠️ Only')}
+            {bindText('Stock Count', 'template_stock_count' as any, '7')}
+            {bindText('Stock Text', 'template_stock_text' as any, 'items left at this price!')}
+          </div>
+        );
+      } else if (path === 'layout.urgency.pricing') {
+        body = (
+          <div className="space-y-4">
+            <div className="font-medium text-sm">Pricing</div>
+            {bindText('Original Price', 'template_original_price' as any, '$199.99')}
+            {bindText('Sale Price', 'template_sale_price' as any, '$59.99')}
+            {bindText('Save Amount Text', 'template_save_amount' as any, 'You Save $140!')}
+          </div>
+        );
+      } else if (path === 'layout.urgency.benefits') {
+        body = (
+          <div className="space-y-4">
+            <div className="font-medium text-sm">Benefits List</div>
+            {bindText('Benefit 1', 'template_feature1_title' as any, '✅ Free Express Shipping')}
+            {bindText('Benefit 2', 'template_feature2_title' as any, '✅ 30-Day Money Back Guarantee')}
+            {bindText('Benefit 3', 'template_feature3_title' as any, '✅ Limited Time Bonus Gift')}
+            {bindText('Benefit 4', 'template_feature4_title' as any, '✅ Priority Customer Support')}
+          </div>
+        );
+      } else if (path === 'layout.urgency.trustBadges') {
+        body = (
+          <div className="space-y-4">
+            <div className="text-sm text-muted-foreground">Trust badges shown under checkout (JSON string array).</div>
+            {bindTextarea('Trust Badges', 'template_trust_badges' as any, '["🔒 Secure","📦 Fast Ship","✅ Guaranteed"]', 4)}
+            <div className="text-xs text-muted-foreground">Example: ["🔒 Secure","📦 Fast Ship","✅ Guaranteed"]</div>
+          </div>
+        );
+      }
+    } else if (path.startsWith('layout.testimonial.')) {
+      body = (
+        <div className="space-y-4">
+          {bindTextarea('Testimonial Text', 'template_testimonial_text' as any, '"Amazing product..."', 4)}
+          {bindText('Testimonial Author', 'template_testimonial_author' as any, '— Sarah M.')}
+        </div>
+      );
+    } else if (path.startsWith('layout.features.')) {
+      body = (
+        <div className="space-y-4">
+          <div className="font-medium text-sm">Feature Cards</div>
+          {bindText('Feature 1 Title', 'template_feature1_title' as any, '✋ Handcrafted')}
+          {bindText('Feature 1 Description', 'template_feature1_desc' as any, 'Made by real artisans')}
+          {bindText('Feature 2 Title', 'template_feature2_title' as any, '🌿 Sustainable')}
+          {bindText('Feature 2 Description', 'template_feature2_desc' as any, 'Eco-friendly materials')}
+          {bindText('Feature 3 Title', 'template_feature3_title' as any, '🎁 Gift Ready')}
+          {bindText('Feature 3 Description', 'template_feature3_desc' as any, 'Beautiful packaging')}
         </div>
       );
     } else if (path === 'layout.footer') {
@@ -1222,7 +1341,7 @@ export default function GoldTemplateEditor() {
         </CardContent>
       </Card>
     );
-  }, [selectedEditPath, settings, navigate, t]);
+  }, [selectedEditPath, settings, navigate, t, activeTemplateId]);
 
   if (loading) {
     return (

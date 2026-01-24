@@ -536,6 +536,7 @@ export default function Profile() {
                   <Input 
                     id="currentPassword" 
                     type={showCurrentPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
                     className="h-6 pr-8" 
                     value={passwordForm.currentPassword} 
                     onChange={(e) => setPasswordForm((s) => ({ ...s, currentPassword: e.target.value }))}
@@ -556,6 +557,7 @@ export default function Profile() {
                   <Input 
                     id="newPassword" 
                     type={showNewPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
                     className="h-6 pr-8" 
                     value={passwordForm.newPassword} 
                     onChange={(e) => setPasswordForm((s) => ({ ...s, newPassword: e.target.value }))}
@@ -575,6 +577,7 @@ export default function Profile() {
                 <Input 
                   id="confirmPassword" 
                   type="password"
+                  autoComplete="new-password"
                   className="h-6" 
                   value={passwordForm.confirmPassword} 
                   onChange={(e) => setPasswordForm((s) => ({ ...s, confirmPassword: e.target.value }))}

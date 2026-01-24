@@ -29,6 +29,22 @@ function safePrice(value: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+type NavLink = { label: string; url: string };
+type SocialLink = { platform: string; url: string };
+
+function parseJsonArray<T>(value: unknown, fallback: T[]): T[] {
+  if (Array.isArray(value)) return value as T[];
+  if (typeof value !== 'string') return fallback;
+  const raw = value.trim();
+  if (!raw) return fallback;
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as T[]) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export default function PapercraftTemplate(props: TemplateProps) {
   const { settings, formatPrice } = props;
   const s = settings as any;
@@ -76,6 +92,23 @@ export default function PapercraftTemplate(props: TemplateProps) {
   // Testimonial (editable)
   const testimonialText = asString(s.template_testimonial_text) || '"The most beautiful handmade products I\'ve ever received. The attention to detail is incredible!"';
   const testimonialAuthor = asString(s.template_testimonial_author) || '— Sarah M.';
+
+  const navLinks = parseJsonArray<NavLink>(s.template_nav_links, [
+    { label: 'Home', url: '#' },
+    { label: 'Shop', url: '#products' },
+    { label: 'Contact', url: '#contact' },
+  ]).filter((l) => l && typeof (l as any).label === 'string' && typeof (l as any).url === 'string');
+
+  const footerLinks = parseJsonArray<NavLink>(s.template_footer_links, [
+    { label: 'Shipping', url: '#shipping' },
+    { label: 'Returns', url: '#returns' },
+    { label: 'Contact', url: '#contact' },
+  ]).filter((l) => l && typeof (l as any).label === 'string' && typeof (l as any).url === 'string');
+
+  const socialLinks = parseJsonArray<SocialLink>(s.template_social_links, [
+    { platform: 'instagram', url: '#' },
+    { platform: 'tiktok', url: '#' },
+  ]).filter((l) => l && typeof (l as any).platform === 'string' && typeof (l as any).url === 'string');
 
   // Spacing
   const baseSpacing = resolveInt(s.template_spacing, 16, 8, 32);
@@ -236,19 +269,27 @@ export default function PapercraftTemplate(props: TemplateProps) {
           </button>
         </div>
 
-        {canManage && (
-          <div
-            data-edit-path="layout.header.nav"
-            onClick={(e) => { stopIfManage(e); onSelect('layout.header.nav'); }}
-            style={{ marginTop: 10, display: 'flex', justifyContent: 'center', gap: 14, fontSize: 14, color: muted }}
-          >
-            {['Home', 'Shop', 'Contact'].map((label) => (
-              <a key={label} href="#" onClick={(e) => { stopIfManage(e); onSelect('layout.header.nav'); }} style={{ color: 'inherit', textDecoration: 'none' }}>
-                {label}
-              </a>
-            ))}
-          </div>
-        )}
+        <div
+          data-edit-path="layout.header.nav"
+          onClick={(e) => { stopIfManage(e); onSelect('layout.header.nav'); }}
+          style={{ marginTop: 10, display: 'flex', justifyContent: 'center', gap: 14, fontSize: 14, color: muted, flexWrap: 'wrap' }}
+        >
+          {navLinks.map((l) => (
+            <a
+              key={`${l.label}-${l.url}`}
+              href={l.url}
+              onClick={(e) => {
+                if (canManage) {
+                  stopIfManage(e);
+                  onSelect('layout.header.nav');
+                }
+              }}
+              style={{ color: 'inherit', textDecoration: 'none' }}
+            >
+              {l.label}
+            </a>
+          ))}
+        </div>
       </header>
 
       {/* Hero Section */}
@@ -395,6 +436,8 @@ export default function PapercraftTemplate(props: TemplateProps) {
                   {features.map((f, idx) => (
                     <div 
                       key={f.title} 
+                      data-edit-path={`layout.features.${idx}`}
+                      onClick={(e) => { stopIfManage(e); onSelect(`layout.features.${idx}`); }}
                       style={{ 
                         ...paperCardStyle, 
                         padding: isMobile ? 14 : 18,
@@ -403,8 +446,20 @@ export default function PapercraftTemplate(props: TemplateProps) {
                       }}
                     >
                       <div style={paperShadowStyle} />
-                      <div style={{ fontSize: isMobile ? 16 : 18, marginBottom: 6 }}>{f.title}</div>
-                      <div style={{ fontSize: isMobile ? 12 : 14, color: muted }}>{f.desc}</div>
+                      <div
+                        data-edit-path={`layout.features.${idx}.title`}
+                        onClick={(e) => { stopIfManage(e); onSelect(`layout.features.${idx}.title`); }}
+                        style={{ fontSize: isMobile ? 16 : 18, marginBottom: 6 }}
+                      >
+                        {f.title}
+                      </div>
+                      <div
+                        data-edit-path={`layout.features.${idx}.desc`}
+                        onClick={(e) => { stopIfManage(e); onSelect(`layout.features.${idx}.desc`); }}
+                        style={{ fontSize: isMobile ? 12 : 14, color: muted }}
+                      >
+                        {f.desc}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -422,8 +477,20 @@ export default function PapercraftTemplate(props: TemplateProps) {
                 }}
               >
                 <div style={paperShadowStyle} />
-                <p style={{ fontSize: isMobile ? 16 : 20, fontStyle: 'italic', marginBottom: 8, lineHeight: 1.5 }}>{testimonialText}</p>
-                <p style={{ fontSize: isMobile ? 14 : 16, color: accent }}>{testimonialAuthor}</p>
+                <p
+                  data-edit-path="layout.testimonial.text"
+                  onClick={(e) => { stopIfManage(e); onSelect('layout.testimonial.text'); }}
+                  style={{ fontSize: isMobile ? 16 : 20, fontStyle: 'italic', marginBottom: 8, lineHeight: 1.5 }}
+                >
+                  {testimonialText}
+                </p>
+                <p
+                  data-edit-path="layout.testimonial.author"
+                  onClick={(e) => { stopIfManage(e); onSelect('layout.testimonial.author'); }}
+                  style={{ fontSize: isMobile ? 14 : 16, color: accent }}
+                >
+                  {testimonialAuthor}
+                </p>
               </div>
             </div>
 
@@ -437,7 +504,11 @@ export default function PapercraftTemplate(props: TemplateProps) {
                   padding: isMobile ? '12px 16px' : '14px 20px',
                   background: `linear-gradient(90deg, ${accent}15, transparent)`,
                 }}>
-                  <span style={{ fontSize: isMobile ? 16 : 18 }}>
+                  <span
+                    data-edit-path="layout.checkout.title"
+                    onClick={(e) => { stopIfManage(e); onSelect('layout.checkout.title'); }}
+                    style={{ fontSize: isMobile ? 16 : 18 }}
+                  >
                     🛒 {asString(s.template_checkout_title) || 'Your Order'}
                   </span>
                 </div>
@@ -474,16 +545,16 @@ export default function PapercraftTemplate(props: TemplateProps) {
         {canManage && (
           <div style={{ marginTop: 12, display: 'flex', justifyContent: 'center', gap: 16, flexWrap: 'wrap' }}>
             <div data-edit-path="layout.footer.links" onClick={(e) => { stopIfManage(e); onSelect('layout.footer.links'); }} style={{ display: 'flex', gap: 12, flexWrap: 'wrap', fontSize: 14, color: muted }}>
-              {['Shipping', 'Returns', 'Contact'].map((label) => (
-                <a key={label} href="#" onClick={(e) => { stopIfManage(e); onSelect('layout.footer.links'); }} style={{ color: 'inherit', textDecoration: 'none' }}>
-                  {label}
+              {footerLinks.map((l) => (
+                <a key={`${l.label}-${l.url}`} href={l.url} onClick={(e) => { stopIfManage(e); onSelect('layout.footer.links'); }} style={{ color: 'inherit', textDecoration: 'none' }}>
+                  {l.label}
                 </a>
               ))}
             </div>
             <div data-edit-path="layout.footer.social" onClick={(e) => { stopIfManage(e); onSelect('layout.footer.social'); }} style={{ display: 'flex', gap: 10, flexWrap: 'wrap', fontSize: 14, color: muted }}>
-              {['Instagram', 'TikTok'].map((label) => (
-                <a key={label} href="#" onClick={(e) => { stopIfManage(e); onSelect('layout.footer.social'); }} style={{ color: 'inherit', textDecoration: 'none' }}>
-                  {label}
+              {socialLinks.map((l) => (
+                <a key={`${l.platform}-${l.url}`} href={l.url} onClick={(e) => { stopIfManage(e); onSelect('layout.footer.social'); }} style={{ color: 'inherit', textDecoration: 'none' }}>
+                  {l.platform}
                 </a>
               ))}
             </div>

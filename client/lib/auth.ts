@@ -4,8 +4,19 @@
 
 // Use relative /api path by default (works in both dev and production)
 // Only use VITE_API_URL if explicitly set to an absolute URL
-const VITE_API_URL = import.meta.env.VITE_API_URL || "";
-const API_BASE_URL = VITE_API_URL || "/api";
+const VITE_API_URL = String(import.meta.env.VITE_API_URL || '').trim();
+
+function normalizeApiBaseUrl(value: string): string {
+  const v = String(value || '').trim();
+  if (!v) return '/api';
+  // Absolute URLs are allowed (e.g. https://api.example.com/api)
+  if (/^https?:\/\//i.test(v)) return v.replace(/\/+$/, '');
+  // Support relative '/api' and fix common misconfig like 'api'
+  if (v.startsWith('/')) return v.replace(/\/+$/, '');
+  return `/${v}`.replace(/\/+$/, '');
+}
+
+const API_BASE_URL = normalizeApiBaseUrl(VITE_API_URL);
 
 export interface AuthResponse {
   message: string;
