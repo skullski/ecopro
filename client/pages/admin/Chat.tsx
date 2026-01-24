@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { MessageCircle, Search, Send, AlertCircle, Plus, UserPlus, X } from 'lucide-react';
+import { MessageCircle, Search, Send, AlertCircle, Plus, UserPlus, X, Tag, Percent, DollarSign, Gift, CheckCircle } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 
 interface Chat {
@@ -35,6 +35,28 @@ interface SearchedClient {
   has_chat: number;
 }
 
+interface AffiliateInfo {
+  client_id: number;
+  client_name: string;
+  has_affiliate: boolean;
+  affiliate?: {
+    id: number;
+    name: string;
+    voucher_code: string;
+    discount_percent: number;
+    commission_percent: number;
+  };
+  payment_count: number;
+  is_first_payment: boolean;
+  pricing: {
+    standard_price: number;
+    discount_applicable: boolean;
+    discount_percent: number;
+    discount_amount: number;
+    final_price: number;
+  };
+}
+
 const TIERS = [
   { id: 'bronze', name: 'Bronze', bgColor: 'bg-amber-500' },
   { id: 'silver', name: 'Silver', bgColor: 'bg-slate-400' },
@@ -52,6 +74,12 @@ export default function AdminChat() {
   const [showCodePanel, setShowCodePanel] = useState(false);
   const [issuingCode, setIssuingCode] = useState<string | null>(null);
   
+  // Affiliate info state
+  const [affiliateInfo, setAffiliateInfo] = useState<AffiliateInfo | null>(null);
+  const [loadingAffiliateInfo, setLoadingAffiliateInfo] = useState(false);
+  const [recordingPayment, setRecordingPayment] = useState(false);
+  const [paymentRecorded, setPaymentRecorded] = useState(false);
+  
   // New chat modal state
   const [showNewChatModal, setShowNewChatModal] = useState(false);
   const [clientSearch, setClientSearch] = useState('');
@@ -68,10 +96,18 @@ export default function AdminChat() {
   useEffect(() => {
     if (selectedChatId) {
       loadMessages();
+      setPaymentRecorded(false);
       const interval = setInterval(loadMessages, 3000);
       return () => clearInterval(interval);
     }
   }, [selectedChatId]);
+
+  // Load affiliate info when chat is selected and chats are loaded
+  useEffect(() => {
+    if (selectedChatId && chats.length > 0) {
+      loadAffiliateInfo();
+    }
+  }, [selectedChatId, chats]);
 
   const loadChats = async () => {
     try {
@@ -95,6 +131,48 @@ export default function AdminChat() {
       }
     } catch (err) {
       console.error('Failed to load messages:', err);
+    }
+  };
+
+  const loadAffiliateInfo = async () => {
+    const selectedChat = chats.find(c => Number(c.id) === selectedChatId);
+    if (!selectedChat?.client_id) return;
+    
+    setLoadingAffiliateInfo(true);
+    try {
+      const response = await apiFetch<AffiliateInfo>(`/api/affiliates/admin/client/${selectedChat.client_id}`);
+      setAffiliateInfo(response);
+    } catch (err) {
+      console.error('Failed to load affiliate info:', err);
+      setAffiliateInfo(null);
+    } finally {
+      setLoadingAffiliateInfo(false);
+    }
+  };
+
+  const recordAffiliatePayment = async () => {
+    if (!affiliateInfo || !affiliateInfo.has_affiliate) return;
+    
+    setRecordingPayment(true);
+    try {
+      const response = await apiFetch<any>('/api/affiliates/admin/record-payment', {
+        method: 'POST',
+        body: JSON.stringify({
+          client_id: affiliateInfo.client_id,
+          amount_paid: affiliateInfo.pricing.final_price,
+          payment_method: 'manual',
+        }),
+      });
+      
+      if (response.success) {
+        setPaymentRecorded(true);
+        // Reload affiliate info to update payment count
+        await loadAffiliateInfo();
+      }
+    } catch (err) {
+      console.error('Failed to record payment:', err);
+    } finally {
+      setRecordingPayment(false);
     }
   };
 
@@ -413,16 +491,88 @@ export default function AdminChat() {
         {selectedChat ? (
           <>
             {/* Chat Header */}
-            <div className="px-4 py-3 border-b border-slate-700/50 bg-gradient-to-r from-slate-800/80 to-slate-900/80 backdrop-blur flex items-center justify-between flex-shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-sm">
-                  {selectedChat.client_name.charAt(0).toUpperCase()}
+            <div className="px-4 py-3 border-b border-slate-700/50 bg-gradient-to-r from-slate-800/80 to-slate-900/80 backdrop-blur flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-sm">
+                    {selectedChat.client_name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <h2 className="font-bold text-sm text-white">{selectedChat.client_name}</h2>
+                    <p className="text-xs text-slate-400">{selectedChat.client_email}</p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="font-bold text-sm text-white">{selectedChat.client_name}</h2>
-                  <p className="text-xs text-slate-400">{selectedChat.client_email}</p>
-                </div>
+                
+                {/* Affiliate Badge */}
+                {affiliateInfo?.has_affiliate && (
+                  <div className="flex items-center gap-2">
+                    <div className="px-3 py-1 bg-gradient-to-r from-emerald-500/20 to-green-500/20 border border-emerald-500/40 rounded-full flex items-center gap-2">
+                      <Tag className="w-3 h-3 text-emerald-400" />
+                      <span className="text-xs text-emerald-300 font-medium">{affiliateInfo.affiliate?.voucher_code}</span>
+                    </div>
+                  </div>
+                )}
               </div>
+              
+              {/* Affiliate Discount Info */}
+              {affiliateInfo?.has_affiliate && affiliateInfo.pricing.discount_applicable && (
+                <div className="mt-3 p-3 bg-gradient-to-r from-emerald-500/10 to-green-500/10 border border-emerald-500/30 rounded-lg">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-3">
+                      <Percent className="w-5 h-5 text-emerald-400" />
+                      <div>
+                        <p className="text-xs text-emerald-300 font-medium">
+                          Referred by <strong>{affiliateInfo.affiliate?.name}</strong> ({affiliateInfo.affiliate?.voucher_code})
+                        </p>
+                        <p className="text-sm text-white">
+                          <span className="line-through text-slate-400">${affiliateInfo.pricing.standard_price.toFixed(2)}</span>
+                          <span className="mx-2">→</span>
+                          <span className="text-emerald-400 font-bold">${affiliateInfo.pricing.final_price.toFixed(2)}</span>
+                          <span className="text-xs text-emerald-300 ml-2">({affiliateInfo.pricing.discount_percent}% off)</span>
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {!paymentRecorded ? (
+                      <button
+                        onClick={recordAffiliatePayment}
+                        disabled={recordingPayment}
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-600 text-white text-xs font-medium rounded-lg flex items-center gap-2 transition-colors"
+                      >
+                        {recordingPayment ? (
+                          <>
+                            <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            Recording...
+                          </>
+                        ) : (
+                          <>
+                            <DollarSign className="w-3 h-3" />
+                            Record Payment
+                          </>
+                        )}
+                      </button>
+                    ) : (
+                      <div className="px-3 py-1.5 bg-emerald-500/20 text-emerald-300 text-xs font-medium rounded-lg flex items-center gap-2">
+                        <CheckCircle className="w-3 h-3" />
+                        Commission Recorded
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {/* Info for non-first payment or no affiliate */}
+              {affiliateInfo && !affiliateInfo.pricing.discount_applicable && affiliateInfo.has_affiliate && (
+                <div className="mt-3 p-2 bg-slate-700/30 border border-slate-600/30 rounded-lg">
+                  <p className="text-xs text-slate-400">
+                    Referred by {affiliateInfo.affiliate?.name} ({affiliateInfo.affiliate?.voucher_code}) • 
+                    {affiliateInfo.payment_count > 0 
+                      ? ` Payment #${affiliateInfo.payment_count + 1} - Standard price $${affiliateInfo.pricing.standard_price.toFixed(2)}`
+                      : ' Discount already applied'
+                    }
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Messages */}
