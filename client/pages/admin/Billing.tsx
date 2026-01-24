@@ -10,12 +10,14 @@ import {
   Download,
   RefreshCw,
   Zap,
+  Tag,
+  Percent,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
 
 interface Subscription {
@@ -47,6 +49,15 @@ const AdminBilling = () => {
   const { t } = useTranslation();
   const { toast } = useToast();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [showCheckoutDialog, setShowCheckoutDialog] = useState(false);
+  const [checkoutInfo, setCheckoutInfo] = useState<{
+    amount: number;
+    originalAmount: number;
+    discountPercent: number;
+    discountAmount: number;
+    voucherCode: string | null;
+    checkoutUrl: string;
+  } | null>(null);
 
   // Fetch subscription
   const { data: subscription, isLoading: subLoading, refetch: refetchSub } = useQuery({
@@ -89,11 +100,25 @@ const AdminBilling = () => {
 
       const data = await res.json();
       
-      // Redirect to RedotPay checkout
-      if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
-      } else {
+      if (!data.checkoutUrl) {
         throw new Error('No checkout URL received');
+      }
+
+      // If there's a discount, show confirmation dialog
+      if (data.discountPercent > 0) {
+        setCheckoutInfo({
+          amount: data.amount,
+          originalAmount: data.originalAmount,
+          discountPercent: data.discountPercent,
+          discountAmount: data.discountAmount,
+          voucherCode: data.voucherCode,
+          checkoutUrl: data.checkoutUrl,
+        });
+        setShowCheckoutDialog(true);
+        setIsCheckingOut(false);
+      } else {
+        // No discount, redirect directly
+        window.location.href = data.checkoutUrl;
       }
     } catch (error) {
       console.error('Checkout error:', error);
@@ -102,8 +127,13 @@ const AdminBilling = () => {
         description: (error as any).message,
         variant: 'destructive',
       });
-    } finally {
       setIsCheckingOut(false);
+    }
+  };
+
+  const proceedToPayment = () => {
+    if (checkoutInfo?.checkoutUrl) {
+      window.location.href = checkoutInfo.checkoutUrl;
     }
   };
 
@@ -484,6 +514,65 @@ const AdminBilling = () => {
           </details>
         </CardContent>
       </Card>
+
+      {/* Checkout Discount Dialog */}
+      <Dialog open={showCheckoutDialog} onOpenChange={setShowCheckoutDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Tag className="w-5 h-5 text-green-600" />
+              Discount Applied!
+            </DialogTitle>
+            <DialogDescription>
+              You have a special discount on your first payment
+            </DialogDescription>
+          </DialogHeader>
+          
+          {checkoutInfo && (
+            <div className="space-y-4 py-4">
+              {/* Voucher Code Badge */}
+              <div className="flex items-center justify-center">
+                <div className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-4 py-2 rounded-full flex items-center gap-2">
+                  <Percent className="w-4 h-4" />
+                  <span className="font-semibold">{checkoutInfo.discountPercent}% OFF</span>
+                  <span className="text-sm">with code <strong>{checkoutInfo.voucherCode}</strong></span>
+                </div>
+              </div>
+
+              {/* Price Breakdown */}
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600 dark:text-gray-400">Original Price</span>
+                  <span className="line-through text-gray-400">${checkoutInfo.originalAmount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm text-green-600">
+                  <span>Discount ({checkoutInfo.discountPercent}%)</span>
+                  <span>-${checkoutInfo.discountAmount.toFixed(2)}</span>
+                </div>
+                <hr className="border-gray-200 dark:border-gray-700" />
+                <div className="flex justify-between font-semibold text-lg">
+                  <span>You Pay</span>
+                  <span className="text-green-600">${checkoutInfo.amount.toFixed(2)}</span>
+                </div>
+              </div>
+
+              <p className="text-xs text-gray-500 text-center">
+                This discount applies to your first payment only
+              </p>
+            </div>
+          )}
+
+          <DialogFooter className="flex gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setShowCheckoutDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={proceedToPayment} className="gap-2 bg-green-600 hover:bg-green-700">
+              <CreditCard className="w-4 h-4" />
+              Proceed to Payment
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

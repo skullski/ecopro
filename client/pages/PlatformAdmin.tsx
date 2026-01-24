@@ -48,6 +48,7 @@ import { Button } from '@/components/ui/button';
 import GlobalAnnouncementsManager from '@/components/platform-admin/GlobalAnnouncementsManager';
 import SpeedometerGauge from '@/components/platform-admin/SpeedometerGauge';
 import BigCarGauge from '@/components/platform-admin/BigCarGauge';
+import AdminAffiliatesPage from '@/pages/admin/AdminAffiliatesPage';
 interface PlatformStats {
   totalUsers: number;
   totalClients: number;
@@ -877,7 +878,7 @@ export default function PlatformAdmin() {
   const [adminAuditLogs, setAdminAuditLogs] = useState<AdminAuditLog[]>([]);
   const [logMode, setLogMode] = useState<'staff' | 'admin'>('staff');
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stores' | 'products' | 'activity' | 'errors' | 'health' | 'settings' | 'billing' | 'payment-failures' | 'codes' | 'tools'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stores' | 'products' | 'activity' | 'errors' | 'health' | 'settings' | 'billing' | 'payment-failures' | 'codes' | 'tools' | 'affiliates'>('overview');
 
   const [platformErrorDays, setPlatformErrorDays] = useState(3);
   const [platformErrorSource, setPlatformErrorSource] = useState<'all' | 'client' | 'server'>('all');
@@ -1941,6 +1942,16 @@ export default function PlatformAdmin() {
             <Gift style={{ width: 'clamp(0.875rem, 1.8vh, 1rem)', height: 'clamp(0.875rem, 1.8vh, 1rem)', marginRight: 'clamp(0.375rem, 0.75vh, 0.5rem)' }} />
             <span className="hidden md:inline">{t('platformAdmin.tabs.codes')}</span>
             <span className="md:hidden">C</span>
+          </Button>
+          <Button
+            variant={activeTab === 'affiliates' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('affiliates')}
+            className="whitespace-nowrap text-slate-200"
+            style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.375rem, 0.8vh, 0.5rem) clamp(0.75rem, 1.5vh, 1rem)', height: 'clamp(2rem, 4vh, 2.5rem)' }}
+          >
+            <TrendingUp style={{ width: 'clamp(0.875rem, 1.8vh, 1rem)', height: 'clamp(0.875rem, 1.8vh, 1rem)', marginRight: 'clamp(0.375rem, 0.75vh, 0.5rem)' }} />
+            <span className="hidden md:inline">Affiliates</span>
+            <span className="md:hidden">AF</span>
           </Button>
           <Button
             variant={activeTab === 'tools' ? 'default' : 'ghost'}
@@ -4556,6 +4567,13 @@ export default function PlatformAdmin() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Affiliates Tab */}
+        {activeTab === 'affiliates' && (
+          <div className="bg-slate-900/40 border border-slate-700/60 rounded-xl p-4">
+            <AdminAffiliatesPage />
           </div>
         )}
 

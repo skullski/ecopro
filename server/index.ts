@@ -52,6 +52,7 @@ import chatRouter from "./routes/chat";
 import codesRouter from "./routes/codes";
 import customerBotRouter from "./routes/customer-bot";
 import pixelsRouter from "./routes/pixels";
+import affiliatesRouter from "./routes/affiliates";
 import { authenticateStaff, requireStaffPermission, requireStaffClientAccess } from "./utils/staff-middleware";
 import { initializeDatabase, createDefaultAdmin, runPendingMigrations } from "./utils/database";
 import { handleHealth } from "./routes/health";
@@ -1358,6 +1359,9 @@ export function createServer(options?: { skipDbInit?: boolean }) {
 
   // Pixel tracking routes (mixed - some public, some authenticated)
   app.use('/api/pixels', pixelsRouter);  // Router handles auth internally
+
+  // Affiliate/Influencer marketing routes (mixed auth - public validate, affiliate auth, admin auth)
+  app.use('/api/affiliates', affiliatesRouter);
 
   // Checkout session routes (database-backed, not localStorage)
   app.post("/api/checkout/save-product", orderRoutes.saveProductForCheckout); // Public - save product for checkout

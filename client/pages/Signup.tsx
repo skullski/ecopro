@@ -3,7 +3,7 @@ import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/i18n";
 import { FloatingShapes } from "@/components/ui/floating-shapes";
-import { UserPlus, Mail, Lock, Sparkles, User, Loader2, CheckCircle2, Eye, EyeOff } from "lucide-react";
+import { UserPlus, Mail, Lock, Sparkles, User, Loader2, CheckCircle2, Eye, EyeOff, Tag, Gift } from "lucide-react";
 
 // Google Icon Component
 function GoogleIcon({ className }: { className?: string }) {
@@ -37,6 +37,10 @@ export default function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [voucherCode, setVoucherCode] = useState("");
+  const [voucherValid, setVoucherValid] = useState<boolean | null>(null);
+  const [voucherDiscount, setVoucherDiscount] = useState<number>(0);
+  const [voucherLoading, setVoucherLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -58,6 +62,32 @@ export default function Signup() {
       .then(data => setGoogleEnabled(data.google?.enabled || false))
       .catch(() => setGoogleEnabled(false));
   }, []);
+
+  // Validate voucher code when it changes
+  useEffect(() => {
+    if (!voucherCode.trim()) {
+      setVoucherValid(null);
+      setVoucherDiscount(0);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setVoucherLoading(true);
+      try {
+        const res = await fetch(`/api/affiliates/validate/${encodeURIComponent(voucherCode.trim())}`);
+        const data = await res.json();
+        setVoucherValid(data.valid);
+        setVoucherDiscount(data.valid ? data.discount_percent : 0);
+      } catch {
+        setVoucherValid(false);
+        setVoucherDiscount(0);
+      } finally {
+        setVoucherLoading(false);
+      }
+    }, 500); // Debounce 500ms
+
+    return () => clearTimeout(timer);
+  }, [voucherCode]);
 
   function isGmailSignup(value: string) {
     return value.trim().toLowerCase().endsWith('@gmail.com');
@@ -95,7 +125,13 @@ export default function Signup() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ email, password, name, role: 'client' })
+        body: JSON.stringify({ 
+          email, 
+          password, 
+          name, 
+          role: 'client',
+          voucher_code: voucherCode.trim() || undefined 
+        })
       });
       
       const data = await res.json();
@@ -257,6 +293,51 @@ export default function Signup() {
                   {t("auth.passwordHint") || "At least 8 characters"}
                 </p>
               </div>
+              
+              {/* Voucher Code Input */}
+              <div>
+                <label className="block text-xs sm:text-sm font-medium mb-1.5 flex items-center gap-1.5">
+                  <Gift className="w-3.5 h-3.5 text-accent" />
+                  Voucher Code <span className="text-muted-foreground font-normal">(optional)</span>
+                </label>
+                <div className="relative">
+                  <input 
+                    type="text"
+                    value={voucherCode} 
+                    onChange={(e) => setVoucherCode(e.target.value.toUpperCase())} 
+                    className={`w-full rounded-lg border-2 bg-background px-3 py-1.5 pr-10 text-sm transition-all uppercase ${
+                      voucherValid === true 
+                        ? 'border-green-500 focus:border-green-500 focus:ring-green-500/20' 
+                        : voucherValid === false 
+                          ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
+                          : 'border-accent/20 focus:border-accent focus:ring-accent/20'
+                    } focus:ring-2`}
+                    placeholder="e.g., AHMED20"
+                    disabled={loading}
+                  />
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                    {voucherLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                    ) : voucherValid === true ? (
+                      <CheckCircle2 className="w-4 h-4 text-green-500" />
+                    ) : voucherValid === false ? (
+                      <Tag className="w-4 h-4 text-red-500" />
+                    ) : null}
+                  </div>
+                </div>
+                {voucherValid === true && voucherDiscount > 0 && (
+                  <p className="text-[10px] sm:text-xs text-green-600 mt-1 flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3" />
+                    {voucherDiscount}% discount on your first month!
+                  </p>
+                )}
+                {voucherValid === false && voucherCode.trim() && (
+                  <p className="text-[10px] sm:text-xs text-red-500 mt-1">
+                    Invalid or expired voucher code
+                  </p>
+                )}
+              </div>
+              
               <div className="flex items-center justify-between pt-1">
                 <Button 
                   type="submit" 

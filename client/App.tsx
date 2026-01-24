@@ -69,6 +69,10 @@ const AccountLocked = lazy(() => import("./pages/AccountLocked"));
 const BillingSuccess = lazy(() => import("./pages/BillingSuccess"));
 const BillingCancelled = lazy(() => import("./pages/BillingCancelled"));
 
+// Affiliate pages - lazy loaded
+const AffiliateLogin = lazy(() => import("./pages/affiliate/AffiliateLogin"));
+const AffiliateDashboard = lazy(() => import("./pages/affiliate/AffiliateDashboard"));
+
 // Orders submenu pages - lazy loaded
 const AddOrder = lazy(() => import("./pages/admin/orders/AddOrder"));
 const AbandonedOrders = lazy(() => import("./pages/admin/orders/AbandonedOrders"));
@@ -362,6 +366,11 @@ const App = () => (
                   {/* Billing success/cancelled routes - RedotPay payment callbacks */}
                   <Route path="/billing/success" element={<BillingSuccess />} />
                   <Route path="/billing/cancelled" element={<BillingCancelled />} />
+                  
+                  {/* Affiliate Portal routes */}
+                  <Route path="/affiliate/login" element={<AffiliateLogin />} />
+                  <Route path="/affiliate/dashboard" element={<AffiliateDashboard />} />
+                  
                   <Route
                     path="/staff/dashboard"
                     element={

@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import https from 'https';
 import { pool } from './database';
+import { calculateAffiliateCommission } from './affiliate-commission';
 
 /**
  * RedotPay Integration Utilities
@@ -28,6 +29,8 @@ export interface CreateCheckoutSessionParams {
   subscriptionId: number;
   description?: string;
   metadata?: Record<string, any>;
+  /** Custom amount in cents (optional - defaults to SUBSCRIPTION_PRICE_CENTS) */
+  amountCents?: number;
 }
 
 /**
@@ -74,9 +77,12 @@ export async function createCheckoutSession(
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + 30); // 30 minute expiry
 
+    // Use custom amount if provided (for discounts), otherwise use standard price
+    const finalAmountCents = params.amountCents ?? SUBSCRIPTION_PRICE_CENTS;
+
     // Call RedotPay API to create session
     const redotpaySessionId = await createRedotPaySession({
-      amount: SUBSCRIPTION_PRICE_CENTS,
+      amount: finalAmountCents,
       currency: CURRENCY,
       customer_email: params.userEmail,
       customer_phone: params.userPhone || '',
@@ -103,7 +109,7 @@ export async function createCheckoutSession(
         params.subscriptionId,
         redotpaySessionId,
         'pending',
-        SUBSCRIPTION_PRICE_CENTS / 100, // Convert cents to units
+        finalAmountCents / 100, // Convert cents to units
         CURRENCY,
         JSON.stringify({
           user_id: params.userId,
@@ -311,16 +317,18 @@ export async function handlePaymentCompleted(
 
     // Create payment record
     const checkoutSession = await pool.query(
-      'SELECT id FROM checkout_sessions WHERE redotpay_session_id = $1',
+      'SELECT id, metadata FROM checkout_sessions WHERE redotpay_session_id = $1',
       [session_id]
     );
 
     const checkoutSessionId = checkoutSession.rows[0]?.id || null;
+    const sessionMetadata = checkoutSession.rows[0]?.metadata || {};
 
     await pool.query(
       `INSERT INTO payments 
        (user_id, subscription_id, checkout_session_id, amount, currency, status, transaction_id, payment_method, provider_response, paid_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       RETURNING id`,
       [
         userId,
         subscriptionId,
@@ -333,7 +341,33 @@ export async function handlePaymentCompleted(
         JSON.stringify(payload.data),
         new Date(payload.data.paid_at || payload.timestamp),
       ]
-    );
+    ).then(async (paymentResult) => {
+      // Calculate affiliate commission if user was referred
+      const paymentId = paymentResult.rows[0]?.id;
+      if (paymentId) {
+        try {
+          await calculateAffiliateCommission(userId, paymentId, amount / 100);
+          
+          // Mark discount as applied in referral record if this was a discounted payment
+          if (sessionMetadata.is_first_payment && sessionMetadata.affiliate_id && sessionMetadata.discount_percent > 0) {
+            await pool.query(
+              `UPDATE affiliate_referrals 
+               SET discount_applied = true 
+               WHERE affiliate_id = $1 AND user_id = $2`,
+              [sessionMetadata.affiliate_id, userId]
+            );
+            console.log('[RedotPay] Marked affiliate discount as applied:', {
+              affiliateId: sessionMetadata.affiliate_id,
+              userId,
+              discountPercent: sessionMetadata.discount_percent,
+            });
+          }
+        } catch (commissionError) {
+          console.warn('[RedotPay] Failed to calculate affiliate commission:', commissionError);
+          // Non-critical - don't fail the payment
+        }
+      }
+    });
 
     // Update checkout session status
     if (checkoutSessionId) {

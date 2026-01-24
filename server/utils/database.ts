@@ -476,14 +476,16 @@ export async function createUser(user: {
   name: string;
   role?: string;
   user_type?: string;
+  referred_by_affiliate_id?: number;
+  referral_voucher_code?: string;
 }): Promise<User> {
   const db = await ensureConnection();
   const passwordCol = await getPasswordColumn('clients');
   const result = await db.query(
-    `INSERT INTO clients (email, ${passwordCol}, name, role, user_type, is_verified, created_at, updated_at)
-     VALUES ($1, $2, $3, $4, $5, false, NOW(), NOW())
+    `INSERT INTO clients (email, ${passwordCol}, name, role, user_type, is_verified, referred_by_affiliate_id, referral_voucher_code, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5, false, $6, $7, NOW(), NOW())
      RETURNING id, email, ${passwordCol} as password, name, role, user_type, is_verified, created_at, updated_at`,
-    [user.email, user.password, user.name, user.role || 'client', user.user_type || 'client']
+    [user.email, user.password, user.name, user.role || 'client', user.user_type || 'client', user.referred_by_affiliate_id || null, user.referral_voucher_code || null]
   );
   return result.rows[0];
 }

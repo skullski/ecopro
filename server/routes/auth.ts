@@ -111,7 +111,7 @@ function setAuthCookies(res: any, accessToken: string, refreshToken: string) {
 // POST /api/auth/register
 export const register: RequestHandler = async (req, res) => {
   try {
-    const { email, password, name, role } = req.body;
+    const { email, password, name, role, voucher_code } = req.body;
     const normalizedEmail = normalizeEmail(email);
 
     if (!isAllowedSignupEmail(normalizedEmail)) {
@@ -153,6 +153,28 @@ export const register: RequestHandler = async (req, res) => {
     // Hash password
     const hashedPassword = await hashPassword(password);
 
+    // Validate voucher code if provided and get affiliate info
+    let affiliateId: number | null = null;
+    let affiliateDiscount = 0;
+    let validatedVoucherCode: string | null = null;
+    
+    if (voucher_code) {
+      const voucherCode = String(voucher_code).toUpperCase().trim();
+      const affiliateResult = await pool.query(
+        `SELECT id, voucher_code, discount_percent FROM affiliates WHERE voucher_code = $1 AND status = 'active'`,
+        [voucherCode]
+      );
+      if (affiliateResult.rows.length > 0) {
+        affiliateId = affiliateResult.rows[0].id;
+        affiliateDiscount = parseFloat(affiliateResult.rows[0].discount_percent);
+        validatedVoucherCode = affiliateResult.rows[0].voucher_code;
+        console.log(`[REGISTER] Valid voucher code ${voucherCode} from affiliate ${affiliateId}, discount: ${affiliateDiscount}%`);
+      } else {
+        console.log(`[REGISTER] Invalid or inactive voucher code: ${voucherCode}`);
+        // Don't fail registration, just ignore invalid code
+      }
+    }
+
     // Create user
     // Map role to valid values: 'admin' stays admin, everything else becomes 'client'
     // Public signup should never create admins.
@@ -166,6 +188,8 @@ export const register: RequestHandler = async (req, res) => {
       name,
       role: normalizedRole,
       user_type: 'client',
+      referred_by_affiliate_id: affiliateId || undefined,
+      referral_voucher_code: validatedVoucherCode || undefined,
     });
 
     // Fingerprint + security log (do not log secrets)
@@ -205,14 +229,38 @@ export const register: RequestHandler = async (req, res) => {
     if (user.user_type === 'client') {
       try {
         await pool.query(
-          `INSERT INTO clients (email, password, name, role, created_at, updated_at)
-           VALUES ($1, $2, $3, $4, NOW(), NOW())
-           ON CONFLICT (email) DO NOTHING`,
-          [user.email, user.password, user.name || 'Store Owner', 'client']
+          `INSERT INTO clients (email, password, name, role, referred_by_affiliate_id, referral_voucher_code, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+           ON CONFLICT (email) DO UPDATE SET referred_by_affiliate_id = COALESCE(EXCLUDED.referred_by_affiliate_id, clients.referred_by_affiliate_id), referral_voucher_code = COALESCE(EXCLUDED.referral_voucher_code, clients.referral_voucher_code)`,
+          [user.email, user.password, user.name || 'Store Owner', 'client', affiliateId, validatedVoucherCode]
         );
       } catch (clientError) {
         console.warn("[REGISTER] Could not create client record:", clientError);
         // Not critical - continue with registration
+      }
+      
+      // Create affiliate referral record if user came from an affiliate
+      if (affiliateId && validatedVoucherCode) {
+        try {
+          // Create referral record
+          await pool.query(
+            `INSERT INTO affiliate_referrals (affiliate_id, user_id, voucher_code_used, discount_applied)
+             VALUES ($1, $2, $3, $4)
+             ON CONFLICT (user_id) DO NOTHING`,
+            [affiliateId, user.id, validatedVoucherCode, affiliateDiscount]
+          );
+          
+          // Update affiliate referral count
+          await pool.query(
+            `UPDATE affiliates SET total_referrals = total_referrals + 1, updated_at = NOW() WHERE id = $1`,
+            [affiliateId]
+          );
+          
+          console.log(`[REGISTER] Created affiliate referral: user ${user.id} referred by affiliate ${affiliateId} with code ${validatedVoucherCode}`);
+        } catch (affiliateError) {
+          console.warn('[REGISTER] Could not create affiliate referral record:', affiliateError);
+          // Not critical - continue with registration
+        }
       }
       
       // Create 30-day trial subscription for new store owners
