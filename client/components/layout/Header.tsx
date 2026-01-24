@@ -337,6 +337,23 @@ export default function Header() {
                 </Link>
               )}
 
+              {!user && (
+                <>
+                  <div className="h-px bg-border/40 my-2" />
+                  <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
+                    <Button variant="outline" className="justify-start border-2 border-primary/30 text-primary hover:bg-gradient-to-r hover:from-primary/15 hover:to-accent/10 hover:border-primary/45 font-bold w-full shadow-sm hover:shadow-md">
+                      {t("auth.login")}
+                    </Button>
+                  </Link>
+                  <Link to="/signup" onClick={() => setMobileMenuOpen(false)}>
+                    <Button className="justify-start bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white font-bold w-full shadow-sm hover:shadow-md">
+                      <Sparkles className="w-5 h-5 ml-2 drop-shadow" />
+                      {t("auth.signup")}
+                    </Button>
+                  </Link>
+                </>
+              )}
+
               {user && (
                 <>
                   <div className="h-px bg-border/40 my-2" />

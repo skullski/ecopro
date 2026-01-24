@@ -27,11 +27,14 @@ import {
   MemoryStick,
   Package,
   PieChart as PieChartIcon,
+  Pin,
+  Plus,
   RefreshCw,
   Search,
   Settings,
   Shield,
   ShoppingBag,
+  StickyNote,
   Store,
   Trash2,
   TrendingUp,
@@ -49,6 +52,18 @@ import GlobalAnnouncementsManager from '@/components/platform-admin/GlobalAnnoun
 import SpeedometerGauge from '@/components/platform-admin/SpeedometerGauge';
 import BigCarGauge from '@/components/platform-admin/BigCarGauge';
 import AdminAffiliatesPage from '@/pages/admin/AdminAffiliatesPage';
+
+interface AdminNote {
+  id: number;
+  admin_id: number;
+  title: string;
+  content: string;
+  color: 'yellow' | 'blue' | 'green' | 'red' | 'purple';
+  is_pinned: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 interface PlatformStats {
   totalUsers: number;
   totalClients: number;
@@ -878,7 +893,7 @@ export default function PlatformAdmin() {
   const [adminAuditLogs, setAdminAuditLogs] = useState<AdminAuditLog[]>([]);
   const [logMode, setLogMode] = useState<'staff' | 'admin'>('staff');
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stores' | 'products' | 'activity' | 'errors' | 'health' | 'settings' | 'billing' | 'payment-failures' | 'codes' | 'tools' | 'affiliates'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'stores' | 'products' | 'activity' | 'errors' | 'health' | 'settings' | 'billing' | 'payment-failures' | 'codes' | 'tools' | 'affiliates' | 'notes'>('overview');
 
   const [platformErrorDays, setPlatformErrorDays] = useState(3);
   const [platformErrorSource, setPlatformErrorSource] = useState<'all' | 'client' | 'server'>('all');
@@ -927,6 +942,14 @@ export default function PlatformAdmin() {
   const [lastGeneratedCode, setLastGeneratedCode] = useState<any>(null);
   const [expireClientEmail, setExpireClientEmail] = useState('');
   const [expiringClient, setExpiringClient] = useState(false);
+
+  // Admin Notes state
+  const [adminNotes, setAdminNotes] = useState<AdminNote[]>([]);
+  const [notesLoading, setNotesLoading] = useState(false);
+  const [showNoteModal, setShowNoteModal] = useState(false);
+  const [editingNote, setEditingNote] = useState<AdminNote | null>(null);
+  const [noteForm, setNoteForm] = useState({ title: '', content: '', color: 'yellow' as const, is_pinned: false });
+  const [savingNote, setSavingNote] = useState(false);
 
   const reloadPlatformErrors = useCallback(async () => {
     setPlatformErrorsLoading(true);
@@ -1448,6 +1471,86 @@ export default function PlatformAdmin() {
     }
   };
 
+  // Admin Notes functions
+  const loadAdminNotes = async () => {
+    setNotesLoading(true);
+    try {
+      const res = await fetch('/api/admin/notes');
+      if (res.ok) {
+        const data = await res.json();
+        setAdminNotes(data.notes || []);
+      } else {
+        console.error('Failed to load notes');
+        setAdminNotes([]);
+      }
+    } catch (error) {
+      console.error('Failed to load notes:', error);
+      setAdminNotes([]);
+    } finally {
+      setNotesLoading(false);
+    }
+  };
+
+  const handleSaveNote = async () => {
+    if (!noteForm.content.trim()) return;
+    setSavingNote(true);
+    try {
+      const url = editingNote ? `/api/admin/notes/${editingNote.id}` : '/api/admin/notes';
+      const method = editingNote ? 'PUT' : 'POST';
+      
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(noteForm),
+      });
+      
+      if (res.ok) {
+        await loadAdminNotes();
+        setShowNoteModal(false);
+        setEditingNote(null);
+        setNoteForm({ title: '', content: '', color: 'yellow', is_pinned: false });
+      } else {
+        const error = await res.json();
+        alert(error.error || 'Failed to save note');
+      }
+    } catch (error) {
+      console.error('Failed to save note:', error);
+      alert('Failed to save note');
+    } finally {
+      setSavingNote(false);
+    }
+  };
+
+  const handleDeleteNote = async (noteId: number) => {
+    if (!confirm('Are you sure you want to delete this note?')) return;
+    try {
+      const res = await fetch(`/api/admin/notes/${noteId}`, { method: 'DELETE' });
+      if (res.ok) {
+        await loadAdminNotes();
+      } else {
+        alert('Failed to delete note');
+      }
+    } catch (error) {
+      console.error('Failed to delete note:', error);
+      alert('Failed to delete note');
+    }
+  };
+
+  const handleTogglePin = async (note: AdminNote) => {
+    try {
+      const res = await fetch(`/api/admin/notes/${note.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_pinned: !note.is_pinned }),
+      });
+      if (res.ok) {
+        await loadAdminNotes();
+      }
+    } catch (error) {
+      console.error('Failed to toggle pin:', error);
+    }
+  };
+
   const handleIssueCode = async () => {
     if (issuingCode) return;
     
@@ -1962,6 +2065,19 @@ export default function PlatformAdmin() {
             <Zap style={{ width: 'clamp(0.875rem, 1.8vh, 1rem)', height: 'clamp(0.875rem, 1.8vh, 1rem)', marginRight: 'clamp(0.375rem, 0.75vh, 0.5rem)' }} />
             <span className="hidden sm:inline">Tools</span>
             <span className="sm:hidden">T</span>
+          </Button>
+          <Button
+            variant={activeTab === 'notes' ? 'default' : 'ghost'}
+            onClick={() => { 
+              setActiveTab('notes');
+              loadAdminNotes();
+            }}
+            className="whitespace-nowrap text-slate-200"
+            style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.375rem, 0.8vh, 0.5rem) clamp(0.75rem, 1.5vh, 1rem)', height: 'clamp(2rem, 4vh, 2.5rem)' }}
+          >
+            <StickyNote style={{ width: 'clamp(0.875rem, 1.8vh, 1rem)', height: 'clamp(0.875rem, 1.8vh, 1rem)', marginRight: 'clamp(0.375rem, 0.75vh, 0.5rem)' }} />
+            <span className="hidden sm:inline">Notes</span>
+            <span className="sm:hidden">N</span>
           </Button>
           <Button
             variant={activeTab === 'settings' ? 'default' : 'ghost'}
@@ -4608,6 +4724,220 @@ export default function PlatformAdmin() {
               </div>
             </div>
             <LockedAccountsManager />
+          </div>
+        )}
+
+        {/* Notes Tab */}
+        {activeTab === 'notes' && (
+          <div className="space-y-4">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-white font-bold text-lg flex items-center gap-2">
+                  <StickyNote className="w-5 h-5 text-yellow-400" />
+                  Admin Notes
+                </h3>
+                <p className="text-slate-400 text-sm">
+                  Internal notes for the admin team. Only visible to admins.
+                </p>
+              </div>
+              <Button
+                onClick={() => {
+                  setEditingNote(null);
+                  setNoteForm({ title: '', content: '', color: 'yellow', is_pinned: false });
+                  setShowNoteModal(true);
+                }}
+                className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 text-white"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                New Note
+              </Button>
+            </div>
+
+            {/* Notes Grid */}
+            {notesLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-yellow-400" />
+              </div>
+            ) : adminNotes.length === 0 ? (
+              <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-8 text-center">
+                <StickyNote className="w-12 h-12 mx-auto text-slate-600 mb-3" />
+                <p className="text-slate-400">No notes yet. Create your first note!</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {adminNotes.map((note) => {
+                  const colorStyles: Record<string, string> = {
+                    yellow: 'bg-yellow-500/20 border-yellow-500/40 hover:border-yellow-500/60',
+                    blue: 'bg-blue-500/20 border-blue-500/40 hover:border-blue-500/60',
+                    green: 'bg-green-500/20 border-green-500/40 hover:border-green-500/60',
+                    red: 'bg-red-500/20 border-red-500/40 hover:border-red-500/60',
+                    purple: 'bg-purple-500/20 border-purple-500/40 hover:border-purple-500/60',
+                  };
+                  const headerColors: Record<string, string> = {
+                    yellow: 'text-yellow-300',
+                    blue: 'text-blue-300',
+                    green: 'text-green-300',
+                    red: 'text-red-300',
+                    purple: 'text-purple-300',
+                  };
+                  return (
+                    <div
+                      key={note.id}
+                      className={`rounded-xl border p-4 transition-all ${colorStyles[note.color] || colorStyles.yellow}`}
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="flex-1 min-w-0">
+                          {note.is_pinned && (
+                            <span className="inline-flex items-center gap-1 text-xs text-amber-400 mb-1">
+                              <Pin className="w-3 h-3" /> Pinned
+                            </span>
+                          )}
+                          {note.title && (
+                            <h4 className={`font-bold truncate ${headerColors[note.color] || headerColors.yellow}`}>
+                              {note.title}
+                            </h4>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleTogglePin(note)}
+                            className={`p-1.5 rounded hover:bg-white/10 transition ${note.is_pinned ? 'text-amber-400' : 'text-slate-400'}`}
+                            title={note.is_pinned ? 'Unpin' : 'Pin'}
+                          >
+                            <Pin className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingNote(note);
+                              setNoteForm({
+                                title: note.title,
+                                content: note.content,
+                                color: note.color,
+                                is_pinned: note.is_pinned,
+                              });
+                              setShowNoteModal(true);
+                            }}
+                            className="p-1.5 rounded hover:bg-white/10 transition text-slate-400 hover:text-white"
+                            title="Edit"
+                          >
+                            <Settings className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteNote(note.id)}
+                            className="p-1.5 rounded hover:bg-red-500/20 transition text-slate-400 hover:text-red-400"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-slate-200 text-sm whitespace-pre-wrap break-words">
+                        {note.content}
+                      </p>
+                      <div className="mt-3 pt-2 border-t border-white/10 text-xs text-slate-500">
+                        Updated {new Date(note.updated_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Note Modal */}
+            {showNoteModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+                <div className="bg-slate-800 rounded-xl border border-slate-700 shadow-2xl w-full max-w-lg mx-4 p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-white font-bold text-lg">
+                      {editingNote ? 'Edit Note' : 'New Note'}
+                    </h3>
+                    <button
+                      onClick={() => setShowNoteModal(false)}
+                      className="text-slate-400 hover:text-white"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm text-slate-400 block mb-1">Title (optional)</label>
+                      <input
+                        type="text"
+                        value={noteForm.title}
+                        onChange={(e) => setNoteForm({ ...noteForm, title: e.target.value })}
+                        placeholder="Note title..."
+                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white placeholder-slate-500"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm text-slate-400 block mb-1">Content *</label>
+                      <textarea
+                        value={noteForm.content}
+                        onChange={(e) => setNoteForm({ ...noteForm, content: e.target.value })}
+                        placeholder="Write your note..."
+                        rows={5}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white placeholder-slate-500 resize-none"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm text-slate-400 block mb-2">Color</label>
+                      <div className="flex gap-2">
+                        {(['yellow', 'blue', 'green', 'red', 'purple'] as const).map((color) => {
+                          const bgColors: Record<string, string> = {
+                            yellow: 'bg-yellow-500',
+                            blue: 'bg-blue-500',
+                            green: 'bg-green-500',
+                            red: 'bg-red-500',
+                            purple: 'bg-purple-500',
+                          };
+                          return (
+                            <button
+                              key={color}
+                              onClick={() => setNoteForm({ ...noteForm, color })}
+                              className={`w-8 h-8 rounded-full ${bgColors[color]} ${
+                                noteForm.color === color ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-800' : ''
+                              }`}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                    
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={noteForm.is_pinned}
+                        onChange={(e) => setNoteForm({ ...noteForm, is_pinned: e.target.checked })}
+                        className="w-4 h-4 rounded"
+                      />
+                      <span className="text-slate-300 text-sm">Pin this note</span>
+                    </label>
+                  </div>
+                  
+                  <div className="flex justify-end gap-2 mt-6">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowNoteModal(false)}
+                      className="text-slate-300 border-slate-600"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleSaveNote}
+                      disabled={savingNote || !noteForm.content.trim()}
+                      className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600 text-white"
+                    >
+                      {savingNote ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                      {editingNote ? 'Save Changes' : 'Create Note'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

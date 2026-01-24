@@ -967,6 +967,35 @@ export function createServer(options?: { skipDbInit?: boolean }) {
     adminRoutes.lockAccountManually
   );
 
+  // Admin Notes routes
+  app.get(
+    "/api/admin/notes",
+    authenticate,
+    requireAdmin,
+    adminRoutes.getAdminNotes
+  );
+
+  app.post(
+    "/api/admin/notes",
+    authenticate,
+    requireAdmin,
+    adminRoutes.createAdminNote
+  );
+
+  app.put(
+    "/api/admin/notes/:id",
+    authenticate,
+    requireAdmin,
+    adminRoutes.updateAdminNote
+  );
+
+  app.delete(
+    "/api/admin/notes/:id",
+    authenticate,
+    requireAdmin,
+    adminRoutes.deleteAdminNote
+  );
+
   // Billing routes (both user and admin)
   app.get(
     "/api/billing/public",

@@ -2163,3 +2163,131 @@ export const lockAccountManually: RequestHandler = async (req, res) => {
     return jsonError(res, 500, "Failed to lock account");
   }
 };
+
+/**
+ * Get all admin notes
+ * GET /api/admin/notes
+ */
+export const getAdminNotes: RequestHandler = async (req, res) => {
+  try {
+    const adminUser = (req as any).user;
+    if (!adminUser || (adminUser.role !== 'admin' && adminUser.user_type !== 'admin')) {
+      return jsonError(res, 403, "Only admins can access notes");
+    }
+
+    const result = await pool.query(
+      `SELECT id, admin_id, title, content, color, is_pinned, created_at, updated_at
+       FROM admin_notes
+       ORDER BY is_pinned DESC, updated_at DESC`
+    );
+
+    res.json({ notes: result.rows });
+  } catch (err) {
+    console.error('[ADMIN NOTES] Error fetching notes:', err);
+    return jsonError(res, 500, "Failed to fetch notes");
+  }
+};
+
+/**
+ * Create a new admin note
+ * POST /api/admin/notes
+ */
+export const createAdminNote: RequestHandler = async (req, res) => {
+  try {
+    const adminUser = (req as any).user;
+    if (!adminUser || (adminUser.role !== 'admin' && adminUser.user_type !== 'admin')) {
+      return jsonError(res, 403, "Only admins can create notes");
+    }
+
+    const { title = '', content, color = 'yellow', is_pinned = false } = req.body;
+
+    if (!content || !content.trim()) {
+      return jsonError(res, 400, "Note content is required");
+    }
+
+    const result = await pool.query(
+      `INSERT INTO admin_notes (admin_id, title, content, color, is_pinned)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, admin_id, title, content, color, is_pinned, created_at, updated_at`,
+      [adminUser.id, title.trim(), content.trim(), color, is_pinned]
+    );
+
+    res.json({ note: result.rows[0] });
+  } catch (err) {
+    console.error('[ADMIN NOTES] Error creating note:', err);
+    return jsonError(res, 500, "Failed to create note");
+  }
+};
+
+/**
+ * Update an admin note
+ * PUT /api/admin/notes/:id
+ */
+export const updateAdminNote: RequestHandler = async (req, res) => {
+  try {
+    const adminUser = (req as any).user;
+    if (!adminUser || (adminUser.role !== 'admin' && adminUser.user_type !== 'admin')) {
+      return jsonError(res, 403, "Only admins can update notes");
+    }
+
+    const noteId = parseInt(req.params.id, 10);
+    if (isNaN(noteId)) {
+      return jsonError(res, 400, "Invalid note ID");
+    }
+
+    const { title, content, color, is_pinned } = req.body;
+
+    const result = await pool.query(
+      `UPDATE admin_notes
+       SET title = COALESCE($1, title),
+           content = COALESCE($2, content),
+           color = COALESCE($3, color),
+           is_pinned = COALESCE($4, is_pinned),
+           updated_at = NOW()
+       WHERE id = $5
+       RETURNING id, admin_id, title, content, color, is_pinned, created_at, updated_at`,
+      [title, content, color, is_pinned, noteId]
+    );
+
+    if (result.rowCount === 0) {
+      return jsonError(res, 404, "Note not found");
+    }
+
+    res.json({ note: result.rows[0] });
+  } catch (err) {
+    console.error('[ADMIN NOTES] Error updating note:', err);
+    return jsonError(res, 500, "Failed to update note");
+  }
+};
+
+/**
+ * Delete an admin note
+ * DELETE /api/admin/notes/:id
+ */
+export const deleteAdminNote: RequestHandler = async (req, res) => {
+  try {
+    const adminUser = (req as any).user;
+    if (!adminUser || (adminUser.role !== 'admin' && adminUser.user_type !== 'admin')) {
+      return jsonError(res, 403, "Only admins can delete notes");
+    }
+
+    const noteId = parseInt(req.params.id, 10);
+    if (isNaN(noteId)) {
+      return jsonError(res, 400, "Invalid note ID");
+    }
+
+    const result = await pool.query(
+      `DELETE FROM admin_notes WHERE id = $1 RETURNING id`,
+      [noteId]
+    );
+
+    if (result.rowCount === 0) {
+      return jsonError(res, 404, "Note not found");
+    }
+
+    res.json({ message: "Note deleted successfully", id: noteId });
+  } catch (err) {
+    console.error('[ADMIN NOTES] Error deleting note:', err);
+    return jsonError(res, 500, "Failed to delete note");
+  }
+};
