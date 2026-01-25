@@ -277,6 +277,14 @@ export default function GoldTemplateEditor() {
 
   const [previewDevice, setPreviewDevice] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
   const [selectedEditPath, setSelectedEditPath] = useState<string | null>(null);
+  const [mobileEditPanelOpen, setMobileEditPanelOpen] = useState(false);
+
+  // Auto-open mobile edit panel when element is selected (only on mobile)
+  useEffect(() => {
+    if (selectedEditPath && window.innerWidth < 1024) {
+      setMobileEditPanelOpen(true);
+    }
+  }, [selectedEditPath]);
 
   const handleSelectEditPath = useCallback((path: string) => {
     setSelectedEditPath(path);
@@ -1970,6 +1978,53 @@ export default function GoldTemplateEditor() {
                       );
                     })}
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* MOBILE Edit Panel - Bottom Sheet */}
+            <div
+              className={`lg:hidden fixed inset-x-0 bottom-0 z-50 transition-transform duration-300 ease-out ${
+                mobileEditPanelOpen && selectedEditPath ? 'translate-y-0' : 'translate-y-full'
+              }`}
+              style={{ maxHeight: '60vh' }}
+            >
+              {/* Backdrop */}
+              {mobileEditPanelOpen && selectedEditPath && (
+                <div 
+                  className="fixed inset-0 bg-black/50 -z-10" 
+                  onClick={() => {
+                    setMobileEditPanelOpen(false);
+                    setSelectedEditPath(null);
+                  }}
+                />
+              )}
+              
+              <div className="bg-background rounded-t-2xl border-t shadow-2xl flex flex-col" style={{ maxHeight: '60vh' }}>
+                {/* Handle bar */}
+                <div className="flex justify-center py-2">
+                  <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full" />
+                </div>
+                
+                {/* Header */}
+                <div className="flex items-center justify-between px-4 pb-3 border-b">
+                  <h3 className="font-semibold">{t('editor.edit')}</h3>
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => {
+                      setMobileEditPanelOpen(false);
+                      setSelectedEditPath(null);
+                    }}
+                  >
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
+
+                {/* Edit Panel Content - scrollable */}
+                <div className="flex-1 overflow-y-auto px-4 py-3" style={{ maxHeight: 'calc(60vh - 70px)' }}>
+                  {editPanel}
                 </div>
               </div>
             </div>

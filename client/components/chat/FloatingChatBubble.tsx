@@ -367,7 +367,7 @@ export default function FloatingChatBubble() {
       {/* Bubble */}
       <div
         className="fixed z-[9999]"
-        style={{ left: pos.x, top: pos.y }}
+        style={{ left: pos.x, top: pos.y, touchAction: 'none' }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -429,6 +429,7 @@ export default function FloatingChatBubble() {
               {/* Draggable header */}
               <div
                 className="absolute top-0 left-0 right-0 h-14 pt-6 px-3 flex items-center justify-between bg-gradient-to-b from-black/60 to-transparent cursor-grab active:cursor-grabbing"
+                style={{ touchAction: 'none' }}
                 onPointerDown={onPhonePointerDown}
                 onPointerMove={onPhonePointerMove}
                 onPointerUp={onPhonePointerUp}
@@ -526,7 +527,7 @@ export default function FloatingChatBubble() {
                 onPointerUp={onResizeHandleUp}
                 role="separator"
                 aria-label="Resize messenger"
-                style={{ cursor: 'nwse-resize' }}
+                style={{ cursor: 'nwse-resize', touchAction: 'none' }}
               />
             </div>
           </div>
