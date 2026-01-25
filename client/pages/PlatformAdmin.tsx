@@ -1475,7 +1475,7 @@ export default function PlatformAdmin() {
   const loadAdminNotes = async () => {
     setNotesLoading(true);
     try {
-      const res = await fetch('/api/admin/notes');
+      const res = await fetch('/api/admin/notes', { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         setAdminNotes(data.notes || []);
@@ -1501,6 +1501,7 @@ export default function PlatformAdmin() {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(noteForm),
       });
       
@@ -1524,7 +1525,7 @@ export default function PlatformAdmin() {
   const handleDeleteNote = async (noteId: number) => {
     if (!confirm('Are you sure you want to delete this note?')) return;
     try {
-      const res = await fetch(`/api/admin/notes/${noteId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/notes/${noteId}`, { method: 'DELETE', credentials: 'include' });
       if (res.ok) {
         await loadAdminNotes();
       } else {
@@ -1541,6 +1542,7 @@ export default function PlatformAdmin() {
       const res = await fetch(`/api/admin/notes/${note.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ is_pinned: !note.is_pinned }),
       });
       if (res.ok) {
@@ -3097,16 +3099,46 @@ export default function PlatformAdmin() {
                         {product.views}
                       </td>
                       <td className="p-4">
-                        <Button
-                          onClick={() => {
-                            setFlaggedProductId(product.id);
-                            setFlagReason(product.flag_reason || '');
-                            setShowFlagModal(true);
-                          }}
-                          className="px-3 py-1 text-sm bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 rounded-lg transition-colors"
-                        >
-                          {product.flagged ? 'Unflag' : 'Flag'}
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            onClick={() => {
+                              setFlaggedProductId(product.id);
+                              setFlagReason(product.flag_reason || '');
+                              setShowFlagModal(true);
+                            }}
+                            className="px-3 py-1 text-sm bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 rounded-lg transition-colors"
+                            size="sm"
+                          >
+                            {product.flagged ? 'Unflag' : 'Flag'}
+                          </Button>
+                          <Button
+                            onClick={async () => {
+                              if (!confirm(`Are you sure you want to remove "${product.title}"? This cannot be undone.`)) return;
+                              try {
+                                const res = await fetch('/api/admin/bulk-remove-products', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  credentials: 'include',
+                                  body: JSON.stringify({ productIds: [product.id] }),
+                                });
+                                if (res.ok) {
+                                  setProducts(products.filter(p => p.id !== product.id));
+                                  alert('Product removed successfully');
+                                } else {
+                                  const err = await res.json();
+                                  alert(err.error || 'Failed to remove product');
+                                }
+                              } catch (e) {
+                                console.error('Error removing product:', e);
+                                alert('Error removing product');
+                              }
+                            }}
+                            className="px-3 py-1 text-sm bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 rounded-lg transition-colors"
+                            size="sm"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -3908,44 +3940,42 @@ export default function PlatformAdmin() {
 
         {/* Settings Tab */}
         {activeTab === 'settings' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.875rem, 1.75vh, 1.25rem)' }}>
-            {/* Main Settings Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2" style={{ gap: 'clamp(0.875rem, 1.75vh, 1.25rem)' }}>
+          <div className="space-y-4">
+            {/* Main Settings Grid - 3 cols on large screens */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {/* Platform Limits */}
-              <div className="bg-slate-800/50 backdrop-blur-md rounded-xl border border-slate-700/50 shadow-lg" style={{ padding: 'clamp(1rem, 2vh, 1.25rem)' }}>
-                <h3 className="font-bold text-white flex items-center" style={{ fontSize: 'clamp(1rem, 2vh, 1.15rem)', gap: 'clamp(0.5rem, 1vh, 0.625rem)', marginBottom: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
-                  <Users className="text-blue-400" style={{ width: 'clamp(1.125rem, 2.25vh, 1.375rem)', height: 'clamp(1.125rem, 2.25vh, 1.375rem)' }} />
+              <div className="bg-slate-800/50 backdrop-blur-md rounded-xl border border-slate-700/50 shadow-lg p-4">
+                <h3 className="font-bold text-white flex items-center text-sm gap-2 mb-3">
+                  <Users className="w-4 h-4 text-blue-400" />
                   Platform Limits
                 </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
-                  <div className="bg-slate-900/30 rounded-lg border border-slate-600/30" style={{ padding: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
-                    <label className="block font-medium text-slate-300" style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', marginBottom: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}>Max Users</label>
-                    <div className="flex items-center" style={{ gap: 'clamp(0.5rem, 1vh, 0.625rem)' }}>
+                <div className="space-y-3">
+                  <div className="bg-slate-900/30 rounded-lg border border-slate-600/30 p-3">
+                    <label className="block text-xs font-medium text-slate-300 mb-1">Max Users</label>
+                    <div className="flex items-center gap-2">
                       <input
                         type="number"
                         value={settingsForm.max_users}
                         onChange={(e) => setSettingsForm((s) => ({ ...s, max_users: Number(e.target.value) }))}
-                        className="flex-1 bg-slate-700/50 border border-slate-600/50 text-white rounded-lg focus:border-blue-500"
-                        style={{ fontSize: 'clamp(0.85rem, 1.7vh, 1rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)' }}
+                        className="flex-1 bg-slate-700/50 border border-slate-600/50 text-white rounded-lg focus:border-blue-500 text-sm p-2"
                       />
-                      <span className="text-slate-400" style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)' }}>Current: {stats.totalUsers}</span>
+                      <span className="text-slate-400 text-xs">Current: {stats.totalUsers}</span>
                     </div>
                   </div>
-                  <div className="bg-slate-900/30 rounded-lg border border-slate-600/30" style={{ padding: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
-                    <label className="block font-medium text-slate-300" style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', marginBottom: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}>Max Stores</label>
-                    <div className="flex items-center" style={{ gap: 'clamp(0.5rem, 1vh, 0.625rem)' }}>
+                  <div className="bg-slate-900/30 rounded-lg border border-slate-600/30 p-3">
+                    <label className="block text-xs font-medium text-slate-300 mb-1">Max Stores</label>
+                    <div className="flex items-center gap-2">
                       <input
                         type="number"
                         value={settingsForm.max_stores}
                         onChange={(e) => setSettingsForm((s) => ({ ...s, max_stores: Number(e.target.value) }))}
-                        className="flex-1 bg-slate-700/50 border border-slate-600/50 text-white rounded-lg focus:border-emerald-500"
-                        style={{ fontSize: 'clamp(0.85rem, 1.7vh, 1rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)' }}
+                        className="flex-1 bg-slate-700/50 border border-slate-600/50 text-white rounded-lg focus:border-emerald-500 text-sm p-2"
                       />
-                      <span className="text-slate-400" style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)' }}>Current: {stats.totalClients}</span>
+                      <span className="text-slate-400 text-xs">Current: {stats.totalClients}</span>
                     </div>
                   </div>
                   <Button
-                    className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white"
+                    className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-sm h-9"
                     disabled={savingLimits}
                     onClick={async () => {
                       setSavingLimits(true);
@@ -3962,44 +3992,41 @@ export default function PlatformAdmin() {
                         setSavingLimits(false);
                       }
                     }}
-                    style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', height: 'clamp(2.25rem, 4.5vh, 2.75rem)' }}
                   >
-                    <Zap style={{ width: 'clamp(0.875rem, 1.75vh, 1rem)', height: 'clamp(0.875rem, 1.75vh, 1rem)', marginRight: 'clamp(0.375rem, 0.75vh, 0.5rem)' }} />
+                    <Zap className="w-4 h-4 mr-1" />
                     {savingLimits ? 'Saving...' : 'Save Limits'}
                   </Button>
                 </div>
               </div>
 
               {/* Subscription Settings */}
-              <div className="bg-slate-800/50 backdrop-blur-md rounded-xl border border-slate-700/50 shadow-lg" style={{ padding: 'clamp(1rem, 2vh, 1.25rem)' }}>
-                <h3 className="font-bold text-white flex items-center" style={{ fontSize: 'clamp(1rem, 2vh, 1.15rem)', gap: 'clamp(0.5rem, 1vh, 0.625rem)', marginBottom: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
-                  <CreditCard className="text-emerald-400" style={{ width: 'clamp(1.125rem, 2.25vh, 1.375rem)', height: 'clamp(1.125rem, 2.25vh, 1.375rem)' }} />
+              <div className="bg-slate-800/50 backdrop-blur-md rounded-xl border border-slate-700/50 shadow-lg p-4">
+                <h3 className="font-bold text-white flex items-center text-sm gap-2 mb-3">
+                  <CreditCard className="w-4 h-4 text-emerald-400" />
                   Subscription Settings
                 </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
-                  <div className="bg-slate-900/30 rounded-lg border border-slate-600/30" style={{ padding: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
-                    <label className="block font-medium text-slate-300" style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', marginBottom: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}>Monthly Price ($)</label>
+                <div className="space-y-3">
+                  <div className="bg-slate-900/30 rounded-lg border border-slate-600/30 p-3">
+                    <label className="block text-xs font-medium text-slate-300 mb-1">Monthly Price ($)</label>
                     <input
                       type="number"
                       step="0.01"
                       value={settingsForm.subscription_price}
                       onChange={(e) => setSettingsForm((s) => ({ ...s, subscription_price: Number(e.target.value) }))}
-                      className="w-full bg-slate-700/50 border border-slate-600/50 text-white rounded-lg focus:border-emerald-500"
-                      style={{ fontSize: 'clamp(0.85rem, 1.7vh, 1rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)' }}
+                      className="w-full bg-slate-700/50 border border-slate-600/50 text-white rounded-lg focus:border-emerald-500 text-sm p-2"
                     />
                   </div>
-                  <div className="bg-slate-900/30 rounded-lg border border-slate-600/30" style={{ padding: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
-                    <label className="block font-medium text-slate-300" style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', marginBottom: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}>Free Trial Days</label>
+                  <div className="bg-slate-900/30 rounded-lg border border-slate-600/30 p-3">
+                    <label className="block text-xs font-medium text-slate-300 mb-1">Free Trial Days</label>
                     <input
                       type="number"
                       value={settingsForm.trial_days}
                       onChange={(e) => setSettingsForm((s) => ({ ...s, trial_days: Number(e.target.value) }))}
-                      className="w-full bg-slate-700/50 border border-slate-600/50 text-white rounded-lg focus:border-emerald-500"
-                      style={{ fontSize: 'clamp(0.85rem, 1.7vh, 1rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)' }}
+                      className="w-full bg-slate-700/50 border border-slate-600/50 text-white rounded-lg focus:border-emerald-500 text-sm p-2"
                     />
                   </div>
                   <Button
-                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white"
+                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-sm h-9"
                     disabled={savingSubscription}
                     onClick={async () => {
                       setSavingSubscription(true);
@@ -4016,57 +4043,56 @@ export default function PlatformAdmin() {
                         setSavingSubscription(false);
                       }
                     }}
-                    style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', height: 'clamp(2.25rem, 4.5vh, 2.75rem)' }}
                   >
-                    <Zap style={{ width: 'clamp(0.875rem, 1.75vh, 1rem)', height: 'clamp(0.875rem, 1.75vh, 1rem)', marginRight: 'clamp(0.375rem, 0.75vh, 0.5rem)' }} />
+                    <Zap className="w-4 h-4 mr-1" />
                     {savingSubscription ? 'Saving...' : 'Save Subscription Settings'}
                   </Button>
                 </div>
               </div>
 
               {/* Email & Notifications */}
-              <div className="bg-slate-800/50 backdrop-blur-md rounded-xl border border-slate-700/50 shadow-lg" style={{ padding: 'clamp(1rem, 2vh, 1.25rem)' }}>
-                <h3 className="font-bold text-white flex items-center" style={{ fontSize: 'clamp(1rem, 2vh, 1.15rem)', gap: 'clamp(0.5rem, 1vh, 0.625rem)', marginBottom: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
-                  <Award className="text-purple-400" style={{ width: 'clamp(1.125rem, 2.25vh, 1.375rem)', height: 'clamp(1.125rem, 2.25vh, 1.375rem)' }} />
+              <div className="bg-slate-800/50 backdrop-blur-md rounded-xl border border-slate-700/50 shadow-lg p-4">
+                <h3 className="font-bold text-white flex items-center text-sm gap-2 mb-3">
+                  <Award className="w-4 h-4 text-purple-400" />
                   Email Configuration
                 </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
-                  <div className="bg-slate-900/30 rounded-lg border border-slate-600/30" style={{ padding: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
-                    <label className="block font-medium text-slate-300" style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', marginBottom: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}>Admin Email</label>
-                    <input type="email" placeholder="admin@ecopro.com" defaultValue="admin@ecopro.com" className="w-full bg-slate-700/50 border border-slate-600/50 text-white rounded-lg focus:border-purple-500" style={{ fontSize: 'clamp(0.85rem, 1.7vh, 1rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)' }} />
+                <div className="space-y-3">
+                  <div className="bg-slate-900/30 rounded-lg border border-slate-600/30 p-3">
+                    <label className="block text-xs font-medium text-slate-300 mb-1">Admin Email</label>
+                    <input type="email" placeholder="admin@ecopro.com" defaultValue="admin@ecopro.com" className="w-full bg-slate-700/50 border border-slate-600/50 text-white rounded-lg focus:border-purple-500 text-sm p-2" />
                   </div>
-                  <div className="bg-slate-900/30 rounded-lg border border-slate-600/30" style={{ padding: 'clamp(0.625rem, 1.25vh, 0.875rem)' }}>
-                    <label className="block font-medium text-slate-300" style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', marginBottom: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}>Support Email</label>
-                    <input type="email" placeholder="support@ecopro.com" className="w-full bg-slate-700/50 border border-slate-600/50 text-white rounded-lg focus:border-purple-500" style={{ fontSize: 'clamp(0.85rem, 1.7vh, 1rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)' }} />
+                  <div className="bg-slate-900/30 rounded-lg border border-slate-600/30 p-3">
+                    <label className="block text-xs font-medium text-slate-300 mb-1">Support Email</label>
+                    <input type="email" placeholder="support@ecopro.com" className="w-full bg-slate-700/50 border border-slate-600/50 text-white rounded-lg focus:border-purple-500 text-sm p-2" />
                   </div>
-                  <label className="flex items-center text-slate-300 cursor-pointer" style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', gap: 'clamp(0.5rem, 1vh, 0.625rem)' }}>
-                    <input type="checkbox" defaultChecked className="rounded bg-slate-700 border-slate-600" style={{ width: 'clamp(0.9rem, 1.8vh, 1.05rem)', height: 'clamp(0.9rem, 1.8vh, 1.05rem)' }} />
+                  <label className="flex items-center text-slate-300 cursor-pointer text-sm gap-2">
+                    <input type="checkbox" defaultChecked className="rounded bg-slate-700 border-slate-600 w-4 h-4" />
                     Payment alerts
                   </label>
                 </div>
               </div>
 
               {/* Security & Compliance */}
-              <div className="bg-slate-800/50 backdrop-blur-md rounded-xl border border-slate-700/50 shadow-lg" style={{ padding: 'clamp(1rem, 2vh, 1.25rem)' }}>
-                <h3 className="font-bold text-white flex items-center" style={{ fontSize: 'clamp(1rem, 2vh, 1.15rem)', gap: 'clamp(0.5rem, 1vh, 0.625rem)', marginBottom: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
-                  <Shield className="text-red-400" style={{ width: 'clamp(1.125rem, 2.25vh, 1.375rem)', height: 'clamp(1.125rem, 2.25vh, 1.375rem)' }} />
+              <div className="bg-slate-800/50 backdrop-blur-md rounded-xl border border-slate-700/50 shadow-lg p-4">
+                <h3 className="font-bold text-white flex items-center text-sm gap-2 mb-3">
+                  <Shield className="w-4 h-4 text-red-400" />
                   Security Options
                 </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(0.25rem, 0.5vh, 0.375rem)' }}>
-                  <label className="flex items-center text-slate-300 cursor-pointer hover:bg-slate-700/30 rounded-lg transition-all" style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', gap: 'clamp(0.5rem, 1vh, 0.625rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)' }}>
-                    <input type="checkbox" defaultChecked className="rounded bg-slate-700 border-slate-600" style={{ width: 'clamp(0.9rem, 1.8vh, 1.05rem)', height: 'clamp(0.9rem, 1.8vh, 1.05rem)' }} />
+                <div className="space-y-1">
+                  <label className="flex items-center text-slate-300 cursor-pointer hover:bg-slate-700/30 rounded-lg transition-all text-sm gap-2 p-2">
+                    <input type="checkbox" defaultChecked className="rounded bg-slate-700 border-slate-600 w-4 h-4" />
                     Enable 2FA for admins
                   </label>
-                  <label className="flex items-center text-slate-300 cursor-pointer hover:bg-slate-700/30 rounded-lg transition-all" style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', gap: 'clamp(0.5rem, 1vh, 0.625rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)' }}>
-                    <input type="checkbox" defaultChecked className="rounded bg-slate-700 border-slate-600" style={{ width: 'clamp(0.9rem, 1.8vh, 1.05rem)', height: 'clamp(0.9rem, 1.8vh, 1.05rem)' }} />
+                  <label className="flex items-center text-slate-300 cursor-pointer hover:bg-slate-700/30 rounded-lg transition-all text-sm gap-2 p-2">
+                    <input type="checkbox" defaultChecked className="rounded bg-slate-700 border-slate-600 w-4 h-4" />
                     Enable IP whitelist
                   </label>
-                  <label className="flex items-center text-slate-300 cursor-pointer hover:bg-slate-700/30 rounded-lg transition-all" style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', gap: 'clamp(0.5rem, 1vh, 0.625rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)' }}>
-                    <input type="checkbox" defaultChecked className="rounded bg-slate-700 border-slate-600" style={{ width: 'clamp(0.9rem, 1.8vh, 1.05rem)', height: 'clamp(0.9rem, 1.8vh, 1.05rem)' }} />
+                  <label className="flex items-center text-slate-300 cursor-pointer hover:bg-slate-700/30 rounded-lg transition-all text-sm gap-2 p-2">
+                    <input type="checkbox" defaultChecked className="rounded bg-slate-700 border-slate-600 w-4 h-4" />
                     Enable audit logging
                   </label>
-                  <label className="flex items-center text-slate-300 cursor-pointer hover:bg-slate-700/30 rounded-lg transition-all" style={{ fontSize: 'clamp(0.8rem, 1.6vh, 0.95rem)', gap: 'clamp(0.5rem, 1vh, 0.625rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)' }}>
-                    <input type="checkbox" className="rounded bg-slate-700 border-slate-600" style={{ width: 'clamp(0.9rem, 1.8vh, 1.05rem)', height: 'clamp(0.9rem, 1.8vh, 1.05rem)' }} />
+                  <label className="flex items-center text-slate-300 cursor-pointer hover:bg-slate-700/30 rounded-lg transition-all text-sm gap-2 p-2">
+                    <input type="checkbox" className="rounded bg-slate-700 border-slate-600 w-4 h-4" />
                     Enable maintenance mode
                   </label>
                 </div>
@@ -4074,19 +4100,19 @@ export default function PlatformAdmin() {
             </div>
 
             {/* System Maintenance */}
-            <div className="bg-slate-800/50 backdrop-blur-md rounded-xl border border-slate-700/50 shadow-lg" style={{ padding: 'clamp(1rem, 2vh, 1.25rem)' }}>
-              <h3 className="font-bold text-white flex items-center" style={{ fontSize: 'clamp(1rem, 2vh, 1.15rem)', gap: 'clamp(0.5rem, 1vh, 0.625rem)', marginBottom: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
-                <Lock className="text-red-400" style={{ width: 'clamp(1.125rem, 2.25vh, 1.375rem)', height: 'clamp(1.125rem, 2.25vh, 1.375rem)' }} />
+            <div className="bg-slate-800/50 backdrop-blur-md rounded-xl border border-slate-700/50 shadow-lg p-4">
+              <h3 className="font-bold text-white flex items-center text-sm gap-2 mb-3">
+                <Lock className="w-4 h-4 text-red-400" />
                 System Maintenance
               </h3>
-              <div className="grid grid-cols-2 lg:grid-cols-4" style={{ gap: 'clamp(0.5rem, 1vh, 0.625rem)' }}>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
                 <Button
                   variant="outline"
-                  className="text-slate-200 h-auto flex flex-col items-center justify-center"
+                  className="text-slate-200 h-auto flex flex-col items-center justify-center text-xs p-2 gap-1"
                   onClick={async () => {
                     if (!confirm('Clear server caches now?')) return;
                     try {
-                      const res = await fetch('/api/admin/clear-cache', { method: 'POST' });
+                      const res = await fetch('/api/admin/clear-cache', { method: 'POST', credentials: 'include' });
                       const data = await res.json().catch(() => ({} as any));
                       if (!res.ok) throw new Error(data?.error || data?.message || 'Failed to clear cache');
                       alert('✅ Cache cleared');
@@ -4094,43 +4120,39 @@ export default function PlatformAdmin() {
                       alert(`❌ ${e?.message || 'Failed to clear cache'}`);
                     }
                   }}
-                  style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)', gap: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}
                 >
-                  <Trash2 style={{ width: 'clamp(1rem, 2vh, 1.25rem)', height: 'clamp(1rem, 2vh, 1.25rem)' }} />
+                  <Trash2 className="w-4 h-4" />
                   <span>Clear Cache</span>
                 </Button>
                 <Button
                   variant="outline"
-                  className="text-slate-200 h-auto flex flex-col items-center justify-center"
+                  className="text-slate-200 h-auto flex flex-col items-center justify-center text-xs p-2 gap-1"
                   onClick={() => {
                     if (!confirm('Export a DB snapshot now? (This will download a JSON file)')) return;
                     window.location.href = '/api/admin/export-db?limit=1000';
                   }}
-                  style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)', gap: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}
                 >
-                  <Package style={{ width: 'clamp(1rem, 2vh, 1.25rem)', height: 'clamp(1rem, 2vh, 1.25rem)' }} />
+                  <Package className="w-4 h-4" />
                   <span>Export DB</span>
                 </Button>
                 <Button
                   variant="outline"
-                  className="text-slate-200 h-auto flex flex-col items-center justify-center"
+                  className="text-slate-200 h-auto flex flex-col items-center justify-center text-xs p-2 gap-1"
                   onClick={() => {
                     setActiveTab('activity');
                     setLogMode('admin');
                     loadAdminAuditLogs();
                   }}
-                  style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)', gap: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}
                 >
-                  <Activity style={{ width: 'clamp(1rem, 2vh, 1.25rem)', height: 'clamp(1rem, 2vh, 1.25rem)' }} />
+                  <Activity className="w-4 h-4" />
                   <span>Audit Log</span>
                 </Button>
                 <Button
                   variant="destructive"
-                  className="h-auto flex flex-col items-center justify-center"
+                  className="h-auto flex flex-col items-center justify-center text-xs p-2 gap-1"
                   onClick={() => alert('Not implemented yet')}
-                  style={{ fontSize: 'clamp(0.75rem, 1.5vh, 0.875rem)', padding: 'clamp(0.5rem, 1vh, 0.625rem)', gap: 'clamp(0.375rem, 0.75vh, 0.5rem)' }}
                 >
-                  <AlertCircle style={{ width: 'clamp(1rem, 2vh, 1.25rem)', height: 'clamp(1rem, 2vh, 1.25rem)' }} />
+                  <AlertCircle className="w-4 h-4" />
                   <span>Emergency</span>
                 </Button>
               </div>
@@ -4429,6 +4451,7 @@ export default function PlatformAdmin() {
                           headers: {
                             'Content-Type': 'application/json'
                           },
+                          credentials: 'include',
                           body: JSON.stringify({
                             productId: flaggedProductId,
                             reason: flagReason,
