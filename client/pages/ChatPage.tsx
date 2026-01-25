@@ -118,8 +118,10 @@ export function ChatPage() {
 
   return (
     <div className="flex flex-col md:flex-row w-full h-full bg-gray-50 overflow-hidden">
-      {/* Chat List */}
-      <div className="w-full md:w-1/3 bg-white shadow-sm flex flex-col min-h-0 order-2 md:order-1 overflow-hidden">
+      {/* Chat List - hidden on mobile when a chat is selected */}
+      <div className={`w-full md:w-1/3 bg-white shadow-sm flex flex-col min-h-0 order-2 md:order-1 overflow-hidden ${
+        selectedChatId ? 'hidden md:flex' : 'flex'
+      }`}>
         <ChatList
           userRole={userRole}
           selectedChatId={selectedChatId}
@@ -127,8 +129,10 @@ export function ChatPage() {
         />
       </div>
 
-      {/* Main Chat Area */}
-      <div className="w-full md:w-2/3 bg-white flex flex-col min-h-0 order-1 md:order-2 overflow-hidden">
+      {/* Main Chat Area - full width on mobile when chat selected */}
+      <div className={`w-full md:w-2/3 bg-white flex flex-col min-h-0 order-1 md:order-2 overflow-hidden ${
+        selectedChatId ? 'flex-1' : 'hidden md:flex'
+      }`}>
         {selectedChatId ? (
           <ChatWindow
             chatId={selectedChatId}

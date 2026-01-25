@@ -1,7 +1,7 @@
 // Chat Window Component - Main Chat Area with Rich UI
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Upload, AlertCircle, Loader, Smile, Paperclip, Phone, Plus, Search, Mic, X } from 'lucide-react';
+import { Send, Upload, AlertCircle, Loader, Smile, Paperclip, Phone, Plus, Search, Mic, X, ArrowLeft } from 'lucide-react';
 import { MessageList } from './MessageList';
 import { FileUploadUI } from './FileUploadUI';
 import { VoiceRecorder } from './VoiceRecorder';
@@ -506,6 +506,17 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
       >
         <div className="flex items-center justify-between" style={{ gap: 'clamp(0.2rem, 1vh, 1rem)' }}>
           <div className="flex items-center min-w-0 flex-1" style={{ gap: 'clamp(0.25rem, 1vh, 1rem)' }}>
+            {/* Mobile back button */}
+            {onClose && (
+              <button 
+                onClick={onClose} 
+                className="md:hidden hover:bg-white/10 rounded-lg transition text-white flex-shrink-0"
+                style={{ padding: 'clamp(0.15rem, 0.8vh, 0.5rem)' }}
+                aria-label="Back to chat list"
+              >
+                <ArrowLeft style={{ width: 'clamp(1rem, 2.5vh, 1.5rem)', height: 'clamp(1rem, 2.5vh, 1.5rem)' }} />
+              </button>
+            )}
             <div 
               className="rounded-full bg-white/20 flex items-center justify-center flex-shrink-0"
               style={{ width: 'clamp(1.25rem, 4vh, 3rem)', height: 'clamp(1.25rem, 4vh, 3rem)' }}
@@ -548,7 +559,7 @@ export function ChatWindow({ chatId, userRole, userId, onClose }: ChatWindowProp
             {onClose && (
               <button 
                 onClick={onClose} 
-                className="hover:bg-white/10 rounded-lg transition text-white"
+                className="hidden md:block hover:bg-white/10 rounded-lg transition text-white"
                 style={{ padding: 'clamp(0.15rem, 0.8vh, 0.625rem)', fontSize: 'clamp(0.7rem, 1.8vh, 1.25rem)' }}
               >
                 ✕
