@@ -51,6 +51,7 @@ interface Affiliate {
   phone: string | null;
   voucher_code: string;
   discount_percent: string;
+  discount_months: number;
   commission_percent: string;
   commission_months: number;
   status: string;
@@ -119,6 +120,7 @@ export default function AdminAffiliatesPage() {
     phone: '',
     voucher_code: '',
     discount_percent: '20',
+    discount_months: '1',
     commission_percent: '50',
     commission_months: '2',
     notes: '',
@@ -193,6 +195,7 @@ export default function AdminAffiliatesPage() {
         body: JSON.stringify({
           ...formData,
           discount_percent: parseFloat(formData.discount_percent),
+          discount_months: parseInt(formData.discount_months) || 1,
           commission_percent: parseFloat(formData.commission_percent),
           commission_months: parseInt(formData.commission_months),
         }),
@@ -231,6 +234,7 @@ export default function AdminAffiliatesPage() {
       if (formData.phone !== undefined) updateData.phone = formData.phone;
       if (formData.voucher_code) updateData.voucher_code = formData.voucher_code;
       if (formData.discount_percent) updateData.discount_percent = parseFloat(formData.discount_percent);
+      if (formData.discount_months) updateData.discount_months = parseInt(formData.discount_months) || 1;
       if (formData.commission_percent) updateData.commission_percent = parseFloat(formData.commission_percent);
       if (formData.commission_months) updateData.commission_months = parseInt(formData.commission_months);
       if (formData.notes !== undefined) updateData.notes = formData.notes;
@@ -349,6 +353,7 @@ export default function AdminAffiliatesPage() {
       phone: affiliate.phone || '',
       voucher_code: affiliate.voucher_code,
       discount_percent: affiliate.discount_percent,
+      discount_months: String(affiliate.discount_months || 1),
       commission_percent: affiliate.commission_percent,
       commission_months: String(affiliate.commission_months),
       notes: affiliate.notes || '',
@@ -369,6 +374,7 @@ export default function AdminAffiliatesPage() {
       phone: '',
       voucher_code: '',
       discount_percent: '20',
+      discount_months: '1',
       commission_percent: '50',
       commission_months: '2',
       notes: '',
@@ -459,7 +465,7 @@ export default function AdminAffiliatesPage() {
                 />
                 <p className="text-xs text-gray-500">The code users will enter at signup</p>
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Discount %</Label>
                   <Input
@@ -467,7 +473,21 @@ export default function AdminAffiliatesPage() {
                     value={formData.discount_percent}
                     onChange={(e) => setFormData({ ...formData, discount_percent: e.target.value })}
                   />
+                  <p className="text-xs text-gray-500">Discount given to referred users</p>
                 </div>
+                <div className="space-y-2">
+                  <Label>Discount Months</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="12"
+                    value={formData.discount_months}
+                    onChange={(e) => setFormData({ ...formData, discount_months: e.target.value })}
+                  />
+                  <p className="text-xs text-gray-500">How many months user gets discount</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Commission %</Label>
                   <Input
@@ -475,14 +495,16 @@ export default function AdminAffiliatesPage() {
                     value={formData.commission_percent}
                     onChange={(e) => setFormData({ ...formData, commission_percent: e.target.value })}
                   />
+                  <p className="text-xs text-gray-500">Affiliate's share of revenue</p>
                 </div>
                 <div className="space-y-2">
-                  <Label>Months</Label>
+                  <Label>Commission Months</Label>
                   <Input
                     type="number"
                     value={formData.commission_months}
                     onChange={(e) => setFormData({ ...formData, commission_months: e.target.value })}
                   />
+                  <p className="text-xs text-gray-500">How many months affiliate earns</p>
                 </div>
               </div>
               <div className="space-y-2">
@@ -762,7 +784,7 @@ export default function AdminAffiliatesPage() {
                 onChange={(e) => setFormData({ ...formData, voucher_code: e.target.value.toUpperCase() })}
               />
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Discount %</Label>
                 <Input
@@ -772,6 +794,18 @@ export default function AdminAffiliatesPage() {
                 />
               </div>
               <div className="space-y-2">
+                <Label>Discount Months</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="12"
+                  value={formData.discount_months}
+                  onChange={(e) => setFormData({ ...formData, discount_months: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
                 <Label>Commission %</Label>
                 <Input
                   type="number"
@@ -780,7 +814,7 @@ export default function AdminAffiliatesPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Months</Label>
+                <Label>Commission Months</Label>
                 <Input
                   type="number"
                   value={formData.commission_months}

@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { MessageCircle, Search, Plus, AlertCircle } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import { useTranslation } from '@/lib/i18n';
+import Header from '@/components/layout/Header';
 
 interface Chat {
   id: number;
@@ -177,7 +178,9 @@ export default function AdminChats() {
   };
 
   return (
-    <div className="flex flex-col md:flex-row w-full h-full bg-gray-50 overflow-hidden">
+    <>
+      <Header />
+      <div className="flex flex-col md:flex-row w-full h-[calc(100vh-64px)] bg-gray-50 overflow-hidden">
       {/* Chat List */}
       <div className="w-full md:w-1/3 bg-white border-r flex flex-col min-h-0 order-2 md:order-1">
         {/* Header */}
@@ -334,5 +337,6 @@ export default function AdminChats() {
         )}
       </div>
     </div>
+    </>
   );
 }

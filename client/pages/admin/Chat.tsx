@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { MessageCircle, Search, Send, AlertCircle, Plus, UserPlus, X, Tag, Percent, DollarSign, Gift, CheckCircle } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
+import Header from '@/components/layout/Header';
 
 interface Chat {
   id: number;
@@ -45,9 +46,12 @@ interface AffiliateInfo {
     voucher_code: string;
     discount_percent: number;
     commission_percent: number;
+    commission_months: number;
+    discount_months: number;
   };
   payment_count: number;
-  is_first_payment: boolean;
+  discount_months_used: number;
+  discount_months_remaining: number;
   pricing: {
     standard_price: number;
     discount_applicable: boolean;
@@ -313,7 +317,9 @@ export default function AdminChat() {
   };
 
   return (
-    <div className="w-full h-[calc(100vh-64px)] flex bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <>
+      <Header />
+      <div className="w-full h-[calc(100vh-64px)] flex bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       {/* Sidebar - Chat List */}
       <div className="w-72 bg-gradient-to-b from-slate-800/80 to-slate-900/80 backdrop-blur-xl border-r border-slate-700/50 flex flex-col shadow-2xl">
         {/* Header */}
@@ -530,6 +536,10 @@ export default function AdminChat() {
                           <span className="text-emerald-400 font-bold">${affiliateInfo.pricing.final_price.toFixed(2)}</span>
                           <span className="text-xs text-emerald-300 ml-2">({affiliateInfo.pricing.discount_percent}% off)</span>
                         </p>
+                        <p className="text-xs text-emerald-400/80 mt-1">
+                          📅 Discount month {affiliateInfo.discount_months_used + 1} of {affiliateInfo.affiliate?.discount_months || 1}
+                          {affiliateInfo.discount_months_remaining > 1 && ` • ${affiliateInfo.discount_months_remaining - 1} more after this`}
+                        </p>
                       </div>
                     </div>
                     
@@ -566,9 +576,9 @@ export default function AdminChat() {
                 <div className="mt-3 p-2 bg-slate-700/30 border border-slate-600/30 rounded-lg">
                   <p className="text-xs text-slate-400">
                     Referred by {affiliateInfo.affiliate?.name} ({affiliateInfo.affiliate?.voucher_code}) • 
-                    {affiliateInfo.payment_count > 0 
-                      ? ` Payment #${affiliateInfo.payment_count + 1} - Standard price $${affiliateInfo.pricing.standard_price.toFixed(2)}`
-                      : ' Discount already applied'
+                    {affiliateInfo.discount_months_used >= (affiliateInfo.affiliate?.discount_months || 1)
+                      ? ` All ${affiliateInfo.discount_months_used} discount months used - Standard price $${affiliateInfo.pricing.standard_price.toFixed(2)}`
+                      : ` Payment #${affiliateInfo.payment_count + 1} - Standard price $${affiliateInfo.pricing.standard_price.toFixed(2)}`
                     }
                   </p>
                 </div>
@@ -693,5 +703,6 @@ export default function AdminChat() {
         )}
       </div>
     </div>
+    </>
   );
 }

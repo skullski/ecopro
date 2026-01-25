@@ -9,35 +9,21 @@ export default function Layout({ children }: PropsWithChildren) {
   const isDashboardPage = location.pathname.startsWith('/dashboard');
   const isStaffPage = location.pathname.startsWith('/staff/');
   const isPlatformAdmin = location.pathname.startsWith('/platform-admin');
-  const isPlatformAdminLogin = location.pathname === '/platform-admin/login';
-  const isAdminChat = location.pathname === '/platform-admin/chats' || location.pathname === '/platform-admin/chat';
   const isChatPage = location.pathname === '/chat';
-  const isFullScreenChat = isAdminChat || isChatPage;
 
-  // Dashboard, staff, and storefront pages have their own complete layout - just render children
-  if (isStorefrontPage || isDashboardPage || isStaffPage || isPlatformAdminLogin) {
+  // Dashboard, staff, storefront, and platform-admin pages have their own complete layout - just render children
+  // Platform-admin pages will render Header themselves
+  if (isStorefrontPage || isDashboardPage || isStaffPage || isPlatformAdmin) {
     return <>{children}</>;
   }
 
-  // Platform admin pages get header but no footer
-  if (isPlatformAdmin) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <main className="flex-1">
-          {children}
-        </main>
-      </div>
-    );
-  }
-
   return (
-    <div className={isFullScreenChat ? "flex flex-col h-screen overflow-hidden" : "min-h-screen flex flex-col"}>
+    <div className={isChatPage ? "flex flex-col h-screen overflow-hidden" : "min-h-screen flex flex-col"}>
       <Header />
-      <main className={isFullScreenChat ? "flex-1 overflow-hidden" : "flex-1"}>
+      <main className={isChatPage ? "flex-1 overflow-hidden" : "flex-1"}>
         {children}
       </main>
-      {!isFullScreenChat && <Footer />}
+      {!isChatPage && <Footer />}
     </div>
   );
 }

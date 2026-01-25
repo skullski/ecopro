@@ -275,7 +275,12 @@ export default function GoldTemplateEditor() {
 
   const loading = settingsLoading || productsLoading;
 
-  const [previewDevice, setPreviewDevice] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
+  const [previewDevice, setPreviewDevice] = useState<'mobile' | 'tablet' | 'desktop'>(() => {
+    // Auto-detect: on mobile devices, show mobile preview by default
+    if (window.innerWidth < 640) return 'mobile';
+    if (window.innerWidth < 1024) return 'tablet';
+    return 'desktop';
+  });
   const [selectedEditPath, setSelectedEditPath] = useState<string | null>(null);
   const [mobileEditPanelOpen, setMobileEditPanelOpen] = useState(false);
 
@@ -572,8 +577,8 @@ export default function GoldTemplateEditor() {
 
     e.preventDefault();
     e.stopPropagation();
-    setSelectedEditPath(path);
-  }, []);
+    handleSelectEditPath(path);
+  }, [handleSelectEditPath]);
 
   // Close the template picker if the user switches away from Preview.
   useEffect(() => {
@@ -722,27 +727,68 @@ export default function GoldTemplateEditor() {
   }, [iframeReady, previewDevice, selectedTemplateId, templateProps, syncIframeHead]);
 
   // Click-to-edit inside iframe (capture phase) so templates don't need special wiring.
+  // Also handle touch events for mobile devices
   useEffect(() => {
     if (previewDevice === 'desktop') return;
     const doc = previewIframeRef.current?.contentDocument;
     if (!doc || !iframeReady) return;
 
-    const onClickCapture = (e: MouseEvent) => {
+    const handleEditPath = (target: HTMLElement | null) => {
       setTemplatePickerOpen(false);
-      const target = e.target as HTMLElement | null;
       if (!target) return;
       const el = target.closest('[data-edit-path]') as HTMLElement | null;
       if (!el) return;
       const path = el.getAttribute('data-edit-path');
       if (!path) return;
-      e.preventDefault();
-      e.stopPropagation();
       handleSelectEditPath(path);
     };
 
+    const onClickCapture = (e: MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      handleEditPath(e.target as HTMLElement | null);
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      handleEditPath(e.target as HTMLElement | null);
+    };
+
     doc.addEventListener('click', onClickCapture, true);
-    return () => doc.removeEventListener('click', onClickCapture, true);
+    doc.addEventListener('touchend', onTouchEnd, true);
+    return () => {
+      doc.removeEventListener('click', onClickCapture, true);
+      doc.removeEventListener('touchend', onTouchEnd, true);
+    };
   }, [iframeReady, previewDevice, handleSelectEditPath]);
+
+  // Touch event handler for desktop preview mode on real mobile devices
+  // Click events are handled by onClickCapture in JSX, but touch needs native listener
+  useEffect(() => {
+    if (previewDevice !== 'desktop') return;
+    const root = previewRootRef.current;
+    if (!root) return;
+
+    const onTouchEnd = (e: TouchEvent) => {
+      const target = e.target as HTMLElement;
+      const el = target.closest('[data-edit-path]') as HTMLElement | null;
+      if (el) {
+        const path = el.getAttribute('data-edit-path');
+        if (path) {
+          e.preventDefault();
+          e.stopPropagation();
+          setTemplatePickerOpen(false);
+          handleSelectEditPath(path);
+        }
+      }
+    };
+
+    root.addEventListener('touchend', onTouchEnd, true);
+    return () => {
+      root.removeEventListener('touchend', onTouchEnd, true);
+    };
+  }, [previewDevice, handleSelectEditPath]);
 
   const deviceFrame = useMemo(() => {
     if (previewDevice === 'mobile') {
@@ -1463,12 +1509,12 @@ export default function GoldTemplateEditor() {
         )}
 
         {/* Content */}
-        <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-4 flex-1 overflow-hidden">
+        <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-4 flex-1 min-h-0 overflow-auto lg:overflow-hidden">
         {activeTab === 'preview' ? (
-          <div className={`grid grid-cols-1 ${previewGridCols} gap-2 sm:gap-4 items-start h-full overflow-hidden`}>
-            <div className="space-y-3 min-w-0 h-full overflow-hidden flex flex-col">
+          <div className={`grid grid-cols-1 ${previewGridCols} gap-2 sm:gap-4 items-start min-h-full lg:h-full`}>
+            <div className="space-y-3 min-w-0 min-h-0 flex flex-col pb-20 lg:pb-0">
               {/* Device Frame Container */}
-              <div ref={previewFitRef} className="w-full h-full overflow-hidden flex items-start justify-center lg:justify-start">
+              <div ref={previewFitRef} className="w-full flex-1 min-h-0 flex items-start justify-center lg:justify-start">
                 {previewDevice === 'desktop' ? (
                   <div
                     style={{

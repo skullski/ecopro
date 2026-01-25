@@ -402,17 +402,35 @@ router.get('/admin/list', requireAdmin, async (req, res) => {
 // POST /api/affiliates/admin/create - Create new affiliate (admin only)
 router.post('/admin/create', requireAdmin, async (req, res) => {
   try {
-    const { name, email, password, phone, voucher_code, discount_percent, commission_percent, commission_months, notes } = req.body;
+    const { name, email, password, phone, voucher_code, discount_percent, discount_months, commission_percent, commission_months, notes } = req.body;
 
     if (!name || !email || !password || !voucher_code) {
       return jsonError(res, 400, 'Name, email, password, and voucher code are required');
     }
 
-    // Check if email or voucher code already exists
+    const normalizedEmail = email.toLowerCase().trim();
+    
+    // Check if email or voucher code already exists in affiliates table
     const existing = await pool.query(
       'SELECT id FROM affiliates WHERE email = $1 OR voucher_code = $2',
-      [email.toLowerCase().trim(), voucher_code.toUpperCase().trim()]
+      [normalizedEmail, voucher_code.toUpperCase().trim()]
     );
+
+    if (existing.rows.length) {
+      return jsonError(res, 400, 'Email or voucher code already exists');
+    }
+
+    // Check if email exists as a regular user/admin - warn about conflicts
+    const existingUser = await pool.query(
+      'SELECT id, role, user_type FROM users WHERE LOWER(email) = $1',
+      [normalizedEmail]
+    );
+
+    if (existingUser.rows.length) {
+      const userRole = existingUser.rows[0].role || existingUser.rows[0].user_type;
+      console.warn(`[Affiliate Admin] Creating affiliate with email that exists as ${userRole} user: ${normalizedEmail}`);
+      // Note: We allow this but the user will have two separate login systems
+    }
 
     if (existing.rows.length) {
       return jsonError(res, 400, 'Email or voucher code already exists');
@@ -422,9 +440,9 @@ router.post('/admin/create', requireAdmin, async (req, res) => {
     const password_hash = await bcrypt.hash(password, 12);
 
     const result = await pool.query(
-      `INSERT INTO affiliates (name, email, password_hash, phone, voucher_code, discount_percent, commission_percent, commission_months, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-       RETURNING id, name, email, phone, voucher_code, discount_percent, commission_percent, commission_months, status, created_at`,
+      `INSERT INTO affiliates (name, email, password_hash, phone, voucher_code, discount_percent, discount_months, commission_percent, commission_months, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       RETURNING id, name, email, phone, voucher_code, discount_percent, discount_months, commission_percent, commission_months, status, created_at`,
       [
         name.trim(),
         email.toLowerCase().trim(),
@@ -432,6 +450,7 @@ router.post('/admin/create', requireAdmin, async (req, res) => {
         phone || null,
         voucher_code.toUpperCase().trim(),
         discount_percent || 20,
+        discount_months || 1,
         commission_percent || 50,
         commission_months || 2,
         notes || null,
@@ -452,7 +471,7 @@ router.post('/admin/create', requireAdmin, async (req, res) => {
 router.patch('/admin/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, password, phone, voucher_code, discount_percent, commission_percent, commission_months, status, notes } = req.body;
+    const { name, email, password, phone, voucher_code, discount_percent, discount_months, commission_percent, commission_months, status, notes } = req.body;
 
     // Check affiliate exists
     const existing = await pool.query('SELECT id FROM affiliates WHERE id = $1', [id]);
@@ -488,6 +507,10 @@ router.patch('/admin/:id', requireAdmin, async (req, res) => {
     if (discount_percent !== undefined) {
       updates.push(`discount_percent = $${paramIndex++}`);
       params.push(discount_percent);
+    }
+    if (discount_months !== undefined) {
+      updates.push(`discount_months = $${paramIndex++}`);
+      params.push(discount_months);
     }
     if (commission_percent !== undefined) {
       updates.push(`commission_percent = $${paramIndex++}`);
@@ -803,7 +826,9 @@ router.get('/admin/client/:clientId', requireAdmin, async (req, res) => {
         a.discount_percent,
         a.commission_percent,
         a.commission_months,
+        COALESCE(a.discount_months, 1) as discount_months,
         ar.discount_applied,
+        COALESCE(ar.discount_months_used, 0) as discount_months_used,
         ar.created_at as referral_date,
         (SELECT COUNT(*) FROM payments p 
          JOIN subscriptions s ON s.id = p.subscription_id 
@@ -821,9 +846,14 @@ router.get('/admin/client/:clientId', requireAdmin, async (req, res) => {
     const client = result.rows[0];
     
     // Calculate if discount should apply
-    const isFirstPayment = parseInt(client.payment_count) === 0;
+    const paymentCount = parseInt(client.payment_count);
+    const discountMonths = parseInt(client.discount_months) || 1;
+    const discountMonthsUsed = parseInt(client.discount_months_used) || 0;
     const hasAffiliate = !!client.affiliate_id;
-    const discountApplicable = hasAffiliate && isFirstPayment && !client.discount_applied;
+    
+    // Discount applies if: has affiliate, hasn't used all discount months yet
+    const discountApplicable = hasAffiliate && discountMonthsUsed < discountMonths;
+    const discountMonthsRemaining = Math.max(0, discountMonths - discountMonthsUsed);
     
     // Get standard subscription price
     const priceResult = await pool.query(
@@ -851,10 +881,11 @@ router.get('/admin/client/:clientId', requireAdmin, async (req, res) => {
         discount_percent: parseFloat(client.discount_percent),
         commission_percent: parseFloat(client.commission_percent),
         commission_months: client.commission_months,
+        discount_months: discountMonths,
       } : null,
-      payment_count: parseInt(client.payment_count),
-      is_first_payment: isFirstPayment,
-      discount_already_applied: client.discount_applied || false,
+      payment_count: paymentCount,
+      discount_months_used: discountMonthsUsed,
+      discount_months_remaining: discountMonthsRemaining,
       referral_date: client.referral_date,
       pricing: {
         standard_price: standardPrice,
@@ -885,7 +916,9 @@ router.post('/admin/record-payment', requireAdmin, async (req, res) => {
       SELECT 
         c.id, c.referred_by_affiliate_id, c.referral_voucher_code,
         a.commission_percent, a.commission_months, a.discount_percent,
-        ar.id as referral_id, ar.discount_applied
+        COALESCE(a.discount_months, 1) as discount_months,
+        ar.id as referral_id, ar.discount_applied,
+        COALESCE(ar.discount_months_used, 0) as discount_months_used
       FROM clients c
       LEFT JOIN affiliates a ON a.id = c.referred_by_affiliate_id
       LEFT JOIN affiliate_referrals ar ON ar.user_id = c.id AND ar.affiliate_id = a.id
@@ -913,6 +946,9 @@ router.post('/admin/record-payment', requireAdmin, async (req, res) => {
     `, [client_id, client.referred_by_affiliate_id]);
     
     const paymentMonth = parseInt(paymentCountResult.rows[0].count) + 1;
+    const discountMonths = parseInt(client.discount_months) || 1;
+    const discountMonthsUsed = parseInt(client.discount_months_used) || 0;
+    const discountWasApplied = discountMonthsUsed < discountMonths;
 
     // Check if within commission period
     if (paymentMonth > client.commission_months) {
@@ -956,10 +992,13 @@ router.post('/admin/record-payment', requireAdmin, async (req, res) => {
       WHERE id = $2
     `, [commissionAmount, client.referred_by_affiliate_id]);
 
-    // Mark discount as applied if this is first payment
-    if (paymentMonth === 1 && !client.discount_applied) {
+    // Track discount usage - increment discount_months_used if discount was applied
+    if (discountWasApplied && client.referral_id) {
       await pool.query(
-        'UPDATE affiliate_referrals SET discount_applied = true WHERE id = $1',
+        `UPDATE affiliate_referrals 
+         SET discount_months_used = COALESCE(discount_months_used, 0) + 1,
+             discount_applied = true 
+         WHERE id = $1`,
         [client.referral_id]
       );
     }
@@ -970,8 +1009,10 @@ router.post('/admin/record-payment', requireAdmin, async (req, res) => {
       commission_id: commissionResult.rows[0].id,
       commission_amount: commissionAmount,
       payment_month: paymentMonth,
+      discount_applied: discountWasApplied,
+      discount_months_remaining: discountWasApplied ? discountMonths - discountMonthsUsed - 1 : 0,
       affiliate_id: client.referred_by_affiliate_id,
-      message: `Commission of $${commissionAmount.toFixed(2)} recorded for month ${paymentMonth}`
+      message: `Commission of $${commissionAmount.toFixed(2)} recorded for month ${paymentMonth}${discountWasApplied ? ` (discount applied, ${discountMonths - discountMonthsUsed - 1} months remaining)` : ''}`
     });
   } catch (error) {
     console.error('[Affiliate Admin] Record payment error:', error);
@@ -988,7 +1029,7 @@ router.post('/admin/record-payment', requireAdmin, async (req, res) => {
 router.post('/apply-code', async (req, res) => {
   try {
     const user = (req as any).user;
-    if (!user || !user.id) {
+    if (!user || !user.id || !user.email) {
       return jsonError(res, 401, 'Not authenticated');
     }
 
@@ -999,26 +1040,29 @@ router.post('/apply-code', async (req, res) => {
 
     const voucherCode = code.toUpperCase().trim();
 
-    // Check if user already has an affiliate
+    // Look up client by email (since users and clients tables have different IDs)
     const userResult = await pool.query(
-      'SELECT id, referred_by_affiliate_id, referral_voucher_code FROM clients WHERE id = $1',
-      [user.id]
+      'SELECT id, referred_by_affiliate_id, referral_voucher_code FROM clients WHERE LOWER(email) = LOWER($1)',
+      [user.email]
     );
 
     if (!userResult.rows.length) {
       return jsonError(res, 404, 'User not found');
     }
 
+    const clientId = userResult.rows[0].id;
+
     if (userResult.rows[0].referred_by_affiliate_id) {
       return jsonError(res, 400, `You already have an affiliate code applied: ${userResult.rows[0].referral_voucher_code}`);
     }
 
     // Check if user has made any payments (can only apply before first payment)
+    // Use client_id to check subscriptions as that's what the payments system uses
     const paymentsResult = await pool.query(
       `SELECT COUNT(*) as count FROM payments p
        JOIN subscriptions s ON s.id = p.subscription_id
        WHERE s.user_id = $1 AND p.status = 'completed'`,
-      [user.id]
+      [clientId]
     );
 
     if (parseInt(paymentsResult.rows[0].count) > 0) {
@@ -1044,7 +1088,7 @@ router.post('/apply-code', async (req, res) => {
       `UPDATE clients 
        SET referred_by_affiliate_id = $1, referral_voucher_code = $2 
        WHERE id = $3`,
-      [affiliate.id, voucherCode, user.id]
+      [affiliate.id, voucherCode, clientId]
     );
 
     // Create referral record
@@ -1052,7 +1096,7 @@ router.post('/apply-code', async (req, res) => {
       `INSERT INTO affiliate_referrals (affiliate_id, user_id, voucher_code_used, discount_applied)
        VALUES ($1, $2, $3, false)
        ON CONFLICT (user_id) DO NOTHING`,
-      [affiliate.id, user.id, voucherCode]
+      [affiliate.id, clientId, voucherCode]
     );
 
     // Update affiliate referral count
@@ -1080,10 +1124,11 @@ router.post('/apply-code', async (req, res) => {
 router.get('/my-referral', async (req, res) => {
   try {
     const user = (req as any).user;
-    if (!user || !user.id) {
+    if (!user || !user.id || !user.email) {
       return jsonError(res, 401, 'Not authenticated');
     }
 
+    // Look up client by email (since users and clients tables have different IDs)
     const result = await pool.query(`
       SELECT 
         c.referred_by_affiliate_id,
@@ -1095,8 +1140,8 @@ router.get('/my-referral', async (req, res) => {
       FROM clients c
       LEFT JOIN affiliates a ON a.id = c.referred_by_affiliate_id
       LEFT JOIN affiliate_referrals ar ON ar.user_id = c.id AND ar.affiliate_id = a.id
-      WHERE c.id = $1
-    `, [user.id]);
+      WHERE LOWER(c.email) = LOWER($1)
+    `, [user.email]);
 
     if (!result.rows.length) {
       return res.json({ has_referral: false });

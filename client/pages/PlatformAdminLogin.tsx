@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { FloatingShapes } from "@/components/ui/floating-shapes";
 import { Loader2, Lock, LogIn, Mail, ShieldAlert } from "lucide-react";
 import { startAutoRefresh, syncAuthState } from "@/lib/auth";
+import Header from "@/components/layout/Header";
 
 type LoginOkResponse = {
   message: string;
@@ -151,7 +152,9 @@ export default function PlatformAdminLogin() {
   }
 
   return (
-    <section className="relative container mx-auto py-6 sm:py-10 min-h-[70vh] flex items-center justify-center overflow-hidden">
+    <>
+      <Header />
+      <section className="relative container mx-auto py-6 sm:py-10 min-h-[70vh] flex items-center justify-center overflow-hidden">
       <FloatingShapes variant="section" colors="cool" />
 
       <div className="relative z-10 mx-auto max-w-sm w-full px-3">
@@ -259,5 +262,6 @@ export default function PlatformAdminLogin() {
         </div>
       </div>
     </section>
+    </>
   );
 }

@@ -78,22 +78,22 @@ export default function AffiliateLogin() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-gray-900 dark:to-gray-800 p-4">
-      <Card className="w-full max-w-md shadow-xl">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="p-3 bg-emerald-100 dark:bg-emerald-900 rounded-full">
-              <TrendingUp className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+      <Card className="w-full max-w-sm shadow-xl">
+        <CardHeader className="text-center py-4">
+          <div className="flex justify-center mb-2">
+            <div className="p-2 bg-emerald-100 dark:bg-emerald-900 rounded-full">
+              <TrendingUp className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">Affiliate Portal</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-xl font-bold">Affiliate Portal</CardTitle>
+          <CardDescription className="text-xs">
             Sign in to view your referrals and earnings
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+        <CardContent className="pb-4">
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-xs">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -102,10 +102,11 @@ export default function AffiliateLogin() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
+                className="h-9"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="password" className="text-xs">Password</Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -114,6 +115,7 @@ export default function AffiliateLogin() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   autoComplete="current-password"
+                  className="h-9"
                 />
                 <button
                   type="button"
@@ -122,17 +124,17 @@ export default function AffiliateLogin() {
                   tabIndex={-1}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
+                    <EyeOff className="h-3.5 w-3.5" />
                   ) : (
-                    <Eye className="h-4 w-4" />
+                    <Eye className="h-3.5 w-3.5" />
                   )}
                 </button>
               </div>
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full h-9" disabled={loading}>
               {loading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
                   Signing in...
                 </>
               ) : (

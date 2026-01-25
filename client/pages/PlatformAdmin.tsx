@@ -52,6 +52,7 @@ import GlobalAnnouncementsManager from '@/components/platform-admin/GlobalAnnoun
 import SpeedometerGauge from '@/components/platform-admin/SpeedometerGauge';
 import BigCarGauge from '@/components/platform-admin/BigCarGauge';
 import AdminAffiliatesPage from '@/pages/admin/AdminAffiliatesPage';
+import Header from '@/components/layout/Header';
 
 interface AdminNote {
   id: number;
@@ -1872,14 +1873,19 @@ export default function PlatformAdmin() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
-        <div className="text-white text-lg font-semibold">{t('loading') || 'Loading...'}</div>
-      </div>
+      <>
+        <Header />
+        <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
+          <div className="text-white text-lg font-semibold">{t('loading') || 'Loading...'}</div>
+        </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <>
+      <Header />
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       {/* Premium Admin Header - Compact */}
       <div className="relative bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white overflow-hidden shadow-lg border-b border-emerald-500/30">
         {/* Animated Background */}
@@ -4965,6 +4971,7 @@ export default function PlatformAdmin() {
         )}
       </div>
     </div>
+    </>
   );
 }
 
