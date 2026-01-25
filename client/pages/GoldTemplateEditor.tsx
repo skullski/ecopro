@@ -1455,12 +1455,12 @@ export default function GoldTemplateEditor() {
         )}
 
         {/* Content */}
-        <div className="container mx-auto px-4 py-4 flex-1 overflow-hidden">
+        <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-4 flex-1 overflow-hidden">
         {activeTab === 'preview' ? (
-          <div className={`grid grid-cols-1 ${previewGridCols} gap-4 items-start h-full overflow-hidden`}>
+          <div className={`grid grid-cols-1 ${previewGridCols} gap-2 sm:gap-4 items-start h-full overflow-hidden`}>
             <div className="space-y-3 min-w-0 h-full overflow-hidden flex flex-col">
               {/* Device Frame Container */}
-              <div ref={previewFitRef} className="w-full h-full overflow-hidden">
+              <div ref={previewFitRef} className="w-full h-full overflow-hidden flex items-start justify-center lg:justify-start">
                 {previewDevice === 'desktop' ? (
                   <div
                     style={{
@@ -1608,7 +1608,7 @@ export default function GoldTemplateEditor() {
               </div>
             </div>
 
-            <div className="min-w-0 h-full overflow-hidden">
+            <div className="min-w-0 h-full overflow-hidden hidden lg:block">
               <div className="relative h-full overflow-hidden">
                 {/* Edit panel stays mounted (so it feels instant when templates hide) */}
                 <div
@@ -1619,7 +1619,7 @@ export default function GoldTemplateEditor() {
                   <div className="h-full overflow-y-auto pr-1">{editPanel}</div>
                 </div>
 
-                {/* Templates panel slides over the edit panel */}
+                {/* Templates panel slides over the edit panel - DESKTOP ONLY */}
                 <div
                   className={
                     `absolute inset-0 transition-all duration-200 ease-out will-change-transform ${
@@ -1851,6 +1851,125 @@ export default function GoldTemplateEditor() {
                       </div>
                     </CardContent>
                   </Card>
+                </div>
+              </div>
+            </div>
+
+            {/* MOBILE Template Picker - Bottom Sheet */}
+            <div
+              className={`lg:hidden fixed inset-x-0 bottom-0 z-50 transition-transform duration-300 ease-out ${
+                templatePickerOpen ? 'translate-y-0' : 'translate-y-full'
+              }`}
+              style={{ maxHeight: '70vh' }}
+            >
+              {/* Backdrop */}
+              {templatePickerOpen && (
+                <div 
+                  className="fixed inset-0 bg-black/50 -z-10" 
+                  onClick={() => setTemplatePickerOpen(false)}
+                />
+              )}
+              
+              <div className="bg-background rounded-t-2xl border-t shadow-2xl flex flex-col" style={{ maxHeight: '70vh' }}>
+                {/* Handle bar */}
+                <div className="flex justify-center py-2">
+                  <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full" />
+                </div>
+                
+                {/* Header */}
+                <div className="flex items-center justify-between px-4 pb-3 border-b">
+                  <h3 className="font-semibold">{(t('editor.chooseTemplate') as any) || 'اختر قالبك'}</h3>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setTemplatePickerOpen(false)}>
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
+
+                {/* Current template indicator */}
+                <div className="px-4 py-2 bg-primary/5 border-b flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Check className="w-4 h-4 text-primary shrink-0" />
+                    <span className="text-xs text-muted-foreground">Current:</span>
+                    <span className="text-sm font-semibold text-primary truncate">
+                      {TEMPLATE_PREVIEWS.find((t) => t.id === effectiveTemplateId)?.name || effectiveTemplateId}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Preview action bar - shows when previewing different template */}
+                {isPreviewingDifferentTemplate && (
+                  <div className="px-4 py-2 bg-slate-100 dark:bg-slate-800 border-b flex items-center justify-between gap-2">
+                    <span className="text-sm truncate">
+                      <span className="text-muted-foreground">Preview: </span>
+                      <span className="font-medium">{TEMPLATE_PREVIEWS.find((t) => t.id === activeTemplateId)?.name}</span>
+                    </span>
+                    <div className="flex gap-2 shrink-0">
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="text-xs h-8"
+                        disabled={saving || !previewTemplateId}
+                        onClick={() => {
+                          if (!previewTemplateId) return;
+                          handleTemplateChange(previewTemplateId);
+                        }}
+                      >
+                        Use
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="text-xs h-8"
+                        onClick={() => setPreviewTemplateId(null)}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Template grid - scrollable */}
+                <div className="flex-1 overflow-y-auto px-4 py-3" style={{ maxHeight: 'calc(70vh - 140px)' }}>
+                  <div className="grid grid-cols-4 gap-2">
+                    {filteredTemplates.map((template) => {
+                      const isSelected = activeTemplateId === template.id;
+                      const isCurrent = effectiveTemplateId === template.id;
+                      return (
+                        <button
+                          key={template.id}
+                          type="button"
+                          onClick={() => setPreviewTemplateId(template.id)}
+                          className={`relative rounded-lg overflow-hidden border-2 transition-all ${
+                            isSelected
+                              ? 'border-primary ring-2 ring-primary/30'
+                              : 'border-border/50'
+                          }`}
+                        >
+                          <div className="aspect-[3/4] bg-muted">
+                            <img
+                              src={template.image}
+                              alt={template.name}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                          </div>
+                          {isCurrent && (
+                            <div className="absolute bottom-1 left-1 rounded bg-primary/90 px-1.5 py-0.5 text-[9px] font-semibold text-primary-foreground">
+                              Current
+                            </div>
+                          )}
+                          {isSelected && !isCurrent && (
+                            <div className="absolute top-1 right-1 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
+                              <Check className="w-2.5 h-2.5 text-primary-foreground" />
+                            </div>
+                          )}
+                          <p className="text-[10px] font-medium text-center py-1 truncate px-1">
+                            {template.name}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             </div>
