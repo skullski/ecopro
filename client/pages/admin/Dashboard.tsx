@@ -199,8 +199,8 @@ export default function Dashboard() {
       {/* Onboarding Guide for New Users */}
       <OnboardingGuide 
         hasProducts={(storeProducts?.length || 0) > 0}
-        hasStoreBasics={Boolean((storeSettings as any)?.store_name) && Boolean((storeSettings as any)?.store_slug)}
-        hasBranding={Boolean((storeSettings as any)?.store_logo) || Boolean((storeSettings as any)?.banner_url)}
+        hasStoreBasics={Boolean((storeSettings as any)?.store_name)}
+        hasBranding={Boolean((storeSettings as any)?.store_logo) || Boolean((storeSettings as any)?.banner_url) || Boolean((storeSettings as any)?.seller_name) || Boolean((storeSettings as any)?.store_description)}
         hasOrders={stats.orders > 0}
         hasTemplateSwitched={hasTemplateSwitched}
         hasStoreLinkCopied={Boolean(onboarding?.completed?.store_link_copied)}

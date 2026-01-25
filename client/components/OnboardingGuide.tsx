@@ -60,7 +60,7 @@ export default function OnboardingGuide({
       description: t('onboarding.setupStoreDesc') || 'Add store name, logo, and description',
       icon: <Store className="w-5 h-5" />,
       link: openBranding,
-      isComplete: hasStoreBasics && hasBranding,
+      isComplete: hasStoreBasics || hasBranding,
     },
     {
       id: 'template',

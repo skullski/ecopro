@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -35,6 +36,7 @@ interface TemplatesTabProps {
 
 export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabProps) {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -154,6 +156,8 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
       setStoreSettings(() => data);
       setSwitchOpen(false);
       setPendingTemplateId(null);
+      // Invalidate react-query cache so Dashboard/OnboardingGuide sees updated template
+      queryClient.invalidateQueries({ queryKey: ['storeSettings'] });
       markOnboardingStepComplete('template_switched');
     } catch (e: any) {
       console.error('Template switch failed:', e);
@@ -434,7 +438,7 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
       </div>
 
       {/* Template Carousel - Infinite scroll */}
-      <div className="relative overflow-hidden rounded-lg bg-gradient-to-b from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 p-4">
+      <div className="relative overflow-hidden rounded-lg bg-gradient-to-b from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 p-3">
         <style>{`
           @keyframes scrollCarousel {
             0% { transform: translateX(0); }
@@ -442,7 +446,7 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
           }
           .carousel-track {
             display: flex;
-            gap: 16px;
+            gap: 12px;
             animation: scrollCarousel 30s linear infinite;
           }
           .carousel-track:hover {
@@ -456,13 +460,13 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
             <button
               key={`${template.id}-${idx}`}
               onClick={() => setPreviewTemplateId(template.id)}
-              className={`flex-shrink-0 w-40 rounded-lg border-2 transition-all overflow-hidden hover:scale-105 hover:z-10 ${
+              className={`flex-shrink-0 w-24 rounded-md border-2 transition-all overflow-hidden hover:scale-105 hover:z-10 ${
                 currentTemplateId === normalizeTemplateId(template.id)
                   ? 'border-blue-500 ring-2 ring-blue-400 shadow-lg shadow-blue-500/30'
                   : 'border-slate-600 hover:border-slate-400'
               }`}
             >
-              <div className="relative h-48 bg-slate-800 overflow-hidden">
+              <div className="relative h-28 bg-slate-800 overflow-hidden">
                 {!brokenImages[getImageKey(template.id, 'carousel')] ? (
                   <img
                     src={template.image}
@@ -477,18 +481,18 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full w-full flex-col gap-2 bg-slate-700">
-                    <div className="text-3xl">{template.icon}</div>
+                    <div className="text-2xl">{template.icon}</div>
                   </div>
                 )}
                 {/* Selected indicator */}
                 {currentTemplateId === normalizeTemplateId(template.id) && (
-                  <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow-lg">
+                  <div className="absolute top-1 right-1 bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold shadow-lg">
                     ✓
                   </div>
                 )}
               </div>
-              <div className="p-2 bg-slate-800/90 backdrop-blur text-center">
-                <h4 className="text-sm font-semibold text-white truncate">{template.name}</h4>
+              <div className="p-1 bg-slate-800/90 backdrop-blur text-center">
+                <h4 className="text-xs font-semibold text-white truncate">{template.name}</h4>
               </div>
             </button>
           ))}
@@ -496,14 +500,44 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
       </div>
 
       {isPreviewingDifferentTemplate && (
-        <div className="mt-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/40 p-3 flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <div className="text-xs text-muted-foreground">Previewing:</div>
-            <div className="font-semibold truncate">{previewTemplateName}</div>
+        <div className="mt-3 rounded-lg border-2 border-blue-300 dark:border-blue-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-800 p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xl">{templates.find((t) => normalizeTemplateId(t.id) === normalizeTemplateId(previewTemplateId))?.icon}</span>
+                <div>
+                  <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">Previewing Template</div>
+                  <div className="font-bold text-lg text-slate-900 dark:text-white">{previewTemplateName}</div>
+                </div>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">
+                {templates.find((t) => normalizeTemplateId(t.id) === normalizeTemplateId(previewTemplateId))?.description}
+              </p>
+              <div className="flex flex-wrap gap-1 mb-3">
+                {templates.find((t) => normalizeTemplateId(t.id) === normalizeTemplateId(previewTemplateId))?.features.slice(0, 4).map((f, i) => (
+                  <span key={i} className="text-[10px] px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">{f}</span>
+                ))}
+              </div>
+            </div>
+            {/* Preview Image */}
+            <div className="shrink-0 w-32 h-40 rounded-md overflow-hidden border border-slate-200 dark:border-slate-600 shadow-md">
+              {!brokenImages[getImageKey(previewTemplateId || '', 'carousel')] ? (
+                <img
+                  src={templates.find((t) => normalizeTemplateId(t.id) === normalizeTemplateId(previewTemplateId))?.image}
+                  alt="Template preview"
+                  className="w-full h-full object-cover object-top"
+                  onError={() => previewTemplateId && setBrokenImages((prev) => ({ ...prev, [getImageKey(previewTemplateId, 'carousel')]: true }))}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full w-full bg-slate-100 dark:bg-slate-700">
+                  <span className="text-4xl">{templates.find((t) => normalizeTemplateId(t.id) === normalizeTemplateId(previewTemplateId))?.icon}</span>
+                </div>
+              )}
+            </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Button type="button" size="sm" onClick={() => previewTemplateId && openTemplateSwitch(previewTemplateId)}>
-              Use template
+          <div className="flex items-center gap-2 mt-2 pt-2 border-t border-blue-200 dark:border-blue-800">
+            <Button type="button" size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={() => previewTemplateId && openTemplateSwitch(previewTemplateId)}>
+              Use This Template
             </Button>
             <Button type="button" size="sm" variant="outline" onClick={() => setPreviewTemplateId(null)}>
               Cancel
@@ -513,18 +547,18 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
       )}
 
       {/* Quick Select Grid - Compact view */}
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 bg-slate-50 dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
+      <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-8 gap-1.5 bg-slate-50 dark:bg-slate-800 p-2 rounded-lg border border-slate-200 dark:border-slate-700">
         {visibleTemplates.map((template) => (
           <button
             key={template.id}
             onClick={() => setPreviewTemplateId(template.id)}
-            className={`text-left rounded-lg border-2 transition-all overflow-hidden hover:shadow-lg ${
+            className={`text-left rounded-md border-2 transition-all overflow-hidden hover:shadow-md ${
               currentTemplateId === normalizeTemplateId(template.id)
-                ? 'border-blue-500 shadow-xl ring-2 ring-blue-400 ring-offset-1 dark:ring-offset-slate-900 bg-blue-50 dark:bg-slate-700'
-                : 'border-slate-300 hover:border-slate-400 dark:border-slate-600 dark:hover:border-slate-500 bg-white dark:bg-slate-800 hover:shadow-md'
+                ? 'border-blue-500 shadow-lg ring-1 ring-blue-400 ring-offset-1 dark:ring-offset-slate-900 bg-blue-50 dark:bg-slate-700'
+                : 'border-slate-300 hover:border-slate-400 dark:border-slate-600 dark:hover:border-slate-500 bg-white dark:bg-slate-800'
             }`}
           >
-            <div className="relative aspect-[3/4] bg-gray-100 dark:bg-gray-800 overflow-hidden flex items-center justify-center">
+            <div className="relative aspect-[4/5] bg-gray-100 dark:bg-gray-800 overflow-hidden flex items-center justify-center">
               {!brokenImages[getImageKey(template.id, 'grid')] ? (
                 <img
                   src={template.image}
@@ -539,17 +573,17 @@ export function TemplatesTab({ storeSettings, setStoreSettings }: TemplatesTabPr
                 />
               ) : (
                 <div className="flex items-center justify-center h-full w-full flex-col gap-1 bg-slate-100 dark:bg-slate-700">
-                  <div className="text-xl">{template.icon}</div>
+                  <div className="text-lg">{template.icon}</div>
                 </div>
               )}
               {currentTemplateId === normalizeTemplateId(template.id) && (
-                <div className="absolute top-1 right-1 bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold shadow">
+                <div className="absolute top-0.5 right-0.5 bg-blue-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold shadow">
                   ✓
                 </div>
               )}
             </div>
-            <div className="p-1.5 bg-gradient-to-r from-slate-100 to-slate-50 dark:from-slate-700 dark:to-slate-800 border-t border-slate-200 dark:border-slate-600">
-              <h4 className="text-xs font-semibold text-slate-900 dark:text-white truncate text-center">{template.name}</h4>
+            <div className="px-1 py-0.5 bg-gradient-to-r from-slate-100 to-slate-50 dark:from-slate-700 dark:to-slate-800 border-t border-slate-200 dark:border-slate-600">
+              <h4 className="text-[10px] font-semibold text-slate-900 dark:text-white truncate text-center">{template.name}</h4>
             </div>
           </button>
         ))}

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { 
   Plus, Search, Eye, Copy, ExternalLink, Edit, Trash2, 
   Star, Package, DollarSign, Image as ImageIcon, Settings,
@@ -65,6 +66,7 @@ interface StoreProduct {
 export default function Store() {
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const { t } = useTranslation();
   const { toast } = useToast();
   // Products Management was duplicated with Overview; keep a single Store page.
@@ -499,6 +501,8 @@ export default function Store() {
             } catch (e) {
               if (saved) setStoreSettings(saved);
             }
+            // Invalidate react-query cache so Dashboard/OnboardingGuide sees updated state
+            queryClient.invalidateQueries({ queryKey: ['storeSettings'] });
             markOnboardingStepComplete('store_branding_saved');
             toast({ title: t('store.toast.savedTitle'), description: t('store.toast.settingsUpdatedDesc') });
           } catch (e) {

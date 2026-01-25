@@ -948,7 +948,7 @@ export default function PlatformAdmin() {
   const [notesLoading, setNotesLoading] = useState(false);
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [editingNote, setEditingNote] = useState<AdminNote | null>(null);
-  const [noteForm, setNoteForm] = useState({ title: '', content: '', color: 'yellow' as const, is_pinned: false });
+  const [noteForm, setNoteForm] = useState<{ title: string; content: string; color: 'yellow' | 'blue' | 'green' | 'red' | 'purple'; is_pinned: boolean }>({ title: '', content: '', color: 'yellow', is_pinned: false });
   const [savingNote, setSavingNote] = useState(false);
 
   const reloadPlatformErrors = useCallback(async () => {
