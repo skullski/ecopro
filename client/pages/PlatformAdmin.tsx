@@ -3239,7 +3239,10 @@ export default function PlatformAdmin() {
 
                   {/* Smaller Speedometer Gauges */}
                   <div className="bg-slate-950/60 rounded-lg border border-slate-700/50" style={{ padding: 'clamp(0.75rem, 1.5vh, 1rem)' }}>
-                    <div className="text-slate-400 text-xs mb-3">Other Metrics (live)</div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="text-slate-400 text-xs">Other Metrics (live)</div>
+                      <div className="text-slate-500 text-[10px]">💡 Server Disk = Render ephemeral, NOT Cloudinary (20GB)</div>
+                    </div>
                     {(() => {
                       const eluPct = serverHealth.eventLoop?.utilization != null ? serverHealth.eventLoop.utilization * 100 : null;
 
@@ -3281,8 +3284,8 @@ export default function PlatformAdmin() {
                             tone="emerald"
                           />
                           <SpeedometerGauge
-                            title="Storage"
-                            subtitle="Uploads disk used"
+                            title="Server Disk"
+                            subtitle="Render ephemeral (not Cloudinary)"
                             value={uploadsUsedPct}
                             min={0}
                             max={100}

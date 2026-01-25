@@ -237,13 +237,13 @@ router.get('/referrals', authenticateAffiliate, async (req, res) => {
         ar.created_at as referred_at,
         ar.voucher_code_used,
         ar.discount_applied,
-        u.name as user_name,
-        u.email as user_email,
+        c.name as user_name,
+        c.email as user_email,
         s.status as subscription_status,
         (SELECT COUNT(*) FROM affiliate_commissions ac WHERE ac.referral_id = ar.id) as commission_count,
         (SELECT COALESCE(SUM(commission_amount), 0) FROM affiliate_commissions ac WHERE ac.referral_id = ar.id) as total_commission
        FROM affiliate_referrals ar
-       JOIN users u ON u.id = ar.user_id
+       JOIN clients c ON c.id = ar.user_id
        LEFT JOIN subscriptions s ON s.user_id = ar.user_id
        WHERE ar.affiliate_id = $1
        ORDER BY ar.created_at DESC
@@ -291,10 +291,10 @@ router.get('/commissions', authenticateAffiliate, async (req, res) => {
         ac.status,
         ac.paid_at,
         ac.created_at,
-        u.name as user_name,
-        u.email as user_email
+        c.name as user_name,
+        c.email as user_email
        FROM affiliate_commissions ac
-       JOIN users u ON u.id = ac.user_id
+       JOIN clients c ON c.id = ac.user_id
        WHERE ac.affiliate_id = $1
     `;
     const params: any[] = [affiliate.id];
@@ -420,15 +420,15 @@ router.post('/admin/create', requireAdmin, async (req, res) => {
       return jsonError(res, 400, 'Email or voucher code already exists');
     }
 
-    // Check if email exists as a regular user/admin - warn about conflicts
-    const existingUser = await pool.query(
-      'SELECT id, role, user_type FROM users WHERE LOWER(email) = $1',
+    // Check if email exists as a regular client/admin - warn about conflicts
+    const existingClient = await pool.query(
+      'SELECT id, role, user_type FROM clients WHERE LOWER(email) = $1',
       [normalizedEmail]
     );
 
-    if (existingUser.rows.length) {
-      const userRole = existingUser.rows[0].role || existingUser.rows[0].user_type;
-      console.warn(`[Affiliate Admin] Creating affiliate with email that exists as ${userRole} user: ${normalizedEmail}`);
+    if (existingClient.rows.length) {
+      const userRole = existingClient.rows[0].role || existingClient.rows[0].user_type;
+      console.warn(`[Affiliate Admin] Creating affiliate with email that exists as ${userRole} client: ${normalizedEmail}`);
       // Note: We allow this but the user will have two separate login systems
     }
 
@@ -599,9 +599,9 @@ router.get('/admin/:id/details', requireAdmin, async (req, res) => {
 
     // Get recent referrals
     const referrals = await pool.query(
-      `SELECT ar.*, u.name as user_name, u.email as user_email, s.status as subscription_status
+      `SELECT ar.*, c.name as user_name, c.email as user_email, s.status as subscription_status
        FROM affiliate_referrals ar
-       JOIN users u ON u.id = ar.user_id
+       JOIN clients c ON c.id = ar.user_id
        LEFT JOIN subscriptions s ON s.user_id = ar.user_id
        WHERE ar.affiliate_id = $1
        ORDER BY ar.created_at DESC
@@ -611,9 +611,9 @@ router.get('/admin/:id/details', requireAdmin, async (req, res) => {
 
     // Get pending commissions
     const pendingCommissions = await pool.query(
-      `SELECT ac.*, u.name as user_name, u.email as user_email
+      `SELECT ac.*, c.name as user_name, c.email as user_email
        FROM affiliate_commissions ac
-       JOIN users u ON u.id = ac.user_id
+       JOIN clients c ON c.id = ac.user_id
        WHERE ac.affiliate_id = $1 AND ac.status = 'pending'
        ORDER BY ac.created_at DESC`,
       [id]
