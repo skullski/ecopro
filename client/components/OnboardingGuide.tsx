@@ -1,8 +1,8 @@
-import { useState, type ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Store, Package, ShoppingCart, Palette, Settings, Rocket,
-  CheckCircle, ChevronRight, X, Sparkles, ArrowRight
+  CheckCircle, ChevronRight, X, Sparkles, ArrowRight, PartyPopper
 } from 'lucide-react';
 import { useTranslation } from '@/lib/i18n';
 import { dismissOnboarding, getOnboardingProgress } from '@/lib/onboarding';
@@ -37,6 +37,12 @@ export default function OnboardingGuide({
 }: OnboardingGuideProps) {
   const { t } = useTranslation();
   const [dismissed, setDismissed] = useState(() => getOnboardingProgress().dismissed);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [celebrationShown, setCelebrationShown] = useState(() => {
+    try {
+      return localStorage.getItem('ecopro_onboarding_celebrated') === 'true';
+    } catch { return false; }
+  });
 
   // Show onboarding for both new users and existing accounts that are still empty.
   // Rule: Only show if they have no products, no orders, and haven't switched templates yet.
@@ -94,6 +100,91 @@ export default function OnboardingGuide({
 
   const completedCount = steps.filter(s => s.isComplete).length;
   const progress = (completedCount / steps.length) * 100;
+  const allComplete = completedCount === steps.length;
+
+  // Trigger celebration when all steps complete (only once)
+  useEffect(() => {
+    if (allComplete && !celebrationShown) {
+      setShowCelebration(true);
+      setCelebrationShown(true);
+      try {
+        localStorage.setItem('ecopro_onboarding_celebrated', 'true');
+      } catch {}
+      // Auto-hide celebration after 5 seconds
+      const timer = setTimeout(() => setShowCelebration(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [allComplete, celebrationShown]);
+
+  // Celebration overlay
+  if (showCelebration) {
+    return (
+      <div className="relative bg-gradient-to-br from-green-500 via-emerald-500 to-teal-500 rounded-2xl p-6 mb-6 overflow-hidden text-white">
+        {/* Confetti animation */}
+        <style>{`
+          @keyframes confetti-fall {
+            0% { transform: translateY(-100%) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(400%) rotate(720deg); opacity: 0; }
+          }
+          @keyframes confetti-shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+          }
+          .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            animation: confetti-fall 3s ease-out forwards, confetti-shake 0.5s ease-in-out infinite;
+          }
+          @keyframes bounce-in {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
+          }
+          .bounce-in { animation: bounce-in 0.5s ease-out forwards; }
+        `}</style>
+        
+        {/* Confetti pieces */}
+        {[...Array(20)].map((_, i) => (
+          <div
+            key={i}
+            className="confetti rounded-full"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: '-10px',
+              backgroundColor: ['#fbbf24', '#f472b6', '#60a5fa', '#34d399', '#a78bfa'][i % 5],
+              animationDelay: `${Math.random() * 2}s`,
+              width: `${6 + Math.random() * 8}px`,
+              height: `${6 + Math.random() * 8}px`,
+            }}
+          />
+        ))}
+        
+        <div className="relative z-10 text-center bounce-in">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-full mb-4">
+            <PartyPopper className="w-8 h-8" />
+          </div>
+          <h2 className="text-2xl font-bold mb-2">🎉 Congratulations!</h2>
+          <p className="text-white/90 mb-4">You've completed all onboarding steps! Your store is ready to go.</p>
+          <div className="flex items-center justify-center gap-3">
+            <Link
+              to="/dashboard/preview"
+              className="px-4 py-2 bg-white text-green-600 rounded-lg font-semibold hover:bg-white/90 transition"
+            >
+              View Your Store
+            </Link>
+            <button
+              onClick={() => setShowCelebration(false)}
+              className="px-4 py-2 bg-white/20 text-white rounded-lg font-semibold hover:bg-white/30 transition"
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gradient-to-br from-primary/5 via-accent/5 to-primary/5 dark:from-primary/10 dark:via-accent/10 dark:to-primary/10 rounded-2xl border-2 border-primary/20 dark:border-primary/30 p-5 mb-6 relative overflow-hidden">

@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { TemplatesTab } from '@/components/TemplatesTab';
-import { generateStoreUrl } from '@/utils/storeUrl';
+import { generateStoreUrl, storeNameToSlug } from '@/utils/storeUrl';
 import { useTranslation } from '@/lib/i18n';
 import { useToast } from '@/components/ui/use-toast';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
@@ -2394,11 +2394,33 @@ export default function Store() {
                     onChange={(e) => setStoreSettings((s: any) => ({ ...s, store_name: e.target.value }))}
                   />
                   <p className="text-xs text-muted-foreground">{t('store.settingsModal.storeNameHint')}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Store slug: <code className="px-1 py-0.5 bg-gray-100 rounded">{storeSettings.store_slug || '—'}</code></p>
-                  <p className="text-xs text-muted-foreground">
-                    {t('store.settingsModal.shareLinkFormat', { slug: storeSettings.store_slug || 'your-slug' })}
-                  </p>
-                  <p className="text-xs mt-1 text-amber-600">These settings apply only to this store (slug shown above).</p>
+                  {/* Live Store URL Preview */}
+                  <div className="mt-3 p-3 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800">
+                    <div className="flex items-center gap-2 mb-1">
+                      <LinkIcon className="w-4 h-4 text-green-600 dark:text-green-400" />
+                      <span className="text-xs font-semibold text-green-700 dark:text-green-300">Your Store URL</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 text-sm px-2 py-1.5 bg-white dark:bg-slate-800 rounded border border-green-200 dark:border-green-700 text-green-800 dark:text-green-200 font-mono truncate">
+                        {window.location.origin}/store/{storeSettings.store_name ? storeNameToSlug(storeSettings.store_name) : 'your-store-name'}
+                      </code>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="shrink-0 border-green-300 hover:bg-green-100 dark:border-green-700 dark:hover:bg-green-900/30"
+                        onClick={() => {
+                          const url = `${window.location.origin}/store/${storeSettings.store_name ? storeNameToSlug(storeSettings.store_name) : ''}`;
+                          navigator.clipboard.writeText(url);
+                          toast({ title: 'URL Copied!', description: 'Store URL copied to clipboard' });
+                        }}
+                        disabled={!storeSettings.store_name}
+                      >
+                        <Copy className="w-3 h-3" />
+                      </Button>
+                    </div>
+                    <p className="text-[10px] text-green-600 dark:text-green-400 mt-1.5">This URL updates live as you type your store name</p>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Seller Name *</Label>
