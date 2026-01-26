@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { 
-  Heart, Share2, ChevronLeft, Plus, Minus, ShoppingBag, Truck, 
+  Heart, Share2, ChevronLeft, Plus, Minus, Maximize2, ShoppingBag, Truck, 
   Shield, Clock, Star, Check, MapPin, Phone, Mail, User, 
   CreditCard, Package, Sparkles, ArrowRight, X, ChevronRight,
   Copy, MessageCircle, Zap, Gift, Send, CheckCircle2
@@ -111,6 +111,8 @@ export default function ProductCheckout() {
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
   const [wishlist, setWishlist] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+  const [showFullImage, setShowFullImage] = useState<boolean>(false);
   const [showCheckout, setShowCheckout] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
@@ -929,6 +931,14 @@ export default function ProductCheckout() {
     return () => window.clearInterval(id);
   }, [product?.id, productImages.length]);
 
+  // Track whether viewport is mobile (used to decide max height of image viewer)
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 640);
+    onResize();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={checkoutBgStyle}>
@@ -1729,31 +1739,49 @@ export default function ProductCheckout() {
                 }}
               >
                 <div
-                  className="relative aspect-[4/5] sm:aspect-[1/1]"
+                  className="relative"
                   style={{
                     background: `linear-gradient(180deg, ${withAlpha(primaryColor, 0.08)} 0%, rgba(255,255,255,0) 70%)`,
                   }}
                 >
-                  <img
-                    src={productImages[activeImageIndex]}
-                    alt={productName}
-                    className="w-full h-full object-cover"
-                  />
+                  <div
+                    style={{ maxHeight: isMobile ? '60vh' : '80vh', overflow: 'auto', cursor: 'pointer' }}
+                    onClick={() => setShowFullImage(true)}
+                    aria-hidden
+                  >
+                    <img
+                      src={productImages[activeImageIndex]}
+                      alt={productName}
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+
+                  {/* Expand button (visible and fixed to image card) */}
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setShowFullImage(true); }}
+                    title={t('productDetail.viewFullImage') || 'View full'}
+                    className="absolute left-4 bottom-4 z-40 inline-flex items-center gap-2 px-3 py-2 rounded-full bg-black text-white border border-transparent shadow-md hover:opacity-95"
+                    aria-label={t('productDetail.expand') || 'Expand'}
+                  >
+                    <Maximize2 className="w-4 h-4" />
+                    <span className="hidden sm:inline">{t('productDetail.expand') || 'Expand'}</span>
+                  </button>
 
                   {productImages.length > 1 && (
                     <>
                       <button
                         type="button"
-                        onClick={() => setActiveImageIndex((i) => (i > 0 ? i - 1 : productImages.length - 1))}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 hover:bg-white border border-slate-200 text-slate-800"
+                        onClick={(e) => { e.stopPropagation(); setActiveImageIndex((i) => (i > 0 ? i - 1 : productImages.length - 1)); }}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 hover:bg-white border border-slate-200 text-slate-800 z-30"
                         aria-label="الصورة السابقة"
                       >
                         <ChevronLeft className="w-4 h-4" />
                       </button>
                       <button
                         type="button"
-                        onClick={() => setActiveImageIndex((i) => (i < productImages.length - 1 ? i + 1 : 0))}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 hover:bg-white border border-slate-200 text-slate-800"
+                        onClick={(e) => { e.stopPropagation(); setActiveImageIndex((i) => (i < productImages.length - 1 ? i + 1 : 0)); }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 hover:bg-white border border-slate-200 text-slate-800 z-30"
                         aria-label="الصورة التالية"
                       >
                         <ChevronRight className="w-4 h-4" />
@@ -1789,6 +1817,42 @@ export default function ProductCheckout() {
           </div>
         </div>
       </div>
+      
+      {/* Slightly wider modal viewer (keeps default card size unchanged) */}
+      {showFullImage && (
+        <div className="fixed inset-0 z-[9999] bg-black/80 flex items-start justify-center pt-12 pb-6 px-4" onClick={() => setShowFullImage(false)}>
+          <div
+            className="relative mx-auto"
+            style={isMobile
+              ? { maxWidth: '100vw', width: '100%', maxHeight: '100vh', overflowY: 'auto', padding: '0 12px', WebkitOverflowScrolling: 'touch' }
+              : { maxWidth: 'calc(100vw - 48px)', width: '100%', maxHeight: '98vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }
+            }
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button type="button" className="absolute right-3 top-3 z-50 p-2 rounded-full bg-white/90 shadow" onClick={() => setShowFullImage(false)} aria-label="Close">
+              <X className="w-5 h-5" />
+            </button>
+
+            <button type="button" className="absolute left-2 top-1/2 -translate-y-1/2 z-50 p-2 rounded-full bg-white/90 shadow" onClick={(e) => { e.stopPropagation(); setActiveImageIndex((i) => (i > 0 ? i - 1 : productImages.length - 1)); }} aria-label="Prev">
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+
+            <img
+              src={productImages[activeImageIndex]}
+              alt={productName}
+              className="mx-auto z-40"
+              style={isMobile
+                ? { width: '100%', height: 'auto', objectFit: 'contain', display: 'block' }
+                : { width: 'auto', maxWidth: '100%', maxHeight: '94vh', height: 'auto', objectFit: 'contain', display: 'block', margin: '0 auto' }
+              }
+            />
+
+            <button type="button" className="absolute right-2 top-1/2 -translate-y-1/2 z-50 p-2 rounded-full bg-white/90 shadow" onClick={(e) => { e.stopPropagation(); setActiveImageIndex((i) => (i < productImages.length - 1 ? i + 1 : 0)); }} aria-label="Next">
+              <ChevronRight className="w-6 h-6" />
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }

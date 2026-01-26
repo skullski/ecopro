@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Heart, Share2, ChevronLeft, Plus, Minus } from 'lucide-react';
+import { Heart, Share2, ChevronLeft, Plus, Minus, Maximize2 } from 'lucide-react';
 import PixelScripts, { trackAllPixels, PixelEvents } from '@/components/storefront/PixelScripts';
 import { useTranslation } from '@/lib/i18n';
 import { readStorefrontSettings, readStorefrontTemplate } from '@/lib/storefrontStorage';
@@ -129,6 +129,8 @@ export default function ProductDetail() {
   const { t } = useTranslation();
   const [quantity, setQuantity] = useState(1);
   const [wishlist, setWishlist] = useState(false);
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+  const [showFullImage, setShowFullImage] = useState<boolean>(false);
 
   // Get template and settings from session/props
   const template = readStorefrontTemplate('fashion');
@@ -263,6 +265,13 @@ export default function ProductDetail() {
     }
   }, [product?.id]);
 
+  useEffect(() => {
+    const onResize = () => setIsMobile(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+    onResize();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
   if (isLoading) {
     return (
       <div className={`min-h-screen ${style.bg} flex items-center justify-center`}>
@@ -299,172 +308,219 @@ export default function ProductDetail() {
             </button>
             <h1 className="text-lg font-semibold flex-1 text-center">{settings.store_name || t('productDetail.storeFallback')}</h1>
             <div className="w-10" />
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-4 py-4 md:py-6 md:py-6 md:py-4 md:py-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-3 md:gap-4 md:gap-10">
-          {/* Image Section */}
-          <div className="flex items-center justify-center">
-            <div
-              className={`relative w-full aspect-square rounded-lg overflow-hidden border ${style.border} bg-gray-100`}
-              style={{ borderColor: accentColor }}
-            >
-              <img
-                src={productImage}
-                alt={productName}
-                className="w-full h-full object-cover"
-              />
-              <button
-                onClick={() => setWishlist(!wishlist)}
-                className={`absolute top-4 right-4 p-2 rounded-full ${
-                  wishlist ? 'bg-red-500 text-white' : 'bg-white text-gray-900'
-                }`}
-              >
-                <Heart className={`w-5 h-5 ${wishlist ? 'fill-current' : ''}`} />
-              </button>
-            </div>
           </div>
+        </div>
 
-          {/* Details Section */}
-          <div className="space-y-3 md:space-y-4">
-            {/* Product Info */}
-            <div>
-              <div
-                className="inline-block px-3 py-1 rounded-full text-xs font-semibold mb-3"
-                style={{ backgroundColor: accentColor, color: style.bg === 'bg-black' ? '#000' : '#fff' }}
-              >
-                {product.category || t('storefront.productDefaultName')}
-              </div>
-              <h1 className="text-2xl md:text-xl md:text-2xl font-bold mb-2">{productName}</h1>
-              <p className="text-gray-500 text-lg mb-4">{product.material || product.realm || product.category || t('productDetail.premium')}</p>
-
-              {/* Rating */}
-              <div className="flex items-center gap-2 mb-6">
-                <div className="flex gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <span key={i} style={{ color: accentColor }}>
-                      ★
-                    </span>
-                  ))}
+        {/* Main Content */}
+        <div className="max-w-6xl mx-auto px-4 py-4 md:py-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-10">
+            {/* Image Section - allow taller sales images (no fixed square crop) */}
+            <div className="flex items-center justify-center">
+              <div className={`relative w-full rounded-lg border bg-gray-100`} style={{ borderColor: accentColor }}>
+                <div style={{ maxHeight: isMobile ? '60vh' : '80vh', overflow: 'auto', cursor: 'pointer' }} onClick={() => setShowFullImage(true)}>
+                  <img
+                    src={productImage}
+                    alt={productName}
+                    style={{ width: '100%', height: 'auto', display: 'block' }}
+                  />
                 </div>
-                <span className="text-sm text-gray-500">{t('productDetail.reviewsCount', { count: 128 })}</span>
-              </div>
 
-              {/* Product Statistics */}
-              <div className={`grid grid-cols-3 gap-3 p-4 rounded-lg mb-4 border ${style.border}`}
-                   style={{ backgroundColor: accentColor + '10', borderColor: accentColor + '50' }}>
-                <div className="text-center">
-                  <div className="text-xs text-gray-500 uppercase tracking-wide">{t('productDetail.stats.views')}</div>
-                  <div className="text-2xl font-bold" style={{ color: accentColor }}>
-                    {Math.floor(Math.random() * 5000) + 100}
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="text-xs text-gray-500 uppercase tracking-wide">{t('productDetail.stats.sold')}</div>
-                  <div className="text-2xl font-bold" style={{ color: accentColor }}>
-                    {Math.floor(Math.random() * 500) + 10}
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="text-xs text-gray-500 uppercase tracking-wide">{t('productDetail.stats.popularity')}</div>
-                  <div className="text-2xl font-bold" style={{ color: accentColor }}>
-                    {(Math.random() * 40 + 60).toFixed(0)}%
-                  </div>
-                </div>
-              </div>
-            </div>
+                {/* Mobile: wishlist button */}
+                <button
+                  onClick={() => setWishlist(!wishlist)}
+                  className={`absolute top-4 right-4 p-2 rounded-full ${
+                    wishlist ? 'bg-red-500 text-white' : 'bg-white text-gray-900'
+                  }`}
+                >
+                  <Heart className={`w-5 h-5 ${wishlist ? 'fill-current' : ''}`} />
+                </button>
 
-            {/* Price Section */}
-            <div className="border-t border-b border-gray-300 py-6" style={{ borderColor: accentColor, borderWidth: '1px' }}>
-              <div className="text-xl md:text-2xl font-bold" style={{ color: accentColor }}>
-                {productPrice} DZD
-              </div>
-              <p className="text-sm text-gray-500 mt-2">{t('productDetail.inclusiveTaxes')}</p>
-            </div>
-
-            {/* Description */}
-            <div className="space-y-2">
-              <h3 className="font-semibold text-lg">{t('productDetail.descriptionTitle')}</h3>
-              <p className="text-gray-600 leading-relaxed">{productDesc}</p>
-            </div>
-
-            {/* Stock Status */}
-            {product && (
-              <div className="space-y-2">
-                {product.stock_quantity > 0 ? (
-                  <p className="text-green-600 font-semibold">{t('productDetail.inStock', { count: product.stock_quantity })}</p>
-                ) : (
-                  <p className="text-red-600 font-semibold">{t('productDetail.outOfStock')}</p>
+                {/* Mobile: quick view */}
+                {isMobile && (
+                  <button
+                    onClick={() => setShowFullImage(true)}
+                    className="absolute left-4 bottom-4 bg-white/90 text-gray-900 px-3 py-2 rounded-lg font-semibold shadow"
+                  >
+                    {t('productDetail.viewFullImage') || 'View full'}
+                  </button>
                 )}
-              </div>
-            )}
 
-            {/* Quantity Selector */}
-            {product && product.stock_quantity > 0 && (
-              <div className="space-y-3">
-                <label className="block font-semibold">{t('productDetail.quantity')}</label>
-                <div className="flex items-center gap-4 w-max">
-                  <button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className={`p-2 rounded border ${style.border}`}
-                  >
-                    <Minus className="w-4 h-4" />
-                  </button>
-                  <span className="text-xl font-semibold w-8 text-center">{quantity}</span>
-                  <button
-                    onClick={() => setQuantity(Math.min(product.stock_quantity, quantity + 1))}
-                    className={`p-2 rounded border ${style.border}`}
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
+                {/* Desktop/mobile: always show expand control (stays visible)") */}
+                <button
+                  onClick={() => setShowFullImage(true)}
+                  className="absolute right-4 bottom-4 bg-black text-white px-3 py-2 rounded-lg font-semibold shadow-md flex items-center gap-2 hover:opacity-95"
+                  title={t('productDetail.viewFullImage') || 'View full'}
+                >
+                  <Maximize2 className="w-4 h-4" />
+                  <span className="hidden sm:inline">{t('productDetail.expand') || 'Expand'}</span>
+                </button>
               </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="space-y-3 pt-4">
-              <button
-                onClick={() => {
-                  const identifier = String(id || slug || '');
-                  if (identifier && product) {
-                    cacheProduct(identifier, product);
-                    // Background refresh so checkout can pick up variants/stock if cache was partial.
-                    void (async () => {
-                      try {
-                        const fresh = await fetchFreshProduct(identifier, false);
-                        cacheProduct(identifier, fresh);
-                      } catch {
-                        // ignore
-                      }
-                    })();
-                  }
-                  navigate(`/checkout/${id || slug}?quantity=${quantity}`);
-                }}
-                disabled={!product || product.stock_quantity === 0}
-                className={`w-full py-4 rounded-lg font-bold text-lg ${
-                  product && product.stock_quantity > 0
-                    ? style.button
-                    : 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                } transition-colors`}
-              >
-                {product && product.stock_quantity === 0 ? t('productDetail.outOfStock') : t('productDetail.buyNow')}
-              </button>
             </div>
 
-            {/* Share */}
-            <button
-              className="flex items-center gap-2 w-full justify-center py-2 rounded-lg hover:bg-gray-100"
-              style={{ color: accentColor }}
-            >
-              <Share2 className="w-4 h-4" />
-              {t('productDetail.shareProduct')}
-            </button>
+            {/* Details Section */}
+            <div className="space-y-3 md:space-y-4">
+              {/* Product Info */}
+              <div>
+                <div
+                  className="inline-block px-3 py-1 rounded-full text-xs font-semibold mb-3"
+                  style={{ backgroundColor: accentColor, color: style.bg === 'bg-black' ? '#000' : '#fff' }}
+                >
+                  {product.category || t('storefront.productDefaultName')}
+                </div>
+                <h1 className="text-2xl md:text-xl md:text-2xl font-bold mb-2">{productName}</h1>
+                <p className="text-gray-500 text-lg mb-4">{product.material || product.realm || product.category || t('productDetail.premium')}</p>
+
+                {/* Rating */}
+                <div className="flex items-center gap-2 mb-6">
+                  <div className="flex gap-1">
+                    {[...Array(5)].map((_, i) => (
+                      <span key={i} style={{ color: accentColor }}>
+                        ★
+                      </span>
+                    ))}
+                  </div>
+                  <span className="text-sm text-gray-500">{t('productDetail.reviewsCount', { count: 128 })}</span>
+                </div>
+
+                {/* Product Statistics */}
+                <div className={`grid grid-cols-3 gap-3 p-4 rounded-lg mb-4 border ${style.border}`}
+                     style={{ backgroundColor: accentColor + '10', borderColor: accentColor + '50' }}>
+                  <div className="text-center">
+                    <div className="text-xs text-gray-500 uppercase tracking-wide">{t('productDetail.stats.views')}</div>
+                    <div className="text-2xl font-bold" style={{ color: accentColor }}>
+                      {Math.floor(Math.random() * 5000) + 100}
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs text-gray-500 uppercase tracking-wide">{t('productDetail.stats.sold')}</div>
+                    <div className="text-2xl font-bold" style={{ color: accentColor }}>
+                      {Math.floor(Math.random() * 500) + 10}
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs text-gray-500 uppercase tracking-wide">{t('productDetail.stats.popularity')}</div>
+                    <div className="text-2xl font-bold" style={{ color: accentColor }}>
+                      {(Math.random() * 40 + 60).toFixed(0)}%
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Price Section */}
+              <div className="border-t border-b border-gray-300 py-6" style={{ borderColor: accentColor, borderWidth: '1px' }}>
+                <div className="text-xl md:text-2xl font-bold" style={{ color: accentColor }}>
+                  {productPrice} DZD
+                </div>
+                <p className="text-sm text-gray-500 mt-2">{t('productDetail.inclusiveTaxes')}</p>
+              </div>
+
+              {/* Description */}
+              <div className="space-y-2">
+                <h3 className="font-semibold text-lg">{t('productDetail.descriptionTitle')}</h3>
+                <p className="text-gray-600 leading-relaxed">{productDesc}</p>
+              </div>
+
+              {/* Stock Status */}
+              {product && (
+                <div className="space-y-2">
+                  {product.stock_quantity > 0 ? (
+                    <p className="text-green-600 font-semibold">{t('productDetail.inStock', { count: product.stock_quantity })}</p>
+                  ) : (
+                    <p className="text-red-600 font-semibold">{t('productDetail.outOfStock')}</p>
+                  )}
+                </div>
+              )}
+
+              {/* Quantity Selector */}
+              {product && product.stock_quantity > 0 && (
+                <div className="space-y-3">
+                  <label className="block font-semibold">{t('productDetail.quantity')}</label>
+                  <div className="flex items-center gap-4 w-max">
+                    <button
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      className={`p-2 rounded border ${style.border}`}
+                    >
+                      <Minus className="w-4 h-4" />
+                    </button>
+                    <span className="text-xl font-semibold w-8 text-center">{quantity}</span>
+                    <button
+                      onClick={() => setQuantity(Math.min(product.stock_quantity, quantity + 1))}
+                      className={`p-2 rounded border ${style.border}`}
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="space-y-3 pt-4">
+                <button
+                  onClick={() => {
+                    const identifier = String(id || slug || '');
+                    if (identifier && product) {
+                      cacheProduct(identifier, product);
+                      void (async () => {
+                        try {
+                          const fresh = await fetchFreshProduct(identifier, false);
+                          cacheProduct(identifier, fresh);
+                        } catch {
+                          // ignore
+                        }
+                      })();
+                    }
+                    navigate(`/checkout/${id || slug}?quantity=${quantity}`);
+                  }}
+                  disabled={!product || product.stock_quantity === 0}
+                  className={`w-full py-4 rounded-lg font-bold text-lg ${
+                    product && product.stock_quantity > 0
+                      ? style.button
+                      : 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                  } transition-colors`}
+                >
+                  {product && product.stock_quantity === 0 ? t('productDetail.outOfStock') : t('productDetail.buyNow')}
+                </button>
+              </div>
+
+              {/* Share */}
+              <button
+                className="flex items-center gap-2 w-full justify-center py-2 rounded-lg hover:bg-gray-100"
+                style={{ color: accentColor }}
+              >
+                <Share2 className="w-4 h-4" />
+                {t('productDetail.shareProduct')}
+              </button>
+            </div>
           </div>
         </div>
       </div>
-      </div>
+
+      {/* Full-screen image viewer (mobile) */}
+      {showFullImage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+          <div className="relative max-w-full max-h-full">
+            <button
+              onClick={() => setShowFullImage(false)}
+              className="absolute top-2 right-2 bg-white/90 text-gray-900 rounded-full p-2 z-60"
+            >
+              ✕
+            </button>
+            <img src={productImage} alt={productName} style={{ maxWidth: '100%', maxHeight: '100vh', display: 'block' }} />
+          </div>
+        </div>
+      )}
+
+      {/* Fixed Expand button (guaranteed visible) */}
+      <button
+        onClick={() => setShowFullImage(true)}
+        className="fixed left-6 bottom-6 bg-blue-600 text-white p-3 rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition"
+        title={t('productDetail.expand') || 'Expand'}
+        style={{ zIndex: 9999 }}
+      >
+        <Maximize2 className="w-5 h-5" />
+      </button>
+
     </>
   );
 }
+

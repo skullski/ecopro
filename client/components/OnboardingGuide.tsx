@@ -93,11 +93,6 @@ export default function OnboardingGuide({
       isComplete: hasStoreLinkCopied,
     },
   ];
-
-  if (!shouldShow) {
-    return null;
-  }
-
   const completedCount = steps.filter(s => s.isComplete).length;
   const progress = (completedCount / steps.length) * 100;
   const allComplete = completedCount === steps.length;
@@ -115,6 +110,10 @@ export default function OnboardingGuide({
       return () => clearTimeout(timer);
     }
   }, [allComplete, celebrationShown]);
+
+  if (!shouldShow) {
+    return null;
+  }
 
   // Celebration overlay
   if (showCelebration) {

@@ -73,10 +73,10 @@ const AdminBilling = () => {
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { color: string; icon: React.ReactNode; label: string }> = {
-      trial: { color: 'bg-blue-100 text-blue-800', icon: <Clock className="w-4 h-4" />, label: 'Free Trial' },
-      active: { color: 'bg-green-100 text-green-800', icon: <CheckCircle className="w-4 h-4" />, label: 'Active' },
-      expired: { color: 'bg-red-100 text-red-800', icon: <AlertCircle className="w-4 h-4" />, label: 'Expired' },
-      cancelled: { color: 'bg-gray-100 text-gray-800', icon: <AlertCircle className="w-4 h-4" />, label: 'Cancelled' },
+      trial: { color: 'bg-blue-100 text-blue-800', icon: <Clock className="w-4 h-4" />, label: t('admin.billing.status.trial') },
+      active: { color: 'bg-green-100 text-green-800', icon: <CheckCircle className="w-4 h-4" />, label: t('admin.billing.status.active') },
+      expired: { color: 'bg-red-100 text-red-800', icon: <AlertCircle className="w-4 h-4" />, label: t('admin.billing.status.expired') },
+      cancelled: { color: 'bg-gray-100 text-gray-800', icon: <AlertCircle className="w-4 h-4" />, label: t('admin.billing.status.cancelled') },
     };
 
     const config = statusConfig[status] || statusConfig.trial;
@@ -98,7 +98,7 @@ const AdminBilling = () => {
 
     return (
       <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusConfig[status] || statusConfig.pending}`}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {t(`admin.billing.paymentStatus.${status}`)}
       </span>
     );
   };
@@ -156,15 +156,15 @@ const AdminBilling = () => {
               {/* Subscription Details */}
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Tier</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('admin.billing.tier')}</p>
                   <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                    {subscription.tier === 'free' ? 'Pro' : 'Pro'} - $8/month
+                    {subscription.tier === 'free' ? t('admin.billing.tierPro') : t('admin.billing.tierPro')} - $8/{t('admin.billing.perMonth')}
                   </p>
                 </div>
 
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                    {subscription.status === 'trial' ? 'Trial Ends' : 'Period Ends'}
+                    {subscription.status === 'trial' ? t('admin.billing.trialEnds') : t('admin.billing.periodEnds')}
                   </p>
                   <p className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                     <Calendar className="w-4 h-4" />
@@ -180,15 +180,15 @@ const AdminBilling = () => {
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     {daysUntilExpiry > 0
-                      ? `${daysUntilExpiry} days remaining`
-                      : 'Expired'}
+                      ? t('admin.billing.daysRemaining', { n: daysUntilExpiry })
+                      : t('admin.billing.expired')}
                   </p>
                 </div>
 
                 <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Auto-Renew</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('admin.billing.autoRenew')}</p>
                   <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                    {subscription.auto_renew ? '✓ Enabled' : '✗ Disabled'}
+                    {subscription.auto_renew ? t('admin.billing.enabled') : t('admin.billing.disabled')}
                   </p>
                 </div>
               </div>
@@ -196,68 +196,68 @@ const AdminBilling = () => {
               {/* Pricing & Features */}
               <div className="space-y-4">
                 <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-900/10 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Monthly Price</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{t('admin.billing.monthlyPrice')}</p>
                   <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">$8</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">Billed monthly • Cancel anytime</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">{t('admin.billing.billedMonthly')}</p>
                 </div>
 
                 <div>
-                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Included:</p>
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">{t('admin.billing.included')}</p>
                   <ul className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
                     <li className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 text-green-600" />
-                      <span>Unlimited products</span>
+                      <span>{t('admin.billing.unlimitedProducts')}</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 text-green-600" />
-                      <span>Unlimited orders</span>
+                      <span>{t('admin.billing.unlimitedOrders')}</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 text-green-600" />
-                      <span>Order management & tracking</span>
+                      <span>{t('admin.billing.orderManagement')}</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 text-green-600" />
-                      <span>WhatsApp & SMS bot</span>
+                      <span>{t('admin.billing.whatsappSmsBot')}</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 text-green-600" />
-                      <span>Automated notifications</span>
+                      <span>{t('admin.billing.automatedNotifications')}</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 text-green-600" />
-                      <span>Advanced analytics</span>
+                      <span>{t('admin.billing.advancedAnalytics')}</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 text-green-600" />
-                      <span>Product variants (size/color)</span>
+                      <span>{t('admin.billing.productVariants')}</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 text-green-600" />
-                      <span>Stock management</span>
+                      <span>{t('admin.billing.stockManagement')}</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 text-green-600" />
-                      <span>Delivery zone setup</span>
+                      <span>{t('admin.billing.deliveryZoneSetup')}</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 text-green-600" />
-                      <span>Staff management</span>
+                      <span>{t('admin.billing.staffManagement')}</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 text-green-600" />
-                      <span>Store customization</span>
+                      <span>{t('admin.billing.storeCustomization')}</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 text-green-600" />
-                      <span>Priority support</span>
+                      <span>{t('admin.billing.prioritySupport')}</span>
                     </li>
                   </ul>
                 </div>
               </div>
             </div>
           ) : (
-            <p className="text-gray-600 dark:text-gray-400">No subscription found</p>
+            <p className="text-gray-600 dark:text-gray-400">{t('admin.billing.noSubscription')}</p>
           )}
 
           {/* Action Buttons */}
@@ -267,13 +267,13 @@ const AdminBilling = () => {
                 <Alert className="flex-1 border-red-200 bg-red-50 dark:bg-red-950/20">
                   <AlertCircle className="h-4 w-4 text-red-600" />
                   <AlertDescription className="text-red-700 dark:text-red-400">
-                    Your subscription has expired. Contact support to renew.
+                    {t('admin.billing.expiredSupport')}
                   </AlertDescription>
                 </Alert>
                 <Link to="/dashboard/chat">
                   <Button className="gap-2 bg-red-600 hover:bg-red-700 w-full sm:w-auto">
                     <MessageCircle className="w-4 h-4" />
-                    Contact Support
+                    {t('admin.billing.contactSupport')}
                   </Button>
                 </Link>
               </>
@@ -282,13 +282,13 @@ const AdminBilling = () => {
                 <Alert className="flex-1 border-blue-200 bg-blue-50 dark:bg-blue-950/20">
                   <Clock className="h-4 w-4 text-blue-600" />
                   <AlertDescription className="text-blue-700 dark:text-blue-400">
-                    {daysUntilExpiry} days of free trial remaining. Contact support when ready to subscribe.
+                    {t('admin.billing.trialDaysLeft', { n: daysUntilExpiry })}
                   </AlertDescription>
                 </Alert>
                 <Link to="/dashboard/chat">
                   <Button className="gap-2 bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">
                     <MessageCircle className="w-4 h-4" />
-                    Contact Support to Pay
+                    {t('admin.billing.contactSupportToPay')}
                   </Button>
                 </Link>
               </>
@@ -297,7 +297,7 @@ const AdminBilling = () => {
                 <Alert className="flex-1 border-green-200 bg-green-50 dark:bg-green-950/20">
                   <CheckCircle className="h-4 w-4 text-green-600" />
                   <AlertDescription className="text-green-700 dark:text-green-400">
-                    Your subscription is active. Expires on {subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString() : 'N/A'}
+                    {t('admin.billing.activeExpires', { date: subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString() : 'N/A' })}
                   </AlertDescription>
                 </Alert>
               </>
@@ -325,12 +325,12 @@ const AdminBilling = () => {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-gray-700">
-                    <th className="text-left py-3 px-2 font-semibold text-gray-700 dark:text-gray-300">Date</th>
-                    <th className="text-left py-3 px-2 font-semibold text-gray-700 dark:text-gray-300">Amount</th>
-                    <th className="text-left py-3 px-2 font-semibold text-gray-700 dark:text-gray-300">Status</th>
-                    <th className="text-left py-3 px-2 font-semibold text-gray-700 dark:text-gray-300">Method</th>
-                    <th className="text-left py-3 px-2 font-semibold text-gray-700 dark:text-gray-300">Transaction ID</th>
-                    <th className="text-center py-3 px-2 font-semibold text-gray-700 dark:text-gray-300">Action</th>
+                    <th className="text-left py-3 px-2 font-semibold text-gray-700 dark:text-gray-300">{t('admin.billing.date')}</th>
+                    <th className="text-left py-3 px-2 font-semibold text-gray-700 dark:text-gray-300">{t('admin.billing.amount')}</th>
+                    <th className="text-left py-3 px-2 font-semibold text-gray-700 dark:text-gray-300">{t('admin.billing.status')}</th>
+                    <th className="text-left py-3 px-2 font-semibold text-gray-700 dark:text-gray-300">{t('admin.billing.method')}</th>
+                    <th className="text-left py-3 px-2 font-semibold text-gray-700 dark:text-gray-300">{t('admin.billing.transactionId')}</th>
+                    <th className="text-center py-3 px-2 font-semibold text-gray-700 dark:text-gray-300">{t('admin.billing.action')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -358,37 +358,37 @@ const AdminBilling = () => {
                           <DialogTrigger asChild>
                             <Button variant="ghost" size="sm" className="gap-1">
                               <Download className="w-4 h-4" />
-                              Details
+                              {t('admin.billing.details')}
                             </Button>
                           </DialogTrigger>
                           <DialogContent>
                             <DialogHeader>
-                              <DialogTitle>Payment Details</DialogTitle>
+                              <DialogTitle>{t('admin.billing.paymentDetails')}</DialogTitle>
                             </DialogHeader>
                             <div className="space-y-4">
                               <div>
-                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Transaction ID</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('admin.billing.transactionId')}</p>
                                 <p className="font-mono text-sm bg-gray-100 dark:bg-gray-800 p-2 rounded break-all">
                                   {payment.transaction_id}
                                 </p>
                               </div>
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Amount</p>
+                                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('admin.billing.amount')}</p>
                                   <p className="font-semibold">{payment.amount} {payment.currency}</p>
                                 </div>
                                 <div>
-                                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Status</p>
-                                  <p className="font-semibold capitalize">{payment.status}</p>
+                                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('admin.billing.status')}</p>
+                                  <p className="font-semibold capitalize">{t(`admin.billing.paymentStatus.${payment.status}`)}</p>
                                 </div>
                                 <div>
-                                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Date</p>
+                                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('admin.billing.date')}</p>
                                   <p className="font-semibold">
                                     {new Date(payment.created_at).toLocaleDateString()}
                                   </p>
                                 </div>
                                 <div>
-                                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Method</p>
+                                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t('admin.billing.method')}</p>
                                   <p className="font-semibold">{payment.payment_method}</p>
                                 </div>
                               </div>
@@ -400,7 +400,7 @@ const AdminBilling = () => {
                               )}
                               <Button className="w-full gap-2">
                                 <Download className="w-4 h-4" />
-                                Download Receipt
+                                {t('admin.billing.downloadReceipt')}
                               </Button>
                             </div>
                           </DialogContent>
@@ -414,8 +414,8 @@ const AdminBilling = () => {
           ) : (
             <div className="text-center py-8">
               <CreditCard className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-600 dark:text-gray-400">No payments yet</p>
-              <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">Your payment history will appear here</p>
+              <p className="text-gray-600 dark:text-gray-400">{t('admin.billing.noPayments')}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">{t('admin.billing.paymentHistoryHint')}</p>
             </div>
           )}
         </CardContent>
@@ -424,34 +424,34 @@ const AdminBilling = () => {
       {/* FAQ Section */}
       <Card>
         <CardHeader>
-          <CardTitle>Billing Questions?</CardTitle>
+          <CardTitle>{t('admin.billing.faqTitle')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <details className="border rounded-lg p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
-            <summary className="font-semibold text-gray-900 dark:text-white">How do I pay for my subscription?</summary>
+            <summary className="font-semibold text-gray-900 dark:text-white">{t('admin.billing.faq1.q')}</summary>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-3">
-              Contact our support team through the chat. They will provide you with payment details. After you send the payment and provide proof, they'll issue a subscription code that you can redeem on your Profile page.
+              {t('admin.billing.faq1.a')}
             </p>
           </details>
 
           <details className="border rounded-lg p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
-            <summary className="font-semibold text-gray-900 dark:text-white">What happens when my subscription expires?</summary>
+            <summary className="font-semibold text-gray-900 dark:text-white">{t('admin.billing.faq2.q')}</summary>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-3">
-              Your store access will be temporarily disabled. Contact support to renew anytime. Your products and orders are safely stored.
+              {t('admin.billing.faq2.a')}
             </p>
           </details>
 
           <details className="border rounded-lg p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
-            <summary className="font-semibold text-gray-900 dark:text-white">Where do I enter my subscription code?</summary>
+            <summary className="font-semibold text-gray-900 dark:text-white">{t('admin.billing.faq3.q')}</summary>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-3">
-              Go to your <strong>Profile page</strong> and enter the code in the "Redeem Voucher Code" section. Your subscription will be activated instantly.
+              {t('admin.billing.faq3.a')}
             </p>
           </details>
 
           <details className="border rounded-lg p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50">
-            <summary className="font-semibold text-gray-900 dark:text-white">Is there a refund policy?</summary>
+            <summary className="font-semibold text-gray-900 dark:text-white">{t('admin.billing.faq4.q')}</summary>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-3">
-              Refunds are handled on a case-by-case basis. Please contact our support team for refund requests.
+              {t('admin.billing.faq4.a')}
             </p>
           </details>
         </CardContent>
