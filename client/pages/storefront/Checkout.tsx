@@ -190,7 +190,6 @@ export default function Checkout() {
   const [quantity, setQuantity] = useState(1);
   const [formData, setFormData] = useState({
     fullName: '',
-    email: '',
     phone: '',
     address: '',
     hai: '',
@@ -725,15 +724,6 @@ export default function Checkout() {
                   </div>
 
                   <div className="space-y-0.5 sm:space-y-0.5 md:space-y-0.5">
-                    <label className="block text-xs sm:text-xs md:text-xs lg:text-sm font-bold opacity-75">البريد الإلكتروني *</label>
-                    <input
-                      type="email"
-                      placeholder="example@email.com"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className={`w-full px-2 sm:px-3 md:px-2 lg:px-4 py-1 sm:py-1.5 md:py-1.5 lg:py-3 rounded-lg border-2 text-xs sm:text-sm md:text-xs lg:text-sm ${style.inputBg} focus:outline-none focus:ring-2 focus:ring-offset-1 transition shadow-sm`}
-                      style={{ '--tw-ring-color': accentColor } as any}
-                    />
                   </div>
 
                   <div className="space-y-0.5 sm:space-y-0.5 md:space-y-0.5">
@@ -1153,7 +1143,6 @@ export default function Checkout() {
                             delivery_fee: deliveryPrice || 0,
                             delivery_type: deliveryType,
                             customer_name: formData.fullName,
-                            ...(formData.email?.trim() ? { customer_email: formData.email.trim() } : {}),
                             customer_phone: formData.phone,
                             shipping_wilaya_id: formData.wilayaId ? Number(formData.wilayaId) : null,
                             shipping_commune_id: formData.communeId ? Number(formData.communeId) : null,

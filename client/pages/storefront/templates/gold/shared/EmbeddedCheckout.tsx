@@ -58,9 +58,35 @@ export default function EmbeddedCheckout(props: {
   });
   const [telegramStartUrl, setTelegramStartUrl] = React.useState<string | null>(null);
 
+  const [telegramBotInfo, setTelegramBotInfo] = React.useState<
+    | {
+        enabled?: boolean;
+        botUsername?: string;
+        botUrl?: string;
+        storeName?: string;
+      }
+    | null
+  >(null);
+  const [telegramConnected, setTelegramConnected] = React.useState(false);
+  const [checkingTelegramConnection, setCheckingTelegramConnection] = React.useState(false);
+
+  const [messengerInfo, setMessengerInfo] = React.useState<
+    | {
+        enabled?: boolean;
+        storeName?: string;
+        pageId?: string;
+        url?: string;
+        refToken?: string;
+      }
+    | null
+  >(null);
+  const [messengerConnected, setMessengerConnected] = React.useState(false);
+  const [checkingMessengerConnection, setCheckingMessengerConnection] = React.useState(false);
+  const [waitingForMessengerConnection, setWaitingForMessengerConnection] = React.useState(false);
+
   const [formData, setFormData] = React.useState({
-    fullName: '',
-    email: '',
+    firstName: '',
+    surname: '',
     phone: '',
     address: '',
     wilayaId: '',
@@ -85,6 +111,99 @@ export default function EmbeddedCheckout(props: {
     // Reset delivery type when switching products.
     setDeliveryType('home');
   }, [product?.id]);
+
+  // Fetch Telegram bot info for this store
+  React.useEffect(() => {
+    const fetchTelegramInfo = async () => {
+      if (!storeSlug) return;
+      try {
+        const res = await fetch(`/api/telegram/bot-link/${encodeURIComponent(storeSlug)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setTelegramBotInfo(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch Telegram info:', error);
+      }
+    };
+    fetchTelegramInfo();
+  }, [storeSlug]);
+
+  // Fetch Messenger info for this store
+  React.useEffect(() => {
+    const fetchMessengerInfo = async () => {
+      if (!storeSlug) return;
+      try {
+        const res = await fetch(`/api/messenger/page-link/${encodeURIComponent(storeSlug)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setMessengerInfo(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch Messenger info:', error);
+      }
+    };
+    fetchMessengerInfo();
+  }, [storeSlug]);
+
+  // Check Telegram connection when phone changes
+  React.useEffect(() => {
+    const checkConnection = async () => {
+      const normalizedPhone = (formData.phone || '').replace(/\D/g, '');
+      if (!storeSlug || normalizedPhone.length < 9) {
+        setTelegramConnected(false);
+        return;
+      }
+
+      setCheckingTelegramConnection(true);
+      try {
+        const res = await fetch(
+          `/api/telegram/check-connection/${encodeURIComponent(storeSlug)}?phone=${encodeURIComponent(normalizedPhone)}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setTelegramConnected(Boolean(data?.connected));
+        }
+      } catch (error) {
+        console.error('Failed to check Telegram connection:', error);
+      } finally {
+        setCheckingTelegramConnection(false);
+      }
+    };
+
+    const timeout = window.setTimeout(checkConnection, 500);
+    return () => window.clearTimeout(timeout);
+  }, [storeSlug, formData.phone]);
+
+  // Check Messenger connection when phone changes
+  React.useEffect(() => {
+    const checkConnection = async () => {
+      const normalizedPhone = (formData.phone || '').replace(/\D/g, '');
+      if (!storeSlug || normalizedPhone.length < 9) {
+        setMessengerConnected(false);
+        return;
+      }
+
+      setCheckingMessengerConnection(true);
+      try {
+        const res = await fetch(
+          `/api/messenger/check-connection/${encodeURIComponent(storeSlug)}?phone=${encodeURIComponent(normalizedPhone)}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setMessengerConnected(Boolean(data?.connected));
+          if (data?.connected) setWaitingForMessengerConnection(false);
+        }
+      } catch (error) {
+        console.error('Failed to check Messenger connection:', error);
+      } finally {
+        setCheckingMessengerConnection(false);
+      }
+    };
+
+    const timeout = window.setTimeout(checkConnection, 500);
+    return () => window.clearTimeout(timeout);
+  }, [storeSlug, formData.phone]);
 
   React.useEffect(() => {
     let stopped = false;
@@ -236,6 +355,53 @@ export default function EmbeddedCheckout(props: {
     appearance: 'none',
   };
 
+  const handleConnectTelegram = async () => {
+    const botUsername = telegramBotInfo?.botUsername;
+    if (!storeSlug || !botUsername) return;
+
+    let url = `https://t.me/${botUsername}`;
+    const normalizedPhone = (formData.phone || '').replace(/\D/g, '');
+    if (normalizedPhone.length >= 9) {
+      try {
+        const res = await fetch(
+          `/api/telegram/bot-link/${encodeURIComponent(storeSlug)}?phone=${encodeURIComponent(normalizedPhone)}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.botUrl) url = String(data.botUrl);
+        }
+      } catch (error) {
+        console.error('Failed to get Telegram link:', error);
+      }
+    }
+
+    window.open(url, '_blank');
+  };
+
+  const handleConnectMessenger = async () => {
+    const normalizedPhone = (formData.phone || '').replace(/\D/g, '');
+    const pageId = messengerInfo?.pageId;
+    if (!storeSlug || !pageId) return;
+
+    let url = messengerInfo?.url || `https://m.me/${encodeURIComponent(pageId)}`;
+    if (normalizedPhone.length >= 9) {
+      try {
+        const res = await fetch(
+          `/api/messenger/page-link/${encodeURIComponent(storeSlug)}?phone=${encodeURIComponent(normalizedPhone)}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.url) url = String(data.url);
+        }
+      } catch (error) {
+        console.error('Failed to get Messenger link:', error);
+      }
+    }
+
+    setWaitingForMessengerConnection(true);
+    window.open(url, '_blank');
+  };
+
   const submit = async () => {
     setOrderStatus({ type: null, message: '' });
     setTelegramStartUrl(null);
@@ -259,16 +425,16 @@ export default function EmbeddedCheckout(props: {
     }
 
     const missing: string[] = [];
-    if (!formData.fullName.trim()) missing.push(dir === 'rtl' ? 'الاسم' : 'Name');
-    if (!formData.phone.trim()) missing.push(dir === 'rtl' ? 'الهاتف' : 'Phone');
+    if (!formData.firstName.trim()) missing.push(dir === 'rtl' ? 'الاسم الأول' : 'First Name');
+    if (!formData.surname.trim()) missing.push(dir === 'rtl' ? 'اللقب' : 'Surname');
+    if (!formData.phone.trim()) missing.push(dir === 'rtl' ? 'رقم الهاتف' : 'Phone');
+    if (formData.phone && !/^\+?[0-9]{7,}$/.test(formData.phone.replace(/\s/g, ''))) {
+      setOrderStatus({ type: 'error', message: dir === 'rtl' ? 'رقم الهاتف غير صالح' : 'Invalid phone number' });
+      return;
+    }
     if (!formData.wilayaId) missing.push(dir === 'rtl' ? 'الولاية' : 'State');
     if (!formData.communeId) missing.push(dir === 'rtl' ? 'البلدية' : 'City');
     if (deliveryType === 'home' && !formData.address.trim()) missing.push(dir === 'rtl' ? 'العنوان' : 'Address');
-
-    const normalizedPhone = formData.phone.replace(/\s/g, '');
-    if (formData.phone && !/^\+?[0-9]{7,}$/.test(normalizedPhone)) {
-      missing.push(dir === 'rtl' ? 'هاتف صحيح' : 'Valid phone');
-    }
 
     if (missing.length) {
       setOrderStatus({ type: 'error', message: `${dir === 'rtl' ? 'يرجى ملء' : 'Please fill'}: ${missing.join(', ')}` });
@@ -286,15 +452,15 @@ export default function EmbeddedCheckout(props: {
           ? [formData.address, selectedCommune?.name || '', selectedWilaya?.name || '']
           : [selectedCommune?.name || '', selectedWilaya?.name || ''];
 
+      const customerName = `${formData.firstName.trim()} ${formData.surname.trim()}`.trim();
       const orderData: any = {
         product_id: product.id,
         quantity,
         total_price: price * quantity + (deliveryFee || 0),
         delivery_fee: deliveryFee || 0,
         delivery_type: deliveryType,
-        customer_name: formData.fullName.trim(),
-        ...(formData.email?.trim() ? { customer_email: formData.email.trim() } : {}),
-        customer_phone: normalizedPhone,
+        customer_name: customerName,
+        customer_phone: formData.phone.trim(),
         shipping_wilaya_id: formData.wilayaId ? Number(formData.wilayaId) : null,
         shipping_commune_id: formData.communeId ? Number(formData.communeId) : null,
         customer_address: addressParts.filter(Boolean).join(', '),
@@ -350,26 +516,41 @@ export default function EmbeddedCheckout(props: {
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           <label style={{ display: 'grid', gap: 6 }}>
-            <span style={{ fontSize: 12, color: theme.muted }}>{dir === 'rtl' ? 'الاسم' : 'Name'}</span>
+            <span style={{ fontSize: 12, color: theme.muted }}>{dir === 'rtl' ? 'الاسم الأول' : 'First Name'}</span>
             <input
-              value={formData.fullName}
+              value={formData.firstName}
               disabled={disabled}
-              onChange={(e) => setFormData((s) => ({ ...s, fullName: e.target.value }))}
+              onChange={(e) => setFormData((s) => ({ ...s, firstName: e.target.value }))}
               style={inputStyle}
-              placeholder={dir === 'rtl' ? 'الاسم الكامل' : 'Full name'}
+              placeholder={dir === 'rtl' ? 'الاسم الأول' : 'First name'}
             />
           </label>
           <label style={{ display: 'grid', gap: 6 }}>
-            <span style={{ fontSize: 12, color: theme.muted }}>{dir === 'rtl' ? 'الهاتف' : 'Phone'}</span>
+            <span style={{ fontSize: 12, color: theme.muted }}>{dir === 'rtl' ? 'اللقب' : 'Surname'}</span>
             <input
-              value={formData.phone}
+              value={formData.surname}
               disabled={disabled}
-              onChange={(e) => setFormData((s) => ({ ...s, phone: e.target.value }))}
+              onChange={(e) => setFormData((s) => ({ ...s, surname: e.target.value }))}
               style={inputStyle}
-              placeholder={dir === 'rtl' ? 'مثال: 07xxxxxxxx' : 'e.g. 07xxxxxxxx'}
+              placeholder={dir === 'rtl' ? 'اللقب' : 'Surname'}
             />
           </label>
         </div>
+
+        <label style={{ display: 'grid', gap: 6 }}>
+          <span style={{ fontSize: 12, color: theme.muted }}>{dir === 'rtl' ? 'رقم الهاتف' : 'Phone Number'}</span>
+          <input
+            type="tel"
+            value={formData.phone}
+            disabled={disabled}
+            onChange={(e) => setFormData((s) => ({ ...s, phone: e.target.value }))}
+            style={inputStyle}
+            placeholder={dir === 'rtl' ? '0XXX XXX XXX' : '0XXX XXX XXX'}
+          />
+          {formData.phone && !/^\+?[0-9]{7,}$/.test(formData.phone.replace(/\s/g, '')) && (
+            <span style={{ fontSize: 11, color: '#ef4444' }}>{dir === 'rtl' ? 'رقم الهاتف غير صالح' : 'Invalid phone number'}</span>
+          )}
+        </label>
 
         <div style={{ display: 'grid', gap: 6 }}>
           <div style={{ fontSize: 12, color: theme.muted }}>{dir === 'rtl' ? 'نوع التوصيل' : 'Delivery type'}</div>
@@ -400,16 +581,18 @@ export default function EmbeddedCheckout(props: {
                     : 'Unavailable'
                   : deliveryPriceDesk != null
                     ? formatPrice(deliveryPriceDesk)
-                    : dir === 'rtl'
-                      ? 'اختر الولاية'
-                      : 'Select state'}
+                    : loadingDeliveryPrice
+                    ? 'Loading…'
+                    : 'TBD'}
               </div>
             </button>
-
             <button
               type="button"
               disabled={disabled}
-              onClick={() => setDeliveryType('home')}
+              onClick={() => {
+                if (disabled) return;
+                setDeliveryType('home');
+              }}
               style={{
                 borderRadius: 12,
                 border: `1px solid ${theme.border}`,
@@ -422,66 +605,11 @@ export default function EmbeddedCheckout(props: {
             >
               {dir === 'rtl' ? 'منزل' : 'Home'}
               <div style={{ marginTop: 2, fontSize: 11, fontWeight: 700, opacity: deliveryType === 'home' ? 0.85 : 0.7 }}>
-                {deliveryPriceHome != null
-                  ? formatPrice(deliveryPriceHome)
-                  : dir === 'rtl'
-                    ? 'اختر الولاية'
-                    : 'Select state'}
+                {deliveryPriceHome != null ? formatPrice(deliveryPriceHome) : loadingDeliveryPrice ? 'Loading…' : 'TBD'}
               </div>
             </button>
           </div>
         </div>
-
-        <label style={{ display: 'grid', gap: 6 }}>
-          <span style={{ fontSize: 12, color: theme.muted }}>{dir === 'rtl' ? 'البريد الإلكتروني (اختياري)' : 'Email (optional)'}</span>
-          <input
-            value={formData.email}
-            disabled={disabled}
-            onChange={(e) => setFormData((s) => ({ ...s, email: e.target.value }))}
-            style={inputStyle}
-            placeholder={dir === 'rtl' ? 'name@example.com' : 'name@example.com'}
-          />
-        </label>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <label style={{ display: 'grid', gap: 6 }}>
-            <span style={{ fontSize: 12, color: theme.muted }}>{dir === 'rtl' ? 'الولاية' : 'State'}</span>
-            <select
-              value={formData.wilayaId}
-              disabled={disabled}
-              onChange={(e) => {
-                const wilayaId = e.target.value;
-                setFormData((s) => ({ ...s, wilayaId, communeId: '' }));
-              }}
-              style={selectStyle}
-            >
-              <option value="">{dir === 'rtl' ? 'اختر الولاية' : 'Select state'}</option>
-              {dzWilayas.map((w) => (
-                <option key={w.id} value={String(w.id)}>
-                  {formatWilayaLabel(w)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label style={{ display: 'grid', gap: 6 }}>
-            <span style={{ fontSize: 12, color: theme.muted }}>{dir === 'rtl' ? 'البلدية' : 'City'}</span>
-            <select
-              value={formData.communeId}
-              disabled={disabled || !formData.wilayaId}
-              onChange={(e) => setFormData((s) => ({ ...s, communeId: e.target.value }))}
-              style={selectStyle}
-            >
-              <option value="">{dir === 'rtl' ? 'اختر البلدية' : 'Select city'}</option>
-              {dzCommunes.map((c) => (
-                <option key={c.id} value={String(c.id)}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        {/* Hai / Neighborhood removed per UI update */}
 
         {deliveryType === 'home' && (
           <label style={{ display: 'grid', gap: 6 }}>
@@ -491,9 +619,148 @@ export default function EmbeddedCheckout(props: {
               disabled={disabled}
               onChange={(e) => setFormData((s) => ({ ...s, address: e.target.value }))}
               style={inputStyle}
-              placeholder={dir === 'rtl' ? 'الشارع / رقم المنزل' : 'Street / house number'}
+              placeholder={dir === 'rtl' ? 'شارع، حي...' : 'Street, neighborhood...'}
             />
           </label>
+        )}
+
+        <label style={{ display: 'grid', gap: 6 }}>
+          <span style={{ fontSize: 12, color: theme.muted }}>{dir === 'rtl' ? 'الولاية' : 'State'}</span>
+          <select
+            value={formData.wilayaId}
+            disabled={disabled}
+            onChange={(e) => setFormData((s) => ({ ...s, wilayaId: e.target.value, communeId: '' }))}
+            style={selectStyle}
+          >
+            <option value="">{dir === 'rtl' ? 'اختر ولاية' : 'Select state'}</option>
+            {dzWilayas.map((w) => (
+              <option key={w.id} value={String(w.id)}>
+                {formatWilayaLabel(w)}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {formData.wilayaId && (
+          <label style={{ display: 'grid', gap: 6 }}>
+            <span style={{ fontSize: 12, color: theme.muted }}>{dir === 'rtl' ? 'البلدية' : 'City'}</span>
+            <select
+              value={formData.communeId}
+              disabled={disabled}
+              onChange={(e) => setFormData((s) => ({ ...s, communeId: e.target.value }))}
+              style={selectStyle}
+            >
+              <option value="">{dir === 'rtl' ? 'اختر بلدية' : 'Select city'}</option>
+              {dzCommunes.map((c) => (
+                <option key={c.id} value={String(c.id)}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+
+        {telegramBotInfo && storeSlug && (
+          <div style={{ padding: '10px 12px', borderRadius: 12, border: `1px solid ${theme.border}`, background: theme.cardBg }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 900, opacity: 0.75 }}>Telegram (Optional)</div>
+              <div style={{ fontSize: 11 }}>
+                {checkingTelegramConnection
+                  ? 'Checking…'
+                  : telegramConnected
+                  ? 'Connected ✓'
+                  : telegramBotInfo.enabled
+                  ? 'Not connected'
+                  : 'Unavailable'}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleConnectTelegram}
+              disabled={
+                !telegramBotInfo.enabled ||
+                (formData.phone || '').replace(/\D/g, '').length < 9
+              }
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                borderRadius: 12,
+                border: `1px solid ${theme.border}`,
+                background: theme.accent,
+                color: '#fff',
+                fontWeight: 900,
+                fontSize: 12,
+                cursor: !telegramBotInfo.enabled || (formData.phone || '').replace(/\D/g, '').length < 9 ? 'not-allowed' : 'pointer',
+                opacity: !telegramBotInfo.enabled || (formData.phone || '').replace(/\D/g, '').length < 9 ? 0.6 : 1,
+              }}
+            >
+              {telegramBotInfo.enabled ? 'Connect Telegram' : 'Telegram Unavailable'}
+            </button>
+            {!telegramBotInfo.enabled && (
+              <div style={{ marginTop: 6, fontSize: 10, opacity: 0.6 }}>Telegram is not configured for this store.</div>
+            )}
+            <div style={{ marginTop: 6, fontSize: 10, opacity: 0.6 }}>Add your phone number first, then connect to receive instant order updates.</div>
+          </div>
+        )}
+
+        {messengerInfo && storeSlug && (
+          <div style={{ padding: '10px 12px', borderRadius: 12, border: `1px solid ${theme.border}`, background: theme.cardBg }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 900, opacity: 0.75 }}>ماسنجر (اختياري)</div>
+              <div style={{ fontSize: 11 }}>
+                {checkingMessengerConnection
+                  ? 'Checking…'
+                  : messengerConnected
+                  ? 'Connected ✓'
+                  : waitingForMessengerConnection
+                  ? 'Waiting…'
+                  : messengerInfo.enabled
+                  ? 'Not connected'
+                  : 'Unavailable'}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleConnectMessenger}
+              disabled={
+                !messengerInfo.enabled ||
+                (formData.phone || '').replace(/\D/g, '').length < 9 ||
+                waitingForMessengerConnection
+              }
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                borderRadius: 12,
+                border: `1px solid ${theme.border}`,
+                background: theme.accent,
+                color: '#fff',
+                fontWeight: 900,
+                fontSize: 12,
+                cursor:
+                  !messengerInfo.enabled ||
+                  (formData.phone || '').replace(/\D/g, '').length < 9 ||
+                  waitingForMessengerConnection
+                    ? 'not-allowed'
+                    : 'pointer',
+                opacity:
+                  !messengerInfo.enabled ||
+                  (formData.phone || '').replace(/\D/g, '').length < 9 ||
+                  waitingForMessengerConnection
+                    ? 0.6
+                    : 1,
+              }}
+            >
+              {waitingForMessengerConnection
+                ? 'Connecting…'
+                : messengerInfo.enabled
+                ? 'Connect Messenger'
+                : 'Messenger Unavailable'}
+            </button>
+            {!messengerInfo.enabled && (
+              <div style={{ marginTop: 6, fontSize: 10, opacity: 0.6 }}>Messenger is not configured for this store.</div>
+            )}
+            <div style={{ marginTop: 6, fontSize: 10, opacity: 0.6 }}>Add your phone number first, then connect to receive instant order updates.</div>
+          </div>
         )}
 
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center', border: `1px solid ${theme.border}`, borderRadius: 14, padding: 12, background: 'rgba(0,0,0,0.02)' }}>

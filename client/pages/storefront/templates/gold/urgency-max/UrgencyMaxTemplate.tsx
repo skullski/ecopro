@@ -29,6 +29,10 @@ function safePrice(value: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+function pad(num: number): string {
+  return String(num).padStart(2, '0');
+}
+
 type NavLink = { label: string; url: string };
 type SocialLink = { platform: string; url: string };
 
@@ -82,52 +86,54 @@ export default function UrgencyMaxTemplate(props: TemplateProps) {
     return () => clearInterval(timer);
   }, [canManage]);
 
-  // Theme colors - Urgency colors
-  const bg = asString(s.template_bg_color) || '#0a0a0a';
-  const text = asString(s.template_text_color) || '#ffffff';
+  // Theme colors - Urgency colors with better defaults
+  const bgColor = asString(s.template_bg_color);
+  const textColor = asString(s.template_text_color);
+  const bg = bgColor && bgColor.length > 0 ? bgColor : '#0a0a0a';
+  const text = textColor && textColor.length > 0 ? textColor : '#ffffff';
   const muted = asString(s.template_muted_color) || '#888888';
   const accent = asString(s.template_accent_color) || '#dc2626';
   const cardBg = asString(s.template_card_bg) || '#1a1a1a';
   const border = 'rgba(255,255,255,0.1)';
   const yellow = '#fbbf24';
 
-  // EDITABLE Content from settings
-  const storeName = asString(s.store_name) || 'FLASH SALE';
-  const heroTitle = asString(s.template_hero_heading) || '⚡ LAST CHANCE - 70% OFF';
-  const heroSubtitle = asString(s.template_hero_subtitle) || 'This deal expires when the timer hits zero. Don\'t miss out!';
-  const ctaText = asString(s.template_button_text) || 'CLAIM YOUR DISCOUNT NOW';
-  const heroKicker = asString(s.template_hero_kicker) || '🔥 SELLING FAST';
+  // EDITABLE Content from settings - ALL ARABIC
+  const storeName = asString(s.store_name) || 'عرض فلاش';
+  const heroTitle = asString(s.template_hero_heading) || '⚡ آخر فرصة - خصم 70%';
+  const heroSubtitle = asString(s.template_hero_subtitle) || 'هذا العرض المميز ينتهي عندما يصل الموقت إلى الصفر. لا تفوت هذه الفرصة!';
+  const ctaText = asString(s.template_button_text) || 'احصل على خصمك الآن';
+  const heroKicker = asString(s.template_hero_kicker) || '🔥 بيع سريع جداً';
 
-  // Urgency elements (editable)
+  // Urgency elements (editable) - ARABIC
   const stockLeft = asString(s.template_stock_count) || '7';
-  const stockText = asString(s.template_stock_text) || 'items left at this price!';
-  const viewersText = asString(s.template_viewers_text) || '47 people viewing this right now';
-  const soldTodayText = asString(s.template_sold_today) || '156 sold in the last 24 hours';
+  const stockText = asString(s.template_stock_text) || 'عناصر متبقية بهذا السعر!';
+  const viewersText = asString(s.template_viewers_text) || '47 شخص يشاهد هذا العرض الآن';
+  const soldTodayText = asString(s.template_sold_today) || '156 عنصر بيع في آخر 24 ساعة';
 
-  // Discount info (editable)
-  const originalPrice = asString(s.template_original_price) || '$199.99';
-  const salePrice = asString(s.template_sale_price) || '$59.99';
-  const saveAmount = asString(s.template_save_amount) || 'You Save $140!';
+  // Discount info (editable) - ARABIC
+  const originalPrice = asString(s.template_original_price) || '199.99 د.ج';
+  const salePrice = asString(s.template_sale_price) || '59.99 د.ج';
+  const saveAmount = asString(s.template_save_amount) || 'توفير 140 د.ج!';
 
-  // Benefits (editable)
-  const benefit1 = asString(s.template_feature1_title) || '✅ Free Express Shipping';
-  const benefit2 = asString(s.template_feature2_title) || '✅ 30-Day Money Back Guarantee';
-  const benefit3 = asString(s.template_feature3_title) || '✅ Limited Time Bonus Gift';
-  const benefit4 = asString(s.template_feature4_title) || '✅ Priority Customer Support';
+  // Benefits (editable) - ARABIC
+  const benefit1 = asString(s.template_feature1_title) || '✅ شحن سريع مجاني';
+  const benefit2 = asString(s.template_feature2_title) || '✅ ضمان استرجاع الأموال 30 يوم';
+  const benefit3 = asString(s.template_feature3_title) || '✅ هدية مميزة في الوقت المحدود';
+  const benefit4 = asString(s.template_feature4_title) || '✅ دعم العملاء الأولوي';
 
-  // Warning text (editable)
-  const warningText = asString(s.template_warning_text) || '⚠️ Price increases when timer ends!';
+  // Warning text (editable) - ARABIC
+  const warningText = asString(s.template_warning_text) || '⚠️ السعر يزيد عندما ينتهي الموقت!';
 
   const navLinks = parseJsonArray<NavLink>(s.template_nav_links, [
-    { label: 'Home', url: '#' },
-    { label: 'FAQ', url: '#faq' },
-    { label: 'Contact', url: '#contact' },
+    { label: 'الرئيسية', url: '#' },
+    { label: 'الأسئلة الشائعة', url: '#faq' },
+    { label: 'التواصل', url: '#contact' },
   ]).filter((l) => l && typeof (l as any).label === 'string' && typeof (l as any).url === 'string');
 
   const footerLinks = parseJsonArray<NavLink>(s.template_footer_links, [
-    { label: 'Shipping', url: '#shipping' },
-    { label: 'Returns', url: '#returns' },
-    { label: 'Support', url: '#support' },
+    { label: 'الشحن', url: '#shipping' },
+    { label: 'المرتجعات', url: '#returns' },
+    { label: 'الدعم', url: '#support' },
   ]).filter((l) => l && typeof (l as any).label === 'string' && typeof (l as any).url === 'string');
 
   const socialLinks = parseJsonArray<SocialLink>(s.template_social_links, [
@@ -135,15 +141,18 @@ export default function UrgencyMaxTemplate(props: TemplateProps) {
     { platform: 'tiktok', url: '#' },
   ]).filter((l) => l && typeof (l as any).platform === 'string' && typeof (l as any).url === 'string');
 
-  const endsInLabel = asString(s.template_timer_ends_label) || 'Ends in:';
-  const countdownHoursLabel = asString(s.template_timer_label_hours) || 'HOURS';
-  const countdownMinsLabel = asString(s.template_timer_label_mins) || 'MINS';
-  const countdownSecsLabel = asString(s.template_timer_label_secs) || 'SECS';
+  const endsInLabel = asString(s.template_timer_ends_label) || 'ينتهي خلال:';
+  const countdownHoursLabel = asString(s.template_timer_label_hours) || 'ساعات';
+  const countdownMinsLabel = asString(s.template_timer_label_mins) || 'دقائق';
+  const countdownSecsLabel = asString(s.template_timer_label_secs) || 'ثوان';
 
-  const saleBadgeText = asString(s.template_discount_badge_text) || '70% OFF';
-  const stockPrefix = asString(s.template_stock_prefix) || '⚠️ Only';
+  const saleBadgeText = asString(s.template_discount_badge_text) || 'خصم 70%';
+  const stockPrefix = asString(s.template_stock_prefix) || '⚠️ فقط';
 
-  const trustBadges = parseJsonArray<string>(s.template_trust_badges, ['🔒 Secure', '📦 Fast Ship', '✅ Guaranteed']).filter(Boolean);
+  const checkoutSubheading = asString(s.template_checkout_subheading) || '🔒 دفع آمن • وصول فوري';
+  const copyrightText = asString(s.template_copyright) || `© ${new Date().getFullYear()} ${storeName}. جميع الحقوق محفوظة.`;
+
+  const trustBadges = parseJsonArray<string>(s.template_trust_badges, ['🔒 آمن', '📦 توصيل سريع', '✅ مضمون']).filter(Boolean);
 
   // Spacing
   const baseSpacing = resolveInt(s.template_spacing, 16, 8, 32);
@@ -169,20 +178,38 @@ export default function UrgencyMaxTemplate(props: TemplateProps) {
 
   const benefits = [benefit1, benefit2, benefit3, benefit4].filter(Boolean);
 
-  const pad = (n: number) => n.toString().padStart(2, '0');
+  const settingsButtonText = asString(s.template_settings_button) || 'الإعدادات';
+  const prevImageText = asString(s.template_prev_image) || 'السابق';
+  const nextImageText = asString(s.template_next_image) || 'التالي';
 
   return (
     <div
+      dir="rtl"
       data-edit-path="__root"
       onClick={() => canManage && onSelect('__root')}
       className="ecopro-storefront"
-      style={{ minHeight: '100vh', background: bg, color: text, fontFamily: 'Inter, system-ui, sans-serif' }}
+      style={{
+        minHeight: '100vh',
+        background: bg,
+        color: text,
+        backgroundColor: bg,
+        fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
+        margin: 0,
+        padding: 0,
+        overflow: 'hidden auto',
+        WebkitFontSmoothing: 'antialiased',
+      }}
     >
+      <style>{`
+        body { background: ${bg} !important; color: ${text} !important; }
+        .ecopro-storefront { background: ${bg} !important; color: ${text} !important; }
+        .ecopro-storefront * { color: inherit; }
+      `}</style>
       {canManage && (
         <button
           type="button"
-          data-edit-path="__settings"
-          onClick={(e) => { stopIfManage(e); onSelect('__settings'); }}
+          data-edit-path="__button.settings"
+          onClick={(e) => { stopIfManage(e); onSelect('__button.settings'); }}
           style={{
             position: 'fixed',
             right: 16,
@@ -198,7 +225,7 @@ export default function UrgencyMaxTemplate(props: TemplateProps) {
             cursor: 'pointer',
           }}
         >
-          Settings
+          {settingsButtonText}
         </button>
       )}
 
@@ -216,8 +243,8 @@ export default function UrgencyMaxTemplate(props: TemplateProps) {
       )}
       {/* Urgency Bar */}
       <div
-        data-edit-path="layout.hero.badge"
-        onClick={(e) => { stopIfManage(e); onSelect('layout.hero.badge'); }}
+        data-edit-path="layout.urgency.topBar"
+        onClick={(e) => { stopIfManage(e); onSelect('layout.urgency.topBar'); }}
         style={{
           background: `linear-gradient(90deg, ${accent} 0%, #991b1b 100%)`,
           color: '#fff',
@@ -228,14 +255,31 @@ export default function UrgencyMaxTemplate(props: TemplateProps) {
           animation: 'pulse 2s infinite',
         }}
       >
-        {heroKicker} • {warningText}
+        <span
+          data-edit-path="layout.urgency.topBar.kicker"
+          onClick={(e) => { stopIfManage(e); onSelect('layout.urgency.topBar.kicker'); }}
+        >
+          {heroKicker}
+        </span>
+        {' • '}
+        <span
+          data-edit-path="layout.urgency.topBar.warning"
+          onClick={(e) => { stopIfManage(e); onSelect('layout.urgency.topBar.warning'); }}
+        >
+          {warningText}
+        </span>
       </div>
 
       {/* Header */}
       <header
         data-edit-path="layout.header"
         onClick={(e) => { stopIfManage(e); onSelect('layout.header'); }}
-        style={{ background: cardBg, borderBottom: `1px solid ${border}`, padding: isMobile ? '10px 12px' : '12px 20px' }}
+        style={{
+          background: cardBg,
+          borderBottom: `1px solid ${border}`,
+          padding: isMobile ? '10px 12px' : '12px 20px',
+          color: text,
+        }}
       >
         <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div
@@ -301,7 +345,11 @@ export default function UrgencyMaxTemplate(props: TemplateProps) {
       <section
         data-edit-path="layout.hero"
         onClick={(e) => { stopIfManage(e); onSelect('layout.hero'); }}
-        style={{ padding: isMobile ? `${sectionSpacing * 0.6}px ${baseSpacing}px` : `${sectionSpacing}px ${baseSpacing}px` }}
+        style={{
+          padding: isMobile ? `${sectionSpacing * 0.6}px ${baseSpacing}px` : `${sectionSpacing}px ${baseSpacing}px`,
+          background: bg,
+          color: text,
+        }}
       >
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
           {/* Title */}
@@ -367,7 +415,13 @@ export default function UrgencyMaxTemplate(props: TemplateProps) {
                 }}>
                   <div style={{ fontSize: isMobile ? 28 : 44, fontWeight: 900, color: '#fff' }}>{pad(item.value)}</div>
                 </div>
-                <div data-edit-path={`layout.urgency.timer.${item.key}.label`} onClick={(e) => { stopIfManage(e); onSelect(`layout.urgency.timer.${item.key}.label`); }} style={{ fontSize: isMobile ? 9 : 11, color: muted, marginTop: 6, fontWeight: 700 }}>{item.label}</div>
+                <div
+                  data-edit-path={`layout.urgency.timer.${item.key}.label`}
+                  onClick={(e) => { stopIfManage(e); onSelect(`layout.urgency.timer.${item.key}.label`); }}
+                  style={{ fontSize: isMobile ? 9 : 11, color: muted, marginTop: 6, fontWeight: 700 }}
+                >
+                  {item.label}
+                </div>
               </div>
             ))}
           </div>
@@ -377,7 +431,7 @@ export default function UrgencyMaxTemplate(props: TemplateProps) {
             
             {/* Left: Product */}
             <div>
-              {/* Product Image */}
+              {/* Product Image - with click indication */}
               <div
                 data-edit-path="layout.hero.image"
                 onClick={(e) => { stopIfManage(e); onSelect('layout.hero.image'); }}
@@ -387,22 +441,29 @@ export default function UrgencyMaxTemplate(props: TemplateProps) {
                   overflow: 'hidden', 
                   border: `2px solid ${accent}`,
                   marginBottom: 16,
+                  cursor: images.length > 1 ? 'pointer' : 'default',
+                  transition: 'transform 0.2s ease',
                 }}
+                title={images.length > 1 ? 'اضغط لعرض الصور التالية' : ''}
               >
-                <img src={images[activeImage] || images[0]} alt="" style={{ width: '100%', aspectRatio: isMobile ? '4/3' : '16/10', objectFit: 'cover' }} />
+                <img src={images[activeImage] || images[0]} alt="منتج" style={{ width: '100%', aspectRatio: isMobile ? '4/3' : '16/10', objectFit: 'cover' }} />
                 
                 {/* Sale badge */}
-                <div data-edit-path="layout.urgency.saleBadge" onClick={(e) => { stopIfManage(e); onSelect('layout.urgency.saleBadge'); }} style={{ 
-                  position: 'absolute', 
-                  top: 16, 
-                  left: 16, 
-                  background: accent, 
-                  color: '#fff', 
-                  padding: isMobile ? '8px 12px' : '10px 16px', 
-                  borderRadius: 6, 
-                  fontWeight: 900, 
-                  fontSize: isMobile ? 14 : 18,
-                }}>
+                <div
+                  data-edit-path="layout.urgency.saleBadge"
+                  onClick={(e) => { stopIfManage(e); onSelect('layout.urgency.saleBadge'); }}
+                  style={{ 
+                    position: 'absolute', 
+                    top: 16, 
+                    right: 16, 
+                    background: accent, 
+                    color: '#fff', 
+                    padding: isMobile ? '8px 12px' : '10px 16px', 
+                    borderRadius: 6, 
+                    fontWeight: 900, 
+                    fontSize: isMobile ? 14 : 18,
+                  }}
+                >
                   {saleBadgeText}
                 </div>
 
@@ -419,47 +480,154 @@ export default function UrgencyMaxTemplate(props: TemplateProps) {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                 }}>
-                  <span data-edit-path="layout.urgency.stock" onClick={(e) => { stopIfManage(e); onSelect('layout.urgency.stock'); }} style={{ color: yellow, fontWeight: 700, fontSize: isMobile ? 12 : 14 }}>
-                    {stockPrefix} {stockLeft} {stockText}
+                  <span 
+                    data-edit-path="layout.urgency.stock"
+                    onClick={(e) => { stopIfManage(e); onSelect('layout.urgency.stock'); }}
+                    style={{ color: yellow, fontWeight: 700, fontSize: isMobile ? 12 : 14 }}
+                  >
+                    <span
+                      data-edit-path="layout.urgency.stock.prefix"
+                      onClick={(e) => { stopIfManage(e); onSelect('layout.urgency.stock.prefix'); }}
+                    >
+                      {stockPrefix}
+                    </span>
+                    {' '}
+                    <span
+                      data-edit-path="layout.urgency.stock.count"
+                      onClick={(e) => { stopIfManage(e); onSelect('layout.urgency.stock.count'); }}
+                    >
+                      {stockLeft}
+                    </span>
+                    {' '}
+                    <span
+                      data-edit-path="layout.urgency.stock.text"
+                      onClick={(e) => { stopIfManage(e); onSelect('layout.urgency.stock.text'); }}
+                    >
+                      {stockText}
+                    </span>
                   </span>
                 </div>
               </div>
 
-              {/* Thumbnail Gallery */}
+              {/* Thumbnail Gallery with Navigation */}
               {images.length > 1 && (
-                <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-                  {images.slice(0, 10).map((img, idx) => (
-                    <button
-                      key={idx}
-                      onClick={(e) => { stopIfManage(e); setActiveImage(idx); }}
-                      style={{
-                        width: isMobile ? 48 : 60,
-                        height: isMobile ? 48 : 60,
-                        borderRadius: 6,
-                        border: idx === activeImage ? `2px solid ${accent}` : `1px solid ${border}`,
-                        padding: 0,
-                        background: 'transparent',
-                        cursor: 'pointer',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    </button>
-                  ))}
+                <div data-edit-path="layout.hero.gallery" onClick={(e) => { stopIfManage(e); onSelect('layout.hero.gallery'); }}>
+                  {/* Image Counter */}
+                  <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 12, color: muted, fontWeight: 600 }}>
+                      صورة {activeImage + 1} من {images.length}
+                    </span>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          stopIfManage(e);
+                          setActiveImage((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+                        }}
+                        style={{
+                          background: accent,
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: 4,
+                          padding: '4px 8px',
+                          cursor: 'pointer',
+                          fontSize: 11,
+                          fontWeight: 600,
+                        }}
+                      >
+                        {prevImageText}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          stopIfManage(e);
+                          setActiveImage((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+                        }}
+                        style={{
+                          background: accent,
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: 4,
+                          padding: '4px 8px',
+                          cursor: 'pointer',
+                          fontSize: 11,
+                          fontWeight: 600,
+                        }}
+                      >
+                        {nextImageText}
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Thumbnail Gallery */}
+                  <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 8 }}>
+                    {images.slice(0, 10).map((img, idx) => (
+                      <button
+                        key={idx}
+                        onClick={(e) => { stopIfManage(e); setActiveImage(idx); }}
+                        title={`صورة ${idx + 1}`}
+                        style={{
+                          width: isMobile ? 48 : 60,
+                          height: isMobile ? 48 : 60,
+                          borderRadius: 6,
+                          border: idx === activeImage ? `2px solid ${accent}` : `1px solid ${border}`,
+                          padding: 0,
+                          background: 'transparent',
+                          cursor: 'pointer',
+                          overflow: 'hidden',
+                          flexShrink: 0,
+                        }}
+                      >
+                        <img src={img} alt={`صورة ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </button>
+                    ))}
+                  </div>
+                  
+                  {/* Image Dots Indicator */}
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: 4, marginTop: 8 }}>
+                    {images.slice(0, 10).map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={(e) => { stopIfManage(e); setActiveImage(idx); }}
+                        style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: '50%',
+                          background: idx === activeImage ? accent : border,
+                          border: 'none',
+                          cursor: 'pointer',
+                          padding: 0,
+                        }}
+                        title={`صورة ${idx + 1}`}
+                      />
+                    ))}
+                  </div>
                 </div>
               )}
 
               {/* Social proof */}
               <div
-                data-edit-path="layout.categories"
-                onClick={(e) => { stopIfManage(e); onSelect('layout.categories'); }}
+                data-edit-path="layout.urgency.socialProof"
+                onClick={(e) => { stopIfManage(e); onSelect('layout.urgency.socialProof'); }}
                 style={{ display: 'grid', gap: 8 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: isMobile ? 12 : 14, color: muted }}>
-                  <span style={{ color: '#22c55e' }}>👁️</span> {viewersText}
+                  <span style={{ color: '#22c55e' }}>👁️</span>
+                  <span
+                    data-edit-path="layout.urgency.socialProof.viewers"
+                    onClick={(e) => { stopIfManage(e); onSelect('layout.urgency.socialProof.viewers'); }}
+                  >
+                    {viewersText}
+                  </span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: isMobile ? 12 : 14, color: muted }}>
-                  <span style={{ color: accent }}>🔥</span> {soldTodayText}
+                  <span style={{ color: accent }}>🔥</span>
+                  <span
+                    data-edit-path="layout.urgency.socialProof.sold"
+                    onClick={(e) => { stopIfManage(e); onSelect('layout.urgency.socialProof.sold'); }}
+                  >
+                    {soldTodayText}
+                  </span>
                 </div>
               </div>
 
@@ -469,9 +637,42 @@ export default function UrgencyMaxTemplate(props: TemplateProps) {
                 onClick={(e) => { stopIfManage(e); onSelect('layout.urgency.benefits'); }}
                 style={{ display: 'grid', gap: 10, marginTop: 20 }}
               >
-                {benefits.map((b) => (
-                  <div key={b} style={{ fontSize: isMobile ? 13 : 15, color: '#22c55e', fontWeight: 600 }}>{b}</div>
-                ))}
+                {benefit1 && (
+                  <div
+                    data-edit-path="layout.urgency.benefits.item1"
+                    onClick={(e) => { stopIfManage(e); onSelect('layout.urgency.benefits.item1'); }}
+                    style={{ fontSize: isMobile ? 13 : 15, color: '#22c55e', fontWeight: 600 }}
+                  >
+                    {benefit1}
+                  </div>
+                )}
+                {benefit2 && (
+                  <div
+                    data-edit-path="layout.urgency.benefits.item2"
+                    onClick={(e) => { stopIfManage(e); onSelect('layout.urgency.benefits.item2'); }}
+                    style={{ fontSize: isMobile ? 13 : 15, color: '#22c55e', fontWeight: 600 }}
+                  >
+                    {benefit2}
+                  </div>
+                )}
+                {benefit3 && (
+                  <div
+                    data-edit-path="layout.urgency.benefits.item3"
+                    onClick={(e) => { stopIfManage(e); onSelect('layout.urgency.benefits.item3'); }}
+                    style={{ fontSize: isMobile ? 13 : 15, color: '#22c55e', fontWeight: 600 }}
+                  >
+                    {benefit3}
+                  </div>
+                )}
+                {benefit4 && (
+                  <div
+                    data-edit-path="layout.urgency.benefits.item4"
+                    onClick={(e) => { stopIfManage(e); onSelect('layout.urgency.benefits.item4'); }}
+                    style={{ fontSize: isMobile ? 13 : 15, color: '#22c55e', fontWeight: 600 }}
+                  >
+                    {benefit4}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -486,18 +687,34 @@ export default function UrgencyMaxTemplate(props: TemplateProps) {
                 marginBottom: 16,
                 textAlign: 'center',
               }}>
-                <div style={{ fontSize: isMobile ? 14 : 16, color: muted, textDecoration: 'line-through' }}>{originalPrice}</div>
-                <div style={{ fontSize: isMobile ? 32 : 44, fontWeight: 900, color: '#22c55e' }}>{salePrice}</div>
-                <div style={{ 
-                  background: yellow, 
-                  color: '#000', 
-                  padding: '6px 12px', 
-                  borderRadius: 4, 
-                  fontWeight: 800, 
-                  fontSize: isMobile ? 12 : 14,
-                  display: 'inline-block',
-                  marginTop: 8,
-                }}>
+                <div
+                  data-edit-path="layout.urgency.pricing.original"
+                  onClick={(e) => { stopIfManage(e); onSelect('layout.urgency.pricing.original'); }}
+                  style={{ fontSize: isMobile ? 14 : 16, color: muted, textDecoration: 'line-through' }}
+                >
+                  {originalPrice}
+                </div>
+                <div
+                  data-edit-path="layout.urgency.pricing.sale"
+                  onClick={(e) => { stopIfManage(e); onSelect('layout.urgency.pricing.sale'); }}
+                  style={{ fontSize: isMobile ? 32 : 44, fontWeight: 900, color: '#22c55e' }}
+                >
+                  {salePrice}
+                </div>
+                <div
+                  data-edit-path="layout.urgency.pricing.save"
+                  onClick={(e) => { stopIfManage(e); onSelect('layout.urgency.pricing.save'); }}
+                  style={{ 
+                    background: yellow, 
+                    color: '#000', 
+                    padding: '6px 12px', 
+                    borderRadius: 4, 
+                    fontWeight: 800, 
+                    fontSize: isMobile ? 12 : 14,
+                    display: 'inline-block',
+                    marginTop: 8,
+                  }}
+                >
                   {saveAmount}
                 </div>
               </div>
@@ -509,13 +726,19 @@ export default function UrgencyMaxTemplate(props: TemplateProps) {
                 theme={checkoutTheme}
                 disabled={canManage}
                 heading={ctaText}
-                subheading={canManage ? 'Disabled in editor' : (asString(s.template_checkout_subheading) || '🔒 Secure checkout • Instant access')}
+                subheading={canManage ? 'معطّل في المحرّر' : checkoutSubheading}
+                dir="rtl"
               />
 
               {/* Trust badges */}
               <div data-edit-path="layout.urgency.trustBadges" onClick={(e) => { stopIfManage(e); onSelect('layout.urgency.trustBadges'); }} style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 16, flexWrap: 'wrap' }}>
-                {trustBadges.map((badge) => (
-                  <span key={badge} style={{ fontSize: isMobile ? 10 : 12, color: muted, background: cardBg, padding: '4px 10px', borderRadius: 4 }}>
+                {trustBadges.map((badge, idx) => (
+                  <span
+                    key={idx}
+                    data-edit-path={`layout.urgency.trustBadges.item${idx + 1}`}
+                    onClick={(e) => { stopIfManage(e); onSelect(`layout.urgency.trustBadges.item${idx + 1}`); }}
+                    style={{ fontSize: isMobile ? 10 : 12, color: muted, background: cardBg, padding: '4px 10px', borderRadius: 4 }}
+                  >
                     {badge}
                   </span>
                 ))}
@@ -536,7 +759,7 @@ export default function UrgencyMaxTemplate(props: TemplateProps) {
           onClick={(e) => { stopIfManage(e); onSelect('layout.footer.copyright'); }}
           style={{ fontSize: isMobile ? 11 : 13, color: muted }}
         >
-          {asString(s.template_copyright) || `© ${new Date().getFullYear()} ${storeName}. All rights reserved.`}
+          {copyrightText}
         </p>
 
         {canManage && (

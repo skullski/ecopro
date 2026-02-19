@@ -335,24 +335,44 @@ export async function sendOrderConfirmationMessages(
         }
       }
 
-      const subRes = await pool.query(
-        `SELECT status, trial_ends_at, current_period_end FROM subscriptions WHERE user_id = $1`,
-        [clientId]
-      );
-      if (subRes.rows.length) {
-        const sub = subRes.rows[0];
-        const now = new Date();
-        const trialEndOk = sub.status === 'trial' && sub.trial_ends_at && now < new Date(sub.trial_ends_at);
-        const activeEndOk = sub.status === 'active' && (!sub.current_period_end || now < new Date(sub.current_period_end));
-        const hasAccess = trialEndOk || activeEndOk;
+      // Check subscription_extended_until on clients table first (admin-granted extensions)
+      let extensionOk = false;
+      try {
+        const extRes = await pool.query(
+          `SELECT subscription_extended_until FROM clients WHERE id = $1`,
+          [clientId]
+        );
+        if (extRes.rows.length) {
+          const extRaw = extRes.rows[0].subscription_extended_until;
+          if (extRaw) {
+            const extensionEnds = new Date(extRaw);
+            extensionOk = Number.isFinite(extensionEnds.getTime()) && new Date() < extensionEnds;
+          }
+        }
+      } catch {
+        // Column may not exist; fall through.
+      }
 
-        if (!hasAccess) {
-          await pool.query(
-            `UPDATE bot_settings SET enabled = false, updated_at = NOW() WHERE client_id = $1`,
-            [clientId]
-          );
-          console.log(`[Bot] Client ${clientId} subscription ended; bot disabled`);
-          return;
+      if (!extensionOk) {
+        const subRes = await pool.query(
+          `SELECT status, trial_ends_at, current_period_end FROM subscriptions WHERE user_id = $1`,
+          [clientId]
+        );
+        if (subRes.rows.length) {
+          const sub = subRes.rows[0];
+          const now = new Date();
+          const trialEndOk = sub.status === 'trial' && sub.trial_ends_at && now < new Date(sub.trial_ends_at);
+          const activeEndOk = (sub.status === 'active' || sub.status === 'extended') && (!sub.current_period_end || now < new Date(sub.current_period_end));
+          const hasAccess = trialEndOk || activeEndOk;
+
+          if (!hasAccess) {
+            await pool.query(
+              `UPDATE bot_settings SET enabled = false, updated_at = NOW() WHERE client_id = $1`,
+              [clientId]
+            );
+            console.log(`[Bot] Client ${clientId} subscription ended; bot disabled`);
+            return;
+          }
         }
       }
     } catch (err) {

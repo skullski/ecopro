@@ -154,7 +154,6 @@ export default function ProductCheckout() {
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
-    email: '',
     city: '',
     wilayaId: '',
     communeId: '',
@@ -836,7 +835,6 @@ export default function ProductCheckout() {
         delivery_type: deliveryType,
         customer_name: formData.fullName,
         customer_phone: formData.phone,
-        ...(formData.email?.trim() ? { customer_email: formData.email.trim() } : {}),
         shipping_wilaya_id: formData.wilayaId ? Number(formData.wilayaId) : null,
         shipping_commune_id: formData.communeId ? Number(formData.communeId) : null,
         customer_address:

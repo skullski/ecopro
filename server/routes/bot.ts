@@ -34,6 +34,25 @@ async function getClientAccessState(clientId: string | number): Promise<{ allowB
     // If the lock columns aren't present, skip this check.
   }
 
+  // Check subscription_extended_until on the clients table first (admin-granted extensions)
+  try {
+    const extRes = await pool.query(
+      `SELECT subscription_extended_until FROM clients WHERE id = $1`,
+      [clientId]
+    );
+    if (extRes.rows.length) {
+      const extRaw = extRes.rows[0].subscription_extended_until;
+      if (extRaw) {
+        const extensionEnds = new Date(extRaw);
+        if (Number.isFinite(extensionEnds.getTime()) && new Date() < extensionEnds) {
+          return { allowBot: true };
+        }
+      }
+    }
+  } catch {
+    // If column doesn't exist yet, fall through to subscription check.
+  }
+
   // Subscription check
   const subRes = await pool.query(
     `SELECT status, trial_ends_at, current_period_end FROM subscriptions WHERE user_id = $1`,
@@ -51,7 +70,7 @@ async function getClientAccessState(clientId: string | number): Promise<{ allowB
     return { allowBot: false, reason: 'Trial ended. Please renew to enable the bot.' };
   }
 
-  if (sub.status === 'active') {
+  if (sub.status === 'active' || sub.status === 'extended') {
     const periodEnd = sub.current_period_end ? new Date(sub.current_period_end) : null;
     if (!periodEnd || now < periodEnd) return { allowBot: true };
     return { allowBot: false, reason: 'Subscription ended. Please renew to enable the bot.' };

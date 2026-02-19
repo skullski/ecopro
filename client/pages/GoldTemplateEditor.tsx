@@ -999,21 +999,29 @@ export default function GoldTemplateEditor() {
         </div>
       );
     } else if (path.startsWith('layout.hero.title')) {
-      body = (
-        <div className="space-y-4">
-          {bindText('Hero Heading', 'template_hero_heading', 'Main headline for your store')}
-          {bindColor('Heading Color', 'template_hero_title_color' as any, '#1C1917')}
-          {bindText('Heading Size (px)', 'template_hero_title_size' as any, '32')}
-        </div>
-      );
+      if (activeTemplateId === 'urgency-max') {
+        body = bindText('Hero Title', 'template_hero_heading', 'Main headline');
+      } else {
+        body = (
+          <div className="space-y-4">
+            {bindText('Hero Heading', 'template_hero_heading', 'Main headline for your store')}
+            {bindColor('Heading Color', 'template_hero_title_color' as any, '#1C1917')}
+            {bindText('Heading Size (px)', 'template_hero_title_size' as any, '32')}
+          </div>
+        );
+      }
     } else if (path.startsWith('layout.hero.subtitle')) {
-      body = (
-        <div className="space-y-4">
-          {bindText('Hero Subtitle', 'template_hero_subtitle', 'Subtitle or tagline')}
-          {bindColor('Subtitle Color', 'template_hero_subtitle_color' as any, '#78716C')}
-          {bindText('Subtitle Size (px)', 'template_hero_subtitle_size' as any, '13')}
-        </div>
-      );
+      if (activeTemplateId === 'urgency-max') {
+        body = bindText('Hero Subtitle', 'template_hero_subtitle', 'Subtitle text');
+      } else {
+        body = (
+          <div className="space-y-4">
+            {bindText('Hero Subtitle', 'template_hero_subtitle', 'Subtitle or tagline')}
+            {bindColor('Subtitle Color', 'template_hero_subtitle_color' as any, '#78716C')}
+            {bindText('Subtitle Size (px)', 'template_hero_subtitle_size' as any, '13')}
+          </div>
+        );
+      }
     } else if (path.startsWith('layout.hero.kicker')) {
       body = (
         <div className="space-y-4">
@@ -1241,7 +1249,13 @@ export default function GoldTemplateEditor() {
         </div>
       );
     } else if (path.startsWith('layout.urgency.')) {
-      if (path === 'layout.urgency.timer' || path.startsWith('layout.urgency.timer')) {
+      if (path === 'layout.urgency.timer.hours.label' || path === 'layout.urgency.timer.hours') {
+        body = bindText('Hours Label', 'template_timer_label_hours' as any, 'ساعات');
+      } else if (path === 'layout.urgency.timer.mins.label' || path === 'layout.urgency.timer.mins') {
+        body = bindText('Minutes Label', 'template_timer_label_mins' as any, 'دقائق');
+      } else if (path === 'layout.urgency.timer.secs.label' || path === 'layout.urgency.timer.secs') {
+        body = bindText('Seconds Label', 'template_timer_label_secs' as any, 'ثوان');
+      } else if (path === 'layout.urgency.timer' || path.startsWith('layout.urgency.timer')) {
         body = (
           <div className="space-y-4">
             <div className="font-medium text-sm">Timer Labels</div>
@@ -1249,12 +1263,6 @@ export default function GoldTemplateEditor() {
             {bindText('Hours Label', 'template_timer_label_hours' as any, 'HOURS')}
             {bindText('Minutes Label', 'template_timer_label_mins' as any, 'MINS')}
             {bindText('Seconds Label', 'template_timer_label_secs' as any, 'SECS')}
-          </div>
-        );
-      } else if (path === 'layout.urgency.saleBadge') {
-        body = (
-          <div className="space-y-4">
-            {bindText('Sale Badge Text', 'template_discount_badge_text' as any, '70% OFF')}
           </div>
         );
       } else if (path === 'layout.urgency.stock') {
@@ -1266,6 +1274,12 @@ export default function GoldTemplateEditor() {
             {bindText('Stock Text', 'template_stock_text' as any, 'items left at this price!')}
           </div>
         );
+      } else if (path === 'layout.urgency.pricing.original') {
+        body = bindText('Original Price', 'template_original_price' as any, '$199.99');
+      } else if (path === 'layout.urgency.pricing.sale') {
+        body = bindText('Sale Price', 'template_sale_price' as any, '$59.99');
+      } else if (path === 'layout.urgency.pricing.save') {
+        body = bindText('Save Amount Text', 'template_save_amount' as any, 'You Save $140!');
       } else if (path === 'layout.urgency.pricing') {
         body = (
           <div className="space-y-4">
@@ -1275,6 +1289,14 @@ export default function GoldTemplateEditor() {
             {bindText('Save Amount Text', 'template_save_amount' as any, 'You Save $140!')}
           </div>
         );
+      } else if (path === 'layout.urgency.benefits.item1') {
+        body = bindText('Benefit 1', 'template_feature1_title' as any, '✅ Free Express Shipping');
+      } else if (path === 'layout.urgency.benefits.item2') {
+        body = bindText('Benefit 2', 'template_feature2_title' as any, '✅ 30-Day Money Back Guarantee');
+      } else if (path === 'layout.urgency.benefits.item3') {
+        body = bindText('Benefit 3', 'template_feature3_title' as any, '✅ Limited Time Bonus Gift');
+      } else if (path === 'layout.urgency.benefits.item4') {
+        body = bindText('Benefit 4', 'template_feature4_title' as any, '✅ Priority Customer Support');
       } else if (path === 'layout.urgency.benefits') {
         body = (
           <div className="space-y-4">
@@ -1283,6 +1305,49 @@ export default function GoldTemplateEditor() {
             {bindText('Benefit 2', 'template_feature2_title' as any, '✅ 30-Day Money Back Guarantee')}
             {bindText('Benefit 3', 'template_feature3_title' as any, '✅ Limited Time Bonus Gift')}
             {bindText('Benefit 4', 'template_feature4_title' as any, '✅ Priority Customer Support')}
+          </div>
+        );
+      } else if (path === 'layout.urgency.stock.prefix') {
+        body = bindText('Stock Prefix', 'template_stock_prefix' as any, '⚠️ Only');
+      } else if (path === 'layout.urgency.stock.count') {
+        body = bindText('Stock Count', 'template_stock_count' as any, '7');
+      } else if (path === 'layout.urgency.stock.text') {
+        body = bindText('Stock Text', 'template_stock_text' as any, 'items left at this price!');
+      } else if (path === 'layout.urgency.stock') {
+        body = (
+          <div className="space-y-4">
+            <div className="font-medium text-sm">Stock Warning</div>
+            {bindText('Prefix', 'template_stock_prefix' as any, '⚠️ Only')}
+            {bindText('Stock Count', 'template_stock_count' as any, '7')}
+            {bindText('Stock Text', 'template_stock_text' as any, 'items left at this price!')}
+          </div>
+        );
+      } else if (path === 'layout.urgency.saleBadge') {
+        body = bindText('Sale Badge Text', 'template_discount_badge_text' as any, '🔥 FLASH SALE');
+      } else if (path === 'layout.urgency.topBar.kicker') {
+        body = bindText('Urgency Kicker', 'template_hero_kicker' as any, '🔥 بيع سريع جداً');
+      } else if (path === 'layout.urgency.topBar.warning') {
+        body = bindText('Warning Text', 'template_warning_text' as any, '⚠️ Price increases when timer ends!');
+      } else if (path === 'layout.urgency.topBar') {
+        body = (
+          <div className="space-y-4">
+            <div className="font-medium text-sm">Top Urgency Bar</div>
+            {bindText('Urgency Kicker', 'template_hero_kicker' as any, '🔥 بيع سريع جداً')}
+            {bindText('Warning Text', 'template_warning_text' as any, '⚠️ Price increases when timer ends!')}
+          </div>
+        );
+      } else if (path === 'layout.urgency.timer.endsLabel') {
+        body = bindText('Timer Label', 'template_timer_ends_label' as any, 'Ends In');
+      } else if (path === 'layout.urgency.socialProof.viewers') {
+        body = bindText('Viewers Text', 'template_viewers_text' as any, '47 people watching now');
+      } else if (path === 'layout.urgency.socialProof.sold') {
+        body = bindText('Sold Today Text', 'template_sold_today' as any, '156 sold in last 24 hours');
+      } else if (path === 'layout.urgency.socialProof') {
+        body = (
+          <div className="space-y-4">
+            <div className="font-medium text-sm">Social Proof</div>
+            {bindText('Viewers Text', 'template_viewers_text' as any, '47 people watching now')}
+            {bindText('Sold Today Text', 'template_sold_today' as any, '156 sold in last 24 hours')}
           </div>
         );
       } else if (path === 'layout.urgency.trustBadges') {

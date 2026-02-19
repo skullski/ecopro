@@ -218,24 +218,25 @@ export const getTelegramBotLink: RequestHandler = async (req, res) => {
     const storeName = storeRes.rows[0].store_name;
     const actualStoreSlug = storeRes.rows[0].store_slug;
     
-    // Get bot settings
+    // Get bot settings - fetch row regardless of enabled flag.
+    // Telegram availability is determined by credentials, not the main bot toggle.
+    // This mirrors how Messenger works (checks messenger_enabled separately).
     const botRes = await pool.query(
       `SELECT enabled, provider, telegram_bot_username, telegram_bot_token
        FROM bot_settings
        WHERE client_id = $1
-         AND enabled = true
-         AND telegram_bot_username IS NOT NULL
        LIMIT 1`,
       [clientId]
     );
     
-    const dbBotUsername = botRes.rows[0]?.telegram_bot_username as string | undefined;
-    const dbBotToken = botRes.rows[0]?.telegram_bot_token as string | undefined;
+    const botRow = botRes.rows[0];
+    const dbBotUsername = botRow?.telegram_bot_username as string | undefined;
+    const dbBotToken = botRow?.telegram_bot_token as string | undefined;
 
     const effectiveBotUsername = normalizeTelegramUsername(dbBotUsername || (PLATFORM_TELEGRAM_AVAILABLE ? PLATFORM_TELEGRAM_BOT_USERNAME : ''));
     const effectiveBotToken = String(dbBotToken || '').trim() || (PLATFORM_TELEGRAM_AVAILABLE ? PLATFORM_TELEGRAM_BOT_TOKEN : '');
 
-    if (!botRes.rows.length || !effectiveBotUsername) {
+    if (!effectiveBotUsername) {
       return res.json({ 
         enabled: false, 
         message: 'Telegram not configured for this store' 
